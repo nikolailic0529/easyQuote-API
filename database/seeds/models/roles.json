@@ -1,0 +1,10 @@
+[
+    {
+        "name": "Administrator",
+        "is_admin": true
+    },
+    {
+        "name": "Sales Manager",
+        "is_admin": false
+    }
+]

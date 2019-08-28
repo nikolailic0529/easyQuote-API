@@ -1,0 +1,188 @@
+{
+	"info": {
+		"_postman_id": "5bb7790f-e96f-4feb-ade1-0e752a5ba4cf",
+		"name": "eQ",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Sign Up",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjE5MTRiYjM3NDRmOGJiNTlmOGRhYjM5MzI5MTJlZTk3MmM3MDI0NTgyNDNjYWJlMTBjYzIxYWM4MjJjMGNlMzExMWUzM2RkNDFlNmJjNTM2In0.eyJhdWQiOiI1ZjM0ZDEzMC1jOTczLTExZTktOGFmYS1lM2JlM2E1OTQzOWUiLCJqdGkiOiIxOTE0YmIzNzQ0ZjhiYjU5ZjhkYWIzOTMyOTEyZWU5NzJjNzAyNDU4MjQzY2FiZTEwY2MyMWFjODIyYzBjZTMxMTFlMzNkZDQxZTZiYzUzNiIsImlhdCI6MTU2Njk4NDI0MywibmJmIjoxNTY2OTg0MjQzLCJleHAiOjE1OTg2MDY2NDMsInN1YiI6IjdjNTFiMDYwLWM5NzUtMTFlOS1hODk2LWI5NWQxODFlYjliZSIsInNjb3BlcyI6W119.IsINlubWVG8TPe3-LcbtGIVIJ9N0Krr6Y1QVqh0VUab4LLwZQnmn8vL9vfdgpnHUfVsCLJ_2rpHiFvsjT5CfnP2azccBKKTPDiLS-QZv2Lh397w_Y7l-Hzhxfx_R2apXJsTCbDbcVSEZIVx2LF4g8dKey2H49iCSmwDOIGelUCcasz0Gy_XA4cyvnRNFpYsRWSMLU7ll_In51fBlJqsKtv8rWhyaxvH5RYmsPCA8eZxgYjkOcWRqB7kpID6AgHfEQTyP2fuOUQPUc1HP3KRx1bL0lH01emoJc2u76m88gxNje5vmmDW4xM1pc6J5dExZvUc4CL27VzHdZ_piNFTvC9W26kMD5pDPFzZ0-fJbX0hKBIfsTzKGki8f2RLvsZpEIJ8fPe-8Io-24fypLrK_zJu3c4Ycpf831kGUoN9LMVG9P4DmsFUiJqUh3tIdF-PFckTV2uU09W-DRpwP5I9FH9gjJuk1QqB_-5QyK_bO_QMYV4mi5IgvrSYUzZW8cSqPkIQh44awroEC6fpdkitT_MPnQEyM5g0GtH0xM4ZiJ_WXdTTWPuTi-B5BiMTaeNgnAN8eFjM-YScK0GaAzftOSzHXQd4pY7DdeK8KhyoACRHuejdJGh4rPtSlg9puzVBC6he_bApiBB62xwgAvmeotr7Ig8YG6ArH2ifz8OguOcg",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "first_name",
+							"value": "First name",
+							"type": "text"
+						},
+						{
+							"key": "middle_name",
+							"value": "Middle name",
+							"type": "text"
+						},
+						{
+							"key": "last_name",
+							"value": "Last name",
+							"type": "text"
+						},
+						{
+							"key": "email",
+							"value": "example@example.com",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "password",
+							"type": "text"
+						},
+						{
+							"key": "country_id",
+							"value": "0177dab7-3510-46aa-b9cb-d9c17780d269",
+							"type": "text"
+						},
+						{
+							"key": "timezone_id",
+							"value": "008b8069-d87b-4513-a4cb-81a1f3a81dc7",
+							"type": "text"
+						},
+						{
+							"key": "password_confirmation",
+							"value": "password",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://easyquote/api/auth/signup",
+					"protocol": "http",
+					"host": [
+						"easyquote"
+					],
+					"path": [
+						"api",
+						"auth",
+						"signup"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Sign In",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "email",
+							"value": "example@example.com",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "password",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://easyquote/api/auth/signin",
+					"protocol": "http",
+					"host": [
+						"easyquote"
+					],
+					"path": [
+						"api",
+						"auth",
+						"signin"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get current user",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjE5MTRiYjM3NDRmOGJiNTlmOGRhYjM5MzI5MTJlZTk3MmM3MDI0NTgyNDNjYWJlMTBjYzIxYWM4MjJjMGNlMzExMWUzM2RkNDFlNmJjNTM2In0.eyJhdWQiOiI1ZjM0ZDEzMC1jOTczLTExZTktOGFmYS1lM2JlM2E1OTQzOWUiLCJqdGkiOiIxOTE0YmIzNzQ0ZjhiYjU5ZjhkYWIzOTMyOTEyZWU5NzJjNzAyNDU4MjQzY2FiZTEwY2MyMWFjODIyYzBjZTMxMTFlMzNkZDQxZTZiYzUzNiIsImlhdCI6MTU2Njk4NDI0MywibmJmIjoxNTY2OTg0MjQzLCJleHAiOjE1OTg2MDY2NDMsInN1YiI6IjdjNTFiMDYwLWM5NzUtMTFlOS1hODk2LWI5NWQxODFlYjliZSIsInNjb3BlcyI6W119.IsINlubWVG8TPe3-LcbtGIVIJ9N0Krr6Y1QVqh0VUab4LLwZQnmn8vL9vfdgpnHUfVsCLJ_2rpHiFvsjT5CfnP2azccBKKTPDiLS-QZv2Lh397w_Y7l-Hzhxfx_R2apXJsTCbDbcVSEZIVx2LF4g8dKey2H49iCSmwDOIGelUCcasz0Gy_XA4cyvnRNFpYsRWSMLU7ll_In51fBlJqsKtv8rWhyaxvH5RYmsPCA8eZxgYjkOcWRqB7kpID6AgHfEQTyP2fuOUQPUc1HP3KRx1bL0lH01emoJc2u76m88gxNje5vmmDW4xM1pc6J5dExZvUc4CL27VzHdZ_piNFTvC9W26kMD5pDPFzZ0-fJbX0hKBIfsTzKGki8f2RLvsZpEIJ8fPe-8Io-24fypLrK_zJu3c4Ycpf831kGUoN9LMVG9P4DmsFUiJqUh3tIdF-PFckTV2uU09W-DRpwP5I9FH9gjJuk1QqB_-5QyK_bO_QMYV4mi5IgvrSYUzZW8cSqPkIQh44awroEC6fpdkitT_MPnQEyM5g0GtH0xM4ZiJ_WXdTTWPuTi-B5BiMTaeNgnAN8eFjM-YScK0GaAzftOSzHXQd4pY7DdeK8KhyoACRHuejdJGh4rPtSlg9puzVBC6he_bApiBB62xwgAvmeotr7Ig8YG6ArH2ifz8OguOcg",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://easyquote/api/auth/user",
+					"protocol": "http",
+					"host": [
+						"easyquote"
+					],
+					"path": [
+						"api",
+						"auth",
+						"user"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Logout",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"type": "text",
+						"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjE5MTRiYjM3NDRmOGJiNTlmOGRhYjM5MzI5MTJlZTk3MmM3MDI0NTgyNDNjYWJlMTBjYzIxYWM4MjJjMGNlMzExMWUzM2RkNDFlNmJjNTM2In0.eyJhdWQiOiI1ZjM0ZDEzMC1jOTczLTExZTktOGFmYS1lM2JlM2E1OTQzOWUiLCJqdGkiOiIxOTE0YmIzNzQ0ZjhiYjU5ZjhkYWIzOTMyOTEyZWU5NzJjNzAyNDU4MjQzY2FiZTEwY2MyMWFjODIyYzBjZTMxMTFlMzNkZDQxZTZiYzUzNiIsImlhdCI6MTU2Njk4NDI0MywibmJmIjoxNTY2OTg0MjQzLCJleHAiOjE1OTg2MDY2NDMsInN1YiI6IjdjNTFiMDYwLWM5NzUtMTFlOS1hODk2LWI5NWQxODFlYjliZSIsInNjb3BlcyI6W119.IsINlubWVG8TPe3-LcbtGIVIJ9N0Krr6Y1QVqh0VUab4LLwZQnmn8vL9vfdgpnHUfVsCLJ_2rpHiFvsjT5CfnP2azccBKKTPDiLS-QZv2Lh397w_Y7l-Hzhxfx_R2apXJsTCbDbcVSEZIVx2LF4g8dKey2H49iCSmwDOIGelUCcasz0Gy_XA4cyvnRNFpYsRWSMLU7ll_In51fBlJqsKtv8rWhyaxvH5RYmsPCA8eZxgYjkOcWRqB7kpID6AgHfEQTyP2fuOUQPUc1HP3KRx1bL0lH01emoJc2u76m88gxNje5vmmDW4xM1pc6J5dExZvUc4CL27VzHdZ_piNFTvC9W26kMD5pDPFzZ0-fJbX0hKBIfsTzKGki8f2RLvsZpEIJ8fPe-8Io-24fypLrK_zJu3c4Ycpf831kGUoN9LMVG9P4DmsFUiJqUh3tIdF-PFckTV2uU09W-DRpwP5I9FH9gjJuk1QqB_-5QyK_bO_QMYV4mi5IgvrSYUzZW8cSqPkIQh44awroEC6fpdkitT_MPnQEyM5g0GtH0xM4ZiJ_WXdTTWPuTi-B5BiMTaeNgnAN8eFjM-YScK0GaAzftOSzHXQd4pY7DdeK8KhyoACRHuejdJGh4rPtSlg9puzVBC6he_bApiBB62xwgAvmeotr7Ig8YG6ArH2ifz8OguOcg"
+					}
+				],
+				"url": {
+					"raw": "http://easyquote/api/auth/logout",
+					"protocol": "http",
+					"host": [
+						"easyquote"
+					],
+					"path": [
+						"api",
+						"auth",
+						"logout"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
