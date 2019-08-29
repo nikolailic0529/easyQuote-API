@@ -22,5 +22,8 @@ class DatabaseSeeder extends Seeder
 
         $this->call(UsersSeeder::class);
         $this->command->info('Seeded the users!');
+
+        $this->call(LanguagesSeeder::class);
+        $this->command->info('Seeded the languages!');
     }
 }

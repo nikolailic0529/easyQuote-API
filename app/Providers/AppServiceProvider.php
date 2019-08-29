@@ -17,14 +17,16 @@ use App\Contracts \ {
     Repositories\CountryRepositoryInterface,
     Repositories\UserRepositoryInterface,
     Repositories\AccessAttemptRepositoryInterface,
-    Repositories\QuoteFileRepositoryInterface
+    Repositories\QuoteFileRepositoryInterface,
+    Repositories\LanguageRepositoryInterface
 };
 use App\Repositories \ {
     TimezoneRepository,
     CountryRepository,
     UserRepository,
     AccessAttemptRepository,
-    QuoteFileRepository
+    QuoteFileRepository,
+    LanguageRepository
 };
 use App\Services \ {
     AuthService
@@ -37,7 +39,8 @@ class AppServiceProvider extends ServiceProvider
         CountryRepositoryInterface::class => CountryRepository::class,
         UserRepositoryInterface::class => UserRepository::class,
         AccessAttemptRepositoryInterface::class => AccessAttemptRepository::class,
-        QuoteFileRepositoryInterface::class => QuoteFileRepository::class
+        QuoteFileRepositoryInterface::class => QuoteFileRepository::class,
+        LanguageRepositoryInterface::class => LanguageRepository::class
     ];
     /**
      * Register any application services.

@@ -15,6 +15,7 @@ Route::group(['prefix' => 'auth'], function () {
 Route::group(['prefix' => 'data'], function () {
     Route::get('countries', 'API\CountriesController');
     Route::get('timezones', 'API\TimezonesController');
+    Route::get('languages', 'API\LanguagesController');
 });
 
 Route::group(['prefix' => 'quotes', 'middleware' => 'auth:api'], function () {
