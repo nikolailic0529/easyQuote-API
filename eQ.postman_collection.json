@@ -63,7 +63,77 @@
 			]
 		},
 		{
+			"name": "Quote Files",
+			"item": [
+				{
+					"name": "Store Quote File",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjI5NmRmMWI5NTExNTE3ZjkwMmI3YTk2OTY3NWJmNzliMWFiYmUzOWNlY2ZiOTM0YWZmNDNhMDJiNmNkZWY4YTNiYjkyMWRkZDIxOTc4YWQzIn0.eyJhdWQiOiJlYjMwYTYyMC1jYTMwLTExZTktODc2NS05ZmVkMTRlZDU1OGMiLCJqdGkiOiIyOTZkZjFiOTUxMTUxN2Y5MDJiN2E5Njk2NzViZjc5YjFhYmJlMzljZWNmYjkzNGFmZjQzYTAyYjZjZGVmOGEzYmI5MjFkZGQyMTk3OGFkMyIsImlhdCI6MTU2NzA2NDcxNCwibmJmIjoxNTY3MDY0NzE0LCJleHAiOjE1OTg2ODcxMTQsInN1YiI6ImJmMjgzZGJkLTlkZjAtNGVmZi1hNTcxLWEwOTE4Yjg1NzA3MCIsInNjb3BlcyI6W119.Ks_ozmTdwzMKNEXfwdXDN2aMtmyFggZ6n--vuRrG4HG_Cbpg_KiWAeqEXOU3WZt5ni5KnLCs-zaVbFSJXtWYIfkPdygirsAtQBlaaaqPGK4AMkMAltLOylycu7mECyhDkKT-HAI-iT51e42DzD9Txx3TILpVl1MZsoxheO8T_RdD91HVeHQl4K9252PY6TAqnQNQfDIV8z32spA7zIkzjkz9BpEpbOWeGR1tGDdwTfJ5IU9JEd8H5bQAj308OSuSh5mSu0BdSJVZOWI313wFpslDcYcd2EpT-H9HGWVnyO-ub3QW1qyZXIO2MGkKGpSKje_EbRI-IugmNzTMjt2idxb8pMCPuT6ThGNyxmB5aSLnFtULIKvsITwZeRh0lXYRLks72kGQKH5Xr5-mdkaoaB0ttUZzzu5MLUPgULGB-UNzHfDJKpqWd-BDIOEZ_E1MiCwA6Adrjio5uspHUYsPqkgAkl5XZjpnQO0Mqu8Q2V-qqZ6vYcAFnkXUyNXTAKeLaUEw7VgtEvqcobC6fsdf6TpIPW1XDsISe_JzsUrDGCzEFbC7ncdPDv2MkynKNqT05zKi7SD2ez3OAyeZAZu4li5YBjkLhJrtTqyMfJsnxYi7g5MxJTtIu4GmmGetoO_EgXa_SuyczCtlfNUGxgZdT1eMgw0l3U0Y9ppsUcXC9wk",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "quote_file",
+									"type": "file",
+									"src": "/C:/Users/Strelenko/Desktop/easyQuote/UK Qute output from Distribution.pdf"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://easyquote/api/quotes/file",
+							"protocol": "http",
+							"host": [
+								"easyquote"
+							],
+							"path": [
+								"api",
+								"quotes",
+								"file"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Sign Up",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "32c6e2d5-d377-4e42-ac75-390ad4c206d9",
+						"exec": [
+							"function getRandomInt(min, max) {",
+							"  return Math.floor(Math.random() * (max - min)) + min;",
+							"}",
+							"",
+							"pm.sendRequest(\"http://easyquote/api/data/timezones\", function (err, response) {",
+							"    let timezones = response.json();",
+							"    pm.environment.set(\"timezone_id\", timezones[getRandomInt(0, timezones.length)].id);",
+							"});",
+							"",
+							"pm.sendRequest(\"http://easyquote/api/data/countries\", function (err, response) {",
+							"    let countries = response.json();",
+							"    pm.environment.set(\"country_id\", countries[getRandomInt(0, countries.length)].id);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"request": {
 				"method": "POST",
 				"header": [
@@ -93,7 +163,7 @@
 						},
 						{
 							"key": "email",
-							"value": "example@example.com",
+							"value": "example5@example.com",
 							"type": "text"
 						},
 						{
@@ -103,12 +173,12 @@
 						},
 						{
 							"key": "country_id",
-							"value": "00132ac2-22c1-4d64-89b2-ee6f682dea43",
+							"value": "{{country_id}}",
 							"type": "text"
 						},
 						{
 							"key": "timezone_id",
-							"value": "078bd71d-b092-494a-880d-5e71155dfb86",
+							"value": "{{timezone_id}}",
 							"type": "text"
 						},
 						{
@@ -149,7 +219,7 @@
 					"formdata": [
 						{
 							"key": "email",
-							"value": "example@example.com",
+							"value": "michael@gmail.com",
 							"type": "text"
 						},
 						{

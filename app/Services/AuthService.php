@@ -2,18 +2,21 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Carbon\Carbon;
-use App\Models\AccessAttempt;
-use App\Http\Requests\UserSignUpRequest;
-use App\Http\Requests\UserSignInRequest;
 
-class AuthService
+use Auth, Hash;
+use Carbon\Carbon;
+use App\Contracts\Repositories\AccessAttemptRepositoryInterface;
+use App\Http\Requests \ {
+    UserSignUpRequest,
+    UserSignInRequest
+};
+use App\Contracts\Services\AuthServiceInterface;
+
+class AuthService implements AuthServiceInterface
 {
     public $accessAttempt;
 
-    public function __construct(AccessAttempt $accessAttempt)
+    public function __construct(AccessAttemptRepositoryInterface $accessAttempt)
     {
         $this->accessAttempt = $accessAttempt;
     }

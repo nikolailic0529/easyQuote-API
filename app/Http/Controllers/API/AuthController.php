@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Contracts\Authenticable;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\UserSignUpRequest;
-use App\Http\Requests\UserSignInRequest;
-use App\Models\User;
-use App\Services\AuthService;
+use Illuminate\Http\Request;
+use App\Http\Requests \ {
+    UserSignUpRequest,
+    UserSignInRequest
+};
+use App\Contracts \ {
+    Authenticable,
+    Repositories\UserRepositoryInterface,
+    Services\AuthServiceInterface
+};
 
 class AuthController extends Controller implements Authenticable
 {
@@ -16,7 +20,7 @@ class AuthController extends Controller implements Authenticable
     protected $tokenResult;
     protected $authService;
 
-    public function __construct(User $user, AuthService $authService)
+    public function __construct(UserRepositoryInterface $user, AuthServiceInterface $authService)
     {
         $this->user = $user;
         $this->authService = $authService;
@@ -24,7 +28,9 @@ class AuthController extends Controller implements Authenticable
 
     public function signup(UserSignUpRequest $request)
     {
-        $user = $this->user->make($this->authService->handleSignUpRequest($request)->all());
+        $user = $this->user->make(
+            $this->authService->handleSignUpRequest($request)->all()
+        );
         $user->setAsAdmin();
         $user->save();
 

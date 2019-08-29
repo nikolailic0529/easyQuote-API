@@ -6,11 +6,13 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Laravel\Passport\HasApiTokens;
 use App\Models\AuthenticableUser;
-use App\Traits\HasCountry;
-use App\Traits\HasTimezone;
-use App\Traits\HasRole;
-use App\Traits\CanBeAdmin;
-use App\Traits\HasQuoteFilesDirectory;
+use App\Traits \ {
+    HasCountry,
+    HasTimezone,
+    HasRole,
+    CanBeAdmin,
+    HasQuoteFilesDirectory
+};
 
 class User extends AuthenticableUser implements MustVerifyEmail
 {

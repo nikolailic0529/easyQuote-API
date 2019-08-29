@@ -2,22 +2,21 @@
 
 namespace App\Http\Controllers\API;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Models\Country;
+use App\Contracts\Repositories\CountryRepositoryInterface;
 
 class CountriesController extends Controller
 {
     protected $country;
 
-    public function __construct(Country $country)
+    public function __construct(CountryRepositoryInterface $country)
     {
         $this->country = $country;
     }
 
     public function __invoke()
     {
-        $countries = $this->country->ordered()->get();
+        $countries = $this->country->all();
         return response()->json($countries);
     }
 }

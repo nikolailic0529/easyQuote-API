@@ -24,13 +24,13 @@ interface Authenticable
     public function logout(Request $request);
 
     /**
-     * get current user data
+     * Get current user data
      * @return json response
      */
     public function user(Request $request);
 
     /**
-     * set token after successfull authorization
+     * Set token after successfull authorization
      * @return void
      */
     public function setToken(UserSignInRequest $request);

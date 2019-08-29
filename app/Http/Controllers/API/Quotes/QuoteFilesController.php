@@ -5,13 +5,13 @@ namespace App\Http\Controllers\API\Quotes;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreQuoteFileRequest;
-use App\Models\QuoteFile\QuoteFile;
+use App\Contracts\Repositories\QuoteFileRepositoryInterface;
 
 class QuoteFilesController extends Controller
 {
     protected $quoteFile;
 
-    public function __construct(QuoteFile $quoteFile)
+    public function __construct(QuoteFileRepositoryInterface $quoteFile)
     {
         $this->quoteFile = $quoteFile;
     }

@@ -8,9 +8,37 @@ use Laravel\Passport\PersonalAccessClient;
 use Webpatser\Uuid\Uuid;
 use Illuminate\Support\ServiceProvider;
 use Schema;
+use App\Http\Controllers\API \ {
+    AuthController
+};
+use App\Contracts \ {
+    Services\AuthServiceInterface,
+    Repositories\TimezoneRepositoryInterface,
+    Repositories\CountryRepositoryInterface,
+    Repositories\UserRepositoryInterface,
+    Repositories\AccessAttemptRepositoryInterface,
+    Repositories\QuoteFileRepositoryInterface
+};
+use App\Repositories \ {
+    TimezoneRepository,
+    CountryRepository,
+    UserRepository,
+    AccessAttemptRepository,
+    QuoteFileRepository
+};
+use App\Services \ {
+    AuthService
+};
 
 class AppServiceProvider extends ServiceProvider
 {
+    public $singletons = [
+        TimezoneRepositoryInterface::class => TimezoneRepository::class,
+        CountryRepositoryInterface::class => CountryRepository::class,
+        UserRepositoryInterface::class => UserRepository::class,
+        AccessAttemptRepositoryInterface::class => AccessAttemptRepository::class,
+        QuoteFileRepositoryInterface::class => QuoteFileRepository::class
+    ];
     /**
      * Register any application services.
      *
@@ -19,6 +47,8 @@ class AppServiceProvider extends ServiceProvider
     public function register()
     {
         Passport::ignoreMigrations();
+
+        $this->app->when(AuthController::class)->needs(AuthServiceInterface::class)->give(AuthService::class);
     }
 
     /**
