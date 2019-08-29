@@ -10,10 +10,11 @@ use App\Traits\HasCountry;
 use App\Traits\HasTimezone;
 use App\Traits\HasRole;
 use App\Traits\CanBeAdmin;
+use App\Traits\HasQuoteFilesDirectory;
 
 class User extends AuthenticableUser implements MustVerifyEmail
 {
-    use HasRole, HasApiTokens, Notifiable, HasCountry, HasTimezone, CanBeAdmin;
+    use HasQuoteFilesDirectory, HasRole, HasApiTokens, Notifiable, HasCountry, HasTimezone, CanBeAdmin;
 
     /**
      * The attributes that are mass assignable.

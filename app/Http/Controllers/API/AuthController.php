@@ -3,33 +3,28 @@
 namespace App\Http\Controllers\API;
 
 use App\Contracts\Authenticable;
-use App\Contracts\AccessLoggable;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Carbon\Carbon;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UserSignUpRequest;
 use App\Http\Requests\UserSignInRequest;
 use App\Models\User;
-use App\Models\AccessAttempt;
+use App\Services\AuthService;
 
-class AuthController extends Controller implements Authenticable, AccessLoggable
+class AuthController extends Controller implements Authenticable
 {
-    public $accessAttempt;
     protected $user;
     protected $tokenResult;
+    protected $authService;
 
-    public function __construct(User $user)
+    public function __construct(User $user, AuthService $authService)
     {
         $this->user = $user;
+        $this->authService = $authService;
     }
 
     public function signup(UserSignUpRequest $request)
     {
-        $user = $this->user->make(
-            $this->handleSignUpRequest($request)->all(),
-        );
+        $user = $this->user->make($this->authService->handleSignUpRequest($request)->all());
         $user->setAsAdmin();
         $user->save();
 
@@ -40,24 +35,24 @@ class AuthController extends Controller implements Authenticable, AccessLoggable
 
     public function signin(UserSignInRequest $request)
     {
+        $this->authService->storeAccessAttempt($request->all());
+
         $credentials = $request->only('email', 'password');
-
-        $this->storeAccessAttempt($request->all());
-
-        if(!Auth::attempt($credentials)) {
+        
+        if(!$this->authService->checkCredentials($credentials)) {
             return response()->json([
                 'message' => __('Unauthorized')
             ], 401);
         };
 
-        $this->accessAttempt->markAsSuccessfull();
+        $this->authService->accessAttempt->markAsSuccessfull();
 
-        $this->generateToken($request);
+        $this->setToken($request);
 
         return response()->json([
             'access_token' => $this->tokenResult->accessToken,
             'token_type' => 'Bearer',
-            'expires_at' => Carbon::parse($this->tokenResult->token->expires_at)->toDateTimeString(),
+            'expires_at' => $this->authService->parseTokenTime($this->tokenResult),
         ]);
     }
     
@@ -74,33 +69,9 @@ class AuthController extends Controller implements Authenticable, AccessLoggable
     {
         return response()->json($request->user());
     }
-
-    public function storeAccessAttempt(Array $payload)
-    {
-        $this->accessAttempt = new AccessAttempt;
-        $this->accessAttempt->setDetails();
-        
-        return $this->accessAttempt->fill($payload)->save();
-    }
     
-    private function generateToken(UserSignInRequest $request)
+    public function setToken(UserSignInRequest $request)
     {
-        $user = $request->user();
-
-        $this->tokenResult = $user->createToken('Personal Access Token');
-        $token = $this->tokenResult->token;
-
-        if($request->remember_me) {
-            $token->expires_at = Carbon::now()->addWeeks(1);
-        }
-
-        $token->save();
-    }
-
-    public static function handleSignUpRequest(UserSignUpRequest $request)
-    {
-        $password = Hash::make($request->password);
-
-        return $request->merge(compact('password'));
+        $this->tokenResult = $this->authService->generateToken($request);
     }
 }
