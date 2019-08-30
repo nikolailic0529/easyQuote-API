@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers\API\Quotes;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreQuoteFileRequest;
-use App\Contracts\Repositories\QuoteFileRepositoryInterface;
+use App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface;
+use App\Jobs\StoreQuoteFile;
 
 class QuoteFilesController extends Controller
 {
     protected $quoteFile;
+    protected $quoteFileHandler;
 
     public function __construct(QuoteFileRepositoryInterface $quoteFile)
     {
@@ -18,11 +19,19 @@ class QuoteFilesController extends Controller
 
     public function store(StoreQuoteFileRequest $request)
     {
-        $file = $request->file('quote_file');
-        $filePath = $file->store(
-            $request->user()->quoteFilesDirectory
-        );
+        $quoteFile = $this->quoteFile->create($request);
 
-        return response()->json(compact('filePath'));
+        return response()->json(
+            $quoteFile
+        );
+    }
+
+    public function all()
+    {
+        $allQuoteFiles = $this->quoteFile->all();
+
+        return response()->json(
+            $allQuoteFiles
+        );
     }
 }

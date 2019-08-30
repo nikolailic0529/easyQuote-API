@@ -12,6 +12,9 @@ class RolesSeeder extends Seeder
      */
     public function run()
     {
+        //Empty the roles table
+        DB::table('roles')->delete();
+
         $roles = json_decode(file_get_contents(__DIR__ . '/models/roles.json'), true);
 
         collect($roles)->each(function ($role) {

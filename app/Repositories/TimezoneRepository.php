@@ -2,7 +2,7 @@
 
 namespace App\Repositories;
 
-use App\Models\Timezone;
+use App\Models\Data\Timezone;
 use App\Contracts\Repositories\TimezoneRepositoryInterface;
 
 class TimezoneRepository implements TimezoneRepositoryInterface

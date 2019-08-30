@@ -11,6 +11,9 @@ class LanguagesSeeder extends Seeder
      */
     public function run()
     {
+        //Empty the languages table
+        DB::table('languages')->delete();
+
         $languages = json_decode(file_get_contents(__DIR__ . '/models/languages.json'), true);
 
         collect($languages)->each(function ($language) {

@@ -25,5 +25,11 @@ class DatabaseSeeder extends Seeder
 
         $this->call(LanguagesSeeder::class);
         $this->command->info('Seeded the languages!');
+
+        $this->call(CurrenciesSeeder::class);
+        $this->command->info('Seeded the currencies!');
+
+        $this->call(QuoteFileFormatsSeeder::class);
+        $this->command->info('Seeded the file formats!');
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Repositories;
 
-use App\Models\Language;
+use App\Models\Data\Language;
 use App\Contracts\Repositories\LanguageRepositoryInterface;
 
 class LanguageRepository implements LanguageRepositoryInterface

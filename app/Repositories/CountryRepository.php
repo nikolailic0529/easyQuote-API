@@ -2,7 +2,7 @@
 
 namespace App\Repositories;
 
-use App\Models\Country;
+use App\Models\Data\Country;
 use App\Contracts\Repositories\CountryRepositoryInterface;
 
 class CountryRepository implements CountryRepositoryInterface

@@ -4,8 +4,8 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Faker\Generator as Faker;
 use App\Models\Role;
-use App\Models\Country;
-use App\Models\Timezone;
+use App\Models\Data\Country;
+use App\Models\Data\Timezone;
 
 class UsersSeeder extends Seeder
 {
@@ -16,6 +16,9 @@ class UsersSeeder extends Seeder
      */
     public function run(Faker $faker)
     {
+        //Empty the users table
+        DB::table('users')->delete();
+
         $users = json_decode(file_get_contents(__DIR__ . '/models/users.json'), true);
 
         $adminRoleId = Role::admin()->id;

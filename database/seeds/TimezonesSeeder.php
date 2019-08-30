@@ -12,6 +12,9 @@ class TimezonesSeeder extends Seeder
      */
     public function run()
     {
+        //Empty the timezones table
+        DB::table('timezones')->delete();
+
         $timezones = json_decode(file_get_contents(__DIR__ . '/models/timezones.json'), true);
 
         collect($timezones)->each(function ($timezone) {
