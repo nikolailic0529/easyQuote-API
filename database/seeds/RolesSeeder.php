@@ -13,7 +13,11 @@ class RolesSeeder extends Seeder
     public function run()
     {
         //Empty the roles table
+        Schema::disableForeignKeyConstraints();
+
         DB::table('roles')->delete();
+
+        Schema::enableForeignKeyConstraints();
 
         $roles = json_decode(file_get_contents(__DIR__ . '/models/roles.json'), true);
 

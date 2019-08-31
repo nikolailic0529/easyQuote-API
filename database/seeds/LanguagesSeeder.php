@@ -12,7 +12,11 @@ class LanguagesSeeder extends Seeder
     public function run()
     {
         //Empty the languages table
+        Schema::disableForeignKeyConstraints();
+
         DB::table('languages')->delete();
+
+        Schema::enableForeignKeyConstraints();
 
         $languages = json_decode(file_get_contents(__DIR__ . '/models/languages.json'), true);
 

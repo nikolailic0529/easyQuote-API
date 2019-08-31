@@ -17,7 +17,11 @@ class UsersSeeder extends Seeder
     public function run(Faker $faker)
     {
         //Empty the users table
+        Schema::disableForeignKeyConstraints();
+
         DB::table('users')->delete();
+
+        Schema::enableForeignKeyConstraints();
 
         $users = json_decode(file_get_contents(__DIR__ . '/models/users.json'), true);
 

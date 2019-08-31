@@ -13,7 +13,11 @@ class CountriesSeeder extends Seeder {
     public function run()
     {
         //Empty the countries table
+        Schema::disableForeignKeyConstraints();
+
         DB::table(\Config::get('countries.table_name'))->delete();
+
+        Schema::enableForeignKeyConstraints();
 
         //Get all of the countries
         $countries = Countries::getList();

@@ -12,7 +12,11 @@ class QuoteFileFormatsSeeder extends Seeder
     public function run()
     {
         //Empty the quote_file_formats table
+        Schema::disableForeignKeyConstraints();
+        
         DB::table('quote_file_formats')->delete();
+
+        Schema::enableForeignKeyConstraints();
 
         $fileFormats = json_decode(file_get_contents(__DIR__ . '/models/quote_file_formats.json'), true);
 

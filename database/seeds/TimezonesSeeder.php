@@ -13,7 +13,11 @@ class TimezonesSeeder extends Seeder
     public function run()
     {
         //Empty the timezones table
+        Schema::disableForeignKeyConstraints();
+
         DB::table('timezones')->delete();
+
+        Schema::enableForeignKeyConstraints();
 
         $timezones = json_decode(file_get_contents(__DIR__ . '/models/timezones.json'), true);
 

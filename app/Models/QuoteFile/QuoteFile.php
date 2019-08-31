@@ -9,10 +9,11 @@ use App\Traits \ {
     Draftable
 };
 use App\Contracts\HasOrderedScope;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class QuoteFile extends UuidModel implements HasOrderedScope
 {
-    use HasUser, HasFileFormat, Draftable;
+    use HasUser, HasFileFormat, Draftable, SoftDeletes;
 
     protected $fillable = [
         'original_file_path',

@@ -12,7 +12,11 @@ class CurrenciesSeeder extends Seeder
     public function run()
     {
         //Empty the currencies table
+        Schema::disableForeignKeyConstraints();
+
         DB::table('currencies')->delete();
+
+        Schema::enableForeignKeyConstraints();
 
         $currencies = json_decode(file_get_contents(__DIR__ . '/models/currencies.json'), true);
 
