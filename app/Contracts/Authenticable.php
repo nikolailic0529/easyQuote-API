@@ -1,10 +1,10 @@
-<?php
-
-namespace App\Contracts;
+<?php namespace App\Contracts;
 
 use Illuminate\Http\Request;
-use App\Http\Requests\UserSignUpRequest;
-use App\Http\Requests\UserSignInRequest;
+use App\Http\Requests \ {
+    UserSignUpRequest,
+    UserSignInRequest
+};
 
 interface Authenticable
 {

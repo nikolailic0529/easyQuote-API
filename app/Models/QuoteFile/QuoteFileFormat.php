@@ -1,6 +1,4 @@
-<?php
-
-namespace App\Models\QuoteFile;
+<?php namespace App\Models\QuoteFile;
 
 use App\Models\UuidModel;
 

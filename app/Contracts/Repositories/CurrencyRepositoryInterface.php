@@ -1,6 +1,4 @@
-<?php
-
-namespace App\Contracts\Repositories;
+<?php namespace App\Contracts\Repositories;
 
 interface CurrencyRepositoryInterface
 {

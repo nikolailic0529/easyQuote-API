@@ -1,16 +1,15 @@
-<?php
-
-namespace App\Services;
-
+<?php namespace App\Services;
 
 use Auth, Hash;
 use Carbon\Carbon;
-use App\Contracts\Repositories\AccessAttemptRepositoryInterface;
+use App\Contracts \ {
+    Services\AuthServiceInterface,
+    Repositories\AccessAttemptRepositoryInterface
+};
 use App\Http\Requests \ {
     UserSignUpRequest,
     UserSignInRequest
 };
-use App\Contracts\Services\AuthServiceInterface;
 
 class AuthService implements AuthServiceInterface
 {

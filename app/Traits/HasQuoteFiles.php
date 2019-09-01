@@ -1,6 +1,4 @@
-<?php
-
-namespace App\Traits;
+<?php namespace App\Traits;
 
 use App\Models\QuoteFile\QuoteFile;
 

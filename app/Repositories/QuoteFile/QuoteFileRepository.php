@@ -1,6 +1,4 @@
-<?php
-
-namespace App\Repositories\QuoteFile;
+<?php namespace App\Repositories\QuoteFile;
 
 use Illuminate\Http\Request;
 use App\Models\QuoteFile \ {
@@ -44,5 +42,16 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         $quoteFile->markAsDrafted();
 
         return $quoteFile;
+    }
+    
+    public function createRawData(QuoteFile $quoteFile, Array $array)
+    {
+        $rawData = $quoteFile->importedRawData()->createMany(
+            $array
+        );
+
+        $quoteFile->markAsHandled();
+
+        return $rawData;
     }
 }

@@ -1,6 +1,4 @@
-<?php
-
-namespace App\Repositories\QuoteFile;
+<?php namespace App\Repositories\QuoteFile;
 
 use App\Models\QuoteFile\QuoteFileFormat;
 use App\Contracts\Repositories\QuoteFile\FileFormatRepositoryInterface;

@@ -1,17 +1,44 @@
 [
     {
-        "text": "Product No."
+        "header": "Product No.",
+        "alias": "product_no",
+        "regexp": "(?<product_no>\\d+\\-.{3}|[a-zA-Z][a-zA-Z\\d]+)\\s",
+        "order": 0
     },
     {
-        "text": "Description"
+        "header": "Description",
+        "alias": "description",
+        "regexp": "(?<description>.+)\\s",
+        "order": 1
     },
     {
-        "text": "Serial No."
+        "header": "Serial No.",
+        "alias": "serial_no",
+        "regexp": "(?<serial_no>[a-zA-Z]{2}[a-zA-Z\\d]{8})\\s+.*?",
+        "order": 2
     },
     {
-        "text": "Qty"
+        "header": "Coverage from",
+        "alias": "coverage_period_from",
+        "regexp": "(?<coverage_period_from>(([0-2][0-9])|(3[0-1]))\\.((0[0-9])|(1[0-2]))\\.\\d{4})?\\s+",
+        "order": 3
     },
     {
-        "text": "Price"
+        "header": "Coverage to",
+        "alias": "coverage_period_to",
+        "regexp": "((?<coverage_period_to>(([0-2][0-9])|(3[0-1]))\\.((0[0-9])|(1[0-2]))\\.\\d{4})\\s+?)?",
+        "order": 4
+    },
+    {
+        "header": "Qty",
+        "alias": "quantity",
+        "regexp": "((?<quantity>\\d{1,3}))",
+        "order": 5
+    },
+    {
+        "header": "Price",
+        "alias": "price",
+        "regexp": "(\\s+(?<price>\\d+\\.\\d\\d|\\d{1,3}))?",
+        "order": 6
     }
 ]

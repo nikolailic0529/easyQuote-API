@@ -1,6 +1,4 @@
-<?php
-
-namespace App\Http\Controllers\API;
+<?php namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -35,7 +33,7 @@ class AuthController extends Controller implements Authenticable
         $user->save();
 
         return response()->json([
-            'message' => __('I have been successfully registered!')
+            'message' => __('You have been successfully registered!')
         ], 201);
     }
 

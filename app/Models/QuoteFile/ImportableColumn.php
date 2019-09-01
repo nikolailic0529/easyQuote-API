@@ -2,7 +2,7 @@
 
 use App\Models\UuidModel;
 
-class DataSelectSeparator extends UuidModel
+class ImportableColumn extends UuidModel
 {
     // 
 }

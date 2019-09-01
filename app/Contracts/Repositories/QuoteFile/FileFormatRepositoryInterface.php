@@ -1,6 +1,4 @@
-<?php
-
-namespace App\Contracts\Repositories\QuoteFile;
+<?php namespace App\Contracts\Repositories\QuoteFile;
 
 use App\Http\Requests\StoreQuoteFileRequest;
 

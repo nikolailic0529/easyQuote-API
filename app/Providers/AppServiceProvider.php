@@ -1,6 +1,4 @@
-<?php
-
-namespace App\Providers;
+<?php namespace App\Providers;
 
 use Laravel\Passport\Passport;
 use Laravel\Passport\Client;
@@ -9,10 +7,12 @@ use Webpatser\Uuid\Uuid;
 use Illuminate\Support\ServiceProvider;
 use Schema;
 use App\Http\Controllers\API \ {
-    AuthController
+    AuthController,
+    Quotes\QuoteFilesController
 };
 use App\Contracts \ {
     Services\AuthServiceInterface,
+    Services\ParserServiceInterface,
     Repositories\TimezoneRepositoryInterface,
     Repositories\CountryRepositoryInterface,
     Repositories\UserRepositoryInterface,
@@ -20,7 +20,8 @@ use App\Contracts \ {
     Repositories\LanguageRepositoryInterface,
     Repositories\CurrencyRepositoryInterface,
     Repositories\QuoteFile\QuoteFileRepositoryInterface,
-    Repositories\QuoteFile\FileFormatRepositoryInterface
+    Repositories\QuoteFile\FileFormatRepositoryInterface,
+    Repositories\QuoteFile\ImportableColumnRepositoryInterface
 };
 use App\Repositories \ {
     TimezoneRepository,
@@ -30,10 +31,12 @@ use App\Repositories \ {
     LanguageRepository,
     CurrencyRepository,
     QuoteFile\QuoteFileRepository,
-    QuoteFile\FileFormatRepository
+    QuoteFile\FileFormatRepository,
+    QuoteFile\ImportableColumnRepository
 };
 use App\Services \ {
-    AuthService
+    AuthService,
+    ParserService
 };
 
 class AppServiceProvider extends ServiceProvider
@@ -46,7 +49,8 @@ class AppServiceProvider extends ServiceProvider
         LanguageRepositoryInterface::class => LanguageRepository::class,
         CurrencyRepositoryInterface::class => CurrencyRepository::class,
         QuoteFileRepositoryInterface::class => QuoteFileRepository::class,
-        FileFormatRepositoryInterface::class => FileFormatRepository::class
+        FileFormatRepositoryInterface::class => FileFormatRepository::class,
+        ImportableColumnRepositoryInterface::class => ImportableColumnRepository::class
     ];
     /**
      * Register any application services.
@@ -58,6 +62,8 @@ class AppServiceProvider extends ServiceProvider
         Passport::ignoreMigrations();
 
         $this->app->when(AuthController::class)->needs(AuthServiceInterface::class)->give(AuthService::class);
+        
+        $this->app->when(QuoteFilesController::class)->needs(ParserServiceInterface::class)->give(ParserService::class);
     }
 
     /**

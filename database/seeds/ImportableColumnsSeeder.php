@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Database\Seeder;
-use Carbon\Carbon;
 
 class ImportableColumnsSeeder extends Seeder
 {
@@ -24,10 +23,10 @@ class ImportableColumnsSeeder extends Seeder
         collect($importable_columns)->each(function ($column) {
             DB::table('importable_columns')->insert([
                 'id' => (string) Uuid::generate(4),
-                'text' => $column['text'],
-                'is_system' => true,
-                'created_at' => Carbon::now()->toDateTimeString(),
-                'updated_at' => Carbon::now()->toDateTimeString()
+                'header' => $column['header'],
+                'alias' => $column['alias'],
+                'regexp' => $column['regexp'],
+                'order' => $column['order'],
             ]);
         });
     }

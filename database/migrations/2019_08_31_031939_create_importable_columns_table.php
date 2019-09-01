@@ -16,13 +16,10 @@ class CreateImportableColumnsTable extends Migration
         Schema::create('importable_columns', function (Blueprint $table) {
             $table->uuid('id');
             $table->primary('id');
-            $table->uuid('user_id')->nullable();
-            $table->foreign('user_id')->references('id')->on('users');
-            $table->string('text');
-            $table->boolean('is_system')->default(false);
-            $table->timestamps();
-            $table->timestamp('drafted_at')->nullable()->default(null);
-            $table->softDeletes();
+            $table->string('header');
+            $table->string('alias')->unique();
+            $table->string('regexp');
+            $table->tinyInteger('order');
         });
     }
 

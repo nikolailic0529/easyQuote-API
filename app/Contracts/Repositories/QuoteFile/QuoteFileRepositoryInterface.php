@@ -1,9 +1,8 @@
-<?php
-
-namespace App\Contracts\Repositories\QuoteFile;
+<?php namespace App\Contracts\Repositories\QuoteFile;
 
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreQuoteFileRequest;
+use App\Models\QuoteFile\QuoteFile;
 
 interface QuoteFileRepositoryInterface
 {
@@ -27,4 +26,13 @@ interface QuoteFileRepositoryInterface
      * @return \App\Models\QuoteFile\QuoteFile
      */
     public function create(StoreQuoteFileRequest $request);
+
+    /**
+     * Store Imported Raw Data by QuoteFile
+     *
+     * @param QuoteFile $quoteFile
+     * @param Array $array
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function createRawData(QuoteFile $quoteFile, Array $array);
 }

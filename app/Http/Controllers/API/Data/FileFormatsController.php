@@ -1,6 +1,4 @@
-<?php
-
-namespace App\Http\Controllers\API\Data;
+<?php namespace App\Http\Controllers\API\Data;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\QuoteFile\FileFormatRepositoryInterface;

@@ -1,6 +1,4 @@
-<?php
-
-namespace App\Models;
+<?php namespace App\Models;
 
 use App\Models\UuidModel;
 use App\Traits\HasUser;
