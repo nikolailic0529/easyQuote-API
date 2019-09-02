@@ -2,10 +2,11 @@
 
 use App\Models \ {
     UuidModel,
-    QuoteFile\ImportedRawData
+    QuoteFile\ImportedRawData,
+    QuoteFile\ImportedColumnData
 };
 use App\Traits \ {
-    HasUser,
+    BelongsToUser,
     HasFileFormat,
     Draftable,
     Handleable
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class QuoteFile extends UuidModel implements HasOrderedScope
 {
-    use HasUser, HasFileFormat, Handleable, Draftable, SoftDeletes;
+    use BelongsToUser, HasFileFormat, Handleable, Draftable, SoftDeletes;
 
     protected $fillable = [
         'original_file_path',
@@ -30,5 +31,10 @@ class QuoteFile extends UuidModel implements HasOrderedScope
     public function importedRawData()
     {
         return $this->hasMany(ImportedRawData::class);
+    }
+
+    public function columnData()
+    {
+        return $this->hasMany(ImportedColumnData::class);
     }
 }

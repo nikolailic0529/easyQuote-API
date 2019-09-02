@@ -1,0 +1,14 @@
+[
+    {
+        "name": "Hewlett Packard Enterprise",
+        "short_code": "HPE"
+    },
+    {
+        "name": "Lenovo Group Limited",
+        "short_code": "Lenovo"
+    },
+    {
+        "name": "International Business Machines Corporation",
+        "short_code": "IBM"
+    }
+]

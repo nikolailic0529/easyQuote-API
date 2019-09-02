@@ -3,7 +3,7 @@
 use App\Contracts \ {
     Services\ParserServiceInterface,
     Repositories\QuoteFile\ImportableColumnRepositoryInterface as ImportableColumn,
-    Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository,
+    Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
 };
 use Illuminate\Support\Collection;
 use Smalot\PdfParser\Parser;
@@ -18,8 +18,11 @@ class ParserService implements ParserServiceInterface
 
     protected $importableColumn;
 
-    public function __construct(QuoteFileRepository $quoteFile, ImportableColumn $importableColumn, Parser $parser)
-    {
+    public function __construct(
+        QuoteFileRepository $quoteFile,
+        ImportableColumn $importableColumn,
+        Parser $parser
+    ) {
         $this->quoteFile = $quoteFile;
         $this->importableColumn = $importableColumn;
         $this->parser = $parser;
@@ -43,9 +46,19 @@ class ParserService implements ParserServiceInterface
         
         $pdfTextPages = $this->getPdfText($quoteFile);
 
-        return $this->quoteFile->createRawData(
+        $this->quoteFile->createRawData(
             $quoteFile,
             $pdfTextPages
+        );
+
+        $rawData = $this->quoteFile->getRawData($quoteFile);
+
+        return $this->quoteFile->createColumnData(
+            $quoteFile,
+            $this->parsePdfText(
+                $rawData->content
+            ),
+            $rawData->page
         );
     }
 
@@ -76,10 +89,12 @@ class ParserService implements ParserServiceInterface
         $regexp = $regexpColumns->implode('');
         $regexp = "/^{$regexp}$/mu";
 
-        preg_match_all($regexp, $text, $matches);
+        preg_match_all($regexp, $text, $matches, PREG_UNMATCHED_AS_NULL);
+
+        $columnsAliases = $this->importableColumn->allColumnsAliases();
 
         $matches = collect($matches)->only(
-            $this->importableColumn->allColumnsAliases()
+            $columnsAliases
         );
 
         return $matches->toArray();

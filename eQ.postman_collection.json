@@ -151,7 +151,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6ImIzYTc3YWJkMTg3MTg3ZjhiN2ViZDUxOTdjYWQzN2Y3YTU3ZjM0NzBkNTNmNTJhYTk2Zjk4M2I5YzBmOWU1MGE2YjI4YWEwOTRiNWYzZTcwIn0.eyJhdWQiOiI5ZGFjNDc2MC1jY2FlLTExZTktYjM4Yi03YjAwYzY5Y2U4MzciLCJqdGkiOiJiM2E3N2FiZDE4NzE4N2Y4YjdlYmQ1MTk3Y2FkMzdmN2E1N2YzNDcwZDUzZjUyYWE5NmY5ODNiOWMwZjllNTBhNmIyOGFhMDk0YjVmM2U3MCIsImlhdCI6MTU2NzM0MTYyOCwibmJmIjoxNTY3MzQxNjI4LCJleHAiOjE1OTg5NjQwMjgsInN1YiI6IjNhM2Y0ZTdmLWJmYTMtNGZjYi05ODU5LTQ1ZDRlMWE2YWNhOCIsInNjb3BlcyI6W119.JJeTjkxluZDUim1LQGezj1ICx3JPg54dwSbrLggdK3zuM0Ch33TMhyZEMObxkmA9z8MW1bhV_rLKKKq7_aQlVmB7s72qoBGxf7JHSbCGguSn0sQuIqL5FZcDHixwnZMyg5dDXWLhsXT5xDT4bEX3blCTJYbQyXvMvYCXwGvfFekfopADp1SoP1xSunLRfqYOGMO-Z1U8uigoDKA5VgaFXv1Wc1fkYZVXcsAhBhkV_pWAmWyVYX5TdMUZCQjfgbSyPPaBbL7srnEpa7aausDley31b8HNVD3HnX-sCcXHLHaYzDP0NB4oz8Q2rCOJZh2-MGeM4gquUpvmUBIK17Hv8-pVDahQZnWZhWLU0E16THX8Qzwz5QjsQXghH4edmW-iKBGgDedelz3hKSTFc6HHEeUsielqO6SoWiWr5rmHPBf7fDtR2Nm024njQRAIRZxEr49G7gEj4b5EIuO1v7TSh1jbAm9yxppSAwjUOdhMKXlvgIZukh20GG0RMj2Yd5glQ0QmhyfadDGfafNIgPyaFyMOUY-4CXJj7T5Jp_CDDjnN2eyJTEUykSSBb1oqkPPKOd2mwoh20WWoIEc8kR3PIzQJps3BgyeU6IX4rK-76Tb-hMIXJEzyPrs5iafs3M2u2QaHMCaCkdiPrrTwSL9HVDbYYh4vEOmjsYqEej36aio",
+									"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjM1ZTYzMTM4ODM3YWJlMDQ5MWY4MGNiNzU2N2NjZmY4OTBhNjUyZjljZDNiMGQwMTg4MDdjMzkyNGZjY2U4Y2MwNmY3MDJhNDUyZTI0NTAyIn0.eyJhdWQiOiIyN2EzZDI2MC1jZDI5LTExZTktYmQxNC1iMTc0ZGVlMGEyMzYiLCJqdGkiOiIzNWU2MzEzODgzN2FiZTA0OTFmODBjYjc1NjdjY2ZmODkwYTY1MmY5Y2QzYjBkMDE4ODA3YzM5MjRmY2NlOGNjMDZmNzAyYTQ1MmUyNDUwMiIsImlhdCI6MTU2NzM5MTIzMywibmJmIjoxNTY3MzkxMjMzLCJleHAiOjE1OTkwMTM2MzMsInN1YiI6ImFkMTAxNTY5LWVjNTItNDY4NS04YjY2LWE2ZTc4MTA5MGU2OCIsInNjb3BlcyI6W119.tJ6ZT-Lf_H2a27G4bZxj5W0ATKRrKIcL5hXqIsvbHaSA_hBk3JOJRCczTG_qy0CQke1OZoticn6-wCYOa7IHtoJfrvorejWNQ3zyCyH3D39mghH07gpWALHADNor1ABEKi2TV_Kc_YwuD1d9iCEq0E4pzyKrR_DO8SqGpjGnmacZnHRsjbaX7R0pEKyf5Joys69Lw3XR1kkiCZRIEpfKulfwnT4Ut6zrsrbitpRavAzBzWmYL-w8ZxSbJxWKSjJr7QzXvq5wTKHpn813g3ugDSSo3CljppKInIidIXkbacFnPlclPERW2aDN_yY0oARbtXQ8EdYl1idJNyvZf8bVrLge5IuTgcXNIxZrWmVSvbQhzgqNhib6jGUSNDjs50OjtBI3mKvv7AUsr2RifUMgUujwpm_guFO3GGVScKHeUCEPwWrNBJeIt5Yg-Ko0gkrIVaBBUdJ2UIVgp6sWGzKtTHRC_LryCQjOoDa4PGh2BQH5_klU8mxFXpJLWP3XC74hoW1bSHaGhnidNazyVfNAL23Xkolb5lhk-zpEw-u1uICKj4h-U3BVMTIjQV6V5jlmvvmjffNRNfSOJWyTh47t9XUtBA42LJkkhBymthhHNBj5RkJRAnl9QhNDesEfsOGAna3rjWDDwe495mjYauGQ3vTWYqgpT1Iv1tweZETK7-Y",
 									"type": "string"
 								}
 							]
@@ -170,12 +170,7 @@
 								{
 									"key": "quote_file",
 									"type": "file",
-									"src": "/C:/Users/Strelenko/Desktop/easyQuote/UK Qute output from Distribution.pdf"
-								},
-								{
-									"key": "quote_file_format_id",
-									"value": "156503ac-3729-4d55-a44b-925989baebdd",
-									"type": "text"
+									"src": "/C:/Users/Strelenko/Desktop/easyQuote/288831SWA2Y0.pdf"
 								},
 								{
 									"key": "file_type",
@@ -214,16 +209,13 @@
 							}
 						}
 					],
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
-					},
 					"request": {
 						"auth": {
 							"type": "bearer",
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6ImIzYTc3YWJkMTg3MTg3ZjhiN2ViZDUxOTdjYWQzN2Y3YTU3ZjM0NzBkNTNmNTJhYTk2Zjk4M2I5YzBmOWU1MGE2YjI4YWEwOTRiNWYzZTcwIn0.eyJhdWQiOiI5ZGFjNDc2MC1jY2FlLTExZTktYjM4Yi03YjAwYzY5Y2U4MzciLCJqdGkiOiJiM2E3N2FiZDE4NzE4N2Y4YjdlYmQ1MTk3Y2FkMzdmN2E1N2YzNDcwZDUzZjUyYWE5NmY5ODNiOWMwZjllNTBhNmIyOGFhMDk0YjVmM2U3MCIsImlhdCI6MTU2NzM0MTYyOCwibmJmIjoxNTY3MzQxNjI4LCJleHAiOjE1OTg5NjQwMjgsInN1YiI6IjNhM2Y0ZTdmLWJmYTMtNGZjYi05ODU5LTQ1ZDRlMWE2YWNhOCIsInNjb3BlcyI6W119.JJeTjkxluZDUim1LQGezj1ICx3JPg54dwSbrLggdK3zuM0Ch33TMhyZEMObxkmA9z8MW1bhV_rLKKKq7_aQlVmB7s72qoBGxf7JHSbCGguSn0sQuIqL5FZcDHixwnZMyg5dDXWLhsXT5xDT4bEX3blCTJYbQyXvMvYCXwGvfFekfopADp1SoP1xSunLRfqYOGMO-Z1U8uigoDKA5VgaFXv1Wc1fkYZVXcsAhBhkV_pWAmWyVYX5TdMUZCQjfgbSyPPaBbL7srnEpa7aausDley31b8HNVD3HnX-sCcXHLHaYzDP0NB4oz8Q2rCOJZh2-MGeM4gquUpvmUBIK17Hv8-pVDahQZnWZhWLU0E16THX8Qzwz5QjsQXghH4edmW-iKBGgDedelz3hKSTFc6HHEeUsielqO6SoWiWr5rmHPBf7fDtR2Nm024njQRAIRZxEr49G7gEj4b5EIuO1v7TSh1jbAm9yxppSAwjUOdhMKXlvgIZukh20GG0RMj2Yd5glQ0QmhyfadDGfafNIgPyaFyMOUY-4CXJj7T5Jp_CDDjnN2eyJTEUykSSBb1oqkPPKOd2mwoh20WWoIEc8kR3PIzQJps3BgyeU6IX4rK-76Tb-hMIXJEzyPrs5iafs3M2u2QaHMCaCkdiPrrTwSL9HVDbYYh4vEOmjsYqEej36aio",
+									"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjM1ZTYzMTM4ODM3YWJlMDQ5MWY4MGNiNzU2N2NjZmY4OTBhNjUyZjljZDNiMGQwMTg4MDdjMzkyNGZjY2U4Y2MwNmY3MDJhNDUyZTI0NTAyIn0.eyJhdWQiOiIyN2EzZDI2MC1jZDI5LTExZTktYmQxNC1iMTc0ZGVlMGEyMzYiLCJqdGkiOiIzNWU2MzEzODgzN2FiZTA0OTFmODBjYjc1NjdjY2ZmODkwYTY1MmY5Y2QzYjBkMDE4ODA3YzM5MjRmY2NlOGNjMDZmNzAyYTQ1MmUyNDUwMiIsImlhdCI6MTU2NzM5MTIzMywibmJmIjoxNTY3MzkxMjMzLCJleHAiOjE1OTkwMTM2MzMsInN1YiI6ImFkMTAxNTY5LWVjNTItNDY4NS04YjY2LWE2ZTc4MTA5MGU2OCIsInNjb3BlcyI6W119.tJ6ZT-Lf_H2a27G4bZxj5W0ATKRrKIcL5hXqIsvbHaSA_hBk3JOJRCczTG_qy0CQke1OZoticn6-wCYOa7IHtoJfrvorejWNQ3zyCyH3D39mghH07gpWALHADNor1ABEKi2TV_Kc_YwuD1d9iCEq0E4pzyKrR_DO8SqGpjGnmacZnHRsjbaX7R0pEKyf5Joys69Lw3XR1kkiCZRIEpfKulfwnT4Ut6zrsrbitpRavAzBzWmYL-w8ZxSbJxWKSjJr7QzXvq5wTKHpn813g3ugDSSo3CljppKInIidIXkbacFnPlclPERW2aDN_yY0oARbtXQ8EdYl1idJNyvZf8bVrLge5IuTgcXNIxZrWmVSvbQhzgqNhib6jGUSNDjs50OjtBI3mKvv7AUsr2RifUMgUujwpm_guFO3GGVScKHeUCEPwWrNBJeIt5Yg-Ko0gkrIVaBBUdJ2UIVgp6sWGzKtTHRC_LryCQjOoDa4PGh2BQH5_klU8mxFXpJLWP3XC74hoW1bSHaGhnidNazyVfNAL23Xkolb5lhk-zpEw-u1uICKj4h-U3BVMTIjQV6V5jlmvvmjffNRNfSOJWyTh47t9XUtBA42LJkkhBymthhHNBj5RkJRAnl9QhNDesEfsOGAna3rjWDDwe495mjYauGQ3vTWYqgpT1Iv1tweZETK7-Y",
 									"type": "string"
 								}
 							]
@@ -236,21 +228,6 @@
 								"type": "text"
 							}
 						],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "quote_file",
-									"type": "file",
-									"src": "/C:/Users/Strelenko/Desktop/easyQuote/UK Qute output from Distribution.pdf"
-								},
-								{
-									"key": "file_format_id",
-									"value": "",
-									"type": "text"
-								}
-							]
-						},
 						"url": {
 							"raw": "http://easyquote/api/quotes/files",
 							"protocol": "http",
@@ -274,7 +251,7 @@
 							"bearer": [
 								{
 									"key": "token",
-									"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjZkNmJmNzUwMWEwNzNhOTQ3NzUwY2JmMzFmNDA2YTc0NzY1NjQyYWM1ZThlOTU4NTk5ZGU1MWVlNWUxZTdhMDYwZTMwZGNjZDgzYjgyNWNjIn0.eyJhdWQiOiI5ZGFjNDc2MC1jY2FlLTExZTktYjM4Yi03YjAwYzY5Y2U4MzciLCJqdGkiOiI2ZDZiZjc1MDFhMDczYTk0Nzc1MGNiZjMxZjQwNmE3NDc2NTY0MmFjNWU4ZTk1ODU5OWRlNTFlZTVlMWU3YTA2MGUzMGRjY2Q4M2I4MjVjYyIsImlhdCI6MTU2NzMzODc0NCwibmJmIjoxNTY3MzM4NzQ0LCJleHAiOjE1OTg5NjExNDQsInN1YiI6IjNhM2Y0ZTdmLWJmYTMtNGZjYi05ODU5LTQ1ZDRlMWE2YWNhOCIsInNjb3BlcyI6W119.NNMHW_xoCk_O2pgxzlZZg_UOPUh5Wub16ADW0Hr16HlXd_GI5cBEEQBAA5JPPZyT8PJInQlezp6-VLJ1sumKJeG4I48q-BEP5YJTQO2dtJYSzLUK4gVmdaJ6bxdSRLk-HZdjuOweQ8yeyb3zsEoyBOOBv7LQKNugYmf0HNWUnsy_wENEFaxm2sE50vRAhzjgolY39H1GquhroUjSCkDNS9loVmEyLBZ932VRzRtrxcJyP-GhvI73GoMS3UO3JcHJ6WWerojR0Lw2BT_yKDTPZj_kvlb5AHBEF85uTvbRRKvADMDoxeZWGkEad-ITO6BRkSBFLOLg9CmbfEDM0kd4AsE_uvTeEWzKniQC1rQ5X1XhJgDU_lv0mFhLs1mHMnf1AcXogcZdudo5zQ4vlSkNkPK9kcrgNL_yfG_CfOSoLGOmfEDaq9koW5RzhiWdcbvRMP5u1zTAknvkPsj5gJbsFISj25vNUoP6yexYu-f_ZVRd2fXWfqxaB5rt2Xf9x_Q9-u98EUOP40gez7OwMBESc4rsps7IE7XDqfdqUNGDx1ixW0W0eDO8RHdnIZkSbKZqnz7r0f6yRBidYk3PGKfRGsnL8tfAv96ZsDHDuRQjAcqCcKwV9mK3_jcRmr7zAcgM-_ejBECLRfYG20SecsW6jR7Im0UoN4YErlcGnc0e-jc",
+									"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6IjM1ZTYzMTM4ODM3YWJlMDQ5MWY4MGNiNzU2N2NjZmY4OTBhNjUyZjljZDNiMGQwMTg4MDdjMzkyNGZjY2U4Y2MwNmY3MDJhNDUyZTI0NTAyIn0.eyJhdWQiOiIyN2EzZDI2MC1jZDI5LTExZTktYmQxNC1iMTc0ZGVlMGEyMzYiLCJqdGkiOiIzNWU2MzEzODgzN2FiZTA0OTFmODBjYjc1NjdjY2ZmODkwYTY1MmY5Y2QzYjBkMDE4ODA3YzM5MjRmY2NlOGNjMDZmNzAyYTQ1MmUyNDUwMiIsImlhdCI6MTU2NzM5MTIzMywibmJmIjoxNTY3MzkxMjMzLCJleHAiOjE1OTkwMTM2MzMsInN1YiI6ImFkMTAxNTY5LWVjNTItNDY4NS04YjY2LWE2ZTc4MTA5MGU2OCIsInNjb3BlcyI6W119.tJ6ZT-Lf_H2a27G4bZxj5W0ATKRrKIcL5hXqIsvbHaSA_hBk3JOJRCczTG_qy0CQke1OZoticn6-wCYOa7IHtoJfrvorejWNQ3zyCyH3D39mghH07gpWALHADNor1ABEKi2TV_Kc_YwuD1d9iCEq0E4pzyKrR_DO8SqGpjGnmacZnHRsjbaX7R0pEKyf5Joys69Lw3XR1kkiCZRIEpfKulfwnT4Ut6zrsrbitpRavAzBzWmYL-w8ZxSbJxWKSjJr7QzXvq5wTKHpn813g3ugDSSo3CljppKInIidIXkbacFnPlclPERW2aDN_yY0oARbtXQ8EdYl1idJNyvZf8bVrLge5IuTgcXNIxZrWmVSvbQhzgqNhib6jGUSNDjs50OjtBI3mKvv7AUsr2RifUMgUujwpm_guFO3GGVScKHeUCEPwWrNBJeIt5Yg-Ko0gkrIVaBBUdJ2UIVgp6sWGzKtTHRC_LryCQjOoDa4PGh2BQH5_klU8mxFXpJLWP3XC74hoW1bSHaGhnidNazyVfNAL23Xkolb5lhk-zpEw-u1uICKj4h-U3BVMTIjQV6V5jlmvvmjffNRNfSOJWyTh47t9XUtBA42LJkkhBymthhHNBj5RkJRAnl9QhNDesEfsOGAna3rjWDDwe495mjYauGQ3vTWYqgpT1Iv1tweZETK7-Y",
 									"type": "string"
 								}
 							]
@@ -288,7 +265,7 @@
 							}
 						],
 						"url": {
-							"raw": "http://easyquote/api/quotes/handle/b19b72a0-ccb5-11e9-aead-833e9a7797ee",
+							"raw": "http://easyquote/api/quotes/handle/ae2b01e0-cd38-11e9-a8eb-f5d1dbdfbf9d",
 							"protocol": "http",
 							"host": [
 								"easyquote"
@@ -297,7 +274,56 @@
 								"api",
 								"quotes",
 								"handle",
-								"b19b72a0-ccb5-11e9-aead-833e9a7797ee"
+								"ae2b01e0-cd38-11e9-a8eb-f5d1dbdfbf9d"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Quote File",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6ImY1NDQ4NGIwYzBmNzA4OGI2YmI2ZGI5MTczMzkwZTU1OGE2ZmJmMTRlYmRlY2UzNTlmZjZjY2U0NGNlN2YwZmUyMzY3NjE1Y2RmYjA1OTViIn0.eyJhdWQiOiIyN2EzZDI2MC1jZDI5LTExZTktYmQxNC1iMTc0ZGVlMGEyMzYiLCJqdGkiOiJmNTQ0ODRiMGMwZjcwODhiNmJiNmRiOTE3MzM5MGU1NThhNmZiZjE0ZWJkZWNlMzU5ZmY2Y2NlNDRjZTdmMGZlMjM2NzYxNWNkZmIwNTk1YiIsImlhdCI6MTU2NzQwOTExMiwibmJmIjoxNTY3NDA5MTEyLCJleHAiOjE1OTkwMzE1MTIsInN1YiI6ImFkMTAxNTY5LWVjNTItNDY4NS04YjY2LWE2ZTc4MTA5MGU2OCIsInNjb3BlcyI6W119.aBQsH9-N46kqhME8box4eSxe6E8iPKzB0rC9ZpPv1xwFi5VtJbqQchyslejXzqzyiBTW3pSzPwT7q1tREL9tgxm4jnhLzZr0WwkjYlGDVY8gEjKGyAWXQBu7-RaFITE8kkOa86V9wDBPo2tG4d9175nbRK9lHCRI5EjzSeAjRNxDS-cSHv9f-B2laTzuN9Xs0eIbguUTOTmbVEctzKGmD5B-YCOnhbsylrbFlbJ3-i_5pXB72aazySqRAy_xuAHNJbNtkuIy_nG2eSA3Li7v7O095Oc838em7xAwgIjP2QhGzfe3opFs9PcHUKU4CfAUz5853oZV01VwwnqUbL6vtJ_1WF5lmMg7p16rLVD8x5gPJWhsk9T37sY8_Ww9XRJoJpBgB1n9d9gfRScPjHMREalQaNC4q6CfIg55aDXK3BJZx5BD2bs54fyZtj6J0X-GknQNplDIHO1frgp9TSHNdoekJMgrFCoqlxOH0EYcM36So23E8VAJhpzg0Y34qR5Ba_ctR5d2z19o9MuKYfoCoVDEbgCmeEPsCTLAc5YhsIX_FmtvTgvIiQWuW0Bi4qugS173sxFaYeMG2eesMoPYJFZuS72NcFq5hPV8CigiWXmTCTWzFNXfY9YiUM0RrL3Nxn2nSG5c77xqNLm9uyrnR3t3XH881vf9RJMUI6kSqLE",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://easyquote/api/quotes/file/31fb30c0-cd49-11e9-b602-1f1c80eee5bb",
+							"protocol": "http",
+							"host": [
+								"easyquote"
+							],
+							"path": [
+								"api",
+								"quotes",
+								"file",
+								"31fb30c0-cd49-11e9-b602-1f1c80eee5bb"
 							]
 						}
 					},

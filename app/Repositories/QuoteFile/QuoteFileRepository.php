@@ -1,9 +1,13 @@
 <?php namespace App\Repositories\QuoteFile;
 
-use Illuminate\Http\Request;
+use Illuminate\Http \ {
+    Request,
+    UploadedFile
+};
 use App\Models\QuoteFile \ {
     QuoteFile,
-    QuoteFileFormat
+    QuoteFileFormat,
+    ImportableColumn
 };
 use App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface;
 use App\Http\Requests\StoreQuoteFileRequest;
@@ -24,7 +28,9 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
     public function create(StoreQuoteFileRequest $request)
     {
         $tempFile = $request->file('quote_file');
-        
+
+        $format = $this->determineFileFormat($tempFile);
+
         $filePath = $tempFile->store(
             $request->user()->quoteFilesDirectory
         );
@@ -37,7 +43,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
             ])->all()
         );
 
-        $quoteFile->format()->associate($fileFormatId);
+        $quoteFile->format()->associate($format);
 
         $quoteFile->markAsDrafted();
 
@@ -46,12 +52,55 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
     
     public function createRawData(QuoteFile $quoteFile, Array $array)
     {
-        $rawData = $quoteFile->importedRawData()->createMany(
+        return $quoteFile->importedRawData()->createMany(
             $array
         );
+    }
+
+    public function getRawData(QuoteFile $quoteFile, Int $page = 2)
+    {
+        return $quoteFile->importedRawData()->where('page', $page)->first();
+    }
+
+    public function createColumnData(QuoteFile $quoteFile, Array $array, Int $page)
+    {
+        $user = request()->user();
+
+        $importedColumnData = collect($array)->map(function ($column, $alias) use ($quoteFile, $user, $page) {
+            $importableColumn = ImportableColumn::where('alias', $alias)->firstOrFail();
+            
+            $rows = collect($column)->map(function ($value) use ($quoteFile, $user, $importableColumn, $page) {
+                $columnDataItem = $quoteFile->columnData()->make(
+                    [
+                        'value' => $value,
+                        'page' => $page
+                    ]
+                );
+
+                $columnDataItem->user()->associate($user);
+                $columnDataItem->importableColumn()->associate($importableColumn);
+
+                $columnDataItem->markAsDrafted();
+
+                return $columnDataItem;
+            });
+
+            return collect($importableColumn->makeHidden('regexp'))->merge(
+                compact('rows')
+            );
+        });
 
         $quoteFile->markAsHandled();
 
-        return $rawData;
+        return $importedColumnData->values();
+    }
+
+    public function determineFileFormat(UploadedFile $file)
+    {
+        $extension = explode('/', $file->getMimeType())[1];
+
+        $format = QuoteFileFormat::whereExtension($extension)->firstOrFail();
+
+        return $format;
     }
 }

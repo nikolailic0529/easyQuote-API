@@ -25,7 +25,6 @@ class StoreQuoteFileRequest extends FormRequest
     {
         return [
             'quote_file' => 'required|file|mimes:pdf,xls,xlsx,csv,docx',
-            'quote_file_format_id' => 'required|uuid|exists:quote_file_formats,id',
             'file_type' => 'required|string|in:Distributor Price List, Payment Schedule'
         ];
     }

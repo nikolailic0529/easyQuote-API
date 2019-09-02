@@ -30,6 +30,13 @@ class QuoteFilesController extends Controller
         );
     }
 
+    public function file(QuoteFile $quoteFile)
+    {
+        return response()->json(
+            $quoteFile
+        );
+    }
+
     public function all()
     {
         $allQuoteFiles = $this->quoteFile->all();
