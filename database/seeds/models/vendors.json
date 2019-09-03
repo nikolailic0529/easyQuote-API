@@ -1,14 +1,23 @@
 [
     {
         "name": "Hewlett Packard Enterprise",
-        "short_code": "HPE"
+        "short_code": "HPE",
+        "countries": [
+            "UK", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SW", "SA"
+        ]
     },
     {
-        "name": "Lenovo Group Limited",
-        "short_code": "Lenovo"
+        "name": "Lenovo",
+        "short_code": "LEN",
+        "countries": [
+            "UK", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SW", "SA", "AU", "NZ"
+        ]
     },
     {
-        "name": "International Business Machines Corporation",
-        "short_code": "IBM"
+        "name": "IBM",
+        "short_code": "IBM",
+        "countries": [
+            "UK", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SW", "SA"
+        ]
     }
 ]

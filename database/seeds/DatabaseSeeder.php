@@ -34,5 +34,14 @@ class DatabaseSeeder extends Seeder
 
         $this->call(ImportableColumnsSeeder::class);
         $this->command->info('Seeded the file importable columns!');
-    }
+
+        $this->call(VendorsSeeder::class);
+        $this->command->info('Seeded the vendors!');
+
+        $this->call(CompaniesSeeder::class);
+        $this->command->info('Seeded the companies!');
+
+        $this->call(CountryLanguageSeeder::class);
+        $this->command->info('Seeded the links country → language!');
+    } 
 }

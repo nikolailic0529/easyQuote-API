@@ -21,7 +21,8 @@ use App\Contracts \ {
     Repositories\CurrencyRepositoryInterface,
     Repositories\QuoteFile\QuoteFileRepositoryInterface,
     Repositories\QuoteFile\FileFormatRepositoryInterface,
-    Repositories\QuoteFile\ImportableColumnRepositoryInterface
+    Repositories\QuoteFile\ImportableColumnRepositoryInterface,
+    Repositories\Quote\QuoteRepositoryInterface
 };
 use App\Repositories \ {
     TimezoneRepository,
@@ -32,7 +33,8 @@ use App\Repositories \ {
     CurrencyRepository,
     QuoteFile\QuoteFileRepository,
     QuoteFile\FileFormatRepository,
-    QuoteFile\ImportableColumnRepository
+    QuoteFile\ImportableColumnRepository,
+    Quote\QuoteRepository
 };
 use App\Services \ {
     AuthService,
@@ -50,7 +52,8 @@ class AppServiceProvider extends ServiceProvider
         CurrencyRepositoryInterface::class => CurrencyRepository::class,
         QuoteFileRepositoryInterface::class => QuoteFileRepository::class,
         FileFormatRepositoryInterface::class => FileFormatRepository::class,
-        ImportableColumnRepositoryInterface::class => ImportableColumnRepository::class
+        ImportableColumnRepositoryInterface::class => ImportableColumnRepository::class,
+        QuoteRepositoryInterface::class => QuoteRepository::class
     ];
     /**
      * Register any application services.

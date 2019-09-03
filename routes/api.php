@@ -21,10 +21,15 @@ Route::group(['namespace' => 'API'], function () {
         Route::get('fileformats', 'FileFormatsController');
     });
     
-    Route::group(['prefix' => 'quotes', 'middleware' => 'auth:api'], function () {
-        Route::post('file', 'Quotes\QuoteFilesController@store');
-        Route::get('file/{quoteFile}', 'Quotes\QuoteFilesController@file');
-        Route::get('files', 'Quotes\QuoteFilesController@all');
-        Route::get('handle/{quoteFile}', 'Quotes\QuoteFilesController@handle');
+    Route::group(['prefix' => 'quotes', 'middleware' => 'auth:api', 'namespace' => 'Quotes'], function () {
+        Route::post('file', 'QuoteFilesController@store');
+        Route::get('file/{quoteFile}', 'QuoteFilesController@file');
+        Route::get('files', 'QuoteFilesController@all');
+        Route::get('handle/{quoteFile}', 'QuoteFilesController@handle');
+        
+        Route::group(['prefix' => 'step'], function () {
+            Route::get('1', 'QuoteController@step1');
+        });
+
     });
 });

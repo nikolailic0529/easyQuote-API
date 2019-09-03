@@ -17,4 +17,9 @@ trait Handleable
             'handled_at' => null,
         ])->save();
     }
+
+    public function isHandled()
+    {
+        return !is_null($this->handled_at);
+    }
 }

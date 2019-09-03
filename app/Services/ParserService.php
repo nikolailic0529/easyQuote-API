@@ -30,7 +30,7 @@ class ParserService implements ParserServiceInterface
 
     public function handle(QuoteFile $quoteFile)
     {   
-        if($quoteFile->handled_at) {
+        if($quoteFile->isHandled()) {
             return response()->json([
                 'message' => __('This Quote File has been already handled')
             ]);

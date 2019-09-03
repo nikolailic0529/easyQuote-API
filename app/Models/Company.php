@@ -1,11 +1,13 @@
 <?php namespace App\Models;
 
 use App\Models\UuidModel;
-use App\Traits\BelongsToCountries;
+use App\Traits \ {
+    BelongsToVendors
+};
 
-class Vendor extends UuidModel
+class Company extends UuidModel
 {
-    use BelongsToCountries;
+    use BelongsToVendors;
 
     protected $hidden = [
         'pivot', 'created_at', 'updated_at', 'drafted_at', 'deleted_at', 'is_system'

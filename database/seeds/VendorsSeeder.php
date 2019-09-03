@@ -1,6 +1,10 @@
 <?php
 
 use Illuminate\Database\Seeder;
+use App\Models \ {
+    Data\Country,
+    Vendor
+};
 
 class VendorsSeeder extends Seeder
 {
@@ -21,13 +25,20 @@ class VendorsSeeder extends Seeder
         $vendors = json_decode(file_get_contents(__DIR__ . '/models/vendors.json'), true);
 
         collect($vendors)->each(function ($vendor) {
+            $vendorId = (string) Uuid::generate(4);
 
             DB::table('vendors')->insert([
-                'id' => (string) Uuid::generate(4),
+                'id' => $vendorId,
                 'name' => $vendor['name'],
                 'short_code' => $vendor['short_code'],
                 'is_system' => true
             ]);
+
+            collect($vendor['countries'])->each(function ($countryIso) use ($vendorId) {
+                $country = Country::where('iso_3166_2', $countryIso)->first();
+                
+                Vendor::whereId($vendorId)->first()->countries()->attach($country);
+            });
         });
     }
 }
