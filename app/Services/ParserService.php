@@ -6,7 +6,11 @@ use App\Contracts \ {
     Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
 };
 use Illuminate\Support\Collection;
-use Smalot\PdfParser\Parser;
+use Smalot\PdfParser\Parser as PdfParser;
+use League\Csv \ {
+    Reader as CsvParser,
+    Exception as CsvParserException
+};
 use App\Models\QuoteFile \ {
     QuoteFile
 };
@@ -14,18 +18,18 @@ use Storage;
 
 class ParserService implements ParserServiceInterface
 {
-    protected $parser;
+    protected $pdfParser;
 
     protected $importableColumn;
 
     public function __construct(
         QuoteFileRepository $quoteFile,
         ImportableColumn $importableColumn,
-        Parser $parser
+        PdfParser $pdfParser
     ) {
         $this->quoteFile = $quoteFile;
         $this->importableColumn = $importableColumn;
-        $this->parser = $parser;
+        $this->pdfParser = $pdfParser;
     }
 
     public function handle(QuoteFile $quoteFile)
@@ -36,37 +40,100 @@ class ParserService implements ParserServiceInterface
             ]);
         };
 
+        return $this->routeParser($quoteFile);
+    }
+
+    public function routeParser(QuoteFile $quoteFile)
+    {
         $fileFormat = $quoteFile->format->extension;
 
-        if($fileFormat !== 'pdf') {
-            return response()->json([
-                'message' => __('This file format is not available for handling yet')
-            ], 415);
-        };
-        
-        $pdfTextPages = $this->getPdfText($quoteFile);
+        switch ($fileFormat) {
+            case 'pdf':
+                return $this->handlePdf($quoteFile);
+                break;
+            case 'csv':
+                return $this->handleCsv($quoteFile);
+            default:
+                return response()->json([
+                    'message' => __('This file format is not available for handling')
+                ], 415);
+                break;
+        }
+    }
+
+    public function handlePdf(QuoteFile $quoteFile)
+    {
+        $rawPages = $this->getPdfText($quoteFile);
 
         $this->quoteFile->createRawData(
             $quoteFile,
-            $pdfTextPages
+            $rawPages
         );
 
         $rawData = $this->quoteFile->getRawData($quoteFile);
 
+        $parsedData = $this->parsePdfText($rawData->content);
+
         return $this->quoteFile->createColumnData(
             $quoteFile,
-            $this->parsePdfText(
-                $rawData->content
-            ),
+            $parsedData,
             $rawData->page
         );
+    }
+
+    public function handleCsv(QuoteFile $quoteFile)
+    {
+        $rawData = $this->getCsvText($quoteFile);
+
+        $parsedData = $this->parseCsvText($rawData, $quoteFile);
+
+        return $this->quoteFile->createColumnData(
+            $quoteFile,
+            $parsedData
+        );
+    }
+
+    public function getCsvText(QuoteFile $quoteFile)
+    {
+        $content = mb_convert_encoding(Storage::get($quoteFile->original_file_path), 'UTF-8', 'UTF-8');
+        
+        return $content;
+    }
+
+    public function parseCsvText(String $content, QuoteFile $quoteFile)
+    {
+        $document = CsvParser::createFromString($content);
+        
+        $document->setHeaderOffset(0);
+
+        $separator = $quoteFile->dataSelectSeparator->separator;
+
+        $document->setDelimiter($separator);
+
+        try {
+            $records = collect($document);
+        } catch (CsvParserException $exception) {
+            return response()->json([
+                'message' => __('Please set the headers in the CSV file')
+            ], 415);
+        }
+
+        $parsedData = [];
+
+        foreach ($records as $record) {
+            foreach ($record as $columnKey => $value) {
+                $parsedData[$columnKey][] = $value;
+            }
+        }
+
+        return $parsedData;
     }
 
     public function getPdfText(QuoteFile $quoteFile)
     {
         $filePath = Storage::path($quoteFile->original_file_path);
 
-        $document = $this->parser->parseFile($filePath);
+        $document = $this->pdfParser->parseFile($filePath);
         
         $rawPages = collect();
 

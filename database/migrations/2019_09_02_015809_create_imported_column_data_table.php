@@ -22,7 +22,7 @@ class CreateImportedColumnDataTable extends Migration
             $table->foreign('quote_file_id')->references('id')->on('quote_files');
             $table->uuid('importable_column_id');
             $table->foreign('importable_column_id')->references('id')->on('importable_columns');
-            $table->tinyInteger('page');
+            $table->tinyInteger('page')->nullable();
             $table->string('value')->nullable();
             $table->timestamps();
             $table->timestamp('drafted_at')->nullable()->default(null);

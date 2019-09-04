@@ -4,18 +4,15 @@ use App\Models\UuidModel;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits \ {
     Draftable,
-    BelongsToQuoteFile
+    BelongsToQuoteFile,
+    BelongsToUser
 };
 
 class ImportedRawData extends UuidModel
 {
-    use BelongsToQuoteFile, Draftable, SoftDeletes;
+    use BelongsToUser, BelongsToQuoteFile, Draftable, SoftDeletes;
 
     protected $fillable = [
         'page', 'content'
-    ];
-
-    protected $casts = [
-        'content' => 'array'
     ];
 }

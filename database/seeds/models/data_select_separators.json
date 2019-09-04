@@ -1,0 +1,18 @@
+[
+    {
+        "name": "Comma",
+        "separator": ","
+    },
+    {
+        "name": "Colon",
+        "separator": ":"
+    },
+    {
+        "name": "Semicolon",
+        "separator": ";"
+    },
+    {
+        "name": "Tab",
+        "separator": "\t"
+    }
+]

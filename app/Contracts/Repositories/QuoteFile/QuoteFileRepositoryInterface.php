@@ -45,7 +45,7 @@ interface QuoteFileRepositoryInterface
      * @param Int $page
      * @return \Illuminate\Support\Collection
      */
-    public function createColumnData(QuoteFile $quoteFile, Array $array, Int $page);
+    public function createColumnData(QuoteFile $quoteFile, Array $array, $page);
 
     /**
      * Get Imported Raw Data on second page by default from QuoteFile

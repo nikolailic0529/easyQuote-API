@@ -3,7 +3,8 @@
 use App\Models \ {
     UuidModel,
     QuoteFile\ImportedRawData,
-    QuoteFile\ImportedColumnData
+    QuoteFile\ImportedColumnData,
+    QuoteFile\DataSelectSeparator
 };
 use App\Traits \ {
     BelongsToUser,
@@ -36,5 +37,10 @@ class QuoteFile extends UuidModel implements HasOrderedScope
     public function columnData()
     {
         return $this->hasMany(ImportedColumnData::class);
+    }
+
+    public function dataSelectSeparator()
+    {
+        return $this->belongsTo(DataSelectSeparator::class);
     }
 }

@@ -43,5 +43,8 @@ class DatabaseSeeder extends Seeder
 
         $this->call(CountryLanguageSeeder::class);
         $this->command->info('Seeded the links country → language!');
+
+        $this->call(DataSelectSeparatorsSeeder::class);
+        $this->command->info('Seeded the data select separators for csv files!');
     } 
 }

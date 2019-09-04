@@ -19,4 +19,20 @@ interface ParserServiceInterface
      * @return void
      */
     public function parsePdfText(String $text);
+
+    /**
+     * Determine Quote File format and return the related parser
+     *
+     * @param QuoteFile $quoteFile
+     * @return void
+     */
+    public function routeParser(QuoteFile $quoteFile);
+
+    /**
+     * Handle PDF file
+     *
+     * @param QuoteFile $quoteFile
+     * @return \App\Models\QuoteFile\ImportedColumnData
+     */
+    public function handlePdf(QuoteFile $quoteFile);
 }

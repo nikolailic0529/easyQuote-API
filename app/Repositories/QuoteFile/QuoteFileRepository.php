@@ -7,7 +7,8 @@ use Illuminate\Http \ {
 use App\Models\QuoteFile \ {
     QuoteFile,
     QuoteFileFormat,
-    ImportableColumn
+    ImportableColumn,
+    DataSelectSeparator
 };
 use App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface;
 use App\Http\Requests\StoreQuoteFileRequest;
@@ -35,13 +36,17 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
             $request->user()->quoteFilesDirectory
         );
 
-        $fileFormatId = $request->quote_file_format_id;
-
         $quoteFile = $request->user()->quoteFiles()->make(
             $request->merge([
                 'original_file_path' => $filePath
             ])->all()
         );
+
+        if($request->has('data_select_separator_id') && $format->extension === 'csv') {
+            $separator = DataSelectSeparator::whereId($request->data_select_separator_id)->first();
+
+            $quoteFile->dataSelectSeparator()->associate($separator);
+        }
 
         $quoteFile->format()->associate($format);
 
@@ -52,17 +57,31 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
     
     public function createRawData(QuoteFile $quoteFile, Array $array)
     {
-        return $quoteFile->importedRawData()->createMany(
-            $array
-        );
+        $user = $quoteFile->user;
+
+        $rawData = collect($array)->map(function ($data) use ($quoteFile, $user) {
+            $importedRawData = $quoteFile->importedRawData()->make($data);
+
+            $importedRawData->user()->associate($user);
+
+            $importedRawData->save();
+
+            return $importedRawData;
+        });
+
+        return $rawData;
     }
 
     public function getRawData(QuoteFile $quoteFile, Int $page = 2)
     {
+        if($quoteFile->format->extension === 'csv') {
+            $quoteFile->importedRawData()->first();
+        }
+
         return $quoteFile->importedRawData()->where('page', $page)->first();
     }
 
-    public function createColumnData(QuoteFile $quoteFile, Array $array, Int $page)
+    public function createColumnData(QuoteFile $quoteFile, Array $array, $page = null)
     {
         $user = request()->user();
 
@@ -82,7 +101,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
                 $columnDataItem->markAsDrafted();
 
-                return $columnDataItem;
+                return collect($columnDataItem)->only('value')->flatten();
             });
 
             return collect($importableColumn->makeHidden('regexp'))->merge(
@@ -97,9 +116,13 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     public function determineFileFormat(UploadedFile $file)
     {
-        $extension = explode('/', $file->getMimeType())[1];
+        $extension = collect([explode('/', $file->getMimeType())[1]]);
+        
+        if($extension->first() === 'plain') {
+            $extension->push('csv');
+        }
 
-        $format = QuoteFileFormat::whereExtension($extension)->firstOrFail();
+        $format = QuoteFileFormat::whereIn('extension', $extension)->firstOrFail();
 
         return $format;
     }

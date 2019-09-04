@@ -1,12 +1,18 @@
 <?php namespace App\Repositories\Quote;
 
 use App\Contracts\Repositories\Quote\QuoteRepositoryInterface;
-use App\Models\Company;
+use App\Models \ {
+    Company,
+    QuoteFile\DataSelectSeparator
+};
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
     public function step1()
     {
-        return Company::with('vendors.countries.languages')->get();
+        $companies = Company::with('vendors.countries.languages')->get();
+        $data_select_separators = DataSelectSeparator::all();
+
+        return compact('companies', 'data_select_separators');
     }
 }

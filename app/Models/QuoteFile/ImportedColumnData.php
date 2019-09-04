@@ -19,7 +19,7 @@ class ImportedColumnData extends UuidModel
     ];
 
     protected $hidden = [
-        'user', 'importableColumn', 'created_at', 'updated_at', 'drafted_at'
+        'user', 'user_id', 'importable_column_id', 'quote_file_id', 'importableColumn', 'page', 'created_at', 'updated_at', 'drafted_at'
     ];
 
     public function importableColumn()
