@@ -261,7 +261,7 @@
 								}
 							]
 						},
-						"method": "GET",
+						"method": "POST",
 						"header": [
 							{
 								"key": "Accept",
@@ -269,8 +269,24 @@
 								"type": "text"
 							}
 						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "quote_file_id",
+									"value": "1dfce7c0-cec6-11e9-8a3b-632303e3fa44",
+									"type": "text"
+								},
+								{
+									"key": "data_select_separator_id",
+									"value": "0940dce0-af78-4fe2-b606-3e4af23e8574",
+									"type": "text",
+									"disabled": true
+								}
+							]
+						},
 						"url": {
-							"raw": "http://easyquote/api/quotes/handle/d01ce1a0-ce2c-11e9-8f2e-31b6c2dc8fd6",
+							"raw": "http://easyquote/api/quotes/handle",
 							"protocol": "http",
 							"host": [
 								"easyquote"
@@ -278,8 +294,7 @@
 							"path": [
 								"api",
 								"quotes",
-								"handle",
-								"d01ce1a0-ce2c-11e9-8f2e-31b6c2dc8fd6"
+								"handle"
 							]
 						}
 					},

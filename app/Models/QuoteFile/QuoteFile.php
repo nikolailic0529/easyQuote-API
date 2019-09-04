@@ -3,7 +3,8 @@
 use App\Models \ {
     UuidModel,
     QuoteFile\ImportedRawData,
-    QuoteFile\ImportedColumnData,
+    QuoteFile\ImportedRow,
+    QuoteFile\ImportedColumn,
     QuoteFile\DataSelectSeparator
 };
 use App\Traits \ {
@@ -18,10 +19,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class QuoteFile extends UuidModel implements HasOrderedScope
 {
     use BelongsToUser, HasFileFormat, Handleable, Draftable, SoftDeletes;
-
+    
     protected $fillable = [
-        'original_file_path',
-        'file_type'
+        'original_file_path', 'file_type', 'pages'
     ];
 
     public function scopeOrdered($query)
@@ -29,14 +29,19 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         return $query->orderBy('created_at', 'desc');
     }
 
+    public function rowsData()
+    {
+        return $this->hasMany(ImportedRow::class);
+    }
+
+    public function columnsData()
+    {
+        return $this->hasMany(ImportedColumn::class);
+    }
+
     public function importedRawData()
     {
         return $this->hasMany(ImportedRawData::class);
-    }
-
-    public function columnData()
-    {
-        return $this->hasMany(ImportedColumnData::class);
     }
 
     public function dataSelectSeparator()

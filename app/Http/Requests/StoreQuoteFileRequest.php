@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use App\Rules\RequiredIfCsv;
 
 class StoreQuoteFileRequest extends FormRequest
 {
@@ -26,8 +25,7 @@ class StoreQuoteFileRequest extends FormRequest
     {
         return [
             'quote_file' => 'required|file|mimes:pdf,csv,txt|max:20000',
-            'file_type' => 'required|string|in:Distributor Price List,Payment Schedule',
-            'data_select_separator_id' => [new RequiredIfCsv, 'exists:data_select_separators,id']
+            'file_type' => 'required|string|in:Distributor Price List,Payment Schedule'
         ];
     }
 }

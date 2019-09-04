@@ -1,7 +1,10 @@
 <?php namespace App\Http\Controllers\API\Quotes;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreQuoteFileRequest;
+use App\Http\Requests \ {
+    StoreQuoteFileRequest,
+    HandleQuoteFileRequest
+};
 use App\Contracts \ {
     Repositories\QuoteFile\QuoteFileRepositoryInterface,
     Services\ParserServiceInterface
@@ -23,7 +26,9 @@ class QuoteFilesController extends Controller
 
     public function store(StoreQuoteFileRequest $request)
     {
-        $quoteFile = $this->quoteFile->create($request);
+        $quoteFile = $this->quoteFile->create(
+            $this->parserService->preHandle($request)
+        );
 
         return response()->json(
             $quoteFile
@@ -33,7 +38,7 @@ class QuoteFilesController extends Controller
     public function file(QuoteFile $quoteFile)
     {
         return response()->json(
-            $quoteFile
+            $quoteFile->load('format')
         );
     }
 
@@ -46,10 +51,10 @@ class QuoteFilesController extends Controller
         );
     }
 
-    public function handle(QuoteFile $quoteFile)
+    public function handle(HandleQuoteFileRequest $request)
     {
         return $this->parserService->handle(
-            $quoteFile
+            $request
         );
     }
 }

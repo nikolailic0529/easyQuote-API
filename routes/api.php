@@ -25,7 +25,7 @@ Route::group(['namespace' => 'API'], function () {
         Route::post('file', 'QuoteFilesController@store');
         Route::get('file/{quoteFile}', 'QuoteFilesController@file');
         Route::get('files', 'QuoteFilesController@all');
-        Route::get('handle/{quoteFile}', 'QuoteFilesController@handle');
+        Route::post('handle', 'QuoteFilesController@handle');
         
         Route::group(['prefix' => 'step'], function () {
             Route::get('1', 'QuoteController@step1');

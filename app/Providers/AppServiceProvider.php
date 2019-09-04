@@ -42,7 +42,7 @@ use App\Services \ {
 };
 
 class AppServiceProvider extends ServiceProvider
-{
+{    
     public $singletons = [
         TimezoneRepositoryInterface::class => TimezoneRepository::class,
         CountryRepositoryInterface::class => CountryRepository::class,
