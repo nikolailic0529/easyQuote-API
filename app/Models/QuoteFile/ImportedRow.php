@@ -7,12 +7,13 @@ use App\Models \ {
 use App\Traits \ {
     BelongsToUser,
     BelongsToQuoteFile,
-    Draftable
+    Draftable,
+    HasColumnsData
 };
 
 class ImportedRow extends UuidModel
 {
-    use BelongsToUser, BelongsToQuoteFile, Draftable;
+    use HasColumnsData, BelongsToUser, BelongsToQuoteFile, Draftable;
 
     protected $fillable = [
         'page'
@@ -21,9 +22,4 @@ class ImportedRow extends UuidModel
     protected $hidden = [
         'quote_file', 'user', 'quote_file_id', 'user_id', 'created_at', 'updated_at', 'drafted_at', 'deleted_at'
     ];
-
-    public function columnsData()
-    {
-        return $this->hasMany(ImportedColumn::class);
-    }
 }

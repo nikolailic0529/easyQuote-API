@@ -8,12 +8,14 @@ use App\Models \ {
 use App\Traits \ {
     BelongsToUser,
     BelongsToQuoteFile,
-    Draftable
+    Draftable,
+    BelongsToImportedRow,
+    BelongsToImportableColumn
 };
 
 class ImportedColumn extends UuidModel
 {
-    use BelongsToUser, BelongsToQuoteFile, Draftable;
+    use BelongsToImportableColumn, BelongsToImportedRow, BelongsToUser, BelongsToQuoteFile, Draftable;
     
     protected $fillable = [
         'value', 'page'
@@ -26,16 +28,6 @@ class ImportedColumn extends UuidModel
     protected $appends = [
         'header'
     ];
-
-    public function importableColumn()
-    {
-        return $this->belongsTo(ImportableColumn::class);
-    }
-
-    public function importedRow()
-    {
-        return $this->belongsTo(ImportedRow::class);
-    }
 
     public function getHeaderAttribute()
     {

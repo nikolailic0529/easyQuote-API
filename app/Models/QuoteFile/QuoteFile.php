@@ -11,14 +11,15 @@ use App\Traits \ {
     BelongsToUser,
     HasFileFormat,
     Draftable,
-    Handleable
+    Handleable,
+    HasColumnsData
 };
 use App\Contracts\HasOrderedScope;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class QuoteFile extends UuidModel implements HasOrderedScope
 {
-    use BelongsToUser, HasFileFormat, Handleable, Draftable, SoftDeletes;
+    use HasColumnsData, BelongsToUser, HasFileFormat, Handleable, Draftable, SoftDeletes;
     
     protected $fillable = [
         'original_file_path', 'file_type', 'pages'
@@ -32,11 +33,6 @@ class QuoteFile extends UuidModel implements HasOrderedScope
     public function rowsData()
     {
         return $this->hasMany(ImportedRow::class);
-    }
-
-    public function columnsData()
-    {
-        return $this->hasMany(ImportedColumn::class);
     }
 
     public function importedRawData()

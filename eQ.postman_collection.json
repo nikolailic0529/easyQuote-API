@@ -405,6 +405,55 @@
 								}
 							},
 							"response": []
+						},
+						{
+							"name": "Step 2",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "http://easyquote/api/quotes/step/2",
+									"protocol": "http",
+									"host": [
+										"easyquote"
+									],
+									"path": [
+										"api",
+										"quotes",
+										"step",
+										"2"
+									]
+								}
+							},
+							"response": []
 						}
 					],
 					"_postman_isSubFolder": true

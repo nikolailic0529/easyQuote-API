@@ -4,6 +4,7 @@ use Illuminate\Http \ {
     Request,
     UploadedFile
 };
+use App\Models\User;
 use App\Models\QuoteFile \ {
     QuoteFile,
     QuoteFileFormat,
@@ -83,65 +84,85 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         $quoteFile->columnsData()->forceDelete();
         $quoteFile->rowsData()->forceDelete();
 
+        $importedPages = $this->createImportedPages($array, $quoteFile, $user);
+        
+        $quoteFile->markAsHandled();
+
+        if($requestedPage) {
+            return $importedPages->firstWhere('page', $requestedPage);
+        }
+
+        return $importedPages;
+    }
+
+    protected function createImportedPages(Array $array, QuoteFile $quoteFile, User $user)
+    {
         $importedPages = collect($array)->map(function ($page, $key) use ($quoteFile, $user) {
-            $pageNumber = $page['page'];
-            $rows = $page['rows'];
+            ['page' => $pageNumber, 'rows' => $rows] = $page;
 
-            $importedRows = collect($rows)->map(function ($row, $key) use ($quoteFile, $user, $pageNumber) {
-                $importedRow = $quoteFile->rowsData()->make([
-                    'page' => $pageNumber
-                ]);
-            
-                $importedRow->user()->associate($user);
-    
-                $importedRow->quoteFile()->associate($quoteFile);
-    
-                $importedRow->markAsDrafted();
-    
-                $rowData = collect($row)->map(function ($value, $alias) use ($quoteFile, $user, $pageNumber, $importedRow) {
-    
-                    $importableColumn = ImportableColumn::where('alias', $alias)->first();
-    
-                    $columnDataItem = $importedRow->columnsData()->make(
-                        [
-                            'value' => $value,
-                            'page' => $pageNumber
-                        ]
-                    );
-    
-                    $columnDataItem->user()->associate($user);
-    
-                    $columnDataItem->quoteFile()->associate($quoteFile);
-                    
-                    if(!is_null($importableColumn)) {
-                        $columnDataItem->importableColumn()->associate($importableColumn);
-                    }
-    
-                    $columnDataItem->markAsDrafted();
-    
-                    return collect($columnDataItem)->only('value', 'importable_column_id')->merge(
-                        $importableColumn->only('header')
-                    );
-                });
-
-                return collect($importedRow)->only('id')->merge([
-                    'columns_data' => $rowData->values()
-                ]);
-            });
+            $importedRows = $this->createImportedRows($rows, $quoteFile, $user, $pageNumber);
 
             return [
                 'page' => $pageNumber,
                 'rows' => $importedRows
             ];
         });
-        
-        $quoteFile->markAsHandled();
 
-        if($requestedPage) {
-            return $importedPages->firstWhere('page', $requestedPage);
-        } else {
-            return $importedPages;
-        }
+        return $importedPages;
+    }
+
+    protected function createImportedRows(Array $rows, QuoteFile $quoteFile, User $user, Int $pageNumber)
+    {
+        $importedRows = collect($rows)->map(function ($row, $key) use ($quoteFile, $user, $pageNumber) {
+            $importedRow = $quoteFile->rowsData()->make([
+                'page' => $pageNumber
+            ]);
+        
+            $importedRow->user()->associate($user);
+
+            $importedRow->quoteFile()->associate($quoteFile);
+
+            $importedRow->markAsDrafted();
+
+            return $this->createRowData($row, $quoteFile, $user, $pageNumber, $importedRow);
+
+            return collect($importedRow)->only('id')->merge([
+                'columns_data' => $rowData->values()
+            ]);
+        });
+
+        return $importedRows;
+    }
+
+    protected function createRowData(Array $row, QuoteFile $quoteFile, User $user, Int $pageNumber, ImportedRow $importedRow)
+    {
+        $rowData = collect($row)->map(function ($value, $alias) use ($quoteFile, $user, $pageNumber, $importedRow) {
+    
+            $importableColumn = ImportableColumn::where('alias', $alias)->first();
+
+            $columnDataItem = $importedRow->columnsData()->make(
+                [
+                    'value' => $value,
+                    'page' => $pageNumber
+                ]
+            );
+
+            $columnDataItem->user()->associate($user);
+
+            $columnDataItem->quoteFile()->associate($quoteFile);
+            
+            if(!is_null($importableColumn)) {
+                $columnDataItem->importableColumn()->associate($importableColumn);
+            }
+
+            $columnDataItem->markAsDrafted();
+
+            return collect($columnDataItem)->only('value', 'importable_column_id')->merge(
+                $importableColumn->only('header')
+            );
+        });
+
+        return $rowData;
     }
 
     public function getRowsData(QuoteFile $quoteFile, Int $page)

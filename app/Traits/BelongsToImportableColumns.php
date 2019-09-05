@@ -2,10 +2,10 @@
 
 use App\Models\QuoteFile\ImportableColumn;
 
-trait BelongsToImportableColumn
+trait BelongsToImportableColumns
 {
     public function importableColumn()
     {
-        return $this->belongsTo(ImportableColumn::class);
+        return $this->belongsToMany(ImportableColumn::class);
     }
 }

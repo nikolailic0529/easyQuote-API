@@ -21,7 +21,7 @@ class CreateImportedColumnsTable extends Migration
             $table->uuid('quote_file_id');
             $table->foreign('quote_file_id')->references('id')->on('quote_files');
             $table->uuid('importable_column_id')->nullable();
-            $table->foreign('importable_column_id')->references('id')->on('importable_columns')->onDelete('cascade');
+            $table->foreign('importable_column_id')->references('id')->on('importable_columns');
             $table->uuid('imported_row_id');
             $table->foreign('imported_row_id')->references('id')->on('imported_rows')->onDelete('cascade');
             $table->tinyInteger('page')->nullable();

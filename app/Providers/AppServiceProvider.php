@@ -22,7 +22,8 @@ use App\Contracts \ {
     Repositories\QuoteFile\QuoteFileRepositoryInterface,
     Repositories\QuoteFile\FileFormatRepositoryInterface,
     Repositories\QuoteFile\ImportableColumnRepositoryInterface,
-    Repositories\Quote\QuoteRepositoryInterface
+    Repositories\Quote\QuoteRepositoryInterface,
+    Repositories\QuoteTemplate\TemplateFieldRepositoryInterface
 };
 use App\Repositories \ {
     TimezoneRepository,
@@ -34,7 +35,8 @@ use App\Repositories \ {
     QuoteFile\QuoteFileRepository,
     QuoteFile\FileFormatRepository,
     QuoteFile\ImportableColumnRepository,
-    Quote\QuoteRepository
+    Quote\QuoteRepository,
+    QuoteTemplate\TemplateFieldRepository
 };
 use App\Services \ {
     AuthService,
@@ -53,7 +55,8 @@ class AppServiceProvider extends ServiceProvider
         QuoteFileRepositoryInterface::class => QuoteFileRepository::class,
         FileFormatRepositoryInterface::class => FileFormatRepository::class,
         ImportableColumnRepositoryInterface::class => ImportableColumnRepository::class,
-        QuoteRepositoryInterface::class => QuoteRepository::class
+        QuoteRepositoryInterface::class => QuoteRepository::class,
+        TemplateFieldRepositoryInterface::class => TemplateFieldRepository::class
     ];
     /**
      * Register any application services.

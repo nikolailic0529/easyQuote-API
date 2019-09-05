@@ -29,6 +29,7 @@ Route::group(['namespace' => 'API'], function () {
         
         Route::group(['prefix' => 'step'], function () {
             Route::get('1', 'QuoteController@step1');
+            Route::get('2', 'QuoteController@step2');
         });
 
     });

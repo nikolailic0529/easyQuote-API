@@ -1,23 +1,34 @@
 <?php namespace App\Http\Controllers\API\Quotes;
 
 use App\Http\Controllers\Controller;
-use App\Contracts\Repositories\Quote\QuoteRepositoryInterface as QuoteRepository;
+use App\Contracts\Repositories \ {
+    Quote\QuoteRepositoryInterface as QuoteRepository,
+    QuoteTemplate\TemplateFieldRepositoryInterface as TemplateFieldRepository
+};
 
 class QuoteController extends Controller
 {
-    protected $quoteRepository;
+    protected $quote;
 
-    public function __construct(QuoteRepository $quoteRepository)
+    protected $templateField;
+
+    public function __construct(QuoteRepository $quote, TemplateFieldRepository $templateField)
     {
-        $this->quoteRepository = $quoteRepository;
+        $this->quote = $quote;
+        $this->templateField = $templateField;
     }
 
     public function step1()
     {
-        $stepData = $this->quoteRepository->step1();
-
         return response()->json(
-            $stepData
+            $this->quote->step1()
+        );
+    }
+
+    public function step2()
+    {
+        return response()->json(
+            $this->templateField->all()
         );
     }
 }

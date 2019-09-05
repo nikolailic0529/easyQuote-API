@@ -13,6 +13,6 @@ class QuoteRepository implements QuoteRepositoryInterface
         $companies = Company::with('vendors.countries.languages')->get();
         $data_select_separators = DataSelectSeparator::all();
 
-        return compact('companies', 'data_select_separators');
+        return compact('data_select_separators', 'companies');
     }
 }

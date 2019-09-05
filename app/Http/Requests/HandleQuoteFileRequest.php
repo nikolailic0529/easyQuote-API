@@ -32,10 +32,7 @@ class HandleQuoteFileRequest extends FormRequest
     {
         return [
             'quote_file_id' => 'required|exists:quote_files,id',
-            'data_select_separator_id' => [
-                $this->requiredIfCsv(),
-                'exists:data_select_separators,id'
-            ],
+            'data_select_separator_id' => $this->requiredIfCsv(),
             'page' => 'integer'
         ];
     }
@@ -46,10 +43,12 @@ class HandleQuoteFileRequest extends FormRequest
 
         $quoteFile = $this->quoteFile->get($id);
 
+        if(is_null($quoteFile)) {
+            return '';
+        }
+
         $extension = $quoteFile->format->extension;
 
-        if($extension === 'csv') {
-            return 'required';
-        }
+        return $extension === 'csv' ? 'required|exists:data_select_separators,id' : '';
     }
 }

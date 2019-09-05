@@ -46,5 +46,8 @@ class DatabaseSeeder extends Seeder
 
         $this->call(DataSelectSeparatorsSeeder::class);
         $this->command->info('Seeded the data select separators for csv files!');
+
+        $this->call(TemplateFieldsSeeder::class);
+        $this->command->info('Seeded the system defined template fields!');
     } 
 }

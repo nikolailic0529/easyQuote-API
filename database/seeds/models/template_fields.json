@@ -1,0 +1,34 @@
+[
+    {
+        "name": "Product No",
+        "is_required": true,
+        "order": 1
+    },
+    {
+        "name": "Description",
+        "order": 2
+    },
+    {
+        "name": "Serial Number",
+        "order": 3
+    },
+    {
+        "name": "From Date",
+        "default_value": "current_date",
+        "order": 4
+    },
+    {
+        "name": "To Date",
+        "default_value": "current_date",
+        "order": 5
+    },
+    {
+        "name": "Quantity",
+        "order": 6
+    },
+    {
+        "name": "Price",
+        "is_required": true,
+        "order": 7
+    }
+]
