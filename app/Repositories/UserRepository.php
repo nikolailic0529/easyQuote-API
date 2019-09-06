@@ -5,13 +5,15 @@ use App\Contracts\Repositories\UserRepositoryInterface;
 
 class UserRepository implements UserRepositoryInterface
 {
-    public function all()
+    protected $user;
+
+    public function __construct(User $user)
     {
-        return User::all();
+        $this->user = $user;
     }
 
     public function make(Array $array)
     {
-        return User::make($array);
+        return $this->user->make($array);
     }
 }

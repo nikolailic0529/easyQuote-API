@@ -17,10 +17,25 @@ use App\Contracts \ {
     Services\ParserServiceInterface
 };
 use App\Http\Requests\StoreQuoteFileRequest;
-use App\Jobs\StoreQuoteFile;
 
 class QuoteFileRepository implements QuoteFileRepositoryInterface
 {
+    protected $quoteFile;
+
+    protected $dataSelectSeparator;
+    
+    protected $importableColumn;
+
+    public function __construct(
+        QuoteFile $quoteFile,
+        DataSelectSeparator $dataSelectSeparator,
+        ImportableColumn $importableColumn
+    ) {
+        $this->quoteFile = $quoteFile;
+        $this->dataSelectSeparator = $quoteFile;
+        $this->importableColumn = $importableColumn;
+    }
+
     public function all()
     {
         return request()->user()->quoteFiles()->ordered()->get();
@@ -28,7 +43,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     public function make(Array $array)
     {
-        return QuoteFile::make($array);
+        return $this->quoteFile->make($array);
     }
 
     public function create(StoreQuoteFileRequest $request)
@@ -40,7 +55,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         $format = $request->format;
 
         if($request->has('data_select_separator_id') && $format->extension === 'csv') {
-            $separator = DataSelectSeparator::whereId($request->data_select_separator_id)->first();
+            $separator = $this->dataSelectSeparator->whereId($request->data_select_separator_id)->first();
 
             $quoteFile->dataSelectSeparator()->associate($separator);
         }
@@ -138,7 +153,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
     {
         $rowData = collect($row)->map(function ($value, $alias) use ($quoteFile, $user, $pageNumber, $importedRow) {
     
-            $importableColumn = ImportableColumn::where('alias', $alias)->first();
+            $importableColumn = $this->importableColumn->whereAlias($alias)->first();
 
             $columnDataItem = $importedRow->columnsData()->make(
                 [
@@ -183,11 +198,11 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     public function get(String $id)
     {
-        return QuoteFile::whereId($id)->first();
+        return $this->quoteFile->whereId($id)->first();
     }
 
     public function exists(String $id)
     {
-        return QuoteFile::whereId($id)->exists();
+        return $this->quoteFile->whereId($id)->exists();
     }
 }

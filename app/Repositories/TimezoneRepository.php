@@ -5,8 +5,15 @@ use App\Contracts\Repositories\TimezoneRepositoryInterface;
 
 class TimezoneRepository implements TimezoneRepositoryInterface
 {
+    protected $timezone;
+
+    public function __construct(Timezone $timezone)
+    {
+        $this->timezone = $timezone;
+    }
+
     public function all()
     {
-        return Timezone::ordered()->get();
+        return $this->timezone->ordered()->get();
     }
 }

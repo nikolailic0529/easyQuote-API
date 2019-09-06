@@ -5,13 +5,20 @@ use App\Contracts\Repositories\AccessAttemptRepositoryInterface;
 
 class AccessAttemptRepository implements AccessAttemptRepositoryInterface
 {
+    protected $accessAttempt;
+
+    public function __construct(AccessAttempt $accessAttempt)
+    {
+        $this->accessAttempt = $accessAttempt;
+    }
+
     public function all()
     {
-        return AccessAttempt::all();
+        return $this->accessAttempt->all();
     }
 
     public function create(Array $array)
     {
-        return AccessAttempt::create($array);
+        return $this->accessAttempt->create($array);
     }
 }

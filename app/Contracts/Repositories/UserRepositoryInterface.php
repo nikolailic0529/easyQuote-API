@@ -3,13 +3,6 @@
 interface UserRepositoryInterface
 {
     /**
-     * Get all users
-     *
-     * @return \Illuminate\Database\Eloquent\Collection 
-     */
-    public function all();
-
-    /**
      * Make a new user
      * @params array
      * @return \App\Models\User

@@ -5,8 +5,15 @@ use App\Models\QuoteTemplate\TemplateField;
 
 class TemplateFieldRepository implements TemplateFieldRepositoryInterface
 {
+    protected $templateField;
+
+    public function __construct(TemplateField $templateField)
+    {
+        $this->templateField = $templateField;
+    }
+
     public function all()
     {
-        return TemplateField::orderBy('order', 'asc')->get();
+        return $this->templateField->orderBy('order', 'asc')->get();
     }
 }

@@ -5,16 +5,23 @@ use App\Models\QuoteFile\ImportableColumn;
 
 class ImportableColumnRepository implements ImportableColumnRepositoryInterface
 {
+    protected $importableColumn;
+
+    public function __construct(ImportableColumn $importableColumn)
+    {
+        $this->importableColumn = $importableColumn;
+    }
+
     public function allColumnsRegs()
     {
-        $importableColumns = ImportableColumn::orderBy('order', 'asc')->select('regexp')->get()->toArray();
+        $importableColumns = $this->importableColumn->orderBy('order', 'asc')->select('regexp')->get()->toArray();
 
         return collect($importableColumns)->flatten();
     }
 
     public function allColumnsAliases()
     {
-        $aliases = ImportableColumn::select('alias')->get()->toArray();
+        $aliases = $this->importableColumn->select('alias')->get()->toArray();
 
         return collect($aliases)->flatten()->toArray();
     }

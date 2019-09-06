@@ -5,8 +5,15 @@ use App\Contracts\Repositories\CountryRepositoryInterface;
 
 class CountryRepository implements CountryRepositoryInterface
 {
+    protected $country;
+
+    public function __construct(Country $country)
+    {
+        $this->country = $country;
+    }
+
     public function all()
     {
-        return Country::ordered()->get();
+        return $this->country->ordered()->get();
     }
 }

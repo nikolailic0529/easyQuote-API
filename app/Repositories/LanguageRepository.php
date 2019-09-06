@@ -5,8 +5,15 @@ use App\Contracts\Repositories\LanguageRepositoryInterface;
 
 class LanguageRepository implements LanguageRepositoryInterface
 {
+    protected $language;
+
+    public function __construct(Language $language)
+    {
+        $this->language = $language;
+    }
+
     public function all()
     {
-        return Language::ordered()->get();
+        return $this->language->ordered()->get();
     }
 }

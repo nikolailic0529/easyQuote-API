@@ -8,10 +8,20 @@ use App\Models \ {
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
+    protected $company;
+    
+    protected $dataSelectSeparator;
+
+    public function __construct(Company $company, DataSelectSeparator $dataSelectSeparator)
+    {
+        $this->company = $company;
+        $this->dataSelectSeparator = $dataSelectSeparator;
+    }
+
     public function step1()
     {
-        $companies = Company::with('vendors.countries.languages')->get();
-        $data_select_separators = DataSelectSeparator::all();
+        $companies = $this->company->with('vendors.countries.languages')->get();
+        $data_select_separators = $this->dataSelectSeparator->all();
 
         return compact('data_select_separators', 'companies');
     }

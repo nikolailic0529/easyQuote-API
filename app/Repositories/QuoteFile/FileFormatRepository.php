@@ -5,8 +5,15 @@ use App\Contracts\Repositories\QuoteFile\FileFormatRepositoryInterface;
 
 class FileFormatRepository implements FileFormatRepositoryInterface
 {
+    protected $quoteFileFormat;
+
+    public function __construct(QuoteFileFormat $quoteFileFormat)
+    {
+        $this->quoteFileFormat = $quoteFileFormat;
+    }
+
     public function all()
     {
-        return QuoteFileFormat::all();
+        return $this->quoteFileFormat->all();
     }
 }

@@ -5,8 +5,15 @@ use App\Contracts\Repositories\CurrencyRepositoryInterface;
 
 class CurrencyRepository implements CurrencyRepositoryInterface
 {
+    protected $currency;
+
+    public function __construct(Currency $currency)
+    {
+        $this->currency = $currency;
+    }
+
     public function all()
     {
-        return Currency::ordered()->get();
+        return $this->ordered()->get();
     }
 }
