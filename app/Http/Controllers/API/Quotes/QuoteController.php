@@ -5,6 +5,9 @@ use App\Contracts\Repositories \ {
     Quote\QuoteRepositoryInterface as QuoteRepository,
     QuoteTemplate\TemplateFieldRepositoryInterface as TemplateFieldRepository
 };
+use App\Http\Requests \ {
+    StoreQuoteStateRequest
+};
 
 class QuoteController extends Controller
 {
@@ -16,6 +19,13 @@ class QuoteController extends Controller
     {
         $this->quote = $quote;
         $this->templateField = $templateField;
+    }
+
+    public function storeState(StoreQuoteStateRequest $request)
+    {
+        return $this->quote->storeState(
+            $request
+        );
     }
 
     public function step1()

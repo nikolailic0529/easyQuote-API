@@ -20,6 +20,12 @@ class CreateQuoteTable extends Migration
             $table->foreign('user_id')->references('id')->on('users');
             $table->uuid('quote_template_id')->nullable();
             $table->foreign('quote_template_id')->references('id')->on('quote_templates');
+            $table->uuid('company_id')->nullable();
+            $table->foreign('company_id')->references('id')->on('companies');
+            $table->uuid('vendor_id')->nullable();
+            $table->foreign('vendor_id')->references('id')->on('vendors');
+            $table->uuid('language_id')->nullable();
+            $table->foreign('language_id')->references('id')->on('languages');
             $table->timestamps();
             $table->timestamp('drafted_at')->nullable()->default(null);
             $table->softDeletes();

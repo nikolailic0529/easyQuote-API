@@ -9,12 +9,12 @@ use App\Http\Requests \ {
 interface ParserServiceInterface
 {
     /**
-     * Get raw text from all pages of PDF format Quote File
+     * Get raw text from all pages of PDF format Uploaded File
      *
-     * @param QuoteFile $quoteFile
+     * @param String $path
      * @return \Illuminate\Support\Collection
      */
-    public function getPdfText(QuoteFile $quoteFile);
+    public function getPdfText(String $path);
 
     /**
      * Parse raw text by columns from PDF format Quote File
@@ -25,20 +25,12 @@ interface ParserServiceInterface
     public function parsePdfText(Array $pages);
 
     /**
-     * Get raw text from all pages of CSV format Quote File
+     * Parse raw text by columns from XLSX format Quote File
      *
      * @param QuoteFile $quoteFile
-     * @return \Illuminate\Support\Collection
+     * @return void
      */
-    public function getCsvText(QuoteFile $quoteFile);
-
-    /**
-     * Parse raw text by columns from CSV format Quote File
-     *
-     * @param String $text
-     * @return array
-     */
-    public function parseCsvText(String $text, QuoteFile $quoteFile);
+    public function importExcel(QuoteFile $quoteFile);
 
     /**
      * Determine Quote File format and return the related parser
@@ -70,18 +62,19 @@ interface ParserServiceInterface
      * Handle PDF format Quote File and store parsed data
      * Return collection as parsed rows
      * @param QuoteFile $quoteFile
-     * @param Int $page
+     * @param Int $requestedPage
      * @return \Illuminate\Support\Collection
      */
-    public function handlePdf(QuoteFile $quoteFile, Int $page);
+    public function handlePdf(QuoteFile $quoteFile, Int $requestedPage);
 
     /**
-     * Handle CSV format Quote File and store parsed data
+     * Handle Excel format Quote File and store parsed data
      * Return collection as parsed rows
      * @param QuoteFile $quoteFile
+     * @param Int $requestedPage
      * @return \Illuminate\Support\Collection
      */
-    public function handleCsv(QuoteFile $quoteFile);
+    public function handleExcel(QuoteFile $quoteFile, Int $requestedPage);
 
     /**
      * Determine File format before storing

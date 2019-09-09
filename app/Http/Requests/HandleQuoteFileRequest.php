@@ -40,10 +40,14 @@ class HandleQuoteFileRequest extends FormRequest
     public function requiredIfCsv()
     {
         $id = $this->quote_file_id;
+        
+        if(!$this->quoteFile->exists($id)) {
+            return '';
+        };
 
-        $quoteFile = $this->quoteFile->get($id);
+        $quoteFile = $this->quoteFile->find($id);
 
-        if(is_null($quoteFile)) {
+        if(is_null($quoteFile) || !$quoteFile->isCsv()) {
             return '';
         }
 

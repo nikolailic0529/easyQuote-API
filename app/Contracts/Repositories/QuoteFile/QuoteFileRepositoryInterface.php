@@ -60,9 +60,10 @@ interface QuoteFileRepositoryInterface
      * Get all parsed column data from Quote File
      *
      * @param QuoteFile $quoteFile
+     * @param Int $requestedPage
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function getRowsData(QuoteFile $quoteFile, Int $page);
+    public function getRowsData(QuoteFile $quoteFile, Int $requestedPage);
 
     /**
      * Get Quote File
@@ -70,7 +71,7 @@ interface QuoteFileRepositoryInterface
      * @param String $id
      * @return QuoteFile
      */
-    public function get(String $id);
+    public function find(String $id);
 
     /**
      * Check for existing

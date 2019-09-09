@@ -6,12 +6,27 @@ use App\Models \ {
     QuoteTemplate\TemplateField,
     QuoteFile\ImportableColumn
 };
+use App\Traits \ {
+    HasQuoteFiles,
+    BelongsToUser,
+    BelongsToCompany,
+    Draftable
+};
 
 class Quote extends UuidModel
 {
+    use HasQuoteFiles, BelongsToUser, BelongsToCompany, Draftable;
+
+    protected $fillable = ['company_id', 'vendor_id', 'language_id'];
+
     public function templateFields()
     {
         return $this->belongsToMany(TemplateField::class, 'quote_field_column', 'quote_id');
+    }
+
+    public function importableColumns()
+    {
+        return $this->belongsToMany(ImportableColumn::class, 'quote_field_column', 'quote_id');
     }
 
     public function quoteTemplate()

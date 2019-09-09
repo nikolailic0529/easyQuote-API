@@ -20,6 +20,6 @@ class ImportedRow extends UuidModel
     ];
 
     protected $hidden = [
-        'quote_file', 'user', 'quote_file_id', 'user_id', 'created_at', 'updated_at', 'drafted_at', 'deleted_at'
+        'quote_file', 'user', 'quote_file_id', 'user_id', 'created_at', 'updated_at', 'drafted_at', 'deleted_at', 'page'
     ];
 }

@@ -175,7 +175,7 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         Webpatser\Countries\CountriesServiceProvider::class,
-
+        Maatwebsite\Excel\ExcelServiceProvider::class
     ],
 
     /*
@@ -228,6 +228,7 @@ return [
         'View' => Illuminate\Support\Facades\View::class,
         'Uuid' => Webpatser\Uuid\Uuid::class,
         'Countries' => Webpatser\Countries\CountriesFacade::class,
+        'Excel' => Maatwebsite\Excel\Facades\Excel::class
     ],
 
 ];

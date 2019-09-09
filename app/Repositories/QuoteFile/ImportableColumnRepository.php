@@ -12,17 +12,22 @@ class ImportableColumnRepository implements ImportableColumnRepositoryInterface
         $this->importableColumn = $importableColumn;
     }
 
+    public function all()
+    {
+        return $this->importableColumn->ordered()->with('aliases')->get();
+    }
+
     public function allColumnsRegs()
     {
-        $importableColumns = $this->importableColumn->orderBy('order', 'asc')->select('regexp')->get()->toArray();
+        $importableColumns = $this->importableColumn->ordered()->select('regexp')->get()->toArray();
 
         return collect($importableColumns)->flatten();
     }
 
-    public function allColumnsAliases()
+    public function allNames()
     {
-        $aliases = $this->importableColumn->select('alias')->get()->toArray();
+        $names = $this->importableColumn->select('name')->get()->toArray();
 
-        return collect($aliases)->flatten()->toArray();
+        return collect($names)->flatten()->toArray();
     }
 }

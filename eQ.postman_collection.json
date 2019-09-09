@@ -457,6 +457,88 @@
 						}
 					],
 					"_postman_isSubFolder": true
+				},
+				{
+					"name": "Store Quote State",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "quote_id",
+									"value": "46364b20-cfd5-11e9-933f-5f6d29811ca6",
+									"type": "text"
+								},
+								{
+									"key": "quote_data[company_id]",
+									"value": "0fe93d3b-d39b-471f-89bb-ca94f8e4b63b",
+									"type": "text"
+								},
+								{
+									"key": "quote_data[vendor_id]",
+									"value": "328be59b-9c44-4be2-a720-79f021faf73d",
+									"type": "text"
+								},
+								{
+									"key": "quote_data[country_id]",
+									"value": "1da9b63f-46f7-4a5c-a542-b1b1371b4b9f",
+									"type": "text"
+								},
+								{
+									"key": "quote_data[language_id]",
+									"value": "a7acc35b-7a32-43e0-8805-21777cb8d5d3",
+									"type": "text"
+								},
+								{
+									"key": "quote_data[files][]",
+									"value": "9c409820-d042-11e9-8f28-f99eb0f31811",
+									"type": "text"
+								},
+								{
+									"key": "quote_data[files][]",
+									"value": "cc3a8820-d03c-11e9-98ac-cdadfe64b182",
+									"type": "text"
+								},
+								{
+									"key": "save",
+									"value": "0",
+									"description": "True to save Quote | False to draft Quote",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://easyquote/api/quotes/state",
+							"protocol": "http",
+							"host": [
+								"easyquote"
+							],
+							"path": [
+								"api",
+								"quotes",
+								"state"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},

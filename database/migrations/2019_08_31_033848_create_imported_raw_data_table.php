@@ -21,7 +21,7 @@ class CreateImportedRawDataTable extends Migration
             $table->uuid('quote_file_id');
             $table->foreign('quote_file_id')->references('id')->on('quote_files');
             $table->integer('page')->nullable();
-            $table->text('content');
+            $table->string('file_path');
             $table->timestamps();
             $table->timestamp('drafted_at')->nullable()->default(null);
             $table->softDeletes();

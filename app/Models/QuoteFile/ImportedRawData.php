@@ -13,6 +13,6 @@ class ImportedRawData extends UuidModel
     use BelongsToUser, BelongsToQuoteFile, Draftable, SoftDeletes;
 
     protected $fillable = [
-        'page', 'content'
+        'page', 'file_path'
     ];
 }

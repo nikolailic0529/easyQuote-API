@@ -70,6 +70,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->when(AuthController::class)->needs(AuthServiceInterface::class)->give(AuthService::class);
         
         $this->app->when(QuoteFilesController::class)->needs(ParserServiceInterface::class)->give(ParserService::class);
+
+        $this->app->when(ParserService::class)->needs(League\Csv\AbstractCsv::class)->give(League\Csv\Reader::class);
     }
 
     /**

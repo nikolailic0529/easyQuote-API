@@ -10,12 +10,13 @@ use App\Traits \ {
     HasRole,
     CanBeAdmin,
     HasQuoteFilesDirectory,
-    HasQuoteFiles
+    HasQuoteFiles,
+    HasQuotes
 };
 
 class User extends AuthenticableUser implements MustVerifyEmail
 {
-    use HasQuoteFiles, HasQuoteFilesDirectory, HasRole, HasApiTokens, Notifiable, HasCountry, HasTimezone, CanBeAdmin;
+    use HasQuotes, HasQuoteFiles, HasQuoteFilesDirectory, HasRole, HasApiTokens, Notifiable, HasCountry, HasTimezone, CanBeAdmin;
 
     /**
      * The attributes that are mass assignable.

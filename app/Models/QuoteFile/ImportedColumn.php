@@ -22,7 +22,8 @@ class ImportedColumn extends UuidModel
     ];
 
     protected $hidden = [
-        'user', 'user_id', 'quote_file_id', 'quote_file', 'page', 'created_at', 'updated_at', 'drafted_at', 'deleted_at'
+        'user', 'user_id', 'quote_file_id', 'quote_file', 'page', 'created_at', 'updated_at', 'drafted_at', 'deleted_at',
+        'unknown_header', 'importableColumn', 'imported_row_id'
     ];
 
     protected $appends = [
@@ -31,6 +32,10 @@ class ImportedColumn extends UuidModel
 
     public function getHeaderAttribute()
     {
-        return $this->importableColumn->header ?: __('Unknown header');
+        if(is_null($this->importableColumn)) {
+            return $this->getAttribute('unknown_header') ?: __('Unknown header');
+        }
+
+        return $this->importableColumn->header;
     }
 }

@@ -17,7 +17,7 @@ class CreateImportableColumnsTable extends Migration
             $table->uuid('id');
             $table->primary('id');
             $table->string('header');
-            $table->string('alias')->unique();
+            $table->string('name');
             $table->string('regexp');
             $table->tinyInteger('order');
         });

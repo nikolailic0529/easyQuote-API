@@ -4,8 +4,12 @@
         "extension": "pdf"
     },
     {
-        "name": "XLSX",
+        "name": "Excel",
         "extension": "xlsx"
+    },
+    {
+        "name": "Excel",
+        "extension": "xls"
     },
     {
         "name": "CSV",

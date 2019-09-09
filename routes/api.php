@@ -22,6 +22,8 @@ Route::group(['namespace' => 'API'], function () {
     });
     
     Route::group(['prefix' => 'quotes', 'middleware' => 'auth:api', 'namespace' => 'Quotes'], function () {
+        Route::post('state', 'QuoteController@storeState');
+        
         Route::post('file', 'QuoteFilesController@store');
         Route::get('file/{quoteFile}', 'QuoteFilesController@file');
         Route::get('files', 'QuoteFilesController@all');

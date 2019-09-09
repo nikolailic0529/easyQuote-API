@@ -9,6 +9,7 @@ use App\Models \ {
 };
 use App\Traits \ {
     BelongsToUser,
+    BelongsToQuote,
     HasFileFormat,
     Draftable,
     Handleable,
@@ -19,7 +20,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class QuoteFile extends UuidModel implements HasOrderedScope
 {
-    use HasColumnsData, BelongsToUser, HasFileFormat, Handleable, Draftable, SoftDeletes;
+    use HasColumnsData, BelongsToQuote, BelongsToUser, HasFileFormat, Handleable, Draftable, SoftDeletes;
     
     protected $fillable = [
         'original_file_path', 'file_type', 'pages'
@@ -43,5 +44,32 @@ class QuoteFile extends UuidModel implements HasOrderedScope
     public function dataSelectSeparator()
     {
         return $this->belongsTo(DataSelectSeparator::class);
+    }
+
+    public function isPdf()
+    {
+        if(is_null($this->format)) {
+            return false;
+        }
+        
+        return $this->format->extension === 'pdf';
+    }
+
+    public function isCsv()
+    {
+        if(is_null($this->format)) {
+            return false;
+        }
+        
+        return $this->format->extension === 'csv';
+    }
+
+    public function isNewDataSelectSeparator(String $id)
+    {
+        if(is_null($this->dataSelectSeparator)) {
+            return false;
+        }
+
+        return $this->dataSelectSeparator->id !== $id;
     }
 }

@@ -10,9 +10,16 @@ interface ImportableColumnRepositoryInterface
     public function allColumnsRegs();
 
     /**
-     * Get all columns aliases
+     * Get all columns with aliases
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function all();
+
+    /**
+     * Get all importable columns names
      *
      * @return Array
      */
-    public function allColumnsAliases();
+    public function allNames();
 }
