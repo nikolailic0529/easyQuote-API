@@ -24,6 +24,7 @@ class CreateTemplateFieldsTable extends Migration
             $table->string('default_value')->nullable();
             $table->boolean('is_required')->default(false);
             $table->boolean('is_system')->default(false);
+            $table->boolean('is_column')->default(false);
             $table->timestamps();
             $table->timestamp('drafted_at')->nullable();
             $table->timestamp('activated_at')->nullable();

@@ -66,7 +66,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
         $quoteFile->markAsDrafted();
 
-        if($quoteFile->isPdf() && $request->has('rawData'))
+        if(($quoteFile->isPdf() || $quoteFile->isWord()) && $request->has('rawData'))
         {
             $this->createRawData($quoteFile, $request->rawData);
         }
@@ -101,7 +101,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     public function getRawData(QuoteFile $quoteFile)
     {
-        return $quoteFile->importedRawData()->get()->toArray();
+        return $quoteFile->importedRawData()->get();
     }
 
     public function createRowsData(QuoteFile $quoteFile, Array $array, $requestedPage = false)
@@ -219,7 +219,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     public function getRowsData(QuoteFile $quoteFile, Int $requestedPage = 2)
     {
-        if($quoteFile->isCsv()) {
+        if($quoteFile->isCsv() || $quoteFile->isWord()) {
             $requestedPage = 1;
         }
 

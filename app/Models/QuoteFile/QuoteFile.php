@@ -46,13 +46,26 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         return $this->belongsTo(DataSelectSeparator::class);
     }
 
+    public function isWord()
+    {
+        if(is_null($this->format)) {
+            return false;
+        }
+        
+        $extension = $this->format->extension;
+
+        return in_array($extension, ['doc', 'docx']);
+    }
+
     public function isPdf()
     {
         if(is_null($this->format)) {
             return false;
         }
         
-        return $this->format->extension === 'pdf';
+        $extension = $this->format->extension;
+
+        return in_array($extension, ['pdf']);
     }
 
     public function isCsv()
@@ -61,10 +74,12 @@ class QuoteFile extends UuidModel implements HasOrderedScope
             return false;
         }
         
-        return $this->format->extension === 'csv';
+        $extension = $this->format->extension;
+
+        return in_array($extension, ['csv']);
     }
 
-    public function isNewDataSelectSeparator(String $id)
+    public function isNewSeparator(string $id)
     {
         if(is_null($this->dataSelectSeparator)) {
             return false;

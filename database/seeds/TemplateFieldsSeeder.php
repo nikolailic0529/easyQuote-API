@@ -34,6 +34,7 @@ class TemplateFieldsSeeder extends Seeder
                 'is_required' => isset($field['is_required']) ? $field['is_required'] : false,
                 'default_value' => $defaultValue ?: null,
                 'is_system' => true,
+                'is_column' => true,
                 'order' => $field['order']
             ]);
         });

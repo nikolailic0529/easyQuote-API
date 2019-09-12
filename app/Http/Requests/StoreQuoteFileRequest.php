@@ -24,7 +24,7 @@ class StoreQuoteFileRequest extends FormRequest
     public function rules()
     {
         return [
-            'quote_file' => 'required|file|mimes:pdf,csv,txt,xlsx,xls|max:20000',
+            'quote_file' => 'required|file|mimes:pdf,csv,txt,xlsx,xls,doc,docx|max:20000',
             'file_type' => 'required|string|in:Distributor Price List,Payment Schedule'
         ];
     }

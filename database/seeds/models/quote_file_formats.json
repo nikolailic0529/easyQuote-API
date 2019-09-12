@@ -16,7 +16,15 @@
         "extension": "csv"
     },
     {
-        "name": "DOCX",
+        "name": "Word",
         "extension": "docx"
+    },
+    {
+        "name": "Word",
+        "extension": "doc"
+    },
+    {
+        "name": "Word",
+        "extension": "rtf"
     }
 ]

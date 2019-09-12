@@ -145,6 +145,19 @@
 			"item": [
 				{
 					"name": "Store Quote File",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "146d61cd-d871-46a3-ba72-46766def70c0",
+								"exec": [
+									"let response = pm.response.json();\r",
+									"pm.environment.set('quote_file_id', response.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -170,17 +183,12 @@
 								{
 									"key": "quote_file",
 									"type": "file",
-									"src": "/C:/Users/Strelenko/Desktop/easyQuote/UK Qute output from Distribution.pdf"
+									"src": "/C:/Users/Strelenko/Desktop/easyQuote/sample.docx"
 								},
 								{
 									"key": "file_type",
 									"value": "Distributor Price List",
 									"description": "Distributor Price List or Payment Schedule",
-									"type": "text"
-								},
-								{
-									"key": "data_select_separator_id",
-									"value": "0a6f029b-0172-424a-afe2-705bb99597ac",
 									"type": "text"
 								}
 							]
@@ -274,14 +282,18 @@
 							"formdata": [
 								{
 									"key": "quote_file_id",
-									"value": "1dfce7c0-cec6-11e9-8a3b-632303e3fa44",
+									"value": "{{quote_file_id}}",
 									"type": "text"
 								},
 								{
 									"key": "data_select_separator_id",
-									"value": "0940dce0-af78-4fe2-b606-3e4af23e8574",
-									"type": "text",
-									"disabled": true
+									"value": "0ab3a73e-4da4-4848-9e9a-05a2959adc46",
+									"type": "text"
+								},
+								{
+									"key": "page",
+									"value": "2",
+									"type": "text"
 								}
 							]
 						},

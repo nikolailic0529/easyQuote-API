@@ -13,6 +13,7 @@ use App\Http\Controllers\API \ {
 use App\Contracts \ {
     Services\AuthServiceInterface,
     Services\ParserServiceInterface,
+    Services\WordParserInterface,
     Repositories\TimezoneRepositoryInterface,
     Repositories\CountryRepositoryInterface,
     Repositories\UserRepositoryInterface,
@@ -22,6 +23,7 @@ use App\Contracts \ {
     Repositories\QuoteFile\QuoteFileRepositoryInterface,
     Repositories\QuoteFile\FileFormatRepositoryInterface,
     Repositories\QuoteFile\ImportableColumnRepositoryInterface,
+    Repositories\QuoteFile\DataSelectSeparatorRepositoryInterface,
     Repositories\Quote\QuoteRepositoryInterface,
     Repositories\QuoteTemplate\TemplateFieldRepositoryInterface
 };
@@ -35,12 +37,14 @@ use App\Repositories \ {
     QuoteFile\QuoteFileRepository,
     QuoteFile\FileFormatRepository,
     QuoteFile\ImportableColumnRepository,
+    QuoteFile\DataSelectSeparatorRepository,
     Quote\QuoteRepository,
     QuoteTemplate\TemplateFieldRepository
 };
 use App\Services \ {
     AuthService,
-    ParserService
+    ParserService,
+    WordParser
 };
 
 class AppServiceProvider extends ServiceProvider
@@ -56,7 +60,8 @@ class AppServiceProvider extends ServiceProvider
         FileFormatRepositoryInterface::class => FileFormatRepository::class,
         ImportableColumnRepositoryInterface::class => ImportableColumnRepository::class,
         QuoteRepositoryInterface::class => QuoteRepository::class,
-        TemplateFieldRepositoryInterface::class => TemplateFieldRepository::class
+        TemplateFieldRepositoryInterface::class => TemplateFieldRepository::class,
+        DataSelectSeparatorRepositoryInterface::class => DataSelectSeparatorRepository::class
     ];
     /**
      * Register any application services.
@@ -71,7 +76,7 @@ class AppServiceProvider extends ServiceProvider
         
         $this->app->when(QuoteFilesController::class)->needs(ParserServiceInterface::class)->give(ParserService::class);
 
-        $this->app->when(ParserService::class)->needs(League\Csv\AbstractCsv::class)->give(League\Csv\Reader::class);
+        $this->app->when(ParserService::class)->needs(WordParserInterface::class)->give(WordParser::class);
     }
 
     /**
