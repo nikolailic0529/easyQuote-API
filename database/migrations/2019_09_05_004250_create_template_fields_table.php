@@ -18,7 +18,8 @@ class CreateTemplateFieldsTable extends Migration
             $table->primary('id');
             $table->uuid('user_id')->nullable();
             $table->foreign('user_id')->references('id')->on('users');
-            $table->string('name', 50);
+            $table->string('header', 50);
+            $table->string('name', 20);
             $table->tinyInteger('order');
             $table->tinyInteger('cols')->default(12);
             $table->string('default_value')->nullable();

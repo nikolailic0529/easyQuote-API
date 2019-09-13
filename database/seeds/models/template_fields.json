@@ -1,33 +1,40 @@
 [
     {
-        "name": "Product No",
+        "header": "Product No",
+        "name": "product_no",
         "is_required": true,
         "order": 1
     },
     {
-        "name": "Description",
+        "header": "Description",
+        "name": "description",
         "order": 2
     },
     {
-        "name": "Serial Number",
+        "header": "Serial Number",
+        "name": "serial_number",
         "order": 3
     },
     {
-        "name": "From Date",
+        "header": "From Date",
+        "name": "date_from",
         "default_value": "current_date",
         "order": 4
     },
     {
-        "name": "To Date",
+        "header": "To Date",
+        "name": "date_to",
         "default_value": "current_date",
         "order": 5
     },
     {
-        "name": "Quantity",
+        "header": "Quantity",
+        "name": "qty",
         "order": 6
     },
     {
-        "name": "Price",
+        "header": "Price",
+        "name": "price",
         "is_required": true,
         "order": 7
     }

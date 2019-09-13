@@ -132,4 +132,20 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         return compact('data_select_separators', 'companies');
     }
+
+    public function step2()
+    {
+        $templateFields = $this->templateField
+            ->with('templateFieldType')->ordered()->get();
+        
+        $templateFields = $templateFields->map(function ($field) {
+            $fieldName = $field->templateFieldType->name;
+            $field->makeHidden('templateFieldType');
+            $field->field_type = $fieldName;
+
+            return $field;
+        });
+
+        return $templateFields;
+    }
 }

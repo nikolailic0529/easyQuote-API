@@ -6,15 +6,18 @@ use App\Models \ {
     QuoteFile\ImportableColumn
 };
 use App\Traits \ {
-    BelongsToUser
+    BelongsToUser,
+    BelongsToTemplateFieldType
 };
+use App\Contracts\HasOrderedScope;
 
-class TemplateField extends UuidModel
+class TemplateField extends UuidModel implements HasOrderedScope
 {
-    use BelongsToUser;
+    use BelongsToUser, BelongsToTemplateFieldType;
 
     protected $hidden = [
-        'created_at', 'updated_at', 'deleted_at', 'activated_at', 'drafted_at', 'is_system', 'user_id'
+        'created_at', 'updated_at', 'deleted_at', 'activated_at', 'drafted_at', 'is_system', 'user_id',
+        'template_field_type_id'
     ];
 
     public function quoteTemplates()
@@ -25,5 +28,10 @@ class TemplateField extends UuidModel
     public function importableColumn()
     {
         return $this->belongsToMany(ImportableColumn::class, 'quote_field_column', 'template_field_id');
+    }
+
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('order', 'asc');
     }
 }

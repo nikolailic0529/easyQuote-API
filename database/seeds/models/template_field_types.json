@@ -1,0 +1,30 @@
+[
+    {
+        "title": "Column Field",
+        "name": "column"
+    },
+    {
+        "title": "Text Field (Single Line)",
+        "name": "text_single"
+    },
+    {
+        "title": "Text Field (Multiple Line)",
+        "name": "text_multiple"
+    },
+    {
+        "title": "Email Field",
+        "name": "email"
+    },
+    {
+        "title": "Currency Field",
+        "name": "currency"
+    },
+    {
+        "title": "Date / Time Field",
+        "name": "time"
+    },
+    {
+        "title": "Logo Image",
+        "name": "image"
+    }
+]

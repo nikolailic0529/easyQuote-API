@@ -38,7 +38,7 @@ class QuoteController extends Controller
     public function step2()
     {
         return response()->json(
-            $this->templateField->all()
+            $this->quote->step2()
         );
     }
 }

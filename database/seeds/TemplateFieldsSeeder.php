@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Seeder;
 use Carbon\Carbon;
+use App\Models\QuoteTemplate\TemplateFieldType;
 
 class TemplateFieldsSeeder extends Seeder
 {
@@ -21,7 +22,9 @@ class TemplateFieldsSeeder extends Seeder
 
         $templateFields = json_decode(file_get_contents(__DIR__ . '/models/template_fields.json'), true);
 
-        collect($templateFields)->each(function ($field) {
+        $typeId = TemplateFieldType::whereName('column')->first('id')->id;
+
+        collect($templateFields)->each(function ($field) use ($typeId) {
             $defaultValue = null;
 
             if(isset($field['default_value']) && $field['default_value'] === 'current_date') {
@@ -30,12 +33,14 @@ class TemplateFieldsSeeder extends Seeder
 
             DB::table('template_fields')->insert([
                 'id' => (string) Uuid::generate(4),
+                'header' => $field['header'],
                 'name' => $field['name'],
                 'is_required' => isset($field['is_required']) ? $field['is_required'] : false,
                 'default_value' => $defaultValue ?: null,
                 'is_system' => true,
                 'is_column' => true,
-                'order' => $field['order']
+                'order' => $field['order'],
+                'template_field_type_id' => $typeId
             ]);
         });
     }

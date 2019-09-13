@@ -14,6 +14,6 @@ class TemplateFieldRepository implements TemplateFieldRepositoryInterface
 
     public function all()
     {
-        return $this->templateField->orderBy('order', 'asc')->get();
+        return $this->templateField->with('templateFieldType')->ordered()->get();
     }
 }

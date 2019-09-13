@@ -1,0 +1,30 @@
+[
+    {
+        "name": "English template",
+        "companies": [
+            "GB758501125",
+            "GB847657576",
+            "CHE109482812"
+        ],
+        "vendors": [
+            "HPE", "Lenovo", "IBM"
+        ],
+        "countries": [
+            "UK", "US"
+        ]
+    },
+    {
+        "name": "French template",
+        "companies": [
+            "GB758501125",
+            "GB847657576",
+            "CHE109482812"
+        ],
+        "vendors": [
+            "HPE", "Lenovo", "IBM"
+        ],
+        "countries": [
+            "FR", "CA"
+        ]
+    }
+]
