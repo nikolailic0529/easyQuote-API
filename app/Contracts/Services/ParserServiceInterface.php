@@ -9,22 +9,6 @@ use App\Http\Requests \ {
 interface ParserServiceInterface
 {
     /**
-     * Get raw text from all pages of PDF format Uploaded File
-     *
-     * @param String $path
-     * @return \Illuminate\Support\Collection
-     */
-    public function getPdfText(String $path);
-
-    /**
-     * Parse raw text by columns from PDF format Quote File
-     *
-     * @param Array $pages
-     * @return array
-     */
-    public function parsePdfText(Array $pages);
-
-    /**
      * Parse raw text by columns from XLSX format Quote File
      *
      * @param QuoteFile $quoteFile
@@ -92,12 +76,4 @@ interface ParserServiceInterface
      * @return int
      */
     public function countPages(String $path);
-
-    /**
-     * Count pages in PDF format file
-     *
-     * @param String $path
-     * @return int
-     */
-    public function countPdfPages(String $path);
 }

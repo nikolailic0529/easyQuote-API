@@ -17,4 +17,9 @@ class UuidModel extends Model
             $model->{$model->getKeyName()} = Uuid::generate()->string;
         });
     }
+
+    protected function propertyExists(string $property)
+    {
+        return isset($this->{$property});
+    }
 }

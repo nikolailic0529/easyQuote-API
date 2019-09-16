@@ -50,8 +50,6 @@ class ImportedRowImport implements ToModel, WithHeadingRow, WithCustomCsvSetting
     {
         $row = collect($row);
 
-        Log::info($row->keys());
-
         $columnsData = $this->fetchRow($row);
 
         if($this->isEmptyRow($columnsData)) {

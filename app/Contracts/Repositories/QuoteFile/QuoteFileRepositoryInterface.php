@@ -1,9 +1,11 @@
 <?php namespace App\Contracts\Repositories\QuoteFile;
 
-use Illuminate\Http\Request;
+use Illuminate\Http \ {
+    Request,
+    UploadedFile
+};
 use App\Http\Requests\StoreQuoteFileRequest;
 use App\Models\QuoteFile\QuoteFile;
-use Illuminate\Http\UploadedFile;
 
 interface QuoteFileRepositoryInterface
 {
@@ -18,7 +20,7 @@ interface QuoteFileRepositoryInterface
      * @params array
      * @return \App\Models\QuoteFile\QuoteFile
      */
-    public function make(Array $array);
+    public function make(array $array);
 
     /**
      * Create a new Quote File
@@ -32,26 +34,35 @@ interface QuoteFileRepositoryInterface
      * Store Imported Raw Data by QuoteFile
      *
      * @param QuoteFile $quoteFile
-     * @param Array $array
+     * @param array $array
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function createRawData(QuoteFile $quoteFile, Array $array);
+    public function createRawData(QuoteFile $quoteFile, array $array);
 
     /**
      * Store Parsed Column Data by QuoteFile
      * And mark QuoteFile as handled
      * @param QuoteFile $quoteFile
-     * @param Array $array
+     * @param array $array
      * @param void $requestedPage
      * @return \Illuminate\Support\Collection
      */
-    public function createRowsData(QuoteFile $quoteFile, Array $array, $requestedPage);
+    public function createRowsData(QuoteFile $quoteFile, array $array, $requestedPage);
 
     /**
-     * Get Imported Raw Data on second page by default from QuoteFile
+     * Store Parsed Payment Schedule Data by QuoteFile
      *
      * @param QuoteFile $quoteFile
-     * @param Int $page
+     * @param array $array
+     * @return \App\Models\QuoteFile\ScheduleData
+     */
+    public function createScheduleData(QuoteFile $quoteFile, array $value);
+
+    /**
+     * Get Imported Raw Data from QuoteFile
+     *
+     * @param QuoteFile $quoteFile
+     * @param int $page
      * @return array
      */
     public function getRawData(QuoteFile $quoteFile);
@@ -60,10 +71,18 @@ interface QuoteFileRepositoryInterface
      * Get all parsed column data from Quote File
      *
      * @param QuoteFile $quoteFile
-     * @param Int $requestedPage
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @param int $requestedPage
+     * @return [\Illuminate\Database\Eloquent\Collection]
      */
-    public function getRowsData(QuoteFile $quoteFile, Int $requestedPage);
+    public function getRowsData(QuoteFile $quoteFile, int $requestedPage);
+
+    /**
+     * Get Imported Schedule Data from Payment Schedule type Quote File
+     *
+     * @param QuoteFile $quoteFile
+     * @return \App\Models\QuoteFile\ScheduleData
+     */
+    public function getScheduleData(QuoteFile $quoteFile);
 
     /**
      * Get Quote File

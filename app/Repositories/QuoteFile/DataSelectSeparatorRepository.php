@@ -17,8 +17,8 @@ class DataSelectSeparatorRepository implements DataSelectSeparatorRepositoryInte
         return $this->dataSelectSeparator->whereId($id)->first();
     }
 
-    public function findBySeparator(string $separator)
+    public function findByName(string $name)
     {
-        return $this->dataSelectSeparator->whereSeparator($separator)->first();
+        return $this->dataSelectSeparator->whereName($name)->first();
     }
 }

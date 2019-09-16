@@ -11,10 +11,10 @@ interface DataSelectSeparatorRepositoryInterface
     public function find(string $id);
 
     /**
-     * Find DataSelectSeparator by separator string
+     * Find DataSelectSeparator by name string
      *
-     * @param string $separator
+     * @param string $name
      * @return \App\Models\QuoteFile\DataSelectSeparator
      */
-    public function findBySeparator(string $separator);
+    public function findByName(string $name);
 }

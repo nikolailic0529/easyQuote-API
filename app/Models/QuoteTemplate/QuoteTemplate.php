@@ -2,18 +2,41 @@
 
 use App\Models \ {
     UuidModel,
-    QuoteTemplate\TemplateField
+    QuoteTemplate\TemplateField,
+    Data\Country,
+    Company,
+    Vendor
 };
 use App\Traits \ {
-    BelongsToUser
+    BelongsToUser,
+    BelongsToTemplateFields,
+    Draftable
 };
 
 class QuoteTemplate extends UuidModel
 {
-    use BelongsToUser;
+    use BelongsToUser, BelongsToTemplateFields, Draftable;
 
-    public function templateFields()
+    protected $fillable = [
+        'name'
+    ];
+
+    protected $hidden = [
+        'created_at', 'updated_at', 'drafted_at', 'deleted_at', 'user_id'
+    ];
+
+    public function companies()
     {
-        return $this->belongsToMany(TemplateField::class);
+        return $this->belongsToMany(Company::class, 'company_quote_template');
+    }
+
+    public function vendors()
+    {
+        return $this->belongsToMany(Vendor::class, 'vendor_quote_template');
+    }
+
+    public function countries()
+    {
+        return $this->belongsToMany(Country::class, 'country_quote_template');
     }
 }

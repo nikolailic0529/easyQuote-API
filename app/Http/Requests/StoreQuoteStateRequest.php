@@ -49,7 +49,12 @@ class StoreQuoteStateRequest extends FormRequest
     {
         return [
             'quote_id' => [
-                'uuid'
+                'uuid',
+                'exists:quotes,id'
+            ],
+            'quote_data.customer_id' => [
+                'uuid',
+                'exists:customers,id'
             ],
             'quote_data.company_id' => [
                 'required_with:quote_data.vendor_id,quote_data.country_id,quote_data.language_id',
@@ -68,11 +73,9 @@ class StoreQuoteStateRequest extends FormRequest
                 'exists:countries,id',
                 $this->existsIn('vendor')
             ],
-            'quote_data.language_id' => [
-                'required_with:quote_data.company_id,quote_data.vendor_id,quote_data.country_id',
+            'quote_data.quote_template_id' => [
                 'uuid',
-                'exists:languages,id',
-                $this->existsIn('country')
+                'exists:quote_templates,id'
             ],
             'quote_data.files.*' => [
                 'uuid',
@@ -85,6 +88,10 @@ class StoreQuoteStateRequest extends FormRequest
             'quote_data.field_column.*.importable_column_id' => [
                 'uuid',
                 'exists:importable_columns,id'
+            ],
+            'quote_data.selected_rows.*' => [
+                'uuid',
+                'exists:imported_rows,id'
             ],
             'save' => 'boolean'
         ];
@@ -103,11 +110,11 @@ class StoreQuoteStateRequest extends FormRequest
                 ->whereHas(Str::pluralStudly($childName), function ($query) use ($childId) {
                     return $query->whereId($childId);
                 })->exists();
-    
+
             if(!$exists) {
                 $parentName = Str::title($parentName);
                 $childName = Str::title($childName);
-    
+
                 $fail("The {$parentName} must have the {$childName}");
             }
         };

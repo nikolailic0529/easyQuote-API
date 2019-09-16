@@ -13,7 +13,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(CountriesSeeder::class);
         $this->command->info('Seeded the countries!');
-        
+
         $this->call(TimezonesSeeder::class);
         $this->command->info('Seeded the timezones!');
 
@@ -41,9 +41,6 @@ class DatabaseSeeder extends Seeder
         $this->call(CompaniesSeeder::class);
         $this->command->info('Seeded the companies!');
 
-        $this->call(CountryLanguageSeeder::class);
-        $this->command->info('Seeded the links country → language!');
-
         $this->call(DataSelectSeparatorsSeeder::class);
         $this->command->info('Seeded the data select separators for csv files!');
 
@@ -52,5 +49,14 @@ class DatabaseSeeder extends Seeder
 
         $this->call(TemplateFieldsSeeder::class);
         $this->command->info('Seeded the system defined template fields!');
-    } 
+
+        $this->call(QuoteTemplatesSeeder::class);
+        $this->command->info('Seeded the system defined quote templates!');
+
+        $this->call(CustomersSeeder::class);
+        $this->command->info('Seeded the S4 customers!');
+
+        $this->call(SystemSettingsSeeder::class);
+        $this->command->info('Seeded the default system settings!');
+    }
 }

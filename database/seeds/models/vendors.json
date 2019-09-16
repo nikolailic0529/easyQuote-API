@@ -3,21 +3,21 @@
         "name": "Hewlett Packard Enterprise",
         "short_code": "HPE",
         "countries": [
-            "UK", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SW", "SA"
+            "GB", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SW", "SA"
         ]
     },
     {
         "name": "Lenovo",
         "short_code": "LEN",
         "countries": [
-            "UK", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SW", "SA", "AU", "NZ"
+            "GB", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SW", "SA", "AU", "NZ"
         ]
     },
     {
         "name": "IBM",
         "short_code": "IBM",
         "countries": [
-            "UK", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SW", "SA"
+            "GB", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SW", "SA"
         ]
     }
 ]

@@ -12,10 +12,7 @@ use App\Models\QuoteFile \ {
     DataSelectSeparator,
     ImportedRow
 };
-use App\Contracts \ {
-    Repositories\QuoteFile\QuoteFileRepositoryInterface,
-    Services\ParserServiceInterface
-};
+use App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface;
 use App\Http\Requests\StoreQuoteFileRequest;
 use Illuminate\Support\LazyCollection;
 use Storage;
@@ -25,7 +22,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
     protected $quoteFile;
 
     protected $dataSelectSeparator;
-    
+
     protected $importableColumn;
 
     public function __construct(
@@ -34,7 +31,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         ImportableColumn $importableColumn
     ) {
         $this->quoteFile = $quoteFile;
-        $this->dataSelectSeparator = $quoteFile;
+        $this->dataSelectSeparator = $dataSelectSeparator;
         $this->importableColumn = $importableColumn;
     }
 
@@ -43,7 +40,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         return request()->user()->quoteFiles()->ordered()->get();
     }
 
-    public function make(Array $array)
+    public function make(array $array)
     {
         return $this->quoteFile->make($array);
     }
@@ -71,10 +68,10 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
             $this->createRawData($quoteFile, $request->rawData);
         }
 
-        return $quoteFile;
+        return $quoteFile->makeHidden('user');
     }
-    
-    public function createRawData(QuoteFile $quoteFile, Array $array)
+
+    public function createRawData(QuoteFile $quoteFile, array $array)
     {
         $user = $quoteFile->user;
         $rawFilesDirectory = "{$user->quoteFilesDirectory}/raw";
@@ -104,7 +101,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         return $quoteFile->importedRawData()->get();
     }
 
-    public function createRowsData(QuoteFile $quoteFile, Array $array, $requestedPage = false)
+    public function createRowsData(QuoteFile $quoteFile, array $array, $requestedPage = false)
     {
         $user = request()->user();
 
@@ -115,7 +112,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         $quoteFile->rowsData()->forceDelete();
 
         $importedPages = $this->createImportedPages($array, $quoteFile, $user);
-        
+
         $quoteFile->markAsHandled();
 
         if($requestedPage) {
@@ -125,7 +122,25 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         return $importedPages;
     }
 
-    protected function createImportedPages(Array $array, QuoteFile $quoteFile, User $user)
+    public function createScheduleData(QuoteFile $quoteFile, array $value)
+    {
+        $user = request()->user();
+
+        /**
+         * Delete early imported payment schedule data
+         */
+        $quoteFile->scheduleData()->forceDelete();
+
+        $scheduleData = $quoteFile->scheduleData()->make(compact('value'));
+        $scheduleData->user()->associate($user);
+        $scheduleData->save();
+
+        $quoteFile->markAsHandled();
+
+        return $scheduleData;
+    }
+
+    protected function createImportedPages(array $array, QuoteFile $quoteFile, User $user)
     {
         $array = collect($array)->filter(function ($item, $key) {
             return isset($item['page']) && isset($item['rows']);
@@ -149,7 +164,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         return $importedPages;
     }
 
-    protected function createImportedRows(Array $rows, QuoteFile $quoteFile, User $user, Int $pageNumber)
+    protected function createImportedRows(array $rows, QuoteFile $quoteFile, User $user, int $pageNumber)
     {
         $importedRows = collect();
 
@@ -162,15 +177,15 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
                 $importedRow = $quoteFile->rowsData()->make([
                     'page' => $pageNumber
                 ]);
-            
+
                 $importedRow->user()->associate($user);
-    
+
                 $importedRow->quoteFile()->associate($quoteFile);
-    
+
                 $importedRow->markAsDrafted();
-    
+
                 $rowData = $this->createRowData($row, $quoteFile, $user, $pageNumber, $importedRow);
-    
+
                 $importedRows->push(
                     collect($importedRow)->only('id')->merge([
                         'columns_data' => $rowData->values()
@@ -182,7 +197,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         return $importedRows;
     }
 
-    protected function createRowData(Array $row, QuoteFile $quoteFile, User $user, Int $pageNumber, ImportedRow $importedRow)
+    protected function createRowData(array $row, QuoteFile $quoteFile, User $user, int $pageNumber, ImportedRow $importedRow)
     {
         $rowData = collect($row)->map(function ($value, $alias) use ($quoteFile, $user, $pageNumber, $importedRow) {
             $importableColumn = $this->importableColumn->whereHas('aliases', function ($query) use ($alias) {
@@ -199,7 +214,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
             $columnDataItem->user()->associate($user);
 
             $columnDataItem->quoteFile()->associate($quoteFile);
-            
+
             if(!is_null($importableColumn)) {
                 $columnDataItem->importableColumn()->associate($importableColumn);
             } else {
@@ -217,13 +232,18 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         return $rowData;
     }
 
-    public function getRowsData(QuoteFile $quoteFile, Int $requestedPage = 2)
+    public function getRowsData(QuoteFile $quoteFile, int $requestedPage = 2)
     {
         if($quoteFile->isCsv() || $quoteFile->isWord()) {
             $requestedPage = 1;
         }
 
         return $quoteFile->rowsData()->with('columnsData')->wherePage($requestedPage)->get();
+    }
+
+    public function getScheduleData(QuoteFile $quoteFile)
+    {
+        return $quoteFile->scheduleData;
     }
 
     public function find(String $id)

@@ -228,7 +228,8 @@ return [
         'View' => Illuminate\Support\Facades\View::class,
         'Uuid' => Webpatser\Uuid\Uuid::class,
         'Countries' => Webpatser\Countries\CountriesFacade::class,
-        'Excel' => Maatwebsite\Excel\Facades\Excel::class
+        'Excel' => Maatwebsite\Excel\Facades\Excel::class,
+        'Setting' => App\Facades\Setting::class
     ],
 
 ];

@@ -1,0 +1,11 @@
+[
+    {
+        "key": "parser.default_separator",
+        "value": "Tab"
+    },
+    {
+        "key": "parser.default_page",
+        "value": 2,
+        "type": "integer"
+    }
+]

@@ -3,21 +3,21 @@
         "name": "Support Warehouse Ltd",
         "vat": "GB758501125",
         "vendors": [
-            "HPE", "Lenovo", "IBM"
+            "HPE", "LEN", "IBM"
         ]
     },
     {
         "name": "Europlus Direct",
         "vat": "GB847657576",
         "vendors": [
-            "HPE", "Lenovo", "IBM"
+            "HPE", "LEN", "IBM"
         ]
     },
     {
         "name": "Tesedi Holding Gmbh",
         "vat": "CHE109482812",
         "vendors": [
-            "HPE", "Lenovo", "IBM"
+            "HPE", "LEN", "IBM"
         ]
     }
 ]

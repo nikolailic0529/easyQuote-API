@@ -1,6 +1,10 @@
 <?php namespace App\Contracts\Repositories\Quote;
 
-use App\Http\Requests\StoreQuoteStateRequest;
+use App\Http\Requests \ {
+    StoreQuoteStateRequest,
+    GetQuoteTemplatesRequest,
+    FindQuoteTemplateRequest
+};
 
 interface QuoteRepositoryInterface
 {
@@ -18,4 +22,20 @@ interface QuoteRepositoryInterface
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function step1();
+
+    /**
+     * Get Quote Templates by Company, Vendor, Country
+     *
+     * @param GetQuoteTemplatesRequest $request
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getTemplates(GetQuoteTemplatesRequest $request);
+
+    /**
+     * Find Quote Template
+     * Attach necessary information for the 2 step
+     * @param FindQuoteTemplateRequest $request
+     * @return \Illuminate\Support\Collection
+     */
+    public function step2(FindQuoteTemplateRequest $request);
 }

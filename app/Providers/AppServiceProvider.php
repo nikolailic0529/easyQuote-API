@@ -14,6 +14,7 @@ use App\Contracts \ {
     Services\AuthServiceInterface,
     Services\ParserServiceInterface,
     Services\WordParserInterface,
+    Services\PdfParserInterface,
     Repositories\TimezoneRepositoryInterface,
     Repositories\CountryRepositoryInterface,
     Repositories\UserRepositoryInterface,
@@ -25,7 +26,10 @@ use App\Contracts \ {
     Repositories\QuoteFile\ImportableColumnRepositoryInterface,
     Repositories\QuoteFile\DataSelectSeparatorRepositoryInterface,
     Repositories\Quote\QuoteRepositoryInterface,
-    Repositories\QuoteTemplate\TemplateFieldRepositoryInterface
+    Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface,
+    Repositories\QuoteTemplate\TemplateFieldRepositoryInterface,
+    Repositories\Customer\CustomerRepositoryInterface,
+    Repositories\System\SystemSettingRepositoryInterface
 };
 use App\Repositories \ {
     TimezoneRepository,
@@ -39,16 +43,20 @@ use App\Repositories \ {
     QuoteFile\ImportableColumnRepository,
     QuoteFile\DataSelectSeparatorRepository,
     Quote\QuoteRepository,
-    QuoteTemplate\TemplateFieldRepository
+    QuoteTemplate\QuoteTemplateRepository,
+    QuoteTemplate\TemplateFieldRepository,
+    Customer\CustomerRepository,
+    System\SystemSettingRepository
 };
 use App\Services \ {
     AuthService,
     ParserService,
-    WordParser
+    WordParser,
+    PdfParser
 };
 
 class AppServiceProvider extends ServiceProvider
-{    
+{
     public $singletons = [
         TimezoneRepositoryInterface::class => TimezoneRepository::class,
         CountryRepositoryInterface::class => CountryRepository::class,
@@ -60,8 +68,11 @@ class AppServiceProvider extends ServiceProvider
         FileFormatRepositoryInterface::class => FileFormatRepository::class,
         ImportableColumnRepositoryInterface::class => ImportableColumnRepository::class,
         QuoteRepositoryInterface::class => QuoteRepository::class,
+        QuoteTemplateRepositoryInterface::class => QuoteTemplateRepository::class,
         TemplateFieldRepositoryInterface::class => TemplateFieldRepository::class,
-        DataSelectSeparatorRepositoryInterface::class => DataSelectSeparatorRepository::class
+        DataSelectSeparatorRepositoryInterface::class => DataSelectSeparatorRepository::class,
+        CustomerRepositoryInterface::class => CustomerRepository::class,
+        SystemSettingRepositoryInterface::class => SystemSettingRepository::class
     ];
     /**
      * Register any application services.
@@ -73,10 +84,12 @@ class AppServiceProvider extends ServiceProvider
         Passport::ignoreMigrations();
 
         $this->app->when(AuthController::class)->needs(AuthServiceInterface::class)->give(AuthService::class);
-        
+
         $this->app->when(QuoteFilesController::class)->needs(ParserServiceInterface::class)->give(ParserService::class);
 
         $this->app->when(ParserService::class)->needs(WordParserInterface::class)->give(WordParser::class);
+
+        $this->app->when(ParserService::class)->needs(PdfParserInterface::class)->give(PdfParser::class);
     }
 
     /**
@@ -92,7 +105,7 @@ class AppServiceProvider extends ServiceProvider
             $client->incrementing = false;
             $client->id = Uuid::generate()->string;
         });
-        
+
         Client::retrieved(function (Client $client) {
             $client->incrementing = false;
         });

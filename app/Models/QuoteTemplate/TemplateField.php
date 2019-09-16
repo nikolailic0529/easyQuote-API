@@ -7,17 +7,18 @@ use App\Models \ {
 };
 use App\Traits \ {
     BelongsToUser,
-    BelongsToTemplateFieldType
+    BelongsToTemplateFieldType,
+    BelongsToQuoteTemplates
 };
 use App\Contracts\HasOrderedScope;
 
 class TemplateField extends UuidModel implements HasOrderedScope
 {
-    use BelongsToUser, BelongsToTemplateFieldType;
+    use BelongsToUser, BelongsToTemplateFieldType, BelongsToQuoteTemplates;
 
     protected $hidden = [
         'created_at', 'updated_at', 'deleted_at', 'activated_at', 'drafted_at', 'is_system', 'user_id',
-        'template_field_type_id'
+        'template_field_type_id', 'pivot'
     ];
 
     public function quoteTemplates()

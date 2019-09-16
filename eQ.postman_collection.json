@@ -381,6 +381,19 @@
 										],
 										"type": "text/javascript"
 									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"id": "7ed90f23-faba-4220-825a-1b492265dfea",
+										"exec": [
+											"let response = pm.response.json();\r",
+											"pm.environment.set('company_id', response.companies[0].id);\r",
+											"pm.environment.set('vendor_id', response.companies[0].vendors[0].id);\r",
+											"pm.environment.set('country_id', response.companies[0].vendors[0].countries[0].id);"
+										],
+										"type": "text/javascript"
+									}
 								}
 							],
 							"request": {
@@ -402,6 +415,86 @@
 										"type": "text"
 									}
 								],
+								"url": {
+									"raw": "http://easyquote/api/quotes/step/1",
+									"protocol": "http",
+									"host": [
+										"easyquote"
+									],
+									"path": [
+										"api",
+										"quotes",
+										"step",
+										"1"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Step 1",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"id": "9fc86bde-d6bd-4e8b-92e6-b73cebe9cb2a",
+										"exec": [
+											"let response = pm.response.json();\r",
+											"pm.environment.set('quote_template_id', response[0].id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"type": "text",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "company_id",
+											"value": "{{company_id}}",
+											"type": "text"
+										},
+										{
+											"key": "vendor_id",
+											"value": "{{vendor_id}}",
+											"type": "text"
+										},
+										{
+											"key": "country_id",
+											"value": "{{country_id}}",
+											"type": "text"
+										}
+									]
+								},
 								"url": {
 									"raw": "http://easyquote/api/quotes/step/1",
 									"protocol": "http",
@@ -443,7 +536,7 @@
 										}
 									]
 								},
-								"method": "GET",
+								"method": "POST",
 								"header": [
 									{
 										"key": "Accept",
@@ -451,6 +544,16 @@
 										"type": "text"
 									}
 								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "quote_template_id",
+											"value": "{{quote_template_id}}",
+											"type": "text"
+										}
+									]
+								},
 								"url": {
 									"raw": "http://easyquote/api/quotes/step/2",
 									"protocol": "http",
@@ -497,43 +600,70 @@
 								{
 									"key": "quote_id",
 									"value": "46364b20-cfd5-11e9-933f-5f6d29811ca6",
-									"type": "text"
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "quote_data[company_id]",
-									"value": "0fe93d3b-d39b-471f-89bb-ca94f8e4b63b",
+									"value": "{{company_id}}",
 									"type": "text"
 								},
 								{
 									"key": "quote_data[vendor_id]",
-									"value": "328be59b-9c44-4be2-a720-79f021faf73d",
+									"value": "{{vendor_id}}",
 									"type": "text"
 								},
 								{
 									"key": "quote_data[country_id]",
-									"value": "1da9b63f-46f7-4a5c-a542-b1b1371b4b9f",
+									"value": "{{country_id}}",
 									"type": "text"
 								},
 								{
-									"key": "quote_data[language_id]",
-									"value": "a7acc35b-7a32-43e0-8805-21777cb8d5d3",
+									"key": "quote_data[quote_template_id]",
+									"value": "{{quote_template_id}}",
 									"type": "text"
 								},
 								{
 									"key": "quote_data[files][]",
 									"value": "9c409820-d042-11e9-8f28-f99eb0f31811",
-									"type": "text"
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "quote_data[files][]",
 									"value": "cc3a8820-d03c-11e9-98ac-cdadfe64b182",
-									"type": "text"
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "save",
 									"value": "0",
 									"description": "True to save Quote | False to draft Quote",
 									"type": "text"
+								},
+								{
+									"key": "quote_data[field_column][0][template_field_id]",
+									"value": "5078f92c-464e-4c3c-ac54-8119ec0f8cfe",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[field_column][0][importable_column_id]",
+									"value": "e3617bdb-dc98-4412-a198-e11ada55feee",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[field_column][][template_field_id]",
+									"value": "45454",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[field_column][][importable_column_id]",
+									"value": "343434",
+									"type": "text",
+									"disabled": true
 								}
 							]
 						},

@@ -20,16 +20,14 @@ class AuthService implements AuthServiceInterface
         $this->accessAttempt = $accessAttempt;
     }
 
-    public function checkCredentials(Array $credentials)
+    public function checkCredentials(array $credentials)
     {
         return Auth::attempt($credentials);
     }
 
-    public function storeAccessAttempt(Array $payload)
+    public function storeAccessAttempt(array $payload)
     {
-        $this->accessAttempt = $this->accessAttempt->create(
-            $payload
-        );
+        $this->accessAttempt = $this->accessAttempt->create($payload);
         $this->accessAttempt->setDetails();
         
         return $this->accessAttempt->save();

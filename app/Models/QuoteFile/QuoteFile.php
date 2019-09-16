@@ -13,14 +13,15 @@ use App\Traits \ {
     HasFileFormat,
     Draftable,
     Handleable,
-    HasColumnsData
+    HasColumnsData,
+    HasScheduleData
 };
 use App\Contracts\HasOrderedScope;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class QuoteFile extends UuidModel implements HasOrderedScope
 {
-    use HasColumnsData, BelongsToQuote, BelongsToUser, HasFileFormat, Handleable, Draftable, SoftDeletes;
+    use HasColumnsData, HasScheduleData, BelongsToQuote, BelongsToUser, HasFileFormat, Handleable, Draftable, SoftDeletes;
     
     protected $fillable = [
         'original_file_path', 'file_type', 'pages'
@@ -46,45 +47,52 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         return $this->belongsTo(DataSelectSeparator::class);
     }
 
+    public function isExcel()
+    {
+        return $this->isFormat(['xls', 'xlsx']);
+    }
+
     public function isWord()
     {
-        if(is_null($this->format)) {
-            return false;
-        }
-        
-        $extension = $this->format->extension;
-
-        return in_array($extension, ['doc', 'docx']);
+        return $this->isFormat(['doc', 'docx']);
     }
 
     public function isPdf()
     {
-        if(is_null($this->format)) {
-            return false;
-        }
-        
-        $extension = $this->format->extension;
-
-        return in_array($extension, ['pdf']);
+        return $this->isFormat('pdf');
     }
 
     public function isCsv()
     {
-        if(is_null($this->format)) {
-            return false;
-        }
-        
-        $extension = $this->format->extension;
-
-        return in_array($extension, ['csv']);
+        return $this->isFormat('csv');
     }
 
     public function isNewSeparator(string $id)
     {
-        if(is_null($this->dataSelectSeparator)) {
+        if(!$this->propertyExists('dataSelectSeparator')) {
             return false;
         }
 
         return $this->dataSelectSeparator->id !== $id;
+    }
+
+    public function isSchedule()
+    {
+        return $this->file_type === 'Payment Schedule';
+    }
+
+    private function isFormat($ext)
+    {
+        if(!$this->propertyExists('format')) {
+            return false;
+        }
+
+        $extension = $this->format->extension;
+
+        if(gettype($ext) === 'array') {
+            return in_array($extension, $ext);
+        }
+        
+        return $extension === $ext;
     }
 }

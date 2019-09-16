@@ -13,6 +13,14 @@ interface WordParserInterface
     public function load(string $path);
 
     /**
+     * Extract and return raw text from Word file
+     *
+     * @param string $path
+     * @return array
+     */
+    public function getText(string $path);
+
+    /**
      * Extract all first level tables from DOCX format file
      *
      * @param PhpWord $phpWord

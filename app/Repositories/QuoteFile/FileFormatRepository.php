@@ -16,4 +16,9 @@ class FileFormatRepository implements FileFormatRepositoryInterface
     {
         return $this->quoteFileFormat->all();
     }
+
+    public function whereInExtension(array $array)
+    {
+        return $this->quoteFileFormat->whereIn('extension', $array)->firstOrFail();
+    }
 }

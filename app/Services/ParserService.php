@@ -3,24 +3,22 @@
 use App\Contracts \ {
     Services\ParserServiceInterface,
     Services\WordParserInterface as WordParser,
+    Services\PdfParserInterface as PdfParser,
     Repositories\QuoteFile\ImportableColumnRepositoryInterface as ImportableColumn,
     Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository,
+    Repositories\QuoteFile\FileFormatRepositoryInterface as FileFormatRepository,
     Repositories\QuoteFile\DataSelectSeparatorRepositoryInterface as DataSelectSeparatorRepository
 };
-use Smalot\PdfParser\Parser as PdfParser;
-use League\Csv\Reader as CsvParser;
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use App\Imports\ImportedRowImport, Excel, Storage, File;
-use App\Models\QuoteFile \ {
-    QuoteFile,
-    QuoteFileFormat
+use App\Imports \ {
+    ImportedRowImport,
+    CountPages
 };
+use App\Models\QuoteFile\QuoteFile;
 use App\Http\Requests \ {
     StoreQuoteFileRequest,
     HandleQuoteFileRequest
 };
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\LazyCollection;
+use Excel, Storage, File, Setting;
 
 class ParserService implements ParserServiceInterface
 {
@@ -29,6 +27,8 @@ class ParserService implements ParserServiceInterface
     protected $wordParser;
 
     protected $importableColumn;
+
+    protected $fileFormat;
 
     protected $dataSelectSeparator;
 
@@ -39,17 +39,19 @@ class ParserService implements ParserServiceInterface
     public function __construct(
         QuoteFileRepository $quoteFile,
         ImportableColumn $importableColumn,
+        FileFormatRepository $fileFormat,
         DataSelectSeparatorRepository $dataSelectSeparator,
         PdfParser $pdfParser,
         WordParser $wordParser
     ) {
         $this->quoteFile = $quoteFile;
         $this->importableColumn = $importableColumn;
+        $this->fileFormat = $fileFormat;
         $this->dataSelectSeparator = $dataSelectSeparator;
         $this->pdfParser = $pdfParser;
         $this->wordParser = $wordParser;
-        $this->defaultPage = 2;
-        $this->defaultSeparator = "\t";
+        $this->defaultPage = Setting::get('parser.default_page');
+        $this->defaultSeparator = Setting::get('parser.default_separator');
     }
 
     public function preHandle(StoreQuoteFileRequest $request)
@@ -68,44 +70,17 @@ class ParserService implements ParserServiceInterface
 
         switch ($format->extension) {
             case 'pdf':
-                $rawData = $this->getPdfText($original_file_path);
+                $rawData = $this->pdfParser->getText($original_file_path);
                 $mergeData = array_merge($mergeData, compact('rawData'));
                 break;
             case 'docx':
             case 'doc':
-                $rawData = $this->getWordText($original_file_path);
+                $rawData = $this->wordParser->getText($original_file_path);
                 $mergeData = array_merge($mergeData, compact('rawData'));
                 break;
         }
 
         return $request->merge($mergeData);
-    }
-
-    public function getWordText(string $filePath)
-    {
-        $columns = $this->importableColumn->all();
-
-        $rows = $this->wordParser->load($filePath)->getTables()->getRows($columns);
-
-        if(empty($rows)) {
-            throw new \ErrorException('Uploaded file has not any required columns');
-        }
-
-        $page = 1;
-        $content = null;
-
-        $rowsLines = [];
-        $rowsLines[] = implode($this->defaultSeparator, $rows['header']);
-
-        foreach ($rows['rows'] as $row) {
-            $rowsLines[] = implode($this->defaultSeparator, $row['cells']);
-        }
-
-        $content = implode(PHP_EOL, $rowsLines);
-
-        $rawPages = [compact('page', 'content')];
-
-        return $rawPages;
     }
 
     public function handle(HandleQuoteFileRequest $request)
@@ -116,6 +91,10 @@ class ParserService implements ParserServiceInterface
 
         if($request->has('data_select_separator')) {
             $separator = $request->data_select_separator_id;
+        }
+
+        if($quoteFile->isHandled() && $quoteFile->isSchedule()) {
+            return $this->quoteFile->getScheduleData($quoteFile);
         }
 
         if(
@@ -147,7 +126,7 @@ class ParserService implements ParserServiceInterface
                 break;
             default:
                 return response()->json([
-                    'message' => __('This file format is not available for handling')
+                    'message' => __('parser.no_handleable_file')
                 ], 415);
                 break;
         }
@@ -155,9 +134,18 @@ class ParserService implements ParserServiceInterface
 
     public function handlePdf(QuoteFile $quoteFile, int $requestedPage)
     {
-        $parsedData = $this->parsePdfText(
-            $this->quoteFile->getRawData($quoteFile)->toArray()
-        );
+        $rawData = $this->quoteFile->getRawData($quoteFile)->toArray();
+
+        if($quoteFile->isSchedule()) {
+            $parsedData = $this->pdfParser->parseSchedule($rawData);
+
+            return $this->quoteFile->createScheduleData(
+                $quoteFile,
+                $parsedData
+            );
+        }
+
+        $parsedData = $this->pdfParser->parse($rawData);
 
         return $this->quoteFile->createRowsData(
             $quoteFile,
@@ -170,7 +158,7 @@ class ParserService implements ParserServiceInterface
     {
         if($quoteFile->isCsv() && request()->has('data_select_separator_id')) {
             $dataSelectSeparator = $this->dataSelectSeparator->find(request()->data_select_separator_id);
-            $quoteFile->dataSelectSeparator()->associate($dataSelectSeparator);
+            $quoteFile->dataSelectSeparator()->associate($dataSelectSeparator)->save();
         }
 
         $this->importExcel($quoteFile);
@@ -180,75 +168,12 @@ class ParserService implements ParserServiceInterface
 
     public function handleWord(QuoteFile $quoteFile, int $requestedPage)
     {
-        $separator = $this->dataSelectSeparator->findBySeparator($this->defaultSeparator);
-        $quoteFile->dataSelectSeparator()->associate($separator);
+        $separator = $this->dataSelectSeparator->findByName($this->defaultSeparator);
+        $quoteFile->dataSelectSeparator()->associate($separator)->save();
 
         $this->importWord($quoteFile);
 
         return $this->quoteFile->getRowsData($quoteFile, $requestedPage);
-    }
-
-    public function getPdfText(string $path)
-    {
-        $filePath = Storage::path($path);
-
-        $document = $this->pdfParser->parseFile($filePath);
-        
-        $rawPages = collect();
-
-        collect($document->getPages())->each(function ($page, $key) use ($rawPages) {
-            $text = str_replace("\0", "", $page->getText());
-
-            $rawPages->push([
-                'page' => ++$key,
-                'content' => $text
-            ]);
-        });
-
-        return $rawPages->toArray();
-    }
-
-    public function parsePdfText(Array $array)
-    {
-        $regexpColumns = $this->importableColumn->allColumnsRegs();
-
-        $regexp = $regexpColumns->implode('');
-        $regexp = "/^{$regexp}$/mu";
-
-        $pages = LazyCollection::make(function () use ($array) {
-            foreach ($array as $page) {
-                $data = [
-                    'page' => $page['page'],
-                    'content' => Storage::get($page['file_path'])
-                ];
-                
-                yield $data;
-            }
-        });
-        
-        $pagesData = $pages->map(function ($page, $key) use ($regexp) {
-            ['page' => $page, 'content' => $content] = $page;
-
-            preg_match_all($regexp, $content, $matches, PREG_UNMATCHED_AS_NULL);
-
-            $columnsAliases = $this->importableColumn->allNames();
-    
-            $matches = collect($matches)->only(
-                $columnsAliases
-            )->toArray();
-            
-            $rows = [];
-    
-            foreach ($matches as $column => $values) {
-                foreach ($values as $key => $value) {
-                    $rows[$key][$column] = $value;
-                }
-            }
-
-            return compact('page', 'rows');
-        });
-
-        return $pagesData->toArray();
     }
 
     public function importExcel(QuoteFile $quoteFile)
@@ -256,7 +181,7 @@ class ParserService implements ParserServiceInterface
         $filePath = $quoteFile->original_file_path;
         $user = $quoteFile->user;
         $columns = $this->importableColumn->all();
-        
+
         $quoteFile->columnsData()->forceDelete();
         $quoteFile->rowsData()->forceDelete();
 
@@ -270,13 +195,13 @@ class ParserService implements ParserServiceInterface
     public function importWord(QuoteFile $quoteFile)
     {
         $rawData = $this->quoteFile->getRawData($quoteFile);
-        
+
         $quoteFile->columnsData()->forceDelete();
         $quoteFile->rowsData()->forceDelete();
 
         $user = $quoteFile->user;
         $columns = $this->importableColumn->all();
-        
+
         $rawData->each(function ($file) use ($quoteFile, $user, $columns) {
             $filePath = $file->file_path;
             (new ImportedRowImport($quoteFile, $user, $columns))->import($filePath);
@@ -293,7 +218,7 @@ class ParserService implements ParserServiceInterface
 
         switch ($format->extension) {
             case 'pdf':
-                return $this->countPdfPages($path);
+                return $this->pdfParser->countPages($path);
                 break;
             case 'xlsx':
             case 'xls':
@@ -304,35 +229,34 @@ class ParserService implements ParserServiceInterface
         }
     }
 
-    public function countPdfPages(string $path)
-    {
-        $filePath = Storage::path($path);
-
-        $document = $this->pdfParser->parseFile($filePath);
-        
-        return count($document->getPages());
-    }
-
     public function countExcelPages(string $path)
     {
         $filePath = Storage::path($path);
 
-        $factory = IOFactory::load($filePath);
+        $import = new CountPages;
 
-        return $factory->getSheetCount();
+        Excel::import($import, $filePath);
+
+        $sheetCount = $import->getSheetCount();
+
+        if($sheetCount === 0) {
+            throw new \ErrorException(__('parser.excel.media_exception'));
+        }
+
+        return $import->getSheetCount();
     }
 
     public function determineFileFormat(string $path)
     {
         $file = Storage::path($path);
 
-        $extension = collect(File::extension($file));
-        
-        if($extension->first() === 'txt') {
-            $extension->push('csv');
+        $extensions = collect(File::extension($file));
+
+        if($extensions->first() === 'txt') {
+            $extensions->push('csv');
         }
 
-        $format = QuoteFileFormat::whereIn('extension', $extension)->firstOrFail();
+        $format = $this->fileFormat->whereInExtension($extensions->toArray());
 
         return $format;
     }

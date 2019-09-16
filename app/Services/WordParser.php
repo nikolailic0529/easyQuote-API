@@ -1,6 +1,10 @@
 <?php namespace App\Services;
 
 use App\Contracts\Services\WordParserInterface;
+use App\Contracts\Repositories\QuoteFile \ {
+    ImportableColumnRepositoryInterface as ImportableColumnRepository,
+    DataSelectSeparatorRepositoryInterface as DataSelectSeparatorRepository
+};
 use Devengine\PhpWord \ {
     IOFactory,
     PhpWord,
@@ -10,20 +14,29 @@ use Devengine\PhpWord \ {
     Element\Cell
 };
 use Illuminate\Database\Eloquent\Collection;
-use Storage, Log;
+use Storage, Setting;
 
 class WordParser implements WordParserInterface
 {
+    protected $importableColumn;
+
     protected $phpWord;
+
+    protected $dataSelectSeparator;
 
     protected $tables;
 
     protected $minHeadersCount;
 
-    public function __construct()
+    protected $defaultSeparator;
+
+    public function __construct(ImportableColumnRepository $importableColumn, DataSelectSeparatorRepository $dataSelectSeparator)
     {
+        $this->importableColumn = $importableColumn;
         $this->tables = [];
         $this->minHeadersCount = 3;
+        $this->dataSelectSeparator = $dataSelectSeparator;
+        $this->defaultSeparator = $dataSelectSeparator->findByName(Setting::get('parser.default_separator'))->separator;
     }
 
     public function load(string $path)
@@ -33,6 +46,33 @@ class WordParser implements WordParserInterface
         $this->phpWord = IOFactory::load($path);
 
         return $this;
+    }
+
+    public function getText(string $filePath)
+    {
+        $columns = $this->importableColumn->all();
+
+        $rows = $this->load($filePath)->getTables()->getRows($columns);
+
+        if(empty($rows)) {
+            throw new \ErrorException(__('parser.word.no_columns_exception'));
+        }
+
+        $page = 1;
+        $content = null;
+
+        $rowsLines = [];
+        $rowsLines[] = implode($this->defaultSeparator, $rows['header']);
+
+        foreach ($rows['rows'] as $row) {
+            $rowsLines[] = implode($this->defaultSeparator, $row['cells']);
+        }
+
+        $content = implode(PHP_EOL, $rowsLines);
+
+        $rawPages = [compact('page', 'content')];
+
+        return $rawPages;
     }
 
     public function getTables(PhpWord $phpWord = null)
@@ -60,7 +100,7 @@ class WordParser implements WordParserInterface
 
         foreach ($columns as $column) {
             $aliases = $column->aliases;
-            
+
             $foundRowsByColumn = [];
 
             foreach ($aliases as $alias) {
@@ -178,7 +218,7 @@ class WordParser implements WordParserInterface
                 return $result;
             }
         }
-        
+
         return false;
     }
 
@@ -212,12 +252,12 @@ class WordParser implements WordParserInterface
         foreach ($instanceRows as $rowElement) {
             $row = [];
             $cells = [];
-            
+
             foreach($rowElement->getCells() as $cellElement) {
                 $cell = [];
                 $cellTextArray = [];
                 $table = [];
-                
+
                 foreach($cellElement->getElements() as $element) {
 
                     if($this->isTableInstance($element)) {
@@ -232,7 +272,7 @@ class WordParser implements WordParserInterface
                         }
                     }
                 }
-                
+
                 if(!empty($table)) {
                     $cell = array_merge($cell, compact('table'));
                 }
@@ -349,7 +389,7 @@ class WordParser implements WordParserInterface
 
         return array_values($filteredRows);
     }
-    
+
     private function isTableInstance($element)
     {
         return $element instanceof Table;

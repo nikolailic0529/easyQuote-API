@@ -7,10 +7,10 @@
             "CHE109482812"
         ],
         "vendors": [
-            "HPE", "Lenovo", "IBM"
+            "HPE", "LEN", "IBM"
         ],
         "countries": [
-            "UK", "US"
+            "GB", "US"
         ]
     },
     {
@@ -21,7 +21,7 @@
             "CHE109482812"
         ],
         "vendors": [
-            "HPE", "Lenovo", "IBM"
+            "HPE", "LEN", "IBM"
         ],
         "countries": [
             "FR", "CA"

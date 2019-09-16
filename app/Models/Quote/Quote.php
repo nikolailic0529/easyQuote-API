@@ -9,15 +9,16 @@ use App\Models \ {
 use App\Traits \ {
     HasQuoteFiles,
     BelongsToUser,
+    BelongsToCustomer,
     BelongsToCompany,
     Draftable
 };
 
 class Quote extends UuidModel
 {
-    use HasQuoteFiles, BelongsToUser, BelongsToCompany, Draftable;
+    use HasQuoteFiles, BelongsToUser, BelongsToCustomer, BelongsToCompany, Draftable;
 
-    protected $fillable = ['company_id', 'vendor_id', 'language_id'];
+    protected $fillable = ['customer_id', 'company_id', 'vendor_id', 'language_id', 'quote_template_id'];
 
     public function templateFields()
     {
@@ -37,16 +38,16 @@ class Quote extends UuidModel
     public function attachColumnToField(TemplateField $templateField, ImportableColumn $importableColumn)
     {
         $fieldId = $templateField->id;
-        $columnId = $importableColumn->id;
+        $importable_column_id = $importableColumn->id;
 
         if($this->templateFields()->whereId($fieldId)->exists()) {
             return $this->templateFields()->updateExistingPivot(
-                $fieldId, ['importable_column_id' => $columnId]
+                $fieldId, compact('importable_column_id')
             );    
         }
 
         return $this->templateFields()->attach([
-            $fieldId => ['importable_column_id' => $columnId]
+            $fieldId => compact('importable_column_id')
         ]);
     }
 }

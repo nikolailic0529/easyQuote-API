@@ -16,7 +16,7 @@ class CreateDataSelectSeparatorsTable extends Migration
         Schema::create('data_select_separators', function (Blueprint $table) {
             $table->uuid('id');
             $table->primary('id');
-            $table->string('name');
+            $table->string('name')->unique();
             $table->string('separator');
         });
     }

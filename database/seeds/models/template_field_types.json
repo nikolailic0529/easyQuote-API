@@ -1,15 +1,11 @@
 [
     {
-        "title": "Column Field",
-        "name": "column"
-    },
-    {
         "title": "Text Field (Single Line)",
-        "name": "text_single"
+        "name": "textbox"
     },
     {
         "title": "Text Field (Multiple Line)",
-        "name": "text_multiple"
+        "name": "textarea"
     },
     {
         "title": "Email Field",
@@ -21,7 +17,7 @@
     },
     {
         "title": "Date / Time Field",
-        "name": "time"
+        "name": "date"
     },
     {
         "title": "Logo Image",
