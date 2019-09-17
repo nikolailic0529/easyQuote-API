@@ -11,7 +11,6 @@ use App\Models \ {
     QuoteFile\QuoteFile,
     QuoteFile\ImportableColumn,
     QuoteFile\DataSelectSeparator,
-    QuoteFile\ImportedRow,
     QuoteTemplate\TemplateField
 };
 use App\Http\Requests \ {
@@ -19,7 +18,7 @@ use App\Http\Requests \ {
     GetQuoteTemplatesRequest,
     FindQuoteTemplateRequest
 };
-use Str;
+use Illuminate\Support\Collection;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
@@ -64,64 +63,22 @@ class QuoteRepository implements QuoteRepositoryInterface
         $quoteData = $state->get('quote_data');
 
         if($request->has('quote_id')) {
-            $quote = $user->quotes()->find($request->quote_id)->firstOrNew([]);
+            $quote = $user->quotes()->whereId($request->quote_id)->firstOrNew([]);
         } else {
             $quote = $user->quotes()->make();
         }
 
         if(isset($quoteData)) {
             $quote->fill($quoteData);
-            $quote->save();
         }
 
-        if(data_get($state, 'quote_data.files')) {
-            $stateFiles = collect(data_get($state, 'quote_data.files'));
+        $this->draftQuote($state, $quote);
 
-            $stateFiles->each(function ($fileId) use ($quote) {
-                $quoteFile = $this->quoteFile->whereId($fileId)->first();
-                $quoteFile->quote()->associate($quote)->save();
-            });
-        }
+        $this->storeQuoteFilesState($state, $quote);
+        $this->attachColumnsToFields($state, $quote);
+        $this->markRowsAsSelectedOrUnSelected($state, $quote);
 
-        if(data_get($state, 'quote_data.field_column')) {
-            collect(data_get($state, 'quote_data.field_column'))->each(function ($relation) use ($quote) {
-                ['template_field_id' => $templateFieldId, 'importable_column_id' => $importableColumnId] = $relation;
-
-                $templateField = $this->templateField->whereId($templateFieldId)->first();
-                $importableColumn = $this->importableColumn->whereId($importableColumnId)->first();
-
-                $quote->attachColumnToField($templateField, $importableColumn);
-            });
-        }
-
-        /**
-         * Saving current state
-         */
-        if($state->has('save') && $state->get('save')) {
-            $quote->markAsNotDrafted();
-        } else {
-            $quote->markAsDrafted();
-        }
-
-        return $quote->load('quoteFiles', 'quoteTemplate');
-    }
-
-    protected function filterState(StoreQuoteStateRequest $request)
-    {
-        $stateModels = [
-            'quote_data.company_id',
-            'quote_data.vendor_id',
-            'quote_data.country_id',
-            'quote_data.language_id',
-            'quote_data.files',
-            'quote_data.field_column',
-            'quote_data.quote_template_id',
-            'quote_data.customer_id',
-            'quote_data.selected_rows',
-            'save'
-        ];
-
-        return collect($request->only($stateModels));
+        return $quote->load('quoteFiles', 'fieldColumn', 'quoteTemplate.templateFields', 'rowsData');
     }
 
     public function findOrNew(string $id)
@@ -131,7 +88,19 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     public function find(string $id)
     {
-        return $this->quote->whereId($id)->first();
+        $user = request()->user();
+
+        $quote = $user->quotes()->whereId($id)
+            ->with('fieldColumn', 'rowsData', 'quoteTemplate.templateFields.templateFieldType')
+            ->first();
+
+        return $quote;
+    }
+
+    public function getDrafted()
+    {
+        $user = request()->user();
+        return $user->quotes()->drafted()->get();
     }
 
     public function create(array $array)
@@ -164,5 +133,92 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function step2(FindQuoteTemplateRequest $request)
     {
         return $this->quoteTemplate->find($request->quote_template_id);
+    }
+
+    private function draftQuote(Collection $state, Quote $quote): Quote
+    {
+        if($state->has('save') && $state->get('save')) {
+            $quote->markAsNotDrafted();
+        } else {
+            $quote->markAsDrafted();
+        }
+
+        return $quote;
+    }
+
+    private function markRowsAsSelectedOrUnSelected(Collection $state, Quote $quote): Quote
+    {
+        if(!isset($state['quote_data']['selected_rows'])) {
+            return $quote;
+        }
+
+        $selectedRowsIds = data_get($state, 'quote_data.selected_rows');
+
+        $notSelectedRows = $quote->rowsData()->whereNotIn('imported_rows.id', $selectedRowsIds);
+
+        $notSelectedRows->each(function ($importedRow) {
+            $importedRow->markAsUnSelected();
+        });
+
+        $selectedRows = $quote->rowsData()->whereIn('imported_rows.id', $selectedRowsIds);
+
+        $selectedRows->each(function ($importedRow) {
+            $importedRow->markAsSelected();
+        });
+
+        return $quote;
+    }
+
+    private function attachColumnsToFields(Collection $state, Quote $quote): Quote
+    {
+        if(!isset($state['quote_data']['field_column'])) {
+            return $quote;
+        }
+
+        collect(data_get($state, 'quote_data.field_column'))->each(function ($relation) use ($quote) {
+            ['template_field_id' => $templateFieldId, 'importable_column_id' => $importableColumnId] = $relation;
+
+            $templateField = $this->templateField->whereId($templateFieldId)->first();
+            $importableColumn = $this->importableColumn->whereId($importableColumnId)->first();
+
+            $quote->attachColumnToField($templateField, $importableColumn);
+        });
+
+        return $quote;
+    }
+
+    private function storeQuoteFilesState(Collection $state, Quote $quote): Quote
+    {
+        if(!isset($state['quote_data']['files'])) {
+            return $quote;
+        }
+
+        $stateFiles = collect(data_get($state, 'quote_data.files'));
+
+        $stateFiles->each(function ($fileId) use ($quote) {
+            $quoteFile = $this->quoteFile->whereId($fileId)->first();
+            $quoteFile->quote()->associate($quote)->save();
+        });
+
+        return $quote;
+    }
+
+    private function filterState(StoreQuoteStateRequest $request): Collection
+    {
+        $stateModels = [
+            'quote_data.type',
+            'quote_data.company_id',
+            'quote_data.vendor_id',
+            'quote_data.country_id',
+            'quote_data.language_id',
+            'quote_data.files',
+            'quote_data.field_column',
+            'quote_data.quote_template_id',
+            'quote_data.customer_id',
+            'quote_data.selected_rows',
+            'save'
+        ];
+
+        return collect($request->only($stateModels));
     }
 }

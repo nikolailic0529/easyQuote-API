@@ -16,4 +16,9 @@ class CustomerRepository implements CustomerRepositoryInterface
     {
         return $this->customer->all();
     }
+
+    public function find(string $id)
+    {
+        return $this->customer->whereId($id)->first();
+    }
 }

@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class QuoteFile extends UuidModel implements HasOrderedScope
 {
     use HasColumnsData, HasScheduleData, BelongsToQuote, BelongsToUser, HasFileFormat, Handleable, Draftable, SoftDeletes;
-    
+
     protected $fillable = [
         'original_file_path', 'file_type', 'pages'
     ];
@@ -67,9 +67,9 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         return $this->isFormat('csv');
     }
 
-    public function isNewSeparator(string $id)
+    public function isNewSeparator($id)
     {
-        if(!$this->propertyExists('dataSelectSeparator')) {
+        if(!$this->propertyExists('dataSelectSeparator') || !isset($id)) {
             return false;
         }
 
@@ -92,7 +92,7 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         if(gettype($ext) === 'array') {
             return in_array($extension, $ext);
         }
-        
+
         return $extension === $ext;
     }
 }

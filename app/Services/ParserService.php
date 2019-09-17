@@ -4,8 +4,9 @@ use App\Contracts \ {
     Services\ParserServiceInterface,
     Services\WordParserInterface as WordParser,
     Services\PdfParserInterface as PdfParser,
-    Repositories\QuoteFile\ImportableColumnRepositoryInterface as ImportableColumn,
+    Repositories\Quote\QuoteRepositoryInterface as QuoteRepository,
     Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository,
+    Repositories\QuoteFile\ImportableColumnRepositoryInterface as ImportableColumn,
     Repositories\QuoteFile\FileFormatRepositoryInterface as FileFormatRepository,
     Repositories\QuoteFile\DataSelectSeparatorRepositoryInterface as DataSelectSeparatorRepository
 };
@@ -13,7 +14,10 @@ use App\Imports \ {
     ImportedRowImport,
     CountPages
 };
-use App\Models\QuoteFile\QuoteFile;
+use App\Models \ {
+    Quote\Quote,
+    QuoteFile\QuoteFile
+};
 use App\Http\Requests \ {
     StoreQuoteFileRequest,
     HandleQuoteFileRequest
@@ -22,9 +26,9 @@ use Excel, Storage, File, Setting;
 
 class ParserService implements ParserServiceInterface
 {
-    protected $pdfParser;
+    protected $quote;
 
-    protected $wordParser;
+    protected $quoteFile;
 
     protected $importableColumn;
 
@@ -32,11 +36,16 @@ class ParserService implements ParserServiceInterface
 
     protected $dataSelectSeparator;
 
+    protected $pdfParser;
+
+    protected $wordParser;
+
     protected $defaultPage;
 
     protected $defaultSeparator;
 
     public function __construct(
+        QuoteRepository $quote,
         QuoteFileRepository $quoteFile,
         ImportableColumn $importableColumn,
         FileFormatRepository $fileFormat,
@@ -44,6 +53,7 @@ class ParserService implements ParserServiceInterface
         PdfParser $pdfParser,
         WordParser $wordParser
     ) {
+        $this->quote = $quote;
         $this->quoteFile = $quoteFile;
         $this->importableColumn = $importableColumn;
         $this->fileFormat = $fileFormat;
@@ -85,13 +95,59 @@ class ParserService implements ParserServiceInterface
 
     public function handle(HandleQuoteFileRequest $request)
     {
+        $quote = $this->quote->find($request->quote_id);
+
+        if(!$quote->quoteTemplate()->exists()) {
+            throw new \ErrorException(__('parser.quote_has_not_template_exception'));
+        };
+
         $quoteFile = $this->quoteFile->find($request->quote_file_id);
 
         $page = $request->page ?: $this->defaultPage;
+        $separator = $request->data_select_separator_id;
 
-        if($request->has('data_select_separator')) {
-            $separator = $request->data_select_separator_id;
+        ['rowsData' => $rowsData, 'handled' => $handled] = $this->handleOrRetrieve(
+            $quote, $quoteFile, $separator, $page
+        );
+
+        if($handled) {
+            $this->mapColumnsToFields($quote, $quoteFile);
+        };
+
+        return $rowsData;
+    }
+
+    public function mapColumnsToFields(Quote $quote, QuoteFile $quoteFile)
+    {
+        $templateFields = $quote->quoteTemplate->templateFields;
+        $rowData = $quoteFile->rowsData()->with(['columnsData' => function ($query) {
+            return $query->whereHas('importableColumn');
+        }])->first();
+
+        if(!isset($rowData)) {
+            return;
         }
+
+        $columnsData = $rowData->columnsData;
+        $columnsData->each(function ($columnData) use ($quote, $templateFields) {
+            $templateField = $templateFields->where('name', $columnData->importableColumn->name)->first();
+
+
+            logger($templateField);
+            logger($columnData->importableColumn);
+
+
+            if(!isset($templateField)) {
+                return true;
+            }
+
+            $quote->attachColumnToField($templateField, $columnData->importableColumn);
+        });
+    }
+
+    public function handleOrRetrieve(Quote $quote, QuoteFile $quoteFile, $separator, int $page)
+    {
+        $handled = false;
 
         if($quoteFile->isHandled() && $quoteFile->isSchedule()) {
             return $this->quoteFile->getScheduleData($quoteFile);
@@ -101,10 +157,16 @@ class ParserService implements ParserServiceInterface
             $quoteFile->isHandled() &&
             !($quoteFile->isCsv() && $quoteFile->isNewSeparator($separator))
         ) {
-            return $this->quoteFile->getRowsData($quoteFile, $page);
+            $rowsData = $this->quoteFile->getRowsData($quoteFile, $page);
+            return compact('rowsData', 'handled');
         };
 
-        return $this->routeParser($quoteFile, $page);
+        $quoteFile->quote()->associate($quote)->save();
+
+        $rowsData = $this->routeParser($quoteFile, $page);
+        $handled = true;
+
+        return compact('rowsData', 'handled');
     }
 
     public function routeParser(QuoteFile $quoteFile, int $page)

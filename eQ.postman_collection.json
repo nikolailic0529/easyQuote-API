@@ -20,11 +20,12 @@
 							}
 						],
 						"url": {
-							"raw": "http://easyquote/api/data/countries",
+							"raw": "http://localhost:8000/api/data/countries",
 							"protocol": "http",
 							"host": [
-								"easyquote"
+								"localhost"
 							],
+							"port": "8000",
 							"path": [
 								"api",
 								"data",
@@ -46,11 +47,12 @@
 							}
 						],
 						"url": {
-							"raw": "http://easyquote/api/data/timezones",
+							"raw": "http://localhost:8000/api/data/timezones",
 							"protocol": "http",
 							"host": [
-								"easyquote"
+								"localhost"
 							],
+							"port": "8000",
 							"path": [
 								"api",
 								"data",
@@ -72,11 +74,12 @@
 							}
 						],
 						"url": {
-							"raw": "http://easyquote/api/data/languages",
+							"raw": "http://localhost:8000/api/data/languages",
 							"protocol": "http",
 							"host": [
-								"easyquote"
+								"localhost"
 							],
+							"port": "8000",
 							"path": [
 								"api",
 								"data",
@@ -98,11 +101,12 @@
 							}
 						],
 						"url": {
-							"raw": "http://easyquote/api/data/currencies",
+							"raw": "http://localhost:8000/api/data/currencies",
 							"protocol": "http",
 							"host": [
-								"easyquote"
+								"localhost"
 							],
+							"port": "8000",
 							"path": [
 								"api",
 								"data",
@@ -124,11 +128,12 @@
 							}
 						],
 						"url": {
-							"raw": "http://easyquote/api/data/fileformats",
+							"raw": "http://localhost:8000/api/data/fileformats",
 							"protocol": "http",
 							"host": [
-								"easyquote"
+								"localhost"
 							],
+							"port": "8000",
 							"path": [
 								"api",
 								"data",
@@ -194,11 +199,12 @@
 							]
 						},
 						"url": {
-							"raw": "http://easyquote/api/quotes/file",
+							"raw": "http://localhost:8000/api/quotes/file",
 							"protocol": "http",
 							"host": [
-								"easyquote"
+								"localhost"
 							],
+							"port": "8000",
 							"path": [
 								"api",
 								"quotes",
@@ -242,11 +248,12 @@
 							}
 						],
 						"url": {
-							"raw": "http://easyquote/api/quotes/files",
+							"raw": "http://localhost:8000/api/quotes/files",
 							"protocol": "http",
 							"host": [
-								"easyquote"
+								"localhost"
 							],
+							"port": "8000",
 							"path": [
 								"api",
 								"quotes",
@@ -258,6 +265,21 @@
 				},
 				{
 					"name": "Handle Quote File",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "d8c03a7e-2c9e-499b-9cb9-bb24820d8615",
+								"exec": [
+									"let response = pm.response.json();\r",
+									"\r",
+									"let importedRowsIds = response.map(({id}) => id);\r",
+									"pm.environment.set('imported_rows_ids', importedRowsIds);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -287,22 +309,28 @@
 								},
 								{
 									"key": "data_select_separator_id",
-									"value": "0ab3a73e-4da4-4848-9e9a-05a2959adc46",
+									"value": "6f06dc89-6c7e-4786-845d-5e2c576ecffb",
 									"type": "text"
 								},
 								{
 									"key": "page",
 									"value": "2",
 									"type": "text"
+								},
+								{
+									"key": "quote_id",
+									"value": "{{quote_id}}",
+									"type": "text"
 								}
 							]
 						},
 						"url": {
-							"raw": "http://easyquote/api/quotes/handle",
+							"raw": "http://localhost:8000/api/quotes/handle",
 							"protocol": "http",
 							"host": [
-								"easyquote"
+								"localhost"
 							],
+							"port": "8000",
 							"path": [
 								"api",
 								"quotes",
@@ -346,11 +374,12 @@
 							}
 						],
 						"url": {
-							"raw": "http://easyquote/api/quotes/file/e6734550-ce1a-11e9-933d-c7c92591e0f5",
+							"raw": "http://localhost:8000/api/quotes/file/e6734550-ce1a-11e9-933d-c7c92591e0f5",
 							"protocol": "http",
 							"host": [
-								"easyquote"
+								"localhost"
 							],
+							"port": "8000",
 							"path": [
 								"api",
 								"quotes",
@@ -416,11 +445,12 @@
 									}
 								],
 								"url": {
-									"raw": "http://easyquote/api/quotes/step/1",
+									"raw": "http://localhost:8000/api/quotes/step/1",
 									"protocol": "http",
 									"host": [
-										"easyquote"
+										"localhost"
 									],
+									"port": "8000",
 									"path": [
 										"api",
 										"quotes",
@@ -432,7 +462,7 @@
 							"response": []
 						},
 						{
-							"name": "Step 1",
+							"name": "Step 1 [Set Template]",
 							"event": [
 								{
 									"listen": "prerequest",
@@ -496,11 +526,12 @@
 									]
 								},
 								"url": {
-									"raw": "http://easyquote/api/quotes/step/1",
+									"raw": "http://localhost:8000/api/quotes/step/1",
 									"protocol": "http",
 									"host": [
-										"easyquote"
+										"localhost"
 									],
+									"port": "8000",
 									"path": [
 										"api",
 										"quotes",
@@ -512,7 +543,7 @@
 							"response": []
 						},
 						{
-							"name": "Step 2",
+							"name": "Step 2 [Mapping]",
 							"event": [
 								{
 									"listen": "prerequest",
@@ -555,11 +586,12 @@
 									]
 								},
 								"url": {
-									"raw": "http://easyquote/api/quotes/step/2",
+									"raw": "http://localhost:8000/api/quotes/step/2",
 									"protocol": "http",
 									"host": [
-										"easyquote"
+										"localhost"
 									],
+									"port": "8000",
 									"path": [
 										"api",
 										"quotes",
@@ -569,12 +601,147 @@
 								}
 							},
 							"response": []
+						},
+						{
+							"name": "Step 3 [Set Margin]",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8000/api/quotes/step/3",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8000",
+									"path": [
+										"api",
+										"quotes",
+										"step",
+										"3"
+									]
+								}
+							},
+							"response": []
 						}
 					],
 					"_postman_isSubFolder": true
 				},
 				{
+					"name": "Get Drafted Quotes",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "7ed90f23-faba-4220-825a-1b492265dfea",
+								"exec": [
+									"let response = pm.response.json();\r",
+									"pm.environment.set('company_id', response.companies[0].id);\r",
+									"pm.environment.set('vendor_id', response.companies[0].vendors[0].id);\r",
+									"pm.environment.set('country_id', response.companies[0].vendors[0].countries[0].id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/quotes/drafted",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"quotes",
+								"drafted"
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Store Quote State",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "871e59c1-f7ba-4910-a5c6-7685c326012f",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "59352b04-f6ab-495e-8443-e5aa3f13c3d3",
+								"exec": [
+									"let response = pm.response.json();\r",
+									"pm.environment.set('quote_id', response.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -599,7 +766,7 @@
 							"formdata": [
 								{
 									"key": "quote_id",
-									"value": "46364b20-cfd5-11e9-933f-5f6d29811ca6",
+									"value": "5efe9870-d85b-11e9-a09f-61b1b3b3061e",
 									"type": "text",
 									"disabled": true
 								},
@@ -621,17 +788,18 @@
 								{
 									"key": "quote_data[quote_template_id]",
 									"value": "{{quote_template_id}}",
-									"type": "text"
-								},
-								{
-									"key": "quote_data[files][]",
-									"value": "9c409820-d042-11e9-8f28-f99eb0f31811",
 									"type": "text",
 									"disabled": true
 								},
 								{
 									"key": "quote_data[files][]",
-									"value": "cc3a8820-d03c-11e9-98ac-cdadfe64b182",
+									"value": "{{quote_file_id}}",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[files][]",
+									"value": "4af7d820-d8ef-11e9-8d6a-f93be8bda748",
 									"type": "text",
 									"disabled": true
 								},
@@ -643,40 +811,213 @@
 								},
 								{
 									"key": "quote_data[field_column][0][template_field_id]",
-									"value": "5078f92c-464e-4c3c-ac54-8119ec0f8cfe",
+									"value": "4c3594a4-083c-4fb1-8a78-ebde713dfa70",
 									"type": "text",
 									"disabled": true
 								},
 								{
 									"key": "quote_data[field_column][0][importable_column_id]",
-									"value": "e3617bdb-dc98-4412-a198-e11ada55feee",
+									"value": "365976e5-a020-4ef9-9844-119bff6a7722",
 									"type": "text",
 									"disabled": true
 								},
 								{
-									"key": "quote_data[field_column][][template_field_id]",
-									"value": "45454",
+									"key": "quote_data[selected_rows][]",
+									"value": "38eb0360-d8f1-11e9-a4c1-3f82ba0a98b2",
 									"type": "text",
 									"disabled": true
 								},
 								{
-									"key": "quote_data[field_column][][importable_column_id]",
-									"value": "343434",
+									"key": "quote_data[selected_rows][]",
+									"value": "38ee8170-d8f1-11e9-b0c7-ff95d0965e62",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[type]",
+									"value": "New",
+									"description": "New | Renewal",
 									"type": "text",
 									"disabled": true
 								}
 							]
 						},
 						"url": {
-							"raw": "http://easyquote/api/quotes/state",
+							"raw": "http://localhost:8000/api/quotes/state",
 							"protocol": "http",
 							"host": [
-								"easyquote"
+								"localhost"
 							],
+							"port": "8000",
 							"path": [
 								"api",
 								"quotes",
 								"state"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Quote",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "7ed90f23-faba-4220-825a-1b492265dfea",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/quotes/get/{{quote_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"quotes",
+								"get",
+								"{{quote_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Customers",
+			"item": [
+				{
+					"name": "Get all S4 Customers",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/quotes/customers/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"quotes",
+								"customers",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get S4 Customer",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/quotes/customer/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"quotes",
+								"customer",
+								""
 							]
 						}
 					},
@@ -765,11 +1106,12 @@
 					]
 				},
 				"url": {
-					"raw": "http://easyquote/api/auth/signup",
+					"raw": "http://localhost:8000/api/auth/signup",
 					"protocol": "http",
 					"host": [
-						"easyquote"
+						"localhost"
 					],
+					"port": "8000",
 					"path": [
 						"api",
 						"auth",
@@ -819,11 +1161,12 @@
 					]
 				},
 				"url": {
-					"raw": "http://easyquote/api/auth/signin",
+					"raw": "http://localhost:8000/api/auth/signin",
 					"protocol": "http",
 					"host": [
-						"easyquote"
+						"localhost"
 					],
+					"port": "8000",
 					"path": [
 						"api",
 						"auth",
@@ -855,11 +1198,12 @@
 					}
 				],
 				"url": {
-					"raw": "http://easyquote/api/auth/user",
+					"raw": "http://localhost:8000/api/auth/user",
 					"protocol": "http",
 					"host": [
-						"easyquote"
+						"localhost"
 					],
+					"port": "8000",
 					"path": [
 						"api",
 						"auth",
@@ -891,11 +1235,12 @@
 					}
 				],
 				"url": {
-					"raw": "http://easyquote/api/auth/logout",
+					"raw": "http://localhost:8000/api/auth/logout",
 					"protocol": "http",
 					"host": [
-						"easyquote"
+						"localhost"
 					],
+					"port": "8000",
 					"path": [
 						"api",
 						"auth",

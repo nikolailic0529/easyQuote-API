@@ -19,6 +19,8 @@ class StoreQuoteStateRequest extends FormRequest
 
     protected $language;
 
+    protected $types;
+
     public function __construct(
         Company $company,
         Vendor $vendor,
@@ -29,7 +31,9 @@ class StoreQuoteStateRequest extends FormRequest
         $this->vendor = $vendor;
         $this->country = $country;
         $this->language = $language;
+        $this->types = collect(__('quote.types'))->implode(',');
     }
+
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -92,6 +96,10 @@ class StoreQuoteStateRequest extends FormRequest
             'quote_data.selected_rows.*' => [
                 'uuid',
                 'exists:imported_rows,id'
+            ],
+            'quote_data.type' => [
+                'string',
+                'in:' . $this->types
             ],
             'save' => 'boolean'
         ];

@@ -11,6 +11,10 @@ class ImportableColumn extends UuidModel implements HasOrderedScope
 {
     use HasColumnsData;
 
+    protected $hidden = [
+        'pivot'
+    ];
+
     public function scopeOrdered($query)
     {
         return $query->orderBy('order', 'asc');

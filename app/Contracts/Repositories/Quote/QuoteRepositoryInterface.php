@@ -1,5 +1,6 @@
 <?php namespace App\Contracts\Repositories\Quote;
 
+use App\Models\Quote\Quote;
 use App\Http\Requests \ {
     StoreQuoteStateRequest,
     GetQuoteTemplatesRequest,
@@ -38,4 +39,19 @@ interface QuoteRepositoryInterface
      * @return \Illuminate\Support\Collection
      */
     public function step2(FindQuoteTemplateRequest $request);
+
+    /**
+     * Get All User's Drafted Quotes
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getDrafted();
+
+    /**
+     * Find User's Quote
+     *
+     * @param Quote $quote
+     * @return \App\Models\Quote\Quote
+     */
+    public function find(string $id);
 }

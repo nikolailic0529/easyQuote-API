@@ -31,6 +31,7 @@ class HandleQuoteFileRequest extends FormRequest
     public function rules()
     {
         return [
+            'quote_id' => 'required|exists:quotes,id',
             'quote_file_id' => 'required|exists:quote_files,id',
             'data_select_separator_id' => $this->requiredIfCsv(),
             'page' => 'integer'
@@ -40,7 +41,7 @@ class HandleQuoteFileRequest extends FormRequest
     public function requiredIfCsv()
     {
         $id = $this->quote_file_id;
-        
+
         if(!$this->quoteFile->exists($id)) {
             return '';
         };

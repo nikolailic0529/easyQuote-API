@@ -14,7 +14,7 @@
     },
     {
         "header": "Serial Number",
-        "name": "serial_number",
+        "name": "serial_no",
         "type": "textbox",
         "order": 3
     },

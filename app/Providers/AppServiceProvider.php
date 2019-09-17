@@ -26,6 +26,7 @@ use App\Contracts \ {
     Repositories\QuoteFile\ImportableColumnRepositoryInterface,
     Repositories\QuoteFile\DataSelectSeparatorRepositoryInterface,
     Repositories\Quote\QuoteRepositoryInterface,
+    Repositories\Quote\Margin\MarginRepositoryInterface,
     Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface,
     Repositories\QuoteTemplate\TemplateFieldRepositoryInterface,
     Repositories\Customer\CustomerRepositoryInterface,
@@ -43,6 +44,7 @@ use App\Repositories \ {
     QuoteFile\ImportableColumnRepository,
     QuoteFile\DataSelectSeparatorRepository,
     Quote\QuoteRepository,
+    Quote\Margin\MarginRepository,
     QuoteTemplate\QuoteTemplateRepository,
     QuoteTemplate\TemplateFieldRepository,
     Customer\CustomerRepository,
@@ -72,7 +74,8 @@ class AppServiceProvider extends ServiceProvider
         TemplateFieldRepositoryInterface::class => TemplateFieldRepository::class,
         DataSelectSeparatorRepositoryInterface::class => DataSelectSeparatorRepository::class,
         CustomerRepositoryInterface::class => CustomerRepository::class,
-        SystemSettingRepositoryInterface::class => SystemSettingRepository::class
+        SystemSettingRepositoryInterface::class => SystemSettingRepository::class,
+        MarginRepositoryInterface::class => MarginRepository::class
     ];
     /**
      * Register any application services.

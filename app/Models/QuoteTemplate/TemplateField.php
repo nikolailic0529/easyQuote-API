@@ -16,10 +16,16 @@ class TemplateField extends UuidModel implements HasOrderedScope
 {
     use BelongsToUser, BelongsToTemplateFieldType, BelongsToQuoteTemplates;
 
+    protected $table = 'template_fields';
+
     protected $hidden = [
         'created_at', 'updated_at', 'deleted_at', 'activated_at', 'drafted_at', 'is_system', 'user_id',
-        'template_field_type_id', 'pivot'
+        'template_field_type_id', 'templateFieldType', 'pivot'
     ];
+
+    // protected $appends = [
+    //     'type'
+    // ];
 
     public function quoteTemplates()
     {
@@ -34,5 +40,14 @@ class TemplateField extends UuidModel implements HasOrderedScope
     public function scopeOrdered($query)
     {
         return $query->orderBy('order', 'asc');
+    }
+
+    public function getTypeAttribute()
+    {
+        if(!isset($this->templateFieldType)) {
+            return null;
+        }
+
+        return $this->templateFieldType->name;
     }
 }

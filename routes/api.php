@@ -20,7 +20,9 @@ Route::group(['namespace' => 'API'], function () {
     });
 
     Route::group(['prefix' => 'quotes', 'middleware' => 'auth:api', 'namespace' => 'Quotes'], function () {
+        Route::get('/get/{quote}', 'QuoteController@quote');
         Route::post('state', 'QuoteController@storeState');
+        Route::get('drafted', 'QuoteController@drafted');
 
         Route::post('file', 'QuoteFilesController@store');
         Route::get('file/{quoteFile}', 'QuoteFilesController@file');
@@ -28,12 +30,15 @@ Route::group(['namespace' => 'API'], function () {
         Route::post('handle', 'QuoteFilesController@handle');
 
         Route::get('customers', 'QuoteController@customers');
+        Route::get('customers/{customer}', 'QuoteController@customer');
 
         Route::group(['prefix' => 'step'], function () {
             Route::get('1', 'QuoteController@step1');
             Route::post('1', 'QuoteController@templates');
 
             Route::post('2', 'QuoteController@step2');
+
+            Route::get('3', 'QuoteController@step3');
         });
     });
 });

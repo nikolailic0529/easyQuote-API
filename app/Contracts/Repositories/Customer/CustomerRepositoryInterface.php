@@ -8,4 +8,12 @@ interface CustomerRepositoryInterface
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function all();
+
+    /**
+     * Find Customer by id
+     *
+     * @param string $id
+     * @return \App\Models\Customer\Customer
+     */
+    public function find(string $id);
 }

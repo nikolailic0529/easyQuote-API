@@ -1,5 +1,6 @@
 <?php
 
 return [
-    'system_handle' => 'System Handle'
+    'system_handle' => 'System Handle',
+    'types' => ['New', 'Renewal']
 ];

@@ -17,4 +17,9 @@ trait Draftable
             'drafted_at' => null,
         ])->save();
     }
+
+    public function scopeDrafted($query)
+    {
+        return $query->whereNotNull('drafted_at');
+    }
 }

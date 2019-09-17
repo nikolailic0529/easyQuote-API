@@ -9,19 +9,21 @@ use App\Models \ {
 };
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel \ {
-    Sheet,
+    Sheet, Row,
     Concerns\ToModel,
     Concerns\WithHeadingRow,
     Concerns\WithCustomCsvSettings,
     Concerns\Importable,
     Concerns\WithEvents,
     Concerns\WithChunkReading,
-    Events\AfterSheet
+    Concerns\OnEachRow,
+    Events\AfterSheet,
+    Imports\HeadingRowFormatter
 };
 use PhpOffice\PhpSpreadsheet\Shared\Date;
-use Uuid, Log;
+use Uuid, Str, Log;
 
-class ImportedRowImport implements ToModel, WithHeadingRow, WithCustomCsvSettings, WithEvents, WithChunkReading
+class ImportedRowImport implements OnEachRow, WithHeadingRow, WithCustomCsvSettings, WithEvents, WithChunkReading
 {
     use Importable;
 
@@ -44,23 +46,27 @@ class ImportedRowImport implements ToModel, WithHeadingRow, WithCustomCsvSetting
         $this->user = $user;
         $this->importableColumns = $importableColumns;
         $this->activeSheetIndex = 1;
+
+        HeadingRowFormatter::default('none');
     }
 
-    public function model(array $row)
+    public function onRow(Row $row)
     {
-        $row = collect($row);
-
         $columnsData = $this->fetchRow($row);
 
         if($this->isEmptyRow($columnsData)) {
             return null;
         };
-        
+
         return $this->makeRow($columnsData);
     }
 
     public function getCsvSettings(): array
     {
+        if(!$this->quoteFile->isCsv() && !$this->quoteFile->isWord()) {
+            return [];
+        }
+
         return [
             'delimiter' => $this->quoteFile->dataSelectSeparator->separator
         ];
@@ -74,70 +80,116 @@ class ImportedRowImport implements ToModel, WithHeadingRow, WithCustomCsvSetting
             },
         ];
     }
-    
+
     public function chunkSize(): int
     {
         return 1000;
     }
 
-    protected function makeRow(Collection $columnsData)
+    private function checkHeader(string $header)
+    {
+        if(Str::length($header) > 40) {
+            throw new \ErrorException(__('parser.separator_exception'));
+        }
+    }
+
+    private function makeRow(Collection $columnsData)
     {
         $importedRow = new ImportedRow;
         $importedRow->id = (string) Uuid::generate(4);
         $importedRow->page = $this->activeSheetIndex;
-        
+
         $importedRow->user()->associate($this->user);
         $importedRow->quoteFile()->associate($this->quoteFile);
         $importedRow->save();
-        
+
         $importedRow->columnsData()->saveMany($columnsData);
-        
+
         return $importedRow;
     }
 
-    protected function isEmptyRow(Collection $columnsData)
+    private function isEmptyRow(Collection $columnsData)
     {
         return $columnsData->filter(function ($columnData) {
             return !is_null($columnData->value);
         })->isEmpty() || $columnsData->isEmpty();
     }
 
-    protected function fetchRow(Collection $row)
+    private function fetchRow(Row $row)
     {
-        $columnsData = $this->importableColumns->map(function ($importableColumn, $key) use ($row) {
-            $alias = $this->findAlias($row, $importableColumn);
-
-            if(is_null($alias)) {
-                return;
-            }
-
-            $columnData = $importableColumn->columnsData()->make([
-                'value' => $row->get($alias),
-                'page' => $this->activeSheetIndex
-            ]);
-
-            $columnData->user()->associate($this->user);
-            $columnData->quoteFile()->associate($this->quoteFile);
-
-            return $columnData;
+        $row = $row->toCollection()->filter(function ($value, $key) {
+            return gettype($key) === 'string';
         });
+
+        $columns = $this->findColumns($row);
+        $columnsData = $this->handleColumns($columns);
 
         return $columnsData->filter(function ($columnData) {
             return !is_null($columnData);
         });
     }
 
-    protected function findAlias(Collection $row, ImportableColumn $importableColumn)
+    private function findColumns(Collection $row)
     {
-        $aliases = collect($importableColumn->aliases->toArray())
-            ->filter(function ($alias) use ($row) {
-                return $row->has(data_get($alias, 'alias'));
-            });
+        $columns = $row->map(function ($value, $header) {
+            $foundColumn = null;
 
-        if($aliases->isEmpty()) {
-            return null;
-        }
+            foreach ($this->importableColumns as $importableColumn) {
+                if(!$this->findColumn($header, $importableColumn)) {
+                    continue;
+                };
 
-        return data_get($aliases->first(), 'alias');
+                $foundColumn = $importableColumn;
+                break;
+            }
+
+            $this->checkHeader($header);
+
+            return compact('foundColumn', 'header', 'value');
+        });
+
+        return $columns;
+    }
+
+    private function findColumn(string $header, ImportableColumn $importableColumn)
+    {
+        $aliases = collect($importableColumn->aliases->toArray());
+        $foundColumn = false;
+
+        foreach ($aliases as $alias) {
+            $match = preg_match("/^{$alias['alias']}.*?/i", $header);
+
+            if(!$match) {
+                continue;
+            };
+
+            $foundColumn = $importableColumn;
+            break;
+        };
+
+        return $foundColumn;
+    }
+
+    private function handleColumns(Collection $columns)
+    {
+        $columns = $columns->map(function ($column) {
+            ['header' => $header, 'value' => $value, 'foundColumn' => $foundColumn] = $column;
+
+            $columnData = $this->quoteFile->columnsData()->make([
+                'value' => $value,
+                'page' => $this->activeSheetIndex,
+                'header' => $header
+            ]);
+
+            $columnData->user()->associate($this->user);
+
+            if(isset($foundColumn)) {
+                $columnData->importableColumn()->associate($foundColumn);
+            }
+
+            return $columnData;
+        });
+
+        return $columns;
     }
 }

@@ -207,7 +207,8 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
             $columnDataItem = $importedRow->columnsData()->make(
                 [
                     'value' => $value,
-                    'page' => $pageNumber
+                    'page' => $pageNumber,
+                    'header' => $alias ?? __('parser.unknown_column_header')
                 ]
             );
 
@@ -217,16 +218,11 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
             if(!is_null($importableColumn)) {
                 $columnDataItem->importableColumn()->associate($importableColumn);
-            } else {
-                $importableColumn = collect(['header' => $alias]);
-                $columnDataItem->unknown_header = trim($alias);
-            }
+            };
 
             $columnDataItem->markAsDrafted();
 
-            return collect($columnDataItem)->only('id', 'value', 'importable_column_id')->merge(
-                $importableColumn->only('header')
-            )->sortKeys();
+            return collect($columnDataItem)->only('id', 'value', 'header', 'importable_column_id')->sortKeys();
         });
 
         return $rowData;

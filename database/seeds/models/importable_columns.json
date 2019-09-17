@@ -7,7 +7,7 @@
         "regexp": "(?<product_no>\\d+\\-\\w{3}|[a-zA-Z]\\w{3,4}?[a-zA-Z]{1,2})\\s+",
         "order": 0,
         "aliases": [
-            "product_no", "product_number", "product", "part_id", "product nu", "product_nu"
+            "product_no", "product_number", "product", "part_id", "product nu", "product_nu", "product nu"
         ]
     },
     {
@@ -30,26 +30,26 @@
     },
     {
         "header": "Coverage from",
-        "name": "coverage_period_from",
-        "regexp": "(?<coverage_period_from>(([0-2][0-9])|(3[0-1]))[\\.\\/]((0[0-9])|(1[0-2]))[\\.\\/]\\d{4})?\\W*?",
+        "name": "date_from",
+        "regexp": "(?<date_from>(([0-2][0-9])|(3[0-1]))[\\.\\/]((0[0-9])|(1[0-2]))[\\.\\/]\\d{4})?\\W*?",
         "order": 3,
         "aliases": [
-            "coverage_from", "coverage_period_from", "coverage period from", "start_date", "startdate"
+            "date_from", "coverage period from", "coverage_from", "coverage_period_from", "coverage period from", "start_date", "startdate"
         ]
     },
     {
         "header": "Coverage to",
-        "name": "coverage_period_to",
-        "regexp": "((?<coverage_period_to>(([0-2][0-9])|(3[0-1]))[\\.\\/]((0[0-9])|(1[0-2]))[\\.\\/]\\d{4})\\s+?)?",
+        "name": "date_to",
+        "regexp": "((?<date_to>(([0-2][0-9])|(3[0-1]))[\\.\\/]((0[0-9])|(1[0-2]))[\\.\\/]\\d{4})\\s+?)?",
         "order": 4,
         "aliases": [
-            "coverage_to", "coverage_period_to", "coverage period to", "end_date", "enddate"
+            "date_to", "coverage period to", "coverage_to", "coverage_period_to", "coverage period to", "end_date", "enddate"
         ]
     },
     {
-        "header": "Qty",
-        "name": "quantity",
-        "regexp": "(?<quantity>\\d{1,3}(?=\\s+?))?",
+        "header": "Quantity",
+        "name": "qty",
+        "regexp": "(?<qty>\\d{1,3}(?=\\s+?))?",
         "order": 5,
         "aliases": [
             "quantity", "qty"

@@ -178,8 +178,8 @@ class PdfParser implements PdfParserInterface
     private function resetCoveragePeriods(array $array)
     {
         $productNo = $array['product_no'];
-        $periodFrom = $array['coverage_period_from'];
-        $periodTo = $array['coverage_period_to'];
+        $periodFrom = $array['date_from'];
+        $periodTo = $array['date_to'];
 
         foreach ($periodTo as $key => $row) {
             $nextKey = $key + 1;
@@ -197,8 +197,8 @@ class PdfParser implements PdfParserInterface
         }
 
         $resettedPeriods = [
-            'coverage_period_from' => $periodFrom,
-            'coverage_period_to' => $periodTo
+            'date_from' => $periodFrom,
+            'date_to' => $periodTo
         ];
 
         return array_merge($array, $resettedPeriods);
