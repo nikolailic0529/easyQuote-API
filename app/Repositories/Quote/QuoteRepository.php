@@ -91,7 +91,10 @@ class QuoteRepository implements QuoteRepositoryInterface
         $user = request()->user();
 
         $quote = $user->quotes()->whereId($id)
-            ->with('fieldColumn', 'rowsData', 'quoteTemplate.templateFields.templateFieldType')
+            ->with(
+                'fieldColumn', 'rowsData.columnsData',
+                'quoteTemplate.templateFields.templateFieldType'
+            )
             ->first();
 
         return $quote;
@@ -146,24 +149,33 @@ class QuoteRepository implements QuoteRepositoryInterface
         return $quote;
     }
 
-    private function markRowsAsSelectedOrUnSelected(Collection $state, Quote $quote): Quote
-    {
+    private function markRowsAsSelectedOrUnSelected(
+        Collection $state,
+        Quote $quote,
+        string $markAsSelected = 'markAsSelected',
+        string $markAsUnSelected = 'markAsUnSelected'
+    ): Quote {
         if(!isset($state['quote_data']['selected_rows'])) {
             return $quote;
-        }
+        };
+
+        if(isset($state['quote_data']['selected_rows_is_rejected'])) {
+            $markAsSelected = 'markAsUnSelected';
+            $markAsUnSelected = 'markAsSelected';
+        };
 
         $selectedRowsIds = data_get($state, 'quote_data.selected_rows');
 
         $notSelectedRows = $quote->rowsData()->whereNotIn('imported_rows.id', $selectedRowsIds);
 
-        $notSelectedRows->each(function ($importedRow) {
-            $importedRow->markAsUnSelected();
+        $notSelectedRows->each(function ($importedRow) use ($markAsUnSelected) {
+            $importedRow->{$markAsUnSelected}();
         });
 
         $selectedRows = $quote->rowsData()->whereIn('imported_rows.id', $selectedRowsIds);
 
-        $selectedRows->each(function ($importedRow) {
-            $importedRow->markAsSelected();
+        $selectedRows->each(function ($importedRow) use ($markAsSelected) {
+            $importedRow->{$markAsSelected}();
         });
 
         return $quote;
@@ -179,6 +191,13 @@ class QuoteRepository implements QuoteRepositoryInterface
             ['template_field_id' => $templateFieldId, 'importable_column_id' => $importableColumnId] = $relation;
 
             $templateField = $this->templateField->whereId($templateFieldId)->first();
+
+            if(!isset($importableColumnId)) {
+                $quote->detachTemplateField($templateField);
+
+                return true;
+            }
+
             $importableColumn = $this->importableColumn->whereId($importableColumnId)->first();
 
             $quote->attachColumnToField($templateField, $importableColumn);
@@ -216,6 +235,7 @@ class QuoteRepository implements QuoteRepositoryInterface
             'quote_data.quote_template_id',
             'quote_data.customer_id',
             'quote_data.selected_rows',
+            'quote_data.selected_rows_is_rejected',
             'save'
         ];
 

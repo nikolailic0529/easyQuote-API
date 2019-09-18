@@ -8,4 +8,10 @@ use App\Traits \ {
 class ImportableColumnAlias extends UuidModel
 {
     use BelongsToImportableColumn;
+
+    public $timestamps = false;
+
+    protected $fillable = [
+        'alias'
+    ];
 }

@@ -4,7 +4,6 @@ use App\Models \ {
     UuidModel,
     QuoteFile\ImportedRawData,
     QuoteFile\ImportedRow,
-    QuoteFile\ImportedColumn,
     QuoteFile\DataSelectSeparator
 };
 use App\Traits \ {
@@ -45,6 +44,16 @@ class QuoteFile extends UuidModel implements HasOrderedScope
     public function dataSelectSeparator()
     {
         return $this->belongsTo(DataSelectSeparator::class);
+    }
+
+    public function scopePriceLists($query)
+    {
+        return $query->where('file_type', 'Distributor Price List');
+    }
+
+    public function scopePaymentSchedules($query)
+    {
+        return $query->where('file_type', 'Payment Schedule');
     }
 
     public function isExcel()

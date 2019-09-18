@@ -5,6 +5,7 @@ use Laravel\Passport\Client;
 use Laravel\Passport\PersonalAccessClient;
 use Webpatser\Uuid\Uuid;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Validator;
 use Schema;
 use App\Http\Controllers\API \ {
     AuthController,
@@ -56,6 +57,7 @@ use App\Services \ {
     WordParser,
     PdfParser
 };
+use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -116,6 +118,10 @@ class AppServiceProvider extends ServiceProvider
         PersonalAccessClient::creating(function (PersonalAccessClient $client) {
             $client->incrementing = false;
             $client->id = Uuid::generate()->string;
+        });
+
+        Str::macro('header', function ($value) {
+            return self::title(str_replace('_', ' ', $value));
         });
     }
 }

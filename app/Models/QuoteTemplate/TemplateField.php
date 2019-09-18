@@ -23,9 +23,9 @@ class TemplateField extends UuidModel implements HasOrderedScope
         'template_field_type_id', 'templateFieldType', 'pivot'
     ];
 
-    // protected $appends = [
-    //     'type'
-    // ];
+    protected $appends = [
+        'type'
+    ];
 
     public function quoteTemplates()
     {

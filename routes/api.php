@@ -22,6 +22,10 @@ Route::group(['namespace' => 'API'], function () {
     Route::group(['prefix' => 'quotes', 'middleware' => 'auth:api', 'namespace' => 'Quotes'], function () {
         Route::get('/get/{quote}', 'QuoteController@quote');
         Route::post('state', 'QuoteController@storeState');
+
+        /**
+         * User's drafted Quotes
+         */
         Route::get('drafted', 'QuoteController@drafted');
 
         Route::post('file', 'QuoteFilesController@store');
@@ -29,15 +33,26 @@ Route::group(['namespace' => 'API'], function () {
         Route::get('files', 'QuoteFilesController@all');
         Route::post('handle', 'QuoteFilesController@handle');
 
+        /**
+         * Get existing (S4) Customers
+         */
         Route::get('customers', 'QuoteController@customers');
         Route::get('customers/{customer}', 'QuoteController@customer');
 
         Route::group(['prefix' => 'step'], function () {
+            /**
+             * Data Select Separators, Companies
+             */
             Route::get('1', 'QuoteController@step1');
+
+            /**
+             * Get Templates by Company, Country, Vendor ids
+             */
             Route::post('1', 'QuoteController@templates');
 
-            Route::post('2', 'QuoteController@step2');
-
+            /**
+             * Set Margin Dialog
+             */
             Route::get('3', 'QuoteController@step3');
         });
     });

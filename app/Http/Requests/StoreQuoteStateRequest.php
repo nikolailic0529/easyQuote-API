@@ -90,6 +90,7 @@ class StoreQuoteStateRequest extends FormRequest
                 'exists:template_fields,id'
             ],
             'quote_data.field_column.*.importable_column_id' => [
+                'nullable',
                 'uuid',
                 'exists:importable_columns,id'
             ],
@@ -97,10 +98,14 @@ class StoreQuoteStateRequest extends FormRequest
                 'uuid',
                 'exists:imported_rows,id'
             ],
-            'quote_data.type' => [
+            'quote_data.selected_rows_is_rejected' => 'boolean',
+            'margin.quote_type' => [
                 'string',
+                'required_with:margin',
                 'in:' . $this->types
             ],
+            'margin.value' => 'required_with:margin|numeric',
+            'margin.is_fixed' => 'required_with:margin|boolean',
             'save' => 'boolean'
         ];
     }

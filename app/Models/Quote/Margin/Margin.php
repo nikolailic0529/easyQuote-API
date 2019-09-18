@@ -15,7 +15,8 @@ abstract class Margin extends UuidModel
     ];
 
     protected $attributes = [
-        'is_fixed' => false
+        'is_fixed' => false,
+        'value' => 0
     ];
 
     public function markAsFixed()

@@ -14,12 +14,13 @@ use App\Traits \ {
     BelongsToUser,
     BelongsToCustomer,
     BelongsToCompany,
+    BelongsToMargin,
     Draftable
 };
 
 class Quote extends UuidModel
 {
-    use HasQuoteFiles, BelongsToUser, BelongsToCustomer, BelongsToCompany, Draftable;
+    use HasQuoteFiles, BelongsToUser, BelongsToCustomer, BelongsToCompany, BelongsToMargin, Draftable;
 
     protected $fillable = ['type', 'customer_id', 'company_id', 'vendor_id', 'language_id', 'quote_template_id'];
 
@@ -62,6 +63,16 @@ class Quote extends UuidModel
         return $this->templateFields()->attach([
             $fieldId => compact('importable_column_id')
         ]);
+    }
+
+    public function detachTemplateField(TemplateField $templateField)
+    {
+        return $this->templateFields()->detach($templateField->id);
+    }
+
+    public function detachColumnsFields()
+    {
+        return $this->templateFields()->detach();
     }
 
     public function scopeNewType($query)

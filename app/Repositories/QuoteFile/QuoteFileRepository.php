@@ -1,21 +1,18 @@
 <?php namespace App\Repositories\QuoteFile;
 
-use Illuminate\Http \ {
-    Request,
-    UploadedFile
-};
-use App\Models\User;
-use App\Models\QuoteFile \ {
-    QuoteFile,
-    QuoteFileFormat,
-    ImportableColumn,
-    DataSelectSeparator,
-    ImportedRow
+use App\Models \ {
+    User,
+    Quote\Quote,
+    QuoteFile\QuoteFile,
+    QuoteFile\ImportableColumn,
+    QuoteFile\DataSelectSeparator,
+    QuoteFile\ImportedRow
 };
 use App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface;
 use App\Http\Requests\StoreQuoteFileRequest;
 use Illuminate\Support\LazyCollection;
-use Storage;
+use Illuminate\Pipeline\Pipeline;
+use Storage, Str;
 
 class QuoteFileRepository implements QuoteFileRepositoryInterface
 {
@@ -197,12 +194,16 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         return $importedRows;
     }
 
-    protected function createRowData(array $row, QuoteFile $quoteFile, User $user, int $pageNumber, ImportedRow $importedRow)
+    protected function createRowData(array $row, QuoteFile $quoteFile, User $user, int $pageNumber, ImportedRow $importedRow, $formatHeader = true)
     {
-        $rowData = collect($row)->map(function ($value, $alias) use ($quoteFile, $user, $pageNumber, $importedRow) {
+        $rowData = collect($row)->map(function ($value, $alias) use ($quoteFile, $user, $pageNumber, $importedRow, $formatHeader) {
             $importableColumn = $this->importableColumn->whereHas('aliases', function ($query) use ($alias) {
                 return $query->whereAlias($alias);
             })->first();
+
+            if($formatHeader) {
+                $alias = Str::header($alias);
+            }
 
             $columnDataItem = $importedRow->columnsData()->make(
                 [
@@ -250,5 +251,45 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
     public function exists(String $id)
     {
         return $this->quoteFile->whereId($id)->exists();
+    }
+
+    public function deletePriceListsExcept(QuoteFile $quoteFile)
+    {
+        $exceptedQuoteFileId = $quoteFile->id;
+        $quote = $quoteFile->quote;
+
+        $priceLists = $quote->quoteFiles()
+            ->priceLists()->whereKeyNot($exceptedQuoteFileId)->get();
+
+        $priceLists->each(function ($price) {
+            $price->columnsData()->delete();
+            $price->rowsData()->delete();
+        });
+
+        return $priceLists->each->delete();
+    }
+
+    public function deletePaymentSchedulesExcept(QuoteFile $quoteFile)
+    {
+        $exceptedQuoteFileId = $quoteFile->id;
+        $quote = $quoteFile->quote;
+
+        $paymentSchedules = $quote->quoteFiles()
+            ->paymentSchedules()->whereKeyNot($exceptedQuoteFileId)->get();
+
+        $paymentSchedules->each(function ($schedule) {
+            $schedule->scheduleData()->delete();
+        });
+
+        return $paymentSchedules->each->delete();
+    }
+
+    public function deleteExcept(QuoteFile $quoteFile)
+    {
+        if($quoteFile->isSchedule()) {
+            return $this->deletePaymentSchedulesExcept($quoteFile);
+        }
+
+        return $this->deletePriceListsExcept($quoteFile);
     }
 }

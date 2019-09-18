@@ -14,12 +14,13 @@ class CreateImportableColumnsTable extends Migration
     public function up()
     {
         Schema::create('importable_columns', function (Blueprint $table) {
-            $table->uuid('id');
-            $table->primary('id');
+            $table->uuid('id')->primary();
+            $table->uuid('user_id')->nullable();
+            $table->foreign('user_id')->references('id')->on('users');
             $table->string('header');
             $table->string('name');
-            $table->string('regexp');
-            $table->tinyInteger('order');
+            $table->string('regexp')->nullable();
+            $table->tinyInteger('order')->default(0);
         });
     }
 

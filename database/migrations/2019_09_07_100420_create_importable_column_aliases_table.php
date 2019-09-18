@@ -16,6 +16,8 @@ class CreateImportableColumnAliasesTable extends Migration
         Schema::create('importable_column_aliases', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('alias', 50);
+            $table->uuid('user_id')->nullable();
+            $table->foreign('user_id')->references('id')->on('users');
             $table->uuid('importable_column_id');
             $table->foreign('importable_column_id')->references('id')->on('importable_columns');
             $table->timestamps();

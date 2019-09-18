@@ -2,16 +2,18 @@
 
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use App\Traits \ {
-    BelongsToQuote
+    BelongsToQuote,
+    BelongsToImportableColumn,
+    BelongsToTemplateField
 };
 
 class FieldColumn extends Pivot
 {
-    use BelongsToQuote;
+    use BelongsToQuote, BelongsToImportableColumn, BelongsToTemplateField;
+
+    protected $table = 'quote_field_column';
 
     protected $hidden = [
         'quote_id'
     ];
-
-    protected $table = 'quote_field_column';
 }

@@ -30,7 +30,7 @@ class QuoteTemplatesSeeder extends Seeder
 
         $templates = json_decode(file_get_contents(__DIR__ . '/models/quote_templates.json'), true);
 
-        $templateFieldsIds = collect(TemplateField::all('id')->filter()->toArray())->flatten();
+        $templateFieldsIds = collect(TemplateField::select('id')->get()->each->setAppends([])->toArray())->filter()->flatten();
 
         collect($templates)->each(function ($template) use ($templateFieldsIds) {
             $templateId = (string) Uuid::generate(4);

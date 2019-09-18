@@ -157,7 +157,7 @@ class ImportedRowImport implements OnEachRow, WithHeadingRow, WithCustomCsvSetti
         $foundColumn = false;
 
         foreach ($aliases as $alias) {
-            $match = preg_match("/^{$alias['alias']}.*?/i", $header);
+            $match = preg_match("~^{$alias['alias']}.*?~i", $header);
 
             if(!$match) {
                 continue;
@@ -178,14 +178,12 @@ class ImportedRowImport implements OnEachRow, WithHeadingRow, WithCustomCsvSetti
             $columnData = $this->quoteFile->columnsData()->make([
                 'value' => $value,
                 'page' => $this->activeSheetIndex,
-                'header' => $header
+                'header' => trim($header)
             ]);
 
             $columnData->user()->associate($this->user);
 
-            if(isset($foundColumn)) {
-                $columnData->importableColumn()->associate($foundColumn);
-            }
+            $columnData->associateImportableColumnOrCreate($foundColumn);
 
             return $columnData;
         });

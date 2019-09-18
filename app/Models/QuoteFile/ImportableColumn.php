@@ -5,14 +5,25 @@ use App\Models \ {
     QuoteFile\ImportableColumnAlias
 };
 use App\Contracts\HasOrderedScope;
-use App\Traits\HasColumnsData;
+use App\Models\Quote\FieldColumn;
+use App\Traits \ {
+    HasColumnsData,
+    HasSystemScope,
+    BelongsToUser
+};
 
 class ImportableColumn extends UuidModel implements HasOrderedScope
 {
-    use HasColumnsData;
+    use BelongsToUser, HasColumnsData, HasSystemScope;
+
+    public $timestamps = false;
+
+    protected $fillable = [
+        'header', 'name'
+    ];
 
     protected $hidden = [
-        'pivot'
+        'pivot', 'regexp'
     ];
 
     public function scopeOrdered($query)
@@ -23,5 +34,10 @@ class ImportableColumn extends UuidModel implements HasOrderedScope
     public function aliases()
     {
         return $this->hasMany(ImportableColumnAlias::class);
+    }
+
+    public function fieldColumn()
+    {
+        return $this->belongsTo(FieldColumn::class, 'quote_field_column');
     }
 }

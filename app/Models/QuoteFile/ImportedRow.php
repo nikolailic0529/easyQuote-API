@@ -1,9 +1,6 @@
 <?php namespace App\Models\QuoteFile;
 
-use App\Models \ {
-    UuidModel,
-    QuoteFile\ImportedColumn
-};
+use App\Models\UuidModel;
 use App\Traits \ {
     BelongsToUser,
     BelongsToQuoteFile,
@@ -11,10 +8,11 @@ use App\Traits \ {
     Draftable,
     Selectable
 };
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ImportedRow extends UuidModel
 {
-    use HasColumnsData, BelongsToUser, BelongsToQuoteFile, Draftable, Selectable;
+    use HasColumnsData, BelongsToUser, BelongsToQuoteFile, Draftable, Selectable, SoftDeletes;
 
     protected $fillable = [
         'page'

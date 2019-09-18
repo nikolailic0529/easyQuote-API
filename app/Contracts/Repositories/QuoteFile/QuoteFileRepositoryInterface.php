@@ -1,11 +1,10 @@
 <?php namespace App\Contracts\Repositories\QuoteFile;
 
-use Illuminate\Http \ {
-    Request,
-    UploadedFile
-};
 use App\Http\Requests\StoreQuoteFileRequest;
-use App\Models\QuoteFile\QuoteFile;
+use App\Models \ {
+    Quote\Quote,
+    QuoteFile\QuoteFile
+};
 
 interface QuoteFileRepositoryInterface
 {
@@ -90,13 +89,37 @@ interface QuoteFileRepositoryInterface
      * @param String $id
      * @return QuoteFile
      */
-    public function find(String $id);
+    public function find(string $id);
 
     /**
      * Check for existing
      *
-     * @param String $id
+     * @param string $id
      * @return void
      */
-    public function exists(String $id);
+    public function exists(string $id);
+
+    /**
+     * Delete all Quote Files by type from Quote excepting passed
+     *
+     * @param QuoteFile $quoteFile
+     * @return void
+     */
+    public function deleteExcept(QuoteFile $quoteFile);
+
+    /**
+     * Delete all Quote Files with Payment Schedules type from Quote excepting passed
+     *
+     * @param QuoteFile $quoteFile
+     * @return void
+     */
+    public function deletePaymentSchedulesExcept(QuoteFile $quoteFile);
+
+    /**
+     * Delete all Quote Files with type Distributor Price List from Quote excepting passed
+     *
+     * @param QuoteFile $quoteFile
+     * @return void
+     */
+    public function deletePriceListsExcept(QuoteFile $quoteFile);
 }

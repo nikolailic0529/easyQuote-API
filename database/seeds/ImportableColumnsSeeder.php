@@ -29,9 +29,10 @@ class ImportableColumnsSeeder extends Seeder
                 'header' => $column['header'],
                 'name' => $column['name'],
                 'regexp' => $column['regexp'],
-                'order' => $column['order']
+                'order' => $column['order'],
+                'is_system' => true
             ]);
-            
+
             collect($column['aliases'])->each(function ($alias) use ($columnId) {
                 DB::table('importable_column_aliases')->insert([
                     'id' => (string) Uuid::generate(4),

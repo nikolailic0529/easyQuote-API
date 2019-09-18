@@ -19,14 +19,15 @@ class ImportableColumnRepository implements ImportableColumnRepositoryInterface
 
     public function allColumnsRegs()
     {
-        $importableColumns = $this->importableColumn->ordered()->select('regexp')->get()->toArray();
+        $importableColumns = $this->importableColumn->system()->ordered()
+            ->select('regexp')->get()->each->makeVisible('regexp')->toArray();
 
         return collect($importableColumns)->flatten();
     }
 
     public function allNames()
     {
-        $names = $this->importableColumn->select('name')->get()->toArray();
+        $names = $this->importableColumn->system()->select('name')->get()->toArray();
 
         return collect($names)->flatten()->toArray();
     }

@@ -119,7 +119,13 @@ class ParserService implements ParserServiceInterface
 
     public function mapColumnsToFields(Quote $quote, QuoteFile $quoteFile)
     {
+        /**
+         * Detach existing relations
+         */
+        $quote->detachColumnsFields();
+
         $templateFields = $quote->quoteTemplate->templateFields;
+
         $rowData = $quoteFile->rowsData()->with(['columnsData' => function ($query) {
             return $query->whereHas('importableColumn');
         }])->first();
@@ -131,11 +137,6 @@ class ParserService implements ParserServiceInterface
         $columnsData = $rowData->columnsData;
         $columnsData->each(function ($columnData) use ($quote, $templateFields) {
             $templateField = $templateFields->where('name', $columnData->importableColumn->name)->first();
-
-
-            logger($templateField);
-            logger($columnData->importableColumn);
-
 
             if(!isset($templateField)) {
                 return true;
@@ -165,6 +166,11 @@ class ParserService implements ParserServiceInterface
 
         $rowsData = $this->routeParser($quoteFile, $page);
         $handled = true;
+
+        /**
+         * Remove all [Distributor Price Lists|Payment Schedules] from the Quote before handling excepting new one
+         */
+        $this->quoteFile->deleteExcept($quoteFile);
 
         return compact('rowsData', 'handled');
     }

@@ -736,7 +736,10 @@
 								"id": "59352b04-f6ab-495e-8443-e5aa3f13c3d3",
 								"exec": [
 									"let response = pm.response.json();\r",
-									"pm.environment.set('quote_id', response.id);"
+									"\r",
+									"if(response.id) {\r",
+									"    pm.environment.set('quote_id', response.id);\r",
+									"}"
 								],
 								"type": "text/javascript"
 							}
@@ -766,9 +769,8 @@
 							"formdata": [
 								{
 									"key": "quote_id",
-									"value": "5efe9870-d85b-11e9-a09f-61b1b3b3061e",
-									"type": "text",
-									"disabled": true
+									"value": "{{quote_id}}",
+									"type": "text"
 								},
 								{
 									"key": "quote_data[company_id]",
@@ -788,8 +790,7 @@
 								{
 									"key": "quote_data[quote_template_id]",
 									"value": "{{quote_template_id}}",
-									"type": "text",
-									"disabled": true
+									"type": "text"
 								},
 								{
 									"key": "quote_data[files][]",
@@ -799,7 +800,7 @@
 								},
 								{
 									"key": "quote_data[files][]",
-									"value": "4af7d820-d8ef-11e9-8d6a-f93be8bda748",
+									"value": "ca0cda80-d9d5-11e9-8237-37ba708a5770",
 									"type": "text",
 									"disabled": true
 								},
@@ -823,9 +824,8 @@
 								},
 								{
 									"key": "quote_data[selected_rows][]",
-									"value": "38eb0360-d8f1-11e9-a4c1-3f82ba0a98b2",
-									"type": "text",
-									"disabled": true
+									"value": "ec2f5420-da08-11e9-873a-f98900055e06",
+									"type": "text"
 								},
 								{
 									"key": "quote_data[selected_rows][]",
@@ -839,6 +839,11 @@
 									"description": "New | Renewal",
 									"type": "text",
 									"disabled": true
+								},
+								{
+									"key": "quote_data[selected_rows_is_rejected]",
+									"value": "true",
+									"type": "text"
 								}
 							]
 						},
