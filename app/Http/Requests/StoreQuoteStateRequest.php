@@ -21,6 +21,8 @@ class StoreQuoteStateRequest extends FormRequest
 
     protected $types;
 
+    protected $margin;
+
     public function __construct(
         Company $company,
         Vendor $vendor,
@@ -32,6 +34,8 @@ class StoreQuoteStateRequest extends FormRequest
         $this->country = $country;
         $this->language = $language;
         $this->types = collect(__('quote.types'))->implode(',');
+        $this->margin['types'] = collect(__('margin.types'))->implode(',');
+        $this->margin['methods'] = collect(__('margin.methods'))->implode(',');
     }
 
     /**
@@ -103,6 +107,14 @@ class StoreQuoteStateRequest extends FormRequest
                 'string',
                 'required_with:margin',
                 'in:' . $this->types
+            ],
+            'margin.type' => [
+                'required_with:margin',
+                'in:' . $this->margin['types']
+            ],
+            'margin.method' => [
+                'required_with:margin',
+                'in:' . $this->margin['methods']
             ],
             'margin.value' => 'required_with:margin|numeric',
             'margin.is_fixed' => 'required_with:margin|boolean',

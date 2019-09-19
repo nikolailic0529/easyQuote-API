@@ -14,15 +14,27 @@ use App\Traits \ {
     BelongsToUser,
     BelongsToCustomer,
     BelongsToCompany,
+    BelongsToVendor,
+    BelongsToCountry,
     BelongsToMargin,
     Draftable
 };
 
 class Quote extends UuidModel
 {
-    use HasQuoteFiles, BelongsToUser, BelongsToCustomer, BelongsToCompany, BelongsToMargin, Draftable;
+    use HasQuoteFiles, BelongsToUser, BelongsToCustomer, BelongsToCompany, BelongsToVendor, BelongsToCountry, BelongsToMargin, Draftable;
 
-    protected $fillable = ['type', 'customer_id', 'company_id', 'vendor_id', 'language_id', 'quote_template_id'];
+    protected $fillable = ['type', 'customer_id', 'company_id', 'vendor_id', 'country_id', 'language_id', 'quote_template_id'];
+
+    public function scopeNewType($query)
+    {
+        return $query->whereType('New');
+    }
+
+    public function scopeRenewalType($query)
+    {
+        return $query->whereType('Renewal');
+    }
 
     public function templateFields()
     {
@@ -75,13 +87,25 @@ class Quote extends UuidModel
         return $this->templateFields()->detach();
     }
 
-    public function scopeNewType($query)
+    public function createCountryMargin(array $attributes)
     {
-        return $query->whereType('New');
-    }
+        if(!isset($this->user) || !isset($this->vendor) || !isset($this->country)) {
+            return null;
+        }
 
-    public function scopeRenewalType($query)
-    {
-        return $query->whereType('Renewal');
+        $this->countryMargin()->dissociate();
+
+        $countryMargin = $this->countryMargin()->make($attributes);
+        $countryMargin->user()->associate($this->user);
+        $countryMargin->country()->associate($this->country);
+        $countryMargin->vendor()->associate($this->vendor);
+        $countryMargin->save();
+
+        $this->countryMargin()->associate($countryMargin);
+
+        $this->setAttribute('type', $attributes['quote_type']);
+        $this->save();
+
+        return $countryMargin;
     }
 }

@@ -6,6 +6,6 @@ trait BelongsToTemplateFields
 {
     public function templateFields()
     {
-        return $this->belongsToMany(TemplateField::class);
+        return $this->belongsToMany(TemplateField::class)->ordered();
     }
 }

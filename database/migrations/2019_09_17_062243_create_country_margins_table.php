@@ -22,6 +22,7 @@ class CreateCountryMarginsTable extends Migration
             $table->uuid('vendor_id');
             $table->foreign('vendor_id')->references('id')->on('vendors');
             $table->set('quote_type', __('quote.types'));
+            $table->set('method', __('margin.methods'));
             $table->uuid('country_id');
             $table->foreign('country_id')->references('id')->on('countries');
             $table->timestamps();
