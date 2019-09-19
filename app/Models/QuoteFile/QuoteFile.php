@@ -90,6 +90,17 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         return $this->file_type === 'Payment Schedule';
     }
 
+    public function setImportedPage(int $page)
+    {
+        if($this->isCsv() || $this->isWord()) {
+            $page = 1;
+        }
+
+        $this->setAttribute('imported_page', $page);
+
+        return $this->save();
+    }
+
     private function isFormat($ext)
     {
         if(!$this->propertyExists('format')) {

@@ -5,9 +5,10 @@ use App\Contracts\Repositories \ {
     QuoteTemplate\QuoteTemplateRepositoryInterface as QuoteTemplateRepository
 };
 use App\Models \ {
-    Quote\Quote,
     Company,
     Vendor,
+    Quote\Quote,
+    Quote\Margin\CountryMargin,
     QuoteFile\QuoteFile,
     QuoteFile\ImportableColumn,
     QuoteFile\DataSelectSeparator,
@@ -19,6 +20,7 @@ use App\Http\Requests \ {
     FindQuoteTemplateRequest
 };
 use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
@@ -35,6 +37,8 @@ class QuoteRepository implements QuoteRepositoryInterface
     protected $company;
 
     protected $dataSelectSeparator;
+
+    private $importableColumnsByName;
 
     public function __construct(
         Quote $quote,
@@ -54,6 +58,13 @@ class QuoteRepository implements QuoteRepositoryInterface
         $this->company = $company;
         $this->vendor = $vendor;
         $this->dataSelectSeparator = $dataSelectSeparator;
+
+        $importableColumnsByName = $this->importableColumn->system()->ordered()->get(['id', 'name'])->toArray();
+        $importableColumnsByName = collect($importableColumnsByName)->mapWithKeys(function ($value) {
+            return [$value['name'] => $value['id']];
+        });
+
+        $this->importableColumnsByName = $importableColumnsByName;
     }
 
     public function storeState(StoreQuoteStateRequest $request)
@@ -77,8 +88,9 @@ class QuoteRepository implements QuoteRepositoryInterface
         $this->storeQuoteFilesState($state, $quote);
         $this->attachColumnsToFields($state, $quote);
         $this->markRowsAsSelectedOrUnSelected($state, $quote);
+        $this->setMargin($quote, $request->margin);
 
-        return $quote->load('quoteFiles', 'fieldColumn', 'quoteTemplate.templateFields', 'rowsData');
+        return $quote->load('quoteFiles', 'fieldColumn', 'quoteTemplate.templateFields', 'rowsData', 'countryMargin');
     }
 
     public function findOrNew(string $id)
@@ -91,11 +103,10 @@ class QuoteRepository implements QuoteRepositoryInterface
         $user = request()->user();
 
         $quote = $user->quotes()->whereId($id)
-            ->with(
-                'fieldColumn', 'rowsData.columnsData',
-                'quoteTemplate.templateFields.templateFieldType'
-            )
+            ->with('quoteFiles', 'fieldColumn', 'rowsData.columnsData', 'quoteTemplate.templateFields.templateFieldType', 'countryMargin')
             ->first();
+
+        $quote = $this->applyMargin($quote);
 
         return $quote;
     }
@@ -136,6 +147,15 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function step2(FindQuoteTemplateRequest $request)
     {
         return $this->quoteTemplate->find($request->quote_template_id);
+    }
+
+    public function setMargin(Quote $quote, $attributes)
+    {
+        if(!isset($attributes) || !is_array($attributes) || empty($attributes)) {
+            return null;
+        }
+
+        return $quote->createCountryMargin($attributes);
     }
 
     private function draftQuote(Collection $state, Quote $quote): Quote
@@ -240,5 +260,37 @@ class QuoteRepository implements QuoteRepositoryInterface
         ];
 
         return collect($request->only($stateModels));
+    }
+
+    private function applyMargin(Quote $quote)
+    {
+        $countryMargin = $quote->countryMargin;
+
+        if(!isset($countryMargin)) {
+            return $quote;
+        }
+
+        $quote->rowsData = $quote->rowsData->map(function ($row) use ($countryMargin) {
+            $dateFromColumn = $this->getColumn($row->columnsData, 'date_from');
+            $dateToColumn = $this->getColumn($row->columnsData, 'date_to');
+            $priceColumn = $this->getColumn($row->columnsData, 'price');
+
+            $priceColumn->value = $countryMargin->calculate($priceColumn->value);
+
+            return $row;
+        });
+
+        return $quote;
+    }
+
+    private function getColumn(EloquentCollection $collection, string $name)
+    {
+        $importableColumns = $this->importableColumnsByName;
+
+        if(!$importableColumns->has($name)) {
+            return null;
+        }
+
+        return $collection->where('importable_column_id', $importableColumns->get($name))->first();
     }
 }

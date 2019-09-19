@@ -2,8 +2,7 @@
 
 use App\Models \ {
     UuidModel,
-    QuoteTemplate\TemplateField,
-    Quote\FieldColumn,
+    Quote\Quote,
     QuoteFile\ImportableColumn
 };
 use App\Traits \ {

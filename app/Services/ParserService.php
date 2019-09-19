@@ -205,7 +205,11 @@ class ParserService implements ParserServiceInterface
         $rawData = $this->quoteFile->getRawData($quoteFile)->toArray();
 
         if($quoteFile->isSchedule()) {
+            $page = collect($rawData)->last()['page'];
+
             $parsedData = $this->pdfParser->parseSchedule($rawData);
+
+            $quoteFile->setImportedPage($page);
 
             return $this->quoteFile->createScheduleData(
                 $quoteFile,
@@ -214,6 +218,8 @@ class ParserService implements ParserServiceInterface
         }
 
         $parsedData = $this->pdfParser->parse($rawData);
+
+        $quoteFile->setImportedPage($requestedPage);
 
         return $this->quoteFile->createRowsData(
             $quoteFile,
@@ -231,6 +237,8 @@ class ParserService implements ParserServiceInterface
 
         $this->importExcel($quoteFile);
 
+        $quoteFile->setImportedPage($requestedPage);
+
         return $this->quoteFile->getRowsData($quoteFile, $requestedPage);
     }
 
@@ -240,6 +248,8 @@ class ParserService implements ParserServiceInterface
         $quoteFile->dataSelectSeparator()->associate($separator)->save();
 
         $this->importWord($quoteFile);
+
+        $quoteFile->setImportedPage($requestedPage);
 
         return $this->quoteFile->getRowsData($quoteFile, $requestedPage);
     }
