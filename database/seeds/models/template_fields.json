@@ -9,7 +9,7 @@
     {
         "header": "Description",
         "name": "description",
-        "type": "textarea",
+        "type": "textbox",
         "order": 2
     },
     {
@@ -21,14 +21,12 @@
     {
         "header": "From Date",
         "name": "date_from",
-        "default_value": "current_date",
         "type": "date",
         "order": 4
     },
     {
         "header": "To Date",
         "name": "date_to",
-        "default_value": "current_date",
         "type": "date",
         "order": 5
     },

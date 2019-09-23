@@ -1,12 +1,13 @@
 <?php namespace App\Models\Quote\Margin;
 
+use App\Models\QuoteFile\ImportedColumn;
 use App\Models\UuidModel;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits \ {
     BelongsToUser,
     BelongsToVendor
 };
-use Str;
+use Carbon\Carbon, Str;
 
 abstract class Margin extends UuidModel
 {
@@ -45,14 +46,28 @@ abstract class Margin extends UuidModel
      * @param [string|int|float] $value
      * @return float
      */
-    public function calculate($value)
+    public function calculate(string $value, $dateFrom = null, $dateTo = null)
     {
         $value = (float) $value;
+        $priceDay = $value / 30;
+        $period = 30;
+
+        if(isset($dateFrom) && isset($dateTo)) {
+            $dateFrom = Carbon::parse(str_replace('/', '.', $dateFrom));
+            $dateTo = Carbon::parse(str_replace('/', '.', $dateTo));
+            $period = $dateFrom->diffInDays($dateTo);
+        }
+
+        $price = $priceDay * $period;
+
+        if($period < 1) {
+            return number_format($value, 2);
+        }
 
         if($this->is_fixed) {
-            $computedValue = $value + $this->diff_value;
+            $computedValue = $price + $this->diff_value;
         } else {
-            $computedValue = $value + ($value * ($this->diff_value / 100));
+            $computedValue = $price + ($price * ($this->diff_value / 100));
         };
 
         if($computedValue < 0) {

@@ -10,14 +10,15 @@ use App\Traits \ {
     BelongsToQuoteFile,
     Draftable,
     BelongsToImportedRow,
-    BelongsToImportableColumn
+    BelongsToImportableColumn,
+    HasSystemScope
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Str;
 
 class ImportedColumn extends UuidModel
 {
-    use BelongsToImportableColumn, BelongsToImportedRow, BelongsToUser, BelongsToQuoteFile, Draftable, SoftDeletes;
+    use BelongsToImportableColumn, BelongsToImportedRow, BelongsToUser, BelongsToQuoteFile, Draftable, SoftDeletes, HasSystemScope;
 
     protected $fillable = [
         'value', 'page', 'header'
@@ -31,18 +32,31 @@ class ImportedColumn extends UuidModel
     public function associateImportableColumnOrCreate($importableColumn)
     {
         if($importableColumn instanceof ImportableColumn) {
-            return $this->importableColumn()->associate($importableColumn);
+            $this->importableColumn()->associate($importableColumn);
+
+            return $importableColumn;
         };
 
-        $user = request()->user();
-        $header = trim($this->header);
-        $alias = $header;
+        $alias = $header = $this->header;
         $name = Str::snake($header);
+        $user = request()->user();
 
-        $importableColumn = $this->importableColumn()->create(compact('header', 'name'));
-        $importableColumn->user()->associate($user);
-        $importableColumn->aliases()->create(compact('alias'));
+        if(!isset($this->header) || mb_strlen(trim($this->header)) === 0) {
+            $alias = $header = __('parser.unknown_column_header');
+            $name = Str::snake($header);
+            $importableColumn = $user->importableColumns()->where('name', $name)->firstOrCreate(compact('header', 'name'));
+            $importableColumn->aliases()->create(compact('alias'));
 
-        return $this->importableColumn()->associate($importableColumn);
+            $this->importableColumn()->associate($importableColumn);
+
+            return $importableColumn;
+        }
+
+        $importableColumn = $user->importableColumns()->where('name', $name)->firstOrCreate(compact('header', 'name'));
+        $importableColumn->aliases()->where('alias', $name)->firstOrCreate(compact('alias'));
+
+        $this->importableColumn()->associate($importableColumn);
+
+        return $importableColumn;
     }
 }

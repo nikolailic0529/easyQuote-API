@@ -22,4 +22,14 @@ trait Handleable
     {
         return !is_null($this->handled_at);
     }
+
+    public function scopeHandled($query)
+    {
+        return $query->whereNotNull('handled_at');
+    }
+
+    public function scopeUnHandled($query)
+    {
+        return $query->whereNull('handled_at');
+    }
 }

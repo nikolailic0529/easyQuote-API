@@ -7,9 +7,15 @@ return [
     'quote_has_not_template_exception' => 'Before Set Template for the Quote',
     'unknown_column_header' => 'Unknown Header',
     'excel' => [
-        'media_exception' => "Uploaded file has media data.\nPlease remove all media data like images, shapes from the file."
+        'unreadable_file_exception' => "The given file isn't readable. Please try to re-save it."
     ],
     'word' => [
         'no_columns_exception' => 'Uploaded file has not any required columns'
+    ],
+    'pdf' => [
+        'replacements' => [
+            'search' => ["ER\x057g", "ERSvr", "UR\x057g", "UR\x00Svr", 'EU$ð', "ER\x00Svr"],
+            'replace' => ["EU Svr", "EU Svr", "EU Svr", "EU Svr", "EU Svr"]
+        ]
     ]
 ];

@@ -22,7 +22,6 @@ class CreateTemplateFieldsTable extends Migration
             $table->string('name', 20);
             $table->tinyInteger('order');
             $table->tinyInteger('cols')->default(12);
-            $table->string('default_value')->nullable();
             $table->boolean('is_required')->default(false);
             $table->boolean('is_system')->default(false);
             $table->boolean('is_column')->default(false);

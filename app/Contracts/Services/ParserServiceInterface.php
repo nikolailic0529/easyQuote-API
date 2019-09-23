@@ -20,10 +20,9 @@ interface ParserServiceInterface
      * Determine Quote File format and return the related parser
      *
      * @param QuoteFile $quoteFile
-     * @param Int $page
      * @return void
      */
-    public function routeParser(QuoteFile $quoteFile, Int $page);
+    public function routeParser(QuoteFile $quoteFile);
 
     /**
      * Check for existing handling
@@ -36,7 +35,7 @@ interface ParserServiceInterface
 
     /**
      * Extract number of sheets/pages and check for errors in Quote File
-     *  
+     *
      * @param QuoteFile $quoteFile
      * @return QuoteFile
      */
@@ -46,19 +45,17 @@ interface ParserServiceInterface
      * Handle PDF format Quote File and store parsed data
      * Return collection as parsed rows
      * @param QuoteFile $quoteFile
-     * @param Int $requestedPage
      * @return \Illuminate\Support\Collection
      */
-    public function handlePdf(QuoteFile $quoteFile, Int $requestedPage);
+    public function handlePdf(QuoteFile $quoteFile);
 
     /**
      * Handle Excel format Quote File and store parsed data
      * Return collection as parsed rows
      * @param QuoteFile $quoteFile
-     * @param Int $requestedPage
      * @return \Illuminate\Support\Collection
      */
-    public function handleExcel(QuoteFile $quoteFile, Int $requestedPage);
+    public function handleExcel(QuoteFile $quoteFile);
 
     /**
      * Determine File format before storing

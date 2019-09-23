@@ -17,6 +17,11 @@ class ImportableColumnRepository implements ImportableColumnRepositoryInterface
         return $this->importableColumn->ordered()->with('aliases')->get();
     }
 
+    public function allSystem()
+    {
+        return $this->importableColumn->ordered()->system()->with('aliases')->get();
+    }
+
     public function allColumnsRegs()
     {
         $importableColumns = $this->importableColumn->system()->ordered()

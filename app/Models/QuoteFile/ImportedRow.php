@@ -22,4 +22,8 @@ class ImportedRow extends UuidModel
         'quote_file', 'user', 'quote_file_id', 'user_id', 'created_at', 'updated_at', 'drafted_at', 'deleted_at', 'page',
         'laravel_through_key'
     ];
+
+    protected $casts = [
+        'is_selected' => 'boolean'
+    ];
 }

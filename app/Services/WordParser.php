@@ -50,7 +50,7 @@ class WordParser implements WordParserInterface
 
     public function getText(string $filePath)
     {
-        $columns = $this->importableColumn->all();
+        $columns = $this->importableColumn->allSystem();
 
         $rows = $this->load($filePath)->getTables()->getRows($columns);
 

@@ -5,6 +5,7 @@ use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface as 
 use Smalot\PdfParser\Parser as SmalotPdfParser;
 use Illuminate\Support\LazyCollection;
 use Storage;
+use mpyw\BaseUTF8\Coder;
 
 class PdfParser implements PdfParserInterface
 {
@@ -29,11 +30,9 @@ class PdfParser implements PdfParserInterface
         $rawPages = collect();
 
         collect($document->getPages())->each(function ($page, $key) use ($rawPages) {
-            $text = str_replace("\0", "", $page->getText());
-
             $rawPages->push([
                 'page' => ++$key,
-                'content' => $text
+                'content' => $page->getText()
             ]);
         });
 
@@ -62,6 +61,8 @@ class PdfParser implements PdfParserInterface
 
             $matches = collect($matches)->only($columnsAliases)->toArray();
 
+            $matches = $this->decodeEntity($matches);
+
             /**
              * Resetting Coverage Periods for rows with the same Product Number
              */
@@ -71,7 +72,7 @@ class PdfParser implements PdfParserInterface
 
             foreach ($matches as $column => $values) {
                 foreach ($values as $key => $value) {
-                    $rows[$key][$column] = $value;
+                    $rows[$key][$column] = $value ? trim($value) : null;
                 }
             }
 
@@ -87,8 +88,6 @@ class PdfParser implements PdfParserInterface
         $filePath = $lastPage['file_path'];
 
         $content = Storage::get($filePath);
-
-        // dd($content);
 
         $priceGroup = '((\p{Sc})?\s?(?<price>(\d{1,3},)?\d+([,\.]\d{1,2})))';
         $dateGroup = '(?<date>(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{4})';
@@ -175,6 +174,25 @@ class PdfParser implements PdfParserInterface
         return count($document->getPages());
     }
 
+    private function decodeEntity(array $array)
+    {
+        $description = collect($array['description']);
+
+        $description->transform(function ($value) {
+            if(is_null($value)) {
+                return $value;
+            }
+
+            return str_replace(
+                __('parser.pdf.replacements.search'),
+                __('parser.pdf.replacements.replace'),
+                $value
+            );
+        })->toArray();
+
+        return array_merge($array, compact('description'));
+    }
+
     private function resetCoveragePeriods(array $array)
     {
         $productNo = $array['product_no'];
@@ -184,16 +202,18 @@ class PdfParser implements PdfParserInterface
         foreach ($periodTo as $key => $row) {
             $nextKey = $key + 1;
 
-            if(
-                !isset($periodTo[$nextKey]) || is_null($row) ||
-                is_null($periodTo[$nextKey]) || !is_null($periodFrom[$key]) ||
-                $productNo[$key] !== $productNo[$nextKey]
-            ) {
+            if(!(
+                isset($periodTo[$key]) &&
+                isset($periodTo[$nextKey]) &&
+                !isset($periodFrom[$key]) &&
+                !isset($periodFrom[$nextKey]) &&
+                $productNo[$key] === $productNo[$nextKey]
+            )) {
                 continue;
             };
 
-            $periodFrom[$key] = $periodTo[$key];
-            $periodTo[$key] = null;
+            $periodFrom[$nextKey] = $periodTo[$nextKey];
+            $periodTo[$nextKey] = null;
         }
 
         $resettedPeriods = [

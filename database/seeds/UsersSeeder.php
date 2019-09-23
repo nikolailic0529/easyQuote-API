@@ -38,7 +38,7 @@ class UsersSeeder extends Seeder
                 'first_name' => $faker->firstName,
                 'middle_name' => $faker->firstName,
                 'last_name' => $faker->lastName,
-                'password' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
+                'password' => isset($user['password']) ? bcrypt($user['password']) : '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
                 'role_id' => $adminRoleId,
                 'country_id' => $countryId,
                 'timezone_id' => $timezoneId

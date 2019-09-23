@@ -1,13 +1,14 @@
 <?php namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\ValidationException, Str;
+use Illuminate\Validation\Rule;
 use App\Models \ {
     Company,
     Vendor,
     Data\Country,
     Data\Language
 };
+use Str;
 
 class StoreQuoteStateRequest extends FormRequest
 {
@@ -89,20 +90,32 @@ class StoreQuoteStateRequest extends FormRequest
                 'uuid',
                 'exists:quote_files,id'
             ],
+            'quote_data.detach_schedule' => [
+                'boolean'
+            ],
             'quote_data.field_column.*.template_field_id' => [
                 'uuid',
                 'exists:template_fields,id'
             ],
             'quote_data.field_column.*.importable_column_id' => [
+                'present',
                 'nullable',
                 'uuid',
                 'exists:importable_columns,id'
+            ],
+            'quote_data.field_column.*.is_default_enabled' => [
+                'boolean',
+            ],
+            'quote_data.field_column.*.default_value' => [
+                'string',
+                'min:1'
             ],
             'quote_data.selected_rows.*' => [
                 'uuid',
                 'exists:imported_rows,id'
             ],
             'quote_data.selected_rows_is_rejected' => 'boolean',
+            'quote_data.last_drafted_step' => 'string|max:20',
             'margin.quote_type' => [
                 'string',
                 'required_with:margin',
@@ -116,10 +129,24 @@ class StoreQuoteStateRequest extends FormRequest
                 'required_with:margin',
                 'in:' . $this->margin['methods']
             ],
-            'margin.value' => 'required_with:margin|numeric',
             'margin.is_fixed' => 'required_with:margin|boolean',
+            'margin.value' => [
+                'required_with:margin',
+                'numeric',
+                $this->ifEquals('margin.is_fixed', false, 'max:100')
+            ],
+            'margin.delete' => [
+                'boolean'
+            ],
             'save' => 'boolean'
         ];
+    }
+
+    public function ifEquals($anotherAttribute, $value, $rule)
+    {
+        if($this->input($anotherAttribute) == $value) {
+            return $rule;
+        }
     }
 
     public function existsIn($parentName)
@@ -143,6 +170,13 @@ class StoreQuoteStateRequest extends FormRequest
                 $fail("The {$parentName} must have the {$childName}");
             }
         };
+    }
+
+    public function messages()
+    {
+        return [
+            'margin.value.max' => 'Margin Percentage can not be greater :max%'
+        ];
     }
 
     protected function getKey(String $model)

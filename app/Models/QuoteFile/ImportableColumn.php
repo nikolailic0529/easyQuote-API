@@ -40,4 +40,14 @@ class ImportableColumn extends UuidModel implements HasOrderedScope
     {
         return $this->belongsTo(FieldColumn::class, 'quote_field_column');
     }
+
+    public function isDateFrom()
+    {
+        return $this->name === 'date_from';
+    }
+
+    public function isDateTo()
+    {
+        return $this->name === 'date_to';
+    }
 }

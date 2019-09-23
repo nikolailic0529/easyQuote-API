@@ -23,20 +23,13 @@ class TemplateFieldsSeeder extends Seeder
 
 
         collect($templateFields)->each(function ($field) {
-            $defaultValue = null;
-
             $typeId = TemplateFieldType::whereName($field['type'])->first()->id;
-
-            if(isset($field['default_value']) && $field['default_value'] === 'current_date') {
-                $defaultValue = now()->format('d/m/Y');
-            }
 
             DB::table('template_fields')->insert([
                 'id' => (string) Uuid::generate(4),
                 'header' => $field['header'],
                 'name' => $field['name'],
                 'is_required' => isset($field['is_required']) ? $field['is_required'] : false,
-                'default_value' => $defaultValue ?: null,
                 'is_system' => true,
                 'is_column' => true,
                 'order' => $field['order'],

@@ -9,8 +9,7 @@ use App\Models \ {
 };
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel \ {
-    Sheet, Row,
-    Concerns\ToModel,
+    Row,
     Concerns\WithHeadingRow,
     Concerns\WithCustomCsvSettings,
     Concerns\Importable,
@@ -18,9 +17,15 @@ use Maatwebsite\Excel \ {
     Concerns\WithChunkReading,
     Concerns\OnEachRow,
     Events\AfterSheet,
-    Imports\HeadingRowFormatter
+    Events\BeforeSheet,
+    Events\BeforeImport,
+    Imports\HeadingRowFormatter,
+    Imports\HeadingRowExtractor,
 };
-use PhpOffice\PhpSpreadsheet\Shared\Date;
+use PhpOffice\PhpSpreadsheet\Worksheet \ {
+    Worksheet,
+    RowCellIterator
+};
 use Uuid, Str, Log;
 
 class ImportedRowImport implements OnEachRow, WithHeadingRow, WithCustomCsvSettings, WithEvents, WithChunkReading
@@ -33,9 +38,17 @@ class ImportedRowImport implements OnEachRow, WithHeadingRow, WithCustomCsvSetti
 
     protected $importableColumns;
 
-    protected $sheet;
+    protected $reader;
 
-    protected $activeSheetIndex;
+    protected $activeSheetIndex = 0;
+
+    protected $headingRow = 1;
+
+    protected $startRow = 2;
+
+    protected $requiredHeaders = [
+        'price', 'qty'
+    ];
 
     public function __construct(
         QuoteFile $quoteFile,
@@ -45,16 +58,19 @@ class ImportedRowImport implements OnEachRow, WithHeadingRow, WithCustomCsvSetti
         $this->quoteFile = $quoteFile;
         $this->user = $user;
         $this->importableColumns = $importableColumns;
-        $this->activeSheetIndex = 1;
 
         HeadingRowFormatter::default('none');
     }
 
     public function onRow(Row $row)
     {
+        if($row->getIndex() < $this->startRow) {
+            return null;
+        }
+
         $columnsData = $this->fetchRow($row);
 
-        if($this->isEmptyRow($columnsData)) {
+        if(!isset($columnsData)) {
             return null;
         };
 
@@ -63,21 +79,32 @@ class ImportedRowImport implements OnEachRow, WithHeadingRow, WithCustomCsvSetti
 
     public function getCsvSettings(): array
     {
-        if(!$this->quoteFile->isCsv() && !$this->quoteFile->isWord()) {
-            return [];
-        }
-
         return [
-            'delimiter' => $this->quoteFile->dataSelectSeparator->separator
+            'delimiter' => $this->quoteFile->dataSelectSeparator->separator ?? null
         ];
     }
 
     public function registerEvents(): array
     {
         return [
-            AfterSheet::class => function () {
-                $this->activeSheetIndex++;
+            BeforeImport::class => function ($event) {
+                $this->reader = $event->reader;
             },
+            BeforeSheet::class => function ($event) {
+                $this->activeSheetIndex++;
+                $this->headingRow = 1;
+                $this->startRow = 2;
+
+                $worksheet = $event->sheet->getDelegate();
+                $highestRow = $worksheet->getHighestRow();
+                $hasHeading = false;
+
+                while(!$hasHeading && $this->headingRow < $highestRow) {
+                    $hasHeading = $this->checkHeadingRow($worksheet);
+                }
+
+                $this->determineCoveragePeriod($worksheet);
+            }
         ];
     }
 
@@ -86,11 +113,81 @@ class ImportedRowImport implements OnEachRow, WithHeadingRow, WithCustomCsvSetti
         return 1000;
     }
 
-    private function checkHeader(string $header)
+    public function headingRow(): int
     {
-        if(Str::length($header) > 40) {
-            throw new \ErrorException(__('parser.separator_exception'));
+        return $this->headingRow;
+    }
+
+    private function checkHeadingRow(Worksheet $worksheet)
+    {
+        $headingRow = HeadingRowExtractor::extract($worksheet, $this);
+        $headingRow = $this->filterHeadingRow(collect($headingRow));
+
+        $foundColumns = $this->findColumns($headingRow, true)->filter(function ($found) {
+            return !is_null($found['foundColumn']);
+        });
+
+        if($foundColumns->isEmpty() || $this->hasNotRequiredHeaders($foundColumns)) {
+            $this->startRow++;
+            $this->headingRow++;
+            return false;
         }
+
+        return true;
+    }
+
+    private function determineCoveragePeriod(Worksheet $worksheet)
+    {
+        $headingRow = HeadingRowExtractor::extract($worksheet, $this);
+
+        $coverageExists = !empty(preg_grep('/^Coverage Period$/i', $headingRow));
+        if(!$coverageExists) {
+            return;
+        }
+
+        $nextHeadingRow = head(iterator_to_array($worksheet->getRowIterator($this->headingRow, $this->headingRow)));
+        $cellIterator = $nextHeadingRow->getCellIterator();
+        $cellIterator->setIterateOnlyExistingCells(true);
+
+        foreach ($cellIterator as $cell) {
+            if(preg_match('/Coverage Period/i', $cell->getValue())) {
+                $cell->setValue('Coverage Period From');
+                $columnIndex = $cellIterator->getCurrentColumnIndex();
+
+                $worksheet->setCellValueByColumnAndRow(++$columnIndex, $this->headingRow, 'Coverage Period To');
+                break;
+            }
+        }
+    }
+
+    private function hasNotRequiredHeaders(Collection $foundColumns)
+    {
+        return $foundColumns->whereIn('foundColumn.name', $this->requiredHeaders)->count() < count($this->requiredHeaders);
+    }
+
+    private function filterHeadingRow(Collection $row)
+    {
+        return $row->filter(function ($value) {
+            return isset($value);
+        });
+    }
+
+    private function filterRowKeys(array $row)
+    {
+        return collect($row)->filter(function ($value, $key) {
+            return gettype($key) === 'string';
+        });
+    }
+
+    private function checkAndLimitHeader(string $header)
+    {
+        if($this->quoteFile->isCsv()) {
+            if(Str::length($header) > 100) {
+                throw new \ErrorException(__('parser.separator_exception'));
+            }
+        }
+
+        return Str::limit($header, 40, '');
     }
 
     private function makeRow(Collection $columnsData)
@@ -108,34 +205,49 @@ class ImportedRowImport implements OnEachRow, WithHeadingRow, WithCustomCsvSetti
         return $importedRow;
     }
 
-    private function isEmptyRow(Collection $columnsData)
-    {
-        return $columnsData->filter(function ($columnData) {
-            return !is_null($columnData->value);
-        })->isEmpty() || $columnsData->isEmpty();
+    private function isBlankRow(Row $row) {
+        return $row->toCollection()->filter(function ($value) {
+            return isset($value);
+        })->isEmpty();
     }
 
     private function fetchRow(Row $row)
     {
-        $row = $row->toCollection()->filter(function ($value, $key) {
-            return gettype($key) === 'string';
-        });
+        if($this->isBlankRow($row)) {
+            return null;
+        }
 
+        $row = $this->filterRowKeys($row->toArray());
         $columns = $this->findColumns($row);
         $columnsData = $this->handleColumns($columns);
 
-        return $columnsData->filter(function ($columnData) {
-            return !is_null($columnData);
-        });
+        if(!$this->requiredExistsInColumns($columnsData)) {
+            return null;
+        };
+
+        return $columnsData;
     }
 
-    private function findColumns(Collection $row)
+    private function requiredExistsInColumns(Collection $columnsData)
     {
-        $columns = $row->map(function ($value, $header) {
+        $foundRequiredHeaders = collect([]);
+        $columnsData->each(function ($column) use ($foundRequiredHeaders) {
+            if(in_array($column->importableColumn->name, $this->requiredHeaders) && isset($column->value) && mb_strlen($column->value) > 0) {
+                $foundRequiredHeaders->push($column->importableColumn->name);
+            }
+        });
+
+        return $foundRequiredHeaders->count() >= count($this->requiredHeaders);
+    }
+
+    private function findColumns(Collection $row, bool $isHeading = false)
+    {
+        $columns = $row->map(function ($value, $header) use ($isHeading) {
+            $headingString = $isHeading ? $value : $header;
             $foundColumn = null;
 
             foreach ($this->importableColumns as $importableColumn) {
-                if(!$this->findColumn($header, $importableColumn)) {
+                if(!$this->findColumn($headingString, $importableColumn)) {
                     continue;
                 };
 
@@ -143,7 +255,7 @@ class ImportedRowImport implements OnEachRow, WithHeadingRow, WithCustomCsvSetti
                 break;
             }
 
-            $this->checkHeader($header);
+            $header = $this->checkAndLimitHeader($headingString);
 
             return compact('foundColumn', 'header', 'value');
         });
@@ -175,15 +287,19 @@ class ImportedRowImport implements OnEachRow, WithHeadingRow, WithCustomCsvSetti
         $columns = $columns->map(function ($column) {
             ['header' => $header, 'value' => $value, 'foundColumn' => $foundColumn] = $column;
 
-            $columnData = $this->quoteFile->columnsData()->make([
-                'value' => $value,
-                'page' => $this->activeSheetIndex,
-                'header' => trim($header)
-            ]);
+            $columnData = $this->quoteFile->columnsData()->make([]);
 
             $columnData->user()->associate($this->user);
 
-            $columnData->associateImportableColumnOrCreate($foundColumn);
+            $columnData->fill([
+                'page' => $this->activeSheetIndex,
+                'header' => trim($header),
+                'value' => $value
+            ]);
+
+            $importableColumn = $columnData->associateImportableColumnOrCreate($foundColumn);
+
+            // $columnData->value = $this->quoteFile->quote->customer->handleColumnValue($importableColumn, $value);
 
             return $columnData;
         });

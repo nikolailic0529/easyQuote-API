@@ -4,7 +4,8 @@ use App\Models\Quote\Quote;
 use App\Http\Requests \ {
     StoreQuoteStateRequest,
     GetQuoteTemplatesRequest,
-    FindQuoteTemplateRequest
+    MappingReviewRequest,
+    ReviewAppliedMarginRequest
 };
 
 interface QuoteRepositoryInterface
@@ -33,12 +34,12 @@ interface QuoteRepositoryInterface
     public function getTemplates(GetQuoteTemplatesRequest $request);
 
     /**
-     * Find Quote Template
-     * Attach necessary information for the 2 step
-     * @param FindQuoteTemplateRequest $request
+     * Get Rows Data by Attached Columns
+     *
+     * @param MappingReviewRequest $request
      * @return \Illuminate\Support\Collection
      */
-    public function step2(FindQuoteTemplateRequest $request);
+    public function step2(MappingReviewRequest $request);
 
     /**
      * Get All User's Drafted Quotes
@@ -54,4 +55,12 @@ interface QuoteRepositoryInterface
      * @return \App\Models\Quote\Quote
      */
     public function find(string $id);
+
+    /**
+     * Get Rows Data after Applying Margin
+     *
+     * @param ReviewAppliedMarginRequest $request
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function step4(ReviewAppliedMarginRequest $request);
 }

@@ -25,7 +25,7 @@
         "regexp": "(?<serial_no>[a-zA-Z]{2,3}[a-zA-Z\\d]{7,8})\\W+?",
         "order": 2,
         "aliases": [
-            "serial", "serial_no", "serial_number", "serial number", "sn"
+            "serial", "serial_no", "serial_number", "serial number", "sn", "proof of purchase"
         ]
     },
     {
@@ -34,7 +34,7 @@
         "regexp": "(?<date_from>(([0-2][0-9])|(3[0-1]))[\\.\\/]((0[0-9])|(1[0-2]))[\\.\\/]\\d{4})?\\W*?",
         "order": 3,
         "aliases": [
-            "date_from", "coverage period from", "coverage_from", "coverage_period_from", "coverage period from", "start_date", "startdate"
+            "start date", "date_from", "coverage period from", "coverage_from", "coverage_period_from", "coverage period from", "start_date", "startdate"
         ]
     },
     {
@@ -43,7 +43,7 @@
         "regexp": "((?<date_to>(([0-2][0-9])|(3[0-1]))[\\.\\/]((0[0-9])|(1[0-2]))[\\.\\/]\\d{4})\\s+?)?",
         "order": 4,
         "aliases": [
-            "date_to", "coverage period to", "coverage_to", "coverage_period_to", "coverage period to", "end_date", "enddate"
+            "end date", "date_to", "coverage period to", "coverage_to", "coverage_period_to", "coverage period to", "end_date", "enddate"
         ]
     },
     {
@@ -61,7 +61,7 @@
         "regexp": "(\\s+?((\\p{Sc})?\\s?(?<price>(\\d{1,3},)?\\d+([,\\.]\\d{1,2}))))([a-zA-Z].+?)?",
         "order": 6,
         "aliases": [
-            "price", "priceeur", "line_amount", "lineamount"
+            "price", "priceeur", "line_amount", "lineamount", "monthly list price", "unit net price", "line amount"
         ]
     }
 ]

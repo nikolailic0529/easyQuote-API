@@ -3,7 +3,8 @@
 use App\Models \ {
     UuidModel,
     QuoteTemplate\QuoteTemplate,
-    QuoteFile\ImportableColumn
+    QuoteFile\ImportableColumn,
+    Quote\FieldColumn
 };
 use App\Traits \ {
     BelongsToUser,
@@ -27,14 +28,20 @@ class TemplateField extends UuidModel implements HasOrderedScope
         'type'
     ];
 
+    protected $casts = [
+        'is_system' => 'boolean',
+        'is_required' => 'boolean',
+        'is_column' => 'boolean'
+    ];
+
     public function quoteTemplates()
     {
         return $this->belongsToMany(QuoteTemplate::class);
     }
 
-    public function importableColumn()
+    public function fieldColumn()
     {
-        return $this->belongsToMany(ImportableColumn::class, 'quote_field_column', 'template_field_id');
+        return $this->hasOne(FieldColumn::class, 'template_field_id');
     }
 
     public function scopeOrdered($query)

@@ -103,11 +103,12 @@ class ParserService implements ParserServiceInterface
 
         $quoteFile = $this->quoteFile->find($request->quote_file_id);
 
-        $page = $request->page ?: $this->defaultPage;
+        $quoteFile->setImportedPage($request->page);
+
         $separator = $request->data_select_separator_id;
 
         ['rowsData' => $rowsData, 'handled' => $handled] = $this->handleOrRetrieve(
-            $quote, $quoteFile, $separator, $page
+            $quote, $quoteFile, $separator
         );
 
         if($handled) {
@@ -146,25 +147,28 @@ class ParserService implements ParserServiceInterface
         });
     }
 
-    public function handleOrRetrieve(Quote $quote, QuoteFile $quoteFile, $separator, int $page)
+    public function handleOrRetrieve(Quote $quote, QuoteFile $quoteFile, $separator)
     {
         $handled = false;
 
         if($quoteFile->isHandled() && $quoteFile->isSchedule()) {
-            return $this->quoteFile->getScheduleData($quoteFile);
+            $rowsData = $this->quoteFile->getScheduleData($quoteFile);
+
+            return compact('rowsData', 'handled');
         }
 
         if(
             $quoteFile->isHandled() &&
             !($quoteFile->isCsv() && $quoteFile->isNewSeparator($separator))
         ) {
-            $rowsData = $this->quoteFile->getRowsData($quoteFile, $page);
+            $rowsData = $this->quoteFile->getRowsData($quoteFile);
+
             return compact('rowsData', 'handled');
         };
 
         $quoteFile->quote()->associate($quote)->save();
 
-        $rowsData = $this->routeParser($quoteFile, $page);
+        $rowsData = $this->routeParser($quoteFile);
         $handled = true;
 
         /**
@@ -175,22 +179,22 @@ class ParserService implements ParserServiceInterface
         return compact('rowsData', 'handled');
     }
 
-    public function routeParser(QuoteFile $quoteFile, int $page)
+    public function routeParser(QuoteFile $quoteFile)
     {
         $fileFormat = $quoteFile->format->extension;
 
         switch ($fileFormat) {
             case 'pdf':
-                return $this->handlePdf($quoteFile, $page);
+                return $this->handlePdf($quoteFile);
                 break;
             case 'csv':
             case 'xlsx':
             case 'xls':
-                return $this->handleExcel($quoteFile, $page);
+                return $this->handleExcel($quoteFile);
                 break;
             case 'doc':
             case 'docx':
-                return $this->handleWord($quoteFile, $page);
+                return $this->handleWord($quoteFile);
                 break;
             default:
                 return response()->json([
@@ -200,7 +204,7 @@ class ParserService implements ParserServiceInterface
         }
     }
 
-    public function handlePdf(QuoteFile $quoteFile, int $requestedPage)
+    public function handlePdf(QuoteFile $quoteFile)
     {
         $rawData = $this->quoteFile->getRawData($quoteFile)->toArray();
 
@@ -219,16 +223,13 @@ class ParserService implements ParserServiceInterface
 
         $parsedData = $this->pdfParser->parse($rawData);
 
-        $quoteFile->setImportedPage($requestedPage);
-
         return $this->quoteFile->createRowsData(
             $quoteFile,
-            $parsedData,
-            $requestedPage
+            $parsedData
         );
     }
 
-    public function handleExcel(QuoteFile $quoteFile, int $requestedPage)
+    public function handleExcel(QuoteFile $quoteFile)
     {
         if($quoteFile->isCsv() && request()->has('data_select_separator_id')) {
             $dataSelectSeparator = $this->dataSelectSeparator->find(request()->data_select_separator_id);
@@ -237,28 +238,24 @@ class ParserService implements ParserServiceInterface
 
         $this->importExcel($quoteFile);
 
-        $quoteFile->setImportedPage($requestedPage);
-
-        return $this->quoteFile->getRowsData($quoteFile, $requestedPage);
+        return $this->quoteFile->getRowsData($quoteFile);
     }
 
-    public function handleWord(QuoteFile $quoteFile, int $requestedPage)
+    public function handleWord(QuoteFile $quoteFile)
     {
         $separator = $this->dataSelectSeparator->findByName($this->defaultSeparator);
         $quoteFile->dataSelectSeparator()->associate($separator)->save();
 
         $this->importWord($quoteFile);
 
-        $quoteFile->setImportedPage($requestedPage);
-
-        return $this->quoteFile->getRowsData($quoteFile, $requestedPage);
+        return $this->quoteFile->getRowsData($quoteFile);
     }
 
     public function importExcel(QuoteFile $quoteFile)
     {
         $filePath = $quoteFile->original_file_path;
         $user = $quoteFile->user;
-        $columns = $this->importableColumn->all();
+        $columns = $this->importableColumn->allSystem();
 
         $quoteFile->columnsData()->forceDelete();
         $quoteFile->rowsData()->forceDelete();
@@ -282,6 +279,7 @@ class ParserService implements ParserServiceInterface
 
         $rawData->each(function ($file) use ($quoteFile, $user, $columns) {
             $filePath = $file->file_path;
+
             (new ImportedRowImport($quoteFile, $user, $columns))->import($filePath);
         });
 
@@ -318,7 +316,7 @@ class ParserService implements ParserServiceInterface
         $sheetCount = $import->getSheetCount();
 
         if($sheetCount === 0) {
-            throw new \ErrorException(__('parser.excel.media_exception'));
+            throw new \ErrorException(__('parser.excel.unreadable_file_exception'));
         }
 
         return $import->getSheetCount();

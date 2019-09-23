@@ -17,13 +17,14 @@ use App\Traits \ {
 };
 use App\Contracts\HasOrderedScope;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Str;
 
 class QuoteFile extends UuidModel implements HasOrderedScope
 {
     use HasColumnsData, HasScheduleData, BelongsToQuote, BelongsToUser, HasFileFormat, Handleable, Draftable, SoftDeletes;
 
     protected $fillable = [
-        'original_file_path', 'file_type', 'pages'
+        'original_file_path', 'original_file_name', 'file_type', 'pages'
     ];
 
     public function scopeOrdered($query)
@@ -87,11 +88,26 @@ class QuoteFile extends UuidModel implements HasOrderedScope
 
     public function isSchedule()
     {
-        return $this->file_type === 'Payment Schedule';
+        return $this->file_type === __('quote_file.types.schedule');
     }
 
-    public function setImportedPage(int $page)
+    public function scopeIsNotHandledSchedule($query)
     {
+        return $query->where(function ($query) {
+            $query->where('file_type', __('quote_file.types.schedule'))->handled();
+        })->orWhere('file_type', __('quote_file.types.price'));
+    }
+
+    public function setImportedPage($page = null)
+    {
+        if(!isset($page)) {
+            if($this->isExcel()) {
+                $page = 1;
+            } else {
+                $page = 2;
+            }
+        }
+
         if($this->isCsv() || $this->isWord()) {
             $page = 1;
         }

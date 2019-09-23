@@ -51,9 +51,19 @@ Route::group(['namespace' => 'API'], function () {
             Route::post('1', 'QuoteController@templates');
 
             /**
+             * Mapping Review
+             */
+            Route::post('2', 'QuoteController@step2');
+
+            /**
              * Set Margin Dialog
              */
             Route::get('3', 'QuoteController@step3');
+
+            /**
+             * Get Quote Rows Data with Applied Margin
+             */
+            Route::post('4', 'QuoteController@step4');
         });
     });
 });

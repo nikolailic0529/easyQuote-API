@@ -10,7 +10,8 @@ use App\Contracts\Repositories \ {
 use App\Http\Requests \ {
     StoreQuoteStateRequest,
     GetQuoteTemplatesRequest,
-    FindQuoteTemplateRequest
+    MappingReviewRequest,
+    ReviewAppliedMarginRequest
 };
 use App\Models \ {
     Quote\Quote,
@@ -72,6 +73,13 @@ class QuoteController extends Controller
         );
     }
 
+    public function step2(MappingReviewRequest $request)
+    {
+        return response()->json(
+            $this->quote->step2($request)
+        );
+    }
+
     public function templates(GetQuoteTemplatesRequest $request)
     {
         $templates = $this->quote->getTemplates($request);
@@ -81,13 +89,6 @@ class QuoteController extends Controller
         }
 
         return response()->json($templates);
-    }
-
-    public function step2(FindQuoteTemplateRequest $request)
-    {
-        return response()->json(
-            $this->quote->step2($request)
-        );
     }
 
     public function drafted()
@@ -101,6 +102,13 @@ class QuoteController extends Controller
     {
         return response()->json(
             $this->margin->data()
+        );
+    }
+
+    public function step4(ReviewAppliedMarginRequest $request)
+    {
+        return response()->json(
+            $this->quote->step4($request)
         );
     }
 }

@@ -10,7 +10,7 @@
             "HPE", "LEN", "IBM"
         ],
         "countries": [
-            "GB", "US"
+            "GB", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SA"
         ]
     },
     {
@@ -24,7 +24,7 @@
             "HPE", "LEN", "IBM"
         ],
         "countries": [
-            "FR", "CA"
+            "GB", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SA"
         ]
     }
 ]

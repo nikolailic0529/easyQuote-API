@@ -17,10 +17,12 @@ use App\Models \ {
 use App\Http\Requests \ {
     StoreQuoteStateRequest,
     GetQuoteTemplatesRequest,
-    FindQuoteTemplateRequest
+    MappingReviewRequest,
+    ReviewAppliedMarginRequest
 };
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Setting;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
@@ -37,6 +39,8 @@ class QuoteRepository implements QuoteRepositoryInterface
     protected $company;
 
     protected $dataSelectSeparator;
+
+    protected $defaultPage;
 
     private $importableColumnsByName;
 
@@ -58,6 +62,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         $this->company = $company;
         $this->vendor = $vendor;
         $this->dataSelectSeparator = $dataSelectSeparator;
+        $this->defaultPage = Setting::get('parser.default_page');
 
         $importableColumnsByName = $this->importableColumn->system()->ordered()->get(['id', 'name'])->toArray();
         $importableColumnsByName = collect($importableColumnsByName)->mapWithKeys(function ($value) {
@@ -84,13 +89,15 @@ class QuoteRepository implements QuoteRepositoryInterface
         }
 
         $this->draftQuote($state, $quote);
-
         $this->storeQuoteFilesState($state, $quote);
+        $this->detachScheduleIfRequested($state, $quote);
         $this->attachColumnsToFields($state, $quote);
         $this->markRowsAsSelectedOrUnSelected($state, $quote);
         $this->setMargin($quote, $request->margin);
 
-        return $quote->load('quoteFiles', 'fieldColumn', 'quoteTemplate.templateFields', 'rowsData', 'countryMargin');
+        $quote = $quote->loadJoins()->setAppends(['field_column']);
+
+        return $quote;
     }
 
     public function findOrNew(string $id)
@@ -103,10 +110,9 @@ class QuoteRepository implements QuoteRepositoryInterface
         $user = request()->user();
 
         $quote = $user->quotes()->whereId($id)
-            ->with('quoteFiles', 'fieldColumn', 'rowsData.columnsData', 'quoteTemplate.templateFields.templateFieldType', 'countryMargin')
-            ->first();
-
-        $quote = $this->applyMargin($quote);
+            ->withJoins()
+            ->first()
+            ->setAppends(['field_column']);
 
         return $quote;
     }
@@ -114,7 +120,7 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function getDrafted()
     {
         $user = request()->user();
-        return $user->quotes()->drafted()->get();
+        return $user->quotes()->drafted()->ordered()->limit(5)->get();
     }
 
     public function create(array $array)
@@ -144,9 +150,31 @@ class QuoteRepository implements QuoteRepositoryInterface
         );
     }
 
-    public function step2(FindQuoteTemplateRequest $request)
+    public function step2(MappingReviewRequest $request)
     {
-        return $this->quoteTemplate->find($request->quote_template_id);
+        $user = request()->user();
+
+        $quote = $user->quotes()->whereId($request->quote_id)->firstOrFail();
+
+        $rowsData = $quote->rowsDataByColumns()->get();
+
+        $rowsData = $this->transformRowsData($rowsData, $quote);
+
+        return $rowsData;
+    }
+
+    public function step4(ReviewAppliedMarginRequest $request)
+    {
+        $user = request()->user();
+
+        $quote = $user->quotes()->with('rowsDataByColumns')->whereId($request->quote_id)->firstOrFail();
+        $quote = $this->applyMargin($quote);
+
+        $rowsData = $quote->rowsDataByColumns;
+
+        $rowsData = $this->transformRowsData($rowsData, $quote);
+
+        return $rowsData;
     }
 
     public function setMargin(Quote $quote, $attributes)
@@ -155,7 +183,32 @@ class QuoteRepository implements QuoteRepositoryInterface
             return null;
         }
 
+        if(isset($attributes['delete']) && $attributes['delete']) {
+            return $quote->deleteCountryMargin();
+        }
+
         return $quote->createCountryMargin($attributes);
+    }
+
+    private function transformRowsData(EloquentCollection $rowsData, $quote)
+    {
+        $rowsData->transform(function ($row) use ($quote) {
+            $columnsData = $row->columnsData->mapWithKeys(function ($column) use ($quote) {
+                if(!isset($column->value) || mb_strlen(trim($column->value)) === 0) {
+                    $value = $column->is_default_enabled ? $column->default_value : $column->value;
+                } else {
+                    $value = $column->value;
+                }
+
+                $value = $quote->customer->handleColumnValue($value, $column->importableColumn);
+
+                return [$column->template_field_name => $value];
+            });
+
+            return collect($row->only('id', 'is_selected'))->merge($columnsData);
+        });
+
+        return $rowsData;
     }
 
     private function draftQuote(Collection $state, Quote $quote): Quote
@@ -208,19 +261,24 @@ class QuoteRepository implements QuoteRepositoryInterface
         }
 
         collect(data_get($state, 'quote_data.field_column'))->each(function ($relation) use ($quote) {
-            ['template_field_id' => $templateFieldId, 'importable_column_id' => $importableColumnId] = $relation;
+            $templateFieldId = $relation['template_field_id'] ?? null;
+            $importableColumnId = $relation['importable_column_id'] ?? null;
+            $attributes = collect($relation)->except(['template_field_id', 'importable_column_id'])->all();
+
+            if(!isset($templateFieldId)) {
+                return true;
+            }
 
             $templateField = $this->templateField->whereId($templateFieldId)->first();
 
             if(!isset($importableColumnId)) {
                 $quote->detachTemplateField($templateField);
-
                 return true;
             }
 
             $importableColumn = $this->importableColumn->whereId($importableColumnId)->first();
 
-            $quote->attachColumnToField($templateField, $importableColumn);
+            $quote->attachColumnToField($templateField, $importableColumn, $attributes);
         });
 
         return $quote;
@@ -236,7 +294,47 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $stateFiles->each(function ($fileId) use ($quote) {
             $quoteFile = $this->quoteFile->whereId($fileId)->first();
+
+            if($quote->quoteFiles()->whereId($fileId)->exists()) {
+                return true;
+            }
+
             $quoteFile->quote()->associate($quote)->save();
+        });
+
+        return $quote;
+    }
+
+    private function detachScheduleIfRequested(Collection $state, Quote $quote): Quote
+    {
+        if(!isset($state['quote_data']['detach_schedule']) || !$state['quote_data']['detach_schedule']) {
+            return $quote;
+        }
+
+        $quote->quoteFiles()->paymentSchedules()->delete();
+
+        return $quote;
+    }
+
+    private function detachQuoteFiles(Collection $state, Quote $quote): Quote
+    {
+        if(!isset($state['quote_data']['detach_files'])) {
+            return $quote;
+        }
+
+        $detachableFiles = collect(data_get($state, 'quote_data.detach_files'));
+
+        $detachableFiles->each(function ($fileId) use ($quote) {
+            $quoteFile = $quote->quoteFiles()->whereId($fileId)->first();
+
+            if(!isset($quoteFile)) {
+                return true;
+            }
+
+            $quoteFile->columnsData()->delete();
+            $quoteFile->rowsData()->delete();
+
+            $quoteFile->delete();
         });
 
         return $quote;
@@ -256,13 +354,15 @@ class QuoteRepository implements QuoteRepositoryInterface
             'quote_data.customer_id',
             'quote_data.selected_rows',
             'quote_data.selected_rows_is_rejected',
+            'quote_data.last_drafted_step',
+            'quote_data.detach_schedule',
             'save'
         ];
 
         return collect($request->only($stateModels));
     }
 
-    private function applyMargin(Quote $quote)
+    private function applyMargin(Quote $quote, bool $mounthly = true)
     {
         $countryMargin = $quote->countryMargin;
 
@@ -270,12 +370,16 @@ class QuoteRepository implements QuoteRepositoryInterface
             return $quote;
         }
 
-        $quote->rowsData = $quote->rowsData->map(function ($row) use ($countryMargin) {
+        $quote->rowsDataByColumns = $quote->rowsDataByColumns->map(function ($row) use ($countryMargin, $mounthly) {
             $dateFromColumn = $this->getColumn($row->columnsData, 'date_from');
             $dateToColumn = $this->getColumn($row->columnsData, 'date_to');
             $priceColumn = $this->getColumn($row->columnsData, 'price');
 
-            $priceColumn->value = $countryMargin->calculate($priceColumn->value);
+            if($mounthly) {
+                $priceColumn->value = $countryMargin->calculate($priceColumn->value);
+            } else {
+                $priceColumn->value = $countryMargin->calculate($priceColumn->value, $dateFromColumn->value, $dateToColumn->value);
+            }
 
             return $row;
         });

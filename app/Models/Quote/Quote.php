@@ -1,5 +1,6 @@
 <?php namespace App\Models\Quote;
 
+use App\Contracts\HasOrderedScope;
 use App\Models \ {
     UuidModel,
     Quote\FieldColumn,
@@ -19,12 +20,13 @@ use App\Traits \ {
     BelongsToMargin,
     Draftable
 };
+use Setting;
 
-class Quote extends UuidModel
+class Quote extends UuidModel implements HasOrderedScope
 {
     use HasQuoteFiles, BelongsToUser, BelongsToCustomer, BelongsToCompany, BelongsToVendor, BelongsToCountry, BelongsToMargin, Draftable;
 
-    protected $fillable = ['type', 'customer_id', 'company_id', 'vendor_id', 'country_id', 'language_id', 'quote_template_id'];
+    protected $fillable = ['type', 'customer_id', 'company_id', 'vendor_id', 'country_id', 'language_id', 'quote_template_id', 'last_drafted_step'];
 
     public function scopeNewType($query)
     {
@@ -34,6 +36,21 @@ class Quote extends UuidModel
     public function scopeRenewalType($query)
     {
         return $query->whereType('Renewal');
+    }
+
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('created_at', 'desc');
+    }
+
+    public function scopeWithJoins($query)
+    {
+        return $query->with($this->joins());
+    }
+
+    public function loadJoins()
+    {
+        return $this->load($this->joins());
     }
 
     public function templateFields()
@@ -51,29 +68,81 @@ class Quote extends UuidModel
         return $this->belongsTo(QuoteTemplate::class);
     }
 
-    public function fieldColumn()
+    public function rowsData()
+    {
+        $importedPage = $this->quoteFiles()->priceLists()->first()->imported_page ?? Setting::get('parser.default_page');
+
+        return $this->hasManyThrough(ImportedRow::class, QuoteFile::class)
+            ->where('quote_files.file_type', __('quote_file.types.price'))
+            ->where('imported_rows.page', '>=', $importedPage);
+    }
+
+    public function rowsDataByColumns()
+    {
+        $fieldsColumns = $this->fieldsColumns()->with('importableColumn', 'templateField')->get();
+
+        return $this->rowsData()->with(['columnsData' => function ($query) use ($fieldsColumns) {
+            return $query->whereHas('importableColumn', function ($query) use ($fieldsColumns) {
+                $importableColumns = data_get($fieldsColumns, '*.importable_column_id');
+                return $query->whereIn('id', $importableColumns)
+                    ->ordered();
+            })->join('quote_field_column', function ($join) {
+                return $join->on('imported_columns.importable_column_id', '=', 'quote_field_column.importable_column_id')
+                    ->where('quote_field_column.quote_id', '=', $this->id);
+            })
+            ->join('template_fields', function ($join) {
+                return $join->on('template_fields.id', '=', 'quote_field_column.template_field_id')
+                    ->select('template_fields.name as template_field_name');
+            })->select(['imported_columns.*', 'template_fields.name as template_field_name', 'quote_field_column.default_value as default_value', 'quote_field_column.is_default_enabled as is_default_enabled']);
+        }]);
+    }
+
+    public function fieldsColumns()
     {
         return $this->hasMany(FieldColumn::class);
     }
 
-    public function rowsData()
+    public function selectedRowsData()
     {
-        return $this->hasManyThrough(ImportedRow::class, QuoteFile::class);
+        return $this->rowsData()->selected();
     }
 
-    public function attachColumnToField(TemplateField $templateField, ImportableColumn $importableColumn)
+    public function getFieldColumnAttribute()
+    {
+        if(!isset($this->quoteTemplate) || !isset($this->quoteTemplate->templateFields)) {
+            return [];
+        }
+
+        $quoteTemplate = $this->quoteTemplate()->with(['templateFields.fieldColumn' => function ($query) {
+            return $query->where('quote_id', $this->id)->withDefault(FieldColumn::make([]));
+        }])->first();
+
+        $templateFields = $quoteTemplate->templateFields->map(function ($templateField) {
+            $template_field_id = $templateField->id;
+            return array_merge(compact('template_field_id'), $templateField->fieldColumn->toArray());
+        });
+
+        return $templateFields;
+    }
+
+    public function attachColumnToField(TemplateField $templateField, $importableColumn, array $attributes = [])
     {
         $fieldId = $templateField->id;
-        $importable_column_id = $importableColumn->id;
+        $importable_column_id = $importableColumn->id ?? null;
+        $attributes = array_intersect_key($attributes, (new FieldColumn)->getAttributes());
+
+        if($importableColumn instanceof ImportableColumn) {
+            $attributes = array_merge($attributes, compact('importable_column_id'));
+        }
 
         if($this->templateFields()->whereId($fieldId)->exists()) {
             return $this->templateFields()->updateExistingPivot(
-                $fieldId, compact('importable_column_id')
+                $fieldId, $attributes
             );
         }
 
         return $this->templateFields()->attach([
-            $fieldId => compact('importable_column_id')
+            $fieldId => $attributes
         ]);
     }
 
@@ -85,6 +154,11 @@ class Quote extends UuidModel
     public function detachColumnsFields()
     {
         return $this->templateFields()->detach();
+    }
+
+    public function detachQuoteFile(QuoteFile $quoteFile)
+    {
+        return $this->quoteFiles()->detach($quoteFile->id);
     }
 
     public function createCountryMargin(array $attributes)
@@ -107,5 +181,27 @@ class Quote extends UuidModel
         $this->save();
 
         return $countryMargin;
+    }
+
+    public function deleteCountryMargin()
+    {
+        $this->countryMargin()->delete();
+        $this->countryMargin()->dissociate();
+
+        return $this;
+    }
+
+    private function joins() {
+        return [
+            'quoteFiles' => function ($query) {
+                return $query->isNotHandledSchedule();
+            },
+            'rowsData.columnsData',
+            'selectedRowsData.columnsData',
+            'rowsDataByColumns',
+            'quoteTemplate.templateFields.templateFieldType',
+            'countryMargin',
+            'customer'
+        ];
     }
 }
