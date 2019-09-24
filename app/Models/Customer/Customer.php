@@ -1,7 +1,9 @@
 <?php namespace App\Models\Customer;
 
-use App\Models\QuoteFile\ImportableColumn;
-use App\Models\UuidModel;
+use App\Models \ {
+    UuidModel,
+    QuoteFile\ImportableColumn
+};
 use Illuminate\Support\Carbon;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 

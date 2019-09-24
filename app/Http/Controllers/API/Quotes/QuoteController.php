@@ -98,6 +98,13 @@ class QuoteController extends Controller
         );
     }
 
+    public function searchDrafted(string $query = '')
+    {
+        return response()->json(
+            $this->quote->searchDrafted($query)
+        );
+    }
+
     public function step3()
     {
         return response()->json(

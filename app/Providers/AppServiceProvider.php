@@ -58,6 +58,10 @@ use App\Services \ {
     PdfParser
 };
 use Illuminate\Support\Str;
+use Elasticsearch \ {
+    Client as ElasticsearchClient,
+    ClientBuilder as ElasticsearchBuilder
+};
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -79,6 +83,7 @@ class AppServiceProvider extends ServiceProvider
         SystemSettingRepositoryInterface::class => SystemSettingRepository::class,
         MarginRepositoryInterface::class => MarginRepository::class
     ];
+
     /**
      * Register any application services.
      *
@@ -95,6 +100,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->when(ParserService::class)->needs(WordParserInterface::class)->give(WordParser::class);
 
         $this->app->when(ParserService::class)->needs(PdfParserInterface::class)->give(PdfParser::class);
+
+        $this->app->bind(ElasticsearchClient::class, function () {
+            return ElasticsearchBuilder::create()->setHosts(app('config')->get('services.search.hosts'))->build();
+        });
     }
 
     /**

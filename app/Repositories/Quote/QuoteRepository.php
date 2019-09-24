@@ -8,7 +8,6 @@ use App\Models \ {
     Company,
     Vendor,
     Quote\Quote,
-    Quote\Margin\CountryMargin,
     QuoteFile\QuoteFile,
     QuoteFile\ImportableColumn,
     QuoteFile\DataSelectSeparator,
@@ -22,7 +21,11 @@ use App\Http\Requests \ {
 };
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Setting;
+use Elasticsearch\Client as Elasticsearch;
+use Illuminate\Database\Eloquent\Builder;
+use App\Builder\Pagination\Paginator;
+use Illuminate\Pipeline\Pipeline;
+use Setting, Arr, Closure;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
@@ -42,6 +45,8 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     protected $defaultPage;
 
+    protected $search;
+
     private $importableColumnsByName;
 
     public function __construct(
@@ -52,7 +57,8 @@ class QuoteRepository implements QuoteRepositoryInterface
         ImportableColumn $importableColumn,
         Company $company,
         Vendor $vendor,
-        DataSelectSeparator $dataSelectSeparator
+        DataSelectSeparator $dataSelectSeparator,
+        Elasticsearch $search
     ) {
         $this->quote = $quote;
         $this->quoteFile = $quoteFile;
@@ -63,6 +69,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         $this->vendor = $vendor;
         $this->dataSelectSeparator = $dataSelectSeparator;
         $this->defaultPage = Setting::get('parser.default_page');
+        $this->search = $search;
 
         $importableColumnsByName = $this->importableColumn->system()->ordered()->get(['id', 'name'])->toArray();
         $importableColumnsByName = collect($importableColumnsByName)->mapWithKeys(function ($value) {
@@ -116,7 +123,19 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function getDrafted()
     {
         $user = request()->user();
-        return $user->quotes()->drafted()->ordered()->limit(5)->get();
+        return $user->quotes()->drafted()->ordered()->with('customer')->apiPaginate();
+    }
+
+    public function searchDrafted(string $query = ''): Paginator
+    {
+        $items = $this->searchOnElasticsearch($query);
+
+        $query = $this->buildQuery($items, function ($query) {
+            $query = $query->drafted()->with('customer');
+            return $this->filterQuery($query);
+        });
+
+        return $query->apiPaginate();
     }
 
     public function create(array $array)
@@ -390,5 +409,59 @@ class QuoteRepository implements QuoteRepositoryInterface
         });
 
         return $rowsData;
+    }
+
+    private function searchOnElasticsearch(string $query = '')
+    {
+        $body = [
+            'query' => [
+                'bool' => [
+                    'must' => [
+                        'multi_match' => [
+                            'fields' => [
+                                'customer.name', 'customer.valid_until', 'customer.support_start', 'customer.support_end', 'customer.rfq', 'type','created_at'
+                            ],
+                            'query' => $query
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        $items = $this->search->search([
+            'index' => $this->quote->getSearchIndex(),
+            'type' => $this->quote->getSearchType(),
+            'body' => $body
+        ]);
+
+        return $items;
+    }
+
+    private function buildQuery(array $items, Closure $scope = null): Builder
+    {
+        $ids = Arr::pluck($items['hits']['hits'], '_id');
+
+        $query = $this->quote->query();
+
+        if(is_callable($scope)) {
+            $query = call_user_func($scope, $query) ?? $query;
+        }
+
+        return $query->whereIn('id', $ids);
+    }
+
+    private function filterQuery(Builder $query)
+    {
+        return app(Pipeline::class)
+            ->send($query)
+            ->through([
+                \App\Http\Query\DefaultOrderBy::class,
+                \App\Http\Query\Quote\OrderByRfq::class,
+                \App\Http\Query\Quote\OrderByValidUntil::class,
+                \App\Http\Query\Quote\OrderBySupportStart::class,
+                \App\Http\Query\Quote\OrderBySupportEnd::class,
+                \App\Http\Query\Quote\OrderByCreatedAt::class
+            ])
+            ->thenReturn();
     }
 }

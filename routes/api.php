@@ -27,6 +27,7 @@ Route::group(['namespace' => 'API'], function () {
          * User's drafted Quotes
          */
         Route::get('drafted', 'QuoteController@drafted');
+        Route::get('drafted/{query}', 'QuoteController@searchDrafted');
 
         Route::post('file', 'QuoteFilesController@store');
         Route::get('file/{quoteFile}', 'QuoteFilesController@file');

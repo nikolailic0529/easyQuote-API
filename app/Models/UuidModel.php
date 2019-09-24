@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Eloquent\Model;
 use Webpatser\Uuid\Uuid;
+use App\Builder\ApiBuilder;
 
 class UuidModel extends Model
 {
@@ -32,5 +33,10 @@ class UuidModel extends Model
         $this->visible = array_unique(array_merge($this->hidden, $attributes));
 
         return $this;
+    }
+
+    public function newEloquentBuilder($query)
+    {
+        return new ApiBuilder($query);
     }
 }

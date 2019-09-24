@@ -1,5 +1,6 @@
 <?php namespace App\Contracts\Repositories\Quote;
 
+use App\Builder\Pagination\Paginator;
 use App\Models\Quote\Quote;
 use App\Http\Requests \ {
     StoreQuoteStateRequest,
@@ -47,6 +48,14 @@ interface QuoteRepositoryInterface
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function getDrafted();
+
+    /**
+     * Search by Drafted Quotes
+     *
+     * @param string $query
+     * @return \Illuminate\Pagination\LengthAwarePaginator
+     */
+    public function searchDrafted(string $query = ''): Paginator;
 
     /**
      * Find User's Quote

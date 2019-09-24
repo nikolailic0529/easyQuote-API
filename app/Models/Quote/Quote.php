@@ -11,6 +11,7 @@ use App\Models \ {
     QuoteFile\QuoteFile
 };
 use App\Traits \ {
+    Search\Searchable,
     HasQuoteFiles,
     BelongsToUser,
     BelongsToCustomer,
@@ -24,9 +25,11 @@ use Setting;
 
 class Quote extends UuidModel implements HasOrderedScope
 {
-    use HasQuoteFiles, BelongsToUser, BelongsToCustomer, BelongsToCompany, BelongsToVendor, BelongsToCountry, BelongsToMargin, Draftable;
+    use Searchable, HasQuoteFiles, BelongsToUser, BelongsToCustomer, BelongsToCompany, BelongsToVendor, BelongsToCountry, BelongsToMargin, Draftable;
 
     protected $fillable = ['type', 'customer_id', 'company_id', 'vendor_id', 'country_id', 'language_id', 'quote_template_id', 'last_drafted_step'];
+
+    protected $perPage = 8;
 
     public function scopeNewType($query)
     {
@@ -196,6 +199,13 @@ class Quote extends UuidModel implements HasOrderedScope
         $this->countryMargin()->dissociate();
 
         return $this;
+    }
+
+    public function toSearchArray()
+    {
+        $this->load('customer');
+
+        return $this->toArray();
     }
 
     private function joins() {
