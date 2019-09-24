@@ -26,4 +26,8 @@ class ImportedRow extends UuidModel
     protected $casts = [
         'is_selected' => 'boolean'
     ];
+
+    protected $attributes = [
+        'is_selected' => false
+    ];
 }

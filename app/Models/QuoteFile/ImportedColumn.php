@@ -26,7 +26,7 @@ class ImportedColumn extends UuidModel
 
     protected $hidden = [
         'user', 'user_id', 'quote_file_id', 'quote_file', 'page', 'created_at', 'updated_at', 'drafted_at', 'deleted_at',
-        'unknown_header', 'importableColumn', 'imported_row_id'
+        'unknown_header', 'importableColumn', 'imported_row_id', 'template_field_name'
     ];
 
     public function associateImportableColumnOrCreate($importableColumn)

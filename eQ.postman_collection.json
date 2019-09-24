@@ -274,7 +274,9 @@
 									"let response = pm.response.json();\r",
 									"\r",
 									"let importedRowsIds = response.map(({id}) => id);\r",
-									"pm.environment.set('imported_rows_ids', importedRowsIds);"
+									"pm.environment.set('imported_rows_ids', importedRowsIds);\r",
+									"\r",
+									"pm.environment.set('after_handling_rows_count', response.length);"
 								],
 								"type": "text/javascript"
 							}
@@ -309,13 +311,15 @@
 								},
 								{
 									"key": "data_select_separator_id",
-									"value": "6f06dc89-6c7e-4786-845d-5e2c576ecffb",
-									"type": "text"
+									"value": "06db06e7-19d2-45fd-9e66-dc63bdc9eba9",
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "page",
 									"value": "2",
-									"type": "text"
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "quote_id",
@@ -402,24 +406,24 @@
 							"name": "Step 1",
 							"event": [
 								{
-									"listen": "prerequest",
+									"listen": "test",
 									"script": {
-										"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+										"id": "38fb2fd3-b735-4fbb-92a3-af961a123424",
 										"exec": [
-											""
+											"let response = pm.response.json();\r",
+											"pm.environment.set('company_id', response.companies[2].id);\r",
+											"pm.environment.set('vendor_id', response.companies[2].vendors[0].id);\r",
+											"pm.environment.set('country_id', response.companies[2].vendors[0].countries[0].id);"
 										],
 										"type": "text/javascript"
 									}
 								},
 								{
-									"listen": "test",
+									"listen": "prerequest",
 									"script": {
-										"id": "7ed90f23-faba-4220-825a-1b492265dfea",
+										"id": "bea963c7-63a7-4ea3-97cb-8cf6765449de",
 										"exec": [
-											"let response = pm.response.json();\r",
-											"pm.environment.set('company_id', response.companies[0].id);\r",
-											"pm.environment.set('vendor_id', response.companies[0].vendors[0].id);\r",
-											"pm.environment.set('country_id', response.companies[0].vendors[0].countries[0].id);"
+											""
 										],
 										"type": "text/javascript"
 									}
@@ -543,7 +547,7 @@
 							"response": []
 						},
 						{
-							"name": "Step 2 [Mapping]",
+							"name": "Step 2 [Mapping Review]",
 							"event": [
 								{
 									"listen": "prerequest",
@@ -571,22 +575,22 @@
 								"header": [
 									{
 										"key": "Accept",
-										"value": "application/json",
-										"type": "text"
+										"type": "text",
+										"value": "application/json"
 									}
 								],
 								"body": {
 									"mode": "formdata",
 									"formdata": [
 										{
-											"key": "quote_template_id",
-											"value": "{{quote_template_id}}",
+											"key": "quote_id",
+											"value": "{{quote_id}}",
 											"type": "text"
 										}
 									]
 								},
 								"url": {
-									"raw": "http://localhost:8000/api/quotes/step/2",
+									"raw": "http://localhost:8000/api/quotes/step/2/",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -596,7 +600,8 @@
 										"api",
 										"quotes",
 										"step",
-										"2"
+										"2",
+										""
 									]
 								}
 							},
@@ -647,6 +652,66 @@
 										"quotes",
 										"step",
 										"3"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Step 4 [Review Rows Data with Applied Margin]",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "quote_id",
+											"value": "{{quote_id}}",
+											"type": "text"
+										}
+									]
+								},
+								"url": {
+									"raw": "http://localhost:8000/api/quotes/step/4",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8000",
+									"path": [
+										"api",
+										"quotes",
+										"step",
+										"4"
 									]
 								}
 							},
@@ -762,6 +827,12 @@
 								"key": "Accept",
 								"value": "application/json",
 								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
 							}
 						],
 						"body": {
@@ -793,6 +864,11 @@
 									"type": "text"
 								},
 								{
+									"key": "quote_data[customer_id]",
+									"value": "{{customer_id}}",
+									"type": "text"
+								},
+								{
 									"key": "quote_data[files][]",
 									"value": "{{quote_file_id}}",
 									"type": "text",
@@ -812,24 +888,35 @@
 								},
 								{
 									"key": "quote_data[field_column][0][template_field_id]",
-									"value": "4c3594a4-083c-4fb1-8a78-ebde713dfa70",
-									"type": "text",
-									"disabled": true
-								},
-								{
-									"key": "quote_data[field_column][0][importable_column_id]",
-									"value": "365976e5-a020-4ef9-9844-119bff6a7722",
-									"type": "text",
-									"disabled": true
-								},
-								{
-									"key": "quote_data[selected_rows][]",
-									"value": "ec2f5420-da08-11e9-873a-f98900055e06",
+									"value": "928d9398-d691-4c0d-803a-7699aabc68e7",
 									"type": "text"
 								},
 								{
+									"key": "quote_data[field_column][0][importable_column_id]",
+									"value": "",
+									"type": "text"
+								},
+								{
+									"key": "quote_data[field_column][0][is_default_enabled]",
+									"value": "1",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[detach_files][0]",
+									"value": "36889b00-db71-11e9-8439-bbdf62174421",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[last_drafted_step]",
+									"value": "mapping_step",
+									"type": "text",
+									"disabled": true
+								},
+								{
 									"key": "quote_data[selected_rows][]",
-									"value": "38ee8170-d8f1-11e9-b0c7-ff95d0965e62",
+									"value": "4cae9fc0-dc0f-11e9-8c7b-93c95e24b12b",
 									"type": "text",
 									"disabled": true
 								},
@@ -842,10 +929,47 @@
 								},
 								{
 									"key": "quote_data[selected_rows_is_rejected]",
-									"value": "true",
-									"type": "text"
+									"value": "1",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "margin[quote_type]",
+									"value": "Renewal",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "margin[type]",
+									"value": "By Country",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "margin[method]",
+									"value": "Standard",
+									"description": "No Margin, Standard",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "margin[value]",
+									"value": "4",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "margin[is_fixed]",
+									"value": "1",
+									"type": "text",
+									"disabled": true
 								}
-							]
+							],
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
 						},
 						"url": {
 							"raw": "http://localhost:8000/api/quotes/state",
@@ -937,6 +1061,17 @@
 								"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
 								"exec": [
 									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "341bae87-08e6-4cf3-9bea-cab1b31bc148",
+								"exec": [
+									"let response = pm.response.json();\r",
+									"pm.environment.set('customer_id', response[0].id);"
 								],
 								"type": "text/javascript"
 							}

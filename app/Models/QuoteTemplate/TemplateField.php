@@ -21,7 +21,7 @@ class TemplateField extends UuidModel implements HasOrderedScope
 
     protected $hidden = [
         'created_at', 'updated_at', 'deleted_at', 'activated_at', 'drafted_at', 'is_system', 'user_id',
-        'template_field_type_id', 'templateFieldType', 'pivot'
+        'template_field_type_id', 'templateFieldType', 'pivot', 'systemImportableColumn'
     ];
 
     protected $appends = [
@@ -42,6 +42,11 @@ class TemplateField extends UuidModel implements HasOrderedScope
     public function fieldColumn()
     {
         return $this->hasOne(FieldColumn::class, 'template_field_id');
+    }
+
+    public function systemImportableColumn()
+    {
+        return $this->hasOne(ImportableColumn::class, 'name', 'name')->system();
     }
 
     public function scopeOrdered($query)

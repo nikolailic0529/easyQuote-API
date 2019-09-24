@@ -199,21 +199,21 @@ class PdfParser implements PdfParserInterface
         $periodFrom = $array['date_from'];
         $periodTo = $array['date_to'];
 
-        foreach ($periodTo as $key => $row) {
+        foreach ($periodFrom as $key => $row) {
             $nextKey = $key + 1;
 
             if(!(
-                isset($periodTo[$key]) &&
-                isset($periodTo[$nextKey]) &&
-                !isset($periodFrom[$key]) &&
-                !isset($periodFrom[$nextKey]) &&
+                isset($periodFrom[$key]) &&
+                isset($periodFrom[$nextKey]) &&
+                !isset($periodTo[$key]) &&
+                !isset($periodTo[$nextKey]) &&
                 $productNo[$key] === $productNo[$nextKey]
             )) {
                 continue;
-            };
+            }
 
-            $periodFrom[$nextKey] = $periodTo[$nextKey];
-            $periodTo[$nextKey] = null;
+            $periodTo[$key] = $periodFrom[$key];
+            $periodFrom[$key] = null;
         }
 
         $resettedPeriods = [

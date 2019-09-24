@@ -114,16 +114,10 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         $quoteFile->rowsData()->forceDelete();
 
         $importedPages = $this->createImportedPages($array, $quoteFile, $user)->all();
+        $rows = collect($importedPages)->where('page', '>=', $quoteFile->imported_page)
+            ->pluck('rows')->collapse();
 
         $quoteFile->markAsHandled();
-
-        $rows = collect([]);
-
-        collect($importedPages)->where('page', '>=', $quoteFile->imported_page)->each(function ($page) use ($rows) {
-            collect($page['rows'])->each(function ($row) use ($rows) {
-                $rows->push($row);
-            });
-        });
 
         return $rows;
     }
@@ -193,7 +187,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
                 $rowData = $this->createRowData($row, $quoteFile, $user, $pageNumber, $importedRow);
 
                 $importedRows->push(
-                    collect($importedRow)->only('id')->merge([
+                    collect($importedRow)->only(['id', 'is_selected'])->merge([
                         'columns_data' => $rowData->values()
                     ])
                 );
@@ -213,8 +207,6 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
             if($formatHeader) {
                 $alias = Str::header($alias);
             }
-
-            // $value = $quoteFile->quote->customer->handleColumnValue($importableColumn, $value);
 
             $columnDataItem = $importedRow->columnsData()->make(
                 [

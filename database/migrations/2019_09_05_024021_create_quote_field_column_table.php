@@ -18,7 +18,7 @@ class CreateQuoteFieldColumnTable extends Migration
             $table->foreign('quote_id')->references('id')->on('quotes')->onDelete('cascade');
             $table->uuid('template_field_id');
             $table->foreign('template_field_id')->references('id')->on('template_fields')->onDelete('cascade');
-            $table->uuid('importable_column_id');
+            $table->uuid('importable_column_id')->nullable();
             $table->foreign('importable_column_id')->references('id')->on('importable_columns')->onDelete('cascade');
         });
     }

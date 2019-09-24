@@ -68,6 +68,11 @@ class Quote extends UuidModel implements HasOrderedScope
         return $this->belongsTo(QuoteTemplate::class);
     }
 
+    public function appendJoins()
+    {
+        return $this->setAppends(['field_column', 'rows_data_by_columns']);
+    }
+
     public function rowsData()
     {
         $importedPage = $this->quoteFiles()->priceLists()->first()->imported_page ?? Setting::get('parser.default_page');
@@ -77,13 +82,13 @@ class Quote extends UuidModel implements HasOrderedScope
             ->where('imported_rows.page', '>=', $importedPage);
     }
 
-    public function rowsDataByColumns()
+    public function getRowsDataByColumnsAttribute()
     {
         $fieldsColumns = $this->fieldsColumns()->with('importableColumn', 'templateField')->get();
+        $importableColumns = data_get($fieldsColumns, '*.importable_column_id');
 
-        return $this->rowsData()->with(['columnsData' => function ($query) use ($fieldsColumns) {
-            return $query->whereHas('importableColumn', function ($query) use ($fieldsColumns) {
-                $importableColumns = data_get($fieldsColumns, '*.importable_column_id');
+        return $this->rowsData()->with(['columnsData' => function ($query) use ($importableColumns) {
+            return $query->whereHas('importableColumn', function ($query) use ($importableColumns) {
                 return $query->whereIn('id', $importableColumns)
                     ->ordered();
             })->join('quote_field_column', function ($join) {
@@ -93,8 +98,13 @@ class Quote extends UuidModel implements HasOrderedScope
             ->join('template_fields', function ($join) {
                 return $join->on('template_fields.id', '=', 'quote_field_column.template_field_id')
                     ->select('template_fields.name as template_field_name');
-            })->select(['imported_columns.*', 'template_fields.name as template_field_name', 'quote_field_column.default_value as default_value', 'quote_field_column.is_default_enabled as is_default_enabled']);
-        }]);
+            })->select(['imported_columns.*', 'template_fields.name as template_field_name']);
+        }])->get();
+    }
+
+    public function defaultTemplateFields()
+    {
+        return $this->templateFields()->with('systemImportableColumn')->where('importable_column_id', null)->where('is_default_enabled', true);
     }
 
     public function fieldsColumns()
@@ -127,22 +137,19 @@ class Quote extends UuidModel implements HasOrderedScope
 
     public function attachColumnToField(TemplateField $templateField, $importableColumn, array $attributes = [])
     {
-        $fieldId = $templateField->id;
+        $template_field_id = $templateField->id;
         $importable_column_id = $importableColumn->id ?? null;
         $attributes = array_intersect_key($attributes, (new FieldColumn)->getAttributes());
+        $attributes = array_merge($attributes, compact('importable_column_id'));
 
-        if($importableColumn instanceof ImportableColumn) {
-            $attributes = array_merge($attributes, compact('importable_column_id'));
-        }
-
-        if($this->templateFields()->whereId($fieldId)->exists()) {
+        if($this->templateFields()->whereId($template_field_id)->exists()) {
             return $this->templateFields()->updateExistingPivot(
-                $fieldId, $attributes
+                $template_field_id, $attributes
             );
         }
 
         return $this->templateFields()->attach([
-            $fieldId => $attributes
+            $template_field_id => $attributes
         ]);
     }
 
@@ -198,7 +205,6 @@ class Quote extends UuidModel implements HasOrderedScope
             },
             'rowsData.columnsData',
             'selectedRowsData.columnsData',
-            'rowsDataByColumns',
             'quoteTemplate.templateFields.templateFieldType',
             'countryMargin',
             'customer'
