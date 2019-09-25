@@ -47,8 +47,6 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     protected $search;
 
-    protected $user;
-
     private $importableColumnsByName;
 
     public function __construct(
@@ -72,7 +70,6 @@ class QuoteRepository implements QuoteRepositoryInterface
         $this->dataSelectSeparator = $dataSelectSeparator;
         $this->defaultPage = Setting::get('parser.default_page');
         $this->search = $search;
-        $this->user = request()->user();
 
         $importableColumnsByName = $this->importableColumn->system()->ordered()->get(['id', 'name'])->toArray();
         $importableColumnsByName = collect($importableColumnsByName)->mapWithKeys(function ($value) {
@@ -123,7 +120,15 @@ class QuoteRepository implements QuoteRepositoryInterface
         return $quote;
     }
 
-    public function getDrafted()
+    public function getDrafted(string $id)
+    {
+        $user = request()->user();
+        $quote = $user->quotes()->drafted()->with('customer')->whereId($id)->firstOrFail();
+
+        return $quote;
+    }
+
+    public function allDrafted()
     {
         $user = request()->user();
         $query = $user->quotes()->drafted()->with('customer')->getQuery();
@@ -208,7 +213,9 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     public function deleteDrafted(string $id)
     {
-        return $this->user->quotes()->drafted()->whereId($id)->delete();
+        $user = request()->user();
+
+        return $user->quotes()->drafted()->whereId($id)->firstOrFail()->delete();
     }
 
     private function transformRowsData(EloquentCollection $rowsData)
@@ -454,7 +461,7 @@ class QuoteRepository implements QuoteRepositoryInterface
             $query = call_user_func($scope, $query) ?? $query;
         }
 
-        return $query->whereIn('id', $ids);
+        return $query->whereIn('quotes.id', $ids);
     }
 
     private function filterQuery(Builder $query)
@@ -463,12 +470,14 @@ class QuoteRepository implements QuoteRepositoryInterface
             ->send($query)
             ->through([
                 \App\Http\Query\DefaultOrderBy::class,
+                \App\Http\Query\Quote\JoinCustomer::class,
                 \App\Http\Query\Quote\OrderByName::class,
                 \App\Http\Query\Quote\OrderByRfq::class,
                 \App\Http\Query\Quote\OrderByValidUntil::class,
                 \App\Http\Query\Quote\OrderBySupportStart::class,
                 \App\Http\Query\Quote\OrderBySupportEnd::class,
                 \App\Http\Query\Quote\OrderByCreatedAt::class,
+                \App\Http\Query\Quote\OrderByCompleteness::class
             ])
             ->thenReturn();
     }

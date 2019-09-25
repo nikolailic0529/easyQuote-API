@@ -19,6 +19,6 @@ class CustomerRepository implements CustomerRepositoryInterface
 
     public function find(string $id)
     {
-        return $this->customer->whereId($id)->first();
+        return $this->customer->whereId($id)->firstOrFail();
     }
 }

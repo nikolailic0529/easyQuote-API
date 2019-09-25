@@ -2,10 +2,10 @@
 
 use App\Http\Query\Query;
 
-class OrderByName extends Query
+class OrderByCompleteness extends Query
 {
     public function applyQuery($builder)
     {
-        return $builder->orderBy('customers.name', request($this->queryName()));
+        return $builder->orderBy('completeness', request($this->queryName()));
     }
 }

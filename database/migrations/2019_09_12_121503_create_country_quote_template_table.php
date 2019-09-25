@@ -15,9 +15,9 @@ class CreateCountryQuoteTemplateTable extends Migration
     {
         Schema::create('country_quote_template', function (Blueprint $table) {
             $table->uuid('country_id');
-            $table->foreign('country_id')->references('id')->on('countries');
+            $table->foreign('country_id')->references('id')->on('countries')->onDelete('cascade');
             $table->uuid('quote_template_id');
-            $table->foreign('quote_template_id')->references('id')->on('quote_templates');
+            $table->foreign('quote_template_id')->references('id')->on('quote_templates')->onDelete('cascade');
         });
     }
 

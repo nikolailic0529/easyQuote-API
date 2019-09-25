@@ -16,9 +16,9 @@ class CreateScheduleDataTable extends Migration
         Schema::create('schedule_data', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('user_id');
-            $table->foreign('user_id')->references('id')->on('users');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->uuid('quote_file_id');
-            $table->foreign('quote_file_id')->references('id')->on('quote_files');
+            $table->foreign('quote_file_id')->references('id')->on('quote_files')->onDelete('cascade');
             $table->json('value');
             $table->timestamps();
             $table->softDeletes();

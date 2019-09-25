@@ -37,7 +37,7 @@ interface ParserServiceInterface
      * Extract number of sheets/pages and check for errors in Quote File
      *
      * @param QuoteFile $quoteFile
-     * @return QuoteFile
+     * @return \App\Http\Requests\StoreQuoteFileRequest
      */
     public function preHandle(StoreQuoteFileRequest $request);
 

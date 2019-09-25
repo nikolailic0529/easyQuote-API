@@ -14,10 +14,21 @@ use App\Traits \ {
     HasQuotes,
     HasImportableColumns
 };
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends AuthenticableUser implements MustVerifyEmail
 {
-    use HasImportableColumns, HasQuotes, HasQuoteFiles, HasQuoteFilesDirectory, HasRole, HasApiTokens, Notifiable, HasCountry, HasTimezone, CanBeAdmin;
+    use HasRoles,
+        HasImportableColumns,
+        HasQuotes,
+        HasQuoteFiles,
+        HasQuoteFilesDirectory,
+        HasRole,
+        HasApiTokens,
+        Notifiable,
+        HasCountry,
+        HasTimezone,
+        CanBeAdmin;
 
     /**
      * The attributes that are mass assignable.

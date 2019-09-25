@@ -15,7 +15,7 @@ class AddTemplateFieldTypeIdTemplateFieldsTable extends Migration
     {
         Schema::table('template_fields', function (Blueprint $table) {
             $table->uuid('template_field_type_id');
-            $table->foreign('template_field_type_id')->references('id')->on('template_field_types');
+            $table->foreign('template_field_type_id')->references('id')->on('template_field_types')->onDelete('cascade');
         });
     }
 

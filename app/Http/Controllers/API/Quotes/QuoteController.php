@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories \ {
-    Customer\CustomerRepositoryInterface as CustomerRepository,
     Quote\QuoteRepositoryInterface as QuoteRepository,
     QuoteTemplate\TemplateFieldRepositoryInterface as TemplateFieldRepository,
     Quote\Margin\MarginRepositoryInterface as MarginRepository
@@ -14,14 +13,11 @@ use App\Http\Requests \ {
     ReviewAppliedMarginRequest
 };
 use App\Models \ {
-    Quote\Quote,
-    Customer\Customer
+    Quote\Quote
 };
 
 class QuoteController extends Controller
 {
-    protected $customer;
-
     protected $quote;
 
     protected $templateField;
@@ -29,12 +25,10 @@ class QuoteController extends Controller
     protected $margin;
 
     public function __construct(
-        CustomerRepository $customer,
         QuoteRepository $quote,
         TemplateFieldRepository $templateField,
         MarginRepository $margin
     ) {
-        $this->customer = $customer;
         $this->quote = $quote;
         $this->templateField = $templateField;
         $this->margin = $margin;
@@ -52,18 +46,6 @@ class QuoteController extends Controller
         return $this->quote->storeState(
             $request
         );
-    }
-
-    public function customers()
-    {
-        return response()->json(
-            $this->customer->all()
-        );
-    }
-
-    public function customer(Customer $customer)
-    {
-        return response()->json($customer);
     }
 
     public function step1()
@@ -91,19 +73,6 @@ class QuoteController extends Controller
         return response()->json($templates);
     }
 
-    public function drafted()
-    {
-        if(request()->has('search')) {
-            return response()->json(
-                $this->quote->searchDrafted(request('search'))
-            );
-        }
-
-        return response()->json(
-            $this->quote->getDrafted()
-        );
-    }
-
     public function step3()
     {
         return response()->json(
@@ -115,13 +84,6 @@ class QuoteController extends Controller
     {
         return response()->json(
             $this->quote->step4($request)
-        );
-    }
-
-    public function deleteDrafted(Quote $quote)
-    {
-        return response()->json(
-            $this->quote->deleteDrafted($quote->id)
         );
     }
 }

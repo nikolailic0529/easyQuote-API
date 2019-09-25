@@ -15,9 +15,9 @@ class CreateVendorQuoteTemplateTable extends Migration
     {
         Schema::create('vendor_quote_template', function (Blueprint $table) {
             $table->uuid('vendor_id');
-            $table->foreign('vendor_id')->references('id')->on('vendors');
+            $table->foreign('vendor_id')->references('id')->on('vendors')->onDelete('cascade');
             $table->uuid('quote_template_id');
-            $table->foreign('quote_template_id')->references('id')->on('quote_templates');
+            $table->foreign('quote_template_id')->references('id')->on('quote_templates')->onDelete('cascade');
         });
     }
 

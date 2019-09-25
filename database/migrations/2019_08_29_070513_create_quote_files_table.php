@@ -16,7 +16,7 @@ class CreateQuoteFilesTable extends Migration
         Schema::create('quote_files', function (Blueprint $table) {
             $table->uuid('id');
             $table->primary('id');
-            $table->uuid('user_id')->references('id')->on('users');
+            $table->uuid('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->string('file_type')->nullable();
             $table->string('original_file_path');
             $table->string('current_file_path')->nullable();

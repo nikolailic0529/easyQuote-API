@@ -17,7 +17,7 @@ class CreateQuoteTable extends Migration
             $table->uuid('id');
             $table->primary('id');
             $table->uuid('user_id');
-            $table->foreign('user_id')->references('id')->on('users');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->uuid('quote_template_id')->nullable();
             $table->foreign('quote_template_id')->references('id')->on('quote_templates')->onDelete('cascade');
             $table->uuid('company_id')->nullable();
@@ -27,7 +27,7 @@ class CreateQuoteTable extends Migration
             $table->uuid('country_id')->nullable();
             $table->foreign('country_id')->references('id')->on('countries')->onDelete('cascade');
             $table->uuid('language_id')->nullable();
-            $table->foreign('language_id')->references('id')->on('languages');
+            $table->foreign('language_id')->references('id')->on('languages')->onDelete('cascade');
             $table->timestamps();
             $table->timestamp('drafted_at')->nullable()->default(null);
             $table->softDeletes();

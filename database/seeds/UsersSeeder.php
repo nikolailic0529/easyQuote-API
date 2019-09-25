@@ -25,9 +25,7 @@ class UsersSeeder extends Seeder
 
         $users = json_decode(file_get_contents(__DIR__ . '/models/users.json'), true);
 
-        $adminRoleId = Role::admin()->id;
-
-        collect($users)->each(function ($user) use ($faker, $adminRoleId) {
+        collect($users)->each(function ($user) use ($faker) {
 
             $countryId = Country::orderByRaw("RAND()")->first()->id;
             $timezoneId = Timezone::orderByRaw("RAND()")->first()->id;
@@ -39,7 +37,6 @@ class UsersSeeder extends Seeder
                 'middle_name' => $faker->firstName,
                 'last_name' => $faker->lastName,
                 'password' => isset($user['password']) ? bcrypt($user['password']) : '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
-                'role_id' => $adminRoleId,
                 'country_id' => $countryId,
                 'timezone_id' => $timezoneId
             ]);

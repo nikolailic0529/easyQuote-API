@@ -5,7 +5,6 @@ use Laravel\Passport\Client;
 use Laravel\Passport\PersonalAccessClient;
 use Webpatser\Uuid\Uuid;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Validator;
 use Schema;
 use App\Http\Controllers\API \ {
     AuthController,
@@ -33,6 +32,8 @@ use App\Contracts \ {
     Repositories\Customer\CustomerRepositoryInterface,
     Repositories\System\SystemSettingRepositoryInterface
 };
+use App\Models\Quote\Quote;
+use App\Observers\QuoteObserver;
 use App\Repositories \ {
     TimezoneRepository,
     CountryRepository,
@@ -132,5 +133,7 @@ class AppServiceProvider extends ServiceProvider
         Str::macro('header', function ($value) {
             return self::title(str_replace('_', ' ', $value));
         });
+
+        Quote::observe(QuoteObserver::class);
     }
 }

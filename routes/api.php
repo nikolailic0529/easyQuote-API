@@ -20,25 +20,25 @@ Route::group(['namespace' => 'API'], function () {
     });
 
     Route::group(['prefix' => 'quotes', 'middleware' => 'auth:api', 'namespace' => 'Quotes'], function () {
+        $crdRoutes = ['index', 'show', 'destroy'];
+        $crRoutes = ['index', 'show', 'store'];
+        $rRoutes = ['index', 'show'];
+
         Route::get('/get/{quote}', 'QuoteController@quote');
         Route::post('state', 'QuoteController@storeState');
 
         /**
          * User's drafted Quotes
          */
-        Route::get('drafted', 'QuoteController@drafted');
-        Route::delete('drafted/{quote}', 'QuoteController@deleteDrafted');
+        Route::resource('drafted', 'QuoteDraftedController', ['only' => $crdRoutes]);
 
-        Route::post('file', 'QuoteFilesController@store');
-        Route::get('file/{quoteFile}', 'QuoteFilesController@file');
-        Route::get('files', 'QuoteFilesController@all');
+        Route::resource('file', 'QuoteFilesController', ['only' => $crRoutes]);
         Route::post('handle', 'QuoteFilesController@handle');
 
         /**
-         * Get existing (S4) Customers
+         * S4 Customers
          */
-        Route::get('customers', 'QuoteController@customers');
-        Route::get('customers/{customer}', 'QuoteController@customer');
+        Route::resource('customers', 'CustomerController', ['only' => $rRoutes]);
 
         Route::group(['prefix' => 'step'], function () {
             /**

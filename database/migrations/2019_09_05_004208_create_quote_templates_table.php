@@ -17,7 +17,7 @@ class CreateQuoteTemplatesTable extends Migration
             $table->uuid('id');
             $table->primary('id');
             $table->uuid('user_id')->nullable();
-            $table->foreign('user_id')->references('id')->on('users');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->string('name', 50);
             $table->boolean('is_system')->default(false);
             $table->timestamps();

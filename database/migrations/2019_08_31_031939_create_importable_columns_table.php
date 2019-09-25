@@ -16,7 +16,7 @@ class CreateImportableColumnsTable extends Migration
         Schema::create('importable_columns', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('user_id')->nullable();
-            $table->foreign('user_id')->references('id')->on('users');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->string('header');
             $table->string('name');
             $table->string('regexp')->nullable();

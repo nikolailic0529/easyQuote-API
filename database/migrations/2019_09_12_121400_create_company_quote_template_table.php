@@ -15,9 +15,9 @@ class CreateCompanyQuoteTemplateTable extends Migration
     {
         Schema::create('company_quote_template', function (Blueprint $table) {
             $table->uuid('company_id');
-            $table->foreign('company_id')->references('id')->on('companies');
+            $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->uuid('quote_template_id');
-            $table->foreign('quote_template_id')->references('id')->on('quote_templates');
+            $table->foreign('quote_template_id')->references('id')->on('quote_templates')->onDelete('cascade');
         });
     }
 

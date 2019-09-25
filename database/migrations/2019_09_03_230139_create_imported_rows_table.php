@@ -17,9 +17,9 @@ class CreateImportedRowsTable extends Migration
             $table->uuid('id');
             $table->primary('id');
             $table->uuid('user_id');
-            $table->foreign('user_id')->references('id')->on('users');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->uuid('quote_file_id');
-            $table->foreign('quote_file_id')->references('id')->on('quote_files');
+            $table->foreign('quote_file_id')->references('id')->on('quote_files')->onDelete('cascade');
             $table->timestamps();
             $table->timestamp('drafted_at')->nullable()->default(null);
             $table->softDeletes();

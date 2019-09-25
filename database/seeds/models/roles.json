@@ -1,10 +1,9 @@
 [
     {
         "name": "Administrator",
-        "is_admin": true
-    },
-    {
-        "name": "Sales Manager",
-        "is_admin": false
+        "permissions": [
+            "create quote", "update quote", "delete quote", "submit quote",
+            "store quote file", "delete quote file", "handle quote file"
+        ]
     }
 ]

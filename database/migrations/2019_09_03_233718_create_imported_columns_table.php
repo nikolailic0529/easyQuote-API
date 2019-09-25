@@ -17,11 +17,11 @@ class CreateImportedColumnsTable extends Migration
             $table->uuid('id');
             $table->primary('id');
             $table->uuid('user_id');
-            $table->foreign('user_id')->references('id')->on('users');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->uuid('quote_file_id');
-            $table->foreign('quote_file_id')->references('id')->on('quote_files');
+            $table->foreign('quote_file_id')->references('id')->on('quote_files')->onDelete('cascade');
             $table->uuid('importable_column_id')->nullable();
-            $table->foreign('importable_column_id')->references('id')->on('importable_columns');
+            $table->foreign('importable_column_id')->references('id')->on('importable_columns')->onDelete('cascade');
             $table->uuid('imported_row_id');
             $table->foreign('imported_row_id')->references('id')->on('imported_rows')->onDelete('cascade');
             $table->tinyInteger('page')->nullable();

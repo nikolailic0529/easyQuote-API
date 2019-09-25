@@ -36,6 +36,10 @@ class Quote extends CompletableModel implements HasOrderedScope
         'completeness' => 1
     ];
 
+    protected $appends = [
+        'last_drafted_step'
+    ];
+
     public function scopeNewType($query)
     {
         return $query->whereType('New');

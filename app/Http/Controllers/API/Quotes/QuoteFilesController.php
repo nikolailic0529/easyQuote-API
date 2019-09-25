@@ -24,6 +24,21 @@ class QuoteFilesController extends Controller
         $this->parserService = $parserService;
     }
 
+    public function index()
+    {
+        return response()->json(
+            $this->quoteFile->all()
+        );
+    }
+
+
+    public function show(QuoteFile $file)
+    {
+        return response()->json(
+            $file->load('format')
+        );
+    }
+
     public function store(StoreQuoteFileRequest $request)
     {
         $quoteFile = $this->quoteFile->create(
@@ -32,22 +47,6 @@ class QuoteFilesController extends Controller
 
         return response()->json(
             $quoteFile
-        );
-    }
-
-    public function file(QuoteFile $quoteFile)
-    {
-        return response()->json(
-            $quoteFile->load('format')
-        );
-    }
-
-    public function all()
-    {
-        $allQuoteFiles = $this->quoteFile->all();
-
-        return response()->json(
-            $allQuoteFiles
         );
     }
 

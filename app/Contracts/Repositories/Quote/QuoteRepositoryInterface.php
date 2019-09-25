@@ -43,11 +43,18 @@ interface QuoteRepositoryInterface
     public function step2(MappingReviewRequest $request);
 
     /**
+     * Get User's Drafted Quote
+     *
+     * @return \App\Models\Quote
+     */
+    public function getDrafted(string $id);
+
+    /**
      * Get All User's Drafted Quotes
      *
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function getDrafted();
+    public function allDrafted();
 
     /**
      * Search by Drafted Quotes
