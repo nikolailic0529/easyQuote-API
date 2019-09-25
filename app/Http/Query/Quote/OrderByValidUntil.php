@@ -6,8 +6,8 @@ class OrderByValidUntil extends Query
 {
     public function applyQuery($builder)
     {
-        return $builder->whereHas('customer', function ($query) {
-            return $query->orderBy('valid_until', request($this->queryName()));
-        });
+        return $builder->join('customers', 'customers.id', '=', 'quotes.customer_id')
+            ->orderBy('customers.valid_until', request($this->queryName()))
+            ->select('quotes.*');
     }
 }

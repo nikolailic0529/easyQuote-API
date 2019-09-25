@@ -93,15 +93,14 @@ class QuoteController extends Controller
 
     public function drafted()
     {
+        if(request()->has('search')) {
+            return response()->json(
+                $this->quote->searchDrafted(request('search'))
+            );
+        }
+
         return response()->json(
             $this->quote->getDrafted()
-        );
-    }
-
-    public function searchDrafted(string $query = '')
-    {
-        return response()->json(
-            $this->quote->searchDrafted($query)
         );
     }
 
@@ -116,6 +115,13 @@ class QuoteController extends Controller
     {
         return response()->json(
             $this->quote->step4($request)
+        );
+    }
+
+    public function deleteDrafted(Quote $quote)
+    {
+        return response()->json(
+            $this->quote->deleteDrafted($quote->id)
         );
     }
 }

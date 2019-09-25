@@ -72,4 +72,12 @@ interface QuoteRepositoryInterface
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function step4(ReviewAppliedMarginRequest $request);
+
+    /**
+     * Delete User's Drafted Quote
+     *
+     * @param string $id
+     * @return void
+     */
+    public function deleteDrafted(string $id);
 }

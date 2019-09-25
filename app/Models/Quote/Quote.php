@@ -2,7 +2,7 @@
 
 use App\Contracts\HasOrderedScope;
 use App\Models \ {
-    UuidModel,
+    CompletableModel,
     Quote\FieldColumn,
     QuoteTemplate\QuoteTemplate,
     QuoteTemplate\TemplateField,
@@ -23,13 +23,18 @@ use App\Traits \ {
 };
 use Setting;
 
-class Quote extends UuidModel implements HasOrderedScope
+class Quote extends CompletableModel implements HasOrderedScope
 {
-    use Searchable, HasQuoteFiles, BelongsToUser, BelongsToCustomer, BelongsToCompany, BelongsToVendor, BelongsToCountry, BelongsToMargin, Draftable;
+    use Searchable, HasQuoteFiles, BelongsToUser, BelongsToCustomer, BelongsToCompany,
+    BelongsToVendor, BelongsToCountry, BelongsToMargin, Draftable;
 
     protected $fillable = ['type', 'customer_id', 'company_id', 'vendor_id', 'country_id', 'language_id', 'quote_template_id', 'last_drafted_step'];
 
     protected $perPage = 8;
+
+    protected $attributes = [
+        'completeness' => 1
+    ];
 
     public function scopeNewType($query)
     {
@@ -73,7 +78,7 @@ class Quote extends UuidModel implements HasOrderedScope
 
     public function appendJoins()
     {
-        return $this->setAppends(['field_column', 'rows_data_by_columns']);
+        return $this->setAppends(['last_drafted_step', 'field_column', 'rows_data', 'rows_data_by_columns']);
     }
 
     public function rowsData()
@@ -83,6 +88,11 @@ class Quote extends UuidModel implements HasOrderedScope
         return $this->hasManyThrough(ImportedRow::class, QuoteFile::class)
             ->where('quote_files.file_type', __('quote_file.types.price'))
             ->where('imported_rows.page', '>=', $importedPage);
+    }
+
+    public function getRowsDataAttribute()
+    {
+        return $this->rowsData()->with('columnsData')->get();
     }
 
     public function getRowsDataByColumnsAttribute()
@@ -208,12 +218,16 @@ class Quote extends UuidModel implements HasOrderedScope
         return $this->toArray();
     }
 
+    public function getCompletenessDictionary()
+    {
+        return __('quote.stages');
+    }
+
     private function joins() {
         return [
             'quoteFiles' => function ($query) {
                 return $query->isNotHandledSchedule();
             },
-            'rowsData.columnsData',
             'selectedRowsData.columnsData',
             'quoteTemplate.templateFields.templateFieldType',
             'countryMargin',

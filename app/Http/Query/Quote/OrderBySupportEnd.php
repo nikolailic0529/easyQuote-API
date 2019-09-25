@@ -6,8 +6,8 @@ class OrderBySupportEnd extends Query
 {
     public function applyQuery($builder)
     {
-        return $builder->whereHas('customer', function ($query) {
-            return $query->orderBy('support_end', request($this->queryName()));
-        });
+        return $builder->join('customers', 'customers.id', '=', 'quotes.customer_id')
+            ->orderBy('customers.support_end', request($this->queryName()))
+            ->select('quotes.*');
     }
 }
