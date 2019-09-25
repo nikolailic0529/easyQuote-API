@@ -47,6 +47,8 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     protected $search;
 
+    protected $user;
+
     private $importableColumnsByName;
 
     public function __construct(
@@ -70,6 +72,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         $this->dataSelectSeparator = $dataSelectSeparator;
         $this->defaultPage = Setting::get('parser.default_page');
         $this->search = $search;
+        $this->user = request()->user();
 
         $importableColumnsByName = $this->importableColumn->system()->ordered()->get(['id', 'name'])->toArray();
         $importableColumnsByName = collect($importableColumnsByName)->mapWithKeys(function ($value) {
@@ -123,7 +126,9 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function getDrafted()
     {
         $user = request()->user();
-        return $user->quotes()->drafted()->ordered()->with('customer')->apiPaginate();
+        $query = $user->quotes()->drafted()->with('customer')->getQuery();
+
+        return $this->filterQuery($query)->apiPaginate();
     }
 
     public function searchDrafted(string $query = ''): Paginator
@@ -199,6 +204,11 @@ class QuoteRepository implements QuoteRepositoryInterface
         }
 
         return $quote->createCountryMargin($attributes);
+    }
+
+    public function deleteDrafted(string $id)
+    {
+        return $this->user->quotes()->drafted()->whereId($id)->delete();
     }
 
     private function transformRowsData(EloquentCollection $rowsData)
@@ -415,15 +425,12 @@ class QuoteRepository implements QuoteRepositoryInterface
     {
         $body = [
             'query' => [
-                'bool' => [
-                    'must' => [
-                        'multi_match' => [
-                            'fields' => [
-                                'customer.name', 'customer.valid_until', 'customer.support_start', 'customer.support_end', 'customer.rfq', 'type','created_at'
-                            ],
-                            'query' => $query
-                        ]
-                    ]
+                'multi_match' => [
+                    'fields' => [
+                        'customer.name', 'customer.valid_until', 'customer.support_start', 'customer.support_end', 'customer.rfq', 'type','created_at'
+                    ],
+                    'type' => 'phrase_prefix',
+                    'query' => $query
                 ]
             ]
         ];
@@ -456,11 +463,12 @@ class QuoteRepository implements QuoteRepositoryInterface
             ->send($query)
             ->through([
                 \App\Http\Query\DefaultOrderBy::class,
+                \App\Http\Query\Quote\OrderByName::class,
                 \App\Http\Query\Quote\OrderByRfq::class,
                 \App\Http\Query\Quote\OrderByValidUntil::class,
                 \App\Http\Query\Quote\OrderBySupportStart::class,
                 \App\Http\Query\Quote\OrderBySupportEnd::class,
-                \App\Http\Query\Quote\OrderByCreatedAt::class
+                \App\Http\Query\Quote\OrderByCreatedAt::class,
             ])
             ->thenReturn();
     }

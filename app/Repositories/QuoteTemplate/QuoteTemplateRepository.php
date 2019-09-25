@@ -28,20 +28,19 @@ class QuoteTemplateRepository implements QuoteTemplateRepositoryInterface
     {
         return $this->quoteTemplate
             ->with('templateFields')
-            ->whereHas(
-                'companies', function ($query) use ($companyId) {
-                    return $query->whereId($companyId);
-                }
-            )
-            ->whereHas(
-                'vendors', function ($query) use ($vendorId) {
-                    return $query->whereId($vendorId);
-                }
-            )
-            ->whereHas(
-                'countries', function ($query) use ($countryId) {
-                    return $query->whereId($countryId);
-                }
-            )->get();
+            ->join('company_quote_template', function ($join) use ($companyId) {
+                return $join->on('company_quote_template.quote_template_id', '=', 'quote_templates.id')
+                    ->where('company_id', $companyId);
+            })
+            ->join('vendor_quote_template', function ($join) use ($vendorId) {
+                return $join->on('vendor_quote_template.quote_template_id', '=', 'quote_templates.id')
+                    ->where('vendor_id', $vendorId);
+            })
+            ->join('country_quote_template', function ($join) use ($countryId) {
+                return $join->on('country_quote_template.quote_template_id', '=', 'quote_templates.id')
+                    ->where('country_id', $countryId);
+            })
+            ->select('quote_templates.*')
+            ->get();
     }
 }
