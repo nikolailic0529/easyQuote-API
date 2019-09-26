@@ -31,16 +31,16 @@ class RolesSeeder extends Seeder
 
         $roles = json_decode(file_get_contents(__DIR__ . '/models/roles.json'), true);
 
-        collect($roles)->each(function ($role) {
+        collect($roles)->each(function ($attributes) {
             $role = Role::create([
-                'name' => $role['name']
+                'name' => $attributes['name']
             ]);
 
-            $permissions = collect($role['permissions'])->map(function ($name) {
+            $permissions = collect($attributes['permissions'])->map(function ($name) {
                 return Permission::where('name', $name)->firstOrCreate(compact('name'));
             });
 
-            $role->syncPermissions($permissions);
+            $role->syncPermissions($permissions)->save();
         });
     }
 }

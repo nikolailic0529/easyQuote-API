@@ -120,18 +120,24 @@ class QuoteRepository implements QuoteRepositoryInterface
         return $quote;
     }
 
-    public function getDrafted(string $id)
+    public function draftedQuery(): Builder
     {
         $user = request()->user();
-        $quote = $user->quotes()->drafted()->with('customer')->whereId($id)->firstOrFail();
+        $query = $user->quotes()->drafted()->with('customer', 'company')->getQuery();
+
+        return $query;
+    }
+
+    public function getDrafted(string $id)
+    {
+        $quote = $this->draftedQuery()->whereId($id)->firstOrFail();
 
         return $quote;
     }
 
     public function allDrafted()
     {
-        $user = request()->user();
-        $query = $user->quotes()->drafted()->with('customer')->getQuery();
+        $query = $this->draftedQuery();
 
         return $this->filterQuery($query)->apiPaginate();
     }
@@ -141,7 +147,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         $items = $this->searchOnElasticsearch($query);
 
         $query = $this->buildQuery($items, function ($query) {
-            $query = $query->drafted()->with('customer');
+            $query = $query->drafted()->with('customer', 'company');
             return $this->filterQuery($query);
         });
 
@@ -214,8 +220,13 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function deleteDrafted(string $id)
     {
         $user = request()->user();
-
         return $user->quotes()->drafted()->whereId($id)->firstOrFail()->delete();
+    }
+
+    public function deactivateDrafted(string $id)
+    {
+        $user = request()->user();
+        return $user->quotes()->drafted()->whereId($id)->firstOrFail()->deactivate();
     }
 
     private function transformRowsData(EloquentCollection $rowsData)
@@ -434,7 +445,8 @@ class QuoteRepository implements QuoteRepositoryInterface
             'query' => [
                 'multi_match' => [
                     'fields' => [
-                        'customer.name', 'customer.valid_until', 'customer.support_start', 'customer.support_end', 'customer.rfq', 'type','created_at'
+                        'customer.name', 'customer.valid_until', 'customer.support_start', 'customer.support_end', 'customer.rfq',
+                        'company.name', 'type', 'created_at'
                     ],
                     'type' => 'phrase_prefix',
                     'query' => $query
@@ -471,7 +483,9 @@ class QuoteRepository implements QuoteRepositoryInterface
             ->through([
                 \App\Http\Query\DefaultOrderBy::class,
                 \App\Http\Query\Quote\JoinCustomer::class,
+                \App\Http\Query\Quote\JoinCompany::class,
                 \App\Http\Query\Quote\OrderByName::class,
+                \App\Http\Query\Quote\OrderByCompanyName::class,
                 \App\Http\Query\Quote\OrderByRfq::class,
                 \App\Http\Query\Quote\OrderByValidUntil::class,
                 \App\Http\Query\Quote\OrderBySupportStart::class,

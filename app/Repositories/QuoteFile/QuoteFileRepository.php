@@ -113,9 +113,11 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         $quoteFile->columnsData()->forceDelete();
         $quoteFile->rowsData()->forceDelete();
 
-        $importedPages = $this->createImportedPages($array, $quoteFile, $user)->all();
+        $importedPages = $this->createImportedPages($array, $quoteFile, $user);
+
         $rows = collect($importedPages)->where('page', '>=', $quoteFile->imported_page)
             ->pluck('rows')->collapse();
+
 
         $quoteFile->markAsHandled();
 
@@ -150,16 +152,12 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
             foreach ($array as $item) {
                 yield $item;
             }
-        })->map(function ($page, $key) use ($quoteFile, $user) {
-            ['page' => $pageNumber, 'rows' => $rows] = $page;
+        })->map(function ($pageData, $key) use ($quoteFile, $user) {
+            ['page' => $page, 'rows' => $rowsData] = $pageData;
+            $rows = $this->createImportedRows($rowsData, $quoteFile, $user, $page);
 
-            $importedRows = $this->createImportedRows($rows, $quoteFile, $user, $pageNumber);
-
-            return [
-                'page' => $pageNumber,
-                'rows' => $importedRows
-            ];
-        });
+            return compact('page', 'rows');
+        })->all();
 
         return $importedPages;
     }
@@ -168,38 +166,28 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
     {
         $importedRows = collect();
 
-        LazyCollection::make(function () use ($rows) {
-            foreach($rows as $row) {
-                yield $row;
-            }
-        })->chunk(40)->each(function ($rowsChunk, $key) use ($quoteFile, $user, $pageNumber, $importedRows) {
-            $rowsChunk->each(function ($row, $key) use ($quoteFile, $user, $pageNumber, $importedRows) {
-                $importedRow = $quoteFile->rowsData()->make([
-                    'page' => $pageNumber
-                ]);
+        collect($rows)->lazy()->chunk(200)
+            ->map(function ($rowChunk) use ($quoteFile, $user, $pageNumber, $importedRows) {
+                $rowChunk->each(function ($row) use ($quoteFile, $user, $pageNumber, $importedRows) {
+                    $importedRow = $quoteFile->rowsData()->make([
+                        'page' => $pageNumber
+                    ]);
 
-                $importedRow->user()->associate($user);
+                    $importedRow->user()->associate($user);
+                    $importedRow->quoteFile()->associate($quoteFile);
+                    $importedRow->markAsDrafted();
+                    $importedRow = $this->createRowData($row, $quoteFile, $user, $pageNumber, $importedRow);
 
-                $importedRow->quoteFile()->associate($quoteFile);
-
-                $importedRow->markAsDrafted();
-
-                $rowData = $this->createRowData($row, $quoteFile, $user, $pageNumber, $importedRow);
-
-                $importedRows->push(
-                    collect($importedRow)->only(['id', 'is_selected'])->merge([
-                        'columns_data' => $rowData->values()
-                    ])
-                );
-            });
-        });
+                    return $importedRows->push($importedRow->makeHiddenExcept(['id', 'is_selected', 'columnsData']));
+                })->all();
+            })->all();
 
         return $importedRows;
     }
 
-    protected function createRowData(array $row, QuoteFile $quoteFile, User $user, int $pageNumber, ImportedRow $importedRow, $formatHeader = true)
+    protected function createRowData(array $row, QuoteFile $quoteFile, User $user, int $page, ImportedRow $importedRow, $formatHeader = true)
     {
-        $rowData = collect($row)->map(function ($value, $alias) use ($quoteFile, $user, $pageNumber, $importedRow, $formatHeader) {
+        $rowData = collect($row)->map(function ($value, $alias) use ($quoteFile, $user, $page, $importedRow, $formatHeader) {
             $importableColumn = $this->importableColumn->whereHas('aliases', function ($query) use ($alias) {
                 return $query->whereAlias($alias);
             })->first();
@@ -208,28 +196,23 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
                 $alias = Str::header($alias);
             }
 
-            $columnDataItem = $importedRow->columnsData()->make(
-                [
-                    'value' => $value,
-                    'page' => $pageNumber,
-                    'header' => $alias ?? __('parser.unknown_column_header')
-                ]
-            );
+            $header = $alias ?? __('parser.unknown_column_header');
 
+            $columnDataItem = $importedRow->columnsData()->make(compact('value', 'page', 'header'));
             $columnDataItem->user()->associate($user);
-
             $columnDataItem->quoteFile()->associate($quoteFile);
 
             if(!is_null($importableColumn)) {
                 $columnDataItem->importableColumn()->associate($importableColumn);
             };
 
-            $columnDataItem->markAsDrafted();
-
-            return collect($columnDataItem)->only('id', 'value', 'header', 'importable_column_id')->sortKeys();
+            return $columnDataItem;
         });
 
-        return $rowData;
+        $importedRow->columnsData()->saveMany($rowData);
+        $importedRow->load('columnsData');
+
+        return $importedRow;
     }
 
     public function getRowsData(QuoteFile $quoteFile)

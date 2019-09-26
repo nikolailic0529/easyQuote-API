@@ -7,6 +7,17 @@ use App\Models\Quote\Quote;
 class QuoteObserver
 {
     /**
+     * Handle the Quote "created" event.
+     *
+     * @param Quote $quote
+     * @return void
+     */
+    public function created(Quote $quote)
+    {
+        return $quote->activate();
+    }
+
+    /**
      * Handle the Quote "deleting" event.
      *
      * @param  \App\Models\Quote\Quote  $quote
@@ -14,6 +25,6 @@ class QuoteObserver
      */
     public function deleting(Quote $quote)
     {
-        $quote->countryMargin()->dissociate();
+        return $quote->countryMargin()->dissociate();
     }
 }

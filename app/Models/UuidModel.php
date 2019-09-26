@@ -3,6 +3,7 @@
 use Illuminate\Database\Eloquent\Model;
 use Webpatser\Uuid\Uuid;
 use App\Builder\ApiBuilder;
+use Carbon\Carbon;
 
 class UuidModel extends Model
 {
@@ -38,5 +39,24 @@ class UuidModel extends Model
     public function newEloquentBuilder($query)
     {
         return new ApiBuilder($query);
+    }
+
+    public function getCreatedAtAttribute($date)
+    {
+        return $this->formatDate($date);
+    }
+
+    public function getUpdatedAtAttribute($date)
+    {
+        return $this->formatDate($date);
+    }
+
+    private function formatDate($date)
+    {
+        if(!isset($date)) {
+            return null;
+        }
+
+        return Carbon::createFromFormat('Y-m-d H:i:s', $date)->format('d/m/Y');
     }
 }

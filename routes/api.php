@@ -31,6 +31,7 @@ Route::group(['namespace' => 'API'], function () {
          * User's drafted Quotes
          */
         Route::resource('drafted', 'QuoteDraftedController', ['only' => $crdRoutes]);
+        Route::patch('drafted/{quote}', 'QuoteDraftedController@deactivate');
 
         Route::resource('file', 'QuoteFilesController', ['only' => $crRoutes]);
         Route::post('handle', 'QuoteFilesController@handle');

@@ -20,6 +20,6 @@ trait Draftable
 
     public function scopeDrafted($query)
     {
-        return $query->whereNotNull('drafted_at');
+        return $query->whereNotNull($this->getTable() . '.drafted_at');
     }
 }

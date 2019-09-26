@@ -13,7 +13,7 @@ class QuoteDraftedController extends Controller
     }
 
     /**
-     * Display a listing of the resource.
+     * Display a listing of the Drafted Quotes.
      *
      * @return \Illuminate\Http\Response
      */
@@ -38,15 +38,28 @@ class QuoteDraftedController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified Drafted Quote
      *
      * @param  string  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(string $id)
     {
         return response()->json(
             $this->quote->deleteDrafted($id)
+        );
+    }
+
+    /**
+     * Deactivate the specified Drafted Quote
+     *
+     * @param  string  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function deactivate(string $id)
+    {
+        return response()->json(
+            $this->quote->deactivateDrafted($id)
         );
     }
 }

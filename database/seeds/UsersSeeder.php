@@ -3,9 +3,12 @@
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Faker\Generator as Faker;
-use App\Models\Role;
-use App\Models\Data\Country;
-use App\Models\Data\Timezone;
+use App\Models \ {
+    User,
+    Role,
+    Data\Country,
+    Data\Timezone
+};
 
 class UsersSeeder extends Seeder
 {
@@ -24,14 +27,14 @@ class UsersSeeder extends Seeder
         Schema::enableForeignKeyConstraints();
 
         $users = json_decode(file_get_contents(__DIR__ . '/models/users.json'), true);
+        $administratorRole = Role::findByName('Administrator');
 
-        collect($users)->each(function ($user) use ($faker) {
+        collect($users)->each(function ($user) use ($administratorRole, $faker) {
 
             $countryId = Country::orderByRaw("RAND()")->first()->id;
             $timezoneId = Timezone::orderByRaw("RAND()")->first()->id;
 
-            DB::table('users')->insert([
-                'id' => (string) Uuid::generate(4),
+            $user = User::create([
                 'email' => $user['email'],
                 'first_name' => $faker->firstName,
                 'middle_name' => $faker->firstName,
@@ -40,6 +43,8 @@ class UsersSeeder extends Seeder
                 'country_id' => $countryId,
                 'timezone_id' => $timezoneId
             ]);
+
+            $user->assignRole($administratorRole);
         });
     }
 }

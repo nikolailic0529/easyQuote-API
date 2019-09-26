@@ -11,6 +11,7 @@ use App\Models \ {
     QuoteFile\QuoteFile
 };
 use App\Traits \ {
+    Activatable,
     Search\Searchable,
     HasQuoteFiles,
     BelongsToUser,
@@ -26,7 +27,7 @@ use Setting;
 class Quote extends CompletableModel implements HasOrderedScope
 {
     use Searchable, HasQuoteFiles, BelongsToUser, BelongsToCustomer, BelongsToCompany,
-    BelongsToVendor, BelongsToCountry, BelongsToMargin, Draftable;
+    BelongsToVendor, BelongsToCountry, BelongsToMargin, Draftable, Activatable;
 
     protected $fillable = ['type', 'customer_id', 'company_id', 'vendor_id', 'country_id', 'language_id', 'quote_template_id', 'last_drafted_step'];
 
@@ -217,7 +218,7 @@ class Quote extends CompletableModel implements HasOrderedScope
 
     public function toSearchArray()
     {
-        $this->load('customer');
+        $this->load('customer', 'company');
 
         return $this->toArray();
     }

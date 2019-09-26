@@ -8,6 +8,7 @@ use App\Http\Requests \ {
     MappingReviewRequest,
     ReviewAppliedMarginRequest
 };
+use Illuminate\Database\Eloquent\Builder;
 
 interface QuoteRepositoryInterface
 {
@@ -60,9 +61,16 @@ interface QuoteRepositoryInterface
      * Search by Drafted Quotes
      *
      * @param string $query
-     * @return \Illuminate\Pagination\LengthAwarePaginator
+     * @return \App\Builder\Pagination\Paginator
      */
     public function searchDrafted(string $query = ''): Paginator;
+
+    /**
+     * Get User's Drafted Quotes Query
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function draftedQuery(): Builder;
 
     /**
      * Find User's Quote
@@ -87,4 +95,12 @@ interface QuoteRepositoryInterface
      * @return void
      */
     public function deleteDrafted(string $id);
+
+    /**
+     * Deactivate User's Drafted Quote
+     *
+     * @param string $id
+     * @return void
+     */
+    public function deactivateDrafted(string $id);
 }
