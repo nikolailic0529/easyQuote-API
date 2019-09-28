@@ -103,4 +103,12 @@ interface QuoteRepositoryInterface
      * @return void
      */
     public function deactivateDrafted(string $id);
+
+    /**
+     * Activate User's Drafted Quote
+     *
+     * @param string $id
+     * @return void
+     */
+    public function activateDrafted(string $id);
 }

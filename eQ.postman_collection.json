@@ -408,12 +408,12 @@
 								{
 									"listen": "test",
 									"script": {
-										"id": "38fb2fd3-b735-4fbb-92a3-af961a123424",
+										"id": "d5cc7a5a-1a62-453f-b8fd-7bb20eaae8ab",
 										"exec": [
 											"let response = pm.response.json();\r",
-											"pm.environment.set('company_id', response.companies[2].id);\r",
-											"pm.environment.set('vendor_id', response.companies[2].vendors[0].id);\r",
-											"pm.environment.set('country_id', response.companies[2].vendors[0].countries[0].id);"
+											"pm.environment.set('company_id', response.companies[0].id);\r",
+											"pm.environment.set('vendor_id', response.companies[0].vendors[0].id);\r",
+											"pm.environment.set('country_id', response.companies[0].vendors[0].countries[0].id);"
 										],
 										"type": "text/javascript"
 									}
@@ -421,7 +421,7 @@
 								{
 									"listen": "prerequest",
 									"script": {
-										"id": "bea963c7-63a7-4ea3-97cb-8cf6765449de",
+										"id": "f162a933-a078-4394-9d63-f0880780e292",
 										"exec": [
 											""
 										],
@@ -721,7 +721,7 @@
 					"_postman_isSubFolder": true
 				},
 				{
-					"name": "Get Drafted Quotes",
+					"name": "Get/Search Drafted Quotes",
 					"event": [
 						{
 							"listen": "prerequest",
@@ -738,10 +738,7 @@
 							"script": {
 								"id": "7ed90f23-faba-4220-825a-1b492265dfea",
 								"exec": [
-									"let response = pm.response.json();\r",
-									"pm.environment.set('company_id', response.companies[0].id);\r",
-									"pm.environment.set('vendor_id', response.companies[0].vendors[0].id);\r",
-									"pm.environment.set('country_id', response.companies[0].vendors[0].countries[0].id);"
+									""
 								],
 								"type": "text/javascript"
 							}
@@ -764,10 +761,16 @@
 								"key": "Accept",
 								"type": "text",
 								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
 							}
 						],
 						"url": {
-							"raw": "http://localhost:8000/api/quotes/drafted",
+							"raw": "http://localhost:8000/api/quotes/drafted/?order_by_name=desc&per_page=2",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -776,7 +779,210 @@
 							"path": [
 								"api",
 								"quotes",
-								"drafted"
+								"drafted",
+								""
+							],
+							"query": [
+								{
+									"key": "order_by_name",
+									"value": "desc"
+								},
+								{
+									"key": "per_page",
+									"value": "2"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deactivate Drafted Quote",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "7ed90f23-faba-4220-825a-1b492265dfea",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/quotes/drafted/bda80a60-e028-11e9-885e-03a81df29dd2",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"quotes",
+								"drafted",
+								"bda80a60-e028-11e9-885e-03a81df29dd2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Activate Drafted Quote",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "7ed90f23-faba-4220-825a-1b492265dfea",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/quotes/drafted/bda80a60-e028-11e9-885e-03a81df29dd2",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"quotes",
+								"drafted",
+								"bda80a60-e028-11e9-885e-03a81df29dd2"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Drafted Quote",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "7ed90f23-faba-4220-825a-1b492265dfea",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/quotes/drafted/{{quote_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"quotes",
+								"drafted",
+								"{{quote_id}}"
 							]
 						}
 					},
@@ -841,7 +1047,8 @@
 								{
 									"key": "quote_id",
 									"value": "{{quote_id}}",
-									"type": "text"
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "quote_data[company_id]",
@@ -888,17 +1095,25 @@
 								},
 								{
 									"key": "quote_data[field_column][0][template_field_id]",
-									"value": "928d9398-d691-4c0d-803a-7699aabc68e7",
-									"type": "text"
-								},
-								{
-									"key": "quote_data[field_column][0][importable_column_id]",
-									"value": "",
-									"type": "text"
+									"value": "73925041-3b13-461d-a8ce-4fc37d16ad90",
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "quote_data[field_column][0][is_default_enabled]",
 									"value": "1",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[field_column][0][importable_column_id]",
+									"value": "",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[field_column][0][default_value]",
+									"value": "e9f46495-59bc-4992-b2f1-800320e70f52",
 									"type": "text",
 									"disabled": true
 								},
@@ -910,20 +1125,12 @@
 								},
 								{
 									"key": "quote_data[last_drafted_step]",
-									"value": "mapping_step",
-									"type": "text",
-									"disabled": true
+									"value": "Initial",
+									"type": "text"
 								},
 								{
 									"key": "quote_data[selected_rows][]",
 									"value": "4cae9fc0-dc0f-11e9-8c7b-93c95e24b12b",
-									"type": "text",
-									"disabled": true
-								},
-								{
-									"key": "quote_data[type]",
-									"value": "New",
-									"description": "New | Renewal",
 									"type": "text",
 									"disabled": true
 								},
@@ -936,30 +1143,38 @@
 								{
 									"key": "margin[quote_type]",
 									"value": "Renewal",
-									"type": "text",
-									"disabled": true
+									"description": "New|Renewal",
+									"type": "text"
 								},
 								{
 									"key": "margin[type]",
 									"value": "By Country",
-									"type": "text",
-									"disabled": true
+									"type": "text"
 								},
 								{
 									"key": "margin[method]",
 									"value": "Standard",
-									"description": "No Margin, Standard",
-									"type": "text",
-									"disabled": true
+									"description": "No Margin|Standard",
+									"type": "text"
 								},
 								{
 									"key": "margin[value]",
-									"value": "4",
+									"value": "20",
+									"type": "text"
+								},
+								{
+									"key": "margin[is_fixed]",
+									"value": "0",
+									"type": "text"
+								},
+								{
+									"key": "margin[delete]",
+									"value": "1",
 									"type": "text",
 									"disabled": true
 								},
 								{
-									"key": "margin[is_fixed]",
+									"key": "quote_data[detach_schedule]",
 									"value": "1",
 									"type": "text",
 									"disabled": true
@@ -1166,6 +1381,505 @@
 			]
 		},
 		{
+			"name": "Margins",
+			"item": [
+				{
+					"name": "List Country Margins",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "is_fixed",
+									"value": "0",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/margins/?order_by_vendor=asc&search=12",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"margins",
+								""
+							],
+							"query": [
+								{
+									"key": "order_by_created_at",
+									"value": "asc",
+									"disabled": true
+								},
+								{
+									"key": "order_by_country",
+									"value": "asc",
+									"disabled": true
+								},
+								{
+									"key": "order_by_vendor",
+									"value": "asc"
+								},
+								{
+									"key": "search",
+									"value": "12"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Country Margin",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "is_fixed",
+									"value": "0",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/margins/{{country_margin_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"margins",
+								"{{country_margin_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Store Country Margin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "916fd03b-df35-49f7-96dc-7a0c4df37aee",
+								"exec": [
+									"let response = pm.response.json();\r",
+									"pm.environment.set('country_margin_id', response.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "quote_type",
+									"value": "New",
+									"type": "text"
+								},
+								{
+									"key": "method",
+									"value": "No Margin",
+									"type": "text"
+								},
+								{
+									"key": "is_fixed",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "country_id",
+									"value": "{{country_id}}",
+									"type": "text"
+								},
+								{
+									"key": "vendor_id",
+									"value": "{{vendor_id}}",
+									"type": "text"
+								},
+								{
+									"key": "value",
+									"value": "2",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/margins/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"margins",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Country Margin",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "is_fixed",
+									"value": "0",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/margins/50381280-e10b-11e9-87b9-2958066c8f28",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"margins",
+								"50381280-e10b-11e9-87b9-2958066c8f28"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Country Margin",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "is_fixed",
+									"value": "0",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/margins/50381280-e10b-11e9-87b9-2958066c8f28",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"margins",
+								"50381280-e10b-11e9-87b9-2958066c8f28"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get percentages by Country Margins",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "quote_type",
+									"value": "New",
+									"type": "text"
+								},
+								{
+									"key": "type",
+									"value": "No Margin",
+									"type": "text"
+								},
+								{
+									"key": "method",
+									"value": "No Margin",
+									"type": "text"
+								},
+								{
+									"key": "quote_id",
+									"value": "{{quote_id}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/margins/percentages",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"margins",
+								"percentages"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Activate Country Margin",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "is_fixed",
+									"value": "0",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/margins/activate/{{country_margin_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"margins",
+								"activate",
+								"{{country_margin_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deactivate Country Margin",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "is_fixed",
+									"value": "0",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/margins/deactivate/{{country_margin_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"margins",
+								"deactivate",
+								"{{country_margin_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
 			"name": "Sign Up",
 			"event": [
 				{
@@ -1290,12 +2004,12 @@
 					"formdata": [
 						{
 							"key": "email",
-							"value": "mike@gmail.com",
+							"value": "fakhar.anwar@supportwarehouse.com",
 							"type": "text"
 						},
 						{
 							"key": "password",
-							"value": "password",
+							"value": "Admin@eq_",
 							"type": "text"
 						}
 					]

@@ -25,7 +25,7 @@ class CreateImportedColumnsTable extends Migration
             $table->uuid('imported_row_id');
             $table->foreign('imported_row_id')->references('id')->on('imported_rows')->onDelete('cascade');
             $table->tinyInteger('page')->nullable();
-            $table->string('value')->nullable();
+            $table->text('value')->nullable();
             $table->timestamps();
             $table->timestamp('drafted_at')->nullable()->default(null);
             $table->softDeletes();

@@ -4,6 +4,7 @@ use App\Contracts\Repositories \ {
     Quote\QuoteRepositoryInterface,
     QuoteTemplate\QuoteTemplateRepositoryInterface as QuoteTemplateRepository
 };
+use App\Contracts\Services\QuoteServiceInterface as QuoteService;
 use App\Models \ {
     Company,
     Vendor,
@@ -58,7 +59,8 @@ class QuoteRepository implements QuoteRepositoryInterface
         Company $company,
         Vendor $vendor,
         DataSelectSeparator $dataSelectSeparator,
-        Elasticsearch $search
+        Elasticsearch $search,
+        QuoteService $quoteService
     ) {
         $this->quote = $quote;
         $this->quoteFile = $quoteFile;
@@ -70,6 +72,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         $this->dataSelectSeparator = $dataSelectSeparator;
         $this->defaultPage = Setting::get('parser.default_page');
         $this->search = $search;
+        $this->quoteService = $quoteService;
 
         $importableColumnsByName = $this->importableColumn->system()->ordered()->get(['id', 'name'])->toArray();
         $importableColumnsByName = collect($importableColumnsByName)->mapWithKeys(function ($value) {
@@ -167,6 +170,14 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function step1()
     {
         $companies = $this->company->with('vendors.countries')->get();
+
+        /**
+         * Re-order Companies (Support Warehouse on the 1st place)
+         */
+        $companies = $companies->sortByDesc(function ($company) {
+            return $company->vat === 'GB758501125';
+        })->values();
+
         $data_select_separators = $this->dataSelectSeparator->all();
 
         return compact('data_select_separators', 'companies');
@@ -196,12 +207,11 @@ class QuoteRepository implements QuoteRepositoryInterface
     {
         $quote = $this->find($request->quote_id);
 
-        $rowsData = $this->createDefaultData($quote->rowsDataByColumns, $quote);
-        $rowsData = $this->setDefaultValues($rowsData, $quote);
-        $rowsData = $this->applyMargin($rowsData, $quote);
-        $rowsData = $this->transformRowsData($rowsData);
+        $quote->computableRows = $this->createDefaultData($quote->rowsDataByColumns, $quote);
+        $quote->computableRows = $this->setDefaultValues($quote->computableRows, $quote);
+        $quote->computableRows = $this->transformRowsData($quote->computableRows);
 
-        return $rowsData;
+        return $quote->computableRows;
     }
 
     public function setMargin(Quote $quote, $attributes)
@@ -227,6 +237,12 @@ class QuoteRepository implements QuoteRepositoryInterface
     {
         $user = request()->user();
         return $user->quotes()->drafted()->whereId($id)->firstOrFail()->deactivate();
+    }
+
+    public function activateDrafted(string $id)
+    {
+        $user = request()->user();
+        return $user->quotes()->drafted()->whereId($id)->firstOrFail()->activate();
     }
 
     private function transformRowsData(EloquentCollection $rowsData)
@@ -383,42 +399,6 @@ class QuoteRepository implements QuoteRepositoryInterface
         ];
 
         return collect($request->only($stateModels));
-    }
-
-    private function applyMargin(EloquentCollection $rowsData, Quote $quote, bool $mounthly = true)
-    {
-        $countryMargin = $quote->countryMargin;
-
-        if(!isset($countryMargin)) {
-            return $rowsData;
-        }
-
-        $rowsData->transform(function ($row) use ($countryMargin, $mounthly) {
-            $dateFromColumn = $this->getColumn($row->columnsData, 'date_from');
-            $dateToColumn = $this->getColumn($row->columnsData, 'date_to');
-            $priceColumn = $this->getColumn($row->columnsData, 'price');
-
-            if($mounthly) {
-                $priceColumn->value = $countryMargin->calculate($priceColumn->value);
-            } else {
-                $priceColumn->value = $countryMargin->calculate($priceColumn->value, $dateFromColumn->value, $dateToColumn->value);
-            }
-
-            return $row;
-        });
-
-        return $rowsData;
-    }
-
-    private function getColumn(EloquentCollection $collection, string $name)
-    {
-        $importableColumns = $this->importableColumnsByName;
-
-        if(!$importableColumns->has($name)) {
-            return null;
-        }
-
-        return $collection->where('importable_column_id', $importableColumns->get($name))->first();
     }
 
     private function createDefaultData(EloquentCollection $rowsData, Quote $quote)

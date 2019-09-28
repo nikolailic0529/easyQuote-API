@@ -21,12 +21,14 @@
     {
         "header": "From Date",
         "name": "date_from",
+        "is_required": true,
         "type": "date",
         "order": 4
     },
     {
         "header": "To Date",
         "name": "date_to",
+        "is_required": true,
         "type": "date",
         "order": 5
     },

@@ -99,6 +99,12 @@ class ImportedRowImport implements OnEachRow, WithHeadingRow, WithCustomCsvSetti
                 $highestRow = $worksheet->getHighestRow();
                 $hasHeading = false;
 
+                $headingRow = HeadingRowExtractor::extract($worksheet, $this);
+
+                if(!$this->quoteFile->isExcel()) {
+                    return;
+                }
+
                 while(!$hasHeading && $this->headingRow < $highestRow) {
                     $hasHeading = $this->checkHeadingRow($worksheet);
                 }
@@ -162,7 +168,14 @@ class ImportedRowImport implements OnEachRow, WithHeadingRow, WithCustomCsvSetti
 
     private function hasNotRequiredHeaders(Collection $foundColumns)
     {
-        return $foundColumns->whereIn('foundColumn.name', $this->requiredHeaders)->count() < count($this->requiredHeaders);
+        $requiredHeaders = collect($this->requiredHeaders)->implode('|');
+        $foundHeaders = $foundColumns->pluck('foundColumn.name')->map(function ($name) use ($requiredHeaders) {
+            if(preg_match("/{$requiredHeaders}/i", $name, $match)) {
+                return $match[0];
+            };
+        });
+
+        return $foundHeaders->unique()->count() < count($this->requiredHeaders);
     }
 
     private function filterHeadingRow(Collection $row)
@@ -230,14 +243,15 @@ class ImportedRowImport implements OnEachRow, WithHeadingRow, WithCustomCsvSetti
 
     private function requiredExistsInColumns(Collection $columnsData)
     {
-        $foundRequiredHeaders = collect([]);
-        $columnsData->each(function ($column) use ($foundRequiredHeaders) {
-            if(in_array($column->importableColumn->name, $this->requiredHeaders) && isset($column->value) && mb_strlen($column->value) > 0) {
-                $foundRequiredHeaders->push($column->importableColumn->name);
-            }
+        $requiredHeaders = collect($this->requiredHeaders)->implode('^|');
+
+        $foundHeaders = $columnsData->map(function ($column) use ($requiredHeaders) {
+            if(isset($column->value) && mb_strlen($column->value) > 0 && preg_match("/{$requiredHeaders}/", $column->importableColumn->name, $match)) {
+                return $match[0];
+            };
         });
 
-        return $foundRequiredHeaders->count() >= count($this->requiredHeaders);
+        return $foundHeaders->unique()->count() >= count($this->requiredHeaders);
     }
 
     private function findColumns(Collection $row, bool $isHeading = false)
@@ -284,7 +298,7 @@ class ImportedRowImport implements OnEachRow, WithHeadingRow, WithCustomCsvSetti
 
     private function handleColumns(Collection $columns)
     {
-        $columns = $columns->map(function ($column) {
+        $columns = $columns->reduce(function ($carry, $column) {
             ['header' => $header, 'value' => $value, 'foundColumn' => $foundColumn] = $column;
 
             $columnData = $this->quoteFile->columnsData()->make([]);
@@ -297,12 +311,12 @@ class ImportedRowImport implements OnEachRow, WithHeadingRow, WithCustomCsvSetti
                 'value' => $value
             ]);
 
-            $importableColumn = $columnData->associateImportableColumnOrCreate($foundColumn);
+            $columnData->associateImportableColumnOrCreate($foundColumn, $carry);
 
-            // $columnData->value = $this->quoteFile->quote->customer->handleColumnValue($importableColumn, $value);
+            $carry->push($columnData);
 
-            return $columnData;
-        });
+            return $carry;
+        }, collect());
 
         return $columns;
     }

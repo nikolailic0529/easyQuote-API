@@ -15,7 +15,7 @@ class CreateCountryMarginsTable extends Migration
     {
         Schema::create('country_margins', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->unsignedSmallInteger('value');
+            $table->decimal('value');
             $table->boolean('is_fixed')->default(false);
             $table->uuid('user_id');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');

@@ -118,20 +118,16 @@ class StoreQuoteStateRequest extends FormRequest
             'quote_data.last_drafted_step' => 'string|max:20',
             'margin.quote_type' => [
                 'string',
-                'required_with:margin',
+                'required_with:margin.is_fixed,margin.method,margin.type,margin.value',
                 'in:' . $this->types
             ],
-            'margin.type' => [
-                'required_with:margin',
-                'in:' . $this->margin['types']
-            ],
             'margin.method' => [
-                'required_with:margin',
+                'required_with:margin.is_fixed,margin.type,margin.quote_type,margin.value',
                 'in:' . $this->margin['methods']
             ],
-            'margin.is_fixed' => 'required_with:margin|boolean',
+            'margin.is_fixed' => 'required_with:margin.method,margin.type,margin.quote_type,margin.value|boolean',
             'margin.value' => [
-                'required_with:margin',
+                'required_with:margin.method,margin.type,margin.quote_type,margin.is_fixed',
                 'numeric',
                 $this->ifEquals('margin.is_fixed', false, 'max:100')
             ],

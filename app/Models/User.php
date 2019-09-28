@@ -8,11 +8,11 @@ use App\Traits \ {
     HasCountry,
     HasTimezone,
     HasRole,
-    CanBeAdmin,
     HasQuoteFilesDirectory,
     HasQuoteFiles,
     HasQuotes,
-    HasImportableColumns
+    HasImportableColumns,
+    Margin\HasCountryMargins
 };
 use Spatie\Permission\Traits\HasRoles;
 
@@ -28,7 +28,7 @@ class User extends AuthenticableUser implements MustVerifyEmail
         Notifiable,
         HasCountry,
         HasTimezone,
-        CanBeAdmin;
+        HasCountryMargins;
 
     /**
      * The attributes that are mass assignable.

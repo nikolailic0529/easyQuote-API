@@ -32,8 +32,15 @@ use App\Contracts \ {
     Repositories\Customer\CustomerRepositoryInterface,
     Repositories\System\SystemSettingRepositoryInterface
 };
-use App\Models\Quote\Quote;
-use App\Observers\QuoteObserver;
+use App\Contracts\Services\QuoteServiceInterface;
+use App\Models\Quote \ {
+    Quote,
+    Margin\CountryMargin
+};
+use App\Observers \ {
+    QuoteObserver,
+    MarginObserver
+};
 use App\Repositories \ {
     TimezoneRepository,
     CountryRepository,
@@ -56,7 +63,8 @@ use App\Services \ {
     AuthService,
     ParserService,
     WordParser,
-    PdfParser
+    QuoteService,
+    PdfParser\PdfParser
 };
 use Illuminate\Support\Str;
 use Elasticsearch \ {
@@ -82,7 +90,8 @@ class AppServiceProvider extends ServiceProvider
         DataSelectSeparatorRepositoryInterface::class => DataSelectSeparatorRepository::class,
         CustomerRepositoryInterface::class => CustomerRepository::class,
         SystemSettingRepositoryInterface::class => SystemSettingRepository::class,
-        MarginRepositoryInterface::class => MarginRepository::class
+        MarginRepositoryInterface::class => MarginRepository::class,
+        QuoteServiceInterface::class => QuoteService::class
     ];
 
     /**
@@ -135,5 +144,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Quote::observe(QuoteObserver::class);
+
+        CountryMargin::observe(MarginObserver::class);
     }
 }

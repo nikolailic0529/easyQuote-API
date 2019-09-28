@@ -58,5 +58,8 @@ class DatabaseSeeder extends Seeder
 
         $this->call(SystemSettingsSeeder::class);
         $this->command->info('Seeded the default system settings!');
+
+        $this->call(CountryMarginsSeeder::class);
+        $this->command->info('Seeded the country margins!');
     }
 }

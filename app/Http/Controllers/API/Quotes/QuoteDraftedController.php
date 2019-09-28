@@ -51,6 +51,19 @@ class QuoteDraftedController extends Controller
     }
 
     /**
+     * Activate the specified Drafted Quote
+     *
+     * @param  string  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function activate(string $id)
+    {
+        return response()->json(
+            $this->quote->activateDrafted($id)
+        );
+    }
+
+    /**
      * Deactivate the specified Drafted Quote
      *
      * @param  string  $id

@@ -14,6 +14,7 @@ use App\Traits \ {
     HasSystemScope
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Str;
 
 class ImportedColumn extends UuidModel
@@ -29,9 +30,17 @@ class ImportedColumn extends UuidModel
         'unknown_header', 'importableColumn', 'imported_row_id', 'template_field_name'
     ];
 
-    public function associateImportableColumnOrCreate($importableColumn)
+    public function associateImportableColumnOrCreate($importableColumn, Collection $carry)
     {
-        if($importableColumn instanceof ImportableColumn) {
+        $carryHasImportableColumn = $carry->contains(function ($column) use ($importableColumn) {
+            if(!isset($importableColumn->id)) {
+                return false;
+            }
+
+            return $column->importableColumn->id === $importableColumn->id;
+        });
+
+        if($importableColumn instanceof ImportableColumn && !$carryHasImportableColumn) {
             $this->importableColumn()->associate($importableColumn);
 
             return $importableColumn;

@@ -1,0 +1,62 @@
+[
+    {
+        "vendor": "HPE",
+        "quote_type": "New",
+        "value": 12.5,
+        "is_fixed": false,
+        "method": "Standard",
+        "countries": [
+            "GB", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SA", "AU", "NZ"
+        ]
+    },
+    {
+        "vendor": "LEN",
+        "quote_type": "New",
+        "value": 8.75,
+        "is_fixed": false,
+        "method": "Standard",
+        "countries": [
+            "GB", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SA", "AU", "NZ"
+        ]
+    },
+    {
+        "vendor": "IBM",
+        "quote_type": "New",
+        "value": 5.5,
+        "is_fixed": false,
+        "method": "Standard",
+        "countries": [
+            "GB", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SA", "AU", "NZ"
+        ]
+    },
+    {
+        "vendor": "HPE",
+        "quote_type": "Renewal",
+        "value": 12.5,
+        "is_fixed": false,
+        "method": "Standard",
+        "countries": [
+            "GB", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SA", "AU", "NZ"
+        ]
+    },
+    {
+        "vendor": "LEN",
+        "quote_type": "Renewal",
+        "value": 8.75,
+        "is_fixed": false,
+        "method": "Standard",
+        "countries": [
+            "GB", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SA", "AU", "NZ"
+        ]
+    },
+    {
+        "vendor": "IBM",
+        "quote_type": "Renewal",
+        "value": 5.5,
+        "is_fixed": false,
+        "method": "Standard",
+        "countries": [
+            "GB", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SA", "AU", "NZ"
+        ]
+    }
+]
