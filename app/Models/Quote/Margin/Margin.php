@@ -1,21 +1,24 @@
 <?php namespace App\Models\Quote\Margin;
 
-use App\Models\QuoteFile\ImportedColumn;
-use App\Models\UuidModel;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models \ {
+    UuidModel,
+    Quote\Quote
+};
 use App\Traits \ {
     BelongsToUser,
-    BelongsToVendor
+    BelongsToVendor,
+    Activatable
 };
+use Illuminate\Database\Eloquent \ {
+    Builder,
+    SoftDeletes
+};
+use App\Contracts\HasOrderedScope;
 use Carbon\Carbon, Str;
 
-abstract class Margin extends UuidModel
+abstract class Margin extends UuidModel implements HasOrderedScope
 {
-    use BelongsToUser, BelongsToVendor, SoftDeletes;
-
-    protected $fillable = [
-        'value', 'is_fixed', 'quote_type', 'method'
-    ];
+    use BelongsToUser, BelongsToVendor, SoftDeletes, Activatable;
 
     protected $attributes = [
         'is_fixed' => false,
@@ -24,6 +27,11 @@ abstract class Margin extends UuidModel
 
     protected $hidden = [
         'deleted_at', 'drafted_at'
+    ];
+
+    protected $casts = [
+        'value' => 'decimal,2',
+        'is_fixed' => 'boolean'
     ];
 
     public function markAsFixed()
@@ -38,6 +46,16 @@ abstract class Margin extends UuidModel
         return $this->forceFill([
             'is_fixed' => false
         ])->save();
+    }
+
+    public function isFixed()
+    {
+        return $this->is_fixed;
+    }
+
+    public function isPercentage()
+    {
+        return !$this->is_fixed;
     }
 
     /**
@@ -64,11 +82,11 @@ abstract class Margin extends UuidModel
             return number_format($value, 2);
         }
 
-        if($this->is_fixed) {
-            $computedValue = $price + $this->diff_value;
-        } else {
+        if($this->isPercentage()) {
             $computedValue = $price + ($price * ($this->diff_value / 100));
-        };
+        } else {
+            $computedValue = $price;
+        }
 
         if($computedValue < 0) {
             return 0;
@@ -85,4 +103,33 @@ abstract class Margin extends UuidModel
 
         return -$this->value;
     }
+
+    public function scopeMethod($query, string $method)
+    {
+        return $query->where('method', $method);
+    }
+
+    public function scopeType($query, string $type)
+    {
+        return $query->where('type', $type);
+    }
+
+    public function scopeQuoteType($query, string $quoteType)
+    {
+        return $query->where('quote_type', $quoteType);
+    }
+
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Query Builder scope based on Quote relations.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param \App\Models\Quote\Quote $quote
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    abstract public function scopeQuoteAcceptable(Builder $query, Quote $quote): Builder;
 }

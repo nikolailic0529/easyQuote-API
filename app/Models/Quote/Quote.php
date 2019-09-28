@@ -192,15 +192,22 @@ class Quote extends CompletableModel implements HasOrderedScope
             return null;
         }
 
+        $user = request()->user();
+
         $this->countryMargin()->dissociate();
 
-        $countryMargin = $this->countryMargin()->make($attributes);
-        $countryMargin->user()->associate($this->user);
-        $countryMargin->country()->associate($this->country);
-        $countryMargin->vendor()->associate($this->vendor);
-        $countryMargin->save();
+        $countryMargin = $user->countryMargins()->quoteAcceptable($this)->firstOrNew(collect($attributes)->except('type')->toArray());
+
+        if($countryMargin->isDirty()) {
+            $countryMargin->user()->associate($this->user);
+            $countryMargin->country()->associate($this->country);
+            $countryMargin->vendor()->associate($this->vendor);
+            $countryMargin->save();
+        }
 
         $this->countryMargin()->associate($countryMargin);
+
+        $this->margin_data = collect($countryMargin->only('value', 'method', 'is_fixed'))->put('type', 'By Country')->toArray();
 
         $this->setAttribute('type', $attributes['quote_type']);
         $this->save();
@@ -220,7 +227,7 @@ class Quote extends CompletableModel implements HasOrderedScope
     {
         $this->load('customer', 'company');
 
-        return $this->toArray();
+        return $this->makeHidden(['margin_data'])->toArray();
     }
 
     public function getCompletenessDictionary()
@@ -236,7 +243,9 @@ class Quote extends CompletableModel implements HasOrderedScope
             'selectedRowsData.columnsData',
             'quoteTemplate.templateFields.templateFieldType',
             'countryMargin',
-            'customer'
+            'customer',
+            'country',
+            'vendor'
         ];
     }
 }

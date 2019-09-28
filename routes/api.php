@@ -19,53 +19,59 @@ Route::group(['namespace' => 'API'], function () {
         Route::get('fileformats', 'FileFormatsController');
     });
 
-    Route::group(['prefix' => 'quotes', 'middleware' => 'auth:api', 'namespace' => 'Quotes'], function () {
-        $crdRoutes = ['index', 'show', 'destroy'];
-        $crRoutes = ['index', 'show', 'store'];
-        $rRoutes = ['index', 'show'];
+    Route::group(['middleware' => 'auth:api'], function () {
+        Route::group(['namespace' => 'Margins'], function () {
+            Route::resource('margins', 'CountryMarginController');
+            Route::put('margins/activate/{margin}', 'CountryMarginController@activate');
+            Route::put('margins/deactivate/{margin}', 'CountryMarginController@deactivate');
+            Route::post('margins/percentages', 'CountryMarginController@percentages');
+        });
 
-        Route::get('/get/{quote}', 'QuoteController@quote');
-        Route::post('state', 'QuoteController@storeState');
-
-        /**
-         * User's drafted Quotes
-         */
-        Route::resource('drafted', 'QuoteDraftedController', ['only' => $crdRoutes]);
-        Route::patch('drafted/{quote}', 'QuoteDraftedController@deactivate');
-
-        Route::resource('file', 'QuoteFilesController', ['only' => $crRoutes]);
-        Route::post('handle', 'QuoteFilesController@handle');
-
-        /**
-         * S4 Customers
-         */
-        Route::resource('customers', 'CustomerController', ['only' => $rRoutes]);
-
-        Route::group(['prefix' => 'step'], function () {
-            /**
-             * Data Select Separators, Companies
-             */
-            Route::get('1', 'QuoteController@step1');
+        Route::group(['prefix' => 'quotes', 'namespace' => 'Quotes'], function () {
+            Route::get('/get/{quote}', 'QuoteController@quote');
+            Route::post('state', 'QuoteController@storeState');
 
             /**
-             * Get Templates by Company, Country, Vendor ids
+             * User's drafted Quotes
              */
-            Route::post('1', 'QuoteController@templates');
+            Route::resource('drafted', 'QuoteDraftedController', ['only' => config('route.rd')]);
+            Route::patch('drafted/{quote}', 'QuoteDraftedController@activate');
+            Route::put('drafted/{quote}', 'QuoteDraftedController@deactivate');
+
+            Route::resource('file', 'QuoteFilesController', ['only' => config('route.cr')]);
+            Route::post('handle', 'QuoteFilesController@handle');
 
             /**
-             * Mapping Review
+             * S4 Customers
              */
-            Route::post('2', 'QuoteController@step2');
+            Route::resource('customers', 'CustomerController', ['only' => config('route.r')]);
 
-            /**
-             * Set Margin Dialog
-             */
-            Route::get('3', 'QuoteController@step3');
+            Route::group(['prefix' => 'step'], function () {
+                /**
+                 * Data Select Separators, Companies
+                 */
+                Route::get('1', 'QuoteController@step1');
 
-            /**
-             * Get Quote Rows Data with Applied Margin
-             */
-            Route::post('4', 'QuoteController@step4');
+                /**
+                 * Get Templates by Company, Country, Vendor ids
+                 */
+                Route::post('1', 'QuoteController@templates');
+
+                /**
+                 * Mapping Review
+                 */
+                Route::post('2', 'QuoteController@step2');
+
+                /**
+                 * Set Margin Dialog
+                 */
+                Route::get('3', 'QuoteController@step3');
+
+                /**
+                 * Get Quote Rows Data with Applied Margin
+                 */
+                Route::post('4', 'QuoteController@step4');
+            });
         });
     });
 });

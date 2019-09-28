@@ -1,5 +1,6 @@
 <?php namespace App\Console\Commands;
 
+use App\Models\Quote\Margin\CountryMargin;
 use Illuminate\Console\Command;
 use Elasticsearch\Client as ElasticsearchClient;
 use App\Models\Quote\Quote;
@@ -18,7 +19,7 @@ class ReindexCommand extends Command
      *
      * @var string
      */
-    protected $description = 'Indexes all quotes to Elasticsearch';
+    protected $description = 'Indexes all entries to Elasticsearch';
 
     /**
      * Create a new command instance.
@@ -39,10 +40,15 @@ class ReindexCommand extends Command
      */
     public function handle()
     {
+        $this->handleQuotes();
+        $this->handleMargins();
+    }
+
+    private function handleQuotes()
+    {
         $this->info('Indexing all quotes...');
 
-        foreach (Quote::cursor() as $quote)
-        {
+        foreach (Quote::cursor() as $quote) {
             $this->elasticsearch->index([
                 'index' => $quote->getSearchIndex(),
                 'type' => $quote->getSearchType(),
@@ -54,5 +60,23 @@ class ReindexCommand extends Command
         }
 
         $this->info('\nDone!');
+    }
+
+    private function handleMargins()
+    {
+        $this->info('Indexing all margins...');
+
+        foreach (CountryMargin::cursor() as $margin) {
+            $this->elasticsearch->index([
+                'index' => $margin->getSearchIndex(),
+                'type' => $margin->getSearchType(),
+                'id' => $margin->getKey(),
+                'body' => $margin->toSearchArray(),
+            ]);
+
+            $this->output->write('.');
+        }
+
+        $this->info("\nDone!");
     }
 }
