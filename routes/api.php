@@ -20,6 +20,13 @@ Route::group(['namespace' => 'API'], function () {
     });
 
     Route::group(['middleware' => 'auth:api'], function () {
+        Route::group([], function () {
+            Route::apiResource('vendors', 'VendorController');
+            Route::put('vendors/activate/{vendor}', 'VendorController@activate');
+            Route::put('vendors/deactivate/{vendor}', 'VendorController@deactivate');
+            Route::get('vendors/country/{country}', 'VendorController@country');
+        });
+
         Route::group(['namespace' => 'Margins'], function () {
             Route::apiResource('margins', 'CountryMarginController');
             Route::put('margins/activate/{margin}', 'CountryMarginController@activate');

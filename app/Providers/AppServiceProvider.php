@@ -34,16 +34,18 @@ use App\Contracts \ {
     Repositories\Quote\Discount\MultiYearDiscountRepositoryInterface,
     Repositories\Quote\Discount\PromotionalDiscountRepositoryInterface,
     Repositories\Quote\Discount\PrePayDiscountRepositoryInterface,
-    Repositories\Quote\Discount\SNDrepositoryInterface
+    Repositories\Quote\Discount\SNDrepositoryInterface,
+    Repositories\VendorRepositoryInterface
 };
 use App\Contracts\Services\QuoteServiceInterface;
-use App\Models\Quote \ {
-    Quote,
-    Margin\CountryMargin,
-    Discount\MultiYearDiscount,
-    Discount\PrePayDiscount,
-    Discount\PromotionalDiscount,
-    Discount\SND
+use App\Models \ {
+    Vendor,
+    Quote\Quote,
+    Quote\Margin\CountryMargin,
+    Quote\Discount\MultiYearDiscount,
+    Quote\Discount\PrePayDiscount,
+    Quote\Discount\PromotionalDiscount,
+    Quote\Discount\SND
 };
 use App\Observers \ {
     QuoteObserver,
@@ -51,7 +53,8 @@ use App\Observers \ {
     Discount\MultiYearDiscountObserver,
     Discount\PrePayDiscountObserver,
     Discount\PromotionalDiscountObserver,
-    Discount\SNDobserver
+    Discount\SNDobserver,
+    VendorObserver
 };
 use App\Repositories \ {
     TimezoneRepository,
@@ -73,7 +76,8 @@ use App\Repositories \ {
     Quote\Discount\MultiYearDiscountRepository,
     Quote\Discount\PromotionalDiscountRepository,
     Quote\Discount\PrePayDiscountRepository,
-    Quote\Discount\SNDrepository
+    Quote\Discount\SNDrepository,
+    VendorRepository
 };
 use App\Services \ {
     AuthService,
@@ -111,7 +115,8 @@ class AppServiceProvider extends ServiceProvider
         MultiYearDiscountRepositoryInterface::class => MultiYearDiscountRepository::class,
         PrePayDiscountRepositoryInterface::class => PrePayDiscountRepository::class,
         PromotionalDiscountRepositoryInterface::class => PromotionalDiscountRepository::class,
-        SNDrepositoryInterface::class => SNDrepository::class
+        SNDrepositoryInterface::class => SNDrepository::class,
+        VendorRepositoryInterface::class => VendorRepository::class
     ];
 
     /**
@@ -165,6 +170,8 @@ class AppServiceProvider extends ServiceProvider
         PromotionalDiscount::observe(PromotionalDiscountObserver::class);
 
         SND::observe(SNDobserver::class);
+
+        Vendor::observe(VendorObserver::class);
     }
 
     protected function registerMacro()

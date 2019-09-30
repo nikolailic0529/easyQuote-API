@@ -31,12 +31,13 @@ class VendorsSeeder extends Seeder
                 'id' => $vendorId,
                 'name' => $vendor['name'],
                 'short_code' => $vendor['short_code'],
-                'is_system' => true
+                'is_system' => true,
+                'activated_at' => now()->toDateTimeString()
             ]);
 
             collect($vendor['countries'])->each(function ($countryIso) use ($vendorId) {
                 $country = Country::where('iso_3166_2', $countryIso)->first();
-                
+
                 Vendor::whereId($vendorId)->first()->countries()->attach($country);
             });
         });

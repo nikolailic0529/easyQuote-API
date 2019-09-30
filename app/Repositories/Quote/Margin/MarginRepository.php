@@ -103,7 +103,7 @@ class MarginRepository implements MarginRepositoryInterface
         $user = request()->user();
 
         $query = $this->buildQuery($model, $items, function ($query) use ($user) {
-            $query = $query->where('user_id', $user->id)->with('country', 'vendor');
+            $query = $query->where('country_margins.user_id', $user->id)->with('country', 'vendor');
             return $this->filterQuery($query);
         });
 
