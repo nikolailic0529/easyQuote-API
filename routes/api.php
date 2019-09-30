@@ -21,10 +21,28 @@ Route::group(['namespace' => 'API'], function () {
 
     Route::group(['middleware' => 'auth:api'], function () {
         Route::group(['namespace' => 'Margins'], function () {
-            Route::resource('margins', 'CountryMarginController');
+            Route::apiResource('margins', 'CountryMarginController');
             Route::put('margins/activate/{margin}', 'CountryMarginController@activate');
             Route::put('margins/deactivate/{margin}', 'CountryMarginController@deactivate');
             Route::post('margins/percentages', 'CountryMarginController@percentages');
+        });
+
+        Route::group(['namespace' => 'Discounts', 'prefix' => 'discounts'], function () {
+            Route::apiResource('multi_year', 'MultiYearDiscountController');
+            Route::put('multi_year/activate/{multi_year}', 'MultiYearDiscountController@activate');
+            Route::put('multi_year/deactivate/{multi_year}', 'MultiYearDiscountController@deactivate');
+
+            Route::apiResource('pre_pay', 'PrePayDiscountController');
+            Route::put('pre_pay/activate/{pre_pay}', 'PrePayDiscountController@activate');
+            Route::put('pre_pay/deactivate/{pre_pay}', 'PrePayDiscountController@deactivate');
+
+            Route::apiResource('promotions', 'PromotionalDiscountController');
+            Route::put('promotions/activate/{promotions}', 'PromotionalDiscountController@activate');
+            Route::put('promotions/deactivate/{promotions}', 'PromotionalDiscountController@deactivate');
+
+            Route::apiResource('snd', 'SNDcontroller');
+            Route::put('snd/activate/{snd}', 'SNDcontroller@activate');
+            Route::put('snd/deactivate/{snd}', 'SNDcontroller@deactivate');
         });
 
         Route::group(['prefix' => 'quotes', 'namespace' => 'Quotes'], function () {
@@ -34,17 +52,17 @@ Route::group(['namespace' => 'API'], function () {
             /**
              * User's drafted Quotes
              */
-            Route::resource('drafted', 'QuoteDraftedController', ['only' => config('route.rd')]);
+            Route::apiResource('drafted', 'QuoteDraftedController', ['only' => config('route.rd')]);
             Route::patch('drafted/{quote}', 'QuoteDraftedController@activate');
             Route::put('drafted/{quote}', 'QuoteDraftedController@deactivate');
 
-            Route::resource('file', 'QuoteFilesController', ['only' => config('route.cr')]);
+            Route::apiResource('file', 'QuoteFilesController', ['only' => config('route.cr')]);
             Route::post('handle', 'QuoteFilesController@handle');
 
             /**
              * S4 Customers
              */
-            Route::resource('customers', 'CustomerController', ['only' => config('route.r')]);
+            Route::apiResource('customers', 'CustomerController', ['only' => config('route.r')]);
 
             Route::group(['prefix' => 'step'], function () {
                 /**
