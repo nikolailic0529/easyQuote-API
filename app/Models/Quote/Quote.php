@@ -86,6 +86,17 @@ class Quote extends CompletableModel implements HasOrderedScope
         return $this->setAppends(['last_drafted_step', 'field_column', 'rows_data', 'rows_data_by_columns']);
     }
 
+    public function discounts()
+    {
+        return $this->belongsToMany(Discount::class, 'quote_discount')->withPivot('duration')
+            ->with('discountable')->whereHasMorph('discountable', [
+                \App\Models\Quote\Discount\MultiYearDiscount::class,
+                \App\Models\Quote\Discount\PrePayDiscount::class,
+                \App\Models\Quote\Discount\PromotionalDiscount::class,
+                \App\Models\Quote\Discount\SND::class
+            ]);
+    }
+
     public function rowsData()
     {
         $importedPage = $this->quoteFiles()->priceLists()->first()->imported_page ?? Setting::get('parser.default_page');

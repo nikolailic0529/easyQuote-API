@@ -3,6 +3,7 @@
 namespace App\Exceptions;
 
 use Exception;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 
 class Handler extends ExceptionHandler
@@ -46,6 +47,20 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Exception $exception)
     {
+        if($exception instanceof ModelNotFoundException) {
+            switch ($exception->getModel()) {
+                case \App\Models\Quote\Margin\CountryMargin::class:
+                    abort(404, __('margin.404'));
+                    break;
+                case \App\Models\Quote\Discount\MultiYearDiscount::class:
+                case \App\Models\Quote\Discount\PrePayDiscount::class:
+                case \App\Models\Quote\Discount\PromotionalDiscount::class:
+                case \App\Models\Quote\Discount\SND::class:
+                    abort(404, __('discount.404'));
+                    break;
+            }
+        }
+
         return parent::render($request, $exception);
     }
 }

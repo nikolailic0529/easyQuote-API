@@ -36,7 +36,7 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
         $query = $this->buildQuery($this->vendor, $items, function ($query) {
             return $query->where(function ($query) {
                 return $query->currentUser();
-            })->with('image');
+            })->with('image', 'countries');
         });
 
         return $query->apiPaginate();
@@ -44,7 +44,7 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
 
     public function userQuery(): Builder
     {
-        return $this->vendor->query()->currentUser()->with('image');
+        return $this->vendor->query()->currentUser()->with('image', 'countries');
     }
 
     public function find(string $id): Vendor
@@ -59,6 +59,7 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
         $vendor = $user->vendors()->create($request->validated());
         $vendor->createImage($request->logo);
         $vendor->syncCountries($request->countries);
+        $vendor->load('countries');
 
         return $vendor;
     }
@@ -70,6 +71,7 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
         $vendor->update($request->validated());
         $vendor->createImage($request->logo);
         $vendor->syncCountries($request->countries);
+        $vendor->load('countries');
 
         return $vendor;
     }
@@ -91,16 +93,16 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
 
     public function country(string $id): Collection
     {
-        return $this->userQuery()->country($id)->get();
+        return $this->userQuery()->country($id)->activated()->get();
     }
 
     protected function filterQueryThrough(): array
     {
         return [
             \App\Http\Query\DefaultOrderBy::class,
-            \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\Vendor\OrderByName::class,
-            \App\Http\Query\Vendor\OrderByShortCode::class
+            \App\Http\Query\Vendor\OrderByShortCode::class,
+            \App\Http\Query\DefaultGroupByActivation::class
         ];
     }
 }

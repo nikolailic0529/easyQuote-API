@@ -85,7 +85,8 @@ class SNDrepository extends DiscountRepository implements SNDrepositoryInterface
     protected function appendFilterQueryThrough(): array
     {
         return [
-            \App\Http\Query\Discount\OrderByValue::class
+            \App\Http\Query\Discount\OrderByValue::class,
+            \App\Http\Query\DefaultGroupByActivation::class
         ];
     }
 }

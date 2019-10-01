@@ -426,8 +426,8 @@
 										"exec": [
 											"let response = pm.response.json();\r",
 											"pm.environment.set('company_id', response.companies[0].id);\r",
-											"pm.environment.set('vendor_id', response.companies[0].vendors[1].id);\r",
-											"pm.environment.set('country_id', response.companies[0].vendors[1].countries[3].id);"
+											"pm.environment.set('vendor_id', response.companies[0].vendors[0].id);\r",
+											"pm.environment.set('country_id', response.companies[0].vendors[0].countries[0].id);"
 										],
 										"type": "text/javascript"
 									}
@@ -2602,14 +2602,29 @@
 									"mode": "urlencoded",
 									"urlencoded": [
 										{
-											"key": "is_fixed",
-											"value": "0",
+											"key": "durations[0][duration]",
+											"value": "1",
+											"type": "text"
+										},
+										{
+											"key": "durations[0][value]",
+											"value": "5.51",
+											"type": "text"
+										},
+										{
+											"key": "durations[1][duration]",
+											"value": "2",
+											"type": "text"
+										},
+										{
+											"key": "durations[1][value]",
+											"value": "10.24",
 											"type": "text"
 										}
 									]
 								},
 								"url": {
-									"raw": "http://localhost:8000/api/discounts/pre_pay/{{multi_year_discount_id}}",
+									"raw": "http://localhost:8000/api/discounts/pre_pay/{{pre_pay_discount_id}}",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -2619,7 +2634,7 @@
 										"api",
 										"discounts",
 										"pre_pay",
-										"{{multi_year_discount_id}}"
+										"{{pre_pay_discount_id}}"
 									]
 								}
 							},
@@ -3970,7 +3985,7 @@
 							]
 						},
 						"url": {
-							"raw": "http://localhost:8000/api/vendors/{{user_vendor_id}}",
+							"raw": "http://localhost:8000/api/vendors/f339a100-e35a-11e9-bea8-2192a37233ae",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -3979,7 +3994,7 @@
 							"path": [
 								"api",
 								"vendors",
-								"{{user_vendor_id}}"
+								"f339a100-e35a-11e9-bea8-2192a37233ae"
 							]
 						}
 					},

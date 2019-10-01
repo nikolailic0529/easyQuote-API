@@ -86,7 +86,8 @@ class PrePayDiscountRepository extends DiscountRepository implements PrePayDisco
     {
         return [
             \App\Http\Query\Discount\OrderByDurationsValue::class,
-            \App\Http\Query\Discount\OrderByDurationsDuration::class
+            \App\Http\Query\Discount\OrderByDurationsDuration::class,
+            \App\Http\Query\DefaultGroupByActivation::class
         ];
     }
 }

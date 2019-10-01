@@ -9,6 +9,7 @@ use App\Models \ {
     Company,
     Vendor,
     Quote\Quote,
+    Quote\Discount as QuoteDiscount,
     QuoteFile\QuoteFile,
     QuoteFile\ImportableColumn,
     QuoteFile\DataSelectSeparator,
@@ -34,6 +35,8 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     protected $quoteFile;
 
+    protected $quoteDiscount;
+
     protected $quoteTemplate;
 
     protected $templateField;
@@ -54,6 +57,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         Quote $quote,
         QuoteFile $quoteFile,
         QuoteTemplateRepository $quoteTemplate,
+        QuoteDiscount $quoteDiscount,
         TemplateField $templateField,
         ImportableColumn $importableColumn,
         Company $company,
@@ -64,6 +68,7 @@ class QuoteRepository implements QuoteRepositoryInterface
     ) {
         $this->quote = $quote;
         $this->quoteFile = $quoteFile;
+        $this->quoteDiscount = $quoteDiscount;
         $this->quoteTemplate = $quoteTemplate;
         $this->templateField = $templateField;
         $this->importableColumn = $importableColumn;
@@ -104,6 +109,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         $this->attachColumnsToFields($state, $quote);
         $this->markRowsAsSelectedOrUnSelected($state, $quote);
         $this->setMargin($quote, $request->margin);
+        $this->setDiscounts($quote, $request->discounts, $request->discounts_detach);
 
         $quote = $quote->loadJoins()->setAppends(['field_column']);
 
@@ -227,6 +233,30 @@ class QuoteRepository implements QuoteRepositoryInterface
         }
 
         return $quote->createCountryMargin($attributes);
+    }
+
+    public function setDiscounts(Quote $quote, $attributes, $detach)
+    {
+        if(isset($detach) && $detach) {
+            $quote->discounts()->detach();
+
+            return $quote->load('discounts');
+        }
+
+        if(!isset($attributes) || !is_array($attributes) || empty($attributes)) {
+            return null;
+        }
+
+        $quoteDiscounts = collect($attributes)->mapWithKeys(function ($discount) {
+            $id = $this->quoteDiscount->where('discountable_id', $discount['id'])->firstOrFail()->id;
+            $duration = $discount['duration'] ?? null;
+
+            return [$id => compact('duration')];
+        });
+
+        $quote->discounts()->sync($quoteDiscounts);
+
+        return $quote->load('discounts');
     }
 
     public function deleteDrafted(string $id)
@@ -471,7 +501,8 @@ class QuoteRepository implements QuoteRepositoryInterface
                 \App\Http\Query\Quote\OrderByValidUntil::class,
                 \App\Http\Query\Quote\OrderBySupportStart::class,
                 \App\Http\Query\Quote\OrderBySupportEnd::class,
-                \App\Http\Query\Quote\OrderByCompleteness::class
+                \App\Http\Query\Quote\OrderByCompleteness::class,
+                \App\Http\Query\DefaultGroupByActivation::class
             ])
             ->thenReturn();
     }

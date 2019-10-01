@@ -25,6 +25,10 @@ class VendorObserver
      */
     public function updating(Vendor $vendor)
     {
+        if(app()->runningInConsole()) {
+            return;
+        }
+
         if($vendor->isSystem()) {
             throw new \ErrorException(__('vendor.system_updating_exception'));
         }
@@ -38,6 +42,10 @@ class VendorObserver
      */
     public function deleting(Vendor $vendor)
     {
+        if(app()->runningInConsole()) {
+            return;
+        }
+
         if($vendor->isSystem()) {
             throw new \ErrorException(__('vendor.system_deleting_exception'));
         }
@@ -48,7 +56,7 @@ class VendorObserver
         return $vendor
             ->where('id', '!=', $vendor->id)
             ->where(function ($query) {
-                $query->where('user_id', request()->user()->id)
+                $query->where('user_id', request()->user()->id ?? null)
                     ->orWhere('is_system', true);
             })
             ->where(function ($query) use ($vendor) {

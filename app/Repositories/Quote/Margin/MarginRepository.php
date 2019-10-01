@@ -51,6 +51,7 @@ class MarginRepository implements MarginRepositoryInterface
         $countryMargin = $this->userCountryMarginsQuery()
             ->quoteType($request->quote_type)->method($request->method)
             ->quoteAcceptable($quote)
+            ->activated()
             ->firstOrFail();
 
         return $countryMargin;
@@ -170,7 +171,8 @@ class MarginRepository implements MarginRepositoryInterface
                 \App\Http\Query\OrderByCountry::class,
                 \App\Http\Query\OrderByVendor::class,
                 \App\Http\Query\Margin\OrderByQuoteType::class,
-                \App\Http\Query\Margin\OrderByValue::class
+                \App\Http\Query\Margin\OrderByValue::class,
+                \App\Http\Query\DefaultGroupByActivation::class
             ])
             ->thenReturn();
     }

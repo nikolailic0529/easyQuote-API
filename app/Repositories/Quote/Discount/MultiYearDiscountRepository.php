@@ -86,7 +86,8 @@ class MultiYearDiscountRepository extends DiscountRepository implements MultiYea
     {
         return [
             \App\Http\Query\Discount\OrderByDurationsValue::class,
-            \App\Http\Query\Discount\OrderByDurationsDuration::class
+            \App\Http\Query\Discount\OrderByDurationsDuration::class,
+            \App\Http\Query\DefaultGroupByActivation::class
         ];
     }
 }

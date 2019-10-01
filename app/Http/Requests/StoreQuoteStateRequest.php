@@ -134,6 +134,24 @@ class StoreQuoteStateRequest extends FormRequest
             'margin.delete' => [
                 'boolean'
             ],
+            'discounts' => [
+                'array'
+            ],
+            'discounts.*' => [
+                'array'
+            ],
+            'discounts.*.id' => [
+                'required',
+                'uuid',
+                'exists:discounts,discountable_id'
+            ],
+            'discounts.*.duration' => [
+                'integer',
+                'min:0'
+            ],
+            'discounts_detach' => [
+                'boolean'
+            ],
             'save' => 'boolean'
         ];
     }

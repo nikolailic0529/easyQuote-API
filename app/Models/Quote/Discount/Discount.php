@@ -1,5 +1,6 @@
 <?php namespace App\Models\Quote\Discount;
 
+use App\Models\Quote\Quote;
 use App\Models\UuidModel;
 use App\Traits \ {
     Activatable,
@@ -8,10 +9,23 @@ use App\Traits \ {
     BelongsToVendor,
     Search\Searchable
 };
+use App\Models\Quote\Discount as QuoteDiscount;
 
 abstract class Discount extends UuidModel
 {
     use Activatable, Searchable, BelongsToCountry, BelongsToVendor, BelongsToUser;
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        /**
+         * Create Pivot model instance for Polymorphic relations on Quotes
+         */
+        static::creating(function (Discount $model) {
+            $model->quoteDiscount()->create([]);
+        });
+    }
 
     public function getFillable()
     {
@@ -27,5 +41,10 @@ abstract class Discount extends UuidModel
         $this->load('country', 'vendor');
 
         return $this->toArray();
+    }
+
+    public function quoteDiscount()
+    {
+        return $this->morphOne(QuoteDiscount::class, 'discountable');
     }
 }

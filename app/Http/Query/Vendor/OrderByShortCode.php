@@ -7,6 +7,7 @@ class OrderByShortCode extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderBy("{$table}.short_code", request($this->queryName()));
+        return $builder->orderBy("{$table}.short_code", request($this->queryName()))
+            ->groupBy("{$table}.id");
     }
 }

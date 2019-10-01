@@ -111,4 +111,23 @@ interface QuoteRepositoryInterface
      * @return void
      */
     public function activateDrafted(string $id);
+
+    /**
+     * Set/Create Margin for Quote
+     *
+     * @param Quote $quote
+     * @param array|null $attributes
+     * @return \App\Models\Quote\Margin\CountryMargin
+     */
+    public function setMargin(Quote $quote, $attributes);
+
+    /**
+     * Set Discounts for Quote
+     *
+     * @param Quote $quote
+     * @param array|null $attributes
+     * @param boolean|null $detach
+     * @return Quote
+     */
+    public function setDiscounts(Quote $quote, $attributes, $detach);
 }
