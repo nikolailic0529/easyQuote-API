@@ -13,7 +13,11 @@ use App\Models \ {
     QuoteFile\QuoteFile,
     QuoteFile\ImportableColumn,
     QuoteFile\DataSelectSeparator,
-    QuoteTemplate\TemplateField
+    QuoteTemplate\TemplateField,
+    Quote\Discount\MultiYearDiscount,
+    Quote\Discount\PrePayDiscount,
+    Quote\Discount\PromotionalDiscount,
+    Quote\Discount\SND
 };
 use App\Http\Requests \ {
     StoreQuoteStateRequest,
@@ -26,6 +30,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Database\Eloquent\Builder;
 use App\Builder\Pagination\Paginator;
+
 use Illuminate\Pipeline\Pipeline;
 use Setting, Arr, Closure;
 
@@ -64,7 +69,11 @@ class QuoteRepository implements QuoteRepositoryInterface
         Vendor $vendor,
         DataSelectSeparator $dataSelectSeparator,
         Elasticsearch $search,
-        QuoteService $quoteService
+        QuoteService $quoteService,
+        MultiYearDiscount $multiYearDiscount,
+        PrePayDiscount $prePayDiscount,
+        PromotionalDiscount $promotionalDiscount,
+        SND $snd
     ) {
         $this->quote = $quote;
         $this->quoteFile = $quoteFile;
@@ -78,6 +87,14 @@ class QuoteRepository implements QuoteRepositoryInterface
         $this->defaultPage = Setting::get('parser.default_page');
         $this->search = $search;
         $this->quoteService = $quoteService;
+
+        /**
+         * Discounts
+         */
+        $this->multiYearDiscount = $multiYearDiscount;
+        $this->prePayDiscount = $prePayDiscount;
+        $this->promotionalDiscount = $promotionalDiscount;
+        $this->snd = $snd;
 
         $importableColumnsByName = $this->importableColumn->system()->ordered()->get(['id', 'name'])->toArray();
         $importableColumnsByName = collect($importableColumnsByName)->mapWithKeys(function ($value) {
@@ -275,6 +292,31 @@ class QuoteRepository implements QuoteRepositoryInterface
     {
         $user = request()->user();
         return $user->quotes()->drafted()->whereId($id)->firstOrFail()->activate();
+    }
+
+    public function discounts(string $id)
+    {
+        $user = request()->user();
+        $quote = $user->quotes()->whereId($id)->firstOrFail();
+
+        $multi_year = $this->multiYearDiscount
+            ->where('user_id', $user->id)
+            ->quoteAcceptable($quote)
+            ->get();
+        $pre_pay = $this->prePayDiscount
+            ->where('user_id', $user->id)
+            ->quoteAcceptable($quote)
+            ->get();
+        $promotions = $this->promotionalDiscount
+            ->where('user_id', $user->id)
+            ->quoteAcceptable($quote)
+            ->get();
+        $snd = $this->snd
+            ->where('user_id', $user->id)
+            ->quoteAcceptable($quote)
+            ->get();
+
+        return compact('multi_year', 'pre_pay', 'promotions', 'snd');
     }
 
     private function transformRowsData(EloquentCollection $rowsData)

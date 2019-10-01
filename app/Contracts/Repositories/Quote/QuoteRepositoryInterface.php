@@ -130,4 +130,12 @@ interface QuoteRepositoryInterface
      * @return Quote
      */
     public function setDiscounts(Quote $quote, $attributes, $detach);
+
+    /**
+     * Get acceptable Discounts for the specified Quote
+     *
+     * @param string $quoteId
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function discounts(string $quoteId);
 }

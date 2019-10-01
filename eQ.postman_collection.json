@@ -1073,8 +1073,7 @@
 								{
 									"key": "quote_id",
 									"value": "{{quote_id}}",
-									"type": "text",
-									"disabled": true
+									"type": "text"
 								},
 								{
 									"key": "quote_data[company_id]",
@@ -1170,28 +1169,33 @@
 									"key": "margin[quote_type]",
 									"value": "Renewal",
 									"description": "New|Renewal",
-									"type": "text"
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "margin[type]",
 									"value": "By Country",
-									"type": "text"
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "margin[method]",
 									"value": "Standard",
 									"description": "No Margin|Standard",
-									"type": "text"
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "margin[value]",
 									"value": "20",
-									"type": "text"
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "margin[is_fixed]",
-									"value": "0",
-									"type": "text"
+									"value": "1",
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "margin[delete]",
@@ -1204,6 +1208,26 @@
 									"value": "1",
 									"type": "text",
 									"disabled": true
+								},
+								{
+									"key": "discounts[0][id]",
+									"value": "f6527880-e3fb-11e9-93d0-ef372311af5d",
+									"type": "text"
+								},
+								{
+									"key": "discounts[0][duration]",
+									"value": "1",
+									"type": "text"
+								},
+								{
+									"key": "discounts[1][id]",
+									"value": "3b83d580-e3fc-11e9-b3d6-2d31480fa980",
+									"type": "text"
+								},
+								{
+									"key": "discounts_detach",
+									"value": "1",
+									"type": "text"
 								}
 							],
 							"options": {
@@ -1282,6 +1306,66 @@
 								"api",
 								"quotes",
 								"get",
+								"{{quote_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Acceptable Discounts",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "7ed90f23-faba-4220-825a-1b492265dfea",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/quotes/discounts/{{quote_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"quotes",
+								"discounts",
 								"{{quote_id}}"
 							]
 						}
@@ -3649,6 +3733,82 @@
 			"name": "Vendors",
 			"item": [
 				{
+					"name": "List / Search",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "is_fixed",
+									"value": "0",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/vendors/?order_by_vendor=asc&search=12",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"vendors",
+								""
+							],
+							"query": [
+								{
+									"key": "order_by_created_at",
+									"value": "asc",
+									"disabled": true
+								},
+								{
+									"key": "order_by_country",
+									"value": "asc",
+									"disabled": true
+								},
+								{
+									"key": "order_by_vendor",
+									"value": "asc"
+								},
+								{
+									"key": "search",
+									"value": "12"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
 					"name": "Get",
 					"protocolProfileBehavior": {
 						"disableBodyPruning": true
@@ -3756,82 +3916,6 @@
 								"vendors",
 								"country",
 								"{{country_id_1}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "List / Search",
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
-					},
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"type": "text",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"name": "Content-Type",
-								"value": "application/x-www-form-urlencoded",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "urlencoded",
-							"urlencoded": [
-								{
-									"key": "is_fixed",
-									"value": "0",
-									"type": "text"
-								}
-							]
-						},
-						"url": {
-							"raw": "http://localhost:8000/api/vendors/?order_by_vendor=asc&search=12",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"vendors",
-								""
-							],
-							"query": [
-								{
-									"key": "order_by_created_at",
-									"value": "asc",
-									"disabled": true
-								},
-								{
-									"key": "order_by_country",
-									"value": "asc",
-									"disabled": true
-								},
-								{
-									"key": "order_by_vendor",
-									"value": "asc"
-								},
-								{
-									"key": "search",
-									"value": "12"
-								}
 							]
 						}
 					},

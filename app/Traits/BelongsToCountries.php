@@ -9,8 +9,12 @@ trait BelongsToCountries
         return $this->belongsToMany(Country::class);
     }
 
-    public function syncCountries(array $countries)
+    public function syncCountries($countries)
     {
+        if(!is_array($countries)) {
+            return false;
+        }
+
         return $this->countries()->sync($countries);
     }
 

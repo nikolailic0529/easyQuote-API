@@ -86,4 +86,17 @@ class QuoteController extends Controller
             $this->quote->step4($request)
         );
     }
+
+    /**
+     * Get acceptable Discounts for the specified Quote
+     *
+     * @param string $id
+     * @return \Illuminate\Http\Response
+     */
+    public function discounts(string $id)
+    {
+        return response()->json(
+            $this->quote->discounts($id)
+        );
+    }
 }

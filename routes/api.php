@@ -54,6 +54,7 @@ Route::group(['namespace' => 'API'], function () {
 
         Route::group(['prefix' => 'quotes', 'namespace' => 'Quotes'], function () {
             Route::get('/get/{quote}', 'QuoteController@quote');
+            Route::get('/discounts/{quote}', 'QuoteController@discounts');
             Route::post('state', 'QuoteController@storeState');
 
             /**

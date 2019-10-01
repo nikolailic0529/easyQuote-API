@@ -12,7 +12,7 @@ trait HasImage
         return $this->morphOne(Image::class, 'imageable');
     }
 
-    public function createImage(UploadedFile $file)
+    public function createImage($file)
     {
         if(!$file instanceof UploadedFile || !$this instanceof WithImage) {
             return $this;

@@ -47,4 +47,14 @@ abstract class Discount extends UuidModel
     {
         return $this->morphOne(QuoteDiscount::class, 'discountable');
     }
+
+    public function scopeQuoteAcceptable($query, Quote $quote)
+    {
+        return $query->whereHas('country', function ($query) use ($quote) {
+                $query->whereId($quote->country_id);
+            })
+            ->whereHas('vendor', function ($query) use ($quote) {
+                $query->whereId($quote->vendor_id);
+            });
+    }
 }
