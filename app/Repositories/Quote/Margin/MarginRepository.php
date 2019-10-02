@@ -49,7 +49,8 @@ class MarginRepository implements MarginRepositoryInterface
         $quote = $user->quotes()->whereId($request->quote_id)->firstOrFail();
 
         $countryMargin = $this->userCountryMarginsQuery()
-            ->quoteType($request->quote_type)->method($request->method)
+            ->quoteType($request->quote_type)
+            ->method($request->method)
             ->quoteAcceptable($quote)
             ->activated()
             ->firstOrFail();

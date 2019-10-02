@@ -9,6 +9,10 @@ use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 class Customer extends UuidModel
 {
+    protected $fillable = [
+        'name', 'support_start', 'support_end', 'rfq', 'valid_until', 'payment_terms', 'invoicing_terms', 'service_level'
+    ];
+
     protected $hidden = [
         'updated_at', 'deleted_at'
     ];
@@ -39,10 +43,25 @@ class Customer extends UuidModel
         return trim($value);
     }
 
+    public function getSupportStartAttribute()
+    {
+        return Carbon::parse($this->attributes['support_start'])->format($this->dateTimeFormat);
+    }
+
+    public function getSupportEndAttribute()
+    {
+        return Carbon::parse($this->attributes['support_end'])->format($this->dateTimeFormat);
+    }
+
+    public function getValidUntilAttribute()
+    {
+        return Carbon::parse($this->attributes['valid_until'])->format($this->dateTimeFormat);
+    }
+
     private function formatDate($value, $default, $isDefaultEnabled)
     {
         if($isDefaultEnabled) {
-            return Carbon::parse($default)->format($this->dateTimeFormat);
+            return $default;
         }
 
         if(preg_match('/^\d{5}$/', $value)) {
@@ -50,15 +69,25 @@ class Customer extends UuidModel
         }
 
         try {
-            $dateTimeValue = preg_replace('/(\d{1,2})\D(\d{1,2})\D(\d{2,4})/', '${1}.${2}.${3}', $value);
+            $dateTimeValue = preg_replace_callback(
+                '/(\d{1,2})\D(\d{1,2})\D(\d{2,4})/',
+                function ($matches) {
+                    if(isset($matches[0]) && $matches[0] > 12) {
+                        return "{$matches[1]}.{$matches[0]}.{$matches[2]}";
+                    }
+                    return "{$matches[0]}.{$matches[1]}.{$matches[2]}";
+                },
+                $value
+            );
+            $dateTimeValue = preg_replace('/[^\w\.\/|\\,]+/', '', $dateTimeValue);
 
             if(strlen($dateTimeValue) < 4) {
-                return Carbon::parse($default)->format($this->dateTimeFormat);
+                return $default;
             }
 
             return Carbon::parse($dateTimeValue)->format($this->dateTimeFormat);
         } catch (\Exception $e) {
-            return Carbon::parse($default)->format($this->dateTimeFormat);
+            return $value;
         }
     }
 }

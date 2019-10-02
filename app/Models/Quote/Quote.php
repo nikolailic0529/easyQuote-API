@@ -26,10 +26,31 @@ use Setting;
 
 class Quote extends CompletableModel implements HasOrderedScope
 {
-    use Searchable, HasQuoteFiles, BelongsToUser, BelongsToCustomer, BelongsToCompany,
-    BelongsToVendor, BelongsToCountry, BelongsToMargin, Draftable, Activatable;
+    use Searchable,
+        HasQuoteFiles,
+        BelongsToUser,
+        BelongsToCustomer,
+        BelongsToCompany,
+        BelongsToVendor,
+        BelongsToCountry,
+        BelongsToMargin,
+        Draftable,
+        Activatable;
 
-    protected $fillable = ['type', 'customer_id', 'company_id', 'vendor_id', 'country_id', 'language_id', 'quote_template_id', 'last_drafted_step'];
+    protected $fillable = [
+        'type',
+        'customer_id',
+        'company_id',
+        'vendor_id',
+        'country_id',
+        'language_id',
+        'quote_template_id',
+        'last_drafted_step',
+        'pricing_document',
+        'service_agreement_id',
+        'system_handle',
+        'additional_details'
+    ];
 
     protected $perPage = 8;
 
@@ -39,6 +60,10 @@ class Quote extends CompletableModel implements HasOrderedScope
 
     protected $appends = [
         'last_drafted_step'
+    ];
+
+    protected $casts = [
+        'margin_data' => 'array'
     ];
 
     public function scopeNewType($query)
@@ -88,7 +113,8 @@ class Quote extends CompletableModel implements HasOrderedScope
 
     public function discounts()
     {
-        return $this->belongsToMany(Discount::class, 'quote_discount')->withPivot('duration')
+        return $this->belongsToMany(Discount::class, 'quote_discount')
+            ->withPivot('duration')
             ->with('discountable')->whereHasMorph('discountable', [
                 \App\Models\Quote\Discount\MultiYearDiscount::class,
                 \App\Models\Quote\Discount\PrePayDiscount::class,
@@ -246,6 +272,35 @@ class Quote extends CompletableModel implements HasOrderedScope
         return __('quote.stages');
     }
 
+    public function getMappingAttribute()
+    {
+        $mapping = $this->fieldsColumns()
+            ->with('importableColumn', 'templateField.systemImportableColumn')
+            ->get()
+            ->mapWithKeys(function ($fieldColumn) {
+                return [$fieldColumn->templateField->name => $fieldColumn->importableColumn->id ?? $fieldColumn->templateField->systemImportableColumn->id];
+            });
+
+        return $mapping;
+    }
+
+    public function getApplicableDiscountsAttribute()
+    {
+        return number_format($this->attributes['applicable_discounts'] ?? 0, 2);
+    }
+
+    public function getRawApplicableDiscountsAttribute()
+    {
+        return $this->attributes['applicable_discounts'] ?? 0;
+    }
+
+    public function getFinalPriceAttribute()
+    {
+        $final_price = ($this->attributes['list_price'] ?? 0) - ($this->attributes['applicable_discounts'] ?? 0);
+
+        return number_format($final_price, 2);
+    }
+
     private function joins() {
         return [
             'quoteFiles' => function ($query) {
@@ -254,6 +309,7 @@ class Quote extends CompletableModel implements HasOrderedScope
             'selectedRowsData.columnsData',
             'quoteTemplate.templateFields.templateFieldType',
             'countryMargin',
+            'discounts',
             'customer',
             'country',
             'vendor'

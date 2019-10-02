@@ -20,6 +20,8 @@ abstract class Margin extends UuidModel implements HasOrderedScope
 {
     use BelongsToUser, BelongsToVendor, SoftDeletes, Activatable;
 
+    protected $perPage = 8;
+
     protected $attributes = [
         'is_fixed' => false,
         'value' => 0
@@ -64,7 +66,7 @@ abstract class Margin extends UuidModel implements HasOrderedScope
      * @param [string|int|float] $value
      * @return float
      */
-    public function calculate(string $value, $dateFrom = null, $dateTo = null)
+    public function calculate($value, $dateFrom = null, $dateTo = null)
     {
         $value = (float) $value;
         $priceDay = $value / 30;
@@ -85,7 +87,7 @@ abstract class Margin extends UuidModel implements HasOrderedScope
         if($this->isPercentage()) {
             $computedValue = $price + ($price * ($this->diff_value / 100));
         } else {
-            $computedValue = $price;
+            $computedValue = $value + $this->diff_value;
         }
 
         if($computedValue < 0) {

@@ -2,8 +2,11 @@
 
 use App\Models\Quote \ {
     Quote,
+    Discount,
     Margin\CountryMargin
 };
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Collection;
 
 interface QuoteServiceInterface
 {
@@ -15,7 +18,7 @@ interface QuoteServiceInterface
      * @param mixed $model
      * @return \App\Models\Quote\Quote
      */
-    public function interact(Quote $quote, $model);
+    public function interact(Quote $quote, $model): Quote;
 
     /**
      * Interact Quote model with Country Margin
@@ -24,5 +27,23 @@ interface QuoteServiceInterface
      * @param \App\Models\Quote\Margin\CountryMargin $countryMargin
      * @return \App\Models\Quote\Quote
      */
-    public function interactWithCountryMargin(Quote $quote, CountryMargin $countryMargin);
+    public function interactWithCountryMargin(Quote $quote, CountryMargin $countryMargin): Quote;
+
+    /**
+     * Interact Quote model with Discount
+     *
+     * @param Quote $quote
+     * @param Discount $discount
+     * @return \App\Models\Quote\Quote
+     */
+    public function interactWithDiscount(Quote $quote, Discount $discount): Quote;
+
+    /**
+     * Count current Total Price by Quote Computable Rows
+     *
+     * @param EloquentCollection $rows
+     * @param Collection $mapping
+     * @return string
+     */
+    public function countTotalPrice(EloquentCollection $rows, Collection $mapping);
 }

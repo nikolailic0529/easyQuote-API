@@ -3,52 +3,96 @@
 use App\Contracts\Services\QuoteServiceInterface;
 use App\Models\Quote \ {
     Quote,
+    Discount,
     Margin\CountryMargin
 };
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 class QuoteService implements QuoteServiceInterface
 {
-    public function interact(Quote $quote, $model)
+    public function interact(Quote $quote, $model): Quote
     {
         if($model instanceof CountryMargin) {
             return $this->interactWithCountryMargin($quote, $model);
+        }
+        if($model instanceof Discount) {
+            return $this->interactWithDiscount($quote, $model);
         }
 
         return $quote;
     }
 
-    public function interactWithCountryMargin(Quote $quote, CountryMargin $countryMargin)
+    public function interactWithCountryMargin(Quote $quote, CountryMargin $countryMargin): Quote
     {
         if(!isset($quote->computableRows)) {
             return $quote;
         }
 
-        $quote->computableRows->transform(function ($row) use ($countryMargin) {
-            $dateFromColumn = $this->getRowColumn($row->columnsData, 'date_from');
-            $dateToColumn = $this->getRowColumn($row->columnsData, 'date_to');
-            $priceColumn = $this->getRowColumn($row->columnsData, 'price');
+        $mapping = $quote->mapping;
 
-            $priceColumn->computed_value = $countryMargin->calculate($priceColumn->value, $dateFromColumn->value, $dateToColumn->value);
+        if($countryMargin->isPercentage()) {
+            $quote->computableRows->transform(function ($row) use ($countryMargin, $mapping) {
+                $dateFromColumn = $this->getRowColumn($mapping, $row->columnsData, 'date_from');
+                $dateToColumn = $this->getRowColumn($mapping, $row->columnsData, 'date_to');
+                $priceColumn = $this->getRowColumn($mapping, $row->columnsData, 'price');
 
-            return $row;
-        });
+                $priceColumn->value = $countryMargin->calculate($priceColumn->value, $dateFromColumn->value ?? null, $dateToColumn->value ?? null);
 
-        $quote->append([
-            'total' => 1
-        ]);
+                return $row;
+            });
+        }
+
+        $list_price = $this->countTotalPrice($quote->computableRows, $mapping);
+
+        if($countryMargin->isFixed()) {
+            $list_price = $countryMargin->calculate($list_price);
+        }
+
+        $quote->list_price = $list_price;
 
         return $quote;
     }
 
-    private function getRowColumn(EloquentCollection $collection, string $name)
+    public function interactWithDiscount(Quote $quote, Discount $discount): Quote
     {
-        $importableColumns = $this->importableColumnsByName;
+        if(!isset($quote->computableRows) || !isset($quote->list_price)) {
+            return $quote;
+        }
 
-        if(!$importableColumns->has($name)) {
+        $mapping = $quote->mapping;
+
+        $quote->computableRows->transform(function ($row) use ($discount, $mapping, $quote) {
+            $priceColumn = $this->getRowColumn($mapping, $row->columnsData, 'price');
+            $initialValue = $priceColumn->value;
+            $priceColumn->value = $discount->calculate($priceColumn->value, $quote->list_price);
+
+            $quote->applicable_discounts = $quote->raw_applicable_discounts + ((float) $initialValue - (float) $priceColumn->value);
+
+            return $row;
+        });
+
+        return $quote;
+    }
+
+    public function countTotalPrice(EloquentCollection $rows, Collection $mapping)
+    {
+        $total = $rows->reduce(function ($carry, $row) use ($mapping) {
+            $priceColumn = $this->getRowColumn($mapping, $row->columnsData, 'price');
+
+            return $carry + (float) $priceColumn->value;
+        });
+
+        return number_format($total, 2);
+    }
+
+    private function getRowColumn(Collection $mapping, EloquentCollection $columnsData, string $name)
+    {
+        if(!$mapping->has($name)) {
             return null;
         }
 
-        return $collection->where('importable_column_id', $importableColumns->get($name))->first();
+        return $columnsData->where('importable_column_id', $mapping->get($name))->first();
     }
 }

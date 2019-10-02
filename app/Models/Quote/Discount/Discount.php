@@ -15,6 +15,8 @@ abstract class Discount extends UuidModel
 {
     use Activatable, Searchable, BelongsToCountry, BelongsToVendor, BelongsToUser;
 
+    protected $perPage = 8;
+
     protected static function boot()
     {
         parent::boot();

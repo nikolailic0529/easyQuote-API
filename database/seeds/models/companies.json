@@ -4,20 +4,23 @@
         "vat": "GB758501125",
         "vendors": [
             "HPE", "LEN", "IBM"
-        ]
+        ],
+        "logo": "/img/companies/swh.png"
     },
     {
         "name": "Europlus Direct",
         "vat": "GB847657576",
         "vendors": [
             "HPE", "LEN", "IBM"
-        ]
+        ],
+        "logo": "/img/companies/swh.png"
     },
     {
         "name": "Tesedi Holding Gmbh",
         "vat": "CHE109482812",
         "vendors": [
             "HPE", "LEN", "IBM"
-        ]
+        ],
+        "logo": "/img/companies/swh.png"
     }
 ]

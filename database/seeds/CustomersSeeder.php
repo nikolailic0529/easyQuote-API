@@ -28,6 +28,9 @@ class CustomersSeeder extends Seeder
                 'valid_until' => now()->create($customer['valid_until'])->toDateTimeString(),
                 'support_start' => now()->create($customer['support_start'])->toDateTimeString(),
                 'support_end' => now()->create($customer['support_end'])->toDateTimeString(),
+                'payment_terms' => $customer['payment_terms'],
+                'invoicing_terms' => $customer['invoicing_terms'],
+                'service_level' => $customer['service_level'],
                 'created_at' => now()->toDateTimeString()
             ]);
         });

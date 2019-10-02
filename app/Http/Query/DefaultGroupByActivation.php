@@ -9,7 +9,6 @@ class DefaultGroupByActivation
         $builder = $next($request);
         $table = $builder->getModel()->getTable();
 
-        return $builder->groupBy(DB::raw("{$table}.activated_at desc"))
-            ->orderBy("{$table}.activated_at", 'desc');
+        return $builder->orderBy("{$table}.activated_at", 'desc');
     }
 }

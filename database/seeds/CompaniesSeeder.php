@@ -31,12 +31,13 @@ class CompaniesSeeder extends Seeder
                 'id' => $companyId,
                 'name' => $company['name'],
                 'vat' => $company['vat'],
-                'is_system' => true
+                'is_system' => true,
+                'logo' => $company['logo']
             ]);
 
             collect($company['vendors'])->each(function ($vendorCode) use ($companyId) {
                 $vendor = Vendor::where('short_code', $vendorCode)->first();
-                
+
                 Company::whereId($companyId)->first()->vendors()->attach($vendor);
             });
         });

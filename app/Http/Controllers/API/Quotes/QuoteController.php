@@ -99,4 +99,17 @@ class QuoteController extends Controller
             $this->quote->discounts($id)
         );
     }
+
+    /**
+     * Get Imported Rows Data after Applying Margins
+     *
+     * @param string $id
+     * @return \Illuminate\Http\Response
+     */
+    public function review(string $id)
+    {
+        return response()->json(
+            $this->quote->review($id)
+        );
+    }
 }

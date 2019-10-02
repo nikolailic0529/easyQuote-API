@@ -30,13 +30,14 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Database\Eloquent\Builder;
 use App\Builder\Pagination\Paginator;
-
 use Illuminate\Pipeline\Pipeline;
 use Setting, Arr, Closure;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
     protected $quote;
+
+    protected $quoteService;
 
     protected $quoteFile;
 
@@ -60,6 +61,7 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     public function __construct(
         Quote $quote,
+        QuoteService $quoteService,
         QuoteFile $quoteFile,
         QuoteTemplateRepository $quoteTemplate,
         QuoteDiscount $quoteDiscount,
@@ -69,7 +71,6 @@ class QuoteRepository implements QuoteRepositoryInterface
         Vendor $vendor,
         DataSelectSeparator $dataSelectSeparator,
         Elasticsearch $search,
-        QuoteService $quoteService,
         MultiYearDiscount $multiYearDiscount,
         PrePayDiscount $prePayDiscount,
         PromotionalDiscount $promotionalDiscount,
@@ -319,11 +320,78 @@ class QuoteRepository implements QuoteRepositoryInterface
         return compact('multi_year', 'pre_pay', 'promotions', 'snd');
     }
 
+    public function review(string $quoteId)
+    {
+        $quote = $this->find($quoteId);
+
+        $quote->computableRows = $this->createDefaultData($quote->rowsDataByColumns, $quote);
+        $quote->computableRows = $this->setDefaultValues($quote->computableRows, $quote);
+        $quote = $this->quoteService->interact($quote, $quote->countryMargin);
+
+        $multiYearDiscount = $quote->discounts()->whereHasMorph('discountable', MultiYearDiscount::class)->first();
+        $promotionalDiscount = $quote->discounts()->whereHasMorph('discountable', PromotionalDiscount::class)->first();
+        $snDiscount = $quote->discounts()->whereHasMorph('discountable', SND::class)->first();
+        $prePayDiscount = $quote->discounts()->whereHasMorph('discountable', PrePayDiscount::class)->first();
+
+        $quote = $this->quoteService->interact($quote, $multiYearDiscount);
+        $quote = $this->quoteService->interact($quote, $promotionalDiscount);
+        $quote = $this->quoteService->interact($quote, $snDiscount);
+        $quote = $this->quoteService->interact($quote, $prePayDiscount);
+
+        $list_price = $quote->list_price ?? $this->quoteService->countTotalPrice($quote->computableRows, $quote->mapping);
+
+        $rows = $this->transformRowsData($quote->computableRows);
+
+        $pages = collect();
+
+        $first_page = [
+            'id' => $quote->id,
+            'template_name' => $quote->quoteTemplate->name,
+            'customer_name' => $quote->customer->name,
+            'company_name' => $quote->company->name,
+            'company_logo' => $quote->company->logo,
+            'vendor_name' => $quote->vendor->name,
+            'vendor_logo' => $quote->vendor->logo,
+            'support_start' => $quote->customer->support_start,
+            'support_end' => $quote->customer->support_end,
+            'valid_until' => $quote->customer->valid_until,
+            'quotation_number' => $quote->customer->rfq,
+            'service_level' => $quote->customer->service_level,
+            'list_price' => $list_price,
+            'applicable_discounts' => $quote->applicable_discounts,
+            'final_price' => $quote->final_price,
+            'payment_terms' => $quote->customer->payment_terms,
+            'invoicing_terms' => $quote->customer->invoicing_terms,
+        ];
+
+        $data_pages = [
+            'pricing_document' => $quote->pricing_document,
+            'service_agreement_id' => $quote->service_agreement_id,
+            'system_handle' => $quote->system_handle,
+            'rows' => $rows
+        ];
+
+        $last_page = [
+            'additional_details' => $quote->additional_details
+        ];
+
+        $pages = $pages->merge(compact('first_page', 'data_pages', 'last_page'));
+
+
+        return $pages;
+    }
+
     private function transformRowsData(EloquentCollection $rowsData)
     {
         $rowsData->transform(function ($row) {
             $columnsData = $row->columnsData->mapWithKeys(function ($column) {
-                return [$column->template_field_name => $column->value];
+                $value = trim(preg_replace('/[\h]/u', ' ', $column->value));
+
+                if($column->template_field_name === 'price') {
+                    $value = number_format((float) $value, 2);
+                }
+
+                return [$column->template_field_name => $value];
             });
             return collect($row->only('id', 'is_selected'))->merge($columnsData);
         });
@@ -469,6 +537,10 @@ class QuoteRepository implements QuoteRepositoryInterface
             'quote_data.selected_rows_is_rejected',
             'quote_data.last_drafted_step',
             'quote_data.detach_schedule',
+            'quote_data.pricing_document',
+            'quote_data.service_agreement_id',
+            'quote_data.system_handle',
+            'quote_data.additional_details',
             'save'
         ];
 

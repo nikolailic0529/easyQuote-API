@@ -99,8 +99,6 @@ class ImportedRowImport implements OnEachRow, WithHeadingRow, WithCustomCsvSetti
                 $highestRow = $worksheet->getHighestRow();
                 $hasHeading = false;
 
-                $headingRow = HeadingRowExtractor::extract($worksheet, $this);
-
                 if(!$this->quoteFile->isExcel()) {
                     return;
                 }

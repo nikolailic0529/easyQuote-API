@@ -138,4 +138,12 @@ interface QuoteRepositoryInterface
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function discounts(string $quoteId);
+
+    /**
+     * Review Quote pages
+     *
+     * @param string $quoteId
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function review(string $quoteId);
 }

@@ -4,41 +4,59 @@
         "rfq": "CQ000000248A9E",
         "valid_until": "27-05-2019",
         "support_start": "11-05-2019",
-        "support_end": "19-05-2020"
+        "support_end": "19-05-2020",
+        "payment_terms": "30 days after invoice date",
+        "invoicing_terms": "Upfront",
+        "service_level": "HPE Foundation Care 24x7 wDMR SVC"
     },
     {
         "name": "Noveltis",
         "rfq": "CQ0000002499D1",
         "valid_until": "27-05-2019",
         "support_start": "14-05-2019",
-        "support_end": "19-05-2020"
+        "support_end": "19-05-2020",
+        "payment_terms": "30 days after invoice date",
+        "invoicing_terms": "Upfront",
+        "service_level": "HPE Foundation Care 24x7 wDMR SVC"
     },
     {
         "name": "Loomis UK Limitd",
         "rfq": "CQ000000248A9E",
         "valid_until": "27-05-2019",
         "support_start": "15-05-2019",
-        "support_end": "19-05-2020"
+        "support_end": "19-05-2020",
+        "payment_terms": "30 days after invoice date",
+        "invoicing_terms": "Upfront",
+        "service_level": "HPE Foundation Care 24x7 wDMR SVC"
     },
     {
         "name": "Noveltis",
         "rfq": "CQ0000002499D1",
         "valid_until": "27-05-2019",
         "support_start": "11-05-2019",
-        "support_end": "19-05-2020"
+        "support_end": "19-05-2020",
+        "payment_terms": "30 days after invoice date",
+        "invoicing_terms": "Upfront",
+        "service_level": "HPE Foundation Care 24x7 wDMR SVC"
     },
     {
         "name": "Loomis UK Limitd",
         "rfq": "CQ000000248A9E",
         "valid_until": "27-05-2019",
         "support_start": "11-05-2019",
-        "support_end": "19-05-2020"
+        "support_end": "19-05-2020",
+        "payment_terms": "30 days after invoice date",
+        "invoicing_terms": "Upfront",
+        "service_level": "HPE Foundation Care 24x7 wDMR SVC"
     },
     {
         "name": "Noveltis",
         "rfq": "CQ0000002499D1",
         "valid_until": "27-05-2019",
         "support_start": "08-05-2019",
-        "support_end": "19-05-2020"
+        "support_end": "19-05-2020",
+        "payment_terms": "30 days after invoice date",
+        "invoicing_terms": "Upfront",
+        "service_level": "HPE Foundation Care 24x7 wDMR SVC"
     }
 ]

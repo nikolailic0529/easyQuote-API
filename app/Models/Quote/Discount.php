@@ -1,5 +1,11 @@
 <?php namespace App\Models\Quote;
 
+use App\Models\Quote\Discount \ {
+    MultiYearDiscount,
+    PrePayDiscount,
+    PromotionalDiscount,
+    SND
+};
 use App\Models\UuidModel;
 use Str;
 
@@ -10,7 +16,7 @@ class Discount extends UuidModel
     ];
 
     protected $appends = [
-        'discount_type'
+        'discount_type', 'duration'
     ];
 
     public function discountable()
@@ -31,5 +37,36 @@ class Discount extends UuidModel
     public function getDurationAttribute()
     {
         return $this->pivot->duration;
+    }
+
+    public function calculate($value, $total)
+    {
+        $value = (float) $value;
+        $total = (float) $total;
+        $discount = $this->discountable;
+
+        if($discount instanceof MultiYearDiscount || $discount instanceof PrePayDiscount) {
+            $durations = collect($discount->durations);
+            $percentage = $durations->where('duration', 3)->first()['value'] ?? $durations->first()['value'];
+
+            return $value - ($value * $percentage / 100);
+        }
+
+        if($discount instanceof PromotionalDiscount) {
+            $percentage = $discount->value;
+            $limit = $discount->minimum_limit;
+
+            if($limit <= $total) {
+                return $value - ($value * $percentage / 100);
+            }
+
+            return $value;
+        }
+
+        if($discount instanceof SND) {
+            $percentage = $discount->value;
+
+            return $value - ($value * $percentage / 100);
+        }
     }
 }
