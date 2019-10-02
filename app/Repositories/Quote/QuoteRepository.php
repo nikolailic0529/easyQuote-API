@@ -340,6 +340,18 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $list_price = $quote->list_price ?? $this->quoteService->countTotalPrice($quote->computableRows, $quote->mapping);
 
+        $equipment_address = $quote->customer->hardwareAddresses()->first()->address_1 ?? null;
+        $hardware_contact = $quote->customer->hardwareContacts()->first();
+        $hardware_contact_name = $hardware_contact->contact_name ?? null;
+        $hardware_contact_phone = $hardware_contact->phone ?? null;
+
+        $software_address = $quote->customer->softwareAddresses()->first()->address_1 ?? null;
+        $software_contact = $quote->customer->softwareContacts()->first();
+        $software_contact_name = $software_contact->contact_name ?? null;
+        $software_contact_phone = $software_contact->phone ?? null;
+
+        $coverage_period = "{$quote->customer->support_start} to {$quote->customer->support_end}";
+
         $rows = $this->transformRowsData($quote->computableRows);
 
         $pages = collect();
@@ -368,6 +380,13 @@ class QuoteRepository implements QuoteRepositoryInterface
             'pricing_document' => $quote->pricing_document,
             'service_agreement_id' => $quote->service_agreement_id,
             'system_handle' => $quote->system_handle,
+            'equipment_address' => $equipment_address,
+            'hardware_contact' => $hardware_contact_name,
+            'hardware_phone' => $hardware_contact_phone,
+            'software_address' => $software_address,
+            'software_contact' => $software_contact_name,
+            'software_phone' => $software_contact_phone,
+            'coverage_period' => $coverage_period,
             'rows' => $rows
         ];
 

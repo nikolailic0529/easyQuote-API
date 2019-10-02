@@ -1,0 +1,32 @@
+[
+    {
+        "rfq": "CQ000000248A9E",
+        "contacts": [
+            {
+                "contact_type": "Software",
+                "contact_name": "John Doe",
+                "phone": "1234"
+            },
+            {
+                "contact_type": "Hardware",
+                "contact_name": "Smith",
+                "phone": "4567"
+            }
+        ]
+    },
+    {
+        "rfq": "CQ0000002499D1",
+        "contacts": [
+            {
+                "contact_type": "Software",
+                "contact_name": "John Doe",
+                "phone": "1234"
+            },
+            {
+                "contact_type": "Hardware",
+                "contact_name": "Smith",
+                "phone": "4567"
+            }
+        ]
+    }
+]

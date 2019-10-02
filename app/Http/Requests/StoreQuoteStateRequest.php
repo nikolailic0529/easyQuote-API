@@ -119,7 +119,7 @@ class StoreQuoteStateRequest extends FormRequest
             'quote_data.pricing_document' => 'string|max:40|min:2',
             'quote_data.service_agreement_id' => 'string|max:40|min:2',
             'quote_data.system_handle' => 'string|max:40|min:2',
-            'quote_data.additional_details' => 'string|max:250|min:2',
+            'quote_data.additional_details' => 'string|max:20000|min:2',
             'margin.quote_type' => [
                 'string',
                 'required_with:margin.is_fixed,margin.method,margin.type,margin.value',

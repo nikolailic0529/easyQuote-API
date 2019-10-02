@@ -4,11 +4,17 @@ use App\Models \ {
     UuidModel,
     QuoteFile\ImportableColumn
 };
+use App\Traits \ {
+    HasAddresses,
+    HasContacts
+};
 use Illuminate\Support\Carbon;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 class Customer extends UuidModel
 {
+    use HasAddresses, HasContacts;
+
     protected $fillable = [
         'name', 'support_start', 'support_end', 'rfq', 'valid_until', 'payment_terms', 'invoicing_terms', 'service_level'
     ];
@@ -56,6 +62,26 @@ class Customer extends UuidModel
     public function getValidUntilAttribute()
     {
         return Carbon::parse($this->attributes['valid_until'])->format($this->dateTimeFormat);
+    }
+
+    public function hardwareAddresses()
+    {
+        return $this->addresses()->where('address_type', 'Hardware');
+    }
+
+    public function softwareAddresses()
+    {
+        return $this->addresses()->where('address_type', 'Software');
+    }
+
+    public function hardwareContacts()
+    {
+        return $this->contacts()->where('contact_type', 'Hardware');
+    }
+
+    public function softwareContacts()
+    {
+        return $this->contacts()->where('contact_type', 'Software');
     }
 
     private function formatDate($value, $default, $isDefaultEnabled)

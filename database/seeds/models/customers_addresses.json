@@ -1,0 +1,48 @@
+[
+    {
+        "rfq": "CQ000000248A9E",
+        "addresses": [
+            {
+                "address_1": "Level 9, 628 Bourke Street",
+                "address_type": "Software",
+                "city": "MELBOURNE",
+                "state": "VICTORIA",
+                "state_code": "VC",
+                "post_code": "3000",
+                "country_code": "GB"
+            },
+            {
+                "address_1": "Level 9, 628 Bourke Street",
+                "address_type": "Hardware",
+                "city": "MELBOURNE",
+                "state": "VICTORIA",
+                "state_code": "VC",
+                "post_code": "3000",
+                "country_code": "GB"
+            }
+        ]
+    },
+    {
+        "rfq": "CQ0000002499D1",
+        "addresses": [
+            {
+                "address_1": "Level 9, 628 Bourke Street",
+                "address_type": "Software",
+                "city": "MELBOURNE",
+                "state": "VICTORIA",
+                "state_code": "VC",
+                "post_code": "3000",
+                "country_code": "GB"
+            },
+            {
+                "address_1": "Level 9, 628 Bourke Street",
+                "address_type": "Hardware",
+                "city": "MELBOURNE",
+                "state": "VICTORIA",
+                "state_code": "VC",
+                "post_code": "3000",
+                "country_code": "GB"
+            }
+        ]
+    }
+]

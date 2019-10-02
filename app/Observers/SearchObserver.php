@@ -14,6 +14,10 @@ class SearchObserver
 
     public function saved($model)
     {
+        if(app()->runningInConsole()) {
+            return;
+        }
+
         $this->elasticsearch->index([
             'index' => $model->getSearchIndex(),
             'type' => $model->getSearchType(),
@@ -24,6 +28,10 @@ class SearchObserver
 
     public function deleted($model)
     {
+        if(app()->runningInConsole()) {
+            return;
+        }
+
         $this->elasticsearch->delete([
             'index' => $model->getSearchIndex(),
             'type' => $model->getSearchType(),
