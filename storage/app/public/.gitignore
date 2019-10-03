@@ -1,2 +1,5 @@
 *
+!images/
+!images/vendors
+!images/companies
 !.gitignore

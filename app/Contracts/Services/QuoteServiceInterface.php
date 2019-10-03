@@ -46,4 +46,14 @@ interface QuoteServiceInterface
      * @return string
      */
     public function countTotalPrice(EloquentCollection $rows, Collection $mapping);
+
+    /**
+     * Get Row Column by Mapping and Template Field Name
+     *
+     * @param Collection $mapping
+     * @param EloquentCollection $columnsData
+     * @param string $name
+     * @return \App\Models\QuoteFile\ImportedColumn|null
+     */
+    public function getRowColumn(Collection $mapping, EloquentCollection $columnsData, string $name);
 }

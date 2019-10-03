@@ -3,7 +3,8 @@
 use App\Contracts\WithImage;
 use App\Models\Image;
 use Illuminate\Http\UploadedFile;
-use ImageIntervention, Storage;
+use Illuminate\Http\File;
+use ImageIntervention, Storage, Str;
 
 trait HasImage
 {
@@ -12,27 +13,43 @@ trait HasImage
         return $this->morphOne(Image::class, 'imageable');
     }
 
-    public function createImage($file)
+    public function createImage($file, $fake = false)
     {
-        if(!$file instanceof UploadedFile || !$this instanceof WithImage) {
+        if((!$file instanceof UploadedFile || !$this instanceof WithImage) && !$fake) {
             return $this;
         }
 
         $modelImagesDir = $this->imagesDirectory();
 
-        $original = $file->store($modelImagesDir, 'public');
+        if($fake) {
+            $original = Storage::putFile("public/$modelImagesDir", new File(base_path($file)), 'public');
+            $original = Str::after($original, 'public/');
+        } else {
+            $original = $file->store($modelImagesDir, 'public');
+        }
 
-        $image = ImageIntervention::make(Storage::path("public/{$original}"));
-        $image->resize($this->thumbnailProperties()['width'], $this->thumbnailProperties()['height'], function ($constraint) {
-            $constraint->aspectRatio();
-            $constraint->upsize();
+        $thumbnails = collect($this->thumbnailProperties())->mapWithKeys(function ($size, $key) use ($original, $modelImagesDir) {
+            if(!isset($size['width']) || !isset($size['height'])) {
+                return true;
+            }
+
+            $image = ImageIntervention::make(Storage::path("public/{$original}"));
+            $image->resize($size['width'], $size['height'], function ($constraint) {
+                $constraint->aspectRatio();
+                $constraint->upsize();
+            });
+
+            $key++;
+            $imageKey = "{$key}x";
+
+            $thumbnail = "{$modelImagesDir}/{$image->filename}@{$imageKey}.{$image->extension}";
+            $image->save(Storage::path("public/{$thumbnail}"));
+
+            return [$imageKey => $thumbnail];
         });
 
-        $thumbnail = "{$modelImagesDir}/{$image->filename}@thumb.{$image->extension}";
-        $image->save(Storage::path("public/{$thumbnail}"));
-
         $this->image()->delete();
-        $this->image()->create(compact('original', 'thumbnail'));
+        $this->image()->create(compact('original', 'thumbnails'));
 
         return $this->load('image');
     }

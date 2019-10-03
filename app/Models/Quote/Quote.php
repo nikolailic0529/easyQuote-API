@@ -10,6 +10,7 @@ use App\Models \ {
     QuoteFile\ImportedRow,
     QuoteFile\QuoteFile
 };
+use App\Models\QuoteFile\ScheduleData;
 use App\Traits \ {
     Activatable,
     Search\Searchable,
@@ -106,6 +107,11 @@ class Quote extends CompletableModel implements HasOrderedScope
         return $this->belongsTo(QuoteTemplate::class);
     }
 
+    public function scheduleData()
+    {
+        return $this->hasOneThrough(ScheduleData::class, QuoteFile::class);
+    }
+
     public function appendJoins()
     {
         return $this->setAppends(['last_drafted_step', 'field_column', 'rows_data', 'rows_data_by_columns']);
@@ -137,24 +143,31 @@ class Quote extends CompletableModel implements HasOrderedScope
         return $this->rowsData()->with('columnsData')->get();
     }
 
-    public function getRowsDataByColumnsAttribute()
+    public function getRowsDataByColumnsAttribute($selected = false)
     {
         $fieldsColumns = $this->fieldsColumns()->with('importableColumn', 'templateField')->get();
         $importableColumns = data_get($fieldsColumns, '*.importable_column_id');
 
-        return $this->rowsData()->with(['columnsData' => function ($query) use ($importableColumns) {
-            return $query->whereHas('importableColumn', function ($query) use ($importableColumns) {
-                return $query->whereIn('id', $importableColumns)
+        $query = $selected ? $this->selectedRowsData() : $this->rowsData();
+
+        return $query->with(['columnsData' => function ($query) use ($importableColumns) {
+            $query->whereHas('importableColumn', function ($query) use ($importableColumns) {
+                $query->whereIn('id', $importableColumns)
                     ->ordered();
             })->join('quote_field_column', function ($join) {
-                return $join->on('imported_columns.importable_column_id', '=', 'quote_field_column.importable_column_id')
+                $join->on('imported_columns.importable_column_id', '=', 'quote_field_column.importable_column_id')
                     ->where('quote_field_column.quote_id', '=', $this->id);
             })
             ->join('template_fields', function ($join) {
-                return $join->on('template_fields.id', '=', 'quote_field_column.template_field_id')
+                $join->on('template_fields.id', '=', 'quote_field_column.template_field_id')
                     ->select('template_fields.name as template_field_name');
             })->select(['imported_columns.*', 'template_fields.name as template_field_name']);
         }])->get();
+    }
+
+    public function getSelectedRowsDataByColumnsAttribute()
+    {
+        return $this->getRowsDataByColumnsAttribute(true);
     }
 
     public function defaultTemplateFields()
@@ -284,21 +297,36 @@ class Quote extends CompletableModel implements HasOrderedScope
         return $mapping;
     }
 
-    public function getApplicableDiscountsAttribute()
+    public function getApplicableDiscountsFormattedAttribute()
     {
         return number_format($this->attributes['applicable_discounts'] ?? 0, 2);
     }
 
-    public function getRawApplicableDiscountsAttribute()
+    public function getApplicableDiscountsAttribute()
     {
-        return $this->attributes['applicable_discounts'] ?? 0;
+        return (float) ($this->attributes['applicable_discounts'] ?? 0);
+    }
+
+    public function getListPriceAttribute()
+    {
+        return (float) ($this->attributes['list_price'] ?? 0);
+    }
+
+    public function getListPriceFormattedAttribute()
+    {
+        return number_format($this->getAttribute('list_price'), 2);
     }
 
     public function getFinalPriceAttribute()
     {
-        $final_price = ($this->attributes['list_price'] ?? 0) - ($this->attributes['applicable_discounts'] ?? 0);
+        $final_price = ((float) $this->getAttribute('list_price')) - ((float) $this->getAttribute('applicable_discounts'));
 
         return number_format($final_price, 2);
+    }
+
+    public function getAdditionalDetailsFormattedAttribute()
+    {
+        return nl2br($this->getAttribute('additional_details'));
     }
 
     private function joins() {

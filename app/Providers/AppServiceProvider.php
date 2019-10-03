@@ -179,6 +179,10 @@ class AppServiceProvider extends ServiceProvider
         Str::macro('header', function ($value) {
             return self::title(str_replace('_', ' ', $value));
         });
+
+        Str::macro('columnName', function ($value) {
+            return self::snake(preg_replace('/\W/', '', $value));
+        });
     }
 
     protected function passportSettings()

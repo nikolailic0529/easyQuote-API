@@ -227,7 +227,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     public function find(String $id)
     {
-        return $this->quoteFile->whereId($id)->first();
+        return $this->quoteFile->whereId($id)->firstOrFail();
     }
 
     public function exists(String $id)

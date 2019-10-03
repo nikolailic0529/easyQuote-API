@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent \ {
     Collection
 };
 use Elasticsearch\Client as Elasticsearch;
-use Closure, Arr;
+use Closure, Arr, DB;
 use Illuminate\Pipeline\Pipeline;
 
 class MarginRepository implements MarginRepositoryInterface
@@ -93,9 +93,10 @@ class MarginRepository implements MarginRepositoryInterface
     {
         $user = request()->user();
 
-        $query = $user->countryMargins()->with('country', 'vendor')->getQuery();
+        $activated = $this->filterQuery($user->countryMargins()->with('country', 'vendor')->getQuery()->activated());
+        $deactivated = $this->filterQuery($user->countryMargins()->with('country', 'vendor')->getQuery()->deactivated());
 
-        return $this->filterQuery($query)->apiPaginate();
+        return $activated->union($deactivated)->apiPaginate();
     }
 
     public function searchCountryMargins(string $query = ''): Paginator
@@ -104,12 +105,17 @@ class MarginRepository implements MarginRepositoryInterface
         $items = $this->searchOnElasticsearch($model, $query);
         $user = request()->user();
 
-        $query = $this->buildQuery($model, $items, function ($query) use ($user) {
-            $query = $query->where('country_margins.user_id', $user->id)->with('country', 'vendor');
+        $activated = $this->buildQuery($model, $items, function ($query) use ($user) {
+            $query = $query->where('country_margins.user_id', $user->id)->with('country', 'vendor')->activated();
             return $this->filterQuery($query);
         });
 
-        return $query->apiPaginate();
+        $deactivated = $this->buildQuery($model, $items, function ($query) use ($user) {
+            $query = $query->where('country_margins.user_id', $user->id)->with('country', 'vendor')->deactivated();
+            return $this->filterQuery($query);
+        });
+
+        return $activated->union($deactivated)->apiPaginate();
     }
 
     public function deactivateCountryMargin(string $id)
@@ -167,13 +173,12 @@ class MarginRepository implements MarginRepositoryInterface
         return app(Pipeline::class)
             ->send($query)
             ->through([
-                \App\Http\Query\DefaultOrderBy::class,
-                \App\Http\Query\OrderByCreatedAt::class,
+                // \App\Http\Query\DefaultOrderBy::class,
+                // \App\Http\Query\OrderByCreatedAt::class,
                 \App\Http\Query\OrderByCountry::class,
                 \App\Http\Query\OrderByVendor::class,
                 \App\Http\Query\Margin\OrderByQuoteType::class,
-                \App\Http\Query\Margin\OrderByValue::class,
-                \App\Http\Query\DefaultGroupByActivation::class
+                \App\Http\Query\Margin\OrderByValue::class
             ])
             ->thenReturn();
     }

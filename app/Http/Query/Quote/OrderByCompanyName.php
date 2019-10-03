@@ -7,8 +7,6 @@ class OrderByCompanyName extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderByJoin('company.name', request($this->queryName()))
-            ->setUseTableAlias(true)
-            ->setLeftJoin(true);
+        return $builder->orderByJoin('company.name', request($this->queryName()));
     }
 }

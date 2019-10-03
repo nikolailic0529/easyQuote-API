@@ -32,21 +32,17 @@ class Customer extends UuidModel
 
     protected $dateTimeFormat = 'd/m/Y';
 
-    public function handleColumnValue($value, $importableColumn, $isDefaultEnabled = false)
+    public function handleColumnValue($value, $dateDirection, $isDefaultEnabled = false)
     {
-        if(!$importableColumn instanceof ImportableColumn) {
-            return $value;
-        }
-
-        if($importableColumn->isDateFrom()) {
+        if($dateDirection === 'date_from') {
             return $this->formatDate($value, $this->support_start, $isDefaultEnabled);
         }
 
-        if($importableColumn->isDateTo()) {
+        if($dateDirection === 'date_to') {
             return $this->formatDate($value, $this->support_end, $isDefaultEnabled);
         }
 
-        return trim($value);
+        return $value;
     }
 
     public function getSupportStartAttribute()

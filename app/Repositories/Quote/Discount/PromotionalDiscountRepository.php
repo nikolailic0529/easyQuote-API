@@ -21,7 +21,10 @@ class PromotionalDiscountRepository extends DiscountRepository implements Promot
 
     public function all(): Paginator
     {
-        return $this->filterQuery($this->userQuery())->apiPaginate();
+        $activated = $this->filterQuery($this->userQuery()->activated());
+        $deactivated = $this->filterQuery($this->userQuery()->deactivated());
+
+        return $activated->union($deactivated)->apiPaginate();
     }
 
     public function search(string $query = ''): Paginator
@@ -32,11 +35,14 @@ class PromotionalDiscountRepository extends DiscountRepository implements Promot
 
         $items = $this->searchOnElasticsearch($this->promotionalDiscount, $searchableFields, $query);
 
-        $query = $this->buildQuery($this->promotionalDiscount, $items, function ($query) {
-            return $this->filterQuery($query->with('country', 'vendor'));
+        $activated = $this->buildQuery($this->promotionalDiscount, $items, function ($query) {
+            return $this->filterQuery($query->with('country', 'vendor')->activated());
+        });
+        $deactivated = $this->buildQuery($this->promotionalDiscount, $items, function ($query) {
+            return $this->filterQuery($query->with('country', 'vendor')->deactivated());
         });
 
-        return $query->apiPaginate();
+        return $activated->union($deactivated)->apiPaginate();
     }
 
     public function userQuery(): Builder
@@ -86,8 +92,7 @@ class PromotionalDiscountRepository extends DiscountRepository implements Promot
     {
         return [
             \App\Http\Query\Discount\OrderByMinimumLimit::class,
-            \App\Http\Query\Discount\OrderByValue::class,
-            \App\Http\Query\DefaultGroupByActivation::class
+            \App\Http\Query\Discount\OrderByValue::class
         ];
     }
 }

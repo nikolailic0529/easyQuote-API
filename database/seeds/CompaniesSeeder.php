@@ -3,7 +3,8 @@
 use Illuminate\Database\Seeder;
 use App\Models \ {
     Vendor,
-    Company
+    Company,
+    Image
 };
 
 class CompaniesSeeder extends Seeder
@@ -31,15 +32,18 @@ class CompaniesSeeder extends Seeder
                 'id' => $companyId,
                 'name' => $company['name'],
                 'vat' => $company['vat'],
-                'is_system' => true,
-                'logo' => $company['logo']
+                'is_system' => true
             ]);
 
-            collect($company['vendors'])->each(function ($vendorCode) use ($companyId) {
+            $createdCompany = Company::whereId($companyId)->first();
+
+            collect($company['vendors'])->each(function ($vendorCode) use ($createdCompany) {
                 $vendor = Vendor::where('short_code', $vendorCode)->first();
 
-                Company::whereId($companyId)->first()->vendors()->attach($vendor);
+                $createdCompany->vendors()->attach($vendor);
             });
+
+            $createdCompany->createImage($company['logo'], true);
         });
     }
 }

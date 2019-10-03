@@ -5,7 +5,7 @@
         "vendors": [
             "HPE", "LEN", "IBM"
         ],
-        "logo": "/img/companies/swh.png"
+        "logo": "/database/seeds/models/images/swh.png"
     },
     {
         "name": "Europlus Direct",
@@ -13,7 +13,7 @@
         "vendors": [
             "HPE", "LEN", "IBM"
         ],
-        "logo": "/img/companies/swh.png"
+        "logo": "/database/seeds/models/images/swh.png"
     },
     {
         "name": "Tesedi Holding Gmbh",
@@ -21,6 +21,6 @@
         "vendors": [
             "HPE", "LEN", "IBM"
         ],
-        "logo": "/img/companies/swh.png"
+        "logo": "/database/seeds/models/images/swh.png"
     }
 ]

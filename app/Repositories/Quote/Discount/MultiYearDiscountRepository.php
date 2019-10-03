@@ -21,7 +21,10 @@ class MultiYearDiscountRepository extends DiscountRepository implements MultiYea
 
     public function all(): Paginator
     {
-        return $this->filterQuery($this->userQuery())->apiPaginate();
+        $activated = $this->filterQuery($this->userQuery()->activated());
+        $deactivated = $this->filterQuery($this->userQuery()->deactivated());
+
+        return $activated->union($deactivated)->apiPaginate();
     }
 
     public function search(string $query = ''): Paginator
@@ -32,11 +35,14 @@ class MultiYearDiscountRepository extends DiscountRepository implements MultiYea
 
         $items = $this->searchOnElasticsearch($this->multiYearDiscount, $searchableFields, $query);
 
-        $query = $this->buildQuery($this->multiYearDiscount, $items, function ($query) {
-            return $this->filterQuery($query->with('country', 'vendor'));
+        $activated = $this->buildQuery($this->multiYearDiscount, $items, function ($query) {
+            return $this->filterQuery($query->with('country', 'vendor')->activated());
+        });
+        $deactivated = $this->buildQuery($this->multiYearDiscount, $items, function ($query) {
+            return $this->filterQuery($query->with('country', 'vendor')->deactivated());
         });
 
-        return $query->apiPaginate();
+        return $activated->union($deactivated)->apiPaginate();
     }
 
     public function userQuery(): Builder
@@ -86,8 +92,7 @@ class MultiYearDiscountRepository extends DiscountRepository implements MultiYea
     {
         return [
             \App\Http\Query\Discount\OrderByDurationsValue::class,
-            \App\Http\Query\Discount\OrderByDurationsDuration::class,
-            \App\Http\Query\DefaultGroupByActivation::class
+            \App\Http\Query\Discount\OrderByDurationsDuration::class
         ];
     }
 }

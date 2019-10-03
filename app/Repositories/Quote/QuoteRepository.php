@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Database\Eloquent\Builder;
 use App\Builder\Pagination\Paginator;
+use App\Models\QuoteFile\ImportedColumn;
 use Illuminate\Pipeline\Pipeline;
 use Setting, Arr, Closure;
 
@@ -164,9 +165,10 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     public function allDrafted()
     {
-        $query = $this->draftedQuery();
+        $activated = $this->filterQuery($this->draftedQuery()->activated());
+        $deactivated = $this->filterQuery($this->draftedQuery()->deactivated());
 
-        return $this->filterQuery($query)->apiPaginate();
+        return $activated->union($deactivated)->apiPaginate();
     }
 
     public function searchDrafted(string $query = ''): Paginator
@@ -175,12 +177,16 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $user = request()->user();
 
-        $query = $this->buildQuery($items, function ($query) use ($user) {
-            $query = $query->drafted()->where('user_id', $user->id)->with('customer', 'company');
+        $activated = $this->buildQuery($items, function ($query) use ($user) {
+            $query = $query->drafted()->where('user_id', $user->id)->with('customer', 'company')->activated();
+            return $this->filterQuery($query);
+        });
+        $deactivated = $this->buildQuery($items, function ($query) use ($user) {
+            $query = $query->drafted()->where('user_id', $user->id)->with('customer', 'company')->deactivated();
             return $this->filterQuery($query);
         });
 
-        return $query->apiPaginate();
+        return $activated->union($deactivated)->apiPaginate();
     }
 
     public function create(array $array)
@@ -324,10 +330,17 @@ class QuoteRepository implements QuoteRepositoryInterface
     {
         $quote = $this->find($quoteId);
 
-        $quote->computableRows = $this->createDefaultData($quote->rowsDataByColumns, $quote);
+        $quote->computableRows = $this->createDefaultData($quote->selectedRowsDataByColumns, $quote);
         $quote->computableRows = $this->setDefaultValues($quote->computableRows, $quote);
+
+        /**
+         * Possible interaction with existing Country Margin
+         */
         $quote = $this->quoteService->interact($quote, $quote->countryMargin);
 
+        /**
+         * Possible interaction with existing Discounts
+         */
         $multiYearDiscount = $quote->discounts()->whereHasMorph('discountable', MultiYearDiscount::class)->first();
         $promotionalDiscount = $quote->discounts()->whereHasMorph('discountable', PromotionalDiscount::class)->first();
         $snDiscount = $quote->discounts()->whereHasMorph('discountable', SND::class)->first();
@@ -338,7 +351,9 @@ class QuoteRepository implements QuoteRepositoryInterface
         $quote = $this->quoteService->interact($quote, $snDiscount);
         $quote = $this->quoteService->interact($quote, $prePayDiscount);
 
-        $list_price = $quote->list_price ?? $this->quoteService->countTotalPrice($quote->computableRows, $quote->mapping);
+        if($quote->list_price === 0.00) {
+            $quote->list_price = $this->quoteService->countTotalPrice($quote->computableRows, $quote->mapping);
+        }
 
         $equipment_address = $quote->customer->hardwareAddresses()->first()->address_1 ?? null;
         $hardware_contact = $quote->customer->hardwareContacts()->first();
@@ -369,8 +384,8 @@ class QuoteRepository implements QuoteRepositoryInterface
             'valid_until' => $quote->customer->valid_until,
             'quotation_number' => $quote->customer->rfq,
             'service_level' => $quote->customer->service_level,
-            'list_price' => $list_price,
-            'applicable_discounts' => $quote->applicable_discounts,
+            'list_price' => $quote->list_price_formatted,
+            'applicable_discounts' => $quote->applicable_discounts_formatted,
             'final_price' => $quote->final_price,
             'payment_terms' => $quote->customer->payment_terms,
             'invoicing_terms' => $quote->customer->invoicing_terms,
@@ -391,10 +406,14 @@ class QuoteRepository implements QuoteRepositoryInterface
         ];
 
         $last_page = [
-            'additional_details' => $quote->additional_details
+            'additional_details' => $quote->additional_details_formatted
         ];
 
-        $pages = $pages->merge(compact('first_page', 'data_pages', 'last_page'));
+        $payment_schedule = [
+            'data' => $quote->scheduleData->value ?? null
+        ];
+
+        $pages = $pages->merge(compact('first_page', 'data_pages', 'last_page', 'payment_schedule'));
 
 
         return $pages;
@@ -420,15 +439,28 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     private function setDefaultValues(EloquentCollection $rowsData, Quote $quote)
     {
-        $rowsData->transform(function ($row) use ($quote) {
-            $row->columnsData->transform(function ($column) use ($quote) {
-                $column->value = $quote->customer->handleColumnValue(
-                    $column->value,
-                    $column->importableColumn,
-                    $column->is_default_enabled
+        $mapping = $quote->mapping;
+
+        $rowsData->transform(function ($row) use ($quote, $mapping) {
+            $dateFrom = $this->quoteService->getRowColumn($mapping, $row->columnsData, 'date_from');
+            $dateTo = $this->quoteService->getRowColumn($mapping, $row->columnsData, 'date_to');
+
+            if($dateFrom instanceof ImportedColumn) {
+                $dateFrom->value = $quote->customer->handleColumnValue(
+                    $dateFrom->value,
+                    'date_from',
+                    $dateFrom->is_default_enabled
                 );
-                return $column;
-            });
+            }
+
+            if($dateTo instanceof ImportedColumn) {
+                $dateTo->value = $quote->customer->handleColumnValue(
+                    $dateTo->value,
+                    'date_to',
+                    $dateTo->is_default_enabled
+                );
+            }
+
             return $row;
         });
 
@@ -572,7 +604,7 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $rowsData->transform(function ($row) use ($defaultTemplateFields, $quote) {
             foreach ($defaultTemplateFields as $templateField) {
-                $value = $quote->customer->handleColumnValue(null, $templateField->systemImportableColumn, true);
+                $value = $quote->customer->handleColumnValue(null, $templateField->name, true);
                 $columnData = $row->columnsData()->make(compact('value'));
                 $columnData->template_field_name = $templateField->name;
 
@@ -634,8 +666,7 @@ class QuoteRepository implements QuoteRepositoryInterface
                 \App\Http\Query\Quote\OrderByValidUntil::class,
                 \App\Http\Query\Quote\OrderBySupportStart::class,
                 \App\Http\Query\Quote\OrderBySupportEnd::class,
-                \App\Http\Query\Quote\OrderByCompleteness::class,
-                \App\Http\Query\DefaultGroupByActivation::class
+                \App\Http\Query\Quote\OrderByCompleteness::class
             ])
             ->thenReturn();
     }

@@ -42,14 +42,24 @@ class Vendor extends UuidModel implements WithImage
             return null;
         }
 
-        return asset("storage/{$this->image->thumbnail}");
+        return $this->image->thumbnails;
     }
 
     public function thumbnailProperties(): array
     {
         return [
-            'width' => 60,
-            'height' => 30
+            [
+                'width' => 60,
+                'height' => 30
+            ],
+            [
+                'width' => 120,
+                'height' => 60
+            ],
+            [
+                'width' => 240,
+                'height' => 120
+            ]
         ];
     }
 

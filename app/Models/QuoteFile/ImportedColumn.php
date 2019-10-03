@@ -47,12 +47,12 @@ class ImportedColumn extends UuidModel
         };
 
         $alias = $header = $this->header;
-        $name = Str::snake($header);
+        $name = Str::columnName($header);
         $user = request()->user();
 
         if(!isset($this->header) || mb_strlen(trim($this->header)) === 0) {
             $alias = $header = __('parser.unknown_column_header');
-            $name = Str::snake($header);
+            $name = Str::columnName($header);
             $importableColumn = $user->importableColumns()->where('name', $name)->firstOrCreate(compact('header', 'name'));
             $importableColumn->aliases()->create(compact('alias'));
 

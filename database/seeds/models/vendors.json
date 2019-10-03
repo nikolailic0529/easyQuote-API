@@ -19,5 +19,12 @@
         "countries": [
             "GB", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SA"
         ]
+    },
+    {
+        "name": "Cisco",
+        "short_code": "CIS",
+        "countries": [
+            "GB", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SA"
+        ]
     }
 ]

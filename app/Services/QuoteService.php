@@ -57,18 +57,23 @@ class QuoteService implements QuoteServiceInterface
 
     public function interactWithDiscount(Quote $quote, Discount $discount): Quote
     {
-        if(!isset($quote->computableRows) || !isset($quote->list_price)) {
+        if(!isset($quote->computableRows)) {
             return $quote;
+        }
+
+        if(!isset($quote->list_price) || $quote->list_price === 0.00) {
+            $quote->list_price = $this->countTotalPrice($quote->computableRows, $quote->mapping);
         }
 
         $mapping = $quote->mapping;
 
         $quote->computableRows->transform(function ($row) use ($discount, $mapping, $quote) {
             $priceColumn = $this->getRowColumn($mapping, $row->columnsData, 'price');
-            $initialValue = $priceColumn->value;
-            $priceColumn->value = $discount->calculate($priceColumn->value, $quote->list_price);
 
-            $quote->applicable_discounts = $quote->raw_applicable_discounts + ((float) $initialValue - (float) $priceColumn->value);
+            $discountValue = $discount->calculateDiscount($priceColumn->value, $quote->list_price);
+            $priceColumn->value = ((float) $priceColumn->value) - $discountValue;
+
+            $quote->applicable_discounts += $discountValue;
 
             return $row;
         });
@@ -84,10 +89,10 @@ class QuoteService implements QuoteServiceInterface
             return $carry + (float) $priceColumn->value;
         });
 
-        return number_format($total, 2);
+        return $total;
     }
 
-    private function getRowColumn(Collection $mapping, EloquentCollection $columnsData, string $name)
+    public function getRowColumn(Collection $mapping, EloquentCollection $columnsData, string $name)
     {
         if(!$mapping->has($name)) {
             return null;

@@ -22,7 +22,10 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
 
     public function all(): Paginator
     {
-        return $this->filterQuery($this->userQuery())->apiPaginate();
+        $activated = $this->filterQuery($this->userQuery()->activated());
+        $deactivated = $this->filterQuery($this->userQuery()->deactivated());
+
+        return $activated->union($deactivated)->apiPaginate();
     }
 
     public function search(string $query = ''): Paginator
@@ -33,13 +36,18 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
 
         $items = $this->searchOnElasticsearch($this->vendor, $searchableFields, $query);
 
-        $query = $this->buildQuery($this->vendor, $items, function ($query) {
+        $activated = $this->buildQuery($this->vendor, $items, function ($query) {
             return $query->where(function ($query) {
                 return $query->currentUser();
             })->with('image', 'countries');
         });
+        $deactivated = $this->buildQuery($this->vendor, $items, function ($query) {
+            return $query->where(function ($query) {
+                return $query->currentUser();
+            })->with('image', 'countries')->deactivated();
+        });
 
-        return $query->apiPaginate();
+        return $activated->union($deactivated)->apiPaginate();
     }
 
     public function userQuery(): Builder
@@ -100,9 +108,9 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
     {
         return [
             \App\Http\Query\DefaultOrderBy::class,
+            \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\Vendor\OrderByName::class,
-            \App\Http\Query\Vendor\OrderByShortCode::class,
-            \App\Http\Query\DefaultGroupByActivation::class
+            \App\Http\Query\Vendor\OrderByShortCode::class
         ];
     }
 }

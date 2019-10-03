@@ -28,14 +28,20 @@ trait Activatable
     public function scopeActivated($query)
     {
         return $query->where(function ($query) {
-            $query->whereNotNull('activated_at')
-                ->orWhereNull('user_id');
-        });
+            $query->whereNotNull("{$this->getTable()}.activated_at")
+                ->orWhereNull("{$this->getTable()}.user_id");
+        })->limit(999999999);
+    }
+
+    public function scopeDeactivated($query)
+    {
+        return $query->where(function ($query) {
+            $query->whereNull("{$this->getTable()}.activated_at");
+        })->limit(999999999);
     }
 
     public function scopeActivatedFirst($query)
     {
-        return $query;
         return $query->orderBy("{$this->getTable()}.activated_at", 'desc');
     }
 }

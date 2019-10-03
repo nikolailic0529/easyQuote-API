@@ -21,7 +21,10 @@ class SNDrepository extends DiscountRepository implements SNDrepositoryInterface
 
     public function all(): Paginator
     {
-        return $this->filterQuery($this->userQuery())->apiPaginate();
+        $activated = $this->filterQuery($this->userQuery()->activated());
+        $deactivated = $this->filterQuery($this->userQuery()->deactivated());
+
+        return $activated->union($deactivated)->apiPaginate();
     }
 
     public function search(string $query = ''): Paginator
@@ -32,11 +35,14 @@ class SNDrepository extends DiscountRepository implements SNDrepositoryInterface
 
         $items = $this->searchOnElasticsearch($this->snd, $searchableFields, $query);
 
-        $query = $this->buildQuery($this->snd, $items, function ($query) {
-            return $this->filterQuery($query->with('country', 'vendor'));
+        $activated = $this->buildQuery($this->promotionalDiscount, $items, function ($query) {
+            return $this->filterQuery($query->with('country', 'vendor')->activated());
+        });
+        $deactivated = $this->buildQuery($this->promotionalDiscount, $items, function ($query) {
+            return $this->filterQuery($query->with('country', 'vendor')->deactivated());
         });
 
-        return $query->apiPaginate();
+        return $activated->union($deactivated)->apiPaginate();
     }
 
     public function userQuery(): Builder
@@ -85,8 +91,7 @@ class SNDrepository extends DiscountRepository implements SNDrepositoryInterface
     protected function appendFilterQueryThrough(): array
     {
         return [
-            \App\Http\Query\Discount\OrderByValue::class,
-            \App\Http\Query\DefaultGroupByActivation::class
+            \App\Http\Query\Discount\OrderByValue::class
         ];
     }
 }

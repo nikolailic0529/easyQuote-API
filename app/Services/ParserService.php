@@ -111,7 +111,7 @@ class ParserService implements ParserServiceInterface
             $quote, $quoteFile, $separator
         );
 
-        if($handled) {
+        if($handled && !$quoteFile->isSchedule()) {
             $this->mapColumnsToFields($quote, $quoteFile);
         };
 

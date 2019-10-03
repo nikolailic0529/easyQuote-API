@@ -101,7 +101,7 @@ class PdfParser implements PdfParserInterface
         $priceGroup = '(\s+?((\p{Sc})?\s?(?<price>(\d{1,3},)?\d+([,\.]\d{1,2}))))';
         $dateGroup = '(?<date>(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{4})';
 
-        $regexp = '/(?<payment>^(?<account>\w[\w -]+)(\s+?((\p{Sc})?\s?(?<price>(\d{1,3},)?\d+([,\.]\d{1,2}))))+(\r\n|\n))|(?<payment_dates>(?:system handle)(?:(?:[^\S]+)?(?<date>(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{4}))+?(\r\n|\n))|((\r\n|\n)?^(?:(?<payment_dates_options>((?:[\s]+)?\g\'date\')+)))/mi';
+        $regexp = '/(?<payment>^(?<account>[ ]?\w[\w -]+)(\s+?((\p{Sc})?\s?(?<price>(\d{1,3},)?\d+([,\.]\d{1,2}))))+(\r\n|\n))|(?<payment_dates>(?:system handle)(?:(?:[^\S]+)?(?<date>(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{4}))+?(\r\n|\n))|((\r\n|\n)?^(?:(?<payment_dates_options>((?:[\s]+)?\g\'date\')+)))/mi';
 
         preg_match_all($regexp, $content, $matches, PREG_UNMATCHED_AS_NULL, 0);
 
@@ -143,33 +143,16 @@ class PdfParser implements PdfParserInterface
 
         $paymentSchedule = [];
 
-        $paymentScheduleHeader = [];
-        foreach ($paymentOptions as $key => $value) {
-            $headerRow = [];
+        $array = [
+            'from' => $paymentOptions[0][0],
+            'to' => $paymentOptions[1][0]
+        ];
 
-            if($key === 0) {
-                $headerRow[] = __('quote.system_handle');
-            } else {
-                $headerRow[] = null;
-            }
-
-            $paymentScheduleHeader[] = array_merge($headerRow, $value);
-        }
-
-        $paymentScheduleRows = [];
-        foreach ($paymentLines as $key => $value) {
-            $row = [];
-
-            if($key === 0) {
-                $row[] = $account;
-            } else {
-                $row[] = null;
-            }
-
-            $paymentScheduleRows[] = array_merge($row, $value);
-        }
-
-        $paymentSchedule = ['header' => $paymentScheduleHeader, 'rows' => $paymentScheduleRows];
+        foreach ($paymentLines[0] as $key => $price) {
+            $from = $paymentOptions[0][$key] ?? null;
+            $to = $paymentOptions[1][$key] ?? null;
+            $paymentSchedule[$key] = compact('from', 'to', 'price');
+        };
 
         return $paymentSchedule;
     }

@@ -56,6 +56,12 @@ class DatabaseSeeder extends Seeder
         $this->call(CustomersSeeder::class);
         $this->command->info('Seeded the S4 customers!');
 
+        $this->call(CustomersAddressesSeeder::class);
+        $this->command->info('Seeded the S4 customers addresses!');
+
+        $this->call(CustomersContactsSeeder::class);
+        $this->command->info('Seeded the S4 customers contacts!');
+
         $this->call(SystemSettingsSeeder::class);
         $this->command->info('Seeded the default system settings!');
 
