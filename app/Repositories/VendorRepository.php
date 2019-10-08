@@ -9,6 +9,7 @@ use App\Http\Requests\Vendor \ {
 };
 use App\Models\Vendor;
 use Illuminate\Database\Eloquent\Collection;
+use Cache;
 
 class VendorRepository extends SearchableRepository implements VendorRepositoryInterface
 {
@@ -25,7 +26,17 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
         $activated = $this->filterQuery($this->userQuery()->activated());
         $deactivated = $this->filterQuery($this->userQuery()->deactivated());
 
-        return $activated->union($deactivated)->apiPaginate();
+        $vendors = $activated->union($deactivated)->apiPaginate();
+        $vendors->each(function ($vendor) {
+            $vendor->appendLogo();
+        });
+
+        return $vendors;
+    }
+
+    public function allFlatten(): Collection
+    {
+        return $this->userQuery()->activated()->get()->each->makeHiddenExcept(['id', 'name']);
     }
 
     public function search(string $query = ''): Paginator
@@ -47,7 +58,12 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
             })->with('image', 'countries')->deactivated();
         });
 
-        return $activated->union($deactivated)->apiPaginate();
+        $vendors = $activated->union($deactivated)->apiPaginate();
+        $vendors->each(function ($vendor) {
+            $vendor->appendLogo();
+        });
+
+        return $vendors;
     }
 
     public function userQuery(): Builder
@@ -57,7 +73,7 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
 
     public function find(string $id): Vendor
     {
-        return $this->userQuery()->whereId($id)->firstOrFail();
+        return $this->userQuery()->whereId($id)->firstOrFail()->makeVisible(['logo']);
     }
 
     public function create(StoreVendorRequest $request): Vendor
@@ -68,6 +84,7 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
         $vendor->createImage($request->logo);
         $vendor->syncCountries($request->countries);
         $vendor->load('countries');
+        $vendor->appendLogo();
 
         return $vendor;
     }
@@ -80,6 +97,7 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
         $vendor->createImage($request->logo);
         $vendor->syncCountries($request->countries);
         $vendor->load('countries');
+        $vendor->appendLogo();
 
         return $vendor;
     }
@@ -101,7 +119,11 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
 
     public function country(string $id): Collection
     {
-        return $this->userQuery()->country($id)->activated()->get();
+        $user_id = request()->user()->id;
+
+        return Cache::remember("vendors-country:{$id}:{$user_id}", 30, function () use ($id) {
+            return $this->userQuery()->country($id)->activated()->get();
+        });
     }
 
     protected function filterQueryThrough(): array

@@ -28,8 +28,7 @@ trait Activatable
     public function scopeActivated($query)
     {
         return $query->where(function ($query) {
-            $query->whereNotNull("{$this->getTable()}.activated_at")
-                ->orWhereNull("{$this->getTable()}.user_id");
+            $query->whereNotNull("{$this->getTable()}.activated_at");
         })->limit(999999999);
     }
 

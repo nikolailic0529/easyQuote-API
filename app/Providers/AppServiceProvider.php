@@ -35,10 +35,12 @@ use App\Contracts \ {
     Repositories\Quote\Discount\PromotionalDiscountRepositoryInterface,
     Repositories\Quote\Discount\PrePayDiscountRepositoryInterface,
     Repositories\Quote\Discount\SNDrepositoryInterface,
-    Repositories\VendorRepositoryInterface
+    Repositories\VendorRepositoryInterface,
+    Repositories\CompanyRepositoryInterface
 };
 use App\Contracts\Services\QuoteServiceInterface;
 use App\Models \ {
+    Company,
     Vendor,
     Quote\Quote,
     Quote\Margin\CountryMargin,
@@ -48,13 +50,14 @@ use App\Models \ {
     Quote\Discount\SND
 };
 use App\Observers \ {
+    CompanyObserver,
+    VendorObserver,
     QuoteObserver,
     MarginObserver,
     Discount\MultiYearDiscountObserver,
     Discount\PrePayDiscountObserver,
     Discount\PromotionalDiscountObserver,
-    Discount\SNDobserver,
-    VendorObserver
+    Discount\SNDobserver
 };
 use App\Repositories \ {
     TimezoneRepository,
@@ -77,7 +80,8 @@ use App\Repositories \ {
     Quote\Discount\PromotionalDiscountRepository,
     Quote\Discount\PrePayDiscountRepository,
     Quote\Discount\SNDrepository,
-    VendorRepository
+    VendorRepository,
+    CompanyRepository
 };
 use App\Services \ {
     AuthService,
@@ -116,7 +120,8 @@ class AppServiceProvider extends ServiceProvider
         PrePayDiscountRepositoryInterface::class => PrePayDiscountRepository::class,
         PromotionalDiscountRepositoryInterface::class => PromotionalDiscountRepository::class,
         SNDrepositoryInterface::class => SNDrepository::class,
-        VendorRepositoryInterface::class => VendorRepository::class
+        VendorRepositoryInterface::class => VendorRepository::class,
+        CompanyRepositoryInterface::class => CompanyRepository::class
     ];
 
     /**
@@ -172,6 +177,8 @@ class AppServiceProvider extends ServiceProvider
         SND::observe(SNDobserver::class);
 
         Vendor::observe(VendorObserver::class);
+
+        Company::observe(CompanyObserver::class);
     }
 
     protected function registerMacro()

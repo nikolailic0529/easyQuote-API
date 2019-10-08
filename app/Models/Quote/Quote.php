@@ -23,6 +23,7 @@ use App\Traits \ {
     BelongsToMargin,
     Draftable
 };
+use Carbon\Carbon;
 use Setting;
 
 class Quote extends CompletableModel implements HasOrderedScope
@@ -50,7 +51,10 @@ class Quote extends CompletableModel implements HasOrderedScope
         'pricing_document',
         'service_agreement_id',
         'system_handle',
-        'additional_details'
+        'additional_details',
+        'checkbox_status',
+        'closing_date',
+        'additional_notes'
     ];
 
     protected $perPage = 8;
@@ -60,11 +64,13 @@ class Quote extends CompletableModel implements HasOrderedScope
     ];
 
     protected $appends = [
-        'last_drafted_step'
+        'last_drafted_step',
+        'closing_date'
     ];
 
     protected $casts = [
-        'margin_data' => 'array'
+        'margin_data' => 'array',
+        'checkbox_status' => 'json'
     ];
 
     public function scopeNewType($query)
@@ -109,12 +115,12 @@ class Quote extends CompletableModel implements HasOrderedScope
 
     public function scheduleData()
     {
-        return $this->hasOneThrough(ScheduleData::class, QuoteFile::class);
+        return $this->hasOneThrough(ScheduleData::class, QuoteFile::class)->withDefault(ScheduleData::make([]));
     }
 
     public function appendJoins()
     {
-        return $this->setAppends(['last_drafted_step', 'field_column', 'rows_data', 'rows_data_by_columns']);
+        return $this->setAppends(['last_drafted_step', 'field_column', 'rows_data']);
     }
 
     public function discounts()
@@ -140,7 +146,7 @@ class Quote extends CompletableModel implements HasOrderedScope
 
     public function getRowsDataAttribute()
     {
-        return $this->rowsData()->with('columnsData')->get();
+        return $this->rowsData()->with('columnsData')->processed()->limit(1)->get();
     }
 
     public function getRowsDataByColumnsAttribute($selected = false)
@@ -277,7 +283,7 @@ class Quote extends CompletableModel implements HasOrderedScope
     {
         $this->load('customer', 'company');
 
-        return $this->makeHidden(['margin_data'])->toArray();
+        return collect($this->toArray())->except(['margin_data', 'checkbox_status'])->toArray();
     }
 
     public function getCompletenessDictionary()
@@ -324,9 +330,13 @@ class Quote extends CompletableModel implements HasOrderedScope
         return number_format($final_price, 2);
     }
 
-    public function getAdditionalDetailsFormattedAttribute()
+    public function getClosingDateAttribute()
     {
-        return nl2br($this->getAttribute('additional_details'));
+        if(!isset($this->attributes['closing_date'])) {
+            return null;
+        }
+
+        return Carbon::parse($this->attributes['closing_date'])->format('d/m/Y');
     }
 
     private function joins() {
@@ -334,7 +344,6 @@ class Quote extends CompletableModel implements HasOrderedScope
             'quoteFiles' => function ($query) {
                 return $query->isNotHandledSchedule();
             },
-            'selectedRowsData.columnsData',
             'quoteTemplate.templateFields.templateFieldType',
             'countryMargin',
             'discounts',

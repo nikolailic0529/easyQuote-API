@@ -13,15 +13,16 @@ use App\Traits \ {
     Draftable,
     Handleable,
     HasColumnsData,
-    HasScheduleData
+    HasScheduleData,
+    Import\Automappable
 };
 use App\Contracts\HasOrderedScope;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Str;
+use Cache;
 
 class QuoteFile extends UuidModel implements HasOrderedScope
 {
-    use HasColumnsData, HasScheduleData, BelongsToQuote, BelongsToUser, HasFileFormat, Handleable, Draftable, SoftDeletes;
+    use Automappable, HasColumnsData, HasScheduleData, BelongsToQuote, BelongsToUser, HasFileFormat, Handleable, Draftable, SoftDeletes;
 
     protected $fillable = [
         'original_file_path', 'original_file_name', 'file_type', 'pages'
@@ -44,7 +45,7 @@ class QuoteFile extends UuidModel implements HasOrderedScope
 
     public function dataSelectSeparator()
     {
-        return $this->belongsTo(DataSelectSeparator::class);
+        return $this->belongsTo(DataSelectSeparator::class)->withDefault(DataSelectSeparator::make([]));
     }
 
     public function scopePriceLists($query)
@@ -115,6 +116,63 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         $this->setAttribute('imported_page', $page);
 
         return $this->save();
+    }
+
+    public function getRowsCountAttribute()
+    {
+        return Cache::remember("rows:{$this->id}", 2, function () {
+            return $this->rowsData()->count();
+        });
+    }
+
+    public function getRowsProcessedCountAttribute()
+    {
+        return Cache::remember("rows-processed:{$this->id}", 2, function () {
+            return $this->rowsData()->processed()->count();
+        });
+    }
+
+    public function getProcessingStatusAttribute()
+    {
+        $percentage = $this->getAttribute('processing_percentage');
+
+        return $percentage >= 100 ? 'completed' : 'processing';
+    }
+
+    public function setException(string $message)
+    {
+        return Cache::put("quote_file_exception:{$this->id}", $message);
+    }
+
+    public function getExceptionAttribute()
+    {
+        return Cache::get("quote_file_exception:{$this->id}", false);
+    }
+
+    public function clearException()
+    {
+        return Cache::forget("quote_file_exception:{$this->id}");
+    }
+
+    public function throwExceptionIfExists()
+    {
+        $exception = $this->getAttribute('exception');
+
+        if($exception) {
+            throw new \ErrorException($exception);
+        }
+    }
+
+    public function getProcessingPercentageAttribute()
+    {
+        $rowsCount = $this->getAttribute('rows_count') ?: 1;
+        $processedRowsCount = $this->getAttribute('rows_processed_count');
+
+        if($processedRowsCount > $rowsCount) {
+            return 0;
+        }
+
+        return floor($processedRowsCount / $rowsCount * 100);
     }
 
     private function isFormat($ext)

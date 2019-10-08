@@ -389,6 +389,8 @@ class QuoteRepository implements QuoteRepositoryInterface
             'final_price' => $quote->final_price,
             'payment_terms' => $quote->customer->payment_terms,
             'invoicing_terms' => $quote->customer->invoicing_terms,
+            'full_name' => $quote->user->full_name,
+            'date' => $quote->updated_at
         ];
 
         $data_pages = [
@@ -406,11 +408,11 @@ class QuoteRepository implements QuoteRepositoryInterface
         ];
 
         $last_page = [
-            'additional_details' => $quote->additional_details_formatted
+            'additional_details' => $quote->additional_details
         ];
 
         $payment_schedule = [
-            'data' => $quote->scheduleData->value ?? null
+            'data' => $quote->scheduleData->value
         ];
 
         $pages = $pages->merge(compact('first_page', 'data_pages', 'last_page', 'payment_schedule'));
@@ -488,7 +490,7 @@ class QuoteRepository implements QuoteRepositoryInterface
             return $quote;
         };
 
-        if(isset($state['quote_data']['selected_rows_is_rejected'])) {
+        if(isset($state['quote_data']['selected_rows_is_rejected']) && $state['quote_data']['selected_rows_is_rejected']) {
             $markAsSelected = 'markAsUnSelected';
             $markAsUnSelected = 'markAsSelected';
         };
@@ -592,6 +594,9 @@ class QuoteRepository implements QuoteRepositoryInterface
             'quote_data.service_agreement_id',
             'quote_data.system_handle',
             'quote_data.additional_details',
+            'quote_data.checkbox_status',
+            'quote_data.closing_date',
+            'quote_data.additional_notes',
             'save'
         ];
 

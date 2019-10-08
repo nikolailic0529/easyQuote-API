@@ -113,15 +113,9 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         $quoteFile->columnsData()->forceDelete();
         $quoteFile->rowsData()->forceDelete();
 
-        $importedPages = $this->createImportedPages($array, $quoteFile, $user);
+        $this->createImportedPages($array, $quoteFile, $user);
 
-        $rows = collect($importedPages)->where('page', '>=', $quoteFile->imported_page)
-            ->pluck('rows')->collapse();
-
-
-        $quoteFile->markAsHandled();
-
-        return $rows;
+        return $quoteFile->markAsHandled();
     }
 
     public function createScheduleData(QuoteFile $quoteFile, array $value)
@@ -175,8 +169,8 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
                     $importedRow->user()->associate($user);
                     $importedRow->quoteFile()->associate($quoteFile);
-                    $importedRow->markAsDrafted();
                     $importedRow = $this->createRowData($row, $quoteFile, $user, $pageNumber, $importedRow);
+                    $importedRow->markAsDrafted();
 
                     return $importedRows->push($importedRow->makeHiddenExcept(['id', 'is_selected', 'columnsData']));
                 })->all();
@@ -187,7 +181,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     protected function createRowData(array $row, QuoteFile $quoteFile, User $user, int $page, ImportedRow $importedRow, $formatHeader = true)
     {
-        $rowData = collect($row)->map(function ($value, $alias) use ($quoteFile, $user, $page, $importedRow, $formatHeader) {
+        $importedRow->columnsDataToCreate = collect($row)->map(function ($value, $alias) use ($quoteFile, $user, $page, $importedRow, $formatHeader) {
             $importableColumn = $this->importableColumn->whereHas('aliases', function ($query) use ($alias) {
                 return $query->whereAlias($alias);
             })->first();
@@ -198,9 +192,9 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
             $header = $alias ?? __('parser.unknown_column_header');
 
-            $columnDataItem = $importedRow->columnsData()->make(compact('value', 'page', 'header'));
+            // $columnDataItem = $importedRow->columnsData()->make(compact('value', 'page', 'header'));
+            $columnDataItem = $quoteFile->columnsData()->make(compact('value', 'page', 'header'));
             $columnDataItem->user()->associate($user);
-            $columnDataItem->quoteFile()->associate($quoteFile);
 
             if(!is_null($importableColumn)) {
                 $columnDataItem->importableColumn()->associate($importableColumn);
@@ -208,9 +202,6 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
             return $columnDataItem;
         });
-
-        $importedRow->columnsData()->saveMany($rowData);
-        $importedRow->load('columnsData');
 
         return $importedRow;
     }

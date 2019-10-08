@@ -1,9 +1,14 @@
 <?php namespace App\Console\Commands;
 
-use App\Models\Quote\Margin\CountryMargin;
 use Illuminate\Console\Command;
 use Elasticsearch\Client as ElasticsearchClient;
-use App\Models\Quote\Quote;
+use App\Models \ {
+    Company,
+    Vendor,
+    Quote\Quote,
+    Quote\Margin\CountryMargin
+};
+use Str;
 
 class ReindexCommand extends Command
 {
@@ -40,38 +45,24 @@ class ReindexCommand extends Command
      */
     public function handle()
     {
-        $this->handleQuotes();
-        $this->handleMargins();
+        $this->handleModel(Quote::class);
+        $this->handleModel(CountryMargin::class);
+        $this->handleModel(Company::class);
+        $this->handleModel(Vendor::class);
     }
 
-    private function handleQuotes()
+    private function handleModel(string $class)
     {
-        $this->info('Indexing all quotes...');
+        $plural = Str::plural(class_basename($class));
 
-        foreach (Quote::cursor() as $quote) {
+        $this->info("Indexing all {$plural}...");
+
+        foreach ($class::cursor() as $quote) {
             $this->elasticsearch->index([
                 'index' => $quote->getSearchIndex(),
                 'type' => $quote->getSearchType(),
                 'id' => $quote->getKey(),
                 'body' => $quote->toSearchArray(),
-            ]);
-
-            $this->output->write('.');
-        }
-
-        $this->info('\nDone!');
-    }
-
-    private function handleMargins()
-    {
-        $this->info('Indexing all margins...');
-
-        foreach (CountryMargin::cursor() as $margin) {
-            $this->elasticsearch->index([
-                'index' => $margin->getSearchIndex(),
-                'type' => $margin->getSearchType(),
-                'id' => $margin->getKey(),
-                'body' => $margin->toSearchArray(),
             ]);
 
             $this->output->write('.');

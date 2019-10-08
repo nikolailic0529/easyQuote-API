@@ -32,13 +32,18 @@ class VendorsSeeder extends Seeder
                 'name' => $vendor['name'],
                 'short_code' => $vendor['short_code'],
                 'is_system' => true,
+                'created_at' => now()->toDateTimeString(),
+                'updated_at' => now()->toDateTimeString(),
                 'activated_at' => now()->toDateTimeString()
             ]);
 
-            collect($vendor['countries'])->each(function ($countryIso) use ($vendorId) {
+            $createdVendor = Vendor::whereId($vendorId)->first();
+            $createdVendor->createImage($vendor['logo'], true);
+
+            collect($vendor['countries'])->each(function ($countryIso) use ($createdVendor) {
                 $country = Country::where('iso_3166_2', $countryIso)->first();
 
-                Vendor::whereId($vendorId)->first()->countries()->attach($country);
+                $createdVendor->countries()->attach($country);
             });
         });
     }

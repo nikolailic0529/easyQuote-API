@@ -1,21 +1,23 @@
 <?php namespace App\Models\QuoteFile;
 
+use App\Jobs\CreateColumnsData;
 use App\Models\UuidModel;
 use App\Traits \ {
     BelongsToUser,
     BelongsToQuoteFile,
     HasColumnsData,
     Draftable,
-    Selectable
+    Selectable,
+    Import\Proccessable
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ImportedRow extends UuidModel
 {
-    use HasColumnsData, BelongsToUser, BelongsToQuoteFile, Draftable, Selectable, SoftDeletes;
+    use Proccessable, HasColumnsData, BelongsToUser, BelongsToQuoteFile, Draftable, Selectable, SoftDeletes;
 
     protected $fillable = [
-        'page'
+        'page', 'quote_file_id', 'user_id'
     ];
 
     protected $hidden = [
@@ -30,4 +32,27 @@ class ImportedRow extends UuidModel
     protected $attributes = [
         'is_selected' => false
     ];
+
+    /**
+     * Save the model to the database.
+     *
+     * @param  array  $options
+     * @return bool
+     */
+    public function save(array $options = [])
+    {
+        if(!isset($this->columnsDataToCreate)) {
+            return parent::save($options);
+        }
+
+        $columnsDataToCreate = $this->columnsDataToCreate;
+        unset($this->columnsDataToCreate);
+
+        $save = parent::save($options);
+
+        CreateColumnsData::dispatch($this, $columnsDataToCreate)
+            ->onQueue('import_columns');
+
+        return $save;
+    }
 }

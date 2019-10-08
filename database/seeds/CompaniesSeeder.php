@@ -32,7 +32,10 @@ class CompaniesSeeder extends Seeder
                 'id' => $companyId,
                 'name' => $company['name'],
                 'vat' => $company['vat'],
-                'is_system' => true
+                'is_system' => true,
+                'created_at' => now()->toDateTimeString(),
+                'updated_at' => now()->toDateTimeString(),
+                'activated_at' => now()->toDateTimeString()
             ]);
 
             $createdCompany = Company::whereId($companyId)->first();

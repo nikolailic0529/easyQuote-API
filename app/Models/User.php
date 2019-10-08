@@ -14,7 +14,8 @@ use App\Traits \ {
     HasImportableColumns,
     Margin\HasCountryMargins,
     Discount\HasDiscounts,
-    Vendor\HasVendors
+    Vendor\HasVendors,
+    Company\HasCompanies
 };
 use Spatie\Permission\Traits\HasRoles;
 
@@ -32,7 +33,8 @@ class User extends AuthenticableUser implements MustVerifyEmail
         HasTimezone,
         HasCountryMargins,
         HasDiscounts,
-        HasVendors;
+        HasVendors,
+        HasCompanies;
 
     /**
      * The attributes that are mass assignable.
@@ -60,4 +62,9 @@ class User extends AuthenticableUser implements MustVerifyEmail
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    public function getFullNameAttribute()
+    {
+        return "{$this->first_name} {$this->middle_name} {$this->last_name}";
+    }
 }

@@ -2,6 +2,7 @@
 
 use App\Models\Data\Language;
 use App\Contracts\Repositories\LanguageRepositoryInterface;
+use Cache;
 
 class LanguageRepository implements LanguageRepositoryInterface
 {
@@ -14,6 +15,8 @@ class LanguageRepository implements LanguageRepositoryInterface
 
     public function all()
     {
-        return $this->language->ordered()->get();
+        return Cache::rememberForever('all-languages', function () {
+            return $this->language->ordered()->get();
+        });
     }
 }

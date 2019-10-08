@@ -40,7 +40,7 @@ trait HasImage
             });
 
             $key++;
-            $imageKey = "{$key}x";
+            $imageKey = "x{$key}";
 
             $thumbnail = "{$modelImagesDir}/{$image->filename}@{$imageKey}.{$image->extension}";
             $image->save(Storage::path("public/{$thumbnail}"));

@@ -91,20 +91,24 @@ class Customer extends UuidModel
         }
 
         try {
-            $dateTimeValue = preg_replace_callback(
-                '/(\d{1,2})\D(\d{1,2})\D(\d{2,4})/',
-                function ($matches) {
-                    if(isset($matches[0]) && $matches[0] > 12) {
-                        return "{$matches[1]}.{$matches[0]}.{$matches[2]}";
-                    }
-                    return "{$matches[0]}.{$matches[1]}.{$matches[2]}";
-                },
-                $value
-            );
-            $dateTimeValue = preg_replace('/[^\w\.\/|\\,]+/', '', $dateTimeValue);
+            try{
+                return Carbon::parse($value)->format($this->dateTimeFormat);
+            } catch (\Exception $e) {
+                $dateTimeValue = preg_replace_callback(
+                    '/(\d{1,2})\D(\d{1,2})\D(\d{2,4})/',
+                    function ($matches) {
+                        if(isset($matches[0]) && $matches[0] > 12) {
+                            return "{$matches[1]}.{$matches[0]}.{$matches[2]}";
+                        }
+                        return "{$matches[0]}.{$matches[1]}.{$matches[2]}";
+                    },
+                    $value
+                );
+                $dateTimeValue = preg_replace('/[^\w\.\/|\\,]+/', '', $dateTimeValue);
 
-            if(strlen($dateTimeValue) < 4) {
-                return $default;
+                if(strlen($dateTimeValue) < 4) {
+                    return $default;
+                }
             }
 
             return Carbon::parse($dateTimeValue)->format($this->dateTimeFormat);

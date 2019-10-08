@@ -19,6 +19,13 @@ interface VendorRepositoryInterface
     public function all(): Paginator;
 
     /**
+     * Get All User's Vendors without pagination
+     *
+     * @return Collection
+     */
+    public function allFlatten(): Collection;
+
+    /**
      * Search over User's Vendors.
      *
      * @param string $query

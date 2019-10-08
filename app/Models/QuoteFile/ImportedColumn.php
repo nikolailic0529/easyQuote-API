@@ -22,7 +22,7 @@ class ImportedColumn extends UuidModel
     use BelongsToImportableColumn, BelongsToImportedRow, BelongsToUser, BelongsToQuoteFile, Draftable, SoftDeletes, HasSystemScope;
 
     protected $fillable = [
-        'value', 'page', 'header'
+        'value', 'page', 'header', 'user_id', 'importable_column_id'
     ];
 
     protected $hidden = [

@@ -2,6 +2,7 @@
 
 return [
     'no_handleable_file' => 'This file format is not available for handling',
+    'no_rows_exception' => 'No rows found in the File',
     'not_schedule_exception' => 'This file doesn\'t look like a Payment Schedule',
     'separator_exception' => 'It seems you\'ve chosen wrong Data Select Separator',
     'quote_has_not_template_exception' => 'Before Set Template for the Quote',

@@ -6,78 +6,28 @@ use App\Traits \ {
     BelongsToCountries,
     BelongsToUser,
     Image\HasImage,
-    Search\Searchable
+    Image\HasLogo,
+    Search\Searchable,
+    Systemable
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Builder;
 
 class Vendor extends UuidModel implements WithImage
 {
-    use BelongsToCountries,
-        BelongsToUser,
+    use HasLogo,
         HasImage,
+        BelongsToCountries,
+        BelongsToUser,
         Activatable,
         SoftDeletes,
-        Searchable;
+        Searchable,
+        Systemable;
 
     protected $fillable = [
         'name', 'short_code'
     ];
 
     protected $hidden = [
-        'pivot', 'deleted_at', 'image', 'image_id'
+        'pivot', 'deleted_at', 'image', 'image_id', 'is_system', 'logo'
     ];
-
-    protected $casts = [
-        'is_system' => 'boolean'
-    ];
-
-    protected $appends = [
-        'logo'
-    ];
-
-    public function getLogoAttribute()
-    {
-        if(!isset($this->image)) {
-            return null;
-        }
-
-        return $this->image->thumbnails;
-    }
-
-    public function thumbnailProperties(): array
-    {
-        return [
-            [
-                'width' => 60,
-                'height' => 30
-            ],
-            [
-                'width' => 120,
-                'height' => 60
-            ],
-            [
-                'width' => 240,
-                'height' => 120
-            ]
-        ];
-    }
-
-    public function imagesDirectory(): string
-    {
-        return 'images/vendors';
-    }
-
-    public function scopeCurrentUser(Builder $query)
-    {
-        return $query->where(function ($query) {
-            $query->where('is_system', true)
-                ->orWhere('user_id', request()->user()->id);
-        });
-    }
-
-    public function isSystem()
-    {
-        return $this->getAttribute('is_system');
-    }
 }

@@ -61,7 +61,7 @@
         "regexp": "(\\s+?((\\p{Sc})?\\s?(?<price>(\\d{1,3},)?\\d+([,\\.]\\d{1,2}))))([a-zA-Z].+?)?",
         "order": 6,
         "aliases": [
-            "price", "priceeur", "line_amount", "lineamount", "monthly list price", "unit net price", "line amount"
+            "price", "priceeur", "line_amount", "lineamount", "line amount", "monthly list price", "unit net price", "line amount", "line item", "total", "subtotal"
         ]
     }
 ]
