@@ -10,6 +10,7 @@ use App\Models \ {
 };
 use App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface;
 use App\Http\Requests\StoreQuoteFileRequest;
+use App\Models\QuoteFile\ImportedColumn;
 use Illuminate\Support\LazyCollection;
 use Illuminate\Pipeline\Pipeline;
 use Storage, Str, File;
@@ -110,7 +111,6 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         /**
          * Delete early imported data
          */
-        $quoteFile->columnsData()->forceDelete();
         $quoteFile->rowsData()->forceDelete();
 
         $this->createImportedPages($array, $quoteFile, $user);
@@ -181,7 +181,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     protected function createRowData(array $row, QuoteFile $quoteFile, User $user, int $page, ImportedRow $importedRow, $formatHeader = true)
     {
-        $importedRow->columnsDataToCreate = collect($row)->map(function ($value, $alias) use ($quoteFile, $user, $page, $importedRow, $formatHeader) {
+        $importedRow->columnsDataToCreate = collect($row)->map(function ($value, $alias) use ($quoteFile, $user, $importedRow, $formatHeader) {
             $importableColumn = $this->importableColumn->whereHas('aliases', function ($query) use ($alias) {
                 return $query->whereAlias($alias);
             })->first();
@@ -192,9 +192,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
             $header = $alias ?? __('parser.unknown_column_header');
 
-            // $columnDataItem = $importedRow->columnsData()->make(compact('value', 'page', 'header'));
-            $columnDataItem = $quoteFile->columnsData()->make(compact('value', 'page', 'header'));
-            $columnDataItem->user()->associate($user);
+            $columnDataItem = ImportedColumn::make(compact('value', 'header'));
 
             if(!is_null($importableColumn)) {
                 $columnDataItem->importableColumn()->associate($importableColumn);
@@ -235,7 +233,6 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
             ->priceLists()->whereKeyNot($exceptedQuoteFileId)->get();
 
         $priceLists->each(function ($price) {
-            $price->columnsData()->delete();
             $price->rowsData()->delete();
         });
 

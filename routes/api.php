@@ -1,7 +1,7 @@
 <?php
 
 Route::group(['namespace' => 'API'], function () {
-    Route::group(['prefix' => 'auth', 'middleware' => 'throttle:60,1'], function () {
+    Route::group(['prefix' => 'auth', 'middleware' => 'throttle:120,1'], function () {
         Route::post('signin', 'AuthController@signin');
         Route::post('signup', 'AuthController@signup');
 
@@ -72,11 +72,19 @@ Route::group(['namespace' => 'API'], function () {
                 Route::post('state', 'QuoteController@storeState');
 
                 /**
-                 * User's drafted Quotes
+                 * User's Drafted Quotes
                  */
                 Route::apiResource('drafted', 'QuoteDraftedController', ['only' => config('route.rd')]);
                 Route::patch('drafted/{quote}', 'QuoteDraftedController@activate');
                 Route::put('drafted/{quote}', 'QuoteDraftedController@deactivate');
+
+                /**
+                 * User's Submitted Quotes
+                 */
+                Route::apiResource('submitted', 'QuoteSubmittedController', ['only' => config('route.rd')]);
+                Route::patch('submitted/{quote}', 'QuoteSubmittedController@activate');
+                Route::put('submitted/{quote}', 'QuoteSubmittedController@deactivate');
+                Route::put('submitted/copy/{quote}', 'QuoteSubmittedController@copy');
 
                 Route::apiResource('file', 'QuoteFilesController', ['only' => config('route.cr')]);
 

@@ -55,6 +55,8 @@ class UpdateCompanyRequest extends FormRequest
                 'max:2048'
             ],
             'category' => [
+                'nullable',
+                'required_if:type,External',
                 'string',
                 'in:' . $this->categories
             ],

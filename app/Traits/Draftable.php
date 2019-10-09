@@ -22,4 +22,9 @@ trait Draftable
     {
         return $query->whereNotNull($this->getTable() . '.drafted_at');
     }
+
+    public function scopeSubmitted($query)
+    {
+        return $query->whereNull($this->getTable() . '.drafted_at');
+    }
 }

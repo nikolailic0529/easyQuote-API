@@ -10,10 +10,7 @@ use App\Contracts \ {
     Repositories\QuoteFile\FileFormatRepositoryInterface as FileFormatRepository,
     Repositories\QuoteFile\DataSelectSeparatorRepositoryInterface as DataSelectSeparatorRepository
 };
-use App\Imports \ {
-    ImportedRowImport,
-    CountPages
-};
+use App\Imports\CountPages;
 use App\Models \ {
     Quote\Quote,
     QuoteFile\QuoteFile
@@ -22,11 +19,12 @@ use App\Http\Requests \ {
     StoreQuoteFileRequest,
     HandleQuoteFileRequest
 };
+use App\Imports\ImportCsv;
 use App\Jobs \ {
-    ImportExcel,
-    UpdateRowsCount
+    ImportCsvJob,
+    ImportExcelJob
 };
-use Excel, Storage, File, Setting, Cache;
+use Excel, Storage, File, Setting;
 
 class ParserService implements ParserServiceInterface
 {
@@ -118,6 +116,8 @@ class ParserService implements ParserServiceInterface
 
             $processed = $quoteFile->processing_percentage;
             $status = $quoteFile->processing_status;
+            $total_rows_count = $quoteFile->rows_count;
+            $processed_rows_count = $quoteFile->rows_processed_count;
 
             if($processed > 1 && $quoteFile->isNotAutomapped()) {
                 $this->mapColumnsToFields($quote, $quoteFile);
@@ -126,9 +126,11 @@ class ParserService implements ParserServiceInterface
         } else {
             $status = 'completted';
             $processed = 100;
+            $total_rows_count = $quoteFile->rows_count;
+            $processed_rows_count = $quoteFile->rows_processed_count;
         }
 
-        return compact('status', 'processed');
+        return compact('status', 'processed', 'total_rows_count', 'processed_rows_count');
     }
 
     public function mapColumnsToFields(Quote $quote, QuoteFile $quoteFile)
@@ -195,6 +197,8 @@ class ParserService implements ParserServiceInterface
                 return $this->handlePdf($quoteFile);
                 break;
             case 'csv':
+                return $this->handleCsv($quoteFile);
+                break;
             case 'xlsx':
             case 'xls':
                 return $this->handleExcel($quoteFile);
@@ -240,14 +244,19 @@ class ParserService implements ParserServiceInterface
 
     public function handleExcel(QuoteFile $quoteFile)
     {
-        if($quoteFile->isCsv() && request()->has('data_select_separator_id')) {
+        $this->importExcel($quoteFile);
+
+        return $this->quoteFile->getRowsData($quoteFile);
+    }
+
+    public function handleCsv(QuoteFile $quoteFile)
+    {
+        if(request()->has('data_select_separator_id')) {
             $dataSelectSeparator = $this->dataSelectSeparator->find(request()->data_select_separator_id);
             $quoteFile->dataSelectSeparator()->associate($dataSelectSeparator)->save();
         }
 
-        $this->importExcel($quoteFile);
-
-        return $this->quoteFile->getRowsData($quoteFile);
+        $this->importCsv($quoteFile);
     }
 
     public function handleWord(QuoteFile $quoteFile)
@@ -266,10 +275,18 @@ class ParserService implements ParserServiceInterface
         $user = $quoteFile->user;
         $columns = $this->importableColumn->allSystem();
 
-        $quoteFile->columnsData()->forceDelete();
         $quoteFile->rowsData()->forceDelete();
 
-        ImportExcel::dispatch($quoteFile, $user, $columns, $filePath);
+        ImportExcelJob::dispatch($quoteFile, $user, $columns, $filePath);
+    }
+
+    public function importCsv(QuoteFile $quoteFile)
+    {
+        $quoteFile->markAsHandled();
+
+        $quoteFile->rowsData()->forceDelete();
+
+        ImportCsvJob::dispatch($quoteFile);
     }
 
     public function importWord(QuoteFile $quoteFile)
@@ -278,7 +295,6 @@ class ParserService implements ParserServiceInterface
 
         $rawData = $this->quoteFile->getRawData($quoteFile);
 
-        $quoteFile->columnsData()->forceDelete();
         $quoteFile->rowsData()->forceDelete();
 
         $user = $quoteFile->user;
@@ -287,7 +303,7 @@ class ParserService implements ParserServiceInterface
         $rawData->each(function ($file) use ($quoteFile, $user, $columns) {
             $filePath = $file->file_path;
 
-            ImportExcel::dispatch($quoteFile, $user, $columns, $filePath);
+            ImportExcelJob::dispatch($quoteFile, $user, $columns, $filePath);
         });
     }
 

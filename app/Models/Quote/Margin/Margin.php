@@ -69,23 +69,9 @@ abstract class Margin extends UuidModel implements HasOrderedScope
     public function calculate($value, $dateFrom = null, $dateTo = null)
     {
         $value = (float) $value;
-        $priceDay = $value / 30;
-        $period = 30;
-
-        if(isset($dateFrom) && isset($dateTo)) {
-            $dateFrom = Carbon::parse(str_replace('/', '.', $dateFrom));
-            $dateTo = Carbon::parse(str_replace('/', '.', $dateTo));
-            $period = $dateFrom->diffInDays($dateTo);
-        }
-
-        $price = $priceDay * $period;
-
-        if($period < 1) {
-            return number_format($value, 2);
-        }
 
         if($this->isPercentage()) {
-            $computedValue = $price + ($price * ($this->diff_value / 100));
+            $computedValue = $value + ($value * ($this->diff_value / 100));
         } else {
             $computedValue = $value + $this->diff_value;
         }
@@ -94,7 +80,7 @@ abstract class Margin extends UuidModel implements HasOrderedScope
             return 0;
         }
 
-        return number_format($computedValue, 2);
+        return $computedValue;
     }
 
     public function getDiffValueAttribute()
@@ -104,6 +90,16 @@ abstract class Margin extends UuidModel implements HasOrderedScope
         }
 
         return -$this->value;
+    }
+
+    public function isStandard()
+    {
+        return Str::snake($this->method) === 'standard';
+    }
+
+    public function isNoMargin()
+    {
+        return Str::snake($this->method) === 'no_margin';
     }
 
     public function scopeMethod($query, string $method)

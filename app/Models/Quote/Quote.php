@@ -24,6 +24,7 @@ use App\Traits \ {
     Draftable
 };
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Setting;
 
 class Quote extends CompletableModel implements HasOrderedScope
@@ -37,7 +38,8 @@ class Quote extends CompletableModel implements HasOrderedScope
         BelongsToCountry,
         BelongsToMargin,
         Draftable,
-        Activatable;
+        Activatable,
+        SoftDeletes;
 
     protected $fillable = [
         'type',
@@ -54,13 +56,15 @@ class Quote extends CompletableModel implements HasOrderedScope
         'additional_details',
         'checkbox_status',
         'closing_date',
-        'additional_notes'
+        'additional_notes',
+        'calculate_list_price'
     ];
 
     protected $perPage = 8;
 
     protected $attributes = [
-        'completeness' => 1
+        'completeness' => 1,
+        'calculate_list_price' => false
     ];
 
     protected $appends = [
@@ -70,7 +74,8 @@ class Quote extends CompletableModel implements HasOrderedScope
 
     protected $casts = [
         'margin_data' => 'array',
-        'checkbox_status' => 'json'
+        'checkbox_status' => 'json',
+        'calculate_list_price' => 'boolean'
     ];
 
     public function scopeNewType($query)
@@ -178,7 +183,7 @@ class Quote extends CompletableModel implements HasOrderedScope
 
     public function defaultTemplateFields()
     {
-        return $this->templateFields()->with('systemImportableColumn')->where('importable_column_id', null)->where('is_default_enabled', true);
+        return $this->templateFields()->with('systemImportableColumn')->where('is_default_enabled', true);
     }
 
     public function fieldsColumns()
@@ -283,7 +288,7 @@ class Quote extends CompletableModel implements HasOrderedScope
     {
         $this->load('customer', 'company');
 
-        return collect($this->toArray())->except(['margin_data', 'checkbox_status'])->toArray();
+        return collect($this->toArray())->except(['margin_data', 'checkbox_status', 'calculate_list_price'])->toArray();
     }
 
     public function getCompletenessDictionary()

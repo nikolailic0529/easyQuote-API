@@ -19,14 +19,14 @@ use Str;
 
 class ImportedColumn extends UuidModel
 {
-    use BelongsToImportableColumn, BelongsToImportedRow, BelongsToUser, BelongsToQuoteFile, Draftable, SoftDeletes, HasSystemScope;
+    use BelongsToImportableColumn, BelongsToImportedRow, Draftable, SoftDeletes, HasSystemScope;
 
     protected $fillable = [
-        'value', 'page', 'header', 'user_id', 'importable_column_id'
+        'value', 'header', 'importable_column_id', 'imported_row_id'
     ];
 
     protected $hidden = [
-        'user', 'user_id', 'quote_file_id', 'quote_file', 'page', 'created_at', 'updated_at', 'drafted_at', 'deleted_at',
+        'created_at', 'updated_at', 'drafted_at', 'deleted_at',
         'unknown_header', 'importableColumn', 'imported_row_id', 'template_field_name'
     ];
 

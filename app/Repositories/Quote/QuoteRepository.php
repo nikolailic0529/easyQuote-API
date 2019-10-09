@@ -189,6 +189,47 @@ class QuoteRepository implements QuoteRepositoryInterface
         return $activated->union($deactivated)->apiPaginate();
     }
 
+    public function submittedQuery(): Builder
+    {
+        $user = request()->user();
+        $query = $user->quotes()->submitted()->with('customer', 'company')->getQuery();
+
+        return $query;
+    }
+
+    public function getSubmitted(string $id)
+    {
+        $quote = $this->submittedQuery()->whereId($id)->firstOrFail();
+
+        return $quote;
+    }
+
+    public function allSubmitted()
+    {
+        $activated = $this->filterQuery($this->submittedQuery()->activated());
+        $deactivated = $this->filterQuery($this->submittedQuery()->deactivated());
+
+        return $activated->union($deactivated)->apiPaginate();
+    }
+
+    public function searchSubmitted(string $query = ''): Paginator
+    {
+        $items = $this->searchOnElasticsearch($query);
+
+        $user = request()->user();
+
+        $activated = $this->buildQuery($items, function ($query) use ($user) {
+            $query = $query->submitted()->where('user_id', $user->id)->with('customer', 'company')->activated();
+            return $this->filterQuery($query);
+        });
+        $deactivated = $this->buildQuery($items, function ($query) use ($user) {
+            $query = $query->submitted()->where('user_id', $user->id)->with('customer', 'company')->deactivated();
+            return $this->filterQuery($query);
+        });
+
+        return $activated->union($deactivated)->apiPaginate();
+    }
+
     public function create(array $array)
     {
         return $this->quote->create($array);
@@ -301,6 +342,46 @@ class QuoteRepository implements QuoteRepositoryInterface
         return $user->quotes()->drafted()->whereId($id)->firstOrFail()->activate();
     }
 
+    public function deleteSubmitted(string $id)
+    {
+        $user = request()->user();
+        return $user->quotes()->submitted()->whereId($id)->firstOrFail()->delete();
+    }
+
+    public function deactivateSubmitted(string $id)
+    {
+        $user = request()->user();
+        return $user->quotes()->submitted()->whereId($id)->firstOrFail()->deactivate();
+    }
+
+    public function activateSubmitted(string $id)
+    {
+        $user = request()->user();
+        return $user->quotes()->submitted()->whereId($id)->firstOrFail()->activate();
+    }
+
+    public function copy(string $id)
+    {
+        $quote = $this->submittedQuery()
+            ->with(
+                'quoteFiles.rowsData.columnsData',
+                'user',
+                'company',
+                'vendor',
+                'country',
+                'countryMargin',
+                'discounts',
+                'customer',
+                'quoteTemplate',
+                'fieldsColumns'
+            )
+            ->whereId($id)
+            ->firstOrFail();
+
+        $quoteCopy = $quote->replicate();
+        return $quoteCopy->push();
+    }
+
     public function discounts(string $id)
     {
         $user = request()->user();
@@ -354,6 +435,11 @@ class QuoteRepository implements QuoteRepositoryInterface
         if($quote->list_price === 0.00) {
             $quote->list_price = $this->quoteService->countTotalPrice($quote->computableRows, $quote->mapping);
         }
+
+        /**
+         * Calculate Mounthly Prices based on Coverage Periods
+         */
+        $this->quoteService->transformPricesBasedOnCoverages($quote);
 
         $equipment_address = $quote->customer->hardwareAddresses()->first()->address_1 ?? null;
         $hardware_contact = $quote->customer->hardwareContacts()->first();
@@ -597,6 +683,7 @@ class QuoteRepository implements QuoteRepositoryInterface
             'quote_data.checkbox_status',
             'quote_data.closing_date',
             'quote_data.additional_notes',
+            'quote_data.calculate_list_price',
             'save'
         ];
 
@@ -612,6 +699,7 @@ class QuoteRepository implements QuoteRepositoryInterface
                 $value = $quote->customer->handleColumnValue(null, $templateField->name, true);
                 $columnData = $row->columnsData()->make(compact('value'));
                 $columnData->template_field_name = $templateField->name;
+                $columnData->importable_column_id = $templateField->systemImportableColumn->id;
 
                 $row->columnsData->push($columnData);
             }

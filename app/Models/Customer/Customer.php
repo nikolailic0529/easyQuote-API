@@ -82,7 +82,7 @@ class Customer extends UuidModel
 
     private function formatDate($value, $default, $isDefaultEnabled)
     {
-        if($isDefaultEnabled) {
+        if($isDefaultEnabled || !isset($value)) {
             return $default;
         }
 
@@ -109,11 +109,10 @@ class Customer extends UuidModel
                 if(strlen($dateTimeValue) < 4) {
                     return $default;
                 }
+                return Carbon::parse($dateTimeValue)->format($this->dateTimeFormat);
             }
-
-            return Carbon::parse($dateTimeValue)->format($this->dateTimeFormat);
         } catch (\Exception $e) {
-            return $value;
+            return $default;
         }
     }
 }

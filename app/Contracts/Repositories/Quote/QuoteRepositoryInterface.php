@@ -44,6 +44,13 @@ interface QuoteRepositoryInterface
     public function step2(MappingReviewRequest $request);
 
     /**
+     * Get User's Submitted Quote
+     *
+     * @return \App\Models\Quote
+     */
+    public function getSubmitted(string $id);
+
+    /**
      * Get User's Drafted Quote
      *
      * @return \App\Models\Quote
@@ -58,6 +65,13 @@ interface QuoteRepositoryInterface
     public function allDrafted();
 
     /**
+     * Get All User's Submitted Quotes
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function allSubmitted();
+
+    /**
      * Search by Drafted Quotes
      *
      * @param string $query
@@ -66,11 +80,26 @@ interface QuoteRepositoryInterface
     public function searchDrafted(string $query = ''): Paginator;
 
     /**
+     * Search by Submitted Quotes
+     *
+     * @param string $query
+     * @return \App\Builder\Pagination\Paginator
+     */
+    public function searchSubmitted(string $query = ''): Paginator;
+
+    /**
      * Get User's Drafted Quotes Query
      *
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function draftedQuery(): Builder;
+
+    /**
+     * Get User's Submitted Quotes Query
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function submittedQuery(): Builder;
 
     /**
      * Find User's Quote
@@ -111,6 +140,38 @@ interface QuoteRepositoryInterface
      * @return void
      */
     public function activateDrafted(string $id);
+
+    /**
+     * Delete User's Submitted Quote
+     *
+     * @param string $id
+     * @return void
+     */
+    public function deleteSubmitted(string $id);
+
+    /**
+     * Deactivate User's Submitted Quote
+     *
+     * @param string $id
+     * @return void
+     */
+    public function deactivateSubmitted(string $id);
+
+    /**
+     * Activate User's Submitted Quote
+     *
+     * @param string $id
+     * @return void
+     */
+    public function activateSubmitted(string $id);
+
+    /**
+     * Copy Submitted Quote with Relations
+     *
+     * @param string $id
+     * @return void
+     */
+    public function copy(string $id);
 
     /**
      * Set/Create Margin for Quote

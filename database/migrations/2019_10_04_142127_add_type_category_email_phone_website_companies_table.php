@@ -15,7 +15,7 @@ class AddTypeCategoryEmailPhoneWebsiteCompaniesTable extends Migration
     {
         Schema::table('companies', function (Blueprint $table) {
             $table->set('type', __('company.types'));
-            $table->set('category', __('company.categories'));
+            $table->set('category', __('company.categories'))->nullable();
             $table->string('email');
             $table->string('phone')->nullable();
             $table->string('website')->nullable();

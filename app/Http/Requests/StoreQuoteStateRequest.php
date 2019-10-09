@@ -123,6 +123,7 @@ class StoreQuoteStateRequest extends FormRequest
             'quote_data.checkbox_status' => 'array',
             'quote_data.closing_date' => 'date_format:Y-m-d',
             'quote_data.additional_notes' => 'string|max:20000|min:2',
+            'quote_data.calculate_list_price' => 'boolean',
             'margin.quote_type' => [
                 'string',
                 'required_with:margin.is_fixed,margin.method,margin.type,margin.value',

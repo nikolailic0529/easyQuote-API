@@ -120,16 +120,19 @@ class QuoteFile extends UuidModel implements HasOrderedScope
 
     public function getRowsCountAttribute()
     {
-        return Cache::remember("rows:{$this->id}", 2, function () {
+        return (int) Cache::get("rows-count:{$this->id}", function () {
             return $this->rowsData()->count();
         });
     }
 
+    public function setRowsCount(int $count)
+    {
+        return Cache::forever("rows-count:{$this->id}", $count);
+    }
+
     public function getRowsProcessedCountAttribute()
     {
-        return Cache::remember("rows-processed:{$this->id}", 2, function () {
-            return $this->rowsData()->processed()->count();
-        });
+        return $this->rowsData()->processed()->count();
     }
 
     public function getProcessingStatusAttribute()
@@ -169,7 +172,7 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         $processedRowsCount = $this->getAttribute('rows_processed_count');
 
         if($processedRowsCount > $rowsCount) {
-            return 0;
+            $rowsCount = $processedRowsCount;
         }
 
         return floor($processedRowsCount / $rowsCount * 100);

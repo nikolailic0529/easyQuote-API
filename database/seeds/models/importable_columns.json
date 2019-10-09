@@ -7,7 +7,7 @@
         "regexp": "(?<product_no>\\d+\\-\\w{3}|[a-zA-Z]\\w{3,4}?[a-zA-Z]{1,2})\\s+",
         "order": 0,
         "aliases": [
-            "product_no", "product_number", "product", "part_id", "product nu", "product_nu", "product nu"
+            "product_no", "product_number", "product", "part_id", "product nu", "product_nu", "product nu", "item"
         ]
     },
     {

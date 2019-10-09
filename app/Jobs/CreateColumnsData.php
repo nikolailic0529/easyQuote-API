@@ -51,6 +51,6 @@ class CreateColumnsData implements ShouldQueue
      */
     public function failed(Exception $exception)
     {
-        logger($exception->message());
+        logger($exception->getMessage());
     }
 }

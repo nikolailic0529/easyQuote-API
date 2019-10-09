@@ -9,6 +9,7 @@ use App\Models\Quote \ {
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Carbon\Carbon;
 
 class QuoteService implements QuoteServiceInterface
 {
@@ -32,11 +33,13 @@ class QuoteService implements QuoteServiceInterface
 
         $mapping = $quote->mapping;
 
-        if($countryMargin->isPercentage()) {
+        if($countryMargin->isPercentage() && $countryMargin->isNoMargin()) {
             $quote->computableRows->transform(function ($row) use ($countryMargin, $mapping) {
                 $dateFromColumn = $this->getRowColumn($mapping, $row->columnsData, 'date_from');
                 $dateToColumn = $this->getRowColumn($mapping, $row->columnsData, 'date_to');
                 $priceColumn = $this->getRowColumn($mapping, $row->columnsData, 'price');
+
+                $this->checkRequiredFields([$dateFromColumn, $dateToColumn, $priceColumn]);
 
                 $priceColumn->value = $countryMargin->calculate($priceColumn->value, $dateFromColumn->value ?? null, $dateToColumn->value ?? null);
 
@@ -46,7 +49,7 @@ class QuoteService implements QuoteServiceInterface
 
         $list_price = $this->countTotalPrice($quote->computableRows, $mapping);
 
-        if($countryMargin->isFixed()) {
+        if($countryMargin->isFixed() && $countryMargin->isNoMargin()) {
             $list_price = $countryMargin->calculate($list_price);
         }
 
@@ -68,10 +71,14 @@ class QuoteService implements QuoteServiceInterface
         $mapping = $quote->mapping;
 
         $quote->computableRows->transform(function ($row) use ($discount, $mapping, $quote) {
+            $dateFromColumn = $this->getRowColumn($mapping, $row->columnsData, 'date_from');
+            $dateToColumn = $this->getRowColumn($mapping, $row->columnsData, 'date_to');
             $priceColumn = $this->getRowColumn($mapping, $row->columnsData, 'price');
 
-            $discountValue = $discount->calculateDiscount($priceColumn->value, $quote->list_price);
-            $priceColumn->value = ((float) $priceColumn->value) - $discountValue;
+            $this->checkRequiredFields([$dateFromColumn, $dateToColumn, $priceColumn]);
+
+            $value = $this->diffInDays($dateFromColumn->value, $dateToColumn->value) * ((float) $priceColumn->value / 30);
+            $discountValue = $discount->calculateDiscount($value, $quote->list_price);
 
             $quote->applicable_discounts += $discountValue;
 
@@ -84,12 +91,40 @@ class QuoteService implements QuoteServiceInterface
     public function countTotalPrice(EloquentCollection $rows, Collection $mapping)
     {
         $total = $rows->reduce(function ($carry, $row) use ($mapping) {
+            $dateFromColumn = $this->getRowColumn($mapping, $row->columnsData, 'date_from');
+            $dateToColumn = $this->getRowColumn($mapping, $row->columnsData, 'date_to');
             $priceColumn = $this->getRowColumn($mapping, $row->columnsData, 'price');
 
-            return $carry + (float) $priceColumn->value;
+            $this->checkRequiredFields([$dateFromColumn, $dateToColumn, $priceColumn]);
+
+            $value = $this->diffInDays($dateFromColumn->value, $dateToColumn->value) * ((float) $priceColumn->value / 30);
+
+            return $carry + $value;
         });
 
         return $total;
+    }
+
+    public function transformPricesBasedOnCoverages(Quote $quote)
+    {
+        if(!isset($quote->computableRows)) {
+            return $quote;
+        }
+
+        $mapping = $quote->mapping;
+
+        $quote->computableRows->transform(function ($row) use ($mapping) {
+            $dateFromColumn = $this->getRowColumn($mapping, $row->columnsData, 'date_from');
+            $dateToColumn = $this->getRowColumn($mapping, $row->columnsData, 'date_to');
+            $priceColumn = $this->getRowColumn($mapping, $row->columnsData, 'price');
+
+            $this->checkRequiredFields([$dateFromColumn, $dateToColumn, $priceColumn]);
+
+            $priceColumn->value = $this->diffInDays($dateFromColumn->value, $dateToColumn->value) * ((float) $priceColumn->value / 30);
+            return $row;
+        });
+
+        return $quote;
     }
 
     public function getRowColumn(Collection $mapping, EloquentCollection $columnsData, string $name)
@@ -99,5 +134,26 @@ class QuoteService implements QuoteServiceInterface
         }
 
         return $columnsData->where('importable_column_id', $mapping->get($name))->first();
+    }
+
+    private function checkRequiredFields(array $columns)
+    {
+        foreach ($columns as $column) {
+            if(!isset($column)) {
+                throw new \ErrorException(__('quote.required_fields_exception'));
+            }
+        }
+    }
+
+    private function diffInDays(string $dateFrom, string $dateTo)
+    {
+        $dateFrom = Carbon::parse(str_replace('/', '.', $dateFrom));
+        $dateTo = Carbon::parse(str_replace('/', '.', $dateTo));
+
+        try {
+            return $dateFrom->diffInDays($dateTo);
+        } catch (\Exception $e) {
+            return 0;
+        }
     }
 }

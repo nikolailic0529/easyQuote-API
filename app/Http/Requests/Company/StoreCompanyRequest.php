@@ -56,7 +56,8 @@ class StoreCompanyRequest extends FormRequest
                 'max:2048'
             ],
             'category' => [
-                'required',
+                'nullable',
+                'required_if:type,External',
                 'string',
                 'in:' . $this->categories
             ],

@@ -12,5 +12,6 @@ return [
         'Discount' => 90,
         'Additional Detail' => 99,
         'Complete' => 100
-    ]
+    ],
+    'required_fields_exception' => 'Required Fields are missing.'
 ];
