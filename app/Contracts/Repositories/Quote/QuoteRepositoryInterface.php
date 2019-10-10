@@ -110,6 +110,14 @@ interface QuoteRepositoryInterface
     public function find(string $id);
 
     /**
+     * Find User's Quote with Modifications
+     *
+     * @param string $id
+     * @return \App\Models\Quote\Quote
+     */
+    public function getWithModifications(string $id);
+
+    /**
      * Get Rows Data after Applying Margin
      *
      * @param ReviewAppliedMarginRequest $request

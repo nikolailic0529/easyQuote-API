@@ -29,7 +29,6 @@ class AuthController extends Controller implements Authenticable
         $user = $this->user->make(
             $this->authService->handleSignUpRequest($request)->all()
         );
-        $user->setAsAdmin();
         $user->save();
 
         return response()->json([
@@ -42,7 +41,7 @@ class AuthController extends Controller implements Authenticable
         $this->authService->storeAccessAttempt($request->all());
 
         $credentials = $request->only('email', 'password');
-        
+
         if(!$this->authService->checkCredentials($credentials)) {
             return response()->json([
                 'message' => __('Unauthorized')
@@ -59,7 +58,7 @@ class AuthController extends Controller implements Authenticable
             'expires_at' => $this->authService->parseTokenTime($this->tokenResult),
         ]);
     }
-    
+
     public function logout(Request $request)
     {
         $request->user()->token()->revoke();
@@ -73,7 +72,7 @@ class AuthController extends Controller implements Authenticable
     {
         return response()->json($request->user());
     }
-    
+
     public function setToken(UserSignInRequest $request)
     {
         $this->tokenResult = $this->authService->generateToken($request);

@@ -13,7 +13,7 @@ use App\Http\Requests\StoreQuoteFileRequest;
 use App\Models\QuoteFile\ImportedColumn;
 use Illuminate\Support\LazyCollection;
 use Illuminate\Pipeline\Pipeline;
-use Storage, Str, File;
+use Storage, Str, File, DB;
 
 class QuoteFileRepository implements QuoteFileRepositoryInterface
 {
@@ -261,5 +261,52 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         }
 
         return $this->deletePriceListsExcept($quoteFile);
+    }
+
+    public function replicatePriceList(QuoteFile $quoteFile)
+    {
+        if($quoteFile->isSchedule()) {
+            return $quoteFile;
+        }
+
+        $quote_file_id = $quoteFile->id;
+        $user_id = $quoteFile->user_id;
+        $quoteFileCopy = $quoteFile->replicate();
+        $quoteFileCopy->saveOrFail();
+        $new_quote_file_id = $quoteFileCopy->id;
+
+        /**
+         * Generating new Ids for Imported Columns and Rows in the temporary table
+         */
+        DB::select(
+            'create temporary table `new_imported_columns`
+            select * from `imported_columns`
+            join (select uuid() as new_imported_row_id, imported_row_id as temp_imported_row_id
+                from `imported_columns`
+                group by imported_row_id) as temp_imported_columns
+                on temp_imported_columns.temp_imported_row_id = `imported_columns`.imported_row_id
+            join (select id as row_id, quote_file_id, page, is_selected, processed_at from imported_rows) as imported_rows
+                on imported_rows.row_id = `imported_columns`.imported_row_id
+                where imported_rows.quote_file_id = :quote_file_id'
+            , compact('quote_file_id'));
+
+        /**
+         * Inserting Imported Rows with new Ids
+         */
+        DB::insert(
+            'insert into `imported_rows` (id, user_id, quote_file_id, page, is_selected, processed_at)
+            select new_imported_row_id, :user_id, :new_quote_file_id, page, is_selected, processed_at from new_imported_columns group by new_imported_row_id'
+        , compact('user_id', 'new_quote_file_id'));
+
+        /**
+         * Inserting Imported Columns with new Ids and new assigned Imported Rows Ids
+         */
+        DB::insert(
+            'insert into `imported_columns` (id, imported_row_id, importable_column_id, value, header)
+            select uuid(), new_imported_row_id, importable_column_id, value, header from new_imported_columns
+            '
+        );
+
+        return $quoteFileCopy;
     }
 }

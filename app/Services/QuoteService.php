@@ -35,13 +35,11 @@ class QuoteService implements QuoteServiceInterface
 
         if($countryMargin->isPercentage() && $countryMargin->isNoMargin()) {
             $quote->computableRows->transform(function ($row) use ($countryMargin, $mapping) {
-                $dateFromColumn = $this->getRowColumn($mapping, $row->columnsData, 'date_from');
-                $dateToColumn = $this->getRowColumn($mapping, $row->columnsData, 'date_to');
                 $priceColumn = $this->getRowColumn($mapping, $row->columnsData, 'price');
 
-                $this->checkRequiredFields([$dateFromColumn, $dateToColumn, $priceColumn]);
+                $this->checkRequiredFields([$priceColumn]);
 
-                $priceColumn->value = $countryMargin->calculate($priceColumn->value, $dateFromColumn->value ?? null, $dateToColumn->value ?? null);
+                $priceColumn->value = $countryMargin->calculate($priceColumn->value);
 
                 return $row;
             });
@@ -77,7 +75,12 @@ class QuoteService implements QuoteServiceInterface
 
             $this->checkRequiredFields([$dateFromColumn, $dateToColumn, $priceColumn]);
 
-            $value = $this->diffInDays($dateFromColumn->value, $dateToColumn->value) * ((float) $priceColumn->value / 30);
+            if($quote->calculate_list_price) {
+                $value = $this->diffInDays($dateFromColumn->value, $dateToColumn->value) * ((float) $priceColumn->value / 30);
+            } else {
+                $value = $priceColumn->value;
+            }
+
             $discountValue = $discount->calculateDiscount($value, $quote->list_price);
 
             $quote->applicable_discounts += $discountValue;

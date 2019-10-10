@@ -18,12 +18,16 @@ class SearchObserver
             return;
         }
 
-        $this->elasticsearch->index([
-            'index' => $model->getSearchIndex(),
-            'type' => $model->getSearchType(),
-            'id' => $model->getKey(),
-            'body' => $model->toSearchArray(),
-        ]);
+        try {
+            $this->elasticsearch->index([
+                'index' => $model->getSearchIndex(),
+                'type' => $model->getSearchType(),
+                'id' => $model->getKey(),
+                'body' => $model->toSearchArray(),
+            ]);
+        } catch (\Exception $exception) {
+            logger($exception->getMessage());
+        }
     }
 
     public function deleted($model)
@@ -31,11 +35,14 @@ class SearchObserver
         if(app()->runningInConsole()) {
             return;
         }
-
-        $this->elasticsearch->delete([
-            'index' => $model->getSearchIndex(),
-            'type' => $model->getSearchType(),
-            'id' => $model->getKey(),
-        ]);
+        try {
+            $this->elasticsearch->delete([
+                'index' => $model->getSearchIndex(),
+                'type' => $model->getSearchType(),
+                'id' => $model->getKey(),
+            ]);
+        } catch (\Exception $exception) {
+            logger($exception->getMessage());
+        }
     }
 }

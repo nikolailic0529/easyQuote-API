@@ -2,7 +2,7 @@
 
 return [
     'pdftotext' => [
-        'linux' => 'Services/PdfParser/bin/pdftotext',
+        'linux' => '/bin/pdftotext',
         'win' => 'Services/PdfParser/bin/pdftotext.exe'
     ]
 ];

@@ -66,7 +66,7 @@ abstract class Margin extends UuidModel implements HasOrderedScope
      * @param [string|int|float] $value
      * @return float
      */
-    public function calculate($value, $dateFrom = null, $dateTo = null)
+    public function calculate($value)
     {
         $value = (float) $value;
 

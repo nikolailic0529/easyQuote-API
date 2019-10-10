@@ -57,7 +57,8 @@ class Quote extends CompletableModel implements HasOrderedScope
         'checkbox_status',
         'closing_date',
         'additional_notes',
-        'calculate_list_price'
+        'calculate_list_price',
+        'buy_price'
     ];
 
     protected $perPage = 8;
@@ -69,13 +70,15 @@ class Quote extends CompletableModel implements HasOrderedScope
 
     protected $appends = [
         'last_drafted_step',
-        'closing_date'
+        'closing_date',
+        'margin_percentage'
     ];
 
     protected $casts = [
         'margin_data' => 'array',
         'checkbox_status' => 'json',
-        'calculate_list_price' => 'boolean'
+        'calculate_list_price' => 'boolean',
+        'buy_price' => 'decimal,2'
     ];
 
     public function scopeNewType($query)
@@ -125,7 +128,7 @@ class Quote extends CompletableModel implements HasOrderedScope
 
     public function appendJoins()
     {
-        return $this->setAppends(['last_drafted_step', 'field_column', 'rows_data']);
+        return $this->setAppends(['last_drafted_step', 'field_column', 'rows_data', 'margin_percentage']);
     }
 
     public function discounts()
@@ -162,10 +165,8 @@ class Quote extends CompletableModel implements HasOrderedScope
         $query = $selected ? $this->selectedRowsData() : $this->rowsData();
 
         return $query->with(['columnsData' => function ($query) use ($importableColumns) {
-            $query->whereHas('importableColumn', function ($query) use ($importableColumns) {
-                $query->whereIn('id', $importableColumns)
-                    ->ordered();
-            })->join('quote_field_column', function ($join) {
+            $query->whereIn('imported_columns.importable_column_id', $importableColumns)
+            ->join('quote_field_column', function ($join) {
                 $join->on('imported_columns.importable_column_id', '=', 'quote_field_column.importable_column_id')
                     ->where('quote_field_column.quote_id', '=', $this->id);
             })
@@ -326,6 +327,15 @@ class Quote extends CompletableModel implements HasOrderedScope
     public function getListPriceFormattedAttribute()
     {
         return number_format($this->getAttribute('list_price'), 2);
+    }
+
+    public function getMarginPercentageAttribute()
+    {
+        if($this->list_price === 0.00 || $this->buy_price > $this->list_price) {
+            return 0;
+        }
+
+        return (($this->list_price - $this->buy_price) / $this->list_price) * 100;
     }
 
     public function getFinalPriceAttribute()

@@ -49,9 +49,8 @@ class ImportedRow extends UuidModel
         unset($this->columnsDataToCreate);
 
         $save = parent::save($options);
-
-        CreateColumnsData::dispatch($this, $columnsDataToCreate)
-            ->onQueue('import_columns');
+        $this->columnsData()->saveMany($columnsDataToCreate);
+        $this->markAsProcessed();
 
         return $save;
     }

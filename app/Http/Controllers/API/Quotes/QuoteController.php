@@ -37,7 +37,7 @@ class QuoteController extends Controller
     public function quote(Quote $quote)
     {
         return response()->json(
-            $this->quote->find($quote->id)
+            $this->quote->getWithModifications($quote->id)
         );
     }
 
