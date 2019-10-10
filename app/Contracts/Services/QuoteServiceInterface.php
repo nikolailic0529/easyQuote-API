@@ -41,11 +41,10 @@ interface QuoteServiceInterface
     /**
      * Count current Total Price by Quote Computable Rows
      *
-     * @param EloquentCollection $rows
-     * @param Collection $mapping
-     * @return string
+     * @param Quote $quote
+     * @return float
      */
-    public function countTotalPrice(EloquentCollection $rows, Collection $mapping);
+    public function countTotalPrice(Quote $quote);
 
     /**
      * Get Row Column by Mapping and Template Field Name

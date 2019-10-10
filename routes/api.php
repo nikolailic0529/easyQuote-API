@@ -65,8 +65,8 @@ Route::group(['namespace' => 'API'], function () {
         Route::group(['prefix' => 'quotes', 'namespace' => 'Quotes'], function () {
             Route::post('handle', 'QuoteFilesController@handle'); // exclusive high throttle rate
 
+            Route::get('/get/{quote}', 'QuoteController@quote'); // exclusive high throttle rate
             Route::group(['middleware' => 'throttle:60,1'], function () {
-                Route::get('/get/{quote}', 'QuoteController@quote');
                 Route::get('/discounts/{quote}', 'QuoteController@discounts');
                 Route::get('/review/{quote}', 'QuoteController@review');
                 Route::post('state', 'QuoteController@storeState');

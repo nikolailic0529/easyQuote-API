@@ -44,7 +44,7 @@ class PdfParser implements PdfParserInterface
     public function getPageContent(string $path, int $page)
     {
         return $this->spatiePdfParser->setPdf($path)
-            ->setOptions(['layout', "f {$page}", "l {$page}"])
+            ->setOptions(['layout', 'table', "f {$page}", "l {$page}"])
             ->text();
     }
 
@@ -52,7 +52,7 @@ class PdfParser implements PdfParserInterface
     {
         $regexpColumns = $this->importableColumn->allColumnsRegs();
 
-        $regexp = '/(?<product_no>\d+\-\w{3}|[a-zA-Z]\w{3,4}?[a-zA-Z]{1,2})\s+(?<description>.+?\w)\s+(?<serial_no>[a-zA-Z]{2,3}[a-zA-Z\d]{7,8})\s+((?<date_from>(([0-2][0-9])|(3[0-1]))[\.\/]((0[0-9])|(1[0-2]))[\.\/]\d{4})\s+?)?((?<date_to>(([0-2][0-9])|(3[0-1]))[\.\/]((0[0-9])|(1[0-2]))[\.\/]\d{4})\s+?)?(?<qty>\d{1,3}(?=\s+?))?(\s+?((\p{Sc})?\s?(?<price>(\d{1,3},)?\d+([,\.]\d{1,2}))))([a-zA-Z].+?)?/m';
+        $regexp = '/^(?<product_no>\d+\-\w{3}|[a-zA-Z]\w{3,4}?[a-zA-Z]{1,2})\s+(?<description>.+?\w)\s+(?<serial_no>[a-zA-Z]{2,3}[a-zA-Z\d]{7,8})\s+((?<date_from>(([0-2][0-9])|(3[0-1]))[\.\/]((0[0-9])|(1[0-2]))[\.\/]\d{4})\s+?)?((?<date_to>(([0-2][0-9])|(3[0-1]))[\.\/]((0[0-9])|(1[0-2]))[\.\/]\d{4})\s+?)?(?<qty>\d{1,3}(?=\s+?))?(\s+?((\p{Sc})?\s?(?<price>(\d{1,3},)?\d+([,\.]\d{1,2}))))([a-zA-Z].+?)?/m';
 
         $pages = LazyCollection::make(function () use ($array) {
             foreach ($array as $page) {
@@ -193,9 +193,9 @@ class PdfParser implements PdfParserInterface
             return $this->binPath = app_path(config('pdfparser.pdftotext.win'));
         }
 
-        // if(config('app.env') === 'production') {
-        //     return $this->binPath = app_path(config('pdfparser.pdftotext.linux'));
-        // }
+        if(config('app.env') === 'production') {
+            return $this->binPath = app_path(config('pdfparser.pdftotext.linux'));
+        }
     }
 
     private function resetCoveragePeriods(array $array)

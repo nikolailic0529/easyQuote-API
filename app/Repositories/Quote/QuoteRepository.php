@@ -139,6 +139,8 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $quote = $quote->loadJoins()->setAppends(['field_column']);
 
+        Cache::forget("quote_list_price:{$quote->id}");
+
         return $quote;
     }
 
@@ -159,9 +161,11 @@ class QuoteRepository implements QuoteRepositoryInterface
     {
         $quote = $this->find($id);
         $quote->list_price = Cache::rememberForever("quote_list_price:{$quote->id}", function () use ($quote) {
-            $computableRows = $this->createDefaultData($quote->selectedRowsDataByColumns, $quote);
-            $computableRows = $this->setDefaultValues($computableRows, $quote);
-            return $this->quoteService->countTotalPrice($computableRows, $quote->mapping);
+            $quote->computableRows = $this->createDefaultData($quote->selectedRowsDataByColumns, $quote);
+            $quote->computableRows = $this->setDefaultValues($quote->computableRows, $quote);
+            $quote = $this->interactWithModels($quote);
+            $quote->makeHidden(['computableRows']);
+            return $this->quoteService->countTotalPrice($quote);
         });
 
         return $quote;
@@ -382,21 +386,12 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function copy(string $id)
     {
         $quote = $this->submittedQuery()
-            ->with(
-                'user',
-                'company',
-                'vendor',
-                'country',
-                'countryMargin',
-                'discounts',
-                'customer',
-                'quoteTemplate'
-            )
+            ->with('user', 'company', 'vendor', 'country', 'countryMargin', 'discounts', 'customer', 'quoteTemplate')
             ->whereId($id)
             ->firstOrFail();
 
         $replicatedQuote = $quote->replicate();
-        $pass = $replicatedQuote->push();
+        $replicatedQuote->push();
 
         /**
          * Mapping Replication
@@ -424,7 +419,7 @@ class QuoteRepository implements QuoteRepositoryInterface
             }
         }
 
-        return $pass;
+        return $replicatedQuote->unSubmit();
     }
 
     public function discounts(string $id)
@@ -460,28 +455,15 @@ class QuoteRepository implements QuoteRepositoryInterface
         $quote->computableRows = $this->setDefaultValues($quote->computableRows, $quote);
 
         /**
-         * Possible interaction with existing Country Margin
+         * Possible Interactions with Margins and Discounts
          */
-        $quote = $this->quoteService->interact($quote, $quote->countryMargin);
-
-        /**
-         * Possible interaction with existing Discounts
-         */
-        $multiYearDiscount = $quote->discounts()->whereHasMorph('discountable', MultiYearDiscount::class)->first();
-        $promotionalDiscount = $quote->discounts()->whereHasMorph('discountable', PromotionalDiscount::class)->first();
-        $snDiscount = $quote->discounts()->whereHasMorph('discountable', SND::class)->first();
-        $prePayDiscount = $quote->discounts()->whereHasMorph('discountable', PrePayDiscount::class)->first();
-
-        $quote = $this->quoteService->interact($quote, $multiYearDiscount);
-        $quote = $this->quoteService->interact($quote, $promotionalDiscount);
-        $quote = $this->quoteService->interact($quote, $snDiscount);
-        $quote = $this->quoteService->interact($quote, $prePayDiscount);
+        $quote = $this->interactWithModels($quote);
 
         /**
          * Calculate List Price if not calculated after interactions
          */
         if($quote->list_price === 0.00) {
-            $quote->list_price = $this->quoteService->countTotalPrice($quote->computableRows, $quote->mapping);
+            $quote->list_price = $this->quoteService->countTotalPrice($quote);
         }
 
         /**
@@ -556,6 +538,29 @@ class QuoteRepository implements QuoteRepositoryInterface
         return $pages;
     }
 
+    private function interactWithModels(Quote $quote)
+    {
+        /**
+         * Possible interaction with existing Country Margin
+         */
+        $quote = $this->quoteService->interact($quote, $quote->countryMargin);
+
+        /**
+         * Possible interaction with existing Discounts
+         */
+        $multiYearDiscount = $quote->discounts()->whereHasMorph('discountable', MultiYearDiscount::class)->first();
+        $promotionalDiscount = $quote->discounts()->whereHasMorph('discountable', PromotionalDiscount::class)->first();
+        $snDiscount = $quote->discounts()->whereHasMorph('discountable', SND::class)->first();
+        $prePayDiscount = $quote->discounts()->whereHasMorph('discountable', PrePayDiscount::class)->first();
+
+        $quote = $this->quoteService->interact($quote, $multiYearDiscount);
+        $quote = $this->quoteService->interact($quote, $promotionalDiscount);
+        $quote = $this->quoteService->interact($quote, $snDiscount);
+        $quote = $this->quoteService->interact($quote, $prePayDiscount);
+
+        return $quote;
+    }
+
     private function addBuyPriceColumn(Quote $quote)
     {
         if(!isset($quote->computableRows)) {
@@ -567,10 +572,11 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $quote->computableRows->transform(function ($row) use ($mapping, $margin_percentage) {
             $priceColumn = $this->quoteService->getRowColumn($mapping, $row->columnsData, 'price');
-            $value = $priceColumn->value - ($priceColumn->value * ($margin_percentage / 100));
+            $value = round((float) $priceColumn->value - ((float) $priceColumn->value * ($margin_percentage / 100)), 2);
 
             $buyPriceColumn = $row->columnsData()->make(compact('value'));
             $buyPriceColumn->template_field_name = 'buy_price';
+
 
             $row->columnsData->push($buyPriceColumn);
 
@@ -631,14 +637,12 @@ class QuoteRepository implements QuoteRepositoryInterface
     private function draftQuote(Collection $state, Quote $quote): Quote
     {
         if(!$state->has('save')) {
-            $quote->save();
+            $quote->markAsDrafted();
             return $quote;
         }
 
         if($state->get('save')) {
-            $quote->markAsNotDrafted();
-        } else {
-            $quote->markAsDrafted();
+            $quote->submit();
         }
 
         return $quote;
@@ -673,8 +677,6 @@ class QuoteRepository implements QuoteRepositoryInterface
             $importedRow->{$markAsSelected}();
         });
 
-        Cache::forget("quote_list_price:{$quote->id}");
-
         return $quote;
     }
 
@@ -704,8 +706,6 @@ class QuoteRepository implements QuoteRepositoryInterface
 
             $quote->attachColumnToField($templateField, $importableColumn, $attributes);
         });
-
-        Cache::forget("quote_list_price:{$quote->id}");
 
         return $quote;
     }

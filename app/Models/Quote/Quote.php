@@ -21,7 +21,8 @@ use App\Traits \ {
     BelongsToVendor,
     BelongsToCountry,
     BelongsToMargin,
-    Draftable
+    Draftable,
+    Submittable
 };
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -38,6 +39,7 @@ class Quote extends CompletableModel implements HasOrderedScope
         BelongsToCountry,
         BelongsToMargin,
         Draftable,
+        Submittable,
         Activatable,
         SoftDeletes;
 
@@ -335,7 +337,7 @@ class Quote extends CompletableModel implements HasOrderedScope
             return 0;
         }
 
-        return (($this->list_price - $this->buy_price) / $this->list_price) * 100;
+        return round((($this->list_price - $this->buy_price) / $this->list_price) * 100, 2);
     }
 
     public function getFinalPriceAttribute()

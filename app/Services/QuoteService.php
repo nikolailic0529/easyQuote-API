@@ -45,7 +45,7 @@ class QuoteService implements QuoteServiceInterface
             });
         }
 
-        $list_price = $this->countTotalPrice($quote->computableRows, $mapping);
+        $list_price = $this->countTotalPrice($quote);
 
         if($countryMargin->isFixed() && $countryMargin->isNoMargin()) {
             $list_price = $countryMargin->calculate($list_price);
@@ -63,7 +63,7 @@ class QuoteService implements QuoteServiceInterface
         }
 
         if(!isset($quote->list_price) || $quote->list_price === 0.00) {
-            $quote->list_price = $this->countTotalPrice($quote->computableRows, $quote->mapping);
+            $quote->list_price = $this->countTotalPrice($quote);
         }
 
         $mapping = $quote->mapping;
@@ -78,7 +78,7 @@ class QuoteService implements QuoteServiceInterface
             if($quote->calculate_list_price) {
                 $value = $this->diffInDays($dateFromColumn->value, $dateToColumn->value) * ((float) $priceColumn->value / 30);
             } else {
-                $value = $priceColumn->value;
+                $value = (float) $priceColumn->value;
             }
 
             $discountValue = $discount->calculateDiscount($value, $quote->list_price);
@@ -91,16 +91,26 @@ class QuoteService implements QuoteServiceInterface
         return $quote;
     }
 
-    public function countTotalPrice(EloquentCollection $rows, Collection $mapping)
+    public function countTotalPrice(Quote $quote)
     {
-        $total = $rows->reduce(function ($carry, $row) use ($mapping) {
+        if(!isset($quote->computableRows)) {
+            return 0;
+        }
+
+        $mapping = $quote->mapping;
+
+        $total = $quote->computableRows->reduce(function ($carry, $row) use ($quote, $mapping) {
             $dateFromColumn = $this->getRowColumn($mapping, $row->columnsData, 'date_from');
             $dateToColumn = $this->getRowColumn($mapping, $row->columnsData, 'date_to');
             $priceColumn = $this->getRowColumn($mapping, $row->columnsData, 'price');
 
             $this->checkRequiredFields([$dateFromColumn, $dateToColumn, $priceColumn]);
 
-            $value = $this->diffInDays($dateFromColumn->value, $dateToColumn->value) * ((float) $priceColumn->value / 30);
+            if($quote->calculate_list_price) {
+                $value = $this->diffInDays($dateFromColumn->value, $dateToColumn->value) * ((float) $priceColumn->value / 30);
+            } else {
+                $value = (float) $priceColumn->value;
+            }
 
             return $carry + $value;
         });
@@ -110,7 +120,7 @@ class QuoteService implements QuoteServiceInterface
 
     public function transformPricesBasedOnCoverages(Quote $quote)
     {
-        if(!isset($quote->computableRows)) {
+        if(!isset($quote->computableRows) || !$quote->calculate_list_price) {
             return $quote;
         }
 
@@ -124,6 +134,7 @@ class QuoteService implements QuoteServiceInterface
             $this->checkRequiredFields([$dateFromColumn, $dateToColumn, $priceColumn]);
 
             $priceColumn->value = $this->diffInDays($dateFromColumn->value, $dateToColumn->value) * ((float) $priceColumn->value / 30);
+
             return $row;
         });
 
