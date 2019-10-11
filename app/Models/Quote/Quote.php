@@ -333,11 +333,17 @@ class Quote extends CompletableModel implements HasOrderedScope
 
     public function getMarginPercentageAttribute()
     {
-        if($this->list_price === 0.00 || $this->buy_price > $this->list_price) {
-            return 0;
-        }
+        $discounts = $this->discounts()->with('discountable')->get()
+            ->reduce(function ($carry, $discount) {
+                return $carry + $discount->getValue(0);
+            }, 0);
 
-        return round((($this->list_price - $this->buy_price) / $this->list_price) * 100, 2);
+        return round($this->countryMargin->value + $this->user_margin_percentage - $discounts, 2);
+    }
+
+    public function getUserMarginPercentageAttribute()
+    {
+        return round((float) $this->attributes['margin_percentage'], 2);
     }
 
     public function getFinalPriceAttribute()

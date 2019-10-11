@@ -32,6 +32,7 @@ class QuoteService implements QuoteServiceInterface
         }
 
         $mapping = $quote->mapping;
+        $margin_percentage = $quote->margin_percentage;
 
         if($countryMargin->isPercentage() && $countryMargin->isNoMargin()) {
             $quote->computableRows->transform(function ($row) use ($countryMargin, $mapping) {
@@ -54,6 +55,31 @@ class QuoteService implements QuoteServiceInterface
         $quote->list_price = $list_price;
 
         return $quote;
+    }
+
+    public function interactWithMargin(Quote $quote): Quote
+    {
+        if(!isset($quote->computableRows)) {
+            return $quote;
+        }
+
+        $mapping = $quote->mapping;
+        $margin_percentage = $quote->margin_percentage;
+
+        $quote->computableRows->transform(function ($row) use ($mapping, $margin_percentage) {
+            $priceColumn = $this->getRowColumn($mapping, $row->columnsData, 'price');
+
+            $this->checkRequiredFields([$priceColumn]);
+
+            $value = (float) $priceColumn->value;
+
+            $priceColumn->value = $value + ($value * $margin_percentage / 100);
+
+            return $row;
+        });
+
+        return $quote;
+
     }
 
     public function interactWithDiscount(Quote $quote, Discount $discount): Quote

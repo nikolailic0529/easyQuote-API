@@ -30,6 +30,14 @@ interface QuoteServiceInterface
     public function interactWithCountryMargin(Quote $quote, CountryMargin $countryMargin): Quote;
 
     /**
+     * Interact with User's Margin and Possible Country Margin
+     *
+     * @param Quote $quote
+     * @return Quote
+     */
+    public function interactWithMargin(Quote $quote): Quote;
+
+    /**
      * Interact Quote model with Discount
      *
      * @param Quote $quote

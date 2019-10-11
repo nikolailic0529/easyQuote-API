@@ -118,14 +118,6 @@ interface QuoteRepositoryInterface
     public function getWithModifications(string $id);
 
     /**
-     * Get Rows Data after Applying Margin
-     *
-     * @param ReviewAppliedMarginRequest $request
-     * @return \Illuminate\Database\Eloquent\Collection
-     */
-    public function step4(ReviewAppliedMarginRequest $request);
-
-    /**
      * Delete User's Drafted Quote
      *
      * @param string $id

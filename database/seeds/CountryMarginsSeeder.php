@@ -17,7 +17,7 @@ class CountryMarginsSeeder extends Seeder
      */
     public function run()
     {
-        //Empty the template_fields table
+        //Empty the country_margins table
         Schema::disableForeignKeyConstraints();
 
         DB::table('country_margins')->delete();

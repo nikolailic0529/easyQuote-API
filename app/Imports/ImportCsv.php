@@ -3,15 +3,12 @@
 use App\Models\QuoteFile\QuoteFile;
 use League\Csv \ {
     Reader,
-    Statement,
-    ResultSet
+    Statement
 };
 use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface as ImportableColumnRepository;
-use App\Jobs\CreateBulkColumnsData;
-use App\Jobs\CreateBulkRows;
-use Illuminate\Support\Facades\Storage;
-use Str;
-use Webpatser\Uuid\Uuid;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Str, DB, Storage;
 
 class ImportCsv
 {
@@ -90,7 +87,28 @@ class ImportCsv
      *
      * @var integer
      */
-    protected $limit = 500;
+    protected $limit = 1000;
+
+    /**
+     * Enclosure character
+     *
+     * @var string
+     */
+    protected $enclosure;
+
+    /**
+     * Temporary Data Table Name
+     *
+     * @var string
+     */
+    protected $dataTable;
+
+    /**
+     * Temporary Mapping Table Name
+     *
+     * @var string
+     */
+    protected $mappingTable;
 
     public function __construct(QuoteFile $quoteFile, $headerOffset = 0)
     {
@@ -110,47 +128,39 @@ class ImportCsv
             ->setDelimiter($this->delimiter)
             ->setHeaderOffset($this->headerOffset);
 
-        $this->header = $this->csv->getHeader();
+        $this->enclosure = $this->csv->getEnclosure();
+
+        $this->header = $this->filterHeader($this->csv->getHeader());
+
+        $this->dataTable = uniqid();
+
+        $this->mappingTable = uniqid();
     }
 
     public function import()
     {
+        $this->beforeImport();
 
-        // DB::insert('
-        //     load data local infile
-        //     ?
-        // ', [$this->quoteFile, 'Dayle']
-        // );
-        // $this->beforeImport();
+        $user_id = $this->quoteFile->user_id;
+        $quote_file_id = $this->quoteFile->id;
 
-        // $stmt = $this->statement(true);
+        // Inserting Rows
+        DB::insert("
+            insert into `imported_rows` (id, created_at, updated_at, processed_at, quote_file_id, user_id, page)
+            select imported_row_id id, now() created_at, now() updated_at, now() processed_at, '{$quote_file_id}' quote_file_id, '{$user_id}' user_id, 1 page
+            from `{$this->dataTable}_r`
+        ");
 
-        // while ($this->offset < $this->rowsCount) {
-        //     $rowsChunk = $this->fetchRowsChunk($stmt->process($this->csv));
-        //     $this->createRowsChunk($rowsChunk);
+        // Inserting Columns by Each Header
+        foreach ($this->headersMapping as $column) {
+            ['header' => $header, 'importable_column_id' => $importable_column_id] = $column;
 
-        //     $stmt = $this->statement();
-        // }
-
-    }
-
-    public function statement(bool $initial = false)
-    {
-        if($initial) {
-            return $this->statement->offset($this->offset)->limit($this->limit);
+            DB::insert("
+                insert into `imported_columns` (id, imported_row_id, importable_column_id, value, header)
+                select uuid() id, imported_row_id, '{$importable_column_id}', `{$header}` value, '{$header}'
+                from `{$this->dataTable}_r`
+            ");
         }
-
-        $this->offset += $this->limit;
-
-        if($this->offset >= $this->rowsCount) {
-            return false;
-        }
-
-        if($this->offset + $this->limit > $this->rowsCount) {
-            $this->limit = $this->rowsCount - $this->offset;
-        }
-
-        return $this->statement->offset($this->offset)->limit($this->limit);
     }
 
     public function beforeImport()
@@ -159,43 +169,67 @@ class ImportCsv
             $this->setRowsCount();
         } catch (\Exception $exception) {
             $this->quoteFile->setException($exception->getMessage());
+            $this->quoteFile->markAsUnHandled();
             throw new \ErrorException($exception->getMessage());
         }
 
+        $this->checkHeader();
+        $this->loadIntoTempTable();
         $this->mapHeaders();
         $this->setHeadersCount();
     }
 
-    public function createRowsChunk(array $rowsChunk)
+    private function checkHeader()
     {
-        CreateBulkRows::withChain(
-            $this->createColumnsDataChunks($rowsChunk['imported_columns'])
-        )->dispatch($rowsChunk['imported_rows'])->onQueue('import_rows');
+        if(mb_strlen($this->header[0]) > 100) {
+            $this->quoteFile->setException(__('parser.separator_exception'));
+            throw new \ErrorException(__('parser.separator_exception'));
+        }
+    }
+
+    private function filterHeader(array $header)
+    {
+        return collect($header)->map(function ($name, $key) {
+            if(mb_strlen(trim($name)) === 0) {
+                return "Unknown Header {$key}";
+            }
+            return str_replace('.', '_', $name);
+        })->toArray();
+    }
+
+    private function loadIntoTempTable()
+    {
+        Schema::create($this->dataTable, function (Blueprint $table) {
+            foreach ($this->header as $column) {
+                $table->text($column);
+            }
+            $table->temporary();
+        });
+
+        $path = str_replace('\\', '/', Storage::path($this->quoteFile->original_file_path));
+
+        $query = "
+            load data local infile '{$path}'
+            into table `{$this->dataTable}`
+            fields terminated by '{$this->delimiter}'
+            optionally enclosed by '{$this->enclosure}'
+            ignore 1 lines
+        ";
+
+        DB::connection()->getpdo()->exec($query);
+
+        /**
+         * Assign Unique Ids to Rows
+         */
+        DB::select("
+            create temporary table `{$this->dataTable}_r`
+            select *, uuid() imported_row_id from `{$this->dataTable}`
+        ");
     }
 
     private function setHeadersCount()
     {
         $this->headersCount = count($this->header);
-    }
-
-    private function createColumnsDataChunks(array $imported_columns)
-    {
-        return collect($imported_columns)->chunk(50 * $this->headersCount)->map(function ($chunk) {
-            return (new CreateBulkColumnsData($chunk->toArray()))->onQueue('import_columns');
-        })->toArray();
-    }
-
-    private function fetchRowsChunk(ResultSet $resultSet)
-    {
-        $imported_rows = [];
-        $imported_columns = [];
-        foreach (iterator_to_array($resultSet, true) as $row) {
-            $row = $this->makeRow($row);
-            $imported_rows[] = $row['imported_row'];
-            array_push($imported_columns, ...$row['columns_data']);
-        }
-
-        return compact('imported_rows', 'imported_columns');
     }
 
     private function setRowsCount()
@@ -204,63 +238,14 @@ class ImportCsv
         $this->quoteFile->setRowsCount($this->rowsCount);
     }
 
-    private function makeRow(array $row)
-    {
-        $id = (string) Uuid::generate(4);
-        $user_id = $this->quoteFile->user->id;
-        $quote_file_id = $this->quoteFile->id;
-        $page = 1;
-        $columns_data = $this->fetchRow($row, $id);
-
-        $imported_row = compact(
-            'id',
-            'user_id',
-            'quote_file_id',
-            'page'
-        );
-
-        return compact('imported_row', 'columns_data');
-    }
-
-    private function checkHeader(string $header)
-    {
-        if(Str::length($header) < 100) {
-            return true;
-        }
-
-        $this->quoteFile->setException(__('parser.separator_exception'));
-        throw new \ErrorException(__('parser.separator_exception'));
-    }
-
-    private function fetchRow(array $row, string $imported_row_id)
-    {
-        $columns = collect($row)->map(function ($value, $header) use ($imported_row_id) {
-            $this->checkHeader($header);
-
-            $id = (string) Uuid::generate(4);
-            $header = trim(Str::limit($header, 40, ''));
-            $importable_column_id = $this->headersMapping->get($header);
-
-            return compact(
-                'id',
-                'imported_row_id',
-                'importable_column_id',
-                'value',
-                'header'
-            );
-        })->values()->toArray();
-
-        return $columns;
-    }
-
     private function mapHeaders()
     {
         $aliasesMapping = $this->importableColumn->allSystem()->pluck('aliases.*.alias', 'id');
         $this->headersMapping = [];
         $mapping = collect([]);
 
-        $this->headersMapping = collect($this->header)->mapWithKeys(function ($header) use ($aliasesMapping, $mapping) {
-            $column = $aliasesMapping->search(function ($aliases) use ($header) {
+        $this->headersMapping = collect($this->header)->map(function ($header) use ($aliasesMapping, $mapping) {
+            $importable_column_id = $aliasesMapping->search(function ($aliases) use ($header) {
                 $matchingHeader = preg_quote($header, '~');
                 $match = preg_grep("~^{$matchingHeader}.*?~i", $aliases);
                 if(empty($match)) {
@@ -269,7 +254,7 @@ class ImportCsv
                 return true;
             });
 
-            if(!$column) {
+            if(!$importable_column_id) {
                 $alias = $header;
                 $name = Str::columnName($header);
 
@@ -278,12 +263,20 @@ class ImportCsv
                     ->whereNotIn('id', $mapping->toArray())
                     ->firstOrCreate(compact('header', 'name'));
                 $importableColumn->aliases()->where('alias', $name)->firstOrCreate(compact('alias'));
-                $column = $importableColumn->id;
+                $importable_column_id = $importableColumn->id;
             }
 
-            $mapping->push($column);
+            $mapping->push($importable_column_id);
 
-            return [$header => $column];
+            return compact('header', 'importable_column_id');
+        })->toArray();
+
+        Schema::create($this->mappingTable, function (Blueprint $table) {
+            $table->text('header');
+            $table->uuid('importable_column_id');
+            $table->temporary();
         });
+
+        DB::table($this->mappingTable)->insert($this->headersMapping);
     }
 }

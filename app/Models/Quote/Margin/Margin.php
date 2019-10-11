@@ -60,6 +60,11 @@ abstract class Margin extends UuidModel implements HasOrderedScope
         return !$this->is_fixed;
     }
 
+    public function getValueAttribute()
+    {
+        return round((float) $this->attributes['value'], 2);
+    }
+
     /**
      * Value Calculation
      *

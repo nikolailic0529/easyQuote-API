@@ -160,13 +160,7 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function getWithModifications(string $id)
     {
         $quote = $this->find($id);
-        $quote->list_price = Cache::rememberForever("quote_list_price:{$quote->id}", function () use ($quote) {
-            $quote->computableRows = $this->createDefaultData($quote->selectedRowsDataByColumns, $quote);
-            $quote->computableRows = $this->setDefaultValues($quote->computableRows, $quote);
-            $quote = $this->interactWithModels($quote);
-            $quote->makeHidden(['computableRows']);
-            return $this->quoteService->countTotalPrice($quote);
-        });
+        $this->calculateDynamicListPrice($quote);
 
         return $quote;
     }
@@ -297,17 +291,6 @@ class QuoteRepository implements QuoteRepositoryInterface
         $rowsData = $this->transformRowsData($rowsData);
 
         return $rowsData;
-    }
-
-    public function step4(ReviewAppliedMarginRequest $request)
-    {
-        $quote = $this->find($request->quote_id);
-
-        $quote->computableRows = $this->createDefaultData($quote->rowsDataByColumns, $quote);
-        $quote->computableRows = $this->setDefaultValues($quote->computableRows, $quote);
-        $quote->computableRows = $this->transformRowsData($quote->computableRows);
-
-        return $quote->computableRows;
     }
 
     public function setMargin(Quote $quote, $attributes)
@@ -543,7 +526,8 @@ class QuoteRepository implements QuoteRepositoryInterface
         /**
          * Possible interaction with existing Country Margin
          */
-        $quote = $this->quoteService->interact($quote, $quote->countryMargin);
+        // $quote = $this->quoteService->interact($quote, $quote->countryMargin);
+        $quote = $this->quoteService->interactWithMargin($quote);
 
         /**
          * Possible interaction with existing Discounts
@@ -676,6 +660,42 @@ class QuoteRepository implements QuoteRepositoryInterface
         $selectedRows->each(function ($importedRow) use ($markAsSelected) {
             $importedRow->{$markAsSelected}();
         });
+
+        /**
+         * Recalculate User's Margin Percentage After Select Rows
+         */
+        $this->calculateMarginPercentage($quote);
+
+        return $quote;
+    }
+
+    private function calculateDynamicListPrice(Quote $quote): Quote
+    {
+        $quote->computableRows = $this->createDefaultData($quote->selectedRowsDataByColumns, $quote);
+        $quote->computableRows = $this->setDefaultValues($quote->computableRows, $quote);
+        $this->interactWithModels($quote);
+
+        $quote->list_price = $this->quoteService->countTotalPrice($quote);
+
+        return $quote;
+    }
+
+    private function calculateMarginPercentage(Quote $quote): Quote
+    {
+        $quote->computableRows = $this->createDefaultData($quote->selectedRowsDataByColumns, $quote);
+        $quote->computableRows = $this->setDefaultValues($quote->computableRows, $quote);
+        $quote->list_price = $this->quoteService->countTotalPrice($quote);
+
+        unset($quote->computableRows, $quote->list_price);
+
+        if($quote->list_price === 0.00 || $quote->buy_price > $quote->list_price) {
+            return $quote;
+        }
+
+        $quote->margin_percentage = round((($quote->list_price - $quote->buy_price) / $quote->list_price) * 100, 2);
+        unset($quote->computableRows, $quote->list_price);
+
+        $quote->save();
 
         return $quote;
     }

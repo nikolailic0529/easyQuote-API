@@ -217,8 +217,6 @@ class ParserService implements ParserServiceInterface
 
     public function handlePdf(QuoteFile $quoteFile)
     {
-        $quoteFile->markAsHandled();
-
         $rawData = $this->quoteFile->getRawData($quoteFile)->toArray();
 
         if($quoteFile->isSchedule()) {
@@ -229,17 +227,17 @@ class ParserService implements ParserServiceInterface
             $quoteFile->setImportedPage($page);
 
             return $this->quoteFile->createScheduleData(
-                $quoteFile,
-                $parsedData
+                $quoteFile, $parsedData
             );
         }
 
         $parsedData = $this->pdfParser->parse($rawData);
 
-        return $this->quoteFile->createRowsData(
-            $quoteFile,
-            $parsedData
+        $this->quoteFile->createRowsData(
+            $quoteFile, $parsedData
         );
+
+        $quoteFile->markAsHandled();
     }
 
     public function handleExcel(QuoteFile $quoteFile)
@@ -269,8 +267,6 @@ class ParserService implements ParserServiceInterface
 
     public function importExcel(QuoteFile $quoteFile)
     {
-        $quoteFile->markAsHandled();
-
         $filePath = $quoteFile->original_file_path;
         $user = $quoteFile->user;
         $columns = $this->importableColumn->allSystem();
@@ -278,21 +274,21 @@ class ParserService implements ParserServiceInterface
         $quoteFile->rowsData()->forceDelete();
 
         ImportExcelJob::dispatch($quoteFile, $user, $columns, $filePath);
+
+        $quoteFile->markAsHandled();
     }
 
     public function importCsv(QuoteFile $quoteFile)
     {
-        $quoteFile->markAsHandled();
-
         $quoteFile->rowsData()->forceDelete();
 
-        ImportCsvJob::dispatch($quoteFile);
+        (new ImportCsv($quoteFile))->import();
+
+        $quoteFile->markAsHandled();
     }
 
     public function importWord(QuoteFile $quoteFile)
     {
-        $quoteFile->markAsHandled();
-
         $rawData = $this->quoteFile->getRawData($quoteFile);
 
         $quoteFile->rowsData()->forceDelete();
@@ -305,6 +301,8 @@ class ParserService implements ParserServiceInterface
 
             ImportExcelJob::dispatch($quoteFile, $user, $columns, $filePath);
         });
+
+        $quoteFile->markAsHandled();
     }
 
     public function countPages(string $path)

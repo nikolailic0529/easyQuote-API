@@ -204,6 +204,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithCustomCsvSettings, W
         if($this->quoteFile->isCsv()) {
             if(Str::length($header) > 100) {
                 $this->quoteFile->setException(__('parser.separator_exception'));
+                $this->quoteFile->markAsUnHandled();
                 throw new \ErrorException(__('parser.separator_exception'));
             }
         }

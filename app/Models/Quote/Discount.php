@@ -39,6 +39,34 @@ class Discount extends UuidModel
         return $this->pivot->duration;
     }
 
+    public function getValue($total)
+    {
+        $total = (float) $total;
+        $discount = $this->discountable;
+
+        if($discount instanceof MultiYearDiscount || $discount instanceof PrePayDiscount) {
+            $durations = collect($discount->durations);
+            $percentage = (float) ($durations->where('duration', $this->duration)->first()['value'] ?? $durations->first()['value']);
+
+            return $percentage;
+        }
+
+        if($discount instanceof PromotionalDiscount) {
+            $percentage = (float) $discount->value;
+            $limit = $discount->minimum_limit;
+
+            if($limit <= $total) {
+                return $percentage;
+            }
+
+            return 0;
+        }
+
+        if($discount instanceof SND) {
+            return (float) $discount->value;
+        }
+    }
+
     public function calculateDiscount($value, $total)
     {
         $value = (float) $value;
@@ -47,7 +75,7 @@ class Discount extends UuidModel
 
         if($discount instanceof MultiYearDiscount || $discount instanceof PrePayDiscount) {
             $durations = collect($discount->durations);
-            $percentage = (float) ($durations->where('duration', 3)->first()['value'] ?? $durations->first()['value']);
+            $percentage = (float) ($durations->where('duration', $this->duration)->first()['value'] ?? $durations->first()['value']);
 
             return $value * $percentage / 100;
         }

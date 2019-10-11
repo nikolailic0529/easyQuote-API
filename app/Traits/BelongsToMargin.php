@@ -6,6 +6,6 @@ trait BelongsToMargin
 {
     public function countryMargin()
     {
-        return $this->belongsTo(CountryMargin::class);
+        return $this->belongsTo(CountryMargin::class)->withDefault(CountryMargin::make([]));
     }
 }
