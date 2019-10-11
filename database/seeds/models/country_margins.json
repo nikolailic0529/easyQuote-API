@@ -2,61 +2,81 @@
     {
         "vendor": "HPE",
         "quote_type": "New",
-        "value": 12.5,
+        "value": 18,
         "is_fixed": false,
         "method": "Standard",
         "countries": [
-            "GB", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SA", "AU", "NZ"
+            "GB"
         ]
     },
     {
-        "vendor": "LEN",
+        "vendor": "HPE",
         "quote_type": "New",
-        "value": 8.75,
+        "value": 20,
         "is_fixed": false,
         "method": "Standard",
         "countries": [
-            "GB", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SA", "AU", "NZ"
-        ]
-    },
-    {
-        "vendor": "IBM",
-        "quote_type": "New",
-        "value": 5.5,
-        "is_fixed": false,
-        "method": "Standard",
-        "countries": [
-            "GB", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SA", "AU", "NZ"
+            "FR"
         ]
     },
     {
         "vendor": "HPE",
         "quote_type": "Renewal",
-        "value": 12.5,
+        "value": 15,
         "is_fixed": false,
         "method": "Standard",
         "countries": [
-            "GB", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SA", "AU", "NZ"
+            "FR"
         ]
     },
     {
-        "vendor": "LEN",
-        "quote_type": "Renewal",
-        "value": 8.75,
+        "vendor": "HPE",
+        "quote_type": "New",
+        "value": 15,
         "is_fixed": false,
         "method": "Standard",
         "countries": [
-            "GB", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SA", "AU", "NZ"
+            "NL", "SE"
         ]
     },
     {
-        "vendor": "IBM",
-        "quote_type": "Renewal",
-        "value": 5.5,
+        "vendor": "HPE",
+        "quote_type": "New",
+        "value": 10,
         "is_fixed": false,
         "method": "Standard",
         "countries": [
-            "GB", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SA", "AU", "NZ"
+            "AT", "BE"
+        ]
+    },
+    {
+        "vendor": "HPE",
+        "quote_type": "New",
+        "value": 16,
+        "is_fixed": false,
+        "method": "Standard",
+        "countries": [
+            "IE"
+        ]
+    },
+    {
+        "vendor": "HPE",
+        "quote_type": "New",
+        "value": 18,
+        "is_fixed": false,
+        "method": "Standard",
+        "countries": [
+            "NO", "DK", "US"
+        ]
+    },
+    {
+        "vendor": "HPE",
+        "quote_type": "New",
+        "value": 20,
+        "is_fixed": false,
+        "method": "Standard",
+        "countries": [
+            "CA"
         ]
     }
 ]

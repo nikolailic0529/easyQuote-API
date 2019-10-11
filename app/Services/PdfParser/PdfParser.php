@@ -194,7 +194,7 @@ class PdfParser implements PdfParserInterface
         }
 
         if(config('app.env') === 'production') {
-            return $this->binPath = app_path(config('pdfparser.pdftotext.linux'));
+            return $this->binPath = config('pdfparser.pdftotext.linux');
         }
     }
 

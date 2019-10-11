@@ -35,9 +35,7 @@ class CountryMarginsSeeder extends Seeder
             $is_fixed = $margin['is_fixed'];
             $method = $margin['method'];
             $quote_type = $margin['quote_type'];
-
-            $countriesIso = ["GB", "US", "BE", "CA", "DK", "FR", "IR", "NL", "SA", "AU", "NZ"];
-            $countries = Country::whereIn('iso_3166_2', $countriesIso)->get();
+            $countries = Country::whereIn('iso_3166_2', $margin['countries'])->get();
 
             $margin = compact('vendor_id', 'is_fixed', 'method', 'quote_type', 'value');
 

@@ -636,7 +636,7 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     private function draftQuote(Collection $state, Quote $quote): Quote
     {
-        if(!$state->has('save')) {
+        if(!$state->has('save') || !$state->get('save')) {
             $quote->markAsDrafted();
             return $quote;
         }

@@ -318,12 +318,12 @@ class Quote extends CompletableModel implements HasOrderedScope
 
     public function getApplicableDiscountsAttribute()
     {
-        return (float) ($this->attributes['applicable_discounts'] ?? 0);
+        return round((float) ($this->attributes['applicable_discounts'] ?? 0), 2);
     }
 
     public function getListPriceAttribute()
     {
-        return (float) ($this->attributes['list_price'] ?? 0);
+        return round((float) ($this->attributes['list_price'] ?? 0), 2);
     }
 
     public function getListPriceFormattedAttribute()

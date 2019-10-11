@@ -9,11 +9,15 @@ use League\Csv \ {
 use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface as ImportableColumnRepository;
 use App\Jobs\CreateBulkColumnsData;
 use App\Jobs\CreateBulkRows;
+use App\Models\QuoteFile\ImportedColumn;
+use App\Models\QuoteFile\ImportedRow;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Str;
 use Webpatser\Uuid\Uuid;
 
-class ImportCsv
+class ImportCsvBackup
 {
     /**
      * Csv Reader Instance
@@ -115,22 +119,16 @@ class ImportCsv
 
     public function import()
     {
+        $this->beforeImport();
 
-        // DB::insert('
-        //     load data local infile
-        //     ?
-        // ', [$this->quoteFile, 'Dayle']
-        // );
-        // $this->beforeImport();
+        $stmt = $this->statement(true);
 
-        // $stmt = $this->statement(true);
+        while ($this->offset < $this->rowsCount) {
+            $rowsChunk = $this->fetchRowsChunk($stmt->process($this->csv));
+            $this->createRowsChunk($rowsChunk);
 
-        // while ($this->offset < $this->rowsCount) {
-        //     $rowsChunk = $this->fetchRowsChunk($stmt->process($this->csv));
-        //     $this->createRowsChunk($rowsChunk);
-
-        //     $stmt = $this->statement();
-        // }
+            $stmt = $this->statement();
+        }
 
     }
 
