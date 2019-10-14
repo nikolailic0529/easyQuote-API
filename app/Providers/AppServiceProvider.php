@@ -183,12 +183,30 @@ class AppServiceProvider extends ServiceProvider
 
     protected function registerMacro()
     {
-        Str::macro('header', function ($value) {
+        Str::macro('header', function ($value, $default = null, $perform = true) {
+            if(!$perform) {
+                return $value;
+            }
+
+            if(!isset($value)) {
+                return $default;
+            }
+
             return self::title(str_replace('_', ' ', $value));
         });
 
         Str::macro('columnName', function ($value) {
             return self::snake(preg_replace('/\W/', '', $value));
+        });
+
+        Str::macro('price', function ($value, $format = null) {
+            $value = round((float) preg_replace('/[^\d\.]/', '', $value), 2);
+
+            if(isset($format) && $format) {
+                return number_format($value, 2);
+            }
+
+            return $value;
         });
     }
 

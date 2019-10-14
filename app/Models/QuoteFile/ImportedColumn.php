@@ -2,12 +2,9 @@
 
 use App\Models \ {
     UuidModel,
-    Quote\Quote,
     QuoteFile\ImportableColumn
 };
 use App\Traits \ {
-    BelongsToUser,
-    BelongsToQuoteFile,
     Draftable,
     BelongsToImportedRow,
     BelongsToImportableColumn,
@@ -67,5 +64,14 @@ class ImportedColumn extends UuidModel
         $this->importableColumn()->associate($importableColumn);
 
         return $importableColumn;
+    }
+
+    public function getValueAttribute()
+    {
+        if(!isset($this->template_field_name) || $this->template_field_name !== 'price') {
+            return $this->attributes['value'];
+        }
+
+        return Str::price($this->attributes['value']);
     }
 }

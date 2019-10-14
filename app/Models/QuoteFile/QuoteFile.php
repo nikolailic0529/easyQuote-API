@@ -25,7 +25,7 @@ class QuoteFile extends UuidModel implements HasOrderedScope
     use Automappable, HasColumnsData, HasScheduleData, BelongsToQuote, BelongsToUser, HasFileFormat, Handleable, Draftable, SoftDeletes;
 
     protected $fillable = [
-        'original_file_path', 'original_file_name', 'file_type', 'pages'
+        'original_file_path', 'original_file_name', 'file_type', 'pages', 'quote_file_format_id'
     ];
 
     public function scopeOrdered($query)
@@ -90,6 +90,11 @@ class QuoteFile extends UuidModel implements HasOrderedScope
     public function isSchedule()
     {
         return $this->file_type === __('quote_file.types.schedule');
+    }
+
+    public function isPrice()
+    {
+        return $this->file_type === __('quote_file.types.price');
     }
 
     public function scopeIsNotHandledSchedule($query)
@@ -176,6 +181,14 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         }
 
         return floor($processedRowsCount / $rowsCount * 100);
+    }
+
+    public function isNewPage($page) {
+        if(!isset($page)) {
+            return false;
+        }
+
+        return $this->attributes['imported_page'] !== ((int) $page);
     }
 
     private function isFormat($ext)

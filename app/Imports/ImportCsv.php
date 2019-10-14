@@ -1,10 +1,7 @@
 <?php namespace App\Imports;
 
 use App\Models\QuoteFile\QuoteFile;
-use League\Csv \ {
-    Reader,
-    Statement
-};
+use League\Csv\Reader;
 use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface as ImportableColumnRepository;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -104,13 +101,20 @@ class ImportCsv
     protected $dataTable;
 
     /**
-     * Temporary Mapping Table Name
+     * PDO driver instance
+     *
+     * @var \PDO
+     */
+    protected $pdo;
+
+    /**
+     * Importable File Path
      *
      * @var string
      */
-    protected $mappingTable;
+    protected $importableFilePath;
 
-    public function __construct(QuoteFile $quoteFile, $headerOffset = 0)
+    public function __construct(QuoteFile $quoteFile, $filePath = null, $headerOffset = 0)
     {
         $this->quoteFile = $quoteFile;
 
@@ -122,9 +126,9 @@ class ImportCsv
 
         $this->importableColumn = app(ImportableColumnRepository::class);
 
-        $this->statement = app(Statement::class);
+        $this->importableFilePath = isset($filePath) ? $filePath : $quoteFile->original_file_path;
 
-        $this->csv = Reader::createFromPath(Storage::path($quoteFile->original_file_path))
+        $this->csv = Reader::createFromPath(Storage::path($this->importableFilePath))
             ->setDelimiter($this->delimiter)
             ->setHeaderOffset($this->headerOffset);
 
@@ -134,7 +138,7 @@ class ImportCsv
 
         $this->dataTable = uniqid();
 
-        $this->mappingTable = uniqid();
+        $this->pdo = DB::connection()->getPdo();
     }
 
     public function import()
@@ -145,34 +149,28 @@ class ImportCsv
         $quote_file_id = $this->quoteFile->id;
 
         // Inserting Rows
-        DB::insert("
+        $this->pdo->exec("
             insert into `imported_rows` (id, created_at, updated_at, processed_at, quote_file_id, user_id, page)
             select imported_row_id id, now() created_at, now() updated_at, now() processed_at, '{$quote_file_id}' quote_file_id, '{$user_id}' user_id, 1 page
-            from `{$this->dataTable}_r`
+            from `{$this->dataTable}`
         ");
 
         // Inserting Columns by Each Header
-        foreach ($this->headersMapping as $column) {
+        $colsQuery = collect($this->headersMapping)->map(function ($column) {
             ['header' => $header, 'importable_column_id' => $importable_column_id] = $column;
 
-            DB::insert("
+            return "
                 insert into `imported_columns` (id, imported_row_id, importable_column_id, value, header)
                 select uuid() id, imported_row_id, '{$importable_column_id}', `{$header}` value, '{$header}'
-                from `{$this->dataTable}_r`
-            ");
-        }
+                from `{$this->dataTable}`
+            ";
+        })->implode(';');
+
+        $this->pdo->exec($colsQuery);
     }
 
     public function beforeImport()
     {
-        try {
-            $this->setRowsCount();
-        } catch (\Exception $exception) {
-            $this->quoteFile->setException($exception->getMessage());
-            $this->quoteFile->markAsUnHandled();
-            throw new \ErrorException($exception->getMessage());
-        }
-
         $this->checkHeader();
         $this->loadIntoTempTable();
         $this->mapHeaders();
@@ -193,49 +191,40 @@ class ImportCsv
             if(mb_strlen(trim($name)) === 0) {
                 return "Unknown Header {$key}";
             }
-            return str_replace('.', '_', $name);
+            return $name;
         })->toArray();
     }
 
     private function loadIntoTempTable()
     {
-        Schema::create($this->dataTable, function (Blueprint $table) {
-            foreach ($this->header as $column) {
-                $table->text($column);
-            }
-            $table->temporary();
-        });
+        $columns = collect($this->header)->map(function ($column) {
+            return "`{$column}` text";
+        })->implode(',');
 
-        $path = str_replace('\\', '/', Storage::path($this->quoteFile->original_file_path));
+        $path = str_replace('\\', '/', Storage::path($this->importableFilePath));
 
-        $query = "
+        $this->pdo->exec("
+            create temporary table `{$this->dataTable}` ({$columns});
+
             load data local infile '{$path}'
             into table `{$this->dataTable}`
             fields terminated by '{$this->delimiter}'
             optionally enclosed by '{$this->enclosure}'
-            ignore 1 lines
-        ";
-
-        DB::connection()->getpdo()->exec($query);
+            ignore 1 lines;
+        ");
 
         /**
          * Assign Unique Ids to Rows
          */
-        DB::select("
-            create temporary table `{$this->dataTable}_r`
-            select *, uuid() imported_row_id from `{$this->dataTable}`
+        $this->pdo->exec("
+            alter table `{$this->dataTable}` add `imported_row_id` char(36) first;
+            update `{$this->dataTable}` set `imported_row_id` = uuid();
         ");
     }
 
     private function setHeadersCount()
     {
         $this->headersCount = count($this->header);
-    }
-
-    private function setRowsCount()
-    {
-        $this->rowsCount = count($this->csv);
-        $this->quoteFile->setRowsCount($this->rowsCount);
     }
 
     private function mapHeaders()
@@ -270,13 +259,5 @@ class ImportCsv
 
             return compact('header', 'importable_column_id');
         })->toArray();
-
-        Schema::create($this->mappingTable, function (Blueprint $table) {
-            $table->text('header');
-            $table->uuid('importable_column_id');
-            $table->temporary();
-        });
-
-        DB::table($this->mappingTable)->insert($this->headersMapping);
     }
 }

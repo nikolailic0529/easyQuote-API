@@ -1,18 +1,17 @@
 <?php namespace App\Repositories\QuoteFile;
 
 use App\Models \ {
-    User,
-    Quote\Quote,
     QuoteFile\QuoteFile,
-    QuoteFile\ImportableColumn,
+    QuoteFile\ImportedColumn,
     QuoteFile\DataSelectSeparator,
     QuoteFile\ImportedRow
 };
-use App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface;
+use App\Contracts\Repositories\QuoteFile \ {
+    QuoteFileRepositoryInterface,
+    ImportableColumnRepositoryInterface
+};
 use App\Http\Requests\StoreQuoteFileRequest;
-use App\Models\QuoteFile\ImportedColumn;
-use Illuminate\Support\LazyCollection;
-use Illuminate\Pipeline\Pipeline;
+use ErrorException;
 use Storage, Str, File, DB;
 
 class QuoteFileRepository implements QuoteFileRepositoryInterface
@@ -23,14 +22,17 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     protected $importableColumn;
 
+    protected $systemImportableColumns;
+
     public function __construct(
         QuoteFile $quoteFile,
         DataSelectSeparator $dataSelectSeparator,
-        ImportableColumn $importableColumn
+        ImportableColumnRepositoryInterface $importableColumn
     ) {
         $this->quoteFile = $quoteFile;
         $this->dataSelectSeparator = $dataSelectSeparator;
         $this->importableColumn = $importableColumn;
+        $this->systemImportableColumns = $importableColumn->allSystem();
     }
 
     public function all()
@@ -106,16 +108,12 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     public function createRowsData(QuoteFile $quoteFile, array $array)
     {
-        $user = request()->user();
-
         /**
          * Delete early imported data
          */
         $quoteFile->rowsData()->forceDelete();
 
-        $this->createImportedPages($array, $quoteFile, $user);
-
-        return $quoteFile->markAsHandled();
+        $this->createImportedPages($array, $quoteFile);
     }
 
     public function createScheduleData(QuoteFile $quoteFile, array $value)
@@ -136,68 +134,51 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         return $scheduleData;
     }
 
-    protected function createImportedPages(array $array, QuoteFile $quoteFile, User $user)
+    protected function createImportedPages(array $array, QuoteFile $quoteFile)
     {
-        $array = collect($array)->filter(function ($item, $key) {
+        $array = collect($array)->filter(function ($item) {
             return isset($item['page']) && isset($item['rows']);
         });
 
-        $importedPages = LazyCollection::make(function () use ($array) {
-            foreach ($array as $item) {
-                yield $item;
-            }
-        })->map(function ($pageData, $key) use ($quoteFile, $user) {
-            ['page' => $page, 'rows' => $rowsData] = $pageData;
-            $rows = $this->createImportedRows($rowsData, $quoteFile, $user, $page);
+        $importedRows = [];
+        foreach ($array as $pageData) {
+            ['page' => $page, 'rows' => $rows] = $pageData;
+            $pageRows = $this->createImportedRows($rows, $quoteFile, $page);
+            array_push($importedRows, ...$pageRows);
+        }
 
-            return compact('page', 'rows');
-        })->all();
+        if(count($importedRows) < 1) {
+            $quoteFile->setException(__('parser.no_rows_exception'));
+            $quoteFile->markAsUnHandled();
+            throw new ErrorException(__('parser.no_rows_exception'));
+        }
 
-        return $importedPages;
+        $quoteFile->rowsData()->saveMany($importedRows);
     }
 
-    protected function createImportedRows(array $rows, QuoteFile $quoteFile, User $user, int $pageNumber)
+    protected function createImportedRows(array $rows, QuoteFile $quoteFile, int $page)
     {
-        $importedRows = collect();
+        $quote_file_id = $quoteFile->id;
+        $user_id = $quoteFile->user->id;
+        $attributes = compact('quote_file_id', 'user_id', 'page');
 
-        collect($rows)->lazy()->chunk(200)
-            ->map(function ($rowChunk) use ($quoteFile, $user, $pageNumber, $importedRows) {
-                $rowChunk->each(function ($row) use ($quoteFile, $user, $pageNumber, $importedRows) {
-                    $importedRow = $quoteFile->rowsData()->make([
-                        'page' => $pageNumber
-                    ]);
-
-                    $importedRow->user()->associate($user);
-                    $importedRow->quoteFile()->associate($quoteFile);
-                    $importedRow = $this->createRowData($row, $quoteFile, $user, $pageNumber, $importedRow);
-                    $importedRow->markAsDrafted();
-
-                    return $importedRows->push($importedRow->makeHiddenExcept(['id', 'is_selected', 'columnsData']));
-                })->all();
-            })->all();
-
-        return $importedRows;
+        return collect($rows)
+            ->map(function ($row) use ($quoteFile, $attributes) {
+                $importedRow = ImportedRow::make($attributes);
+                $this->createRowData($row, $quoteFile, $importedRow);
+                return $importedRow;
+            });
     }
 
-    protected function createRowData(array $row, QuoteFile $quoteFile, User $user, int $page, ImportedRow $importedRow, $formatHeader = true)
+    protected function createRowData(array $row, QuoteFile $quoteFile, ImportedRow $importedRow, $formatHeader = true)
     {
-        $importedRow->columnsDataToCreate = collect($row)->map(function ($value, $alias) use ($quoteFile, $user, $importedRow, $formatHeader) {
-            $importableColumn = $this->importableColumn->whereHas('aliases', function ($query) use ($alias) {
-                return $query->whereAlias($alias);
-            })->first();
+        $user = $quoteFile->user;
 
-            if($formatHeader) {
-                $alias = Str::header($alias);
-            }
+        $importedRow->columnsDataToCreate = collect($row)->map(function ($value, $columnName) use ($quoteFile, $user, $importedRow, $formatHeader) {
+            $importable_column_id = $this->systemImportableColumns->firstWhere('name', $columnName)->id ?? null;
+            $header = Str::header($columnName, __('parser.unknown_column_header'), $formatHeader);
 
-            $header = $alias ?? __('parser.unknown_column_header');
-
-            $columnDataItem = ImportedColumn::make(compact('value', 'header'));
-
-            if(!is_null($importableColumn)) {
-                $columnDataItem->importableColumn()->associate($importableColumn);
-            };
-
+            $columnDataItem = ImportedColumn::make(compact('value', 'header', 'importable_column_id'));
             return $columnDataItem;
         });
 

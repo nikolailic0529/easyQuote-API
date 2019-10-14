@@ -1,8 +1,6 @@
 <?php namespace App\Imports;
 
-use App\Jobs\CreateRow;
 use App\Models \ {
-    User,
     QuoteFile\ImportedRow,
     QuoteFile\QuoteFile
 };
@@ -11,21 +9,20 @@ use Illuminate\Support\Collection;
 use Maatwebsite\Excel \ {
     Row,
     Concerns\WithHeadingRow,
-    Concerns\WithCustomCsvSettings,
     Concerns\Importable,
     Concerns\WithEvents,
     Concerns\WithChunkReading,
     Concerns\OnEachRow,
     Events\BeforeSheet,
-    Events\BeforeImport,
     Events\AfterImport,
     Imports\HeadingRowFormatter,
     Imports\HeadingRowExtractor,
 };
+use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface as ImportableColumnRepository;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Str;
 
-class ImportExcel implements OnEachRow, WithHeadingRow, WithCustomCsvSettings, WithEvents, WithChunkReading
+class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkReading
 {
     use Importable;
 
@@ -33,9 +30,9 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithCustomCsvSettings, W
 
     protected $user;
 
-    protected $importableColumns;
+    protected $importableColumn;
 
-    protected $reader;
+    protected $systemImportableColumns;
 
     protected $activeSheetIndex = 0;
 
@@ -53,14 +50,11 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithCustomCsvSettings, W
 
     protected $rowsCount = 0;
 
-    public function __construct(
-        QuoteFile $quoteFile,
-        User $user,
-        Collection $importableColumns
-    ) {
-        $this->quoteFile = $quoteFile;
-        $this->user = $user;
-        $this->importableColumns = $importableColumns;
+    public function __construct(QuoteFile $quoteFile) {
+        $this->quoteFile = $quoteFile->load('user');
+        $this->user = $quoteFile->user;
+        $this->importableColumn = app(ImportableColumnRepository::class);
+        $this->systemImportableColumns = $this->importableColumn->allSystem();
 
         HeadingRowFormatter::default('none');
     }
@@ -83,43 +77,25 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithCustomCsvSettings, W
         $this->increaseRowsCount();
     }
 
-    public function getCsvSettings(): array
-    {
-        return [
-            'delimiter' => $this->quoteFile->dataSelectSeparator->separator
-        ];
-    }
-
     public function registerEvents(): array
     {
         return [
-            BeforeImport::class => function ($event) {
-                $this->reader = $event->reader;
-            },
             BeforeSheet::class => function ($event) {
-                $this->activeSheetIndex++;
-                $this->headingRow = 1;
-                $this->startRow = 2;
+                $this->beforeNextSheet();
 
                 $worksheet = $event->sheet->getDelegate();
+                $highestRow = $worksheet->getHighestRow();
 
-                if($this->quoteFile->isExcel()) {
-                    $highestRow = $worksheet->getHighestRow();
-
-                    while(!$this->checkHeadingRow($worksheet) && $this->headingRow < $highestRow) {
-                        continue;
-                    }
-
-                    $this->determineCoveragePeriod($worksheet);
-                } else {
-                    $this->mapHeaders($worksheet);
+                while(!$this->checkHeadingRow($worksheet) && $this->headingRow < $highestRow) {
+                    continue;
                 }
 
-                $this->mapRequiredHeaders();
+                $this->determineCoveragePeriod($worksheet);
             },
             AfterImport::class => function ($event) {
                 if($this->rowsCount < 1) {
                     $this->quoteFile->setException(__('parser.no_rows_exception'));
+                    $this->quoteFile->markAsUnHandled();
                 }
             }
         ];
@@ -133,6 +109,13 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithCustomCsvSettings, W
     public function headingRow(): int
     {
         return $this->headingRow;
+    }
+
+    private function beforeNextSheet()
+    {
+        $this->activeSheetIndex++;
+        $this->headingRow = 1;
+        $this->startRow = 2;
     }
 
     private function increaseRowsCount()
@@ -245,7 +228,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithCustomCsvSettings, W
                 return gettype($header) !== 'string';
             });
 
-        $aliasesMapping = $this->importableColumns->pluck('aliases.*.alias', 'id');
+        $aliasesMapping = $this->importableColumn->allSystem()->pluck('aliases.*.alias', 'id');
 
         $this->headersMapping = [];
         $mapping = collect([]);
@@ -280,7 +263,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithCustomCsvSettings, W
     private function mapRequiredHeaders()
     {
         $this->requiredHeadersMapping = collect($this->requiredHeaders)->mapWithKeys(function ($name) {
-            $aliases = $this->importableColumns->where('name', $name)->first()->aliases->pluck('alias');
+            $aliases = $this->systemImportableColumns->where('name', $name)->first()->aliases->pluck('alias');
 
             $header = $this->headersMapping->search(function ($id, $header) use ($aliases) {
                 return $aliases->contains(function ($alias) use ($header) {

@@ -207,4 +207,13 @@ interface QuoteRepositoryInterface
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function review(string $quoteId);
+
+    /**
+     * Retrieve Quote Mapping Review Data
+     *
+     * @param Quote $quote
+     * @param bool|null $clearCache
+     * @return void
+     */
+    public function mappingReviewData(Quote $quote, $clearCache = null);
 }

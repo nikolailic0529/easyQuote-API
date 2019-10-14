@@ -19,10 +19,9 @@ use App\Http\Requests \ {
     StoreQuoteFileRequest,
     HandleQuoteFileRequest
 };
-use App\Imports\ImportCsv;
-use App\Jobs \ {
-    ImportCsvJob,
-    ImportExcelJob
+use App\Imports \ {
+    ImportCsv,
+    ImportExcel
 };
 use Excel, Storage, File, Setting;
 
@@ -111,13 +110,11 @@ class ParserService implements ParserServiceInterface
 
         $handled = $this->handleOrRetrieve($quote, $quoteFile, $separator);
 
-        if(!$quoteFile->isSchedule()) {
-            $quoteFile->throwExceptionIfExists();
+        $quoteFile->throwExceptionIfExists();
 
+        if(!$quoteFile->isSchedule()) {
             $processed = $quoteFile->processing_percentage;
             $status = $quoteFile->processing_status;
-            $total_rows_count = $quoteFile->rows_count;
-            $processed_rows_count = $quoteFile->rows_processed_count;
 
             if($processed > 1 && $quoteFile->isNotAutomapped()) {
                 $this->mapColumnsToFields($quote, $quoteFile);
@@ -126,11 +123,9 @@ class ParserService implements ParserServiceInterface
         } else {
             $status = 'completted';
             $processed = 100;
-            $total_rows_count = $quoteFile->rows_count;
-            $processed_rows_count = $quoteFile->rows_processed_count;
         }
 
-        return compact('status', 'processed', 'total_rows_count', 'processed_rows_count');
+        return compact('status', 'processed');
     }
 
     public function mapColumnsToFields(Quote $quote, QuoteFile $quoteFile)
@@ -166,24 +161,23 @@ class ParserService implements ParserServiceInterface
 
     public function handleOrRetrieve(Quote $quote, QuoteFile $quoteFile, $separator)
     {
-        $handled = false;
-
-        if($quoteFile->isHandled() && $quoteFile->isSchedule()) {
-            return $handled;
+        if(($quoteFile->isHandled() && $quoteFile->isPrice()) || ($quoteFile->isHandled() && $quoteFile->isSchedule() && !$quoteFile->isNewPage(request()->page))) {
+            return false;
         }
 
-        if(
-            $quoteFile->isHandled() &&
-            !($quoteFile->isCsv() && $quoteFile->isNewSeparator($separator))
-        ) {
-
-            return $handled;
+        if(($quoteFile->isHandled() && $quoteFile->isPrice()) && !($quoteFile->isCsv() && $quoteFile->isNewSeparator($separator))) {
+            return false;
         };
 
         $quoteFile->clearException();
         $quoteFile->quote()->associate($quote)->save();
         $this->routeParser($quoteFile);
         $this->quoteFile->deleteExcept($quoteFile);
+
+        /**
+         * Re-Cache Mapping Review Data After Handling
+         */
+        $this->quote->mappingReviewData($quote, true);
 
         return true;
     }
@@ -220,15 +214,17 @@ class ParserService implements ParserServiceInterface
         $rawData = $this->quoteFile->getRawData($quoteFile)->toArray();
 
         if($quoteFile->isSchedule()) {
-            $page = collect($rawData)->last()['page'];
+            $page = request()->has('page') ? request()->page : collect($rawData)->last()['page'];
 
-            $parsedData = $this->pdfParser->parseSchedule($rawData);
+            $pageData = collect($rawData)->firstWhere('page', $page);
 
-            $quoteFile->setImportedPage($page);
+            $parsedData = $this->pdfParser->parseSchedule($pageData);
 
-            return $this->quoteFile->createScheduleData(
+            $this->quoteFile->createScheduleData(
                 $quoteFile, $parsedData
             );
+
+            return $quoteFile->markAsHandled();
         }
 
         $parsedData = $this->pdfParser->parse($rawData);
@@ -237,14 +233,12 @@ class ParserService implements ParserServiceInterface
             $quoteFile, $parsedData
         );
 
-        $quoteFile->markAsHandled();
+        return $quoteFile->markAsHandled();
     }
 
     public function handleExcel(QuoteFile $quoteFile)
     {
         $this->importExcel($quoteFile);
-
-        return $this->quoteFile->getRowsData($quoteFile);
     }
 
     public function handleCsv(QuoteFile $quoteFile)
@@ -268,12 +262,10 @@ class ParserService implements ParserServiceInterface
     public function importExcel(QuoteFile $quoteFile)
     {
         $filePath = $quoteFile->original_file_path;
-        $user = $quoteFile->user;
-        $columns = $this->importableColumn->allSystem();
 
         $quoteFile->rowsData()->forceDelete();
 
-        ImportExcelJob::dispatch($quoteFile, $user, $columns, $filePath);
+        (new ImportExcel($quoteFile))->import($filePath);
 
         $quoteFile->markAsHandled();
     }
@@ -293,13 +285,10 @@ class ParserService implements ParserServiceInterface
 
         $quoteFile->rowsData()->forceDelete();
 
-        $user = $quoteFile->user;
-        $columns = $this->importableColumn->all();
-
-        $rawData->each(function ($file) use ($quoteFile, $user, $columns) {
+        $rawData->each(function ($file) use ($quoteFile) {
             $filePath = $file->file_path;
 
-            ImportExcelJob::dispatch($quoteFile, $user, $columns, $filePath);
+            (new ImportCsv($quoteFile, $filePath))->import();
         });
 
         $quoteFile->markAsHandled();

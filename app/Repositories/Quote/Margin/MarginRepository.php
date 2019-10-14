@@ -38,7 +38,7 @@ class MarginRepository implements MarginRepositoryInterface
     {
         $quote_types = __('quote.types');
         $margin_types = __('margin.types');
-        $margin_methods = __('margin.methods');
+        $margin_methods = collect(__('margin.methods'))->diff(['Standard']);
 
         return compact('quote_types', 'margin_types', 'margin_methods');
     }

@@ -71,7 +71,7 @@ class QuoteService implements QuoteServiceInterface
 
             $this->checkRequiredFields([$priceColumn]);
 
-            $value = (float) $priceColumn->value;
+            $value = $priceColumn->value;
 
             $priceColumn->value = $value + ($value * $margin_percentage / 100);
 
@@ -102,9 +102,9 @@ class QuoteService implements QuoteServiceInterface
             $this->checkRequiredFields([$dateFromColumn, $dateToColumn, $priceColumn]);
 
             if($quote->calculate_list_price) {
-                $value = $this->diffInDays($dateFromColumn->value, $dateToColumn->value) * ((float) $priceColumn->value / 30);
+                $value = $this->diffInDays($dateFromColumn->value, $dateToColumn->value) * ($priceColumn->value / 30);
             } else {
-                $value = (float) $priceColumn->value;
+                $value = $priceColumn->value;
             }
 
             $discountValue = $discount->calculateDiscount($value, $quote->list_price);
@@ -133,9 +133,9 @@ class QuoteService implements QuoteServiceInterface
             $this->checkRequiredFields([$dateFromColumn, $dateToColumn, $priceColumn]);
 
             if($quote->calculate_list_price) {
-                $value = $this->diffInDays($dateFromColumn->value, $dateToColumn->value) * ((float) $priceColumn->value / 30);
+                $value = $this->diffInDays($dateFromColumn->value, $dateToColumn->value) * ($priceColumn->value / 30);
             } else {
-                $value = (float) $priceColumn->value;
+                $value = $priceColumn->value;
             }
 
             return $carry + $value;
@@ -159,7 +159,7 @@ class QuoteService implements QuoteServiceInterface
 
             $this->checkRequiredFields([$dateFromColumn, $dateToColumn, $priceColumn]);
 
-            $priceColumn->value = $this->diffInDays($dateFromColumn->value, $dateToColumn->value) * ((float) $priceColumn->value / 30);
+            $priceColumn->value = $this->diffInDays($dateFromColumn->value, $dateToColumn->value) * ($priceColumn->value / 30);
 
             return $row;
         });

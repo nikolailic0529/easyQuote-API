@@ -23,8 +23,7 @@ use App\Models \ {
 use App\Http\Requests \ {
     StoreQuoteStateRequest,
     GetQuoteTemplatesRequest,
-    MappingReviewRequest,
-    ReviewAppliedMarginRequest
+    MappingReviewRequest
 };
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -32,10 +31,8 @@ use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Database\Eloquent\Builder;
 use App\Builder\Pagination\Paginator;
 use App\Models\QuoteFile\ImportedColumn;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Pipeline\Pipeline;
-use Illuminate\Support\Facades\Schema;
-use Setting, Arr, Closure, DB, Cache;
+use Setting, Arr, Closure, Cache, DB, Str;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
@@ -286,11 +283,7 @@ class QuoteRepository implements QuoteRepositoryInterface
     {
         $quote = $this->find($request->quote_id);
 
-        $rowsData = $this->createDefaultData($quote->rowsDataByColumns, $quote);
-        $rowsData = $this->setDefaultValues($rowsData, $quote);
-        $rowsData = $this->transformRowsData($rowsData);
-
-        return $rowsData;
+        return $this->mappingReviewData($quote);
     }
 
     public function setMargin(Quote $quote, $attributes)
@@ -374,35 +367,37 @@ class QuoteRepository implements QuoteRepositoryInterface
             ->firstOrFail();
 
         $replicatedQuote = $quote->replicate();
-        $replicatedQuote->push();
+        $pass = $replicatedQuote->push() && $replicatedQuote->unSubmit();
 
         /**
          * Mapping Replication
          */
-        $quote->templateFields()->withPivot('is_default_enabled', 'importable_column_id')->get()
-            ->each(function ($templateField) use ($replicatedQuote) {
-                $attributes = $templateField->pivot->only('is_default_enabled', 'importable_column_id');
-                $replicatedQuote->templateFields()->attach([$templateField->id => $attributes]);
-            });
+        DB::insert("
+            insert into `quote_field_column` (quote_id, template_field_id, importable_column_id, is_default_enabled)
+            select '{$replicatedQuote->id}' quote_id, template_field_id, importable_column_id, is_default_enabled
+            from `quote_field_column` where quote_id = '{$quote->id}'
+        ");
+
+        $quoteFilesToSave = collect();
 
         $priceList = $quote->quoteFiles()->priceLists()->first();
         if(isset($priceList)) {
-            $replicatedPriceList = $this->quoteFileRepository->replicatePriceList($priceList);
-            $replicatedQuote->quoteFiles()->save($replicatedPriceList);
+            $quoteFilesToSave->push($this->quoteFileRepository->replicatePriceList($priceList));
         }
 
-        $schedule = $quote->quoteFiles()->paymentSchedules()->first();
+        $schedule = $quote->quoteFiles()->paymentSchedules()->with('scheduleData')->first();
         if(isset($schedule)) {
             $replicatedSchedule = $schedule->replicate();
-            $scheduleData = $schedule->scheduleData()->first();
-            if(isset($scheduleData)) {
-                $replicatedScheduleData = $scheduleData->replicate();
-                $replicatedSchedule->scheduleData()->associate($replicatedScheduleData);
-                $replicatedQuote->quoteFiles()->save($replicatedSchedule);
+            unset($replicatedSchedule->scheduleData);
+            $replicatedSchedule->save();
+            if(isset($schedule->scheduleData)) {
+                $replicatedSchedule->scheduleData()->save($schedule->scheduleData->replicate());
             }
+
+            $quoteFilesToSave->push($replicatedSchedule);
         }
 
-        return $replicatedQuote->unSubmit();
+        return $pass && $replicatedQuote->quoteFiles()->saveMany($quoteFilesToSave);
     }
 
     public function discounts(string $id)
@@ -521,13 +516,28 @@ class QuoteRepository implements QuoteRepositoryInterface
         return $pages;
     }
 
+    public function mappingReviewData(Quote $quote, $clearCache = null)
+    {
+        $cacheKey = "mapping-review-data:{$quote->id}";
+
+        if(isset($clearCache) && $clearCache) {
+            Cache::forget($cacheKey);
+        }
+
+        return Cache::rememberForever($cacheKey, function () use ($quote) {
+            $rowsData = $this->createDefaultData($quote->rowsDataByColumns, $quote);
+            $rowsData = $this->setDefaultValues($rowsData, $quote);
+            return $this->transformRowsData($rowsData);
+        });
+    }
+
     private function interactWithModels(Quote $quote)
     {
         /**
          * Possible interaction with existing Country Margin
          */
-        // $quote = $this->quoteService->interact($quote, $quote->countryMargin);
-        $quote = $this->quoteService->interactWithMargin($quote);
+        $quote = $this->quoteService->interact($quote, $quote->countryMargin);
+        // $quote = $this->quoteService->interactWithMargin($quote);
 
         /**
          * Possible interaction with existing Discounts
@@ -577,7 +587,7 @@ class QuoteRepository implements QuoteRepositoryInterface
                 $value = trim(preg_replace('/[\h]/u', ' ', $column->value));
 
                 if($column->template_field_name === 'price') {
-                    $value = number_format((float) $value, 2);
+                    $value = Str::price($column->value, true);
                 }
 
                 return [$column->template_field_name => $value];
@@ -686,13 +696,11 @@ class QuoteRepository implements QuoteRepositoryInterface
         $quote->computableRows = $this->setDefaultValues($quote->computableRows, $quote);
         $quote->list_price = $this->quoteService->countTotalPrice($quote);
 
-        unset($quote->computableRows, $quote->list_price);
-
         if($quote->list_price === 0.00 || $quote->buy_price > $quote->list_price) {
-            return $quote;
+            $quote->margin_percentage = 0;
+        } else {
+            $quote->margin_percentage = round((($quote->list_price - $quote->buy_price) / $quote->list_price) * 100, 2);
         }
-
-        $quote->margin_percentage = round((($quote->list_price - $quote->buy_price) / $quote->list_price) * 100, 2);
         unset($quote->computableRows, $quote->list_price);
 
         $quote->save();
@@ -726,6 +734,11 @@ class QuoteRepository implements QuoteRepositoryInterface
 
             $quote->attachColumnToField($templateField, $importableColumn, $attributes);
         });
+
+        /**
+         * Clear Cache Mapping Review Data when Mapping is changed
+         */
+        Cache::forget("mapping-review-data:{$quote->id}");
 
         return $quote;
     }
@@ -799,7 +812,19 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $rowsData->transform(function ($row) use ($defaultTemplateFields, $quote) {
             foreach ($defaultTemplateFields as $templateField) {
-                $value = $quote->customer->handleColumnValue(null, $templateField->name, true);
+                switch ($templateField->name) {
+                    case 'date_from':
+                    case 'date_to':
+                        $value = $quote->customer->handleColumnValue(null, $templateField->name, true);
+                        break;
+                    case 'qty':
+                        $value = 1;
+                        break;
+                    default:
+                        $value = null;
+                        break;
+                }
+
                 $columnData = $row->columnsData()->make(compact('value'));
                 $columnData->template_field_name = $templateField->name;
                 $columnData->importable_column_id = $templateField->systemImportableColumn->id;

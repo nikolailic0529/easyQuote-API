@@ -4,14 +4,14 @@ trait Submittable
 {
     public function submit()
     {
-        $this->forceFill([
+        return $this->forceFill([
             'submitted_at' => now()->toDateTimeString()
         ])->save();
     }
 
     public function unSubmit()
     {
-        $this->forceFill([
+        return $this->forceFill([
             'submitted_at' => null
         ])->save();
     }

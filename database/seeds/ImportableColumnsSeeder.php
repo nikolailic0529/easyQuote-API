@@ -28,7 +28,6 @@ class ImportableColumnsSeeder extends Seeder
                 'id' => $columnId,
                 'header' => $column['header'],
                 'name' => $column['name'],
-                'regexp' => $column['regexp'],
                 'order' => $column['order'],
                 'is_system' => true
             ]);

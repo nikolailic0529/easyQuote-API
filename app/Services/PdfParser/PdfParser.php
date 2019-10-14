@@ -43,15 +43,19 @@ class PdfParser implements PdfParserInterface
 
     public function getPageContent(string $path, int $page)
     {
-        return $this->spatiePdfParser->setPdf($path)
-            ->setOptions(['layout', 'table', "f {$page}", "l {$page}"])
-            ->text();
+        try {
+            return $this->spatiePdfParser->setPdf($path)
+                ->setOptions(['layout', 'table', "f {$page}", "l {$page}"])
+                ->text();
+        } catch (\Exception $e) {
+            return $this->spatiePdfParser->setPdf($path)
+                ->setOptions(['layout', "f {$page}", "l {$page}"])
+                ->text();
+        }
     }
 
     public function parse(array $array)
     {
-        $regexpColumns = $this->importableColumn->allColumnsRegs();
-
         $regexp = '/^(?<product_no>\d+\-\w{3}|[a-zA-Z]\w{3,4}?[a-zA-Z]{1,2})\s+(?<description>.+?\w)\s+(?<serial_no>[a-zA-Z]{2,3}[a-zA-Z\d]{7,8})\s+((?<date_from>(([0-2][0-9])|(3[0-1]))[\.\/]((0[0-9])|(1[0-2]))[\.\/]\d{4})\s+?)?((?<date_to>(([0-2][0-9])|(3[0-1]))[\.\/]((0[0-9])|(1[0-2]))[\.\/]\d{4})\s+?)?(?<qty>\d{1,3}(?=\s+?))?(\s+?((\p{Sc})?\s?(?<price>(\d{1,3},)?\d+([,\.]\d{1,2}))))([a-zA-Z].+?)?/m';
 
         $pages = LazyCollection::make(function () use ($array) {
@@ -93,15 +97,14 @@ class PdfParser implements PdfParserInterface
 
     public function parseSchedule(array $array)
     {
-        $lastPage = collect($array)->last();
-        $filePath = $lastPage['file_path'];
+        $filePath = $array['file_path'];
 
         $content = Storage::get($filePath);
 
         $priceGroup = '(\s+?((\p{Sc})?\s?(?<price>(\d{1,3},)?\d+([,\.]\d{1,2}))))';
-        $dateGroup = '(?<date>(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{4})';
+        $dateGroup = '(?<date>(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{2,4})';
 
-        $regexp = '/(?<payment>^(?<account>[ ]?\w[\w -]+)(\s+?((\p{Sc})?\s?(?<price>(\d{1,3},)?\d+([,\.]\d{1,2}))))+(\r\n|\n))|(?<payment_dates>(?:system handle)(?:(?:[^\S]+)?(?<date>(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{4}))+?(\r\n|\n))|((\r\n|\n)?^(?:(?<payment_dates_options>((?:[\s]+)?\g\'date\')+)))/mi';
+        $regexp = '/(?<payment>^(?<account>[ ]?\w[\w -]+)(\s+?((\p{Sc})?\s?(?<price>(\d{1,3},)?\d+([,\.]\d{1,2}))))+(\r\n|\n))|(?<payment_dates>(?:system handle|periode de)(?:(?:[\h\t ]+)(?<date>(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{2,4}))+)([ \ta-zA-Z]+|\r\n|\n)|((\r\n|\n)?^(?:(?:period au)?(?<payment_dates_options>((?:[\s]+)?\g\'date\')+)))/mi';
 
         preg_match_all($regexp, $content, $matches, PREG_UNMATCHED_AS_NULL, 0);
 
@@ -122,13 +125,6 @@ class PdfParser implements PdfParserInterface
         $paymentDatesStandard = $matches['payment_dates'][0];
         $paymentDatesOptions = $matches['payment_dates_options'];
 
-        // Payment Lines
-        $paymentsRegexp = "/{$priceGroup}/";
-        $paymentLines = collect($paymentLines)->map(function ($paymentLine) use ($paymentsRegexp) {
-            preg_match_all($paymentsRegexp, $paymentLine, $matches);
-            return $matches['price'];
-        });
-
         // Payment dates options
         $datesRegexp = "/{$dateGroup}/";
         $paymentOptions = [];
@@ -140,6 +136,20 @@ class PdfParser implements PdfParserInterface
             preg_match_all($datesRegexp, $paymentOption, $matches);
             $paymentOptions[] = $matches['date'];
         }
+
+        // Payment Lines
+        $paymentsRegexp = "/{$priceGroup}/";
+        $paymentLines = collect($paymentLines)->map(function ($paymentLine) use ($paymentsRegexp) {
+            preg_match_all($paymentsRegexp, $paymentLine, $matches);
+            return $matches['price'];
+        });
+
+        /**
+         * Removal of unnecessary Prices
+         */
+        $paymentLines->transform(function ($line) use ($paymentOptions) {
+            return collect($line)->splice(0, count($paymentOptions[0]));
+        });
 
         $paymentSchedule = [];
 
@@ -193,7 +203,7 @@ class PdfParser implements PdfParserInterface
             return $this->binPath = app_path(config('pdfparser.pdftotext.win'));
         }
 
-        if(config('app.env') === 'production') {
+        if(config('app.env') === 'production' && !config('pdfparser.pdftotext.default_bin')) {
             return $this->binPath = config('pdfparser.pdftotext.linux');
         }
     }

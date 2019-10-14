@@ -22,6 +22,7 @@ use App\Traits \ {
     BelongsToCountry,
     BelongsToMargin,
     Draftable,
+    Discount\HasMorphableDiscounts,
     Submittable
 };
 use Carbon\Carbon;
@@ -41,7 +42,8 @@ class Quote extends CompletableModel implements HasOrderedScope
         Draftable,
         Submittable,
         Activatable,
-        SoftDeletes;
+        SoftDeletes,
+        HasMorphableDiscounts;
 
     protected $fillable = [
         'type',
@@ -73,7 +75,9 @@ class Quote extends CompletableModel implements HasOrderedScope
     protected $appends = [
         'last_drafted_step',
         'closing_date',
-        'margin_percentage'
+        'margin_percentage',
+        'margin_percentage_without_country_margin',
+        'margin_percentage_without_discounts'
     ];
 
     protected $casts = [
@@ -130,19 +134,16 @@ class Quote extends CompletableModel implements HasOrderedScope
 
     public function appendJoins()
     {
-        return $this->setAppends(['last_drafted_step', 'field_column', 'rows_data', 'margin_percentage']);
-    }
-
-    public function discounts()
-    {
-        return $this->belongsToMany(Discount::class, 'quote_discount')
-            ->withPivot('duration')
-            ->with('discountable')->whereHasMorph('discountable', [
-                \App\Models\Quote\Discount\MultiYearDiscount::class,
-                \App\Models\Quote\Discount\PrePayDiscount::class,
-                \App\Models\Quote\Discount\PromotionalDiscount::class,
-                \App\Models\Quote\Discount\SND::class
-            ]);
+        return $this->setAppends(
+            [
+                'last_drafted_step',
+                'field_column',
+                'rows_data',
+                'margin_percentage',
+                'margin_percentage_without_country_margin',
+                'margin_percentage_without_discounts'
+            ]
+        );
     }
 
     public function rowsData()
@@ -211,7 +212,8 @@ class Quote extends CompletableModel implements HasOrderedScope
 
         $templateFields = $quoteTemplate->templateFields->map(function ($templateField) {
             $template_field_id = $templateField->id;
-            return array_merge(compact('template_field_id'), $templateField->fieldColumn->toArray());
+            $template_field_name = $templateField->name;
+            return array_merge(compact('template_field_id', 'template_field_name'), $templateField->fieldColumn->toArray());
         });
 
         return $templateFields;
@@ -248,43 +250,6 @@ class Quote extends CompletableModel implements HasOrderedScope
     public function detachQuoteFile(QuoteFile $quoteFile)
     {
         return $this->quoteFiles()->detach($quoteFile->id);
-    }
-
-    public function createCountryMargin(array $attributes)
-    {
-        if(!isset($this->user) || !isset($this->vendor) || !isset($this->country)) {
-            return null;
-        }
-
-        $user = request()->user();
-
-        $this->countryMargin()->dissociate();
-
-        $countryMargin = $user->countryMargins()->quoteAcceptable($this)->firstOrNew(collect($attributes)->except('type')->toArray());
-
-        if($countryMargin->isDirty()) {
-            $countryMargin->user()->associate($this->user);
-            $countryMargin->country()->associate($this->country);
-            $countryMargin->vendor()->associate($this->vendor);
-            $countryMargin->save();
-        }
-
-        $this->countryMargin()->associate($countryMargin);
-
-        $this->margin_data = collect($countryMargin->only('value', 'method', 'is_fixed'))->put('type', 'By Country')->toArray();
-
-        $this->setAttribute('type', $attributes['quote_type']);
-        $this->save();
-
-        return $countryMargin;
-    }
-
-    public function deleteCountryMargin()
-    {
-        $this->countryMargin()->delete();
-        $this->countryMargin()->dissociate();
-
-        return $this;
     }
 
     public function toSearchArray()
@@ -333,12 +298,17 @@ class Quote extends CompletableModel implements HasOrderedScope
 
     public function getMarginPercentageAttribute()
     {
-        $discounts = $this->discounts()->with('discountable')->get()
-            ->reduce(function ($carry, $discount) {
-                return $carry + $discount->getValue(0);
-            }, 0);
+        return round($this->user_margin_percentage + $this->country_margin_value - $this->discounts_sum, 2);
+    }
 
-        return round($this->countryMargin->value + $this->user_margin_percentage - $discounts, 2);
+    public function getMarginPercentageWithoutCountryMarginAttribute()
+    {
+        return round($this->user_margin_percentage - $this->discounts_sum, 2);
+    }
+
+    public function getMarginPercentageWithoutDiscountsAttribute()
+    {
+        return round($this->user_margin_percentage + $this->country_margin_value, 2);
     }
 
     public function getUserMarginPercentageAttribute()
