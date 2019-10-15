@@ -1,12 +1,6 @@
 <?php namespace App\Models\QuoteTemplate;
 
-use App\Models \ {
-    UuidModel,
-    QuoteTemplate\TemplateField,
-    Data\Country,
-    Company,
-    Vendor
-};
+use App\Models\UuidModel;
 use App\Traits \ {
     Activatable,
     BelongsToCompany,
@@ -15,12 +9,21 @@ use App\Traits \ {
     BelongsToTemplateFields,
     BelongsToVendor,
     Draftable,
-    Systemable
+    Systemable,
+    Search\Searchable
 };
 
 class QuoteTemplate extends UuidModel
 {
-    use BelongsToUser, BelongsToTemplateFields, BelongsToCompany, BelongsToVendor, BelongsToCountries, Draftable, Activatable, Systemable;
+    use BelongsToUser,
+        BelongsToTemplateFields,
+        BelongsToCompany,
+        BelongsToVendor,
+        BelongsToCountries,
+        Draftable,
+        Activatable,
+        Systemable,
+        Searchable;
 
     protected $fillable = [
         'name', 'company_id', 'vendor_id'

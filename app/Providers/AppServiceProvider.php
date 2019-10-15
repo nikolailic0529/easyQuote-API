@@ -212,6 +212,11 @@ class AppServiceProvider extends ServiceProvider
 
             return $value;
         });
+
+        Str::macro('short', function ($value) {
+            preg_match_all('/\b[a-zA-Z]/', $value, $matches);
+            return implode('', $matches[0]);
+        });
     }
 
     protected function passportSettings()

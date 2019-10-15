@@ -33,14 +33,19 @@ class QuoteTemplatesSeeder extends Seeder
         collect($templates)->each(function ($template) use ($templateFields) {
 
             collect($template['companies'])->each(function ($vat) use ($template, $templateFields) {
-                $company_id = Company::whereVat($vat)->first()->id;
+                $company = Company::whereVat($vat)->first();
 
-                collect($template['vendors'])->each(function ($vendorCode) use ($company_id, $template, $templateFields) {
+                collect($template['vendors'])->each(function ($vendorCode) use ($company, $template, $templateFields) {
+                    $vendor = Vendor::whereShortCode($vendorCode)->first();
+                    $vendor_id = $vendor->id;
+                    $company_id = $company->id;
                     $id = $quote_template_id = (string) Uuid::generate(4);
-                    $name = $template['name'];
                     $is_system = true;
-                    $vendor_id = Vendor::whereShortCode($vendorCode)->first()->id;
                     $created_at = $updated_at = $activated_at = now()->toDateTimeString();
+
+                    $templateName = $template['name'];
+                    $companyShortCode = Str::short($company->name);
+                    $name = "{$companyShortCode} {$vendor->short_code} $templateName";
 
                     DB::table('quote_templates')->insert(
                         compact('id', 'name', 'is_system', 'company_id', 'vendor_id', 'created_at', 'updated_at', 'activated_at')

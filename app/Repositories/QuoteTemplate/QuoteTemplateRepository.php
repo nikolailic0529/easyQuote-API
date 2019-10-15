@@ -40,7 +40,7 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
         $items = $this->searchOnElasticsearch($this->quoteTemplate, $searchableFields, $query);
 
         $activated = $this->buildQuery($this->quoteTemplate, $items, function ($query) {
-            return $query->where->currentUser()->with('company', 'vendor', 'countries')->activated();
+            return $query->currentUser()->with('company', 'vendor', 'countries')->activated();
         });
         $deactivated = $this->buildQuery($this->quoteTemplate, $items, function ($query) {
             return $query->currentUser()->with('company', 'vendor', 'countries')->deactivated();
@@ -96,24 +96,27 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
 
     public function delete(string $id): bool
     {
-        return $this->userQuery()->whereId($id)->delete();
+        return $this->find($id)->delete();
     }
 
     public function activate(string $id): bool
     {
-        return $this->userQuery()->whereId($id)->firstOrFail()->activate();
+        return $this->find($id)->activate();
     }
 
     public function deactivate(string $id): bool
     {
-        return $this->userQuery()->whereId($id)->firstOrFail()->deactivate();
+        return $this->find($id)->deactivate();
     }
 
     protected function filterQueryThrough(): array
     {
         return [
             \App\Http\Query\DefaultOrderBy::class,
-            \App\Http\Query\OrderByCreatedAt::class
+            \App\Http\Query\OrderByCreatedAt::class,
+            \App\Http\Query\QuoteTemplate\OrderByName::class,
+            \App\Http\Query\QuoteTemplate\OrderByCompanyName::class,
+            \App\Http\Query\QuoteTemplate\OrderByVendorName::class
         ];
     }
 }

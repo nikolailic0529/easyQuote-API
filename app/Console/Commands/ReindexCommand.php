@@ -6,7 +6,8 @@ use App\Models \ {
     Company,
     Vendor,
     Quote\Quote,
-    Quote\Margin\CountryMargin
+    Quote\Margin\CountryMargin,
+    QuoteTemplate\QuoteTemplate
 };
 use Str;
 
@@ -49,6 +50,7 @@ class ReindexCommand extends Command
         $this->handleModel(CountryMargin::class);
         $this->handleModel(Company::class);
         $this->handleModel(Vendor::class);
+        $this->handleModel(QuoteTemplate::class);
     }
 
     private function handleModel(string $class)

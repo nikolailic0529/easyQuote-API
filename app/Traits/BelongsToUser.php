@@ -13,8 +13,8 @@ trait BelongsToUser
     public function scopeCurrentUser(Builder $query)
     {
         return $query->where(function ($query) {
-            $query->where('is_system', true)
-                ->orWhere('user_id', request()->user()->id);
+            $query->where("{$this->getTable()}.is_system", true)
+                ->orWhere("{$this->getTable()}.user_id", request()->user()->id);
         });
     }
 }
