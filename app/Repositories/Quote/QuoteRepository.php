@@ -362,7 +362,7 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function copy(string $id)
     {
         $quote = $this->submittedQuery()
-            ->with('user', 'company', 'vendor', 'country', 'countryMargin', 'discounts', 'customer', 'quoteTemplate')
+            ->with('user', 'company', 'vendor', 'country', 'discounts', 'customer', 'quoteTemplate')
             ->whereId($id)
             ->firstOrFail();
 
@@ -694,13 +694,9 @@ class QuoteRepository implements QuoteRepositoryInterface
     {
         $quote->computableRows = $this->createDefaultData($quote->selectedRowsDataByColumns, $quote);
         $quote->computableRows = $this->setDefaultValues($quote->computableRows, $quote);
-        $quote->list_price = $this->quoteService->countTotalPrice($quote);
 
-        if($quote->list_price === 0.00 || $quote->buy_price > $quote->list_price) {
-            $quote->margin_percentage = 0;
-        } else {
-            $quote->margin_percentage = round((($quote->list_price - $quote->buy_price) / $quote->list_price) * 100, 2);
-        }
+        $quote->list_price = $this->quoteService->countTotalPrice($quote);
+        $quote->margin_percentage = round((($quote->list_price - $quote->buy_price) / $quote->list_price) * 100, 2);
         unset($quote->computableRows, $quote->list_price);
 
         $quote->save();

@@ -121,7 +121,7 @@ class ParserService implements ParserServiceInterface
             }
 
         } else {
-            $status = 'completted';
+            $status = 'completed';
             $processed = 100;
         }
 

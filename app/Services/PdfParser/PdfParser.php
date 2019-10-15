@@ -45,11 +45,11 @@ class PdfParser implements PdfParserInterface
     {
         try {
             return $this->spatiePdfParser->setPdf($path)
-                ->setOptions(['layout', 'table', "f {$page}", "l {$page}"])
+                ->setOptions(['layout', 'eol unix', 'table', "f {$page}", "l {$page}"])
                 ->text();
         } catch (\Exception $e) {
             return $this->spatiePdfParser->setPdf($path)
-                ->setOptions(['layout', "f {$page}", "l {$page}"])
+                ->setOptions(['layout', 'eol unix', "f {$page}", "l {$page}"])
                 ->text();
         }
     }
@@ -101,10 +101,12 @@ class PdfParser implements PdfParserInterface
 
         $content = Storage::get($filePath);
 
-        $priceGroup = '(\s+?((\p{Sc})?\s?(?<price>(\d{1,3},)?\d+([,\.]\d{1,2}))))';
+        // dd($content);
+
+        $priceGroup = '(\h{2,}((\p{Sc})?[ ]?(?<price>([\d]+[ ]?,?)?[,\.]?\d+[,\.]?\d+)))';
         $dateGroup = '(?<date>(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{2,4})';
 
-        $regexp = '/(?<payment>^(?<account>[ ]?\w[\w -]+)(\s+?((\p{Sc})?\s?(?<price>(\d{1,3},)?\d+([,\.]\d{1,2}))))+(\r\n|\n))|(?<payment_dates>(?:system handle|periode de)(?:(?:[\h\t ]+)(?<date>(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{2,4}))+)([ \ta-zA-Z]+|\r\n|\n)|((\r\n|\n)?^(?:(?:period au)?(?<payment_dates_options>((?:[\s]+)?\g\'date\')+)))/mi';
+        $regexp = '/(?<payment_dates>(?:system handle|periode de)(?<date>(?:[\ha-z-]+)(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))([\.\/]\d{2,4})(?:[\ha-z-]*?))+$)|(^(\h)?(?!payment (\h+)? schedule)(?:period au)?(?<payment_dates_options>(\g\'date\')+(?:([\ha-z-]+)?)$))|(?<payment>^(?<account>\h?\w[\w\h-]+?)(\h{2,}((\p{Sc})?[ ]?(?<price>([\d]+[ ]?,?)?[,\.]?\d+[,\.]?\d+)))+$)/mi';
 
         preg_match_all($regexp, $content, $matches, PREG_UNMATCHED_AS_NULL, 0);
 
@@ -132,6 +134,15 @@ class PdfParser implements PdfParserInterface
         preg_match_all($datesRegexp, $paymentDatesStandard, $matches);
         $paymentOptions[] = $matches['date'];
 
+        $wholeRegexp = '/(?:periode de|system handle\h+)|(?<cols>(?<date>(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{2,4})|(\b(\w+)\b))/mi';
+        preg_match_all($wholeRegexp, $paymentDatesStandard, $matches, PREG_UNMATCHED_AS_NULL, 0);
+
+        $colsMapping = collect($matches['cols'])->filter(function ($value) {
+            return !is_null($value);
+        })->values()->map(function ($value) use ($datesRegexp) {
+            return (boolean) preg_match($datesRegexp, $value);
+        });
+
         foreach ($paymentDatesOptions as $paymentOption) {
             preg_match_all($datesRegexp, $paymentOption, $matches);
             $paymentOptions[] = $matches['date'];
@@ -142,6 +153,10 @@ class PdfParser implements PdfParserInterface
         $paymentLines = collect($paymentLines)->map(function ($paymentLine) use ($paymentsRegexp) {
             preg_match_all($paymentsRegexp, $paymentLine, $matches);
             return $matches['price'];
+        })->map(function ($line) use ($colsMapping) {
+            return collect($line)->filter(function ($payment, $key) use ($colsMapping) {
+                return $colsMapping[$key];
+            });
         });
 
         /**

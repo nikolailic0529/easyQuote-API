@@ -3,8 +3,6 @@
 use App\Models\QuoteFile\QuoteFile;
 use League\Csv\Reader;
 use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface as ImportableColumnRepository;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Str, DB, Storage;
 
 class ImportCsv
@@ -15,13 +13,6 @@ class ImportCsv
      * @var \League\Csv\Reader
      */
     protected $csv;
-
-    /**
-     * Csv Statement Instance
-     *
-     * @var \League\Csv\Statement
-     */
-    protected $stmt;
 
     /**
      * QuoteFile Model
