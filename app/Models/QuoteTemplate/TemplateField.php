@@ -9,13 +9,14 @@ use App\Models \ {
 use App\Traits \ {
     BelongsToUser,
     BelongsToTemplateFieldType,
-    BelongsToQuoteTemplates
+    BelongsToQuoteTemplates,
+    Systemable
 };
 use App\Contracts\HasOrderedScope;
 
 class TemplateField extends UuidModel implements HasOrderedScope
 {
-    use BelongsToUser, BelongsToTemplateFieldType, BelongsToQuoteTemplates;
+    use BelongsToUser, BelongsToTemplateFieldType, BelongsToQuoteTemplates, Systemable;
 
     protected $table = 'template_fields';
 

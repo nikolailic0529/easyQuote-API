@@ -17,62 +17,46 @@ class QuoteTemplatesSeeder extends Seeder
      */
     public function run()
     {
-        //Empty the quote_templates, quote_template_template_field, company_quote_template, vendor_quote_template, country_quote_template tables
+        //Empty the quote_templates, country_quote_template (pivot), quote_template_template_field (pivot) tables
         Schema::disableForeignKeyConstraints();
 
         DB::table('quote_templates')->delete();
-        DB::table('quote_template_template_field')->delete();
-        DB::table('company_quote_template')->delete();
-        DB::table('vendor_quote_template')->delete();
         DB::table('country_quote_template')->delete();
+        DB::table('quote_template_template_field')->delete();
 
         Schema::enableForeignKeyConstraints();
 
         $templates = json_decode(file_get_contents(__DIR__ . '/models/quote_templates.json'), true);
 
-        $templateFieldsIds = collect(TemplateField::select('id')->get()->each->setAppends([])->toArray())->filter()->flatten();
+        $templateFields = collect(TemplateField::select('id')->get()->each->setAppends([])->toArray())->filter()->flatten();
 
-        collect($templates)->each(function ($template) use ($templateFieldsIds) {
-            $templateId = (string) Uuid::generate(4);
+        collect($templates)->each(function ($template) use ($templateFields) {
 
-            DB::table('quote_templates')->insert([
-                'id' => $templateId,
-                'name' => $template['name'],
-                'is_system' => true
-            ]);
+            collect($template['companies'])->each(function ($vat) use ($template, $templateFields) {
+                $company_id = Company::whereVat($vat)->first()->id;
 
-            $templateFieldsIds->each(function ($fieldId) use ($templateId) {
-                DB::table('quote_template_template_field')->insert([
-                    'quote_template_id' => $templateId,
-                    'template_field_id' => $fieldId
-                ]);
-            });
+                collect($template['vendors'])->each(function ($vendorCode) use ($company_id, $template, $templateFields) {
+                    $id = $quote_template_id = (string) Uuid::generate(4);
+                    $name = $template['name'];
+                    $is_system = true;
+                    $vendor_id = Vendor::whereShortCode($vendorCode)->first()->id;
+                    $created_at = $updated_at = $activated_at = now()->toDateTimeString();
 
-            collect($template['companies'])->each(function ($vat) use ($templateId) {
-                $companyId = Company::whereVat($vat)->first()->id;
+                    DB::table('quote_templates')->insert(
+                        compact('id', 'name', 'is_system', 'company_id', 'vendor_id', 'created_at', 'updated_at', 'activated_at')
+                    );
 
-                DB::table('company_quote_template')->insert([
-                    'company_id' => $companyId,
-                    'quote_template_id' => $templateId
-                ]);
-            });
+                    $templateFields->each(function ($template_field_id) use ($quote_template_id) {
+                        DB::table('quote_template_template_field')->insert(
+                            compact('quote_template_id', 'template_field_id')
+                        );
+                    });
 
-            collect($template['vendors'])->each(function ($vendorCode) use ($templateId) {
-                $vendorId = Vendor::whereShortCode($vendorCode)->first()->id;
-
-                DB::table('vendor_quote_template')->insert([
-                    'vendor_id' => $vendorId,
-                    'quote_template_id' => $templateId
-                ]);
-            });
-
-            collect($template['countries'])->each(function ($countryIso) use ($templateId) {
-                $countryId = Country::where('iso_3166_2', $countryIso)->first()->id;
-
-                DB::table('country_quote_template')->insert([
-                    'country_id' => $countryId,
-                    'quote_template_id' => $templateId
-                ]);
+                    collect($template['countries'])->each(function ($countryIso) use ($quote_template_id) {
+                        $country_id = Country::where('iso_3166_2', $countryIso)->first()->id;
+                        DB::table('country_quote_template')->insert(compact('quote_template_id', 'country_id'));
+                    });
+                });
             });
         });
     }

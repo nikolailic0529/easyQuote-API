@@ -23,9 +23,15 @@ Route::group(['namespace' => 'API'], function () {
 
     Route::group(['middleware' => 'auth:api'], function () {
         Route::group(['middleware' => 'throttle:60,1'], function () {
+            Route::apiResource('templates', 'QuoteTemplateController');
+            Route::put('templates/activate/{template}', 'QuoteTemplateController@activate');
+            Route::put('templates/deactivate/{template}', 'QuoteTemplateController@deactivate');
+        });
+
+        Route::group(['middleware' => 'throttle:60,1'], function () {
             Route::resource('companies', 'CompanyController', config('route.crud'));
-            Route::put('companies/activate/{vendor}', 'CompanyController@activate');
-            Route::put('companies/deactivate/{vendor}', 'CompanyController@deactivate');
+            Route::put('companies/activate/{company}', 'CompanyController@activate');
+            Route::put('companies/deactivate/{company}', 'CompanyController@deactivate');
         });
 
         Route::group([], function () {

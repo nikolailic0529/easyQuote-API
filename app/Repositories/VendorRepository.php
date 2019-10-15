@@ -50,7 +50,7 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
         $activated = $this->buildQuery($this->vendor, $items, function ($query) {
             return $query->where(function ($query) {
                 return $query->currentUser();
-            })->with('image', 'countries');
+            })->with('image', 'countries')->activated();
         });
         $deactivated = $this->buildQuery($this->vendor, $items, function ($query) {
             return $query->where(function ($query) {

@@ -685,7 +685,11 @@ class QuoteRepository implements QuoteRepositoryInterface
         $quote->computableRows = $this->setDefaultValues($quote->computableRows, $quote);
         $this->interactWithModels($quote);
 
-        $quote->list_price = $this->quoteService->countTotalPrice($quote);
+        try {
+            $quote->list_price = $this->quoteService->countTotalPrice($quote);
+        } catch (\Exception $e) {
+            $quote->list_price = 0;
+        }
 
         return $quote;
     }

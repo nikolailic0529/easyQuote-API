@@ -15,7 +15,8 @@ use App\Traits \ {
     Margin\HasCountryMargins,
     Discount\HasDiscounts,
     Vendor\HasVendors,
-    Company\HasCompanies
+    Company\HasCompanies,
+    QuoteTemplate\HasQuoteTemplates
 };
 use Spatie\Permission\Traits\HasRoles;
 
@@ -34,7 +35,8 @@ class User extends AuthenticableUser implements MustVerifyEmail
         HasCountryMargins,
         HasDiscounts,
         HasVendors,
-        HasCompanies;
+        HasCompanies,
+        HasQuoteTemplates;
 
     /**
      * The attributes that are mass assignable.

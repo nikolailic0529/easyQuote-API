@@ -47,7 +47,8 @@ use App\Models \ {
     Quote\Discount\MultiYearDiscount,
     Quote\Discount\PrePayDiscount,
     Quote\Discount\PromotionalDiscount,
-    Quote\Discount\SND
+    Quote\Discount\SND,
+    QuoteTemplate\QuoteTemplate
 };
 use App\Observers \ {
     CompanyObserver,
@@ -57,7 +58,8 @@ use App\Observers \ {
     Discount\MultiYearDiscountObserver,
     Discount\PrePayDiscountObserver,
     Discount\PromotionalDiscountObserver,
-    Discount\SNDobserver
+    Discount\SNDobserver,
+    QuoteTemplateObserver
 };
 use App\Repositories \ {
     TimezoneRepository,
@@ -179,6 +181,8 @@ class AppServiceProvider extends ServiceProvider
         Vendor::observe(VendorObserver::class);
 
         Company::observe(CompanyObserver::class);
+
+        QuoteTemplate::observe(QuoteTemplateObserver::class);
     }
 
     protected function registerMacro()

@@ -60,7 +60,7 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
         $activated = $this->buildQuery($this->company, $items, function ($query) {
             return $query->where(function ($query) {
                 return $query->currentUser();
-            })->with('image', 'vendors');
+            })->with('image', 'vendors')->activated();
         });
         $deactivated = $this->buildQuery($this->company, $items, function ($query) {
             return $query->where(function ($query) {

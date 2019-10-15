@@ -8,35 +8,29 @@ use App\Models \ {
     Vendor
 };
 use App\Traits \ {
+    Activatable,
+    BelongsToCompany,
+    BelongsToCountries,
     BelongsToUser,
     BelongsToTemplateFields,
-    Draftable
+    BelongsToVendor,
+    Draftable,
+    Systemable
 };
 
 class QuoteTemplate extends UuidModel
 {
-    use BelongsToUser, BelongsToTemplateFields, Draftable;
+    use BelongsToUser, BelongsToTemplateFields, BelongsToCompany, BelongsToVendor, BelongsToCountries, Draftable, Activatable, Systemable;
 
     protected $fillable = [
-        'name'
+        'name', 'company_id', 'vendor_id'
     ];
 
     protected $hidden = [
         'created_at', 'updated_at', 'drafted_at', 'deleted_at', 'user_id'
     ];
 
-    public function companies()
-    {
-        return $this->belongsToMany(Company::class, 'company_quote_template');
-    }
-
-    public function vendors()
-    {
-        return $this->belongsToMany(Vendor::class, 'vendor_quote_template');
-    }
-
-    public function countries()
-    {
-        return $this->belongsToMany(Country::class, 'country_quote_template');
-    }
+    protected $casts = [
+        'is_system' => 'boolean'
+    ];
 }
