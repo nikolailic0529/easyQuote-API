@@ -123,7 +123,10 @@ class AppServiceProvider extends ServiceProvider
         PromotionalDiscountRepositoryInterface::class => PromotionalDiscountRepository::class,
         SNDrepositoryInterface::class => SNDrepository::class,
         VendorRepositoryInterface::class => VendorRepository::class,
-        CompanyRepositoryInterface::class => CompanyRepository::class
+        CompanyRepositoryInterface::class => CompanyRepository::class,
+        ParserServiceInterface::class => ParserService::class,
+        WordParserInterface::class => WordParser::class,
+        PdfParserInterface::class => PdfParser::class
     ];
 
     /**
@@ -136,12 +139,6 @@ class AppServiceProvider extends ServiceProvider
         Passport::ignoreMigrations();
 
         $this->app->when(AuthController::class)->needs(AuthServiceInterface::class)->give(AuthService::class);
-
-        $this->app->when(QuoteFilesController::class)->needs(ParserServiceInterface::class)->give(ParserService::class);
-
-        $this->app->when(ParserService::class)->needs(WordParserInterface::class)->give(WordParser::class);
-
-        $this->app->when(ParserService::class)->needs(PdfParserInterface::class)->give(PdfParser::class);
 
         $this->app->bind(ElasticsearchClient::class, function () {
             return ElasticsearchBuilder::create()->setHosts(app('config')->get('services.search.hosts'))->build();

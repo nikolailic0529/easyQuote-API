@@ -27,11 +27,11 @@ class PdfParser implements PdfParserInterface
         $this->spatiePdfParser = new SpatiePdfParser($this->binPath);
     }
 
-    public function getText(string $path)
+    public function getText(string $path, bool $storage = true)
     {
-        $filePath = Storage::path($path);
+        $filePath = $storage ? Storage::path($path) : $path;
 
-        $count = $this->countPages($path);
+        $count = $this->countPages($path, $storage);
 
         $rawPages = collect()->times($count, function ($page) use ($filePath) {
             $content = $this->getPageContent($filePath, $page);
@@ -182,9 +182,9 @@ class PdfParser implements PdfParserInterface
         return $paymentSchedule;
     }
 
-    public function countPages(string $path)
+    public function countPages(string $path, bool $storage = true)
     {
-        $filePath = Storage::path($path);
+        $filePath = $storage ? Storage::path($path) : $path;
 
         $document = $this->smalotPdfParser->parseFile($filePath);
 

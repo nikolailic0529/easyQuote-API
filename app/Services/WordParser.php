@@ -39,20 +39,20 @@ class WordParser implements WordParserInterface
         $this->defaultSeparator = $dataSelectSeparator->findByName(Setting::get('parser.default_separator'))->separator;
     }
 
-    public function load(string $path)
+    public function load(string $path, bool $storage = true)
     {
-        $path = Storage::path($path);
+        $path = $storage ? Storage::path($path) : $path;
 
         $this->phpWord = IOFactory::load($path);
 
         return $this;
     }
 
-    public function getText(string $filePath)
+    public function getText(string $filePath, bool $storage = true)
     {
         $columns = $this->importableColumn->allSystem();
 
-        $rows = $this->load($filePath)->getTables()->getRows($columns);
+        $rows = $this->load($filePath, $storage)->getTables()->getRows($columns);
 
         if(empty($rows)) {
             throw new \ErrorException(__('parser.word.no_columns_exception'));

@@ -8,17 +8,19 @@ interface WordParserInterface
      * Load file and return PhpWord instance reader
      *
      * @param string $path
+     * @param bool $storage
      * @return App\Services\WordParser\WordParser
      */
-    public function load(string $path);
+    public function load(string $path, bool $storage = true);
 
     /**
      * Extract and return raw text from Word file
      *
      * @param string $path
+     * @param bool $storage
      * @return array
      */
-    public function getText(string $path);
+    public function getText(string $path, bool $storage = true);
 
     /**
      * Extract all first level tables from DOCX format file
@@ -30,7 +32,7 @@ interface WordParserInterface
 
     /**
      * Recursive search header by $needle and rows on the same nesting level
-     * 
+     *
      * @param string $needle
      * @param Array $tables
      * @return Array [[header][rows]]

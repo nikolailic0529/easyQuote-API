@@ -4,7 +4,7 @@
         "name": "product_no",
         "order": 0,
         "aliases": [
-            "product_no", "product_number", "product", "part_id", "product nu", "product_nu", "product nu", "item", "line no", "proof of purchase"
+            "product_no", "product_number", "product", "part_id", "product nu", "product_nu", "product nu", "item", "line no", "proof of purchase", "numéro de produit"
         ]
     },
     {
@@ -52,7 +52,7 @@
         "name": "price",
         "order": 6,
         "aliases": [
-            "price", "priceeur", "line_amount", "lineamount", "line amount", "monthly list price", "unit net price", "line amount", "line item", "total", "subtotal"
+            "price", "priceeur", "line_amount", "lineamount", "line amount", "monthly list price", "unit net price", "line amount", "line item", "total", "subtotal", "prix"
         ]
     }
 ]

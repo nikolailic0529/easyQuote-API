@@ -105,7 +105,7 @@ class ImportCsv
      */
     protected $importableFilePath;
 
-    public function __construct(QuoteFile $quoteFile, $filePath = null, $headerOffset = 0)
+    public function __construct(QuoteFile $quoteFile, $filePath = null, int $headerOffset = 0)
     {
         $this->quoteFile = $quoteFile;
 
@@ -117,9 +117,9 @@ class ImportCsv
 
         $this->importableColumn = app(ImportableColumnRepository::class);
 
-        $this->importableFilePath = isset($filePath) ? $filePath : $quoteFile->original_file_path;
+        $this->setImportableFilePath($quoteFile, $filePath);
 
-        $this->csv = Reader::createFromPath(Storage::path($this->importableFilePath))
+        $this->csv = Reader::createFromPath($this->importableFilePath)
             ->setDelimiter($this->delimiter)
             ->setHeaderOffset($this->headerOffset);
 
@@ -192,7 +192,7 @@ class ImportCsv
             return "`{$column}` text";
         })->implode(',');
 
-        $path = str_replace('\\', '/', Storage::path($this->importableFilePath));
+        $path = str_replace('\\', '/', $this->importableFilePath);
 
         $this->pdo->exec("
             create temporary table `{$this->dataTable}` ({$columns});
@@ -250,5 +250,17 @@ class ImportCsv
 
             return compact('header', 'importable_column_id');
         })->toArray();
+    }
+
+    private function setImportableFilePath(QuoteFile $quoteFile, $filePath) {
+        $path = isset($filePath) ? $filePath : $quoteFile->original_file_path;
+
+        if(isset($quoteFile->fullPath) && $quoteFile->fullPath) {
+            unset($quoteFile->fullPath);
+        } else {
+            $path = Storage::path($path);
+        }
+
+        $this->importableFilePath = $path;
     }
 }
