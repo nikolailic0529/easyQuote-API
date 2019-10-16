@@ -65,7 +65,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
             return null;
         }
 
-        $row = $row->toCollection();
+        $row = $row->toCollection(null, true);
         $columnsData = $this->fetchRow($row);
 
         if(!$this->checkColumnsData($columnsData)) {

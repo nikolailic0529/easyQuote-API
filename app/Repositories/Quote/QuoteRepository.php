@@ -700,6 +700,11 @@ class QuoteRepository implements QuoteRepositoryInterface
         $quote->computableRows = $this->setDefaultValues($quote->computableRows, $quote);
 
         $quote->list_price = $this->quoteService->countTotalPrice($quote);
+
+        if($quote->list_price === 0.00) {
+            return $quote;
+        }
+
         $quote->margin_percentage = round((($quote->list_price - $quote->buy_price) / $quote->list_price) * 100, 2);
         unset($quote->computableRows, $quote->list_price);
 

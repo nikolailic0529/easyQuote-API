@@ -11,7 +11,7 @@ class ScheduleData extends UuidModel
     use BelongsToUser, BelongsToQuoteFile;
 
     protected $fillable = [
-        'value'
+        'value', 'user_id', 'quote_file_id'
     ];
 
     protected $hidden = [

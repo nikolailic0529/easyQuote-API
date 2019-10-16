@@ -21,7 +21,8 @@ use App\Http\Requests \ {
 };
 use App\Imports \ {
     ImportCsv,
-    ImportExcel
+    ImportExcel,
+    ImportExcelSchedule
 };
 use Excel, Storage, File, Setting;
 
@@ -214,9 +215,7 @@ class ParserService implements ParserServiceInterface
         $rawData = $this->quoteFile->getRawData($quoteFile)->toArray();
 
         if($quoteFile->isSchedule()) {
-            $page = request()->has('page') ? request()->page : collect($rawData)->last()['page'];
-
-            $pageData = collect($rawData)->firstWhere('page', $page);
+            $pageData = collect($rawData)->firstWhere('page', $quoteFile->imported_page);
 
             $parsedData = $this->pdfParser->parseSchedule($pageData);
 
@@ -238,7 +237,11 @@ class ParserService implements ParserServiceInterface
 
     public function handleExcel(QuoteFile $quoteFile)
     {
-        $this->importExcel($quoteFile);
+        if($quoteFile->isSchedule()) {
+            return $this->importExcelSchedule($quoteFile);
+        }
+
+        return $this->importExcel($quoteFile);
     }
 
     public function handleCsv(QuoteFile $quoteFile)
@@ -266,6 +269,17 @@ class ParserService implements ParserServiceInterface
         $quoteFile->rowsData()->forceDelete();
 
         (new ImportExcel($quoteFile))->import($filePath);
+
+        $quoteFile->markAsHandled();
+    }
+
+    public function importExcelSchedule(QuoteFile $quoteFile)
+    {
+        $filePath = $quoteFile->original_file_path;
+
+        $quoteFile->scheduleData()->forceDelete();
+
+        (new ImportExcelSchedule($quoteFile))->import($filePath);
 
         $quoteFile->markAsHandled();
     }

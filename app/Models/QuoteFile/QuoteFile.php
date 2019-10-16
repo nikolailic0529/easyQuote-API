@@ -104,21 +104,17 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         })->orWhere('file_type', __('quote_file.types.price'));
     }
 
-    public function setImportedPage($page = null)
+    public function setImportedPage($imported_page = null)
     {
-        if(!isset($page)) {
-            if($this->isExcel()) {
-                $page = 1;
+        if(!isset($imported_page)) {
+            if($this->isPrice()) {
+                $imported_page = ($this->isExcel() || $this->isCsv() || $this->isWord()) ? 1 : 2;
             } else {
-                $page = 2;
+                $imported_page = $this->pages;
             }
         }
 
-        if($this->isCsv() || $this->isWord()) {
-            $page = 1;
-        }
-
-        $this->setAttribute('imported_page', $page);
+        $this->setAttribute('imported_page', $imported_page);
 
         return $this->save();
     }
