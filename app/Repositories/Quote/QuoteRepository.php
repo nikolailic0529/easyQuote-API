@@ -296,6 +296,8 @@ class QuoteRepository implements QuoteRepositoryInterface
             return $quote->deleteCountryMargin();
         }
 
+        unset($quote->computableRows, $quote->list_price);
+
         return $quote->createCountryMargin($attributes);
     }
 
@@ -448,6 +450,11 @@ class QuoteRepository implements QuoteRepositoryInterface
          * Calculate Mounthly Prices based on Coverage Periods
          */
         $this->quoteService->transformPricesBasedOnCoverages($quote);
+
+        /**
+         * Calculate Schedule Total Prices based on Margin Percentage
+         */
+        $this->quoteService->calculateSchedulePrices($quote);
 
         $equipment_address = $quote->customer->hardwareAddresses()->first()->address_1 ?? null;
         $hardware_contact = $quote->customer->hardwareContacts()->first();

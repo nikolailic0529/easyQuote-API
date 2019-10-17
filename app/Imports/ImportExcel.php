@@ -152,10 +152,17 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
     {
         $headingRow = HeadingRowExtractor::extract($worksheet, $this);
 
-        $coverageExists = !empty(preg_grep('/^Coverage Period$/i', $headingRow));
+        $coverageReg = '/((?<!from|to)[ ]*coverage[ ]*?period(?!from|to))|((?<!fra|til)[ ]*dæknings[ ]*periode[ ]*(?<!fra|til))/i';
+        $coverageExists = preg_grep($coverageReg, $headingRow);
 
         if(!$coverageExists) {
             return;
+        }
+
+        if(preg_match('/dæknings/i', reset($coverageExists))) {
+            $lang = 'de';
+        } else {
+            $lang = 'en';
         }
 
         $nextHeadingRow = head(iterator_to_array($worksheet->getRowIterator($this->headingRow, $this->headingRow)));
@@ -163,11 +170,11 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         $cellIterator->setIterateOnlyExistingCells(true);
 
         foreach ($cellIterator as $cell) {
-            if(preg_match('/Coverage Period/i', $cell->getValue())) {
-                $cell->setValue('Coverage Period From');
+            if(preg_match($coverageReg, $cell->getValue())) {
+                $cell->setValue(__("parser.coverage_period.{$lang}.from"));
                 $columnIndex = $cellIterator->getCurrentColumnIndex();
 
-                $worksheet->setCellValueByColumnAndRow(++$columnIndex, $this->headingRow, 'Coverage Period To');
+                $worksheet->setCellValueByColumnAndRow(++$columnIndex, $this->headingRow, __("parser.coverage_period.{$lang}.to"));
                 break;
             }
         }
@@ -210,6 +217,10 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
     private function fetchRow(Collection $row)
     {
         $columns = $row->map(function ($value, $header) {
+            if(isset($value)) {
+                $value = trim(str_replace('_x000D_', '', $value));
+            }
+
             $importable_column_id = $this->headersMapping->get($header);
             $header = $this->checkAndLimitHeader($header);
 

@@ -12,5 +12,15 @@ return [
     ],
     'word' => [
         'no_columns_exception' => 'Uploaded file has not any required columns'
+    ],
+    'coverage_period' => [
+        'en' => [
+            'from' => 'Coverage Period From',
+            'to' => 'Coverage Period To'
+        ],
+        'de' => [
+            'from' => 'Dæknings Periode Fra',
+            'to' => 'Dæknings Periode Til'
+        ]
     ]
 ];

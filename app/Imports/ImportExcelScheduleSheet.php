@@ -39,7 +39,7 @@ class ImportExcelScheduleSheet implements OnEachRow, WithEvents, WithChunkReadin
         }
 
         if(!$this->hasMatched(['from'])) {
-            if(preg_grep('/Support Account Reference.*/i', $row)) {
+            if(preg_grep('/Support Account Reference.*/i', $row) && preg_grep('/((?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{2,4})/', $row)) {
                 $this->matched['from'] = $row;
             };
             return;
@@ -51,7 +51,7 @@ class ImportExcelScheduleSheet implements OnEachRow, WithEvents, WithChunkReadin
         }
 
         if(!$this->hasMatched(['price'])) {
-            if(preg_grep('/Total list Price.*/i', $row)) {
+            if(preg_grep('/Reseller cost.*/i', $row)) {
                 $this->matched['price'] = $row;
             }
             return;

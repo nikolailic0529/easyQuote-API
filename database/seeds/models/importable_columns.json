@@ -4,7 +4,18 @@
         "name": "product_no",
         "order": 0,
         "aliases": [
-            "product_no", "product_number", "product", "part_id", "product nu", "product_nu", "product nu", "item", "line no", "proof of purchase", "numéro de produit"
+            "product_no",
+            "product_number",
+            "product",
+            "part_id",
+            "product nu",
+            "product_nu",
+            "product nu",
+            "item",
+            "line no",
+            "proof of purchase",
+            "numéro de produit",
+            "produktnummer"
         ]
     },
     {
@@ -12,7 +23,9 @@
         "name": "description",
         "order": 1,
         "aliases": [
-            "description", "desc"
+            "description",
+            "desc",
+            "beskrivelse"
         ]
     },
     {
@@ -20,7 +33,12 @@
         "name": "serial_no",
         "order": 2,
         "aliases": [
-            "serial", "serial_no", "serial_number", "serial number", "sn"
+            "serial",
+            "serial_no",
+            "serial_number",
+            "serial number",
+            "sn",
+            "serienummer"
         ]
     },
     {
@@ -28,7 +46,16 @@
         "name": "date_from",
         "order": 3,
         "aliases": [
-            "start date", "date_from", "coverage period from", "coverage_from", "coverage_period_from", "coverage period from", "start_date", "startdate"
+            "start date",
+            "date_from",
+            "coverage period from",
+            "coverage_from",
+            "coverage_period_from",
+            "coverage period from",
+            "start_date",
+            "startdate",
+            "dæknings periode fra",
+            "fra"
         ]
     },
     {
@@ -36,7 +63,16 @@
         "name": "date_to",
         "order": 4,
         "aliases": [
-            "end date", "date_to", "coverage period to", "coverage_to", "coverage_period_to", "coverage period to", "end_date", "enddate"
+            "end date",
+            "date_to",
+            "coverage period to",
+            "coverage_to",
+            "coverage_period_to",
+            "coverage period to",
+            "end_date",
+            "enddate",
+            "dæknings periode til",
+            "til"
         ]
     },
     {
@@ -44,7 +80,9 @@
         "name": "qty",
         "order": 5,
         "aliases": [
-            "quantity", "qty"
+            "quantity",
+            "qty",
+            "antal"
         ]
     },
     {
@@ -52,7 +90,20 @@
         "name": "price",
         "order": 6,
         "aliases": [
-            "price", "priceeur", "line_amount", "lineamount", "line amount", "monthly list price", "unit net price", "line amount", "line item", "total", "subtotal", "prix"
+            "price",
+            "priceeur",
+            "line_amount",
+            "lineamount",
+            "line amount",
+            "monthly list price",
+            "unit net price",
+            "line amount",
+            "line item",
+            "total",
+            "subtotal",
+            "prix",
+            "pris",
+            "upfront betaling"
         ]
     }
 ]

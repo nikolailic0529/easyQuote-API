@@ -38,6 +38,14 @@ interface QuoteServiceInterface
     public function interactWithMargin(Quote $quote): Quote;
 
     /**
+     * Calculate Schedule Prices based on Margin Percentage
+     *
+     * @param Quote $quote
+     * @return Quote
+     */
+    public function calculateSchedulePrices(Quote $quote): Quote;
+
+    /**
      * Interact Quote model with Discount
      *
      * @param Quote $quote

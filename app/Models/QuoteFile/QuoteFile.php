@@ -12,7 +12,6 @@ use App\Traits \ {
     HasFileFormat,
     Draftable,
     Handleable,
-    HasColumnsData,
     HasScheduleData,
     Import\Automappable
 };
@@ -22,7 +21,7 @@ use Cache;
 
 class QuoteFile extends UuidModel implements HasOrderedScope
 {
-    use Automappable, HasColumnsData, HasScheduleData, BelongsToQuote, BelongsToUser, HasFileFormat, Handleable, Draftable, SoftDeletes;
+    use Automappable, HasScheduleData, BelongsToQuote, BelongsToUser, HasFileFormat, Handleable, Draftable, SoftDeletes;
 
     protected $fillable = [
         'original_file_path', 'original_file_name', 'file_type', 'pages', 'quote_file_format_id'
@@ -36,6 +35,11 @@ class QuoteFile extends UuidModel implements HasOrderedScope
     public function rowsData()
     {
         return $this->hasMany(ImportedRow::class);
+    }
+
+    public function columnsData()
+    {
+        return $this->hasManyThrough(ImportedColumn::class, ImportedRow::class);
     }
 
     public function importedRawData()

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
+use Str;
 
 class QuoteService implements QuoteServiceInterface
 {
@@ -162,6 +163,27 @@ class QuoteService implements QuoteServiceInterface
             $priceColumn->value = $this->diffInDays($dateFromColumn->value, $dateToColumn->value) * ($priceColumn->value / 30);
 
             return $row;
+        });
+
+        return $quote;
+    }
+
+    public function calculateSchedulePrices(Quote $quote): Quote
+    {
+        if(!isset($quote->scheduleData->value)) {
+            return $quote;
+        }
+
+        $divider = (100 - $quote->margin_percentage) / 100;
+
+        $quote->scheduleData->value = collect($quote->scheduleData->value)->map(function ($payment) use ($divider) {
+            if($divider === 0.00) {
+                $payment['price'] = 0.00;
+            } else {
+                $payment['price'] = round(Str::price($payment['price']) / $divider, 2);
+            }
+
+            return $payment;
         });
 
         return $quote;
