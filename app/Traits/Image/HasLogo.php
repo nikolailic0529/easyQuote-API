@@ -41,4 +41,23 @@ trait HasLogo
     {
         return $this->makeVisible('logo')->setAppends(['logo']);
     }
+
+    public function getLogoDimensionsAttribute()
+    {
+        if(!is_array($this->logo)) {
+            return $this->logo;
+        }
+
+        $name = Str::snake(class_basename($this));
+
+        return collect($this->logo)->values()->transform(function ($src, $key) use ($name) {
+            $id = $name . '_logo_x' . ($key + 1);
+            $width = $this->thumbnailProperties()[$key]['width'];
+            $height = $this->thumbnailProperties()[$key]['height'];
+            $label = "Logo {$width}X{$height}";
+            $is_image = true;
+
+            return compact('id', 'label', 'src', 'is_image');
+        })->toArray();
+    }
 }

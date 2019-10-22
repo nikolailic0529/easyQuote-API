@@ -7,13 +7,14 @@ use App\Traits \ {
     BelongsToCountry,
     BelongsToUser,
     BelongsToVendor,
-    Search\Searchable
+    Search\Searchable,
+    Collaboration\BelongsToCollaboration
 };
 use App\Models\Quote\Discount as QuoteDiscount;
 
 abstract class Discount extends UuidModel
 {
-    use Activatable, Searchable, BelongsToCountry, BelongsToVendor, BelongsToUser;
+    use Activatable, Searchable, BelongsToCountry, BelongsToVendor, BelongsToUser, BelongsToCollaboration;
 
     protected $perPage = 8;
 

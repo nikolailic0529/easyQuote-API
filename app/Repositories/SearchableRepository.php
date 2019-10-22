@@ -24,7 +24,7 @@ abstract class SearchableRepository
         $query = $model->query();
 
         if(is_callable($scope)) {
-            $query = call_user_func($scope, $query) ?? $query;
+            call_user_func($scope, $query);
         }
 
         return $query->whereIn("{$model->getTable()}.id", $ids);

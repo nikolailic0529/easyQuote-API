@@ -39,13 +39,13 @@ class ImportExcelScheduleSheet implements OnEachRow, WithEvents, WithChunkReadin
         }
 
         if(!$this->hasMatched(['from'])) {
-            if(preg_grep('/Support Account Reference.*/i', $row) && preg_grep('/((?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{2,4})/', $row)) {
+            if(preg_grep('/Support Account Reference.*/i', $row) && $this->hasDates($row)) {
                 $this->matched['from'] = $row;
             };
             return;
         }
 
-        if(!$this->hasMatched(['to'])) {
+        if(!$this->hasMatched(['to']) && $this->hasDates($row)) {
             $this->matched['to'] = $row;
             return;
         }
@@ -105,6 +105,11 @@ class ImportExcelScheduleSheet implements OnEachRow, WithEvents, WithChunkReadin
         })->toArray();
 
         return $schedule;
+    }
+
+    private function hasDates(array $row)
+    {
+        return (bool) preg_grep('/((?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{2,4})/', $row);
     }
 
     private function filterDates(array $array)

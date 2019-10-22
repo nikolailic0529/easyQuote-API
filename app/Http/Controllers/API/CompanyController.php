@@ -9,7 +9,7 @@ use App\Http\Requests\Company \ {
     StoreCompanyRequest,
     UpdateCompanyRequest
 };
-use Cache;
+use App\Models\Company;
 
 class CompanyController extends Controller
 {
@@ -19,6 +19,7 @@ class CompanyController extends Controller
     {
         $this->company = $company;
         $this->vendor = $vendor;
+        $this->authorizeResource(Company::class, 'company');
     }
 
     /**
@@ -69,13 +70,13 @@ class CompanyController extends Controller
     /**
      * Display the specified Company.
      *
-     * @param  string $id
+     * @param  \App\Models\Company $company
      * @return \Illuminate\Http\Response
      */
-    public function show(string $id)
+    public function show(Company $company)
     {
         return response()->json(
-            $this->company->find($id)
+            $this->company->find($company->id)
         );
     }
 
@@ -83,51 +84,56 @@ class CompanyController extends Controller
      * Update the specified Company in storage.
      *
      * @param  UpdateCompanyRequest  $request
-     * @param  string  $id
+     * @param  \App\Models\Company $company
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateCompanyRequest $request, string $id)
+    public function update(UpdateCompanyRequest $request, Company $company)
     {
         return response()->json(
-            $this->company->update($request, $id)
+            $this->company->update($request, $company->id)
         );
     }
 
     /**
      * Remove the specified Company from storage.
      *
-     * @param  string  $id
+     * @param  \App\Models\Company $company
      * @return \Illuminate\Http\Response
      */
-    public function destroy(string $id)
+    public function destroy(Company $company)
     {
         return response()->json(
-            $this->company->delete($id)
+            $this->company->delete($company->id)
         );
     }
+
     /**
      * Activate the specified Company from storage.
      *
-     * @param  string  $id
+     * @param  \App\Models\Company $company
      * @return \Illuminate\Http\Response
      */
-    public function activate(string $id)
+    public function activate(Company $company)
     {
+        $this->authorize('update', $company);
+
         return response()->json(
-            $this->company->activate($id)
+            $this->company->activate($company->id)
         );
     }
 
     /**
      * Deactivate the specified Company from storage.
      *
-     * @param  string  $id
+     * @param  \App\Models\Company $company
      * @return \Illuminate\Http\Response
      */
-    public function deactivate(string $id)
+    public function deactivate(Company $company)
     {
+        $this->authorize('update', $company);
+
         return response()->json(
-            $this->company->deactivate($id)
+            $this->company->deactivate($company->id)
         );
     }
 }

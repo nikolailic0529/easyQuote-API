@@ -20,6 +20,7 @@ class UuidModel extends Model
 
         static::creating(function ($model) {
             $model->{$model->getKeyName()} = Uuid::generate()->string;
+            $model->fireModelEvent('generated', false);
         });
     }
 
@@ -70,6 +71,17 @@ class UuidModel extends Model
     public function getUpdatedAtAttribute($date)
     {
         return $this->formatDate($date);
+    }
+
+    /**
+     * Register a generated model event with the dispatcher.
+     *
+     * @param  \Closure|string  $callback
+     * @return void
+     */
+    public static function generated($callback)
+    {
+        static::registerModelEvent('generated', $callback);
     }
 
     private function formatDate($date)

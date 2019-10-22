@@ -65,22 +65,23 @@ class QuoteService implements QuoteServiceInterface
         }
 
         $mapping = $quote->mapping;
-        $margin_percentage = $quote->margin_percentage;
+        $divider = (100 - $quote->margin_percentage) / 100;
 
-        $quote->computableRows->transform(function ($row) use ($mapping, $margin_percentage) {
+        $quote->computableRows->transform(function ($row) use ($mapping, $divider) {
             $priceColumn = $this->getRowColumn($mapping, $row->columnsData, 'price');
 
             $this->checkRequiredFields([$priceColumn]);
 
-            $value = $priceColumn->value;
-
-            $priceColumn->value = $value + ($value * $margin_percentage / 100);
+            if($divider === 0.00) {
+                $priceColumn->value = 0.00;
+            } else {
+                $priceColumn->value = round(Str::price($priceColumn->value) / $divider, 2);
+            }
 
             return $row;
         });
 
         return $quote;
-
     }
 
     public function interactWithDiscount(Quote $quote, Discount $discount): Quote

@@ -6,6 +6,7 @@ use App\Http\Requests\QuoteTemplate \ {
     UpdateQuoteTemplateRequest
 };
 use App\Models\QuoteTemplate\QuoteTemplate;
+use Illuminate\Support\Collection;
 
 interface QuoteTemplateRepositoryInterface
 {
@@ -41,6 +42,14 @@ interface QuoteTemplateRepositoryInterface
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function findByCompanyVendorCountry(string $companyId, string $vendorId, string $countryId);
+
+    /**
+     * Template Tags and other Data for Template Designer
+     *
+     * @param string $id
+     * @return Collection
+     */
+    public function designer(string $id): Collection;
 
     /**
      * Create Quote Template.

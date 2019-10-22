@@ -9,7 +9,6 @@ use App\Contracts \ {
     Repositories\QuoteFile\QuoteFileRepositoryInterface,
     Services\ParserServiceInterface
 };
-use App\Jobs\StoreQuoteFile;
 use App\Models\QuoteFile\QuoteFile;
 
 class QuoteFilesController extends Controller
@@ -22,6 +21,7 @@ class QuoteFilesController extends Controller
     {
         $this->quoteFile = $quoteFile;
         $this->parserService = $parserService;
+        $this->authorizeResource(QuoteFile::class, 'file');
     }
 
     public function index()
@@ -52,8 +52,8 @@ class QuoteFilesController extends Controller
 
     public function handle(HandleQuoteFileRequest $request)
     {
-        return $this->parserService->handle(
-            $request
-        );
+        $this->authorize('handle', $this->quoteFile->find($request->quote_file_id));
+
+        return $this->parserService->handle($request);
     }
 }

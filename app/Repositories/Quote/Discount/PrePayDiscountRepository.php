@@ -36,10 +36,10 @@ class PrePayDiscountRepository extends DiscountRepository implements PrePayDisco
         $items = $this->searchOnElasticsearch($this->prePayDiscount, $searchableFields, $query);
 
         $activated = $this->buildQuery($this->prePayDiscount, $items, function ($query) {
-            return $this->filterQuery($query->with('country', 'vendor')->activated());
+            return $this->filterQuery($query->userCollaboration()->with('country', 'vendor')->activated());
         });
         $deactivated = $this->buildQuery($this->prePayDiscount, $items, function ($query) {
-            return $this->filterQuery($query->with('country', 'vendor')->deactivated());
+            return $this->filterQuery($query->userCollaboration()->with('country', 'vendor')->deactivated());
         });
 
         return $activated->union($deactivated)->apiPaginate();
@@ -47,9 +47,7 @@ class PrePayDiscountRepository extends DiscountRepository implements PrePayDisco
 
     public function userQuery(): Builder
     {
-        $user = request()->user();
-
-        return $user->prePayDiscounts()->with('country', 'vendor')->getQuery();
+        return $this->prePayDiscount->query()->userCollaboration()->with('country', 'vendor');
     }
 
     public function find(string $id): PrePayDiscount

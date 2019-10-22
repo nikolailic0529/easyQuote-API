@@ -5,11 +5,7 @@ use Laravel\Passport\Client;
 use Laravel\Passport\PersonalAccessClient;
 use Webpatser\Uuid\Uuid;
 use Illuminate\Support\ServiceProvider;
-use Schema;
-use App\Http\Controllers\API \ {
-    AuthController,
-    Quotes\QuoteFilesController
-};
+use App\Http\Controllers\API\AuthController;
 use App\Contracts \ {
     Services\AuthServiceInterface,
     Services\ParserServiceInterface,
@@ -36,9 +32,10 @@ use App\Contracts \ {
     Repositories\Quote\Discount\PrePayDiscountRepositoryInterface,
     Repositories\Quote\Discount\SNDrepositoryInterface,
     Repositories\VendorRepositoryInterface,
-    Repositories\CompanyRepositoryInterface
+    Repositories\CompanyRepositoryInterface,
+    Repositories\RoleRepositoryInterface,
+    Services\QuoteServiceInterface
 };
-use App\Contracts\Services\QuoteServiceInterface;
 use App\Models \ {
     Company,
     Vendor,
@@ -48,7 +45,8 @@ use App\Models \ {
     Quote\Discount\PrePayDiscount,
     Quote\Discount\PromotionalDiscount,
     Quote\Discount\SND,
-    QuoteTemplate\QuoteTemplate
+    QuoteTemplate\QuoteTemplate,
+    QuoteTemplate\TemplateField
 };
 use App\Observers \ {
     CompanyObserver,
@@ -59,7 +57,8 @@ use App\Observers \ {
     Discount\PrePayDiscountObserver,
     Discount\PromotionalDiscountObserver,
     Discount\SNDobserver,
-    QuoteTemplateObserver
+    QuoteTemplateObserver,
+    TemplateFieldObserver
 };
 use App\Repositories \ {
     TimezoneRepository,
@@ -83,7 +82,8 @@ use App\Repositories \ {
     Quote\Discount\PrePayDiscountRepository,
     Quote\Discount\SNDrepository,
     VendorRepository,
-    CompanyRepository
+    CompanyRepository,
+    RoleRepository
 };
 use App\Services \ {
     AuthService,
@@ -92,11 +92,12 @@ use App\Services \ {
     QuoteService,
     PdfParser\PdfParser
 };
-use Illuminate\Support\Str;
 use Elasticsearch \ {
     Client as ElasticsearchClient,
     ClientBuilder as ElasticsearchBuilder
 };
+use Schema;
+use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -126,7 +127,8 @@ class AppServiceProvider extends ServiceProvider
         CompanyRepositoryInterface::class => CompanyRepository::class,
         ParserServiceInterface::class => ParserService::class,
         WordParserInterface::class => WordParser::class,
-        PdfParserInterface::class => PdfParser::class
+        PdfParserInterface::class => PdfParser::class,
+        RoleRepositoryInterface::class => RoleRepository::class
     ];
 
     /**
@@ -180,6 +182,8 @@ class AppServiceProvider extends ServiceProvider
         Company::observe(CompanyObserver::class);
 
         QuoteTemplate::observe(QuoteTemplateObserver::class);
+
+        TemplateField::observe(TemplateFieldObserver::class);
     }
 
     protected function registerMacro()
@@ -213,6 +217,10 @@ class AppServiceProvider extends ServiceProvider
         Str::macro('short', function ($value) {
             preg_match_all('/\b[a-zA-Z]/', $value, $matches);
             return implode('', $matches[0]);
+        });
+
+        Str::macro('name', function ($value) {
+            return self::snake(Str::snake(preg_replace('/[^\w\h]/', ' ', $value)));
         });
     }
 

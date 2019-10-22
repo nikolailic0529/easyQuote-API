@@ -32,9 +32,14 @@ class RolesSeeder extends Seeder
         $roles = json_decode(file_get_contents(__DIR__ . '/models/roles.json'), true);
 
         collect($roles)->each(function ($attributes) {
-            $role = Role::create([
-                'name' => $attributes['name']
-            ]);
+            $name = $attributes['name'];
+            $is_system = true;
+            $privilege = collect(__('role.privileges'))->last();
+            $privileges = collect(__('role.modules'))->keys()->map(function ($module) use ($privilege) {
+                return compact('module', 'privilege');
+            })->toArray();
+
+            $role = Role::create(compact('name', 'privileges', 'is_system'));
 
             $permissions = collect($attributes['permissions'])->map(function ($name) {
                 return Permission::where('name', $name)->firstOrCreate(compact('name'));

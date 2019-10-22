@@ -1,6 +1,4 @@
-<?php
-
-namespace App\Http\Requests\QuoteTemplate;
+<?php namespace App\Http\Requests\QuoteTemplate;
 
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -28,7 +26,9 @@ class UpdateQuoteTemplateRequest extends FormRequest
             'company_id' => 'string|uuid|exists:companies,id',
             'vendor_id' => 'string|uuid|exists:vendors,id',
             'countries' => 'array',
-            'countries.*' => 'string|uuid|exists:countries,id'
+            'countries.*' => 'string|uuid|exists:countries,id',
+            'form_data' => 'array',
+            'form_values_data' => 'required_with:form_data|array'
         ];
     }
 }

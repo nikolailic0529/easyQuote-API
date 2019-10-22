@@ -287,10 +287,10 @@
 								"exec": [
 									"let response = pm.response.json();\r",
 									"\r",
-									"let importedRowsIds = response.map(({id}) => id);\r",
-									"pm.environment.set('imported_rows_ids', importedRowsIds);\r",
+									"// let importedRowsIds = response.map(({id}) => id);\r",
+									"// pm.environment.set('imported_rows_ids', importedRowsIds);\r",
 									"\r",
-									"pm.environment.set('after_handling_rows_count', response.length);"
+									"// pm.environment.set('after_handling_rows_count', response.length);"
 								],
 								"type": "text/javascript"
 							}
@@ -325,13 +325,12 @@
 								},
 								{
 									"key": "data_select_separator_id",
-									"value": "06db06e7-19d2-45fd-9e66-dc63bdc9eba9",
-									"type": "text",
-									"disabled": true
+									"value": "1978b20f-27d3-4960-bd11-cdb00b91e340",
+									"type": "text"
 								},
 								{
 									"key": "page",
-									"value": "2",
+									"value": "1",
 									"type": "text",
 									"disabled": true
 								},
@@ -392,7 +391,7 @@
 							}
 						],
 						"url": {
-							"raw": "http://localhost:8000/api/quotes/file/e6734550-ce1a-11e9-933d-c7c92591e0f5",
+							"raw": "http://localhost:8000/api/quotes/file/{{quote_file_id}}",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -402,7 +401,7 @@
 								"api",
 								"quotes",
 								"file",
-								"e6734550-ce1a-11e9-933d-c7c92591e0f5"
+								"{{quote_file_id}}"
 							]
 						}
 					},
@@ -425,9 +424,9 @@
 										"id": "d5cc7a5a-1a62-453f-b8fd-7bb20eaae8ab",
 										"exec": [
 											"let response = pm.response.json();\r",
-											"pm.environment.set('company_id', response.companies[0].id);\r",
-											"pm.environment.set('vendor_id', response.companies[0].vendors[0].id);\r",
-											"pm.environment.set('country_id', response.companies[0].vendors[0].countries[0].id);"
+											"pm.environment.set('company_id', response.companies[1].id);\r",
+											"pm.environment.set('vendor_id', response.companies[1].vendors[2].id);\r",
+											"pm.environment.set('country_id', response.companies[1].vendors[2].countries[0].id);"
 										],
 										"type": "text/javascript"
 									}
@@ -672,7 +671,7 @@
 							"response": []
 						},
 						{
-							"name": "Step 4 [Review Rows Data with Applied Margin]",
+							"name": "Quote Review [Data Pages]",
 							"event": [
 								{
 									"listen": "prerequest",
@@ -696,26 +695,16 @@
 										}
 									]
 								},
-								"method": "POST",
+								"method": "GET",
 								"header": [
 									{
 										"key": "Accept",
-										"value": "application/json",
-										"type": "text"
+										"type": "text",
+										"value": "application/json"
 									}
 								],
-								"body": {
-									"mode": "formdata",
-									"formdata": [
-										{
-											"key": "quote_id",
-											"value": "{{quote_id}}",
-											"type": "text"
-										}
-									]
-								},
 								"url": {
-									"raw": "http://localhost:8000/api/quotes/step/4",
+									"raw": "http://localhost:8000/api/quotes/review/{{quote_id}}",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -724,8 +713,8 @@
 									"path": [
 										"api",
 										"quotes",
-										"step",
-										"4"
+										"review",
+										"{{quote_id}}"
 									]
 								}
 							},
@@ -735,522 +724,645 @@
 					"_postman_isSubFolder": true
 				},
 				{
-					"name": "Get/Search Drafted Quotes",
-					"event": [
+					"name": "Drafted Quotes",
+					"item": [
 						{
-							"listen": "prerequest",
-							"script": {
-								"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
-								"exec": [
-									""
+							"name": "Get/Search Drafted Quotes",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"id": "7ed90f23-faba-4220-825a-1b492265dfea",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"name": "Content-Type",
+										"value": "application/x-www-form-urlencoded",
+										"type": "text"
+									}
 								],
-								"type": "text/javascript"
-							}
+								"url": {
+									"raw": "http://localhost:8000/api/quotes/drafted/?order_by_company_name=asc&order_by_rfq=desc&order_by_support_end=desc&order_by_support_start=asc&order_by_valid_until=desc",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8000",
+									"path": [
+										"api",
+										"quotes",
+										"drafted",
+										""
+									],
+									"query": [
+										{
+											"key": "order_by_company_name",
+											"value": "asc"
+										},
+										{
+											"key": "order_by_rfq",
+											"value": "desc"
+										},
+										{
+											"key": "order_by_support_end",
+											"value": "desc"
+										},
+										{
+											"key": "order_by_support_start",
+											"value": "asc"
+										},
+										{
+											"key": "order_by_valid_until",
+											"value": "desc"
+										}
+									]
+								}
+							},
+							"response": []
 						},
 						{
-							"listen": "test",
-							"script": {
-								"id": "7ed90f23-faba-4220-825a-1b492265dfea",
-								"exec": [
-									""
+							"name": "Deactivate Drafted Quote",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"id": "7ed90f23-faba-4220-825a-1b492265dfea",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"name": "Content-Type",
+										"type": "text",
+										"value": "application/x-www-form-urlencoded"
+									}
 								],
-								"type": "text/javascript"
-							}
+								"url": {
+									"raw": "http://localhost:8000/api/quotes/drafted/{{quote_id}}",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8000",
+									"path": [
+										"api",
+										"quotes",
+										"drafted",
+										"{{quote_id}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Activate Drafted Quote",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"id": "7ed90f23-faba-4220-825a-1b492265dfea",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Accept",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"name": "Content-Type",
+										"type": "text",
+										"value": "application/x-www-form-urlencoded"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8000/api/quotes/drafted/bda80a60-e028-11e9-885e-03a81df29dd2",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8000",
+									"path": [
+										"api",
+										"quotes",
+										"drafted",
+										"bda80a60-e028-11e9-885e-03a81df29dd2"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Drafted Quote",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"id": "7ed90f23-faba-4220-825a-1b492265dfea",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Accept",
+										"type": "text",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8000/api/quotes/drafted/{{quote_id}}",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8000",
+									"path": [
+										"api",
+										"quotes",
+										"drafted",
+										"{{quote_id}}"
+									]
+								}
+							},
+							"response": []
 						}
 					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [
-							{
-								"key": "Accept",
-								"type": "text",
-								"value": "application/json"
-							},
-							{
-								"key": "Content-Type",
-								"name": "Content-Type",
-								"value": "application/x-www-form-urlencoded",
-								"type": "text"
-							}
-						],
-						"url": {
-							"raw": "http://localhost:8000/api/quotes/drafted/?order_by_company_name=asc&order_by_rfq=desc&order_by_support_end=desc&order_by_support_start=asc&order_by_valid_until=desc",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"quotes",
-								"drafted",
-								""
-							],
-							"query": [
-								{
-									"key": "order_by_company_name",
-									"value": "asc"
-								},
-								{
-									"key": "order_by_rfq",
-									"value": "desc"
-								},
-								{
-									"key": "order_by_support_end",
-									"value": "desc"
-								},
-								{
-									"key": "order_by_support_start",
-									"value": "asc"
-								},
-								{
-									"key": "order_by_valid_until",
-									"value": "desc"
-								}
-							]
-						}
-					},
-					"response": []
+					"protocolProfileBehavior": {},
+					"_postman_isSubFolder": true
 				},
 				{
-					"name": "Deactivate Drafted Quote",
-					"event": [
+					"name": "Submitted Quotes",
+					"item": [
 						{
-							"listen": "prerequest",
-							"script": {
-								"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
-								"exec": [
-									""
-								],
-								"type": "text/javascript"
-							}
-						},
-						{
-							"listen": "test",
-							"script": {
-								"id": "7ed90f23-faba-4220-825a-1b492265dfea",
-								"exec": [
-									""
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
+							"name": "Get/Search Submitted Quotes",
+							"event": [
 								{
-									"key": "token",
-									"value": "{{token}}",
-									"type": "string"
+									"listen": "prerequest",
+									"script": {
+										"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"id": "7ed90f23-faba-4220-825a-1b492265dfea",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
 								}
-							]
-						},
-						"method": "PUT",
-						"header": [
-							{
-								"key": "Accept",
-								"type": "text",
-								"value": "application/json"
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"name": "Content-Type",
+										"value": "application/x-www-form-urlencoded",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8000/api/quotes/submitted/?order_by_company_name=asc&order_by_rfq=desc&order_by_support_end=desc&order_by_support_start=asc&order_by_valid_until=desc",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8000",
+									"path": [
+										"api",
+										"quotes",
+										"submitted",
+										""
+									],
+									"query": [
+										{
+											"key": "order_by_company_name",
+											"value": "asc"
+										},
+										{
+											"key": "order_by_rfq",
+											"value": "desc"
+										},
+										{
+											"key": "order_by_support_end",
+											"value": "desc"
+										},
+										{
+											"key": "order_by_support_start",
+											"value": "asc"
+										},
+										{
+											"key": "order_by_valid_until",
+											"value": "desc"
+										}
+									]
+								}
 							},
-							{
-								"key": "Content-Type",
-								"name": "Content-Type",
-								"type": "text",
-								"value": "application/x-www-form-urlencoded"
-							}
-						],
-						"url": {
-							"raw": "http://localhost:8000/api/quotes/drafted/bda80a60-e028-11e9-885e-03a81df29dd2",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"quotes",
-								"drafted",
-								"bda80a60-e028-11e9-885e-03a81df29dd2"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Activate Drafted Quote",
-					"event": [
-						{
-							"listen": "prerequest",
-							"script": {
-								"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
-								"exec": [
-									""
-								],
-								"type": "text/javascript"
-							}
+							"response": []
 						},
 						{
-							"listen": "test",
-							"script": {
-								"id": "7ed90f23-faba-4220-825a-1b492265dfea",
-								"exec": [
-									""
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
+							"name": "Deactivate Submitted Quote",
+							"event": [
 								{
-									"key": "token",
-									"value": "{{token}}",
-									"type": "string"
+									"listen": "prerequest",
+									"script": {
+										"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"id": "7ed90f23-faba-4220-825a-1b492265dfea",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
 								}
-							]
-						},
-						"method": "PATCH",
-						"header": [
-							{
-								"key": "Accept",
-								"type": "text",
-								"value": "application/json"
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"name": "Content-Type",
+										"type": "text",
+										"value": "application/x-www-form-urlencoded"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8000/api/quotes/submitted/{{quote_id}}",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8000",
+									"path": [
+										"api",
+										"quotes",
+										"submitted",
+										"{{quote_id}}"
+									]
+								}
 							},
-							{
-								"key": "Content-Type",
-								"name": "Content-Type",
-								"type": "text",
-								"value": "application/x-www-form-urlencoded"
-							}
-						],
-						"url": {
-							"raw": "http://localhost:8000/api/quotes/drafted/bda80a60-e028-11e9-885e-03a81df29dd2",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"quotes",
-								"drafted",
-								"bda80a60-e028-11e9-885e-03a81df29dd2"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Delete Drafted Quote",
-					"event": [
-						{
-							"listen": "prerequest",
-							"script": {
-								"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
-								"exec": [
-									""
-								],
-								"type": "text/javascript"
-							}
+							"response": []
 						},
 						{
-							"listen": "test",
-							"script": {
-								"id": "7ed90f23-faba-4220-825a-1b492265dfea",
-								"exec": [
-									""
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
+							"name": "Activate Submitted Quote",
+							"event": [
 								{
-									"key": "token",
-									"value": "{{token}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "DELETE",
-						"header": [
-							{
-								"key": "Accept",
-								"type": "text",
-								"value": "application/json"
-							}
-						],
-						"url": {
-							"raw": "http://localhost:8000/api/quotes/drafted/{{quote_id}}",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"quotes",
-								"drafted",
-								"{{quote_id}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Store Quote State",
-					"event": [
-						{
-							"listen": "prerequest",
-							"script": {
-								"id": "871e59c1-f7ba-4910-a5c6-7685c326012f",
-								"exec": [
-									""
-								],
-								"type": "text/javascript"
-							}
-						},
-						{
-							"listen": "test",
-							"script": {
-								"id": "59352b04-f6ab-495e-8443-e5aa3f13c3d3",
-								"exec": [
-									"let response = pm.response.json();\r",
-									"\r",
-									"if(response.id) {\r",
-									"    pm.environment.set('quote_id', response.id);\r",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
+									"listen": "prerequest",
+									"script": {
+										"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
 								{
-									"key": "token",
-									"value": "{{token}}",
-									"type": "string"
+									"listen": "test",
+									"script": {
+										"id": "7ed90f23-faba-4220-825a-1b492265dfea",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
 								}
-							]
-						},
-						"method": "POST",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Accept",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"name": "Content-Type",
+										"type": "text",
+										"value": "application/x-www-form-urlencoded"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8000/api/quotes/submitted/bda80a60-e028-11e9-885e-03a81df29dd2",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8000",
+									"path": [
+										"api",
+										"quotes",
+										"submitted",
+										"bda80a60-e028-11e9-885e-03a81df29dd2"
+									]
+								}
 							},
-							{
-								"key": "Content-Type",
-								"name": "Content-Type",
-								"value": "application/x-www-form-urlencoded",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "quote_id",
-									"value": "{{quote_id}}",
-									"type": "text"
-								},
-								{
-									"key": "quote_data[company_id]",
-									"value": "{{company_id}}",
-									"type": "text"
-								},
-								{
-									"key": "quote_data[vendor_id]",
-									"value": "{{vendor_id}}",
-									"type": "text"
-								},
-								{
-									"key": "quote_data[country_id]",
-									"value": "{{country_id}}",
-									"type": "text"
-								},
-								{
-									"key": "quote_data[quote_template_id]",
-									"value": "{{quote_template_id}}",
-									"type": "text"
-								},
-								{
-									"key": "quote_data[customer_id]",
-									"value": "{{customer_id}}",
-									"type": "text"
-								},
-								{
-									"key": "quote_data[files][]",
-									"value": "{{quote_file_id}}",
-									"type": "text",
-									"disabled": true
-								},
-								{
-									"key": "quote_data[files][]",
-									"value": "ca0cda80-d9d5-11e9-8237-37ba708a5770",
-									"type": "text",
-									"disabled": true
-								},
-								{
-									"key": "save",
-									"value": "0",
-									"description": "True to save Quote | False to draft Quote",
-									"type": "text"
-								},
-								{
-									"key": "quote_data[field_column][0][template_field_id]",
-									"value": "73925041-3b13-461d-a8ce-4fc37d16ad90",
-									"type": "text",
-									"disabled": true
-								},
-								{
-									"key": "quote_data[field_column][0][is_default_enabled]",
-									"value": "1",
-									"type": "text",
-									"disabled": true
-								},
-								{
-									"key": "quote_data[field_column][0][importable_column_id]",
-									"value": "",
-									"type": "text",
-									"disabled": true
-								},
-								{
-									"key": "quote_data[field_column][0][default_value]",
-									"value": "e9f46495-59bc-4992-b2f1-800320e70f52",
-									"type": "text",
-									"disabled": true
-								},
-								{
-									"key": "quote_data[detach_files][0]",
-									"value": "36889b00-db71-11e9-8439-bbdf62174421",
-									"type": "text",
-									"disabled": true
-								},
-								{
-									"key": "quote_data[last_drafted_step]",
-									"value": "Initial",
-									"type": "text"
-								},
-								{
-									"key": "quote_data[selected_rows][]",
-									"value": "4cae9fc0-dc0f-11e9-8c7b-93c95e24b12b",
-									"type": "text",
-									"disabled": true
-								},
-								{
-									"key": "quote_data[selected_rows_is_rejected]",
-									"value": "1",
-									"type": "text",
-									"disabled": true
-								},
-								{
-									"key": "margin[quote_type]",
-									"value": "Renewal",
-									"description": "New|Renewal",
-									"type": "text",
-									"disabled": true
-								},
-								{
-									"key": "margin[type]",
-									"value": "By Country",
-									"type": "text",
-									"disabled": true
-								},
-								{
-									"key": "margin[method]",
-									"value": "Standard",
-									"description": "No Margin|Standard",
-									"type": "text",
-									"disabled": true
-								},
-								{
-									"key": "margin[value]",
-									"value": "20",
-									"type": "text",
-									"disabled": true
-								},
-								{
-									"key": "margin[is_fixed]",
-									"value": "1",
-									"type": "text",
-									"disabled": true
-								},
-								{
-									"key": "margin[delete]",
-									"value": "1",
-									"type": "text",
-									"disabled": true
-								},
-								{
-									"key": "quote_data[detach_schedule]",
-									"value": "1",
-									"type": "text",
-									"disabled": true
-								},
-								{
-									"key": "discounts[0][id]",
-									"value": "f6527880-e3fb-11e9-93d0-ef372311af5d",
-									"type": "text"
-								},
-								{
-									"key": "discounts[0][duration]",
-									"value": "1",
-									"type": "text"
-								},
-								{
-									"key": "discounts[1][id]",
-									"value": "3b83d580-e3fc-11e9-b3d6-2d31480fa980",
-									"type": "text"
-								},
-								{
-									"key": "discounts_detach",
-									"value": "1",
-									"type": "text"
-								}
-							],
-							"options": {
-								"raw": {
-									"language": "text"
-								}
-							}
+							"response": []
 						},
-						"url": {
-							"raw": "http://localhost:8000/api/quotes/state",
-							"protocol": "http",
-							"host": [
-								"localhost"
+						{
+							"name": "Delete Submitted  Quote",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"id": "7ed90f23-faba-4220-825a-1b492265dfea",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
 							],
-							"port": "8000",
-							"path": [
-								"api",
-								"quotes",
-								"state"
-							]
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Accept",
+										"type": "text",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8000/api/quotes/submitted/{{quote_id}}",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8000",
+									"path": [
+										"api",
+										"quotes",
+										"submitted",
+										"{{quote_id}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create a copy Submitted Quote",
+							"event": [
+								{
+									"listen": "prerequest",
+									"script": {
+										"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
+									"listen": "test",
+									"script": {
+										"id": "7ed90f23-faba-4220-825a-1b492265dfea",
+										"exec": [
+											""
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Accept",
+										"type": "text",
+										"value": "application/json"
+									},
+									{
+										"key": "Content-Type",
+										"name": "Content-Type",
+										"type": "text",
+										"value": "application/x-www-form-urlencoded"
+									}
+								],
+								"url": {
+									"raw": "http://localhost:8000/api/quotes/submitted/copy/{{quote_id}}",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "8000",
+									"path": [
+										"api",
+										"quotes",
+										"submitted",
+										"copy",
+										"{{quote_id}}"
+									]
+								}
+							},
+							"response": []
 						}
-					},
-					"response": []
+					],
+					"protocolProfileBehavior": {},
+					"_postman_isSubFolder": true
 				},
 				{
 					"name": "Get Quote",
@@ -1367,6 +1479,289 @@
 								"quotes",
 								"discounts",
 								"{{quote_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Store Quote State",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "871e59c1-f7ba-4910-a5c6-7685c326012f",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "59352b04-f6ab-495e-8443-e5aa3f13c3d3",
+								"exec": [
+									"let response = pm.response.json();\r",
+									"\r",
+									"if(response.id) {\r",
+									"    pm.environment.set('quote_id', response.id);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "quote_id",
+									"value": "{{quote_id}}",
+									"type": "text"
+								},
+								{
+									"key": "quote_data[company_id]",
+									"value": "{{company_id}}",
+									"type": "text"
+								},
+								{
+									"key": "quote_data[vendor_id]",
+									"value": "{{vendor_id}}",
+									"type": "text"
+								},
+								{
+									"key": "quote_data[country_id]",
+									"value": "{{country_id}}",
+									"type": "text"
+								},
+								{
+									"key": "quote_data[quote_template_id]",
+									"value": "{{quote_template_id}}",
+									"type": "text"
+								},
+								{
+									"key": "quote_data[customer_id]",
+									"value": "{{customer_id}}",
+									"type": "text"
+								},
+								{
+									"key": "quote_data[files][]",
+									"value": "{{quote_file_id}}",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[files][]",
+									"value": "ca0cda80-d9d5-11e9-8237-37ba708a5770",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "save",
+									"value": "0",
+									"description": "True to save Quote | False to draft Quote",
+									"type": "text"
+								},
+								{
+									"key": "quote_data[field_column][0][template_field_id]",
+									"value": "7761207a-2039-4313-97c3-42dc8f7e573f",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[field_column][0][is_default_enabled]",
+									"value": "1",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[field_column][0][importable_column_id]",
+									"value": "",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[field_column][0][default_value]",
+									"value": "e9f46495-59bc-4992-b2f1-800320e70f52",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[detach_files][0]",
+									"value": "36889b00-db71-11e9-8439-bbdf62174421",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[last_drafted_step]",
+									"value": "Initial",
+									"type": "text"
+								},
+								{
+									"key": "quote_data[selected_rows][]",
+									"value": "77006940-e6a6-11e9-a9fa-2183316c84b3",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[selected_rows][]",
+									"value": "7703c850-e6a6-11e9-8d90-2d8c1c274ee2",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[selected_rows_is_rejected]",
+									"value": "0",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "margin[quote_type]",
+									"value": "Renewal",
+									"description": "New|Renewal",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "margin[type]",
+									"value": "By Country",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "margin[method]",
+									"value": "Standard",
+									"description": "No Margin|Standard",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "margin[value]",
+									"value": "5",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "margin[is_fixed]",
+									"value": "0",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "margin[delete]",
+									"value": "1",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[detach_schedule]",
+									"value": "1",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "discounts[0][id]",
+									"value": "bfefa160-e581-11e9-befe-e71f9e812dae",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "discounts[0][duration]",
+									"value": "1",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "discounts[1][id]",
+									"value": "e7170090-e4f3-11e9-86ea-a98afd5c1867",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "discounts[2][id]",
+									"value": "61c7fdb0-e4fe-11e9-839d-d7f079dbc907",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "discounts_detach",
+									"value": "1",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[pricing_document]",
+									"value": "SW-LOOMIS",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[service_agreement_id]",
+									"value": "1085 9064 0243",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[system_handle]",
+									"value": "LOOMIS UK LTD-01",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[additional_details]",
+									"value": "Single Payment for Duration All amounts shown are in GBP unless otherwise indicated.\n\nblabla",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[checkbox_status]",
+									"value": "{\"check_from\":true,\"check_to\":true}",
+									"type": "text"
+								}
+							],
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/quotes/state",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"quotes",
+								"state"
 							]
 						}
 					},
@@ -3734,9 +4129,20 @@
 			"item": [
 				{
 					"name": "List / Search",
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
-					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "8c2da9f8-aff4-4e16-abf6-13491c0849f4",
+								"exec": [
+									"let response = pm.response.json();\r",
+									"pm.environment.set('vendor_id_1', response.data[0].id);\r",
+									"pm.environment.set('vendor_id_2', response.data[1].id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -3762,18 +4168,8 @@
 								"type": "text"
 							}
 						],
-						"body": {
-							"mode": "urlencoded",
-							"urlencoded": [
-								{
-									"key": "is_fixed",
-									"value": "0",
-									"type": "text"
-								}
-							]
-						},
 						"url": {
-							"raw": "http://localhost:8000/api/vendors/?order_by_vendor=asc&search=12",
+							"raw": "http://localhost:8000/api/vendors/?per_page=40&order_by_short_code=asc",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -3787,21 +4183,26 @@
 							"query": [
 								{
 									"key": "order_by_created_at",
-									"value": "asc",
+									"value": "desc",
 									"disabled": true
 								},
 								{
-									"key": "order_by_country",
-									"value": "asc",
+									"key": "order_by_name",
+									"value": "desc",
 									"disabled": true
-								},
-								{
-									"key": "order_by_vendor",
-									"value": "asc"
 								},
 								{
 									"key": "search",
-									"value": "12"
+									"value": "MCA",
+									"disabled": true
+								},
+								{
+									"key": "per_page",
+									"value": "40"
+								},
+								{
+									"key": "order_by_short_code",
+									"value": "asc"
 								}
 							]
 						}
@@ -4220,6 +4621,979 @@
 								"vendors",
 								"deactivate",
 								"{{user_vendor_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Companies",
+			"item": [
+				{
+					"name": "List / Search",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/companies/?per_page=40&order_by_short_code=asc",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"companies",
+								""
+							],
+							"query": [
+								{
+									"key": "order_by_created_at",
+									"value": "desc",
+									"disabled": true
+								},
+								{
+									"key": "order_by_name",
+									"value": "asc",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "MCA",
+									"disabled": true
+								},
+								{
+									"key": "per_page",
+									"value": "40"
+								},
+								{
+									"key": "order_by_short_code",
+									"value": "asc"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": []
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/companies/{{user_company_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"companies",
+								"{{user_company_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/companies/create?",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"companies",
+								"create"
+							],
+							"query": [
+								{
+									"key": "order_by_created_at",
+									"value": "desc",
+									"disabled": true
+								},
+								{
+									"key": "order_by_name",
+									"value": "asc",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "MCA",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Store",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "916fd03b-df35-49f7-96dc-7a0c4df37aee",
+								"exec": [
+									"let response = pm.response.json();\r",
+									"pm.environment.set('user_company_id', response.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Google",
+									"type": "text"
+								},
+								{
+									"key": "category",
+									"value": "Business Partner",
+									"description": "End User|Reseller|Business Partner",
+									"type": "text"
+								},
+								{
+									"key": "vat",
+									"value": "GB844653576",
+									"type": "text"
+								},
+								{
+									"key": "type",
+									"value": "Internal",
+									"description": "Internal|External",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "google@example.com",
+									"type": "text"
+								},
+								{
+									"key": "phone",
+									"value": "999666",
+									"type": "text"
+								},
+								{
+									"key": "website",
+									"value": "https://google.com",
+									"type": "text"
+								},
+								{
+									"key": "logo",
+									"type": "file",
+									"src": "/C:/Users/Devengine/Desktop/easyQuote/companies/google-1015751_960_720.png"
+								},
+								{
+									"key": "vendors[]",
+									"value": "{{vendor_id_1}}",
+									"type": "text"
+								},
+								{
+									"key": "vendors[]",
+									"value": "{{vendor_id_2}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/companies/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"companies",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Google",
+									"type": "text"
+								},
+								{
+									"key": "category",
+									"value": "Business Partner",
+									"type": "text"
+								},
+								{
+									"key": "vat",
+									"value": "GB844653576",
+									"type": "text"
+								},
+								{
+									"key": "type",
+									"value": "Internal",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "google@example.com",
+									"type": "text"
+								},
+								{
+									"key": "phone",
+									"value": "999666",
+									"type": "text"
+								},
+								{
+									"key": "website",
+									"value": "https://google.com",
+									"type": "text"
+								},
+								{
+									"key": "vendors[]",
+									"value": "8284c275-7584-462b-9723-cafa10fceb83",
+									"type": "text"
+								},
+								{
+									"key": "vendors[]",
+									"value": "0a2bd2e7-5e8f-43a5-bb3f-6ef8ad6dac3e",
+									"type": "text"
+								},
+								{
+									"key": "logo",
+									"type": "file",
+									"src": "/C:/Users/Devengine/Desktop/easyQuote/vendors/broadcom-logo.png"
+								},
+								{
+									"key": "_method",
+									"value": "PATCH",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/companies/{{user_company_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"companies",
+								"{{user_company_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "is_fixed",
+									"value": "0",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/companies/{{user_company_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"companies",
+								"{{user_company_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Activate",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/companies/activate/{{user_vendor_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"companies",
+								"activate",
+								"{{user_vendor_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deactivate",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/companies/deactivate/{{user_company_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"companies",
+								"deactivate",
+								"{{user_company_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Templates",
+			"item": [
+				{
+					"name": "List / Search",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "8c2da9f8-aff4-4e16-abf6-13491c0849f4",
+								"exec": [
+									"let response = pm.response.json();\r",
+									"pm.environment.set('vendor_id_1', response.data[0].id);\r",
+									"pm.environment.set('vendor_id_2', response.data[1].id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/templates/?per_page=40&order_by_short_code=asc",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"templates",
+								""
+							],
+							"query": [
+								{
+									"key": "order_by_created_at",
+									"value": "desc",
+									"disabled": true
+								},
+								{
+									"key": "order_by_name",
+									"value": "desc",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "MCA",
+									"disabled": true
+								},
+								{
+									"key": "per_page",
+									"value": "40"
+								},
+								{
+									"key": "order_by_short_code",
+									"value": "asc"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "is_fixed",
+									"value": "0",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/templates/{{user_template_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"templates",
+								"{{user_template_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Store",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "916fd03b-df35-49f7-96dc-7a0c4df37aee",
+								"exec": [
+									"let response = pm.response.json();\r",
+									"pm.environment.set('user_template_id', response.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "SWH HPE UK 123",
+									"type": "text"
+								},
+								{
+									"key": "countries[0]",
+									"value": "{{country_id_1}}",
+									"type": "text"
+								},
+								{
+									"key": "countries[1]",
+									"value": "{{country_id_2}}",
+									"type": "text"
+								},
+								{
+									"key": "company_id",
+									"value": "{{company_id}}",
+									"type": "text"
+								},
+								{
+									"key": "vendor_id",
+									"value": "{{vendor_id}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/templates/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"templates",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "SWH HPE UK 2",
+									"type": "text"
+								},
+								{
+									"key": "countries[0]",
+									"value": "{{country_id_1}}",
+									"type": "text"
+								},
+								{
+									"key": "countries[1]",
+									"value": "{{country_id_2}}",
+									"type": "text"
+								},
+								{
+									"key": "company_id",
+									"value": "{{company_id}}",
+									"type": "text"
+								},
+								{
+									"key": "vendor_id",
+									"value": "{{vendor_id}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/templates/{{user_template_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"templates",
+								"{{user_template_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "is_fixed",
+									"value": "0",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/templates/{{user_template_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"templates",
+								"{{user_template_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Activate",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/templates/activate/{{user_template_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"templates",
+								"activate",
+								"{{user_template_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deactivate",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/templates/deactivate/{{user_template_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"templates",
+								"deactivate",
+								"{{user_template_id}}"
 							]
 						}
 					},

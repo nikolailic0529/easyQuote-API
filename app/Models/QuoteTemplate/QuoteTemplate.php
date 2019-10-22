@@ -10,8 +10,10 @@ use App\Traits \ {
     BelongsToVendor,
     Draftable,
     Systemable,
-    Search\Searchable
+    Search\Searchable,
+    Collaboration\BelongsToCollaboration
 };
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class QuoteTemplate extends UuidModel
 {
@@ -23,17 +25,21 @@ class QuoteTemplate extends UuidModel
         Draftable,
         Activatable,
         Systemable,
-        Searchable;
+        Searchable,
+        SoftDeletes,
+        BelongsToCollaboration;
 
     protected $fillable = [
-        'name', 'company_id', 'vendor_id'
+        'name', 'company_id', 'vendor_id', 'form_data', 'form_values_data'
     ];
 
     protected $hidden = [
-        'created_at', 'updated_at', 'drafted_at', 'deleted_at', 'user_id'
+        'created_at', 'updated_at', 'drafted_at', 'deleted_at', 'user_id', 'pivot'
     ];
 
     protected $casts = [
-        'is_system' => 'boolean'
+        'is_system' => 'boolean',
+        'form_data' => 'array',
+        'form_values_data' => 'array'
     ];
 }

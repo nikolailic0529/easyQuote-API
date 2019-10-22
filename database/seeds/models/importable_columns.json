@@ -38,7 +38,8 @@
             "serial_number",
             "serial number",
             "sn",
-            "serienummer"
+            "serienummer",
+            "serial no"
         ]
     },
     {
@@ -55,7 +56,8 @@
             "start_date",
             "startdate",
             "dæknings periode fra",
-            "fra"
+            "fra",
+            "couverture du"
         ]
     },
     {
@@ -72,7 +74,8 @@
             "end_date",
             "enddate",
             "dæknings periode til",
-            "til"
+            "til",
+            "couverture au"
         ]
     },
     {
@@ -82,7 +85,8 @@
         "aliases": [
             "quantity",
             "qty",
-            "antal"
+            "antal",
+            "quantité"
         ]
     },
     {

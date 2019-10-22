@@ -1,22 +1,52 @@
 <?php namespace App\Models;
 
-use App\Models\UuidModel;
-use Spatie\Permission\Guard;
-use Spatie\Permission\Traits\HasPermissions;
-use Spatie\Permission\Exceptions\RoleDoesNotExist;
-use Spatie\Permission\Exceptions\GuardDoesNotMatch;
-use Spatie\Permission\Exceptions\RoleAlreadyExists;
-use Spatie\Permission\Contracts\Role as RoleContract;
-use Spatie\Permission\Traits\RefreshesPermissionCache;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Models \ {
+    UuidModel,
+    Permission
+};
+use App\Traits \ {
+    Activatable,
+    BelongsToUser,
+    Collaboration\BelongsToCollaboration,
+    Search\Searchable,
+    Systemable
+};
+use Spatie\Permission \ {
+    Guard,
+    Traits\HasPermissions,
+    Traits\RefreshesPermissionCache,
+    Exceptions\RoleDoesNotExist,
+    Exceptions\GuardDoesNotMatch,
+    Exceptions\RoleAlreadyExists,
+    Contracts\Role as RoleContract
+};
+use Illuminate\Database\Eloquent \ {
+    SoftDeletes,
+    Relations\MorphToMany,
+    Relations\BelongsToMany
+};
 
 class Role extends UuidModel implements RoleContract
 {
-    use HasPermissions;
-    use RefreshesPermissionCache;
+    use HasPermissions,
+        RefreshesPermissionCache,
+        BelongsToCollaboration,
+        BelongsToUser,
+        Searchable,
+        SoftDeletes,
+        Activatable,
+        Systemable;
 
     protected $guarded = ['id'];
+
+    protected $hidden = [
+        'permissions', 'user', 'deleted_at'
+    ];
+
+    protected $casts = [
+        'privileges' => 'array',
+        'is_system' => 'boolean'
+    ];
 
     public function __construct(array $attributes = [])
     {
@@ -29,9 +59,21 @@ class Role extends UuidModel implements RoleContract
 
     public static function create(array $attributes = [])
     {
-        $attributes['guard_name'] = $attributes['guard_name'] ?? Guard::getDefaultName(static::class);
+        $attributes['guard_name'] = $attributes['guard_name'] ?? 'web';
 
-        if (static::where('name', $attributes['name'])->where('guard_name', $attributes['guard_name'])->first()) {
+        if(!app()->runningInConsole()) {
+            $attributes['user_id'] = $attributes['user_id'] ?? request()->user()->id;
+        }
+
+        if (
+            static::where('name', $attributes['name'])
+            ->where('guard_name', $attributes['guard_name'])
+            ->where(function ($query) use ($attributes) {
+                $query->where('user_id', $attributes['user_id'] ?? null)
+                    ->orWhere('is_system', true);
+            })
+            ->first()
+        ) {
             throw RoleAlreadyExists::create($attributes['name'], $attributes['guard_name']);
         }
 
@@ -152,5 +194,33 @@ class Role extends UuidModel implements RoleContract
         }
 
         return $this->permissions->contains('id', $permission->id);
+    }
+
+    public function setPrivilegesAttribute($value)
+    {
+        $privilege = collect(__('role.privileges'))->first();
+        $privileges = collect($value);
+        $defaultPrivileges = collect(__('role.modules'))->keys()
+            ->diff($privileges->pluck('module')->toArray())
+            ->map(function ($module) use ($privilege) {
+                return compact('module', 'privilege');
+            });
+
+        $this->attributes['privileges'] = json_encode($defaultPrivileges->merge($privileges));
+    }
+
+    public function syncPrivileges($privileges = null)
+    {
+        $privileges = $privileges ?? $this->privileges;
+
+        $permissionsNames = collect($privileges)->reduce(function ($carry, $privilege) {
+            $permissions = __('role.modules')[$privilege['module']][$privilege['privilege']];
+            array_push($carry, ...$permissions);
+            return $carry;
+        }, []);
+
+        $permissions = Permission::whereIn('name', $permissionsNames)->get();
+
+        return $this->syncPermissions($permissions);
     }
 }

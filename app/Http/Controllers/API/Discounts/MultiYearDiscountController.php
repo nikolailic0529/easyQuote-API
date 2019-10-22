@@ -6,6 +6,10 @@ use App\Http\Requests\Discount \ {
     StoreMultiYearDiscountRequest,
     UpdateMultiYearDiscountRequest
 };
+use App\Models\Quote\Discount \ {
+    Discount,
+    MultiYearDiscount
+};
 
 class MultiYearDiscountController extends Controller
 {
@@ -14,7 +18,8 @@ class MultiYearDiscountController extends Controller
 
     public function __construct(MultiYearDiscountRepository $multiYearDiscount)
     {
-        return $this->multiYearDiscount = $multiYearDiscount;
+        $this->multiYearDiscount = $multiYearDiscount;
+        $this->authorizeResource(Discount::class, 'multi_year');
     }
 
     /**
@@ -51,13 +56,13 @@ class MultiYearDiscountController extends Controller
     /**
      * Display the specified MultiYear Discount.
      *
-     * @param  string  $id
+     * @param  \App\Models\Quote\Discount\MultiYearDiscount $multi_year
      * @return \Illuminate\Http\Response
      */
-    public function show(string $id)
+    public function show(MultiYearDiscount $multi_year)
     {
         return response()->json(
-            $this->multiYearDiscount->find($id)
+            $this->multiYearDiscount->find($multi_year->id)
         );
     }
 
@@ -65,52 +70,56 @@ class MultiYearDiscountController extends Controller
      * Update the specified MultiYear Discount in storage.
      *
      * @param  UpdateMultiYearDiscountRequest  $request
-     * @param  string  $id
+     * @param  \App\Models\Quote\Discount\MultiYearDiscount $multi_year
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateMultiYearDiscountRequest $request, string $id)
+    public function update(UpdateMultiYearDiscountRequest $request, MultiYearDiscount $multi_year)
     {
         return response()->json(
-            $this->multiYearDiscount->update($request, $id)
+            $this->multiYearDiscount->update($request, $multi_year->id)
         );
     }
 
     /**
      * Remove the specified MultiYear Discount from storage.
      *
-     * @param  string  $id
+     * @param  \App\Models\Quote\Discount\MultiYearDiscount $multi_year
      * @return \Illuminate\Http\Response
      */
-    public function destroy(string $id)
+    public function destroy(MultiYearDiscount $multi_year)
     {
         return response()->json(
-            $this->multiYearDiscount->delete($id)
+            $this->multiYearDiscount->delete($multi_year->id)
         );
     }
 
     /**
      * Activate the specified MultiYear Discount from storage.
      *
-     * @param  string  $id
+     * @param  \App\Models\Quote\Discount\MultiYearDiscount $multi_year
      * @return \Illuminate\Http\Response
      */
-    public function activate(string $id)
+    public function activate(MultiYearDiscount $multi_year)
     {
+        $this->authorize('update', $multi_year);
+
         return response()->json(
-            $this->multiYearDiscount->activate($id)
+            $this->multiYearDiscount->activate($multi_year->id)
         );
     }
 
     /**
      * Deactivate the specified MultiYear Discount from storage.
      *
-     * @param  string  $id
+     * @param  \App\Models\Quote\Discount\MultiYearDiscount $multi_year
      * @return \Illuminate\Http\Response
      */
-    public function deactivate(string $id)
+    public function deactivate(MultiYearDiscount $multi_year)
     {
+        $this->authorize('update', $multi_year);
+
         return response()->json(
-            $this->multiYearDiscount->deactivate($id)
+            $this->multiYearDiscount->deactivate($multi_year->id)
         );
     }
 }

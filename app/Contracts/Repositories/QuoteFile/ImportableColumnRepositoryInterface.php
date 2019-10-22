@@ -1,5 +1,7 @@
 <?php namespace App\Contracts\Repositories\QuoteFile;
 
+use App\Models\QuoteFile\ImportableColumn;
+
 interface ImportableColumnRepositoryInterface
 {
     /**
@@ -29,4 +31,12 @@ interface ImportableColumnRepositoryInterface
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function allSystem();
+
+    /**
+     * Find ImportableColumn by Name
+     *
+     * @param string $name
+     * @return ImportableColumn
+     */
+    public function findByName(string $name): ImportableColumn;
 }

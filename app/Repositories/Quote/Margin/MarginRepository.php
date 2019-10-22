@@ -2,36 +2,27 @@
 
 use App\Builder\Pagination\Paginator;
 use App\Contracts\Repositories\Quote\Margin\MarginRepositoryInterface;
+use App\Repositories\SearchableRepository;
 use App\Http\Requests\Margin \ {
-    GetPercentagesCountryMarginsRequest,
     StoreCountryMarginRequest,
     UpdateCountryMarginRequest
 };
 use App\Models\Quote\Margin\CountryMargin;
-use Illuminate\Database\Eloquent \ {
-    Builder,
-    Collection
-};
-use Elasticsearch\Client as Elasticsearch;
-use Closure, Arr, DB;
-use Illuminate\Pipeline\Pipeline;
+use Illuminate\Database\Eloquent\Builder;
 
-class MarginRepository implements MarginRepositoryInterface
+class MarginRepository extends SearchableRepository implements MarginRepositoryInterface
 {
     protected $countryMargin;
 
-    protected $search;
-
-    public function __construct(CountryMargin $countryMargin, Elasticsearch $search)
+    public function __construct(CountryMargin $countryMargin)
     {
+        parent::__construct();
         $this->countryMargin = $countryMargin;
-        $this->search = $search;
     }
 
-    public function userCountryMarginsQuery(): Builder
+    public function userQuery(): Builder
     {
-        $user = request()->user();
-        return $user->countryMargins()->getQuery();
+        return $this->countryMargin->query()->userCollaboration()->with('country', 'vendor');
     }
 
     public function data(): array
@@ -43,143 +34,77 @@ class MarginRepository implements MarginRepositoryInterface
         return compact('quote_types', 'margin_types', 'margin_methods');
     }
 
-    public function percentages(GetPercentagesCountryMarginsRequest $request): CountryMargin
+    public function create(StoreCountryMarginRequest $request): CountryMargin
     {
-        $user = request()->user();
-        $quote = $user->quotes()->whereId($request->quote_id)->firstOrFail();
-
-        $countryMargin = $this->userCountryMarginsQuery()
-            ->quoteType($request->quote_type)
-            ->method($request->method)
-            ->quoteAcceptable($quote)
-            ->activated()
-            ->firstOrFail();
-
-        return $countryMargin;
+        return $request->user()->countryMargins()->create($request->validated());
     }
 
-    public function createCountryMargin(StoreCountryMarginRequest $request): CountryMargin
+    public function update(UpdateCountryMarginRequest $request, string $id): CountryMargin
     {
-        $user = request()->user();
-
-        return $user->countryMargins()->create($request->validated());
-    }
-
-    public function updateCountryMargin(UpdateCountryMarginRequest $request): CountryMargin
-    {
-        $user = request()->user();
-
-        $countryMargin = $user->countryMargins()->whereId(request('margin'))->firstOrFail();
+        $countryMargin = $this->find($id);
         $countryMargin->update($request->validated());
 
         return $countryMargin;
     }
 
-    public function getCountryMargin(string $id)
+    public function find(string $id)
     {
-        $user = request()->user();
-
-        return $user->countryMargins()->whereId($id)->firstOrFail();
+        return $this->userQuery()->whereId($id)->firstOrFail();
     }
 
-    public function deleteCountryMargin(string $id)
+    public function delete(string $id)
     {
-        $user = request()->user();
-
-        return $user->countryMargins()->whereId($id)->firstOrFail()->delete();
+        return $this->getCountryMargin($id)->delete();
     }
 
-    public function allCountryMargins(): Paginator
+    public function all(): Paginator
     {
-        $user = request()->user();
-
-        $activated = $this->filterQuery($user->countryMargins()->with('country', 'vendor')->getQuery()->activated());
-        $deactivated = $this->filterQuery($user->countryMargins()->with('country', 'vendor')->getQuery()->deactivated());
+        $activated = $this->filterQuery($this->userQuery()->activated());
+        $deactivated = $this->filterQuery($this->userQuery()->deactivated());
 
         return $activated->union($deactivated)->apiPaginate();
     }
 
     public function searchCountryMargins(string $query = ''): Paginator
     {
-        $model = $this->countryMargin;
-        $items = $this->searchOnElasticsearch($model, $query);
-        $user = request()->user();
+        $searchableFields = [
+            'value^5', 'quote_type^4', 'created_at^3', 'country.name', 'vendor.name'
+        ];
 
-        $activated = $this->buildQuery($model, $items, function ($query) use ($user) {
-            $query = $query->where('country_margins.user_id', $user->id)->with('country', 'vendor')->activated();
-            return $this->filterQuery($query);
+        $items = $this->searchOnElasticsearch($this->countryMargin, $searchableFields, $query);
+
+        $activated = $this->buildQuery($this->countryMargin, $items, function ($query) {
+            $query->userCollaboration()->with('country', 'vendor')->activated();
+            $this->filterQuery($query);
         });
 
-        $deactivated = $this->buildQuery($model, $items, function ($query) use ($user) {
-            $query = $query->where('country_margins.user_id', $user->id)->with('country', 'vendor')->deactivated();
-            return $this->filterQuery($query);
+        $deactivated = $this->buildQuery($this->countryMargin, $items, function ($query) {
+            $query->userCollaboration()->with('country', 'vendor')->deactivated();
+            $this->filterQuery($query);
         });
 
         return $activated->union($deactivated)->apiPaginate();
     }
 
-    public function deactivateCountryMargin(string $id)
+    public function activate(string $id)
     {
-        $user = request()->user();
-
-        return $user->countryMargins()->whereId($id)->firstOrFail()->deactivate();
+        return $this->find($id)->activate();
     }
 
-    public function activateCountryMargin(string $id)
+    public function deactivate(string $id)
     {
-        $user = request()->user();
-
-        return $user->countryMargins()->whereId($id)->firstOrFail()->activate();
+        return $this->find($id)->deactivate();
     }
 
-    private function searchOnElasticsearch($model, string $query = '')
+    protected function filterQueryThrough(): array
     {
-        $body = [
-            'query' => [
-                'multi_match' => [
-                    'fields' => [
-                        'value^5', 'quote_type^4', 'created_at^3', 'country.name', 'vendor.name'
-                    ],
-                    'type' => 'phrase_prefix',
-                    'query' => $query
-                ]
-            ]
+        return [
+            \App\Http\Query\DefaultOrderBy::class,
+            \App\Http\Query\OrderByCreatedAt::class,
+            \App\Http\Query\OrderByCountry::class,
+            \App\Http\Query\OrderByVendor::class,
+            \App\Http\Query\Margin\OrderByQuoteType::class,
+            \App\Http\Query\Margin\OrderByValue::class
         ];
-
-        $items = $this->search->search([
-            'index' => $model->getSearchIndex(),
-            'type' => $model->getSearchType(),
-            'body' => $body
-        ]);
-
-        return $items;
-    }
-
-    private function buildQuery($model, array $items, Closure $scope = null): Builder
-    {
-        $ids = Arr::pluck($items['hits']['hits'], '_id');
-
-        $query = $model->query();
-
-        if(is_callable($scope)) {
-            $query = call_user_func($scope, $query) ?? $query;
-        }
-
-        return $query->whereIn("{$model->getTable()}.id", $ids);
-    }
-
-    private function filterQuery(Builder $query)
-    {
-        return app(Pipeline::class)
-            ->send($query)
-            ->through([
-                // \App\Http\Query\DefaultOrderBy::class,
-                // \App\Http\Query\OrderByCreatedAt::class,
-                \App\Http\Query\OrderByCountry::class,
-                \App\Http\Query\OrderByVendor::class,
-                \App\Http\Query\Margin\OrderByQuoteType::class,
-                \App\Http\Query\Margin\OrderByValue::class
-            ])
-            ->thenReturn();
     }
 }

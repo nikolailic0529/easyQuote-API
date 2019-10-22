@@ -1,6 +1,4 @@
-<?php
-
-namespace App\Http\Requests\QuoteTemplate;
+<?php namespace App\Http\Requests\QuoteTemplate;
 
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -28,7 +26,9 @@ class StoreQuoteTemplateRequest extends FormRequest
             'company_id' => 'required|string|uuid|exists:companies,id',
             'vendor_id' => 'required|string|uuid|exists:vendors,id',
             'countries' => 'required|array',
-            'countries.*' => 'required|string|uuid|exists:countries,id'
+            'countries.*' => 'required|string|uuid|exists:countries,id',
+            'form_data' => 'array',
+            'form_values_data' => 'required_with:form_data|array'
         ];
     }
 }

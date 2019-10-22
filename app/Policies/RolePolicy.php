@@ -1,0 +1,76 @@
+<?php namespace App\Policies;
+
+use App\Models \ {
+    User,
+    Role
+};
+use Illuminate\Auth\Access\HandlesAuthorization;
+
+class RolePolicy
+{
+    use HandlesAuthorization;
+
+    /**
+     * Determine whether the user can view any roles.
+     *
+     * @param  \App\Models\User  $user
+     * @return mixed
+     */
+    public function viewAny(User $user)
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can view the role.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Role  $role
+     * @return mixed
+     */
+    public function view(User $user, Role $role)
+    {
+        return $user->id === $role->user_id || $role->isSystem();
+    }
+
+    /**
+     * Determine whether the user can create roles.
+     *
+     * @param  \App\Models\User  $user
+     * @return mixed
+     */
+    public function create(User $user)
+    {
+        if($user->can('create_roles')) {
+            return true;
+        }
+    }
+
+    /**
+     * Determine whether the user can update the role.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Role  $role
+     * @return mixed
+     */
+    public function update(User $user, Role $role)
+    {
+        if($user->can('update_own_roles')) {
+            return $user->id === $role->user_id;
+        }
+    }
+
+    /**
+     * Determine whether the user can delete the role.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Role  $role
+     * @return mixed
+     */
+    public function delete(User $user, Role $role)
+    {
+        if($user->can('delete_own_roles')) {
+            return $user->id === $role->user_id;
+        }
+    }
+}

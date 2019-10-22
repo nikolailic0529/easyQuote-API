@@ -2,8 +2,27 @@
     {
         "name": "Administrator",
         "permissions": [
-            "create quote", "update quote", "delete quote", "submit quote",
-            "store quote file", "delete quote file", "handle quote file"
+            "invite_users", "reset_user_password", "activate_users", "deactivate_users",
+            "create_roles", "update_own_roles", "delete_own_roles",
+            "create_quotes", "update_collaboration_quotes", "delete_collaboration_quotes", "submit_quotes",
+            "create_quote_files", "update_collaboration_quote_files", "handle_collaboration_quote_files", "delete_collaboration_quote_files",
+            "create_templates", "update_collaboration_templates", "delete_collaboration_templates",
+            "create_companies", "update_collaboration_companies", "delete_collaboration_companies",
+            "create_vendors", "update_collaboration_vendors", "delete_collaboration_vendors",
+            "create_discounts", "update_collaboration_discounts", "delete_collaboration_discounts",
+            "create_margins", "update_collaboration_margins", "delete_collaboration_margins"
+        ]
+    },
+    {
+        "name": "Sales Manager",
+        "permissions": [
+            "create_quotes", "update_own_quotes", "delete_own_quotes", "submit_quotes",
+            "create_quote_files", "update_own_quote_files", "handle_own_quote_files", "delete_own_quote_files",
+            "create_templates", "update_own_templates", "delete_own_templates",
+            "create_companies", "update_own_companies", "delete_own_companies",
+            "create_vendors", "update_own_vendors", "delete_own_vendors",
+            "create_discounts", "update_own_discounts", "delete_own_discounts",
+            "create_margins", "update_own_margins", "delete_own_margins"
         ]
     }
 ]

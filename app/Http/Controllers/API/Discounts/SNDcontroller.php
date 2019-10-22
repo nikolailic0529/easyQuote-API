@@ -1,11 +1,15 @@
-<?php
-
-namespace App\Http\Controllers\API\Discounts;
+<?php namespace App\Http\Controllers\API\Discounts;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\Quote\Discount\SNDrepositoryInterface as SNDrepository;
-use App\Http\Requests\Discount\StoreSNDrequest;
-use App\Http\Requests\Discount\UpdateSNDrequest;
+use App\Http\Requests\Discount \ {
+    StoreSNDrequest,
+    UpdateSNDrequest
+};
+use App\Models\Quote\Discount \ {
+    Discount,
+    SND
+};
 
 class SNDcontroller extends Controller
 {
@@ -13,7 +17,8 @@ class SNDcontroller extends Controller
 
     public function __construct(SNDrepository $snd)
     {
-        return $this->snd = $snd;
+        $this->snd = $snd;
+        $this->authorizeResource(Discount::class, 'snd');
     }
 
     /**
@@ -50,13 +55,13 @@ class SNDcontroller extends Controller
     /**
      * Display the specified SN discount.
      *
-     * @param  string  $id
+     * @param  \App\Models\Quote\Discount\SND $snd
      * @return \Illuminate\Http\Response
      */
-    public function show(string $id)
+    public function show(SND $snd)
     {
         return response()->json(
-            $this->snd->find($id)
+            $this->snd->find($snd->id)
         );
     }
 
@@ -64,52 +69,56 @@ class SNDcontroller extends Controller
      * Update the specified SN discount in storage.
      *
      * @param  UpdateSNDrequest  $request
-     * @param  string  $id
+     * @param  \App\Models\Quote\Discount\SND $snd
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateSNDrequest $request, string $id)
+    public function update(UpdateSNDrequest $request, SND $snd)
     {
         return response()->json(
-            $this->snd->update($request, $id)
+            $this->snd->update($request, $snd->id)
         );
     }
 
     /**
      * Remove the specified SN discount from storage.
      *
-     * @param  string  $id
+     * @param  \App\Models\Quote\Discount\SND $snd
      * @return \Illuminate\Http\Response
      */
-    public function destroy(string $id)
+    public function destroy(SND $snd)
     {
         return response()->json(
-            $this->snd->delete($id)
+            $this->snd->delete($snd->id)
         );
     }
 
     /**
      * Activate the specified SN discount from storage.
      *
-     * @param  string  $id
+     * @param  \App\Models\Quote\Discount\SND $snd
      * @return \Illuminate\Http\Response
      */
-    public function activate(string $id)
+    public function activate(SND $snd)
     {
+        $this->authorize('update', $snd);
+
         return response()->json(
-            $this->snd->activate($id)
+            $this->snd->activate($snd->id)
         );
     }
 
     /**
      * Deactivate the specified SN discount from storage.
      *
-     * @param  string  $id
+     * @param  \App\Models\Quote\Discount\SND $snd
      * @return \Illuminate\Http\Response
      */
-    public function deactivate(string $id)
+    public function deactivate(SND $snd)
     {
+        $this->authorize('update', $snd);
+
         return response()->json(
-            $this->snd->deactivate($id)
+            $this->snd->deactivate($snd->id)
         );
     }
 }

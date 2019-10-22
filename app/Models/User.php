@@ -16,8 +16,10 @@ use App\Traits \ {
     Discount\HasDiscounts,
     Vendor\HasVendors,
     Company\HasCompanies,
-    QuoteTemplate\HasQuoteTemplates
+    QuoteTemplate\HasQuoteTemplates,
+    Collaboration\BelongsToCollaboration
 };
+use App\Traits\QuoteTemplate\HasTemplateFields;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends AuthenticableUser implements MustVerifyEmail
@@ -27,7 +29,6 @@ class User extends AuthenticableUser implements MustVerifyEmail
         HasQuotes,
         HasQuoteFiles,
         HasQuoteFilesDirectory,
-        HasRole,
         HasApiTokens,
         Notifiable,
         HasCountry,
@@ -36,7 +37,9 @@ class User extends AuthenticableUser implements MustVerifyEmail
         HasDiscounts,
         HasVendors,
         HasCompanies,
-        HasQuoteTemplates;
+        HasQuoteTemplates,
+        HasTemplateFields,
+        BelongsToCollaboration;
 
     /**
      * The attributes that are mass assignable.
@@ -68,5 +71,17 @@ class User extends AuthenticableUser implements MustVerifyEmail
     public function getFullNameAttribute()
     {
         return "{$this->first_name} {$this->middle_name} {$this->last_name}";
+    }
+
+    public function scopeAdministrators($query)
+    {
+        return $query->role('Administrator');
+    }
+
+    public function scopeNonAdministrators($query)
+    {
+        return $query->whereDoesntHave('roles', function ($query) {
+            $query->whereName('Administrator');
+        });
     }
 }

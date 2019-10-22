@@ -3,11 +3,16 @@
 use Illuminate\Console\Command;
 use Elasticsearch\Client as ElasticsearchClient;
 use App\Models \ {
+    Role,
     Company,
     Vendor,
     Quote\Quote,
+    QuoteTemplate\QuoteTemplate,
     Quote\Margin\CountryMargin,
-    QuoteTemplate\QuoteTemplate
+    Quote\Discount\MultiYearDiscount,
+    Quote\Discount\PrePayDiscount,
+    Quote\Discount\PromotionalDiscount,
+    Quote\Discount\SND
 };
 use Str;
 
@@ -46,30 +51,41 @@ class ReindexCommand extends Command
      */
     public function handle()
     {
-        $this->handleModel(Quote::class);
-        $this->handleModel(CountryMargin::class);
-        $this->handleModel(Company::class);
-        $this->handleModel(Vendor::class);
-        $this->handleModel(QuoteTemplate::class);
+        $this->handleModels(
+            [
+                Role::class,
+                Quote::class,
+                QuoteTemplate::class,
+                CountryMargin::class,
+                MultiYearDiscount::class,
+                PrePayDiscount::class,
+                PromotionalDiscount::class,
+                SND::class,
+                Company::class,
+                Vendor::class
+            ]
+        );
     }
 
-    private function handleModel(string $class)
+    private function handleModels(array $models)
     {
-        $plural = Str::plural(class_basename($class));
+        foreach ($models as $model) {
+            $plural = Str::plural(class_basename($model));
 
-        $this->info("Indexing all {$plural}...");
+            $this->info("Indexing all {$plural}...");
 
-        foreach ($class::cursor() as $quote) {
-            $this->elasticsearch->index([
-                'index' => $quote->getSearchIndex(),
-                'type' => $quote->getSearchType(),
-                'id' => $quote->getKey(),
-                'body' => $quote->toSearchArray(),
-            ]);
+            foreach ($model::cursor() as $entry) {
+                $this->elasticsearch->index([
+                    'index' => $entry->getSearchIndex(),
+                    'type' => $entry->getSearchType(),
+                    'id' => $entry->getKey(),
+                    'body' => $entry->toSearchArray(),
+                ]);
 
-            $this->output->write('.');
+                $this->output->write('.');
+            }
+
+            $this->info("\nDone!");
         }
-
-        $this->info("\nDone!");
     }
 }

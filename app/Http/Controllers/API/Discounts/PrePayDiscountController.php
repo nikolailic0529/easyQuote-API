@@ -6,6 +6,10 @@ use App\Http\Requests\Discount \ {
     StorePrePayDiscountRequest,
     UpdatePrePayDiscountRequest
 };
+use App\Models\Quote\Discount \ {
+    Discount,
+    PrePayDiscount
+};
 
 class PrePayDiscountController extends Controller
 {
@@ -13,7 +17,8 @@ class PrePayDiscountController extends Controller
 
     public function __construct(PrePayDiscountRepository $prePayDiscount)
     {
-        return $this->prePayDiscount = $prePayDiscount;
+        $this->prePayDiscount = $prePayDiscount;
+        $this->authorizeResource(Discount::class, 'pre_pay');
     }
 
     /**
@@ -50,13 +55,13 @@ class PrePayDiscountController extends Controller
     /**
      * Display the specified PrePay Discount.
      *
-     * @param  string  $id
+     * @param  \App\Models\Quote\Discount\PrePayDiscount $pre_pay
      * @return \Illuminate\Http\Response
      */
-    public function show(string $id)
+    public function show(PrePayDiscount $pre_pay)
     {
         return response()->json(
-            $this->prePayDiscount->find($id)
+            $this->prePayDiscount->find($pre_pay->id)
         );
     }
 
@@ -64,52 +69,56 @@ class PrePayDiscountController extends Controller
      * Update the specified PrePay Discount in storage.
      *
      * @param  UpdatePrePayDiscountRequest  $request
-     * @param  string  $id
+     * @param  \App\Models\Quote\Discount\PrePayDiscount $pre_pay
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdatePrePayDiscountRequest $request, string $id)
+    public function update(UpdatePrePayDiscountRequest $request, PrePayDiscount $pre_pay)
     {
         return response()->json(
-            $this->prePayDiscount->update($request, $id)
+            $this->prePayDiscount->update($request, $pre_pay->id)
         );
     }
 
     /**
      * Remove the specified PrePay Discount from storage.
      *
-     * @param  string  $id
+     * @param  \App\Models\Quote\Discount\PrePayDiscount $pre_pay
      * @return \Illuminate\Http\Response
      */
-    public function destroy(string $id)
+    public function destroy(PrePayDiscount $pre_pay)
     {
         return response()->json(
-            $this->prePayDiscount->delete($id)
+            $this->prePayDiscount->delete($pre_pay->id)
         );
     }
 
     /**
      * Activate the specified PrePay Discount from storage.
      *
-     * @param  string  $id
+     * @param  \App\Models\Quote\Discount\PrePayDiscount $pre_pay
      * @return \Illuminate\Http\Response
      */
-    public function activate(string $id)
+    public function activate(PrePayDiscount $pre_pay)
     {
+        $this->authorize('update', $pre_pay);
+
         return response()->json(
-            $this->prePayDiscount->activate($id)
+            $this->prePayDiscount->activate($pre_pay->id)
         );
     }
 
     /**
      * Deactivate the specified PrePay Discount from storage.
      *
-     * @param  string  $id
+     * @param  \App\Models\Quote\Discount\PrePayDiscount $pre_pay
      * @return \Illuminate\Http\Response
      */
-    public function deactivate(string $id)
+    public function deactivate(PrePayDiscount $pre_pay)
     {
+        $this->authorize('update', $pre_pay);
+
         return response()->json(
-            $this->prePayDiscount->deactivate($id)
+            $this->prePayDiscount->deactivate($pre_pay->id)
         );
     }
 }

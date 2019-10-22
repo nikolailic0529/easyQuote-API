@@ -6,6 +6,7 @@ use App\Http\Requests\Vendor \ {
     StoreVendorRequest,
     UpdateVendorRequest
 };
+use App\Models\Vendor;
 
 class VendorController extends Controller
 {
@@ -14,6 +15,7 @@ class VendorController extends Controller
     public function __construct(VendorRepository $vendor)
     {
         $this->vendor = $vendor;
+        $this->authorizeResource(Vendor::class, 'vendor');
     }
 
     /**
@@ -50,13 +52,13 @@ class VendorController extends Controller
     /**
      * Display the specified Vendor.
      *
-     * @param  string  $id
+     * @param  \App\Models\Vendor $vendor
      * @return \Illuminate\Http\Response
      */
-    public function show(string $id)
+    public function show(Vendor $vendor)
     {
         return response()->json(
-            $this->vendor->find($id)
+            $this->vendor->find($vendor->id)
         );
     }
 
@@ -64,52 +66,56 @@ class VendorController extends Controller
      * Update the specified Vendor in storage.
      *
      * @param  UpdateVendorRequest  $request
-     * @param  string  $id
+     * @param  \App\Models\Vendor $vendor
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateVendorRequest $request, string $id)
+    public function update(UpdateVendorRequest $request, Vendor $vendor)
     {
         return response()->json(
-            $this->vendor->update($request, $id)
+            $this->vendor->update($request, $vendor->id)
         );
     }
 
     /**
      * Remove the specified Vendor from storage.
      *
-     * @param  string  $id
+     * @param  \App\Models\Vendor $vendor
      * @return \Illuminate\Http\Response
      */
-    public function destroy(string $id)
+    public function destroy(Vendor $vendor)
     {
         return response()->json(
-            $this->vendor->delete($id)
+            $this->vendor->delete($vendor->id)
         );
     }
 
     /**
      * Activate the specified Vendor from storage.
      *
-     * @param  string  $id
+     * @param  \App\Models\Vendor $vendor
      * @return \Illuminate\Http\Response
      */
-    public function activate(string $id)
+    public function activate(Vendor $vendor)
     {
+        $this->authorize('update', $vendor);
+
         return response()->json(
-            $this->vendor->activate($id)
+            $this->vendor->activate($vendor->id)
         );
     }
 
     /**
      * Deactivate the specified Vendor from storage.
      *
-     * @param  string  $id
+     * @param  \App\Models\Vendor $vendor
      * @return \Illuminate\Http\Response
      */
-    public function deactivate(string $id)
+    public function deactivate(Vendor $vendor)
     {
+        $this->authorize('update', $vendor);
+
         return response()->json(
-            $this->vendor->deactivate($id)
+            $this->vendor->deactivate($vendor->id)
         );
     }
 
@@ -121,6 +127,8 @@ class VendorController extends Controller
      */
     public function country(string $id)
     {
+        $this->authorize('viewAny', Vendor::class);
+
         return response()->json(
             $this->vendor->country($id)
         );

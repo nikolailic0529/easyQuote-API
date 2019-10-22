@@ -36,10 +36,10 @@ class PromotionalDiscountRepository extends DiscountRepository implements Promot
         $items = $this->searchOnElasticsearch($this->promotionalDiscount, $searchableFields, $query);
 
         $activated = $this->buildQuery($this->promotionalDiscount, $items, function ($query) {
-            return $this->filterQuery($query->with('country', 'vendor')->activated());
+            return $this->filterQuery($query->userCollaboration()->with('country', 'vendor')->activated());
         });
         $deactivated = $this->buildQuery($this->promotionalDiscount, $items, function ($query) {
-            return $this->filterQuery($query->with('country', 'vendor')->deactivated());
+            return $this->filterQuery($query->userCollaboration()->with('country', 'vendor')->deactivated());
         });
 
         return $activated->union($deactivated)->apiPaginate();
@@ -47,9 +47,7 @@ class PromotionalDiscountRepository extends DiscountRepository implements Promot
 
     public function userQuery(): Builder
     {
-        $user = request()->user();
-
-        return $user->promotionalDiscounts()->with('country', 'vendor')->getQuery();
+        return $this->promotionalDiscount->query()->userCollaboration()->with('country', 'vendor');
     }
 
     public function find(string $id): PromotionalDiscount
@@ -59,9 +57,7 @@ class PromotionalDiscountRepository extends DiscountRepository implements Promot
 
     public function create(StorePromotionalDiscountRequest $request): PromotionalDiscount
     {
-        $user = request()->user();
-
-        return $user->promotionalDiscounts()->create($request->validated());
+        return $request->user()->promotionalDiscounts()->create($request->validated());
     }
 
     public function update(UpdatePromotionalDiscountRequest $request, string $id): PromotionalDiscount

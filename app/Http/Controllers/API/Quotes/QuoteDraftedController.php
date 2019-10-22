@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\Quote\QuoteRepositoryInterface as QuoteRepository;
+use App\Models\Quote\Quote;
 
 class QuoteDraftedController extends Controller
 {
@@ -10,6 +11,7 @@ class QuoteDraftedController extends Controller
     public function __construct(QuoteRepository $quote)
     {
         $this->quote = $quote;
+        $this->authorizeResource(Quote::class, 'drafted');
     }
 
     /**
@@ -30,49 +32,53 @@ class QuoteDraftedController extends Controller
         );
     }
 
-    public function show(string $quote)
+    public function show(Quote $drafted)
     {
         return response()->json(
-            $this->quote->getDrafted($quote)
+            $this->quote->getDrafted($drafted->id)
         );
     }
 
     /**
      * Remove the specified Drafted Quote
      *
-     * @param  string  $id
+     * @param  Quote $drafted
      * @return \Illuminate\Http\Response
      */
-    public function destroy(string $id)
+    public function destroy(Quote $drafted)
     {
         return response()->json(
-            $this->quote->deleteDrafted($id)
+            $this->quote->deleteDrafted($drafted->id)
         );
     }
 
     /**
      * Activate the specified Drafted Quote
      *
-     * @param  string  $id
+     * @param  Quote $drafted
      * @return \Illuminate\Http\Response
      */
-    public function activate(string $id)
+    public function activate(Quote $drafted)
     {
+        $this->authorize('update', $drafted);
+
         return response()->json(
-            $this->quote->activateDrafted($id)
+            $this->quote->activateDrafted($drafted->id)
         );
     }
 
     /**
      * Deactivate the specified Drafted Quote
      *
-     * @param  string  $id
+     * @param  Quote $drafted
      * @return \Illuminate\Http\Response
      */
-    public function deactivate(string $id)
+    public function deactivate(Quote $drafted)
     {
+        $this->authorize('update', $drafted);
+
         return response()->json(
-            $this->quote->deactivateDrafted($id)
+            $this->quote->deactivateDrafted($drafted->id)
         );
     }
 }

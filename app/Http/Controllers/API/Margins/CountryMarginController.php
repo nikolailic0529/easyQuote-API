@@ -3,9 +3,12 @@
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\Quote\Margin\MarginRepositoryInterface as MarginRepository;
 use App\Http\Requests\Margin \ {
-    GetPercentagesCountryMarginsRequest,
     StoreCountryMarginRequest,
     UpdateCountryMarginRequest
+};
+use App\Models\Quote\Margin \ {
+    Margin,
+    CountryMargin
 };
 
 class CountryMarginController extends Controller
@@ -15,6 +18,7 @@ class CountryMarginController extends Controller
     public function __construct(MarginRepository $margin)
     {
         $this->margin = $margin;
+        // $this->authorizeResource(Margin::class, 'margin');
     }
 
     /**
@@ -26,25 +30,25 @@ class CountryMarginController extends Controller
     {
         if(request()->filled('search')) {
             return response()->json(
-                $this->margin->searchCountryMargins(request('search'))
+                $this->margin->search(request('search'))
             );
         }
 
         return response()->json(
-            $this->margin->allCountryMargins()
+            $this->margin->all()
         );
     }
 
     /**
      * Display specified Country Margin
      *
-     * @param string $quote
+     * @param \App\Models\Quote\Margin\CountryMargin $margin
      * @return \Illuminate\Http\Response
      */
-    public function show(string $margin)
+    public function show(CountryMargin $margin)
     {
         return response()->json(
-            $this->margin->getCountryMargin($margin)
+            $this->margin->find($margin->id)
         );
     }
 
@@ -57,7 +61,7 @@ class CountryMarginController extends Controller
     public function store(StoreCountryMarginRequest $request)
     {
         return response()->json(
-            $this->margin->createCountryMargin($request)
+            $this->margin->create($request)
         );
     }
 
@@ -65,32 +69,26 @@ class CountryMarginController extends Controller
      * Update specified User's Country Margin
      *
      * @param UpdateCountryMarginRequest $request
+     * @param \App\Models\Quote\Margin\CountryMargin $margin
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateCountryMarginRequest $request)
+    public function update(UpdateCountryMarginRequest $request, CountryMargin $margin)
     {
         return response()->json(
-            $this->margin->updateCountryMargin($request)
+            $this->margin->update($request, $margin->id)
         );
     }
 
     /**
      * Delete specified User's Country Margin
      *
-     * @param string $margin
+     * @param \App\Models\Quote\Margin\CountryMargin $margin
      * @return \Illuminate\Http\Response
      */
-    public function destroy(string $margin)
+    public function destroy(CountryMargin $margin)
     {
         return response()->json(
-            $this->margin->deleteCountryMargin($margin)
-        );
-    }
-
-    public function percentages(GetPercentagesCountryMarginsRequest $request)
-    {
-        return response()->json(
-            $this->margin->percentages($request)
+            $this->margin->delete($margin->id)
         );
     }
 
@@ -103,7 +101,7 @@ class CountryMarginController extends Controller
     public function activate(string $margin)
     {
         return response()->json(
-            $this->margin->activateCountryMargin($margin)
+            $this->margin->activate($margin)
         );
     }
 
@@ -116,7 +114,7 @@ class CountryMarginController extends Controller
     public function deactivate(string $margin)
     {
         return response()->json(
-            $this->margin->deactivateCountryMargin($margin)
+            $this->margin->deactivate($margin)
         );
     }
 }

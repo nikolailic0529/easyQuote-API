@@ -6,6 +6,10 @@ use App\Http\Requests\Discount \ {
     StorePromotionalDiscountRequest,
     UpdatePromotionalDiscountRequest
 };
+use App\Models\Quote\Discount \ {
+    Discount,
+    PromotionalDiscount
+};
 
 class PromotionalDiscountController extends Controller
 {
@@ -13,7 +17,8 @@ class PromotionalDiscountController extends Controller
 
     public function __construct(PromotionalDiscountRepository $promotionalDiscount)
     {
-        return $this->promotionalDiscount = $promotionalDiscount;
+        $this->promotionalDiscount = $promotionalDiscount;
+        $this->authorizeResource(Discount::class, 'promotion');
     }
 
     /**
@@ -50,13 +55,13 @@ class PromotionalDiscountController extends Controller
     /**
      * Display the specified Promotional Discount.
      *
-     * @param  string  $id
+     * @param  \App\Models\Quote\Discount\PromotionalDiscount $promotion
      * @return \Illuminate\Http\Response
      */
-    public function show(string $id)
+    public function show(PromotionalDiscount $promotion)
     {
         return response()->json(
-            $this->promotionalDiscount->find($id)
+            $this->promotionalDiscount->find($promotion->id)
         );
     }
 
@@ -64,52 +69,56 @@ class PromotionalDiscountController extends Controller
      * Update the specified Promotional Discount in storage.
      *
      * @param  UpdatePromotionalDiscountRequest  $request
-     * @param  string  $id
+     * @param  \App\Models\Quote\Discount\PromotionalDiscount $promotion
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdatePromotionalDiscountRequest $request, string $id)
+    public function update(UpdatePromotionalDiscountRequest $request, PromotionalDiscount $promotion)
     {
         return response()->json(
-            $this->promotionalDiscount->update($request, $id)
+            $this->promotionalDiscount->update($request, $promotion->id)
         );
     }
 
     /**
      * Remove the specified Promotional Discount from storage.
      *
-     * @param  string  $id
+     * @param  \App\Models\Quote\Discount\PromotionalDiscount $promotion
      * @return \Illuminate\Http\Response
      */
-    public function destroy(string $id)
+    public function destroy(PromotionalDiscount $promotion)
     {
         return response()->json(
-            $this->promotionalDiscount->delete($id)
+            $this->promotionalDiscount->delete($promotion->id)
         );
     }
 
     /**
      * Activate the specified Promotional Discount from storage.
      *
-     * @param  string  $id
+     * @param  \App\Models\Quote\Discount\PromotionalDiscount $promotion
      * @return \Illuminate\Http\Response
      */
-    public function activate(string $id)
+    public function activate(PromotionalDiscount $promotion)
     {
+        $this->authorize('update', $promotion);
+
         return response()->json(
-            $this->promotionalDiscount->activate($id)
+            $this->promotionalDiscount->activate($promotion->id)
         );
     }
 
     /**
      * Deactivate the specified Promotional Discount from storage.
      *
-     * @param  string  $id
+     * @param  \App\Models\Quote\Discount\PromotionalDiscount $promotion
      * @return \Illuminate\Http\Response
      */
-    public function deactivate(string $id)
+    public function deactivate(PromotionalDiscount $promotion)
     {
+        $this->authorize('update', $promotion);
+
         return response()->json(
-            $this->promotionalDiscount->deactivate($id)
+            $this->promotionalDiscount->deactivate($promotion->id)
         );
     }
 }

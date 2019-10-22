@@ -60,8 +60,6 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     protected $search;
 
-    private $importableColumnsByName;
-
     public function __construct(
         Quote $quote,
         QuoteService $quoteService,
@@ -101,13 +99,6 @@ class QuoteRepository implements QuoteRepositoryInterface
         $this->prePayDiscount = $prePayDiscount;
         $this->promotionalDiscount = $promotionalDiscount;
         $this->snd = $snd;
-
-        $importableColumnsByName = $this->importableColumn->system()->ordered()->get(['id', 'name'])->toArray();
-        $importableColumnsByName = collect($importableColumnsByName)->mapWithKeys(function ($value) {
-            return [$value['name'] => $value['id']];
-        });
-
-        $this->importableColumnsByName = $importableColumnsByName;
     }
 
     public function storeState(StoreQuoteStateRequest $request)
@@ -117,7 +108,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         $quoteData = $state->get('quote_data');
 
         if($request->has('quote_id')) {
-            $quote = $user->quotes()->whereId($request->quote_id)->firstOrNew([]);
+            $quote = $user->quotes()->whereId($request->quote_id)->firstOrFail();
         } else {
             $quote = $user->quotes()->make();
         }
@@ -148,8 +139,7 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     public function find(string $id)
     {
-        $user = request()->user();
-        $quote = $user->quotes()->whereId($id)->withJoins()->firstOrFail()->appendJoins();
+        $quote = $this->quote->userCollaboration()->whereId($id)->withJoins()->firstOrFail()->appendJoins();
 
         return $quote;
     }
@@ -164,8 +154,7 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     public function draftedQuery(): Builder
     {
-        $user = request()->user();
-        $query = $user->quotes()->drafted()->with('customer', 'company')->getQuery();
+        $query = $this->quote->userCollaboration()->drafted()->with('customer', 'company');
 
         return $query;
     }
@@ -189,14 +178,12 @@ class QuoteRepository implements QuoteRepositoryInterface
     {
         $items = $this->searchOnElasticsearch($query);
 
-        $user = request()->user();
-
-        $activated = $this->buildQuery($items, function ($query) use ($user) {
-            $query = $query->drafted()->where('user_id', $user->id)->with('customer', 'company')->activated();
+        $activated = $this->buildQuery($items, function ($query) {
+            $query = $query->userCollaboration()->drafted()->with('customer', 'company')->activated();
             return $this->filterQuery($query);
         });
-        $deactivated = $this->buildQuery($items, function ($query) use ($user) {
-            $query = $query->drafted()->where('user_id', $user->id)->with('customer', 'company')->deactivated();
+        $deactivated = $this->buildQuery($items, function ($query) {
+            $query = $query->userCollaboration()->drafted()->with('customer', 'company')->deactivated();
             return $this->filterQuery($query);
         });
 
@@ -205,8 +192,7 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     public function submittedQuery(): Builder
     {
-        $user = request()->user();
-        $query = $user->quotes()->submitted()->with('customer', 'company')->getQuery();
+        $query = $this->quote->userCollaboration()->submitted()->with('customer', 'company');
 
         return $query;
     }
@@ -230,14 +216,12 @@ class QuoteRepository implements QuoteRepositoryInterface
     {
         $items = $this->searchOnElasticsearch($query);
 
-        $user = request()->user();
-
-        $activated = $this->buildQuery($items, function ($query) use ($user) {
-            $query = $query->submitted()->where('user_id', $user->id)->with('customer', 'company')->activated();
+        $activated = $this->buildQuery($items, function ($query) {
+            $query = $query->userCollaboration()->submitted()->with('customer', 'company')->activated();
             return $this->filterQuery($query);
         });
-        $deactivated = $this->buildQuery($items, function ($query) use ($user) {
-            $query = $query->submitted()->where('user_id', $user->id)->with('customer', 'company')->deactivated();
+        $deactivated = $this->buildQuery($items, function ($query) {
+            $query = $query->userCollaboration()->submitted()->with('customer', 'company')->deactivated();
             return $this->filterQuery($query);
         });
 
@@ -327,48 +311,44 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     public function deleteDrafted(string $id)
     {
-        $user = request()->user();
-        return $user->quotes()->drafted()->whereId($id)->firstOrFail()->delete();
+        return $this->draftedQuery()->whereId($id)->firstOrFail()->delete();
     }
 
     public function deactivateDrafted(string $id)
     {
-        $user = request()->user();
-        return $user->quotes()->drafted()->whereId($id)->firstOrFail()->deactivate();
+        return $this->draftedQuery()->whereId($id)->firstOrFail()->deactivate();
     }
 
     public function activateDrafted(string $id)
     {
-        $user = request()->user();
-        return $user->quotes()->drafted()->whereId($id)->firstOrFail()->activate();
+        return $this->draftedQuery()->whereId($id)->firstOrFail()->activate();
     }
 
     public function deleteSubmitted(string $id)
     {
-        $user = request()->user();
-        return $user->quotes()->submitted()->whereId($id)->firstOrFail()->delete();
+        return $this->submittedQuery()->whereId($id)->firstOrFail()->delete();
     }
 
     public function deactivateSubmitted(string $id)
     {
-        $user = request()->user();
-        return $user->quotes()->submitted()->whereId($id)->firstOrFail()->deactivate();
+        return $this->submittedQuery()->whereId($id)->firstOrFail()->deactivate();
     }
 
     public function activateSubmitted(string $id)
     {
-        $user = request()->user();
-        return $user->quotes()->submitted()->whereId($id)->firstOrFail()->activate();
+        return $this->submittedQuery()->whereId($id)->firstOrFail()->activate();
     }
 
     public function copy(string $id)
     {
         $quote = $this->submittedQuery()
-            ->with('user', 'company', 'vendor', 'country', 'discounts', 'customer', 'quoteTemplate')
+            ->with('company', 'vendor', 'country', 'discounts', 'customer')
             ->whereId($id)
             ->firstOrFail();
 
         $replicatedQuote = $quote->replicate();
+        $replicatedQuote->user_id = request()->user()->id;
+
         $pass = $replicatedQuote->push() && $replicatedQuote->unSubmit();
 
         /**
@@ -404,23 +384,22 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     public function discounts(string $id)
     {
-        $user = request()->user();
-        $quote = $user->quotes()->whereId($id)->firstOrFail();
+        $quote = $this->find($id);
 
         $multi_year = $this->multiYearDiscount
-            ->where('user_id', $user->id)
+            ->userCollaboration()
             ->quoteAcceptable($quote)
             ->get();
         $pre_pay = $this->prePayDiscount
-            ->where('user_id', $user->id)
+            ->userCollaboration()
             ->quoteAcceptable($quote)
             ->get();
         $promotions = $this->promotionalDiscount
-            ->where('user_id', $user->id)
+            ->userCollaboration()
             ->quoteAcceptable($quote)
             ->get();
         $snd = $this->snd
-            ->where('user_id', $user->id)
+            ->userCollaboration()
             ->quoteAcceptable($quote)
             ->get();
 
@@ -437,7 +416,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         /**
          * Possible Interactions with Margins and Discounts
          */
-        $quote = $this->interactWithModels($quote);
+        $this->interactWithModels($quote);
 
         /**
          * Calculate List Price if not calculated after interactions
@@ -514,6 +493,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         ];
 
         $payment_schedule = [
+            'period' => $coverage_period,
             'data' => $quote->scheduleData->value
         ];
 
@@ -541,23 +521,9 @@ class QuoteRepository implements QuoteRepositoryInterface
     private function interactWithModels(Quote $quote)
     {
         /**
-         * Possible interaction with existing Country Margin
+         * Interaction with Margin percentage
          */
-        $quote = $this->quoteService->interact($quote, $quote->countryMargin);
-        // $quote = $this->quoteService->interactWithMargin($quote);
-
-        /**
-         * Possible interaction with existing Discounts
-         */
-        $multiYearDiscount = $quote->discounts()->whereHasMorph('discountable', MultiYearDiscount::class)->first();
-        $promotionalDiscount = $quote->discounts()->whereHasMorph('discountable', PromotionalDiscount::class)->first();
-        $snDiscount = $quote->discounts()->whereHasMorph('discountable', SND::class)->first();
-        $prePayDiscount = $quote->discounts()->whereHasMorph('discountable', PrePayDiscount::class)->first();
-
-        $quote = $this->quoteService->interact($quote, $multiYearDiscount);
-        $quote = $this->quoteService->interact($quote, $promotionalDiscount);
-        $quote = $this->quoteService->interact($quote, $snDiscount);
-        $quote = $this->quoteService->interact($quote, $prePayDiscount);
+        $this->quoteService->interactWithMargin($quote);
 
         return $quote;
     }

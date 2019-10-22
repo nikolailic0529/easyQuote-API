@@ -7,6 +7,7 @@ use App\Models \ {
 use App\Traits \ {
     BelongsToUser,
     BelongsToVendor,
+    Collaboration\BelongsToCollaboration,
     Activatable
 };
 use Illuminate\Database\Eloquent \ {
@@ -14,11 +15,11 @@ use Illuminate\Database\Eloquent \ {
     SoftDeletes
 };
 use App\Contracts\HasOrderedScope;
-use Carbon\Carbon, Str;
+use Str;
 
 abstract class Margin extends UuidModel implements HasOrderedScope
 {
-    use BelongsToUser, BelongsToVendor, SoftDeletes, Activatable;
+    use BelongsToCollaboration, BelongsToUser, BelongsToVendor, SoftDeletes, Activatable;
 
     protected $perPage = 8;
 

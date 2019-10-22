@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\Quote\QuoteRepositoryInterface as QuoteRepository;
+use App\Models\Quote\Quote;
 
 class QuoteSubmittedController extends Controller
 {
@@ -10,6 +11,7 @@ class QuoteSubmittedController extends Controller
     public function __construct(QuoteRepository $quote)
     {
         $this->quote = $quote;
+        $this->authorizeResource(Quote::class, 'submitted');
     }
 
     /**
@@ -30,62 +32,68 @@ class QuoteSubmittedController extends Controller
         );
     }
 
-    public function show(string $quote)
+    public function show(Quote $submitted)
     {
         return response()->json(
-            $this->quote->getSubmitted($quote)
+            $this->quote->getSubmitted($quote->id)
         );
     }
 
     /**
      * Remove the specified Submitted Quote
      *
-     * @param  string  $id
+     * @param  Quote $submitted
      * @return \Illuminate\Http\Response
      */
-    public function destroy(string $id)
+    public function destroy(Quote $submitted)
     {
         return response()->json(
-            $this->quote->deleteSubmitted($id)
+            $this->quote->deleteSubmitted($submitted->id)
         );
     }
 
     /**
      * Activate the specified Submitted Quote
      *
-     * @param  string  $id
+     * @param  Quote $submitted
      * @return \Illuminate\Http\Response
      */
-    public function activate(string $id)
+    public function activate(Quote $submitted)
     {
+        $this->authorize('update', $submitted);
+
         return response()->json(
-            $this->quote->activateSubmitted($id)
+            $this->quote->activateSubmitted($submitted->id)
         );
     }
 
     /**
      * Deactivate the specified Submitted Quote
      *
-     * @param  string  $id
+     * @param  Quote $submitted
      * @return \Illuminate\Http\Response
      */
-    public function deactivate(string $id)
+    public function deactivate(Quote $submitted)
     {
+        $this->authorize('update', $submitted);
+
         return response()->json(
-            $this->quote->deactivateSubmitted($id)
+            $this->quote->deactivateSubmitted($submitted->id)
         );
     }
 
     /**
      * Create copy of the specified Submitted Quote
      *
-     * @param string $id
+     * @param Quote $submitted
      * @return void
      */
-    public function copy(string $id)
+    public function copy(Quote $submitted)
     {
+        $this->authorize('copy', $submitted);
+
         return response()->json(
-            $this->quote->copy($id)
+            $this->quote->copy($submitted->id)
         );
     }
 }

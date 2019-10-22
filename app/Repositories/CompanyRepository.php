@@ -58,14 +58,12 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
         $items = $this->searchOnElasticsearch($this->company, $searchableFields, $query);
 
         $activated = $this->buildQuery($this->company, $items, function ($query) {
-            return $query->where(function ($query) {
-                return $query->currentUser();
-            })->with('image', 'vendors')->activated();
+            $query->userCollaboration()->with('image', 'vendors')->activated();
+            $this->filterQuery($query);
         });
         $deactivated = $this->buildQuery($this->company, $items, function ($query) {
-            return $query->where(function ($query) {
-                return $query->currentUser();
-            })->with('image', 'vendors')->deactivated();
+            $query->userCollaboration()->with('image', 'vendors')->deactivated();
+            $this->filterQuery($query);
         });
 
         $companies = $activated->union($deactivated)->apiPaginate();
@@ -78,7 +76,7 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
 
     public function userQuery(): Builder
     {
-        return $this->company->query()->currentUser()->with('image', 'vendors');
+        return $this->company->query()->userCollaboration()->with('image', 'vendors');
     }
 
     public function find(string $id): Company

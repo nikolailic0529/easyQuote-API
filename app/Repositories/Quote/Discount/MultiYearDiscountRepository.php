@@ -36,10 +36,10 @@ class MultiYearDiscountRepository extends DiscountRepository implements MultiYea
         $items = $this->searchOnElasticsearch($this->multiYearDiscount, $searchableFields, $query);
 
         $activated = $this->buildQuery($this->multiYearDiscount, $items, function ($query) {
-            return $this->filterQuery($query->with('country', 'vendor')->activated());
+            return $this->filterQuery($query->userCollaboration()->with('country', 'vendor')->activated());
         });
         $deactivated = $this->buildQuery($this->multiYearDiscount, $items, function ($query) {
-            return $this->filterQuery($query->with('country', 'vendor')->deactivated());
+            return $this->filterQuery($query->userCollaboration()->with('country', 'vendor')->deactivated());
         });
 
         return $activated->union($deactivated)->apiPaginate();
@@ -47,9 +47,7 @@ class MultiYearDiscountRepository extends DiscountRepository implements MultiYea
 
     public function userQuery(): Builder
     {
-        $user = request()->user();
-
-        return $user->multiYearDiscounts()->with('country', 'vendor')->getQuery();
+        return $this->multiYearDiscount->query()->userCollaboration()->with('country', 'vendor');
     }
 
     public function find(string $id): MultiYearDiscount
@@ -59,9 +57,7 @@ class MultiYearDiscountRepository extends DiscountRepository implements MultiYea
 
     public function create(StoreMultiYearDiscountRequest $request): MultiYearDiscount
     {
-        $user = request()->user();
-
-        return $user->multiYearDiscounts()->create($request->validated());
+        return $request->user()->multiYearDiscounts()->create($request->validated());
     }
 
     public function update(UpdateMultiYearDiscountRequest $request, string $id): MultiYearDiscount

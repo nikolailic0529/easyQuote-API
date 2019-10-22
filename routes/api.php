@@ -23,13 +23,24 @@ Route::group(['namespace' => 'API'], function () {
 
     Route::group(['middleware' => 'auth:api'], function () {
         Route::group(['middleware' => 'throttle:60,1'], function () {
+            Route::resource('roles', 'RoleController')->only(config('route.crud'));
+            Route::put('roles/activate/{role}', 'RoleController@activate');
+            Route::put('roles/deactivate/{role}', 'RoleController@deactivate');
+        });
+
+        Route::group(['namespace' => 'Templates', 'middleware' => 'throttle:60,1'], function () {
+            Route::get('templates/designer/{template}', 'QuoteTemplateController@designer');
             Route::apiResource('templates', 'QuoteTemplateController');
             Route::put('templates/activate/{template}', 'QuoteTemplateController@activate');
             Route::put('templates/deactivate/{template}', 'QuoteTemplateController@deactivate');
+
+            Route::resource('template_fields', 'TemplateFieldController', ['only' => config('route.crud')]);
+            Route::put('template_fields/activate/{template_fields}', 'TemplateFieldController@activate');
+            Route::put('template_fields/deactivate/{template_fields}', 'TemplateFieldController@deactivate');
         });
 
         Route::group(['middleware' => 'throttle:60,1'], function () {
-            Route::resource('companies', 'CompanyController', config('route.crud'));
+            Route::resource('companies', 'CompanyController', ['only' => config('route.crud')]);
             Route::put('companies/activate/{company}', 'CompanyController@activate');
             Route::put('companies/deactivate/{company}', 'CompanyController@deactivate');
         });
@@ -47,7 +58,6 @@ Route::group(['namespace' => 'API'], function () {
             Route::apiResource('margins', 'CountryMarginController');
             Route::put('margins/activate/{margin}', 'CountryMarginController@activate');
             Route::put('margins/deactivate/{margin}', 'CountryMarginController@deactivate');
-            Route::post('margins/percentages', 'CountryMarginController@percentages');
         });
 
         Route::group(['namespace' => 'Discounts', 'prefix' => 'discounts', 'middleware' => 'throttle:60,1'], function () {
@@ -60,8 +70,8 @@ Route::group(['namespace' => 'API'], function () {
             Route::put('pre_pay/deactivate/{pre_pay}', 'PrePayDiscountController@deactivate');
 
             Route::apiResource('promotions', 'PromotionalDiscountController');
-            Route::put('promotions/activate/{promotions}', 'PromotionalDiscountController@activate');
-            Route::put('promotions/deactivate/{promotions}', 'PromotionalDiscountController@deactivate');
+            Route::put('promotions/activate/{promotion}', 'PromotionalDiscountController@activate');
+            Route::put('promotions/deactivate/{promotion}', 'PromotionalDiscountController@deactivate');
 
             Route::apiResource('snd', 'SNDcontroller');
             Route::put('snd/activate/{snd}', 'SNDcontroller@activate');
@@ -81,16 +91,16 @@ Route::group(['namespace' => 'API'], function () {
                  * User's Drafted Quotes
                  */
                 Route::apiResource('drafted', 'QuoteDraftedController', ['only' => config('route.rd')]);
-                Route::patch('drafted/{quote}', 'QuoteDraftedController@activate');
-                Route::put('drafted/{quote}', 'QuoteDraftedController@deactivate');
+                Route::patch('drafted/{drafted}', 'QuoteDraftedController@activate');
+                Route::put('drafted/{drafted}', 'QuoteDraftedController@deactivate');
 
                 /**
                  * User's Submitted Quotes
                  */
                 Route::apiResource('submitted', 'QuoteSubmittedController', ['only' => config('route.rd')]);
-                Route::patch('submitted/{quote}', 'QuoteSubmittedController@activate');
-                Route::put('submitted/{quote}', 'QuoteSubmittedController@deactivate');
-                Route::put('submitted/copy/{quote}', 'QuoteSubmittedController@copy');
+                Route::patch('submitted/{submitted}', 'QuoteSubmittedController@activate');
+                Route::put('submitted/{submitted}', 'QuoteSubmittedController@deactivate');
+                Route::put('submitted/copy/{submitted}', 'QuoteSubmittedController@copy');
 
                 Route::apiResource('file', 'QuoteFilesController', ['only' => config('route.cr')]);
 
@@ -119,11 +129,6 @@ Route::group(['namespace' => 'API'], function () {
                          * Set Margin Dialog
                          */
                         Route::get('3', 'QuoteController@step3');
-
-                        /**
-                         * Get Quote Rows Data with Applied Margin
-                         */
-                        Route::post('4', 'QuoteController@step4');
                 });
             });
         });

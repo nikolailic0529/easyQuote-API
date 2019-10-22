@@ -142,7 +142,9 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         $pass = $this->requiredHeadersMapping->reject(function ($header, $id) use ($columnsData) {
             return $columnsData->contains(function ($column) use ($header) {
                 return trim($column->header) === trim($header) && isset($column->value);
-            });
+            }) || $columnsData->filter(function ($column) {
+                return isset($column->value);
+            })->count() > 3;
         })->isEmpty();
 
         return $pass;

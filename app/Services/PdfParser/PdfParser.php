@@ -214,7 +214,7 @@ class PdfParser implements PdfParserInterface
 
     private function setBinPath()
     {
-        if(config('app.env') === 'local') {
+        if(in_array(config('app.env'), ['local', 'testing'])) {
             return $this->binPath = app_path(config('pdfparser.pdftotext.win'));
         }
 

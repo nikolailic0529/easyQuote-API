@@ -1,12 +1,15 @@
 <?php namespace App\Repositories\QuoteTemplate;
 
+use App\Contracts\Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface;
+use App\Repositories\SearchableRepository;
 use App\Builder\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
-use App\Contracts\Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface;
-use App\Http\Requests\QuoteTemplate\StoreQuoteTemplateRequest;
-use App\Http\Requests\QuoteTemplate\UpdateQuoteTemplateRequest;
+use App\Http\Requests\QuoteTemplate \ {
+    StoreQuoteTemplateRequest,
+    UpdateQuoteTemplateRequest
+};
 use App\Models\QuoteTemplate\QuoteTemplate;
-use App\Repositories\SearchableRepository;
+use Illuminate\Support\Collection;
 
 class QuoteTemplateRepository extends SearchableRepository implements QuoteTemplateRepositoryInterface
 {
@@ -20,7 +23,7 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
 
     public function userQuery(): Builder
     {
-        return $this->quoteTemplate->query()->currentUser()->with('company', 'vendor', 'countries');
+        return $this->quoteTemplate->query()->userCollaboration()->with('company:id,name', 'vendor:id,name', 'countries:id,name');
     }
 
     public function all(): Paginator
@@ -40,10 +43,10 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
         $items = $this->searchOnElasticsearch($this->quoteTemplate, $searchableFields, $query);
 
         $activated = $this->buildQuery($this->quoteTemplate, $items, function ($query) {
-            return $query->currentUser()->with('company', 'vendor', 'countries')->activated();
+            return $query->userCollaboration()->with('company', 'vendor', 'countries')->activated();
         });
         $deactivated = $this->buildQuery($this->quoteTemplate, $items, function ($query) {
-            return $query->currentUser()->with('company', 'vendor', 'countries')->deactivated();
+            return $query->userCollaboration()->with('company', 'vendor', 'countries')->deactivated();
         });
 
         return $activated->union($deactivated)->apiPaginate();
@@ -75,6 +78,24 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
                     ->where('country_id', $countryId);
             })
             ->get();
+    }
+
+    public function designer(string $id): Collection
+    {
+        $template = $this->find($id)->load('company', 'vendor.image');
+
+        $company_logos = $template->company->appendLogo()->logoDimensions;
+        $vendor_logos = $template->vendor->appendLogo()->logoDimensions;
+
+        $designer = collect(__('template.designer'))->transform(function ($page) {
+            return collect($page)->transform(function ($tag) {
+                return array_merge($tag, ['is_image' => false]);
+            })->toArray();
+        });
+
+        $designer['first_page'] = array_merge($designer['first_page'], $company_logos, $vendor_logos);
+
+        return $designer;
     }
 
     public function create(StoreQuoteTemplateRequest $request): QuoteTemplate

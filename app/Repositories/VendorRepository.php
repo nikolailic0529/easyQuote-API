@@ -48,14 +48,12 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
         $items = $this->searchOnElasticsearch($this->vendor, $searchableFields, $query);
 
         $activated = $this->buildQuery($this->vendor, $items, function ($query) {
-            return $query->where(function ($query) {
-                return $query->currentUser();
-            })->with('image', 'countries')->activated();
+            $query->userCollaboration()->with('image', 'countries')->activated();
+            $this->filterQuery($query);
         });
         $deactivated = $this->buildQuery($this->vendor, $items, function ($query) {
-            return $query->where(function ($query) {
-                return $query->currentUser();
-            })->with('image', 'countries')->deactivated();
+            $query->userCollaboration()->with('image', 'countries')->deactivated();
+            $this->filterQuery($query);
         });
 
         $vendors = $activated->union($deactivated)->apiPaginate();
@@ -68,12 +66,12 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
 
     public function userQuery(): Builder
     {
-        return $this->vendor->query()->currentUser()->with('image', 'countries');
+        return $this->vendor->query()->userCollaboration()->with('image', 'countries');
     }
 
     public function find(string $id): Vendor
     {
-        return $this->userQuery()->whereId($id)->firstOrFail()->makeVisible(['logo']);
+        return $this->userQuery()->whereId($id)->firstOrFail()->appendLogo();
     }
 
     public function create(StoreVendorRequest $request): Vendor

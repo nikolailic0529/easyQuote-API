@@ -13,7 +13,8 @@ use App\Traits \ {
     Draftable,
     Handleable,
     HasScheduleData,
-    Import\Automappable
+    Import\Automappable,
+    Collaboration\BelongsToCollaboration
 };
 use App\Contracts\HasOrderedScope;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -21,7 +22,15 @@ use Cache;
 
 class QuoteFile extends UuidModel implements HasOrderedScope
 {
-    use Automappable, HasScheduleData, BelongsToQuote, BelongsToUser, HasFileFormat, Handleable, Draftable, SoftDeletes;
+    use Automappable,
+        HasScheduleData,
+        BelongsToQuote,
+        BelongsToUser,
+        BelongsToCollaboration,
+        HasFileFormat,
+        Handleable,
+        Draftable,
+        SoftDeletes;
 
     protected $fillable = [
         'original_file_path', 'original_file_name', 'file_type', 'pages', 'quote_file_format_id'

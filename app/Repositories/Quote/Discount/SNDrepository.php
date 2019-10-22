@@ -36,10 +36,10 @@ class SNDrepository extends DiscountRepository implements SNDrepositoryInterface
         $items = $this->searchOnElasticsearch($this->snd, $searchableFields, $query);
 
         $activated = $this->buildQuery($this->promotionalDiscount, $items, function ($query) {
-            return $this->filterQuery($query->with('country', 'vendor')->activated());
+            return $this->filterQuery($query->userCollaboration()->with('country', 'vendor')->activated());
         });
         $deactivated = $this->buildQuery($this->promotionalDiscount, $items, function ($query) {
-            return $this->filterQuery($query->with('country', 'vendor')->deactivated());
+            return $this->filterQuery($query->userCollaboration()->with('country', 'vendor')->deactivated());
         });
 
         return $activated->union($deactivated)->apiPaginate();
@@ -47,9 +47,7 @@ class SNDrepository extends DiscountRepository implements SNDrepositoryInterface
 
     public function userQuery(): Builder
     {
-        $user = request()->user();
-
-        return $user->SNDs()->with('country', 'vendor')->getQuery();
+        return $this->snd->query()->userCollaboration()->with('country', 'vendor');
     }
 
     public function find(string $id): SND
@@ -59,9 +57,7 @@ class SNDrepository extends DiscountRepository implements SNDrepositoryInterface
 
     public function create(StoreSNDrequest $request): SND
     {
-        $user = request()->user();
-
-        return $user->SNDs()->create($request->validated());
+        return $request->user()->SNDs()->create($request->validated());
     }
 
     public function update(UpdateSNDrequest $request, string $id): SND

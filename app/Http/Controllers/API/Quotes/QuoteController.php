@@ -36,6 +36,8 @@ class QuoteController extends Controller
 
     public function quote(Quote $quote)
     {
+        $this->authorize('view', $quote);
+
         return response()->json(
             $this->quote->getWithModifications($quote->id)
         );
@@ -43,8 +45,14 @@ class QuoteController extends Controller
 
     public function storeState(StoreQuoteStateRequest $request)
     {
-        return $this->quote->storeState(
-            $request
+        if($request->has('quote_id')) {
+            $this->authorize('update', $this->quote->find($request->quote_id));
+        } else {
+            $this->authorize('create', Quote::class);
+        }
+
+        return response()->json(
+            $this->quote->storeState($request)
         );
     }
 
@@ -57,6 +65,8 @@ class QuoteController extends Controller
 
     public function step2(MappingReviewRequest $request)
     {
+        $this->authorize('view', $this->quote->find($request->quote_id));
+
         return response()->json(
             $this->quote->step2($request)
         );
@@ -80,36 +90,33 @@ class QuoteController extends Controller
         );
     }
 
-    public function step4(ReviewAppliedMarginRequest $request)
-    {
-        return response()->json(
-            $this->quote->step4($request)
-        );
-    }
-
     /**
      * Get acceptable Discounts for the specified Quote
      *
-     * @param string $id
+     * @param Quote $quote
      * @return \Illuminate\Http\Response
      */
-    public function discounts(string $id)
+    public function discounts(Quote $quote)
     {
+        $this->authorize('view', $quote);
+
         return response()->json(
-            $this->quote->discounts($id)
+            $this->quote->discounts($quote->id)
         );
     }
 
     /**
      * Get Imported Rows Data after Applying Margins
      *
-     * @param string $id
+     * @param Quote $quote
      * @return \Illuminate\Http\Response
      */
-    public function review(string $id)
+    public function review(Quote $quote)
     {
+        $this->authorize('view', $quote);
+
         return response()->json(
-            $this->quote->review($id)
+            $this->quote->review($quote->id)
         );
     }
 }
