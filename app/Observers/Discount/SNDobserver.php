@@ -12,6 +12,10 @@ class SNDobserver
      */
     public function saving(SND $snd)
     {
+        if(app()->runningInConsole()) {
+            return;
+        }
+
         if($this->exists($snd)) {
             throw new \ErrorException(__('discount.exists_exception'));
         }

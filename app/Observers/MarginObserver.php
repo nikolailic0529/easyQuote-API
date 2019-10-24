@@ -12,6 +12,10 @@ class MarginObserver
      */
     public function saving(CountryMargin $countryMargin)
     {
+        if(app()->runningInConsole()) {
+            return;
+        }
+
         if($this->exists($countryMargin)) {
             throw new \ErrorException(__('margin.exists_exception'));
         }

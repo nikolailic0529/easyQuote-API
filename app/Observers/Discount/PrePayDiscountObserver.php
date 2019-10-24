@@ -12,6 +12,10 @@ class PrePayDiscountObserver
      */
     public function saving(PrePayDiscount $prePayDiscount)
     {
+        if(app()->runningInConsole()) {
+            return;
+        }
+
         if($this->exists($prePayDiscount)) {
             throw new \ErrorException(__('discount.exists_exception'));
         }

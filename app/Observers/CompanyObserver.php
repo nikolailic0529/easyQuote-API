@@ -12,6 +12,10 @@ class CompanyObserver
      */
     public function saving(Company $company)
     {
+        if(app()->runningInConsole()) {
+            return;
+        }
+
         if($this->exists($company)) {
             throw new \ErrorException(__('company.exists_exception'));
         }

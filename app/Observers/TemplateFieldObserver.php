@@ -12,6 +12,10 @@ class TemplateFieldObserver
      */
     public function saving(TemplateField $templateField)
     {
+        if(app()->runningInConsole()) {
+            return;
+        }
+
         if($this->exists($templateField)) {
             throw new \ErrorException(__('template_field.exists_exception'));
         }

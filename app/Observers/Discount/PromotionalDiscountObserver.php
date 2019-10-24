@@ -12,6 +12,10 @@ class PromotionalDiscountObserver
      */
     public function saving(PromotionalDiscount $promotionalDiscount)
     {
+        if(app()->runningInConsole()) {
+            return;
+        }
+
         if($this->exists($promotionalDiscount)) {
             throw new \ErrorException(__('discount.exists_exception'));
         }

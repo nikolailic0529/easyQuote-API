@@ -12,6 +12,10 @@ class MultiYearDiscountObserver
      */
     public function saving(MultiYearDiscount $multiYearDiscount)
     {
+        if(app()->runningInConsole()) {
+            return;
+        }
+
         if($this->exists($multiYearDiscount)) {
             throw new \ErrorException(__('discount.exists_exception'));
         }

@@ -12,6 +12,10 @@ class VendorObserver
      */
     public function saving(Vendor $vendor)
     {
+        if(app()->runningInConsole()) {
+            return;
+        }
+
         if($this->exists($vendor)) {
             throw new \ErrorException(__('vendor.exists_exception'));
         }

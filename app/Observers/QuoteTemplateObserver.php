@@ -12,6 +12,10 @@ class QuoteTemplateObserver
      */
     public function saving(QuoteTemplate $quoteTemplate)
     {
+        if(app()->runningInConsole()) {
+            return;
+        }
+
         if($this->exists($quoteTemplate)) {
             throw new \ErrorException(__('template.exists_exception'));
         }
