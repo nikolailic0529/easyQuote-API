@@ -55,11 +55,11 @@ class QuoteService implements QuoteServiceInterface
 
     public function interactWithMargin(Quote $quote): Quote
     {
-        if(!isset($quote->computableRows)) {
+        if(!isset($quote->computableRows) || !isset($quote->countryMargin)) {
             return $quote;
         }
 
-        $divider = (100 - $quote->margin_percentage_without_discounts) / 100;
+        $divider = (100 - $quote->countryMargin->value) / 100;
 
         if($divider === 0.00) {
             $quote->computableRows->transform(function ($row) {
@@ -109,11 +109,11 @@ class QuoteService implements QuoteServiceInterface
 
     public function calculateSchedulePrices(Quote $quote): Quote
     {
-        if(!isset($quote->scheduleData->value)) {
+        if(!isset($quote->scheduleData->value) || !isset($quote->countryMargin)) {
             return $quote;
         }
 
-        $divider = (100 - $quote->margin_percentage) / 100;
+        $divider = (100 - $quote->countryMargin->value) / 100;
 
         if($divider === 0.00) {
             $quote->scheduleData->value = collect($quote->scheduleData->value)->map(function ($payment) {
