@@ -1,7 +1,11 @@
 <?php namespace App\Models\Quote\Discount;
 
+use App\Traits\Discount\HasDurationsAttribute;
+
 class PrePayDiscount extends Discount
 {
+    use HasDurationsAttribute;
+
     protected $fillable = [
         'durations'
     ];

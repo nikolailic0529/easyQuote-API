@@ -25,13 +25,7 @@ class CompanyObserver
      */
     public function updating(Company $company)
     {
-        if(app()->runningInConsole()) {
-            return;
-        }
-
-        if($company->isSystem()) {
-            throw new \ErrorException(__('company.system_updating_exception'));
-        }
+        //
     }
 
     /**
@@ -42,23 +36,15 @@ class CompanyObserver
      */
     public function deleting(Company $company)
     {
-        if(app()->runningInConsole()) {
-            return;
-        }
-
-        if($company->isSystem()) {
-            throw new \ErrorException(__('company.system_deleting_exception'));
-        }
+        //
     }
 
     private function exists(Company $company)
     {
         return $company
+            ->query()
+            ->userCollaboration()
             ->where('id', '!=', $company->id)
-            ->where(function ($query) {
-                $query->where('user_id', request()->user()->id ?? null)
-                    ->orWhere('is_system', true);
-            })
             ->where(function ($query) use ($company) {
                 $query->where('name', $company->name)
                     ->orWhere('vat', $company->vat);

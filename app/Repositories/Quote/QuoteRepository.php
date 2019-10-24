@@ -147,7 +147,8 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function getWithModifications(string $id)
     {
         $quote = $this->find($id);
-        $this->calculateDynamicListPrice($quote);
+
+        $quote->list_price = $quote->countTotalPrice();
 
         return $quote;
     }
@@ -410,8 +411,7 @@ class QuoteRepository implements QuoteRepositoryInterface
     {
         $quote = $this->find($quoteId);
 
-        $quote->computableRows = $this->createDefaultData($quote->selectedRowsDataByColumns, $quote);
-        $quote->computableRows = $this->setDefaultValues($quote->computableRows, $quote);
+        $quote->computableRows = $quote->calculate_list_price ? $quote->rowsDataByColumnsCalculated(true)->get() : $quote->rowsDataByColumns(true)->get();
 
         /**
          * Possible Interactions with Margins and Discounts
@@ -421,14 +421,9 @@ class QuoteRepository implements QuoteRepositoryInterface
         /**
          * Calculate List Price if not calculated after interactions
          */
-        if($quote->list_price === 0.00) {
-            $quote->list_price = $this->quoteService->countTotalPrice($quote);
+        if(((float) $quote->list_price) === 0.00) {
+            $quote->list_price = $quote->countTotalPrice();
         }
-
-        /**
-         * Calculate Mounthly Prices based on Coverage Periods
-         */
-        $this->quoteService->transformPricesBasedOnCoverages($quote);
 
         /**
          * Calculate Schedule Total Prices based on Margin Percentage
@@ -448,7 +443,6 @@ class QuoteRepository implements QuoteRepositoryInterface
         $coverage_period = "{$quote->customer->support_start} to {$quote->customer->support_end}";
 
         $quote = $this->addBuyPriceColumn($quote);
-        $rows = $this->transformRowsData($quote->computableRows);
 
         $pages = collect();
 
@@ -485,7 +479,7 @@ class QuoteRepository implements QuoteRepositoryInterface
             'software_contact' => $software_contact_name,
             'software_phone' => $software_contact_phone,
             'coverage_period' => $coverage_period,
-            'rows' => $rows
+            'rows' => $quote->computableRows
         ];
 
         $last_page = [
@@ -512,9 +506,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         }
 
         return Cache::rememberForever($cacheKey, function () use ($quote) {
-            $rowsData = $this->createDefaultData($quote->rowsDataByColumns, $quote);
-            $rowsData = $this->setDefaultValues($rowsData, $quote);
-            return $this->transformRowsData($rowsData);
+            return $quote->rowsDataByColumns()->get();
         });
     }
 
@@ -525,6 +517,16 @@ class QuoteRepository implements QuoteRepositoryInterface
          */
         $this->quoteService->interactWithMargin($quote);
 
+        $this->quoteService->interact(
+            $quote,
+            [
+                $quote->discounts()->discountType(MultiYearDiscount::class)->first(),
+                $quote->discounts()->discountType(PromotionalDiscount::class)->first(),
+                $quote->discounts()->discountType(SND::class)->first(),
+                $quote->discounts()->discountType(PrePayDiscount::class)->first()
+            ]
+        );
+
         return $quote;
     }
 
@@ -534,71 +536,14 @@ class QuoteRepository implements QuoteRepositoryInterface
             return $quote;
         }
 
-        $mapping = $quote->mapping;
         $margin_percentage = $quote->margin_percentage;
 
-        $quote->computableRows->transform(function ($row) use ($mapping, $margin_percentage) {
-            $priceColumn = $this->quoteService->getRowColumn($mapping, $row->columnsData, 'price');
-            $value = round((float) $priceColumn->value - ((float) $priceColumn->value * ($margin_percentage / 100)), 2);
-
-            $buyPriceColumn = $row->columnsData()->make(compact('value'));
-            $buyPriceColumn->template_field_name = 'buy_price';
-
-
-            $row->columnsData->push($buyPriceColumn);
-
+        $quote->computableRows->transform(function ($row) use ($margin_percentage) {
+            $row->buy_price = round($row->price - ($row->price * ($margin_percentage / 100)), 2);
             return $row;
         });
 
         return $quote;
-    }
-
-    private function transformRowsData(EloquentCollection $rowsData)
-    {
-        $rowsData->transform(function ($row) {
-            $columnsData = $row->columnsData->mapWithKeys(function ($column) {
-                $value = trim(preg_replace('/[\h]/u', ' ', $column->value));
-
-                if($column->template_field_name === 'price') {
-                    $value = Str::price($column->value, true);
-                }
-
-                return [$column->template_field_name => $value];
-            });
-            return collect($row->only('id', 'is_selected'))->merge($columnsData);
-        });
-
-        return $rowsData;
-    }
-
-    private function setDefaultValues(EloquentCollection $rowsData, Quote $quote)
-    {
-        $mapping = $quote->mapping;
-
-        $rowsData->transform(function ($row) use ($quote, $mapping) {
-            $dateFrom = $this->quoteService->getRowColumn($mapping, $row->columnsData, 'date_from');
-            $dateTo = $this->quoteService->getRowColumn($mapping, $row->columnsData, 'date_to');
-
-            if($dateFrom instanceof ImportedColumn) {
-                $dateFrom->value = $quote->customer->handleColumnValue(
-                    $dateFrom->value,
-                    'date_from',
-                    $dateFrom->is_default_enabled
-                );
-            }
-
-            if($dateTo instanceof ImportedColumn) {
-                $dateTo->value = $quote->customer->handleColumnValue(
-                    $dateTo->value,
-                    'date_to',
-                    $dateTo->is_default_enabled
-                );
-            }
-
-            return $row;
-        });
-
-        return $rowsData;
     }
 
     private function draftQuote(Collection $state, Quote $quote): Quote
@@ -649,38 +594,26 @@ class QuoteRepository implements QuoteRepositoryInterface
          */
         $this->calculateMarginPercentage($quote);
 
-        return $quote;
-    }
-
-    private function calculateDynamicListPrice(Quote $quote): Quote
-    {
-        $quote->computableRows = $this->createDefaultData($quote->selectedRowsDataByColumns, $quote);
-        $quote->computableRows = $this->setDefaultValues($quote->computableRows, $quote);
-        $this->interactWithModels($quote);
-
-        try {
-            $quote->list_price = $this->quoteService->countTotalPrice($quote);
-        } catch (\Exception $e) {
-            $quote->list_price = 0;
-        }
+        /**
+         * Clear Cache Mapping Review Data when Selected Rows was changed
+         */
+        Cache::forget("mapping-review-data:{$quote->id}");
 
         return $quote;
     }
 
     private function calculateMarginPercentage(Quote $quote): Quote
     {
-        $quote->computableRows = $this->createDefaultData($quote->selectedRowsDataByColumns, $quote);
-        $quote->computableRows = $this->setDefaultValues($quote->computableRows, $quote);
+        $quote->list_price = $quote->countTotalPrice();
 
-        $quote->list_price = $this->quoteService->countTotalPrice($quote);
+        if(((float) $quote->list_price) === 0.00) {
+            $quote->margin_percentage = 0;
+            $quote->save();
 
-        if($quote->list_price === 0.00) {
             return $quote;
         }
 
         $quote->margin_percentage = round((($quote->list_price - $quote->buy_price) / $quote->list_price) * 100, 2);
-        unset($quote->computableRows, $quote->list_price);
-
         $quote->save();
 
         return $quote;

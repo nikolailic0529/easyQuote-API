@@ -4,7 +4,7 @@ trait HasPricesAttributes
 {
     public function getListPriceAttribute()
     {
-        return round((float) ($this->attributes['list_price'] ?? 0), 2);
+        return round((float) ($this->list_price ?? 0), 2);
     }
 
     public function getListPriceFormattedAttribute()

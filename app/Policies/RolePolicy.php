@@ -4,7 +4,10 @@ use App\Models \ {
     User,
     Role
 };
-use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Auth\Access \ {
+    HandlesAuthorization,
+    Response
+};
 
 class RolePolicy
 {
@@ -55,6 +58,10 @@ class RolePolicy
      */
     public function update(User $user, Role $role)
     {
+        if($role->isSystem()) {
+            return Response::deny('role.system_updating_exception');
+        }
+
         if($user->can('update_own_roles')) {
             return $user->id === $role->user_id;
         }
@@ -69,6 +76,10 @@ class RolePolicy
      */
     public function delete(User $user, Role $role)
     {
+        if($role->isSystem()) {
+            return Response::deny('role.system_deleting_exception');
+        }
+
         if($user->can('delete_own_roles')) {
             return $user->id === $role->user_id;
         }

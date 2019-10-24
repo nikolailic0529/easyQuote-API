@@ -10,10 +10,12 @@ return [
         'Quotes' => [
             'Read Only' => [],
             'Read & Write' => [
-                'create_quotes', 'update_own_quotes'
+                'create_quotes', 'update_own_quotes',
+                'create_quote_files', 'update_own_quote_files', 'handle_own_quote_files',
             ],
             'Read, Write and Delete' => [
-                'create_quotes', 'update_own_quotes', 'delete_own_quotes'
+                'create_quotes', 'update_own_quotes', 'delete_own_quotes',
+                'create_quote_files', 'update_own_quote_files', 'handle_own_quote_files', 'delete_own_quote_files'
             ]
         ],
         'Templates' => [
@@ -61,5 +63,8 @@ return [
                 'create_discounts', 'update_own_discounts', 'delete_own_discounts'
             ]
         ]
-    ]
+    ],
+    'exists_exception' => 'The Role with the same Name already exists.',
+    'system_updating_exception' => 'You could not update the system defined Role.',
+    'system_deleting_exception' => 'You could not delete the system defined Role.'
 ];

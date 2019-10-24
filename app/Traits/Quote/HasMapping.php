@@ -5,6 +5,7 @@ use App\Models \ {
     QuoteFile\ImportableColumn,
     QuoteTemplate\TemplateField
 };
+use Illuminate\Support\Facades\DB;
 
 trait HasMapping
 {
@@ -68,29 +69,146 @@ trait HasMapping
         return $mapping;
     }
 
-    public function getRowsDataByColumnsAttribute($selected = false)
+    public function rowsDataByColumns($selected = false)
     {
         $fieldsColumns = $this->fieldsColumns()->with('importableColumn', 'templateField')->get();
-        $importableColumns = data_get($fieldsColumns, '*.importable_column_id');
 
-        $query = $selected ? $this->selectedRowsData() : $this->rowsData();
+        $query = DB::table('imported_rows')
+            ->select('imported_rows.id', 'imported_rows.is_selected')
+            ->join('quote_files', 'quote_files.id', '=', 'imported_rows.quote_file_id')
+            ->join('customers', function ($join) {
+                $join->where('customers.id', $this->customer_id);
+            });
 
-        return $query->with(['columnsData' => function ($query) use ($importableColumns) {
-            $query->whereIn('imported_columns.importable_column_id', $importableColumns)
+        if($selected) {
+            $query->where('imported_rows.is_selected', true);
+        }
+
+        $fieldsColumns->each(function ($mapping) use ($query) {
+            if ($mapping->is_default_enabled) {
+                switch ($mapping->templateField->name) {
+                    case 'date_from':
+                        $query->selectRaw(
+                            "date_format(`customers`.`support_start`, '%d/%m/%Y') as {$mapping->templateField->name}"
+                        );
+                        break;
+                    case 'date_to':
+                        $query->selectRaw(
+                            "date_format(`customers`.`support_end`, '%d/%m/%Y') as {$mapping->templateField->name}"
+                        );
+                        break;
+                    case 'qty':
+                        $query->selectRaw(
+                            "1 as {$mapping->templateField->name}"
+                        );
+                        break;
+                }
+
+            } else {
+                switch ($mapping->templateField->name) {
+                    case 'price':
+                        $query->selectRaw(
+                            "max(
+                                if(
+                                    `imported_columns`.`name` = ?,
+                                    cast(
+                                        replace(
+                                            replace(
+                                                replace(`imported_columns`.`value`, ',', ''),
+                                                '€', ''
+                                            ),
+                                            '$', ''
+                                        )
+                                        as decimal(8,2)),
+                                    null
+                                )
+                            ) as {$mapping->templateField->name}",
+                            [$mapping->templateField->name]
+                        );
+                        break;
+                    case 'date_from':
+                    case 'date_to':
+                        $default = $mapping->templateField->name === 'date_from' ? 'support_start' : 'support_end';
+                        $query->selectRaw(
+                            "max(
+                                if(
+                                    `imported_columns`.`name` = ?,
+                                    date_format(
+                                        coalesce(
+                                            str_to_date(`imported_columns`.`value`, '%d.%m.%Y'),
+                                            str_to_date(`imported_columns`.`value`, '%d/%m/%Y'),
+                                            str_to_date(`imported_columns`.`value`, '%Y.%m.%d'),
+                                            str_to_date(`imported_columns`.`value`, '%Y/%m/%d'),
+                                            if(`imported_columns`.`value` regexp '^[0-9]{5}$', date_add(date_add(date(if(`imported_columns`.`value` < 60, '1899-12-31', '1899-12-30')), interval floor(`imported_columns`.`value`) day), interval floor(86400*(`imported_columns`.`value`-floor(`imported_columns`.`value`))) second), null),
+                                            `customers`.`{$default}`
+                                        ),
+                                        '%d/%m/%Y'
+                                    )
+                                    ,
+                                    null
+                                )
+                            ) as {$mapping->templateField->name}",
+                            [$mapping->templateField->name]
+                        );
+                        break;
+                    default:
+                        $query->selectRaw(
+                            "max(if(`imported_columns`.`name` = ?, `imported_columns`.`value`, null)) as {$mapping->templateField->name}",
+                            [$mapping->templateField->name]
+                        );
+                        break;
+                }
+            }
+        });
+
+        $importedColumns = DB::table('imported_columns')
+            ->select('imported_row_id', 'value', 'template_fields.name')
             ->join('quote_field_column', function ($join) {
-                $join->on('imported_columns.importable_column_id', '=', 'quote_field_column.importable_column_id')
-                    ->where('quote_field_column.quote_id', '=', $this->id);
+                $join->where('quote_field_column.quote_id', $this->id)
+                    ->on('quote_field_column.importable_column_id', '=', 'imported_columns.importable_column_id');
             })
-            ->join('template_fields', function ($join) {
-                $join->on('template_fields.id', '=', 'quote_field_column.template_field_id')
-                    ->select('template_fields.name as template_field_name');
-            })->select(['imported_columns.*', 'template_fields.name as template_field_name']);
-        }])->get();
+            ->join('template_fields', 'template_fields.id', '=', 'quote_field_column.template_field_id');
+
+        return $query
+            ->joinSub($importedColumns, 'imported_columns', function ($join) {
+                $join->on('imported_columns.imported_row_id', '=', 'imported_rows.id');
+            })
+            ->whereNull('quote_files.deleted_at')
+            ->where('quote_files.quote_id', $this->id)
+            ->where('quote_files.file_type', __('quote_file.types.price'))
+            ->groupBy('imported_rows.id');
     }
 
-    public function getSelectedRowsDataByColumnsAttribute()
+    public function rowsDataByColumnsCalculated($selected = false)
     {
-        return $this->getRowsDataByColumnsAttribute(true);
+        $columns = $this->fieldsColumns()
+            ->with('importableColumn', 'templateField')
+            ->whereDoesntHave('templateField', function ($query) {
+                $query->whereName('price');
+            })
+            ->get()
+            ->pluck('templateField.name')
+            ->toArray();
+
+        return DB::query()
+            ->fromSub($this->rowsDataByColumns($selected), 'rows_data')
+            ->select(
+                array_merge(
+                    $columns,
+                    [DB::raw("(`price` / 30 * greatest(datediff(str_to_date(`date_to`, '%d/%m/%Y'), str_to_date(`date_from`, '%d/%m/%Y')), 0)) as `price`")]
+                )
+            );
+    }
+
+    public function countTotalPrice()
+    {
+        $sub = $this->calculate_list_price ? $this->rowsDataByColumnsCalculated(true) : $this->rowsDataByColumns(true);
+
+        if(!$sub->exists('price')) {
+            return 0.00;
+        }
+
+        return DB::query()->fromSub($sub, 'rows_data')->sum('price');
     }
 
     public function getFieldColumnAttribute()

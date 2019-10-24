@@ -4,7 +4,10 @@ use App\Models \ {
     User,
     Company
 };
-use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Auth\Access \ {
+    HandlesAuthorization,
+    Response
+};
 
 class CompanyPolicy
 {
@@ -55,6 +58,10 @@ class CompanyPolicy
      */
     public function update(User $user, Company $company)
     {
+        if($company->isSystem()) {
+            return Response::deny(__('company.system_updating_exception'));
+        }
+
         if($user->can('update_collaboration_companies')) {
             return $user->collaboration_id === $company->collaboration_id;
         }
@@ -73,6 +80,10 @@ class CompanyPolicy
      */
     public function delete(User $user, Company $company)
     {
+        if($company->isSystem()) {
+            return Response::deny(__('company.system_deleting_exception'));
+        }
+
         if($user->can('delete_collaboration_companies')) {
             return $user->collaboration_id === $company->collaboration_id;
         }

@@ -97,4 +97,9 @@ class Discount extends UuidModel
             return $value * $percentage / 100;
         }
     }
+
+    public function scopeDiscountType($query, string $class)
+    {
+        return $query->whereHasMorph('discountable', $class);
+    }
 }

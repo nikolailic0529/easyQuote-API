@@ -31,7 +31,6 @@ class QuoteFilesController extends Controller
         );
     }
 
-
     public function show(QuoteFile $file)
     {
         return response()->json(

@@ -19,13 +19,12 @@ class MultiYearDiscountObserver
 
     private function exists(MultiYearDiscount $multiYearDiscount)
     {
-        $user = $multiYearDiscount->user;
-
-        return $user->multiYearDiscounts()
+        return $multiYearDiscount
+            ->query()
+            ->userCollaboration()
             ->where('id', '!=', $multiYearDiscount->id)
-            ->where('country_id', $multiYearDiscount->country_id)
             ->where('vendor_id', $multiYearDiscount->vendor_id)
-            ->whereJsonContains('durations', $multiYearDiscount->durations)
+            ->durationIn($multiYearDiscount->years)
             ->exists();
     }
 }

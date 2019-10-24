@@ -19,11 +19,10 @@ class SNDobserver
 
     private function exists(SND $snd)
     {
-        $user = $snd->user;
-
-        return $user->SNDs()
+        return $snd
+            ->query()
+            ->userCollaboration()
             ->where('id', '!=', $snd->id)
-            ->where('country_id', $snd->country_id)
             ->where('vendor_id', $snd->vendor_id)
             ->where('value', $snd->value)
             ->exists();

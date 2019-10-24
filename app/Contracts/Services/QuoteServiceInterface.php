@@ -55,14 +55,6 @@ interface QuoteServiceInterface
     public function interactWithDiscount(Quote $quote, Discount $discount): Quote;
 
     /**
-     * Count current Total Price by Quote Computable Rows
-     *
-     * @param Quote $quote
-     * @return float
-     */
-    public function countTotalPrice(Quote $quote);
-
-    /**
      * Get Row Column by Mapping and Template Field Name
      *
      * @param Collection $mapping

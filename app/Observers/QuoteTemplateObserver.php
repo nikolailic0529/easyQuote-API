@@ -25,13 +25,7 @@ class QuoteTemplateObserver
      */
     public function updating(QuoteTemplate $quoteTemplate)
     {
-        if(app()->runningInConsole()) {
-            return;
-        }
-
-        if($quoteTemplate->isSystem()) {
-            throw new \ErrorException(__('template.system_updating_exception'));
-        }
+        //
     }
 
     /**
@@ -42,13 +36,7 @@ class QuoteTemplateObserver
      */
     public function deleting(QuoteTemplate $quoteTemplate)
     {
-        if(app()->runningInConsole()) {
-            return;
-        }
-
-        if($quoteTemplate->isSystem()) {
-            throw new \ErrorException(__('template.system_deleting_exception'));
-        }
+        //
     }
 
     private function exists(QuoteTemplate $quoteTemplate)

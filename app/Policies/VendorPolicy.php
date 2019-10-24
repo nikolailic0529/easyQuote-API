@@ -4,7 +4,10 @@ use App\Models \ {
     User,
     Vendor
 };
-use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Auth\Access \ {
+    HandlesAuthorization,
+    Response
+};
 
 class VendorPolicy
 {
@@ -55,6 +58,10 @@ class VendorPolicy
      */
     public function update(User $user, Vendor $vendor)
     {
+        if($vendor->isSystem()) {
+            return Response::deny(__('vendor.system_updating_exception'));
+        }
+
         if($user->can('update_collaboration_vendors')) {
             return $user->collaboration_id === $vendor->collaboration_id;
         }
@@ -73,6 +80,10 @@ class VendorPolicy
      */
     public function delete(User $user, Vendor $vendor)
     {
+        if($vendor->isSystem()) {
+            return Response::deny(__('vendor.system_deleting_exception'));
+        }
+
         if($user->can('delete_collaboration_vendors')) {
             return $user->collaboration_id === $vendor->collaboration_id;
         }

@@ -19,13 +19,12 @@ class PrePayDiscountObserver
 
     private function exists(PrePayDiscount $prePayDiscount)
     {
-        $user = $prePayDiscount->user;
-
-        return $user->prePayDiscounts()
+        return $prePayDiscount
+            ->query()
+            ->userCollaboration()
             ->where('id', '!=', $prePayDiscount->id)
-            ->where('country_id', $prePayDiscount->country_id)
             ->where('vendor_id', $prePayDiscount->vendor_id)
-            ->whereJsonContains('durations', $prePayDiscount->durations)
+            ->durationIn($prePayDiscount->years)
             ->exists();
     }
 }

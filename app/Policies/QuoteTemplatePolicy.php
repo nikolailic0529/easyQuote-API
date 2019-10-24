@@ -4,7 +4,10 @@ use App\Models \ {
     User,
     QuoteTemplate\QuoteTemplate
 };
-use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Auth\Access \ {
+    HandlesAuthorization,
+    Response
+};
 
 class QuoteTemplatePolicy
 {
@@ -55,6 +58,10 @@ class QuoteTemplatePolicy
      */
     public function update(User $user, QuoteTemplate $quoteTemplate)
     {
+        if($quoteTemplate->isSystem()) {
+            return Response::deny(__('template.system_updating_exception'));
+        }
+
         if($user->can('update_collaboration_templates')) {
             return $user->collaboration_id === $quoteTemplate->collaboration_id;
         }
@@ -73,6 +80,10 @@ class QuoteTemplatePolicy
      */
     public function delete(User $user, QuoteTemplate $quoteTemplate)
     {
+        if($quoteTemplate->isSystem()) {
+            return Response::deny(__('template.system_deleting_exception'));
+        }
+
         if($user->can('delete_collaboration_templates')) {
             return $user->collaboration_id === $quoteTemplate->collaboration_id;
         }

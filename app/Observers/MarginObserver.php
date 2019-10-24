@@ -19,9 +19,9 @@ class MarginObserver
 
     private function exists(CountryMargin $countryMargin)
     {
-        $user = $countryMargin->user;
-
-        return $user->countryMargins()
+        return $countryMargin
+            ->query()
+            ->userCollaboration()
             ->where('id', '!=', $countryMargin->id)
             ->where('quote_type', $countryMargin->quote_type)
             ->where('country_id', $countryMargin->country_id)

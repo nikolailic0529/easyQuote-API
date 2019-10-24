@@ -12,7 +12,7 @@ trait HasMorphableDiscounts
 
         return $this->discounts
             ->reduce(function ($carry, $discount) {
-                return $carry + $discount->getValue(0);
+                return $carry + $discount->getValue($this->list_price);
             }, 0);
     }
 

@@ -19,14 +19,12 @@ class PromotionalDiscountObserver
 
     private function exists(PromotionalDiscount $promotionalDiscount)
     {
-        $user = $promotionalDiscount->user;
-
-        return $user->promotionalDiscounts()
+        return $promotionalDiscount
+            ->query()
+            ->userCollaboration()
             ->where('id', '!=', $promotionalDiscount->id)
-            ->where('country_id', $promotionalDiscount->country_id)
             ->where('vendor_id', $promotionalDiscount->vendor_id)
             ->where('value', $promotionalDiscount->value)
-            ->where('minimum_limit', $promotionalDiscount->minimum_limit)
             ->exists();
     }
 }

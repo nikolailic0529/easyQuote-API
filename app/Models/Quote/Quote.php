@@ -51,6 +51,10 @@ class Quote extends CompletableModel implements HasOrderedScope
         HasPricesAttributes,
         HasMapping;
 
+    public $computableRows = null;
+
+    public $list_price = null;
+
     protected $perPage = 8;
 
     protected $fillable = [
@@ -137,7 +141,9 @@ class Quote extends CompletableModel implements HasOrderedScope
                 'rows_data',
                 'margin_percentage',
                 'margin_percentage_without_country_margin',
-                'margin_percentage_without_discounts'
+                'margin_percentage_without_discounts',
+                'user_margin_percentage',
+                'list_price'
             ]
         );
     }

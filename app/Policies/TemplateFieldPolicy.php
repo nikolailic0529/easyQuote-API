@@ -1,15 +1,15 @@
-<?php
+<?php namespace App\Policies;
 
-namespace App\Policies;
-
-use App\Models\User;
-use App\TemplateField;
+use App\Models \ {
+    User,
+    QuoteTemplate\TemplateField
+};
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class TemplateFieldPolicy
 {
     use HandlesAuthorization;
-    
+
     /**
      * Determine whether the user can view any template fields.
      *
@@ -25,7 +25,7 @@ class TemplateFieldPolicy
      * Determine whether the user can view the template field.
      *
      * @param  \App\Models\User  $user
-     * @param  \App\TemplateField  $templateField
+     * @param  \App\Models\QuoteTemplate\TemplateField  $templateField
      * @return mixed
      */
     public function view(User $user, TemplateField $templateField)
@@ -48,7 +48,7 @@ class TemplateFieldPolicy
      * Determine whether the user can update the template field.
      *
      * @param  \App\Models\User  $user
-     * @param  \App\TemplateField  $templateField
+     * @param  \App\Models\QuoteTemplate\TemplateField  $templateField
      * @return mixed
      */
     public function update(User $user, TemplateField $templateField)
@@ -60,7 +60,7 @@ class TemplateFieldPolicy
      * Determine whether the user can delete the template field.
      *
      * @param  \App\Models\User  $user
-     * @param  \App\TemplateField  $templateField
+     * @param  \App\Models\QuoteTemplate\TemplateField  $templateField
      * @return mixed
      */
     public function delete(User $user, TemplateField $templateField)
@@ -72,7 +72,7 @@ class TemplateFieldPolicy
      * Determine whether the user can restore the template field.
      *
      * @param  \App\Models\User  $user
-     * @param  \App\TemplateField  $templateField
+     * @param  \App\Models\QuoteTemplate\TemplateField  $templateField
      * @return mixed
      */
     public function restore(User $user, TemplateField $templateField)
@@ -84,7 +84,7 @@ class TemplateFieldPolicy
      * Determine whether the user can permanently delete the template field.
      *
      * @param  \App\Models\User  $user
-     * @param  \App\TemplateField  $templateField
+     * @param  \App\Models\QuoteTemplate\TemplateField  $templateField
      * @return mixed
      */
     public function forceDelete(User $user, TemplateField $templateField)

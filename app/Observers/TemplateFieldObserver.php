@@ -58,11 +58,9 @@ class TemplateFieldObserver
     private function exists(TemplateField $templateField)
     {
         return $templateField
+            ->query()
+            ->userCollaboration()
             ->where('id', '!=', $templateField->id)
-            ->where(function ($query) {
-                $query->where('is_system', true)
-                    ->orWhere('user_id', request()->user()->id);
-            })
             ->where(function ($query) use ($templateField) {
                 $query->where('name', $templateField->name)
                     ->orWhere('header', $templateField->header);

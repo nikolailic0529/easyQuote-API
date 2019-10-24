@@ -24,7 +24,7 @@ use App\Imports \ {
     ImportExcel,
     ImportExcelSchedule
 };
-use Excel, Storage, File, Setting;
+use Excel, Storage, File, Setting, Cache;
 
 class ParserService implements ParserServiceInterface
 {
@@ -147,6 +147,7 @@ class ParserService implements ParserServiceInterface
         }
 
         $columnsData = $rowData->columnsData;
+
         $columnsData->each(function ($columnData) use ($quote, $templateFields) {
             $templateField = $templateFields->where('name', $columnData->importableColumn->name)->first();
 
@@ -154,8 +155,12 @@ class ParserService implements ParserServiceInterface
                 return true;
             }
 
-            $quote->attachColumnToField($templateField, $columnData->importableColumn);
+            $is_default_enabled = false;
+
+            $quote->attachColumnToField($templateField, $columnData->importableColumn, compact('is_default_enabled'));
         });
+
+        Cache::forget("mapping-review-data:{$quote->id}");
 
         return $quoteFile->markAsAutomapped();
     }
