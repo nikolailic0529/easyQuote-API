@@ -99,6 +99,8 @@ class QuoteService implements QuoteServiceInterface
 
             $discountValue = $discount->calculateDiscount($row->computablePrice, $quote->list_price);
             $quote->applicable_discounts += $discountValue;
+
+            $row->computablePrice -= $discountValue;
             return $row;
         });
 
