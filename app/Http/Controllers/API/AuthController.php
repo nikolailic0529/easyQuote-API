@@ -1,80 +1,68 @@
 <?php namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Http\Requests \ {
     UserSignUpRequest,
-    UserSignInRequest
+    UserSignInRequest,
+    Collaboration\CompleteInvitationRequest
 };
 use App\Contracts \ {
-    Authenticable,
     Repositories\UserRepositoryInterface,
     Services\AuthServiceInterface
 };
+use App\Models\Collaboration\Invitation;
 
-class AuthController extends Controller implements Authenticable
+class AuthController extends Controller
 {
     protected $user;
-    protected $tokenResult;
-    protected $authService;
 
-    public function __construct(UserRepositoryInterface $user, AuthServiceInterface $authService)
+    protected $auth;
+
+    public function __construct(UserRepositoryInterface $user, AuthServiceInterface $auth)
     {
         $this->user = $user;
-        $this->authService = $authService;
+        $this->auth = $auth;
     }
 
     public function signup(UserSignUpRequest $request)
     {
-        $user = $this->user->make(
-            $this->authService->handleSignUpRequest($request)->all()
+        return response()->json(
+            (bool) $this->user->create($request->validated())
         );
-        $user->save();
+    }
 
-        return response()->json([
-            'message' => __('You have been successfully registered!')
-        ], 201);
+    public function invitation(Invitation $invitation)
+    {
+        return response()->json(
+            $this->user->invitation($invitation->invitation_token)
+        );
+    }
+
+    public function completeInvitation(CompleteInvitationRequest $request, Invitation $invitation)
+    {
+        return response()->json(
+            (bool) $this->user->completeInvitation($request->validated(), $invitation)
+        );
     }
 
     public function signin(UserSignInRequest $request)
     {
-        $this->authService->storeAccessAttempt($request->all());
-
-        $credentials = $request->only('email', 'password');
-
-        if(!$this->authService->checkCredentials($credentials)) {
-            return response()->json([
-                'message' => __('Unauthorized')
-            ], 401);
-        };
-
-        $this->authService->accessAttempt->markAsSuccessfull();
-
-        $this->setToken($request);
-
-        return response()->json([
-            'access_token' => $this->tokenResult->accessToken,
-            'token_type' => 'Bearer',
-            'expires_at' => $this->authService->parseTokenTime($this->tokenResult),
-        ]);
+        return response()->json(
+            $this->auth->authenticate($request)
+        );
     }
 
-    public function logout(Request $request)
+    public function logout()
     {
-        $request->user()->token()->revoke();
-
-        return response()->json([
-            'message' => __('You have been successfully logged out.')
-        ]);
+        return response()->json(
+            request()->user()->token()->revoke()
+        );
     }
 
-    public function user(Request $request)
+    public function user()
     {
-        return response()->json($request->user());
-    }
-
-    public function setToken(UserSignInRequest $request)
-    {
-        $this->tokenResult = $this->authService->generateToken($request);
+        return response()->json(
+            request()->user()
+        );
     }
 }

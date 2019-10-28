@@ -5,6 +5,7 @@ return [
     'exists_exception' => 'The Template with the same Name already exists.',
     'system_updating_exception' => 'You could not update the system defined Template.',
     'system_deleting_exception' => 'You could not delete the system defined Template.',
+    'attached_deleting_exception' => 'You could not delete this Template because it is already in use in one or more Quotes.',
     'designer' => [
         'first_page' => [
             // Quotation For

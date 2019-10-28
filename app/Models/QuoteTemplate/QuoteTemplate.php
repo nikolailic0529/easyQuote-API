@@ -11,7 +11,8 @@ use App\Traits \ {
     Draftable,
     Systemable,
     Search\Searchable,
-    Collaboration\BelongsToCollaboration
+    Collaboration\BelongsToCollaboration,
+    HasQuotes
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -22,12 +23,13 @@ class QuoteTemplate extends UuidModel
         BelongsToCompany,
         BelongsToVendor,
         BelongsToCountries,
+        BelongsToCollaboration,
+        HasQuotes,
         Draftable,
         Activatable,
         Systemable,
         Searchable,
-        SoftDeletes,
-        BelongsToCollaboration;
+        SoftDeletes;
 
     protected $fillable = [
         'name', 'company_id', 'vendor_id', 'form_data', 'form_values_data'
@@ -42,4 +44,9 @@ class QuoteTemplate extends UuidModel
         'form_data' => 'array',
         'form_values_data' => 'array'
     ];
+
+    public function isAttached()
+    {
+        return $this->quotes()->exists();
+    }
 }

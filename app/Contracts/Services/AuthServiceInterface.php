@@ -1,52 +1,48 @@
-<?php
+<?php namespace App\Contracts\Services;
 
-namespace App\Contracts\Services;
-
-use App\Http\Requests \ {
-    UserSignInRequest,
-    UserSignUpRequest
-};
+use App\Http\Requests\UserSignInRequest;
+use Laravel\Passport\PersonalAccessTokenResult;
 
 interface AuthServiceInterface
 {
     /**
      * Try to authenticate user
      *
-     * @param Array $credentials
+     * @param array $credentials
      * @return void
      */
-    public function checkCredentials(Array $credentials);
+    public function checkCredentials(array $credentials);
 
     /**
      * Store Access Attempt
      * If successfull will set relevant flag
      *
-     * @param Array $payload
+     * @param array $payload
      * @return void
      */
-    public function storeAccessAttempt(Array $payload);
-    
-    /**
-     * Parse and return time from token
-     *
-     * @param [type] $tokenResult
-     * @return void
-     */
-    public function parseTokenTime($tokenResult);
-    
+    public function storeAccessAttempt(array $payload);
+
     /**
      * Generate and return token for authenticated user
      *
      * @param UserSignInRequest $request
-     * @return Object
+     * @return \Laravel\Passport\PersonalAccessTokenResult
      */
-    public function generateToken(UserSignInRequest $request);
+    public function generateToken(UserSignInRequest $request): PersonalAccessTokenResult;
 
     /**
-     * Handling User Sign In Request
+     * Authenticate User
      *
-     * @param UserSignUpRequest $request
-     * @return UserSignUpRequest
+     * @param UserSignInRequest $request
+     * @return mixed
      */
-    public static function handleSignUpRequest(UserSignUpRequest $request);
+    public function authenticate(UserSignInRequest $request);
+
+    /**
+     * Response when Successful Authentication
+     *
+     * @param PersonalAccessTokenResult $token
+     * @return array
+     */
+    public function response(PersonalAccessTokenResult $token): array;
 }

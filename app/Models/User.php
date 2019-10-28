@@ -4,10 +4,10 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Laravel\Passport\HasApiTokens;
 use App\Models\AuthenticableUser;
+use App\Models\Collaboration\Invitation;
 use App\Traits \ {
     HasCountry,
     HasTimezone,
-    HasRole,
     HasQuoteFilesDirectory,
     HasQuoteFiles,
     HasQuotes,
@@ -17,9 +17,10 @@ use App\Traits \ {
     Vendor\HasVendors,
     Company\HasCompanies,
     QuoteTemplate\HasQuoteTemplates,
-    Collaboration\BelongsToCollaboration
+    QuoteTemplate\HasTemplateFields,
+    Collaboration\BelongsToCollaboration,
+    Collaboration\HasInvitations
 };
-use App\Traits\QuoteTemplate\HasTemplateFields;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends AuthenticableUser implements MustVerifyEmail
@@ -30,8 +31,9 @@ class User extends AuthenticableUser implements MustVerifyEmail
         HasQuoteFiles,
         HasQuoteFilesDirectory,
         HasApiTokens,
-        Notifiable,
         HasCountry,
+        HasInvitations,
+        Notifiable,
         HasTimezone,
         HasCountryMargins,
         HasDiscounts,
@@ -83,5 +85,14 @@ class User extends AuthenticableUser implements MustVerifyEmail
         return $query->whereDoesntHave('roles', function ($query) {
             $query->whereName('Administrator');
         });
+    }
+
+    public function interact($model)
+    {
+        if($model instanceof Invitation) {
+            $this->attributes['collaboration_id'] = $model->collaboration_id;
+            $this->assignRole($model->role);
+            return $this->save() && $model->delete();
+        }
     }
 }

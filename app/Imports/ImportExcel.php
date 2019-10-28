@@ -154,29 +154,36 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
     {
         $headingRow = HeadingRowExtractor::extract($worksheet, $this);
 
-        $coverageReg = '/((?<!from|to)[ ]*coverage[ ]*?period(?!from|to))|((?<!fra|til)[ ]*dæknings[ ]*periode[ ]*(?<!fra|til))/i';
+        $coverageReg = '/((?<!from|to)[ ]*coverage[ ]*?(period)?(?!from|to))|((?<!fra|til)[ ]*dæknings[ ]*periode[ ]*(?<!fra|til))/i';
         $coverageExists = preg_grep($coverageReg, $headingRow);
 
         if(!$coverageExists) {
             return;
         }
 
-        if(preg_match('/dæknings/i', reset($coverageExists))) {
-            $lang = 'de';
-        } else {
-            $lang = 'en';
-        }
+        $lang = preg_match('/dæknings/i', reset($coverageExists)) ? 'de' : 'en';
 
         $nextHeadingRow = head(iterator_to_array($worksheet->getRowIterator($this->headingRow, $this->headingRow)));
         $cellIterator = $nextHeadingRow->getCellIterator();
-        $cellIterator->setIterateOnlyExistingCells(true);
+        $cellIterator->setIterateOnlyExistingCells(false);
 
+        $foundStart = false;
+        $foundEnd = false;
         foreach ($cellIterator as $cell) {
-            if(preg_match($coverageReg, $cell->getValue())) {
+            if(preg_match($coverageReg, $cell->getValue()) && !$foundStart) {
                 $cell->setValue(__("parser.coverage_period.{$lang}.from"));
-                $columnIndex = $cellIterator->getCurrentColumnIndex();
+                $foundStart = $cellIterator->getCurrentColumnIndex();
+                continue;
+            }
 
-                $worksheet->setCellValueByColumnAndRow(++$columnIndex, $this->headingRow, __("parser.coverage_period.{$lang}.to"));
+            if($foundStart && $cell->getValue() === null) {
+                $foundEnd = $cellIterator->getCurrentColumnIndex();
+                continue;
+            }
+
+            if($foundStart && $foundEnd && $cell->getValue() !== null) {
+                $end = (int) ($foundStart + floor(($foundEnd - $foundStart) / 2) + 1);
+                $worksheet->setCellValueByColumnAndRow($end, $this->headingRow, __("parser.coverage_period.{$lang}.to"));
                 break;
             }
         }
@@ -218,7 +225,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
     private function fetchRow(Collection $row)
     {
-        $columns = $row->map(function ($value, $header) {
+        $columns = $row->map(function ($value, $header) use ($row) {
             if(isset($value)) {
                 $value = trim(str_replace('_x000D_', '', $value));
             }
@@ -236,10 +243,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
     private function mapHeaders(Worksheet $worksheet)
     {
-        $headingRow = collect(HeadingRowExtractor::extract($worksheet, $this))
-            ->reject(function ($header) {
-                return gettype($header) !== 'string';
-            });
+        $headingRow = collect(HeadingRowExtractor::extract($worksheet, $this));
 
         $aliasesMapping = $this->importableColumn->allSystem()->pluck('aliases.*.alias', 'id');
 

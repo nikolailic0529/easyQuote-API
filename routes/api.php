@@ -2,8 +2,10 @@
 
 Route::group(['namespace' => 'API'], function () {
     Route::group(['prefix' => 'auth', 'middleware' => 'throttle:120,1'], function () {
-        Route::post('signin', 'AuthController@signin');
-        Route::post('signup', 'AuthController@signup');
+        Route::post('signin', 'AuthController@signin')->name('signin');
+        Route::post('signup', 'AuthController@signup')->name('signup');
+        Route::get('signup/{invitation}', 'AuthController@invitation');
+        Route::post('signup/{invitation}', 'AuthController@completeInvitation');
 
         Route::group(['middleware' => 'auth:api'], function () {
             Route::get('logout', 'AuthController@logout');
@@ -23,7 +25,11 @@ Route::group(['namespace' => 'API'], function () {
 
     Route::group(['middleware' => 'auth:api'], function () {
         Route::group(['middleware' => 'throttle:60,1'], function () {
-            Route::resource('roles', 'RoleController')->only(config('route.crud'));
+            Route::resource('users', 'UserController', ['only' => config('route.crud')]);
+        });
+
+        Route::group(['middleware' => 'throttle:60,1'], function () {
+            Route::resource('roles', 'RoleController', ['only' => config('route.crud')]);
             Route::put('roles/activate/{role}', 'RoleController@activate');
             Route::put('roles/deactivate/{role}', 'RoleController@deactivate');
         });

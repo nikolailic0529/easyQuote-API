@@ -35,6 +35,9 @@ class DatabaseSeeder extends Seeder
         $this->call(ImportableColumnsSeeder::class);
         $this->command->info('Seeded the file importable columns!');
 
+        $this->call(MySQLSeeder::class);
+        $this->command->info('Seeded the stored MySQL functions!');
+
         $this->call(VendorsSeeder::class);
         $this->command->info('Seeded the vendors!');
 

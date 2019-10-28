@@ -40,7 +40,13 @@ class QuoteTemplateObserver
      */
     public function deleting(QuoteTemplate $quoteTemplate)
     {
-        //
+        if(app()->runningInConsole()) {
+            return;
+        }
+
+        if($quoteTemplate->isAttached()) {
+            throw new \ErrorException(__('template.attached_deleting_exception'));
+        }
     }
 
     private function exists(QuoteTemplate $quoteTemplate)

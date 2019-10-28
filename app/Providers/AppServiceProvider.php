@@ -46,7 +46,8 @@ use App\Models \ {
     Quote\Discount\PromotionalDiscount,
     Quote\Discount\SND,
     QuoteTemplate\QuoteTemplate,
-    QuoteTemplate\TemplateField
+    QuoteTemplate\TemplateField,
+    Collaboration\Invitation
 };
 use App\Observers \ {
     CompanyObserver,
@@ -58,7 +59,8 @@ use App\Observers \ {
     Discount\PromotionalDiscountObserver,
     Discount\SNDobserver,
     QuoteTemplateObserver,
-    TemplateFieldObserver
+    TemplateFieldObserver,
+    Collaboration\InvitationObserver
 };
 use App\Repositories \ {
     TimezoneRepository,
@@ -184,6 +186,8 @@ class AppServiceProvider extends ServiceProvider
         QuoteTemplate::observe(QuoteTemplateObserver::class);
 
         TemplateField::observe(TemplateFieldObserver::class);
+
+        Invitation::observe(InvitationObserver::class);
     }
 
     protected function registerMacro()
