@@ -1,7 +1,10 @@
 <?php namespace App\Models\Quote\Discount;
 
-use App\Models\Quote\Quote;
-use App\Models\UuidModel;
+use App\Contracts\ActivatableInterface;
+use App\Models \ {
+    UuidModel,
+    Quote\Quote
+};
 use App\Traits \ {
     Activatable,
     BelongsToCountry,
@@ -11,8 +14,9 @@ use App\Traits \ {
     Collaboration\BelongsToCollaboration
 };
 use App\Models\Quote\Discount as QuoteDiscount;
+use Arr;
 
-abstract class Discount extends UuidModel
+abstract class Discount extends UuidModel implements ActivatableInterface
 {
     use Activatable, Searchable, BelongsToCountry, BelongsToVendor, BelongsToUser, BelongsToCollaboration;
 
@@ -43,7 +47,7 @@ abstract class Discount extends UuidModel
     {
         $this->load('country', 'vendor');
 
-        return $this->toArray();
+        return Arr::except($this->toArray(), ['vendor.logo']);
     }
 
     public function quoteDiscount()

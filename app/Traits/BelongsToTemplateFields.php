@@ -9,7 +9,6 @@ trait BelongsToTemplateFields
     {
         static::created(function (Model $model) {
             $systemTemplateFields = TemplateField::system()->pluck('id');
-
             $model->templateFields()->syncWithoutDetaching($systemTemplateFields);
         });
     }
@@ -17,5 +16,14 @@ trait BelongsToTemplateFields
     public function templateFields()
     {
         return $this->belongsToMany(TemplateField::class)->ordered();
+    }
+
+    public function syncTemplateFields($templateFields)
+    {
+        if(!is_array($templateFields)) {
+            return false;
+        }
+
+        return $this->templateFields()->sync($templateFields);
     }
 }

@@ -11,7 +11,7 @@ abstract class DiscountRepository extends SearchableRepository
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\OrderByVendor::class,
             \App\Http\Query\OrderByCountry::class,
-            \App\Http\Query\Discount\OrderByName::class
+            \App\Http\Query\OrderByName::class
         ];
 
         return array_merge($through, $this->appendFilterQueryThrough());

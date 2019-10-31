@@ -1,10 +1,6 @@
 <?php namespace App\Imports;
 
-use App\Models \ {
-    QuoteFile\ImportedRow,
-    QuoteFile\QuoteFile
-};
-use App\Models\QuoteFile\ImportedColumn;
+use App\Models\QuoteFile\QuoteFile;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel \ {
     Row,
@@ -19,8 +15,10 @@ use Maatwebsite\Excel \ {
     Imports\HeadingRowExtractor,
 };
 use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface as ImportableColumnRepository;
+use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use Str;
+use Webpatser\Uuid\Uuid;
+use Str, Arr, DB;
 
 class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkReading
 {
@@ -50,6 +48,8 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
     protected $rowsCount = 0;
 
+    protected $importableSheetData = [];
+
     public function __construct(QuoteFile $quoteFile) {
         $this->quoteFile = $quoteFile->load('user');
         $this->user = $quoteFile->user;
@@ -66,13 +66,13 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         }
 
         $row = $row->toCollection(null, true);
-        $columnsData = $this->fetchRow($row);
+        $importableRow = $this->fetchRow($row);
 
-        if(!$this->checkColumnsData($columnsData)) {
+        if(!$this->checkColumnsData($importableRow['imported_columns'])) {
             return null;
         };
 
-        $this->makeRow($columnsData)->save();
+        $this->makeRow($importableRow);
 
         $this->increaseRowsCount();
     }
@@ -92,6 +92,9 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
                 $this->determineCoveragePeriod($worksheet);
             },
+            AfterSheet::class => function ($event) {
+                $this->importSheetData();
+            },
             AfterImport::class => function ($event) {
                 if($this->rowsCount < 1) {
                     $this->quoteFile->setException(__('parser.no_rows_exception'));
@@ -103,7 +106,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
     public function chunkSize(): int
     {
-        return 1000;
+        return 10000;
     }
 
     public function headingRow(): int
@@ -111,8 +114,22 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         return $this->headingRow;
     }
 
+    private function importSheetData()
+    {
+        if(empty($this->importableSheetData)) {
+            return;
+        }
+
+        $importableRows = Arr::pluck($this->importableSheetData, 'imported_row');
+        $importableColumns = Arr::collapse(Arr::pluck($this->importableSheetData, 'imported_columns.*'));
+
+        DB::table('imported_rows')->insert($importableRows);
+        DB::table('imported_columns')->insert($importableColumns);
+    }
+
     private function beforeNextSheet()
     {
+        $this->importableSheetData = [];
         $this->activeSheetIndex++;
         $this->headingRow = 1;
         $this->startRow = 2;
@@ -141,9 +158,9 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
     {
         $pass = $this->requiredHeadersMapping->reject(function ($header, $id) use ($columnsData) {
             return $columnsData->contains(function ($column) use ($header) {
-                return trim($column->header) === trim($header) && isset($column->value);
+                return trim($column['header']) === trim($header) && isset($column['value']);
             }) || $columnsData->filter(function ($column) {
-                return isset($column->value);
+                return isset($column['value']);
             })->count() > 3;
         })->isEmpty();
 
@@ -211,34 +228,40 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         return trim(Str::limit($header, 40, ''));
     }
 
-    private function makeRow(Collection $columnsData)
+    private function makeRow(array $row)
     {
-        $user_id = $this->user->id;
-        $quote_file_id = $this->quoteFile->id;
-        $page = $this->activeSheetIndex;
-
-        $importedRow = ImportedRow::make(compact('user_id', 'quote_file_id', 'page'));
-        $importedRow->columnsDataToCreate = $columnsData;
-
-        return $importedRow;
+        array_push($this->importableSheetData, $row);
     }
 
     private function fetchRow(Collection $row)
     {
-        $columns = $row->map(function ($value, $header) use ($row) {
+        $imported_row_id = Uuid::generate(4)->string;
+        $now = now()->toDateTimeString();
+        $imported_row = [
+            'id' => $imported_row_id,
+            'user_id' => $this->user->id,
+            'quote_file_id' => $this->quoteFile->id,
+            'page' => $this->activeSheetIndex,
+            'created_at' => $now,
+            'updated_at' => $now,
+            'processed_at' => $now
+        ];
+
+        $imported_columns = $row->map(function ($value, $header) use ($row, $imported_row_id) {
             if(isset($value)) {
-                $value = trim(str_replace('_x000D_', '', $value));
+                $value = preg_replace('/(^[\h]+)|([\h]+$)/um', '', str_replace('_x000D_', '', $value));
             }
 
+            $id = Uuid::generate(4)->string;
             $importable_column_id = $this->headersMapping->get($header);
             $header = $this->checkAndLimitHeader($header);
 
-            return ImportedColumn::make(compact('importable_column_id', 'value', 'header'));
+            return compact('id', 'imported_row_id', 'importable_column_id', 'value', 'header');
         })->filter(function ($column) {
-            return isset($column->importable_column_id) && $column->header !== $column->value;
+            return isset($column['importable_column_id']) && $column['header'] !== $column['value'];
         })->values();
 
-        return $columns;
+        return compact('imported_row', 'imported_columns');
     }
 
     private function mapHeaders(Worksheet $worksheet)

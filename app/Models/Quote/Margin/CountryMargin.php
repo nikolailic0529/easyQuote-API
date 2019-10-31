@@ -6,6 +6,7 @@ use App\Traits \ {
 };
 use App\Models\Quote\Quote;
 use Illuminate\Database\Eloquent\Builder;
+use Arr;
 
 class CountryMargin extends Margin
 {
@@ -27,8 +28,9 @@ class CountryMargin extends Margin
 
     public function toSearchArray()
     {
+        $value = strval($this->value);
         $this->load('country', 'vendor');
 
-        return $this->toArray();
+        return array_merge(Arr::except($this->toArray(), ['vendor.logo']), compact('value'));
     }
 }

@@ -14,11 +14,8 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
 
     public function get(string $key)
     {
-        $builder = $this->systemSetting->where('key', $key);
+        $setting = $this->systemSetting->where('key', $key)->firstOrNew([]);
 
-        if(!$builder->exists()) {
-            return null;
-        }
-        return $builder->first()->value;
+        return $setting->value;
     }
 }

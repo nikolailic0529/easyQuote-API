@@ -1,5 +1,6 @@
 <?php namespace App\Models\QuoteTemplate;
 
+use App\Contracts\ActivatableInterface;
 use App\Models \ {
     UuidModel,
     QuoteFile\ImportableColumn,
@@ -17,7 +18,7 @@ use App\Traits\Search\Searchable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Str;
 
-class TemplateField extends UuidModel implements HasOrderedScope
+class TemplateField extends UuidModel implements HasOrderedScope, ActivatableInterface
 {
     use BelongsToCollaboration,
         BelongsToUser,

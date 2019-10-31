@@ -9,6 +9,7 @@ use App\Http\Requests \ {
     ReviewAppliedMarginRequest
 };
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 interface QuoteRepositoryInterface
 {
@@ -44,64 +45,6 @@ interface QuoteRepositoryInterface
     public function step2(MappingReviewRequest $request);
 
     /**
-     * Get User's Submitted Quote
-     *
-     * @return \App\Models\Quote
-     */
-    public function getSubmitted(string $id);
-
-    /**
-     * Get User's Drafted Quote
-     *
-     * @return \App\Models\Quote
-     */
-    public function getDrafted(string $id);
-
-    /**
-     * Get All User's Drafted Quotes
-     *
-     * @return \Illuminate\Database\Eloquent\Collection
-     */
-    public function allDrafted();
-
-    /**
-     * Get All User's Submitted Quotes
-     *
-     * @return \Illuminate\Database\Eloquent\Collection
-     */
-    public function allSubmitted();
-
-    /**
-     * Search by Drafted Quotes
-     *
-     * @param string $query
-     * @return \App\Builder\Pagination\Paginator
-     */
-    public function searchDrafted(string $query = ''): Paginator;
-
-    /**
-     * Search by Submitted Quotes
-     *
-     * @param string $query
-     * @return \App\Builder\Pagination\Paginator
-     */
-    public function searchSubmitted(string $query = ''): Paginator;
-
-    /**
-     * Get User's Drafted Quotes Query
-     *
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function draftedQuery(): Builder;
-
-    /**
-     * Get User's Submitted Quotes Query
-     *
-     * @return \Illuminate\Database\Eloquent\Builder
-     */
-    public function submittedQuery(): Builder;
-
-    /**
      * Find User's Quote
      *
      * @param Quote $quote
@@ -116,62 +59,6 @@ interface QuoteRepositoryInterface
      * @return \App\Models\Quote\Quote
      */
     public function getWithModifications(string $id);
-
-    /**
-     * Delete User's Drafted Quote
-     *
-     * @param string $id
-     * @return void
-     */
-    public function deleteDrafted(string $id);
-
-    /**
-     * Deactivate User's Drafted Quote
-     *
-     * @param string $id
-     * @return void
-     */
-    public function deactivateDrafted(string $id);
-
-    /**
-     * Activate User's Drafted Quote
-     *
-     * @param string $id
-     * @return void
-     */
-    public function activateDrafted(string $id);
-
-    /**
-     * Delete User's Submitted Quote
-     *
-     * @param string $id
-     * @return void
-     */
-    public function deleteSubmitted(string $id);
-
-    /**
-     * Deactivate User's Submitted Quote
-     *
-     * @param string $id
-     * @return void
-     */
-    public function deactivateSubmitted(string $id);
-
-    /**
-     * Activate User's Submitted Quote
-     *
-     * @param string $id
-     * @return void
-     */
-    public function activateSubmitted(string $id);
-
-    /**
-     * Copy Submitted Quote with Relations
-     *
-     * @param string $id
-     * @return void
-     */
-    public function copy(string $id);
 
     /**
      * Set/Create Margin for Quote
@@ -216,4 +103,13 @@ interface QuoteRepositoryInterface
      * @return void
      */
     public function mappingReviewData(Quote $quote, $clearCache = null);
+
+    /**
+     * Find Rows by query
+     *
+     * @param string $id
+     * @param string $query
+     * @return \Illuminate\Support\Collection
+     */
+    public function rows(string $id, string $query = ''): Collection;
 }

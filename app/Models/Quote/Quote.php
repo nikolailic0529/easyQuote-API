@@ -1,5 +1,6 @@
 <?php namespace App\Models\Quote;
 
+use App\Contracts\ActivatableInterface;
 use App\Contracts\HasOrderedScope;
 use App\Models \ {
     CompletableModel,
@@ -23,14 +24,16 @@ use App\Traits \ {
     Margin\HasMarginPercentageAttribute,
     Quote\HasPricesAttributes,
     Quote\HasMapping,
+    Quote\HasCustomDiscountAttribute,
     QuoteTemplate\BelongsToQuoteTemplate,
     Collaboration\BelongsToCollaboration
 };
+use App\Traits\Quote\HasGroupDescriptionAttribute;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Setting;
+use Setting, Arr;
 
-class Quote extends CompletableModel implements HasOrderedScope
+class Quote extends CompletableModel implements HasOrderedScope, ActivatableInterface
 {
     use Searchable,
         HasQuoteFiles,
@@ -49,7 +52,9 @@ class Quote extends CompletableModel implements HasOrderedScope
         HasMorphableDiscounts,
         HasMarginPercentageAttribute,
         HasPricesAttributes,
-        HasMapping;
+        HasMapping,
+        HasCustomDiscountAttribute,
+        HasGroupDescriptionAttribute;
 
     public $computableRows = null;
 
@@ -94,7 +99,7 @@ class Quote extends CompletableModel implements HasOrderedScope
         'margin_data' => 'array',
         'checkbox_status' => 'json',
         'calculate_list_price' => 'boolean',
-        'buy_price' => 'decimal,2'
+        'buy_price' => 'float'
     ];
 
     public function scopeNewType($query)
@@ -169,9 +174,18 @@ class Quote extends CompletableModel implements HasOrderedScope
 
     public function toSearchArray()
     {
-        $this->load('customer', 'company');
+        $this->load('customer', 'company', 'vendor');
 
-        return collect($this->toArray())->except(['margin_data', 'checkbox_status', 'calculate_list_price'])->toArray();
+        return Arr::except(
+            $this->toArray(),
+                [
+                    'margin_data',
+                    'checkbox_status',
+                    'calculate_list_price',
+                    'vendor.logo',
+                    'company.logo'
+                ]
+            );
     }
 
     public function getCompletenessDictionary()

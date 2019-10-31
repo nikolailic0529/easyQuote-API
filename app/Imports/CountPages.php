@@ -25,10 +25,10 @@ class CountPages implements WithEvents, WithChunkReading
         return [
             BeforeSheet::class => function () {
                 $this->sheetCount++;
-            },
+            }
         ];
     }
-    
+
     public function chunkSize(): int
     {
         return 1000;

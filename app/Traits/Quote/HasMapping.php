@@ -57,18 +57,6 @@ trait HasMapping
         return $this->templateFields()->detach();
     }
 
-    public function getMappingAttribute()
-    {
-        $mapping = $this->fieldsColumns()
-            ->with('importableColumn', 'templateField.systemImportableColumn')
-            ->get()
-            ->mapWithKeys(function ($fieldColumn) {
-                return [$fieldColumn->templateField->name => $fieldColumn->importableColumn->id ?? $fieldColumn->templateField->systemImportableColumn->id];
-            });
-
-        return $mapping;
-    }
-
     public function rowsDataByColumns($selected = false)
     {
         $fieldsColumns = $this->fieldsColumns()->with('importableColumn', 'templateField')->get();
@@ -111,9 +99,7 @@ trait HasMapping
                             "max(
                                 if(
                                     `imported_columns`.`name` = ?,
-                                    cast(
-                                        ExtractDecimal(`imported_columns`.`value`)
-                                        as decimal(8,2)),
+                                    ExtractDecimal(`imported_columns`.`value`),
                                     null
                                 )
                             ) as {$mapping->templateField->name}",
@@ -173,16 +159,9 @@ trait HasMapping
             ->groupBy('imported_rows.id');
     }
 
-    public function rowsDataByColumnsCalculated($selected = false)
+    public function rowsDataByColumnsCalculated(bool $selected = false)
     {
-        $columns = $this->fieldsColumns()
-            ->with('importableColumn', 'templateField')
-            ->whereDoesntHave('templateField', function ($query) {
-                $query->whereName('price');
-            })
-            ->get()
-            ->pluck('templateField.name')
-            ->toArray();
+        $columns = $this->templateFieldsToArray('price');
 
         return DB::query()
             ->fromSub($this->rowsDataByColumns($selected), 'rows_data')
@@ -194,15 +173,25 @@ trait HasMapping
             );
     }
 
+    public function rowsDataByColumnsGroupable(string $query = '')
+    {
+        return $this->rowsDataByColumns()
+            ->join('imported_columns as groupable', function ($join) use ($query) {
+                $join->on('groupable.imported_row_id', '=', 'imported_rows.id')
+                    ->whereRaw('match(groupable.value) against (?)', [$query]);
+            });
+    }
+
     public function countTotalPrice()
     {
         $sub = $this->calculate_list_price ? $this->rowsDataByColumnsCalculated(true) : $this->rowsDataByColumns(true);
+        $subQuery = DB::query()->fromSub($sub, 'rows_data');
 
-        if(!$sub->exists('price')) {
+        if(!$this->templateFields->contains('name', 'price')) {
             return 0.00;
         }
 
-        return DB::query()->fromSub($sub, 'rows_data')->sum('price');
+        return $subQuery->sum('price');
     }
 
     public function getFieldColumnAttribute()
@@ -222,5 +211,14 @@ trait HasMapping
         });
 
         return $templateFields;
+    }
+
+    public function templateFieldsToArray(...$except)
+    {
+        if(is_array(head($except))) {
+            $except = head($except);
+        }
+
+        return $this->templateFields->whereNotIn('name', $except)->sortBy('order')->pluck('name')->toArray();
     }
 }

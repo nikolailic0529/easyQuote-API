@@ -18,7 +18,9 @@ class DiscountPolicy
      */
     public function viewAny(User $user)
     {
-        return true;
+        if($user->can('view_discounts')) {
+            return true;
+        }
     }
 
     /**

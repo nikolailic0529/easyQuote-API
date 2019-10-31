@@ -1,24 +1,34 @@
 <?php namespace App\Models;
 
 use App\Models\UuidModel;
-use Illuminate\Http\Request;
+use Laravel\Passport\PersonalAccessTokenResult;
 
 class AccessAttempt extends UuidModel
 {
     protected $fillable = [
-        'email', 'token', 'ip_address', 'user_agent', 'is_success'
+        'email'
     ];
 
-    public function markAsSuccessfull()
+    protected static function boot()
     {
-        return $this->fill([
-            'is_success' => true
+        parent::boot();
+
+        static::creating(function ($model) {
+            $model->setDetails();
+        });
+    }
+
+    public function markAsSuccessful(PersonalAccessTokenResult $token)
+    {
+        return $this->forceFill([
+            'is_success' => true,
+            'token' => $token->accessToken
         ])->save();
     }
 
     public function setDetails()
     {
-        $this->fill([
+        $this->forceFill([
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
         ]);

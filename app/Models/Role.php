@@ -1,5 +1,6 @@
 <?php namespace App\Models;
 
+use App\Contracts\ActivatableInterface;
 use App\Models \ {
     UuidModel,
     Permission
@@ -26,7 +27,7 @@ use Illuminate\Database\Eloquent \ {
     Relations\BelongsToMany
 };
 
-class Role extends UuidModel implements RoleContract
+class Role extends UuidModel implements RoleContract, ActivatableInterface
 {
     use HasPermissions,
         RefreshesPermissionCache,
@@ -222,5 +223,10 @@ class Role extends UuidModel implements RoleContract
         $permissions = Permission::whereIn('name', $permissionsNames)->get();
 
         return $this->syncPermissions($permissions);
+    }
+
+    public static function administrator()
+    {
+        return static::whereName('Administrator')->system()->firstOrFail();
     }
 }

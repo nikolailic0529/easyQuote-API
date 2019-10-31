@@ -20,13 +20,13 @@ class AuthService implements AuthServiceInterface
 
     public function authenticate(UserSignInRequest $request)
     {
-        $this->storeAccessAttempt($request->all());
+        $attempt = $this->storeAccessAttempt($request->validated());
 
         $this->checkCredentials($request->only('email', 'password'));
 
-        $this->accessAttempt->markAsSuccessfull();
-
         $token = $this->generateToken($request);
+
+        $attempt->markAsSuccessful($token);
 
         return $this->response($token);
     }
@@ -47,20 +47,15 @@ class AuthService implements AuthServiceInterface
 
     public function storeAccessAttempt(array $payload)
     {
-        $this->accessAttempt = $this->accessAttempt->create($payload);
-        $this->accessAttempt->setDetails();
-
-        return $this->accessAttempt->save();
+        return $this->accessAttempt->create($payload);
     }
 
     public function generateToken(UserSignInRequest $request): PersonalAccessTokenResult
     {
-        $user = $request->user();
-
-        $tokenResult = $user->createToken('Personal Access Token');
+        $tokenResult = $request->user()->createToken('Personal Access Token');
         $token = $tokenResult->token;
 
-        if($request->remember_me) {
+        if((bool) $request->remember_me) {
             $token->expires_at = Carbon::now()->addWeeks(1);
         }
 

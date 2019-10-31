@@ -1,11 +1,16 @@
 <?php namespace App\Models;
 
+use App\Contracts\ActivatableInterface;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Laravel\Passport\HasApiTokens;
-use App\Models\AuthenticableUser;
-use App\Models\Collaboration\Invitation;
+use App\Models \ {
+    Role,
+    AuthenticableUser,
+    Collaboration\Invitation
+};
 use App\Traits \ {
+    Activatable,
     HasCountry,
     HasTimezone,
     HasQuoteFilesDirectory,
@@ -19,11 +24,12 @@ use App\Traits \ {
     QuoteTemplate\HasQuoteTemplates,
     QuoteTemplate\HasTemplateFields,
     Collaboration\BelongsToCollaboration,
-    Collaboration\HasInvitations
+    Collaboration\HasInvitations,
+    Search\Searchable
 };
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends AuthenticableUser implements MustVerifyEmail
+class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInterface
 {
     use HasRoles,
         HasImportableColumns,
@@ -41,7 +47,9 @@ class User extends AuthenticableUser implements MustVerifyEmail
         HasCompanies,
         HasQuoteTemplates,
         HasTemplateFields,
-        BelongsToCollaboration;
+        BelongsToCollaboration,
+        Activatable,
+        Searchable;
 
     /**
      * The attributes that are mass assignable.
@@ -58,7 +66,7 @@ class User extends AuthenticableUser implements MustVerifyEmail
      * @var array
      */
     protected $hidden = [
-        'password', 'remember_token',
+        'password', 'remember_token', 'roles'
     ];
 
     /**
@@ -68,6 +76,10 @@ class User extends AuthenticableUser implements MustVerifyEmail
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+    ];
+
+    protected $appends = [
+        'role_name'
     ];
 
     public function getFullNameAttribute()
@@ -90,9 +102,14 @@ class User extends AuthenticableUser implements MustVerifyEmail
     public function interact($model)
     {
         if($model instanceof Invitation) {
-            $this->attributes['collaboration_id'] = $model->collaboration_id;
+            $this->attributes['collaboration_id'] = $model->attributes['user_id'];
             $this->assignRole($model->role);
             return $this->save() && $model->delete();
         }
+    }
+
+    public function getRoleNameAttribute()
+    {
+        return $this->roles->first(null, Role::make([]))->name;
     }
 }

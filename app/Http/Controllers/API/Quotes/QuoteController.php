@@ -67,6 +67,12 @@ class QuoteController extends Controller
     {
         $this->authorize('view', $this->quote->find($request->quote_id));
 
+        if($request->has('search')) {
+            return response()->json(
+                $this->quote->rows($request->quote_id, $request->search)
+            );
+        }
+
         return response()->json(
             $this->quote->step2($request)
         );

@@ -1,13 +1,15 @@
 <?php namespace App\Repositories\Quote\Discount;
 
 use App\Contracts\Repositories\Quote\Discount\SNDrepositoryInterface;
-use App\Builder\Pagination\Paginator;
+use App\Models\Quote\Discount\SND;
 use App\Http\Requests\Discount \ {
     StoreSNDrequest,
     UpdateSNDrequest
 };
-use App\Models\Quote\Discount\SND;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent \ {
+    Model,
+    Builder
+};
 
 class SNDrepository extends DiscountRepository implements SNDrepositoryInterface
 {
@@ -15,34 +17,7 @@ class SNDrepository extends DiscountRepository implements SNDrepositoryInterface
 
     public function __construct(SND $snd)
     {
-        parent::__construct();
         $this->snd = $snd;
-    }
-
-    public function all(): Paginator
-    {
-        $activated = $this->filterQuery($this->userQuery()->activated());
-        $deactivated = $this->filterQuery($this->userQuery()->deactivated());
-
-        return $activated->union($deactivated)->apiPaginate();
-    }
-
-    public function search(string $query = ''): Paginator
-    {
-        $searchableFields = [
-            'name^5', 'value^4', 'created_at^3', 'country.name', 'vendor.name'
-        ];
-
-        $items = $this->searchOnElasticsearch($this->snd, $searchableFields, $query);
-
-        $activated = $this->buildQuery($this->promotionalDiscount, $items, function ($query) {
-            return $this->filterQuery($query->userCollaboration()->with('country', 'vendor')->activated());
-        });
-        $deactivated = $this->buildQuery($this->promotionalDiscount, $items, function ($query) {
-            return $this->filterQuery($query->userCollaboration()->with('country', 'vendor')->deactivated());
-        });
-
-        return $activated->union($deactivated)->apiPaginate();
     }
 
     public function userQuery(): Builder
@@ -89,5 +64,30 @@ class SNDrepository extends DiscountRepository implements SNDrepositoryInterface
         return [
             \App\Http\Query\Discount\OrderByValue::class
         ];
+    }
+
+    protected function filterableQuery()
+    {
+        return [
+            $this->userQuery()->activated(),
+            $this->userQuery()->deactivated()
+        ];
+    }
+
+    protected function searchableModel(): Model
+    {
+        return $this->snd;
+    }
+
+    protected function searchableFields(): array
+    {
+        return [
+            'name^5', 'value^4', 'created_at^3', 'country.name', 'vendor.name'
+        ];
+    }
+
+    protected function searchableScope(Builder $query)
+    {
+        return $query->userCollaboration()->with('country', 'vendor');
     }
 }

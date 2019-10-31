@@ -1,7 +1,7 @@
 <?php namespace App\Repositories\QuoteFile;
 
-use App\Models\QuoteFile\QuoteFileFormat;
 use App\Contracts\Repositories\QuoteFile\FileFormatRepositoryInterface;
+use App\Models\QuoteFile\QuoteFileFormat;
 
 class FileFormatRepository implements FileFormatRepositoryInterface
 {

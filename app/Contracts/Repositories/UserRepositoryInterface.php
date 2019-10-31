@@ -10,7 +10,7 @@ use App\Models \ {
     User,
     Collaboration\Invitation
 };
-use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 interface UserRepositoryInterface
@@ -55,21 +55,30 @@ interface UserRepositoryInterface
     public function create(array $attributes): User;
 
     /**
+     * Create a new User with Administrator Role
+     *
+     * @param array $attributes
+     * @return User
+     */
+    public function createAdministrator(array $attributes): User;
+
+    /**
      * Create a new User by Invitation
      *
      * @param array $attributes
      * @param \App\Models\Collaboration\Invitation $invitation
      * @return \App\Models\User
      */
-    public function completeInvitation(array $attributes, Invitation $invitation): User;
+    public function createCollaborator(array $attributes, Invitation $invitation): User;
 
     /**
      * Update Collaboration User
      *
      * @param \App\Http\Requests\Collaboration\UpdateUserRequest $request
+     * @param string $id
      * @return bool
      */
-    public function update(UpdateUserRequest $request): bool;
+    public function update(UpdateUserRequest $request, string $id): bool;
 
     /**
      * Get Collaboration User by id
@@ -100,4 +109,28 @@ interface UserRepositoryInterface
      * @return Builder
      */
     public function userQuery(): Builder;
+
+    /**
+     * Activate specified Collaboration User
+     *
+     * @param string $id
+     * @return bool
+     */
+    public function activate(string $id): bool;
+
+    /**
+     * Deactivate specified Collaboration User
+     *
+     * @param string $id
+     * @return bool
+     */
+    public function deactivate(string $id): bool;
+
+    /**
+     * Delete specified Collaboration User
+     *
+     * @param string $id
+     * @return bool
+     */
+    public function delete(string $id): bool;
 }

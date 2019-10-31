@@ -24,7 +24,8 @@ class MappingReviewRequest extends FormRequest
     public function rules()
     {
         return [
-            'quote_id' => 'required|uuid|exists:quotes,id'
+            'quote_id' => 'required|uuid|exists:quotes,id',
+            'search' => 'string'
         ];
     }
 }

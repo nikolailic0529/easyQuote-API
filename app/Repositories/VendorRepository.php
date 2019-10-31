@@ -1,14 +1,16 @@
 <?php namespace App\Repositories;
 
 use App\Contracts\Repositories\VendorRepositoryInterface;
-use App\Builder\Pagination\Paginator;
-use Illuminate\Database\Eloquent\Builder;
 use App\Http\Requests\Vendor \ {
     StoreVendorRequest,
     UpdateVendorRequest
 };
 use App\Models\Vendor;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent \ {
+    Model,
+    Builder,
+    Collection
+};
 use Cache;
 
 class VendorRepository extends SearchableRepository implements VendorRepositoryInterface
@@ -17,51 +19,12 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
 
     public function __construct(Vendor $vendor)
     {
-        parent::__construct();
         $this->vendor = $vendor;
-    }
-
-    public function all(): Paginator
-    {
-        $activated = $this->filterQuery($this->userQuery()->activated());
-        $deactivated = $this->filterQuery($this->userQuery()->deactivated());
-
-        $vendors = $activated->union($deactivated)->apiPaginate();
-        $vendors->each(function ($vendor) {
-            $vendor->appendLogo();
-        });
-
-        return $vendors;
     }
 
     public function allFlatten(): Collection
     {
         return $this->userQuery()->activated()->get()->each->makeHiddenExcept(['id', 'name']);
-    }
-
-    public function search(string $query = ''): Paginator
-    {
-        $searchableFields = [
-            'name^5', 'short_code^4', 'created_at^3'
-        ];
-
-        $items = $this->searchOnElasticsearch($this->vendor, $searchableFields, $query);
-
-        $activated = $this->buildQuery($this->vendor, $items, function ($query) {
-            $query->userCollaboration()->with('image', 'countries')->activated();
-            $this->filterQuery($query);
-        });
-        $deactivated = $this->buildQuery($this->vendor, $items, function ($query) {
-            $query->userCollaboration()->with('image', 'countries')->deactivated();
-            $this->filterQuery($query);
-        });
-
-        $vendors = $activated->union($deactivated)->apiPaginate();
-        $vendors->each(function ($vendor) {
-            $vendor->appendLogo();
-        });
-
-        return $vendors;
     }
 
     public function userQuery(): Builder
@@ -129,8 +92,33 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
         return [
             \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class,
-            \App\Http\Query\Vendor\OrderByName::class,
+            \App\Http\Query\OrderByName::class,
             \App\Http\Query\Vendor\OrderByShortCode::class
         ];
+    }
+
+    protected function filterableQuery()
+    {
+        return [
+            $this->userQuery()->activated(),
+            $this->userQuery()->deactivated()
+        ];
+    }
+
+    protected function searchableModel(): Model
+    {
+        return $this->vendor;
+    }
+
+    protected function searchableFields(): array
+    {
+        return [
+            'name^5', 'short_code^4', 'created_at^3'
+        ];
+    }
+
+    protected function searchableScope(Builder $query)
+    {
+        return $query->userCollaboration()->with('image', 'countries');
     }
 }

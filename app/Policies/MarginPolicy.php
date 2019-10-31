@@ -18,7 +18,9 @@ class MarginPolicy
      */
     public function viewAny(User $user)
     {
-        return true;
+        if($user->can('view_margins')) {
+            return true;
+        }
     }
 
     /**

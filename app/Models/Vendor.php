@@ -1,5 +1,6 @@
 <?php namespace App\Models;
 
+use App\Contracts\ActivatableInterface;
 use App\Contracts\WithImage;
 use App\Traits \ {
     Activatable,
@@ -13,7 +14,7 @@ use App\Traits \ {
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Vendor extends UuidModel implements WithImage
+class Vendor extends UuidModel implements WithImage, ActivatableInterface
 {
     use HasLogo,
         HasImage,
@@ -30,6 +31,16 @@ class Vendor extends UuidModel implements WithImage
     ];
 
     protected $hidden = [
-        'pivot', 'deleted_at', 'image', 'image_id', 'is_system', 'logo'
+        'pivot', 'deleted_at', 'image', 'image_id', 'is_system'
     ];
+
+    protected $appends = [
+        'logo'
+    ];
+
+    public function toSearchArray()
+    {
+        $this->makeHidden('logo');
+        return $this->toArray();
+    }
 }

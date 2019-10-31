@@ -65,7 +65,7 @@ interface MarginRepositoryInterface
     /**
      * Get All User's Country Margins
      *
-     * @return Collection
+     * @return Paginator
      */
     public function all(): Paginator;
 
@@ -84,4 +84,12 @@ interface MarginRepositoryInterface
      * @return void
      */
     public function deactivate(string $id);
+
+    /**
+     * Search through Collaboration Margins
+     *
+     * @param string $search
+     * @return Paginator
+     */
+    public function search(string $search = ''): Paginator;
 }

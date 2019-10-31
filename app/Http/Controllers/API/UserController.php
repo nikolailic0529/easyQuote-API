@@ -18,6 +18,7 @@ class UserController extends Controller
     public function __construct(UserRepository $user)
     {
         $this->user = $user;
+        $this->authorizeResource(User::class, 'user');
     }
 
     /**
@@ -27,7 +28,15 @@ class UserController extends Controller
      */
     public function index()
     {
-        //
+        if(request()->filled('search')) {
+            return response()->json(
+                $this->user->search(request('search'))
+            );
+        }
+
+        return response()->json(
+            $this->user->all()
+        );
     }
 
     /**
@@ -50,7 +59,9 @@ class UserController extends Controller
      */
     public function show(User $user)
     {
-        //
+        return response()->json(
+            $this->user->find($user->id)
+        );
     }
 
     /**
@@ -76,7 +87,9 @@ class UserController extends Controller
      */
     public function update(UpdateUserRequest $request, User $user)
     {
-        //
+        return response()->json(
+            $this->user->update($request, $user->id)
+        );
     }
 
     /**
@@ -87,7 +100,9 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
-        //
+        return response()->json(
+            $this->user->delete($user->id)
+        );
     }
 
     /**
@@ -98,7 +113,9 @@ class UserController extends Controller
      */
     public function activate(User $user)
     {
-        //
+        return response()->json(
+            $this->user->activate($user->id)
+        );
     }
 
     /**
@@ -109,6 +126,8 @@ class UserController extends Controller
      */
     public function deactivate(User $user)
     {
-        //
+        return response()->json(
+            $this->user->deactivate($user->id)
+        );
     }
 }

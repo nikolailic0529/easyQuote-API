@@ -1,6 +1,13 @@
 <?php namespace App\Traits\Discount;
 
-use App\Models\Quote\Discount;
+use App\Models\Quote \ {
+    Discount,
+    Discount\MultiYearDiscount,
+    Discount\PrePayDiscount,
+    Discount\PromotionalDiscount,
+    Discount\SND
+};
+use Arr;
 
 trait HasMorphableDiscounts
 {
@@ -13,19 +20,28 @@ trait HasMorphableDiscounts
         return $this->discounts
             ->reduce(function ($carry, $discount) {
                 return $carry + $discount->getValue($this->list_price);
-            }, 0);
+            }, 0) + $this->custom_discount;
     }
 
     public function discounts()
     {
+        $discountsOrder = Arr::quote($this->discountsOrder());
+
         return $this->belongsToMany(Discount::class, 'quote_discount')
             ->withPivot('duration')
-            ->with('discountable')->whereHasMorph('discountable', [
-                \App\Models\Quote\Discount\MultiYearDiscount::class,
-                \App\Models\Quote\Discount\PrePayDiscount::class,
-                \App\Models\Quote\Discount\PromotionalDiscount::class,
-                \App\Models\Quote\Discount\SND::class
-            ]);
+            ->with('discountable')
+            ->whereHasMorph('discountable', $this->discountsOrder())
+            ->orderByRaw("field(`discounts`.`discountable_type`, {$discountsOrder})", 'desc');
+    }
+
+    public function discountsOrder(): array
+    {
+        return [
+            MultiYearDiscount::class,
+            PrePayDiscount::class,
+            PromotionalDiscount::class,
+            SND::class
+        ];
     }
 
     public function getApplicableDiscountsFormattedAttribute()

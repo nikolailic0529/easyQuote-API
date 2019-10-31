@@ -91,4 +91,12 @@ interface QuoteTemplateRepositoryInterface
      * @return bool
      */
     public function deactivate(string $id): bool;
+
+    /**
+     * Copy specified Quote Template.
+     *
+     * @param string $id
+     * @return bool
+     */
+    public function copy(string $id): bool;
 }

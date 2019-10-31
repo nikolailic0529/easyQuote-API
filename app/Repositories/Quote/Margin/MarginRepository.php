@@ -1,6 +1,5 @@
 <?php namespace App\Repositories\Quote\Margin;
 
-use App\Builder\Pagination\Paginator;
 use App\Contracts\Repositories\Quote\Margin\MarginRepositoryInterface;
 use App\Repositories\SearchableRepository;
 use App\Http\Requests\Margin \ {
@@ -8,7 +7,10 @@ use App\Http\Requests\Margin \ {
     UpdateCountryMarginRequest
 };
 use App\Models\Quote\Margin\CountryMargin;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent \ {
+    Model,
+    Builder
+};
 
 class MarginRepository extends SearchableRepository implements MarginRepositoryInterface
 {
@@ -16,7 +18,6 @@ class MarginRepository extends SearchableRepository implements MarginRepositoryI
 
     public function __construct(CountryMargin $countryMargin)
     {
-        parent::__construct();
         $this->countryMargin = $countryMargin;
     }
 
@@ -57,35 +58,6 @@ class MarginRepository extends SearchableRepository implements MarginRepositoryI
         return $this->getCountryMargin($id)->delete();
     }
 
-    public function all(): Paginator
-    {
-        $activated = $this->filterQuery($this->userQuery()->activated());
-        $deactivated = $this->filterQuery($this->userQuery()->deactivated());
-
-        return $activated->union($deactivated)->apiPaginate();
-    }
-
-    public function searchCountryMargins(string $query = ''): Paginator
-    {
-        $searchableFields = [
-            'value^5', 'quote_type^4', 'created_at^3', 'country.name', 'vendor.name'
-        ];
-
-        $items = $this->searchOnElasticsearch($this->countryMargin, $searchableFields, $query);
-
-        $activated = $this->buildQuery($this->countryMargin, $items, function ($query) {
-            $query->userCollaboration()->with('country', 'vendor')->activated();
-            $this->filterQuery($query);
-        });
-
-        $deactivated = $this->buildQuery($this->countryMargin, $items, function ($query) {
-            $query->userCollaboration()->with('country', 'vendor')->deactivated();
-            $this->filterQuery($query);
-        });
-
-        return $activated->union($deactivated)->apiPaginate();
-    }
-
     public function activate(string $id)
     {
         return $this->find($id)->activate();
@@ -106,5 +78,30 @@ class MarginRepository extends SearchableRepository implements MarginRepositoryI
             \App\Http\Query\Margin\OrderByQuoteType::class,
             \App\Http\Query\Margin\OrderByValue::class
         ];
+    }
+
+    protected function filterableQuery()
+    {
+        return [
+            $this->userQuery()->activated(),
+            $this->userQuery()->deactivated()
+        ];
+    }
+
+    protected function searchableModel(): Model
+    {
+        return $this->countryMargin;
+    }
+
+    protected function searchableFields(): array
+    {
+        return [
+            'value^5', 'quote_type^4', 'created_at^3', 'country.name', 'vendor.name'
+        ];
+    }
+
+    protected function searchableScope(Builder $query)
+    {
+        return $query->userCollaboration()->with('country', 'vendor');
     }
 }

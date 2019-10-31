@@ -1,7 +1,7 @@
 <?php namespace App\Http\Controllers\API\Quotes;
 
 use App\Http\Controllers\Controller;
-use App\Contracts\Repositories\Quote\QuoteRepositoryInterface as QuoteRepository;
+use App\Contracts\Repositories\Quote\QuoteSubmittedRepositoryInterface as QuoteRepository;
 use App\Models\Quote\Quote;
 
 class QuoteSubmittedController extends Controller
@@ -23,19 +23,19 @@ class QuoteSubmittedController extends Controller
     {
         if(request()->filled('search')) {
             return response()->json(
-                $this->quote->searchSubmitted(request('search'))
+                $this->quote->search(request('search'))
             );
         }
 
         return response()->json(
-            $this->quote->allSubmitted()
+            $this->quote->all()
         );
     }
 
     public function show(Quote $submitted)
     {
         return response()->json(
-            $this->quote->getSubmitted($quote->id)
+            $this->quote->find($submitted->id)
         );
     }
 
@@ -48,7 +48,7 @@ class QuoteSubmittedController extends Controller
     public function destroy(Quote $submitted)
     {
         return response()->json(
-            $this->quote->deleteSubmitted($submitted->id)
+            $this->quote->delete($submitted->id)
         );
     }
 
@@ -63,7 +63,7 @@ class QuoteSubmittedController extends Controller
         $this->authorize('update', $submitted);
 
         return response()->json(
-            $this->quote->activateSubmitted($submitted->id)
+            $this->quote->activate($submitted->id)
         );
     }
 
@@ -78,7 +78,7 @@ class QuoteSubmittedController extends Controller
         $this->authorize('update', $submitted);
 
         return response()->json(
-            $this->quote->deactivateSubmitted($submitted->id)
+            $this->quote->deactivate($submitted->id)
         );
     }
 
@@ -86,7 +86,7 @@ class QuoteSubmittedController extends Controller
      * Create copy of the specified Submitted Quote
      *
      * @param Quote $submitted
-     * @return void
+     * @return \Illuminate\Http\Response
      */
     public function copy(Quote $submitted)
     {

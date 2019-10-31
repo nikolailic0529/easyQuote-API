@@ -8,7 +8,8 @@ use App\Models \ {
     Quote\Discount\Discount,
     QuoteFile\QuoteFile,
     QuoteTemplate\QuoteTemplate,
-    Role
+    Role,
+    User
 };
 use App\Policies \ {
     CompanyPolicy,
@@ -18,6 +19,7 @@ use App\Policies \ {
     QuotePolicy,
     QuoteTemplatePolicy,
     RolePolicy,
+    UserPolicy,
     VendorPolicy
 };
 use Laravel\Passport\Passport;
@@ -38,7 +40,8 @@ class AuthServiceProvider extends ServiceProvider
         Vendor::class => VendorPolicy::class,
         Discount::class => DiscountPolicy::class,
         Margin::class => MarginPolicy::class,
-        Role::class => RolePolicy::class
+        Role::class => RolePolicy::class,
+        User::class => UserPolicy::class
     ];
 
     /**

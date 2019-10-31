@@ -36,6 +36,12 @@ trait BelongsToCollaboration
             ->orWhere("{$this->getTable()}.collaboration_id", null);
     }
 
+    public function scopeUserCollaborationExcept($query)
+    {
+        return $query->where("{$this->getTable()}.collaboration_id", request()->user()->collaboration_id)
+            ->where("{$this->getTable()}.id", '!=', request()->user()->id);
+    }
+
     public function scopeCollaboration($query, string $collaboration_id)
     {
         return $query->where("{$this->getTable()}.collaboration_id", $collaboration_id);

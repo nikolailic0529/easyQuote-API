@@ -18,7 +18,9 @@ class QuoteFilePolicy
      */
     public function viewAny(User $user)
     {
-        return true;
+        if($user->can('view_quote_files')) {
+            return true;
+        }
     }
 
     /**

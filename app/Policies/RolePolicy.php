@@ -21,7 +21,9 @@ class RolePolicy
      */
     public function viewAny(User $user)
     {
-        return true;
+        if($user->can('view_roles')) {
+            return true;
+        }
     }
 
     /**

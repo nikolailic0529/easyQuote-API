@@ -24,13 +24,25 @@ class AuthController extends Controller
         $this->auth = $auth;
     }
 
+    /**
+     * Register a new User with Administrator Role
+     *
+     * @param UserSignUpRequest $request
+     * @return \Illuminate\Http\Response
+     */
     public function signup(UserSignUpRequest $request)
     {
         return response()->json(
-            (bool) $this->user->create($request->validated())
+            (bool) $this->user->createAdministrator($request->validated())
         );
     }
 
+    /**
+     * Show specified Invitation
+     *
+     * @param Invitation $invitation
+     * @return \Illuminate\Http\Response
+     */
     public function invitation(Invitation $invitation)
     {
         return response()->json(
@@ -38,13 +50,26 @@ class AuthController extends Controller
         );
     }
 
-    public function completeInvitation(CompleteInvitationRequest $request, Invitation $invitation)
+    /**
+     * Register a new Collaboration User with Invitation specified Role and Collaboration
+     *
+     * @param CompleteInvitationRequest $request
+     * @param Invitation $invitation
+     * @return \Illuminate\Http\Response
+     */
+    public function signupCollaborator(CompleteInvitationRequest $request, Invitation $invitation)
     {
         return response()->json(
-            (bool) $this->user->completeInvitation($request->validated(), $invitation)
+            (bool) $this->user->createCollaborator($request->validated(), $invitation)
         );
     }
 
+    /**
+     * Authenticate specified User
+     *
+     * @param UserSignInRequest $request
+     * @return \Illuminate\Http\Response
+     */
     public function signin(UserSignInRequest $request)
     {
         return response()->json(
@@ -52,6 +77,11 @@ class AuthController extends Controller
         );
     }
 
+    /**
+     * Logout authenticated User
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function logout()
     {
         return response()->json(
@@ -59,6 +89,11 @@ class AuthController extends Controller
         );
     }
 
+    /**
+     * Get authenticated User
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function user()
     {
         return response()->json(

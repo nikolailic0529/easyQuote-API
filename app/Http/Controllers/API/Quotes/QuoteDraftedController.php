@@ -1,7 +1,7 @@
 <?php namespace App\Http\Controllers\API\Quotes;
 
 use App\Http\Controllers\Controller;
-use App\Contracts\Repositories\Quote\QuoteRepositoryInterface as QuoteRepository;
+use App\Contracts\Repositories\Quote\QuoteDraftedRepositoryInterface as QuoteRepository;
 use App\Models\Quote\Quote;
 
 class QuoteDraftedController extends Controller
@@ -23,19 +23,19 @@ class QuoteDraftedController extends Controller
     {
         if(request()->filled('search')) {
             return response()->json(
-                $this->quote->searchDrafted(request('search'))
+                $this->quote->search(request('search'))
             );
         }
 
         return response()->json(
-            $this->quote->allDrafted()
+            $this->quote->all()
         );
     }
 
     public function show(Quote $drafted)
     {
         return response()->json(
-            $this->quote->getDrafted($drafted->id)
+            $this->quote->find($drafted->id)
         );
     }
 
@@ -48,7 +48,7 @@ class QuoteDraftedController extends Controller
     public function destroy(Quote $drafted)
     {
         return response()->json(
-            $this->quote->deleteDrafted($drafted->id)
+            $this->quote->delete($drafted->id)
         );
     }
 
@@ -63,7 +63,7 @@ class QuoteDraftedController extends Controller
         $this->authorize('update', $drafted);
 
         return response()->json(
-            $this->quote->activateDrafted($drafted->id)
+            $this->quote->activate($drafted->id)
         );
     }
 
@@ -78,7 +78,7 @@ class QuoteDraftedController extends Controller
         $this->authorize('update', $drafted);
 
         return response()->json(
-            $this->quote->deactivateDrafted($drafted->id)
+            $this->quote->deactivate($drafted->id)
         );
     }
 }

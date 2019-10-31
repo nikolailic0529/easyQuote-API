@@ -8,7 +8,9 @@ return [
     ],
     'modules' => [
         'Quotes' => [
-            'Read Only' => [],
+            'Read Only' => [
+                'view_quotes'
+            ],
             'Read & Write' => [
                 'create_quotes', 'update_own_quotes',
                 'create_quote_files', 'update_own_quote_files', 'handle_own_quote_files',
@@ -19,7 +21,9 @@ return [
             ]
         ],
         'Templates' => [
-            'Read Only' => [],
+            'Read Only' => [
+                'view_templates'
+            ],
             'Read & Write' => [
                 'create_templates', 'update_own_templates'
             ],
@@ -28,7 +32,9 @@ return [
             ]
         ],
         'Companies' => [
-            'Read Only' => [],
+            'Read Only' => [
+                'view_companies'
+            ],
             'Read & Write' => [
                 'create_companies', 'update_own_companies'
             ],
@@ -37,7 +43,9 @@ return [
             ]
         ],
         'Vendors' => [
-            'Read Only' => [],
+            'Read Only' => [
+                'view_vendors'
+            ],
             'Read & Write' => [
                 'create_vendors', 'update_own_vendors'
             ],
@@ -46,7 +54,9 @@ return [
             ]
         ],
         'Margins' => [
-            'Read Only' => [],
+            'Read Only' => [
+                'view_margins'
+            ],
             'Read & Write' => [
                 'create_margins', 'update_own_margins'
             ],
@@ -55,7 +65,9 @@ return [
             ]
         ],
         'Discounts' => [
-            'Read Only' => [],
+            'Read Only' => [
+                'view_discounts'
+            ],
             'Read & Write' => [
                 'create_discounts', 'update_own_discounts'
             ],

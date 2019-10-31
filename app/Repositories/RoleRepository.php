@@ -9,8 +9,10 @@ use App\Http\Requests\Role \ {
     StoreRoleRequest,
     UpdateRoleRequest
 };
-use App\Builder\Pagination\Paginator;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent \ {
+    Model,
+    Builder
+};
 use Illuminate\Support\Collection;
 
 class RoleRepository extends SearchableRepository implements RoleRepositoryInterface
@@ -19,7 +21,6 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
 
     public function __construct(Role $role, Permission $permission)
     {
-        parent::__construct();
         $this->role = $role;
         $this->permission = $permission;
     }
@@ -30,34 +31,6 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
         $modules = collect(__('role.modules'))->keys();
 
         return collect(compact('privileges', 'modules'));
-    }
-
-    public function all(): Paginator
-    {
-        $activated = $this->filterQuery($this->userQuery()->activated());
-        $deactivated = $this->filterQuery($this->userQuery()->deactivated());
-
-        return $activated->union($deactivated)->apiPaginate();
-    }
-
-    public function search(string $query = ''): Paginator
-    {
-        $searchableFields = [
-            'name^5', 'created_at'
-        ];
-
-        $items = $this->searchOnElasticsearch($this->role, $searchableFields, $query);
-
-        $activated = $this->buildQuery($this->role, $items, function ($query) {
-            $query->userCollaboration()->activated();
-            $this->filterQuery($query);
-        });
-        $deactivated = $this->buildQuery($this->role, $items, function ($query) {
-            $query->userCollaboration()->deactivated();
-            $this->filterQuery($query);
-        });
-
-        return $activated->union($deactivated)->apiPaginate();
     }
 
     public function userQuery(): Builder
@@ -102,8 +75,33 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
     {
         return [
             \App\Http\Query\DefaultOrderBy::class,
-            \App\Http\Query\Role\OrderByName::class,
+            \App\Http\Query\OrderByName::class,
             \App\Http\Query\OrderByCreatedAt::class
         ];
+    }
+
+    protected function filterableQuery()
+    {
+        return [
+            $this->userQuery()->activated(),
+            $this->userQuery()->deactivated()
+        ];
+    }
+
+    protected function searchableModel(): Model
+    {
+        return $this->role;
+    }
+
+    protected function searchableFields(): array
+    {
+        return [
+            'name^5', 'created_at'
+        ];
+    }
+
+    protected function searchableScope(Builder $query)
+    {
+        return $query->userCollaboration();
     }
 }

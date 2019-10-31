@@ -26,13 +26,8 @@ use App\Http\Requests \ {
     MappingReviewRequest
 };
 use Illuminate\Support\Collection;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Elasticsearch\Client as Elasticsearch;
-use Illuminate\Database\Eloquent\Builder;
-use App\Builder\Pagination\Paginator;
-use App\Models\QuoteFile\ImportedColumn;
-use Illuminate\Pipeline\Pipeline;
-use Setting, Arr, Closure, Cache, DB, Str;
+use Setting, Cache;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
@@ -104,7 +99,7 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function storeState(StoreQuoteStateRequest $request)
     {
         $user = $request->user();
-        $state = $this->filterState($request);
+        $state = collect($request->validated());
         $quoteData = $state->get('quote_data');
 
         if($request->has('quote_id')) {
@@ -151,82 +146,6 @@ class QuoteRepository implements QuoteRepositoryInterface
         $quote->list_price = $quote->countTotalPrice();
 
         return $quote;
-    }
-
-    public function draftedQuery(): Builder
-    {
-        $query = $this->quote->userCollaboration()->drafted()->with('customer', 'company');
-
-        return $query;
-    }
-
-    public function getDrafted(string $id)
-    {
-        $quote = $this->draftedQuery()->whereId($id)->firstOrFail();
-
-        return $quote;
-    }
-
-    public function allDrafted()
-    {
-        $activated = $this->filterQuery($this->draftedQuery()->activated());
-        $deactivated = $this->filterQuery($this->draftedQuery()->deactivated());
-
-        return $activated->union($deactivated)->apiPaginate();
-    }
-
-    public function searchDrafted(string $query = ''): Paginator
-    {
-        $items = $this->searchOnElasticsearch($query);
-
-        $activated = $this->buildQuery($items, function ($query) {
-            $query = $query->userCollaboration()->drafted()->with('customer', 'company')->activated();
-            return $this->filterQuery($query);
-        });
-        $deactivated = $this->buildQuery($items, function ($query) {
-            $query = $query->userCollaboration()->drafted()->with('customer', 'company')->deactivated();
-            return $this->filterQuery($query);
-        });
-
-        return $activated->union($deactivated)->apiPaginate();
-    }
-
-    public function submittedQuery(): Builder
-    {
-        $query = $this->quote->userCollaboration()->submitted()->with('customer', 'company');
-
-        return $query;
-    }
-
-    public function getSubmitted(string $id)
-    {
-        $quote = $this->submittedQuery()->whereId($id)->firstOrFail();
-
-        return $quote;
-    }
-
-    public function allSubmitted()
-    {
-        $activated = $this->filterQuery($this->submittedQuery()->activated());
-        $deactivated = $this->filterQuery($this->submittedQuery()->deactivated());
-
-        return $activated->union($deactivated)->apiPaginate();
-    }
-
-    public function searchSubmitted(string $query = ''): Paginator
-    {
-        $items = $this->searchOnElasticsearch($query);
-
-        $activated = $this->buildQuery($items, function ($query) {
-            $query = $query->userCollaboration()->submitted()->with('customer', 'company')->activated();
-            return $this->filterQuery($query);
-        });
-        $deactivated = $this->buildQuery($items, function ($query) {
-            $query = $query->userCollaboration()->submitted()->with('customer', 'company')->deactivated();
-            return $this->filterQuery($query);
-        });
-
-        return $activated->union($deactivated)->apiPaginate();
     }
 
     public function create(array $array)
@@ -288,10 +207,10 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     public function setDiscounts(Quote $quote, $attributes, $detach)
     {
-        if(isset($detach) && $detach) {
+        if((bool) $detach === true) {
             $quote->discounts()->detach();
 
-            return $quote->load('discounts');
+            return $quote;
         }
 
         if(!isset($attributes) || !is_array($attributes) || empty($attributes)) {
@@ -307,80 +226,11 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $quote->discounts()->sync($quoteDiscounts);
 
+        if($quote->custom_discount > 0) {
+            $quote->resetCustomDiscount();
+        }
+
         return $quote->load('discounts');
-    }
-
-    public function deleteDrafted(string $id)
-    {
-        return $this->draftedQuery()->whereId($id)->firstOrFail()->delete();
-    }
-
-    public function deactivateDrafted(string $id)
-    {
-        return $this->draftedQuery()->whereId($id)->firstOrFail()->deactivate();
-    }
-
-    public function activateDrafted(string $id)
-    {
-        return $this->draftedQuery()->whereId($id)->firstOrFail()->activate();
-    }
-
-    public function deleteSubmitted(string $id)
-    {
-        return $this->submittedQuery()->whereId($id)->firstOrFail()->delete();
-    }
-
-    public function deactivateSubmitted(string $id)
-    {
-        return $this->submittedQuery()->whereId($id)->firstOrFail()->deactivate();
-    }
-
-    public function activateSubmitted(string $id)
-    {
-        return $this->submittedQuery()->whereId($id)->firstOrFail()->activate();
-    }
-
-    public function copy(string $id)
-    {
-        $quote = $this->submittedQuery()
-            ->with('company', 'vendor', 'country', 'discounts', 'customer')
-            ->whereId($id)
-            ->firstOrFail();
-
-        $replicatedQuote = $quote->replicate();
-        $replicatedQuote->user_id = request()->user()->id;
-
-        $pass = $replicatedQuote->push() && $replicatedQuote->unSubmit();
-
-        /**
-         * Mapping Replication
-         */
-        DB::insert("
-            insert into `quote_field_column` (quote_id, template_field_id, importable_column_id, is_default_enabled)
-            select '{$replicatedQuote->id}' quote_id, template_field_id, importable_column_id, is_default_enabled
-            from `quote_field_column` where quote_id = '{$quote->id}'
-        ");
-
-        $quoteFilesToSave = collect();
-
-        $priceList = $quote->quoteFiles()->priceLists()->first();
-        if(isset($priceList)) {
-            $quoteFilesToSave->push($this->quoteFileRepository->replicatePriceList($priceList));
-        }
-
-        $schedule = $quote->quoteFiles()->paymentSchedules()->with('scheduleData')->first();
-        if(isset($schedule)) {
-            $replicatedSchedule = $schedule->replicate();
-            unset($replicatedSchedule->scheduleData);
-            $replicatedSchedule->save();
-            if(isset($schedule->scheduleData)) {
-                $replicatedSchedule->scheduleData()->save($schedule->scheduleData->replicate());
-            }
-
-            $quoteFilesToSave->push($replicatedSchedule);
-        }
-
-        return $pass && $replicatedQuote->quoteFiles()->saveMany($quoteFilesToSave);
     }
 
     public function discounts(string $id)
@@ -510,21 +360,24 @@ class QuoteRepository implements QuoteRepositoryInterface
         });
     }
 
+    public function rows(string $id, string $query = ''): Collection
+    {
+        return $this->find($id)->rowsDataByColumnsGroupable($query)->get();
+    }
+
     private function interactWithModels(Quote $quote)
     {
         /**
-         * Interaction with Margin percentage
+         * Possible interaction with Margin percentage.
          */
         $this->quoteService->interactWithMargin($quote);
 
+        /**
+         * Possible interaction with Discounts.
+         */
         $this->quoteService->interact(
             $quote,
-            [
-                $quote->discounts()->discountType(MultiYearDiscount::class)->first(),
-                $quote->discounts()->discountType(PromotionalDiscount::class)->first(),
-                $quote->discounts()->discountType(SND::class)->first(),
-                $quote->discounts()->discountType(PrePayDiscount::class)->first()
-            ]
+            collect($quote->discounts)->prepend($quote->custom_discount)
         );
 
         return $quote;
@@ -684,122 +537,5 @@ class QuoteRepository implements QuoteRepositoryInterface
         $quote->quoteFiles()->paymentSchedules()->delete();
 
         return $quote;
-    }
-
-    private function filterState(StoreQuoteStateRequest $request): Collection
-    {
-        $stateModels = [
-            'quote_data.type',
-            'quote_data.company_id',
-            'quote_data.vendor_id',
-            'quote_data.country_id',
-            'quote_data.language_id',
-            'quote_data.files',
-            'quote_data.field_column',
-            'quote_data.quote_template_id',
-            'quote_data.customer_id',
-            'quote_data.selected_rows',
-            'quote_data.selected_rows_is_rejected',
-            'quote_data.last_drafted_step',
-            'quote_data.detach_schedule',
-            'quote_data.pricing_document',
-            'quote_data.service_agreement_id',
-            'quote_data.system_handle',
-            'quote_data.additional_details',
-            'quote_data.checkbox_status',
-            'quote_data.closing_date',
-            'quote_data.additional_notes',
-            'quote_data.calculate_list_price',
-            'quote_data.buy_price',
-            'save'
-        ];
-
-        return collect($request->only($stateModels));
-    }
-
-    private function createDefaultData(EloquentCollection $rowsData, Quote $quote)
-    {
-        $defaultTemplateFields = $quote->defaultTemplateFields()->get();
-
-        $rowsData->transform(function ($row) use ($defaultTemplateFields, $quote) {
-            foreach ($defaultTemplateFields as $templateField) {
-                switch ($templateField->name) {
-                    case 'date_from':
-                    case 'date_to':
-                        $value = $quote->customer->handleColumnValue(null, $templateField->name, true);
-                        break;
-                    case 'qty':
-                        $value = 1;
-                        break;
-                    default:
-                        $value = null;
-                        break;
-                }
-
-                $columnData = $row->columnsData()->make(compact('value'));
-                $columnData->template_field_name = $templateField->name;
-                $columnData->importable_column_id = $templateField->systemImportableColumn->id;
-
-                $row->columnsData->push($columnData);
-            }
-            return $row;
-        });
-
-        return $rowsData;
-    }
-
-    private function searchOnElasticsearch(string $query = '')
-    {
-        $body = [
-            'query' => [
-                'multi_match' => [
-                    'fields' => [
-                        'customer.name', 'customer.valid_until', 'customer.support_start', 'customer.support_end', 'customer.rfq',
-                        'company.name', 'type', 'created_at'
-                    ],
-                    'type' => 'phrase_prefix',
-                    'query' => $query
-                ]
-            ]
-        ];
-
-        $items = $this->search->search([
-            'index' => $this->quote->getSearchIndex(),
-            'type' => $this->quote->getSearchType(),
-            'body' => $body
-        ]);
-
-        return $items;
-    }
-
-    private function buildQuery(array $items, Closure $scope = null): Builder
-    {
-        $ids = Arr::pluck($items['hits']['hits'], '_id');
-
-        $query = $this->quote->query();
-
-        if(is_callable($scope)) {
-            $query = call_user_func($scope, $query) ?? $query;
-        }
-
-        return $query->whereIn('quotes.id', $ids);
-    }
-
-    private function filterQuery(Builder $query)
-    {
-        return app(Pipeline::class)
-            ->send($query)
-            ->through([
-                \App\Http\Query\DefaultOrderBy::class,
-                \App\Http\Query\OrderByCreatedAt::class,
-                \App\Http\Query\Quote\OrderByName::class,
-                \App\Http\Query\Quote\OrderByCompanyName::class,
-                \App\Http\Query\Quote\OrderByRfq::class,
-                \App\Http\Query\Quote\OrderByValidUntil::class,
-                \App\Http\Query\Quote\OrderBySupportStart::class,
-                \App\Http\Query\Quote\OrderBySupportEnd::class,
-                \App\Http\Query\Quote\OrderByCompleteness::class
-            ])
-            ->thenReturn();
     }
 }

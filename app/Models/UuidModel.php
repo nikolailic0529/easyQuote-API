@@ -22,6 +22,11 @@ class UuidModel extends Model
             $model->{$model->getKeyName()} = Uuid::generate(4)->string;
             $model->fireModelEvent('generated', false);
         });
+
+        static::replicating(function ($model) {
+            $model->{$model->getKeyName()} = Uuid::generate(4)->string;
+            $model->fireModelEvent('generated', false);
+        });
     }
 
     protected function propertyExists(string $property)

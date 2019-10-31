@@ -1,5 +1,6 @@
 <?php namespace App\Models\QuoteTemplate;
 
+use App\Contracts\ActivatableInterface;
 use App\Models\UuidModel;
 use App\Traits \ {
     Activatable,
@@ -16,7 +17,7 @@ use App\Traits \ {
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class QuoteTemplate extends UuidModel
+class QuoteTemplate extends UuidModel implements ActivatableInterface
 {
     use BelongsToUser,
         BelongsToTemplateFields,

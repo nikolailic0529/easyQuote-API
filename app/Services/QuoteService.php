@@ -6,8 +6,6 @@ use App\Models\Quote \ {
     Discount,
     Margin\CountryMargin
 };
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Illuminate\Support\Collection;
 use Str;
 
 class QuoteService implements QuoteServiceInterface
@@ -17,10 +15,10 @@ class QuoteService implements QuoteServiceInterface
         if($interactable instanceof CountryMargin) {
             return $this->interactWithCountryMargin($quote, $interactable);
         }
-        if($interactable instanceof Discount) {
+        if($interactable instanceof Discount || is_numeric($interactable)) {
             return $this->interactWithDiscount($quote, $interactable);
         }
-        if(is_array($interactable)) {
+        if(is_iterable($interactable)) {
             collect($interactable)->each(function ($entity) use ($quote) {
                 $this->interact($quote, $entity);
             });
@@ -61,13 +59,13 @@ class QuoteService implements QuoteServiceInterface
 
         $divider = (100 - $quote->countryMargin->value) / 100;
 
-        if($divider === 0.00) {
+        if((float) $divider === 0.0) {
             $quote->computableRows->transform(function ($row) {
-                $row->price = 0.00;
+                $row->price = 0.0;
                 return $row;
             });
 
-            $quote->list_price = 0.00;
+            $quote->list_price = 0.0;
             return $quote;
         }
 
@@ -82,13 +80,13 @@ class QuoteService implements QuoteServiceInterface
         return $quote;
     }
 
-    public function interactWithDiscount(Quote $quote, Discount $discount): Quote
+    public function interactWithDiscount(Quote $quote, $discount): Quote
     {
-        if(!isset($quote->computableRows)) {
+        if(!isset($quote->computableRows) || $discount === 0.0) {
             return $quote;
         }
 
-        if(!isset($quote->list_price) || $quote->list_price === 0.00) {
+        if(!isset($quote->list_price) || (float) $quote->list_price === 0.0) {
             $quote->list_price = $quote->countTotalPrice();
         }
 
@@ -97,10 +95,10 @@ class QuoteService implements QuoteServiceInterface
                 $row->computablePrice = $row->price;
             }
 
-            $discountValue = $discount->calculateDiscount($row->computablePrice, $quote->list_price);
-            $quote->applicable_discounts += $discountValue;
+            $value = $this->calculateDiscountValue($discount, (float) $row->computablePrice, (float) $quote->list_price);
+            $quote->applicable_discounts += $value;
+            $row->computablePrice -= $value;
 
-            $row->computablePrice -= $discountValue;
             return $row;
         });
 
@@ -115,7 +113,7 @@ class QuoteService implements QuoteServiceInterface
 
         $divider = (100 - $quote->countryMargin->value) / 100;
 
-        if($divider === 0.00) {
+        if($divider === 0.0) {
             $quote->scheduleData->value = collect($quote->scheduleData->value)->map(function ($payment) {
                 $payment['price'] = 0.00;
                 return $payment;
@@ -132,21 +130,16 @@ class QuoteService implements QuoteServiceInterface
         return $quote;
     }
 
-    public function getRowColumn(Collection $mapping, EloquentCollection $columnsData, string $name)
+    private function calculateDiscountValue($discount, float $price, float $list_price): float
     {
-        if(!$mapping->has($name)) {
-            return null;
+        if($discount instanceof Discount) {
+            return $discount->calculateDiscount($price, $list_price);
         }
 
-        return $columnsData->where('importable_column_id', $mapping->get($name))->first();
-    }
-
-    private function checkRequiredFields(array $columns)
-    {
-        foreach ($columns as $column) {
-            if(!isset($column)) {
-                throw new \ErrorException(__('quote.required_fields_exception'));
-            }
+        if(is_numeric($discount)) {
+            return $price * $discount / 100;
         }
+
+        return 0.0;
     }
 }

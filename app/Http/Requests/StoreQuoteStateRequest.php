@@ -110,6 +110,9 @@ class StoreQuoteStateRequest extends FormRequest
                 'string',
                 'min:1'
             ],
+            /**
+             * Imported Rows
+             */
             'quote_data.selected_rows.*' => [
                 'uuid',
                 'exists:imported_rows,id'
@@ -125,6 +128,18 @@ class StoreQuoteStateRequest extends FormRequest
             'quote_data.additional_notes' => 'string|max:20000|min:2',
             'quote_data.calculate_list_price' => 'boolean',
             'quote_data.buy_price' => 'nullable|numeric|min:0',
+            'quote_data.custom_discount' => 'nullable|numeric|min:0',
+            /**
+             * Rows group description
+             */
+            'quote_data.group_description' => 'nullable|array',
+            'quote_data.group_description.*.name' => 'required|string|min:1|distinct',
+            'quote_data.group_description.*.search_text' => 'required|string|min:1|distinct',
+            'quote_data.group_description.*.rows' => 'required|array|distinct',
+            'quote_data.group_description.*.rows.*' => 'required|string|uuid|distinct|exists:imported_rows,id',
+            /**
+             * Margin
+             */
             'margin.quote_type' => [
                 'string',
                 'required_with:margin.is_fixed,margin.method,margin.type,margin.value',
@@ -143,6 +158,9 @@ class StoreQuoteStateRequest extends FormRequest
             'margin.delete' => [
                 'boolean'
             ],
+            /**
+             * Defined Discounts
+             */
             'discounts' => [
                 'array'
             ],
@@ -161,6 +179,9 @@ class StoreQuoteStateRequest extends FormRequest
             'discounts_detach' => [
                 'boolean'
             ],
+            /**
+             * Pass true for submit a quote
+             */
             'save' => 'boolean'
         ];
     }

@@ -21,7 +21,9 @@ class VendorPolicy
      */
     public function viewAny(User $user)
     {
-        return true;
+        if($user->can('view_vendors')) {
+            return true;
+        }
     }
 
     /**

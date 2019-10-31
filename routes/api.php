@@ -5,7 +5,7 @@ Route::group(['namespace' => 'API'], function () {
         Route::post('signin', 'AuthController@signin')->name('signin');
         Route::post('signup', 'AuthController@signup')->name('signup');
         Route::get('signup/{invitation}', 'AuthController@invitation');
-        Route::post('signup/{invitation}', 'AuthController@completeInvitation');
+        Route::post('signup/{invitation}', 'AuthController@signupCollaborator');
 
         Route::group(['middleware' => 'auth:api'], function () {
             Route::get('logout', 'AuthController@logout');
@@ -26,6 +26,8 @@ Route::group(['namespace' => 'API'], function () {
     Route::group(['middleware' => 'auth:api'], function () {
         Route::group(['middleware' => 'throttle:60,1'], function () {
             Route::resource('users', 'UserController', ['only' => config('route.crud')]);
+            Route::put('users/activate/{user}', 'UserController@activate');
+            Route::put('users/deactivate/{user}', 'UserController@deactivate');
         });
 
         Route::group(['middleware' => 'throttle:60,1'], function () {
@@ -39,6 +41,7 @@ Route::group(['namespace' => 'API'], function () {
             Route::apiResource('templates', 'QuoteTemplateController');
             Route::put('templates/activate/{template}', 'QuoteTemplateController@activate');
             Route::put('templates/deactivate/{template}', 'QuoteTemplateController@deactivate');
+            Route::put('templates/copy/{template}', 'QuoteTemplateController@copy');
 
             Route::resource('template_fields', 'TemplateFieldController', ['only' => config('route.crud')]);
             Route::put('template_fields/activate/{template_fields}', 'TemplateFieldController@activate');
@@ -86,8 +89,8 @@ Route::group(['namespace' => 'API'], function () {
 
         Route::group(['prefix' => 'quotes', 'namespace' => 'Quotes'], function () {
             Route::post('handle', 'QuoteFilesController@handle'); // exclusive high throttle rate
-
             Route::get('/get/{quote}', 'QuoteController@quote'); // exclusive high throttle rate
+
             Route::group(['middleware' => 'throttle:60,1'], function () {
                 Route::get('/discounts/{quote}', 'QuoteController@discounts');
                 Route::get('/review/{quote}', 'QuoteController@review');

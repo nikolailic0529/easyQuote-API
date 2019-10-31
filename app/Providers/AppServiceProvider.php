@@ -36,6 +36,8 @@ use App\Contracts \ {
     Repositories\RoleRepositoryInterface,
     Services\QuoteServiceInterface
 };
+use App\Contracts\Repositories\Quote\QuoteDraftedRepositoryInterface;
+use App\Contracts\Repositories\Quote\QuoteSubmittedRepositoryInterface;
 use App\Models \ {
     Company,
     Vendor,
@@ -87,6 +89,8 @@ use App\Repositories \ {
     CompanyRepository,
     RoleRepository
 };
+use App\Repositories\Quote\QuoteDraftedRepository;
+use App\Repositories\Quote\QuoteSubmittedRepository;
 use App\Services \ {
     AuthService,
     ParserService,
@@ -98,8 +102,7 @@ use Elasticsearch \ {
     Client as ElasticsearchClient,
     ClientBuilder as ElasticsearchBuilder
 };
-use Schema;
-use Illuminate\Support\Str;
+use Schema, Str, Arr;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -130,7 +133,9 @@ class AppServiceProvider extends ServiceProvider
         ParserServiceInterface::class => ParserService::class,
         WordParserInterface::class => WordParser::class,
         PdfParserInterface::class => PdfParser::class,
-        RoleRepositoryInterface::class => RoleRepository::class
+        RoleRepositoryInterface::class => RoleRepository::class,
+        QuoteDraftedRepositoryInterface::class => QuoteDraftedRepository::class,
+        QuoteSubmittedRepositoryInterface::class => QuoteSubmittedRepository::class
     ];
 
     /**
@@ -225,6 +230,16 @@ class AppServiceProvider extends ServiceProvider
 
         Str::macro('name', function ($value) {
             return self::snake(Str::snake(preg_replace('/[^\w\h]/', ' ', $value)));
+        });
+
+        Arr::macro('quote', function ($value) {
+            return implode(',', array_map('json_encode', $value));
+        });
+
+        Arr::macro('cols', function (array $value, string $append = '') {
+            return implode(', ', array_map(function ($item) use ($append) {
+                return "`{$item}`{$append}";
+            }, $value));
         });
     }
 

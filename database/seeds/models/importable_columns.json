@@ -4,6 +4,7 @@
         "name": "product_no",
         "order": 0,
         "aliases": [
+            "product number",
             "product_no",
             "product_number",
             "product",

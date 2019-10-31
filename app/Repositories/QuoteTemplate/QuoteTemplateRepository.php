@@ -2,14 +2,16 @@
 
 use App\Contracts\Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface;
 use App\Repositories\SearchableRepository;
-use App\Builder\Pagination\Paginator;
-use Illuminate\Database\Eloquent\Builder;
+use App\Models\QuoteTemplate\QuoteTemplate;
 use App\Http\Requests\QuoteTemplate \ {
     StoreQuoteTemplateRequest,
     UpdateQuoteTemplateRequest
 };
-use App\Models\QuoteTemplate\QuoteTemplate;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent \ {
+    Model,
+    Builder
+};
+use Illuminate\Support\Collection as SupportCollection;
 
 class QuoteTemplateRepository extends SearchableRepository implements QuoteTemplateRepositoryInterface
 {
@@ -17,39 +19,12 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
 
     public function __construct(QuoteTemplate $quoteTemplate)
     {
-        parent::__construct();
         $this->quoteTemplate = $quoteTemplate;
     }
 
     public function userQuery(): Builder
     {
         return $this->quoteTemplate->query()->userCollaboration()->with('company:id,name', 'vendor:id,name', 'countries:id,name');
-    }
-
-    public function all(): Paginator
-    {
-        $activated = $this->filterQuery($this->userQuery()->activated());
-        $deactivated = $this->filterQuery($this->userQuery()->deactivated());
-
-        return $activated->union($deactivated)->apiPaginate();
-    }
-
-    public function search(string $query = ''): Paginator
-    {
-        $searchableFields = [
-            'name^5', 'created_at^3'
-        ];
-
-        $items = $this->searchOnElasticsearch($this->quoteTemplate, $searchableFields, $query);
-
-        $activated = $this->buildQuery($this->quoteTemplate, $items, function ($query) {
-            return $query->userCollaboration()->with('company', 'vendor', 'countries')->activated();
-        });
-        $deactivated = $this->buildQuery($this->quoteTemplate, $items, function ($query) {
-            return $query->userCollaboration()->with('company', 'vendor', 'countries')->deactivated();
-        });
-
-        return $activated->union($deactivated)->apiPaginate();
     }
 
     public function find(string $id): QuoteTemplate
@@ -80,7 +55,7 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
             ->get();
     }
 
-    public function designer(string $id): Collection
+    public function designer(string $id): SupportCollection
     {
         $template = $this->find($id)->load('company', 'vendor.image');
 
@@ -130,14 +105,49 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
         return $this->find($id)->deactivate();
     }
 
+    public function copy(string $id): bool
+    {
+        $replicatableTemplate = $this->find($id);
+        $template = $replicatableTemplate->replicate(['user', 'countries', 'templateFields']);
+        $countries = $replicatableTemplate->countries->pluck('id')->toArray();
+        $templateFields = $replicatableTemplate->templateFields->pluck('id')->toArray();
+
+        return $template->save() && $template->syncCountries($countries) && $template->syncTemplateFields($templateFields);
+    }
+
     protected function filterQueryThrough(): array
     {
         return [
             \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class,
-            \App\Http\Query\QuoteTemplate\OrderByName::class,
+            \App\Http\Query\OrderByName::class,
             \App\Http\Query\QuoteTemplate\OrderByCompanyName::class,
             \App\Http\Query\QuoteTemplate\OrderByVendorName::class
         ];
+    }
+
+    protected function filterableQuery()
+    {
+        return [
+            $this->userQuery()->activated(),
+            $this->userQuery()->deactivated()
+        ];
+    }
+
+    protected function searchableModel(): Model
+    {
+        return $this->quoteTemplate;
+    }
+
+    protected function searchableFields(): array
+    {
+        return [
+            'name^5', 'created_at^3'
+        ];
+    }
+
+    protected function searchableScope(Builder $query)
+    {
+        return $query->userCollaboration()->with('company:id,name', 'vendor:id,name', 'countries:id,name');
     }
 }

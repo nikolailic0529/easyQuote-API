@@ -18,7 +18,9 @@ class QuotePolicy
      */
     public function viewAny(User $user)
     {
-        return true;
+        if($user->can('view_quotes')) {
+            return true;
+        }
     }
 
     /**

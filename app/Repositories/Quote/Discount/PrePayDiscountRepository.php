@@ -1,13 +1,15 @@
 <?php namespace App\Repositories\Quote\Discount;
 
 use App\Contracts\Repositories\Quote\Discount\PrePayDiscountRepositoryInterface;
-use App\Builder\Pagination\Paginator;
+use App\Models\Quote\Discount\PrePayDiscount;
 use App\Http\Requests\Discount \ {
     StorePrePayDiscountRequest,
     UpdatePrePayDiscountRequest
 };
-use App\Models\Quote\Discount\PrePayDiscount;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent \ {
+    Model,
+    Builder
+};
 
 class PrePayDiscountRepository extends DiscountRepository implements PrePayDiscountRepositoryInterface
 {
@@ -15,34 +17,7 @@ class PrePayDiscountRepository extends DiscountRepository implements PrePayDisco
 
     public function __construct(PrePayDiscount $prePayDiscount)
     {
-        parent::__construct();
         $this->prePayDiscount = $prePayDiscount;
-    }
-
-    public function all(): Paginator
-    {
-        $activated = $this->filterQuery($this->userQuery()->activated());
-        $deactivated = $this->filterQuery($this->userQuery()->deactivated());
-
-        return $activated->union($deactivated)->apiPaginate();
-    }
-
-    public function search(string $query = ''): Paginator
-    {
-        $searchableFields = [
-            'name^5', 'durations.*^4', 'created_at^3', 'country.name', 'vendor.name'
-        ];
-
-        $items = $this->searchOnElasticsearch($this->prePayDiscount, $searchableFields, $query);
-
-        $activated = $this->buildQuery($this->prePayDiscount, $items, function ($query) {
-            return $this->filterQuery($query->userCollaboration()->with('country', 'vendor')->activated());
-        });
-        $deactivated = $this->buildQuery($this->prePayDiscount, $items, function ($query) {
-            return $this->filterQuery($query->userCollaboration()->with('country', 'vendor')->deactivated());
-        });
-
-        return $activated->union($deactivated)->apiPaginate();
     }
 
     public function userQuery(): Builder
@@ -92,5 +67,30 @@ class PrePayDiscountRepository extends DiscountRepository implements PrePayDisco
             \App\Http\Query\Discount\OrderByDurationsValue::class,
             \App\Http\Query\Discount\OrderByDurationsDuration::class
         ];
+    }
+
+    protected function filterableQuery()
+    {
+        return [
+            $this->userQuery()->activated(),
+            $this->userQuery()->deactivated()
+        ];
+    }
+
+    protected function searchableModel(): Model
+    {
+        return $this->prePayDiscount;
+    }
+
+    protected function searchableFields(): array
+    {
+        return [
+            'name^5', 'durations.*^4', 'created_at^3', 'country.name', 'vendor.name'
+        ];
+    }
+
+    protected function searchableScope(Builder $query)
+    {
+        return $query->userCollaboration()->with('country', 'vendor');
     }
 }

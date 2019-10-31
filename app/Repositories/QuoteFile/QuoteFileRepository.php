@@ -1,14 +1,14 @@
 <?php namespace App\Repositories\QuoteFile;
 
+use App\Contracts\Repositories\QuoteFile \ {
+    QuoteFileRepositoryInterface,
+    ImportableColumnRepositoryInterface
+};
 use App\Models \ {
     QuoteFile\QuoteFile,
     QuoteFile\ImportedColumn,
     QuoteFile\DataSelectSeparator,
     QuoteFile\ImportedRow
-};
-use App\Contracts\Repositories\QuoteFile \ {
-    QuoteFileRepositoryInterface,
-    ImportableColumnRepositoryInterface
 };
 use App\Http\Requests\StoreQuoteFileRequest;
 use ErrorException;

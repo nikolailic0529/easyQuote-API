@@ -1,16 +1,20 @@
 <?php namespace App\Repositories\QuoteTemplate;
 
 use App\Contracts\Repositories\QuoteTemplate\TemplateFieldRepositoryInterface;
-use App\Builder\Pagination\Paginator;
 use App\Http\Requests\QuoteTemplate \ {
     StoreTemplateFieldRequest,
     UpdateTemplateFieldRequest
 };
-use App\Models\QuoteTemplate\TemplateField;
-use App\Models\QuoteTemplate\TemplateFieldType;
+use App\Models\QuoteTemplate \ {
+    TemplateField,
+    TemplateFieldType
+};
 use App\Repositories\SearchableRepository;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent \ {
+    Model,
+    Builder
+};
+use Illuminate\Support\Collection as SupportCollection;
 
 class TemplateFieldRepository extends SearchableRepository implements TemplateFieldRepositoryInterface
 {
@@ -27,41 +31,15 @@ class TemplateFieldRepository extends SearchableRepository implements TemplateFi
     public function userQuery(): Builder
     {
         return $this->templateField->query()
-            ->currentUser()
+            ->userCollaboration()
             ->with('userQuoteTemplates:id,name', 'templateFieldType');
     }
 
-    public function data(): Collection
+    public function data(): SupportCollection
     {
         $types = $this->templateFieldType->get();
 
         return collect(compact('types'));
-    }
-
-    public function all()
-    {
-        $activated = $this->filterQuery($this->userQuery()->activated());
-        $deactivated = $this->filterQuery($this->userQuery()->deactivated());
-
-        return $activated->union($deactivated)->apiPaginate();
-    }
-
-    public function search(string $query = ''): Paginator
-    {
-        $searchableFields = [
-            'name^5', 'created_at^3'
-        ];
-
-        $items = $this->searchOnElasticsearch($this->templateField, $searchableFields, $query);
-
-        $activated = $this->buildQuery($this->templateField, $items, function ($query) {
-            return $query->currentUser()->with('userQuoteTemplates:id,name', 'templateFieldType')->activated();
-        });
-        $deactivated = $this->buildQuery($this->templateField, $items, function ($query) {
-            return $query->currentUser()->with('userQuoteTemplates:id,name', 'templateFieldType')->deactivated();
-        });
-
-        return $activated->union($deactivated)->apiPaginate();
     }
 
     public function find(string $id): TemplateField
@@ -104,5 +82,30 @@ class TemplateFieldRepository extends SearchableRepository implements TemplateFi
             \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class
         ];
+    }
+
+    protected function filterableQuery()
+    {
+        return [
+            $this->userQuery()->activated(),
+            $this->userQuery()->deactivated()
+        ];
+    }
+
+    protected function searchableModel(): Model
+    {
+        return $this->templateField;
+    }
+
+    protected function searchableFields(): array
+    {
+        return [
+            'header^5', 'name^4', 'created_at^3'
+        ];
+    }
+
+    protected function searchableScope(Builder $query)
+    {
+        return $query->userCollaboration()->with('userQuoteTemplates:id,name', 'templateFieldType');
     }
 }

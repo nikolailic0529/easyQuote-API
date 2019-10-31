@@ -36,6 +36,7 @@ class MySQLSeeder extends Seeder
                     DECLARE ctrNumber VARCHAR(255);
                     DECLARE in_string_parsed VARCHAR(255);
                     DECLARE digitsAndDotsNumber VARCHAR(255) DEFAULT '';
+                    DECLARE posAfterDot INT DEFAULT 2;
                     DECLARE finalNumber VARCHAR(255) DEFAULT '';
                     DECLARE sChar VARCHAR(1);
                     DECLARE inti INTEGER DEFAULT 1;
@@ -73,7 +74,8 @@ class MySQLSeeder extends Seeder
                         END WHILE;
 
                         SET inti = 1;
-                        WHILE(inti <= LENGTH(digitsAndDotsNumber)-3) DO
+                        SET posAfterDot = length(substring_index(digitsAndDotsNumber, '.', -1)) + 1;
+                        WHILE(inti <= LENGTH(digitsAndDotsNumber) - posAfterDot) DO
                             SET sChar = SUBSTRING(digitsAndDotsNumber, inti, 1);
                             SET ctrNumber = FIND_IN_SET(sChar, '0,1,2,3,4,5,6,7,8,9');
                             IF ctrNumber > 0 THEN
@@ -82,7 +84,7 @@ class MySQLSeeder extends Seeder
                             SET inti = inti + 1;
                         END WHILE;
 
-                        SET finalNumber = CONCAT(finalNumber, RIGHT(digitsAndDotsNumber, 3));
+                        SET finalNumber = CONCAT(finalNumber, RIGHT(digitsAndDotsNumber, posAfterDot));
                         IF negativeNumber = true AND LENGTH(finalNumber) > 0 THEN
                             SET finalNumber = CONCAT('-', finalNumber);
                         END IF;

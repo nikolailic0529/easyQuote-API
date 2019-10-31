@@ -1,5 +1,6 @@
 <?php namespace App\Models\Quote\Margin;
 
+use App\Contracts\ActivatableInterface;
 use App\Models \ {
     UuidModel,
     Quote\Quote
@@ -17,7 +18,7 @@ use Illuminate\Database\Eloquent \ {
 use App\Contracts\HasOrderedScope;
 use Str;
 
-abstract class Margin extends UuidModel implements HasOrderedScope
+abstract class Margin extends UuidModel implements HasOrderedScope, ActivatableInterface
 {
     use BelongsToCollaboration, BelongsToUser, BelongsToVendor, SoftDeletes, Activatable;
 

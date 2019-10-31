@@ -21,7 +21,9 @@ class QuoteTemplatePolicy
      */
     public function viewAny(User $user)
     {
-        return true;
+        if($user->can('view_templates')) {
+            return true;
+        }
     }
 
     /**
@@ -91,5 +93,17 @@ class QuoteTemplatePolicy
         if($user->can('update_own_templates')) {
             return $user->id === $quoteTemplate->user_id;
         }
+    }
+
+    /**
+     * Determine whether the user can make copy of the quote.
+     *
+     * @param User $user
+     * @param QuoteTemplate $quoteTemplate
+     * @return mixed
+     */
+    public function copy(User $user, QuoteTemplate $quoteTemplate)
+    {
+        return $this->create($user) && $this->view($user, $quoteTemplate);
     }
 }

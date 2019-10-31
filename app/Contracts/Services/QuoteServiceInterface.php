@@ -49,18 +49,8 @@ interface QuoteServiceInterface
      * Interact Quote model with Discount
      *
      * @param Quote $quote
-     * @param Discount $discount
+     * @param mixed $discount
      * @return \App\Models\Quote\Quote
      */
-    public function interactWithDiscount(Quote $quote, Discount $discount): Quote;
-
-    /**
-     * Get Row Column by Mapping and Template Field Name
-     *
-     * @param Collection $mapping
-     * @param EloquentCollection $columnsData
-     * @param string $name
-     * @return \App\Models\QuoteFile\ImportedColumn|null
-     */
-    public function getRowColumn(Collection $mapping, EloquentCollection $columnsData, string $name);
+    public function interactWithDiscount(Quote $quote, $discount): Quote;
 }

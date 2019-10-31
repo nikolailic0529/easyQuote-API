@@ -1,7 +1,7 @@
 <?php namespace App\Repositories;
 
-use App\Models\AccessAttempt;
 use App\Contracts\Repositories\AccessAttemptRepositoryInterface;
+use App\Models\AccessAttempt;
 
 class AccessAttemptRepository implements AccessAttemptRepositoryInterface
 {

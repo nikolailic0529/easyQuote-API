@@ -1,7 +1,7 @@
 <?php namespace App\Repositories;
 
-use App\Models\Data\Country;
 use App\Contracts\Repositories\CountryRepositoryInterface;
+use App\Models\Data\Country;
 use Cache;
 
 class CountryRepository implements CountryRepositoryInterface
@@ -16,7 +16,7 @@ class CountryRepository implements CountryRepositoryInterface
     public function all()
     {
         return Cache::rememberForever('all-countries', function () {
-            return $this->country->ordered()->get();
+            return $this->country->ordered()->get(['id', 'name']);
         });
     }
 }

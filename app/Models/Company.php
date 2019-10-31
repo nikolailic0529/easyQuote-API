@@ -1,5 +1,6 @@
 <?php namespace App\Models;
 
+use App\Contracts\ActivatableInterface;
 use App\Contracts\WithImage;
 use App\Models\UuidModel;
 use App\Traits \ {
@@ -13,7 +14,7 @@ use App\Traits \ {
 };
 use App\Traits\Search\Searchable;
 
-class Company extends UuidModel implements WithImage
+class Company extends UuidModel implements WithImage, ActivatableInterface
 {
     use HasLogo,
         HasImage,

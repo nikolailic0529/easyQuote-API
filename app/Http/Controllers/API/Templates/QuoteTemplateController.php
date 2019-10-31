@@ -120,7 +120,7 @@ class QuoteTemplateController extends Controller
     }
 
     /**
-     * Find the specified Quote Templates by Country
+     * Find the specified Quote Templates by Country.
      *
      * @param string $id
      * @return \Illuminate\Http\Response
@@ -135,7 +135,7 @@ class QuoteTemplateController extends Controller
     }
 
     /**
-     * Get Data for Template Designer
+     * Get Data for Template Designer.
      *
      * @param QuoteTemplate $template
      * @return \Illuminate\Http\Response
@@ -146,6 +146,21 @@ class QuoteTemplateController extends Controller
 
         return response()->json(
             $this->quoteTemplate->designer($template->id)
+        );
+    }
+
+    /**
+     * Create copy of the specified Quote Template.
+     *
+     * @param QuoteTemplate $template
+     * @return \Illuminate\Http\Response
+     */
+    public function copy(QuoteTemplate $template)
+    {
+        $this->authorize('copy', $template);
+
+        return response()->json(
+            $this->quoteTemplate->copy($template->id)
         );
     }
 }

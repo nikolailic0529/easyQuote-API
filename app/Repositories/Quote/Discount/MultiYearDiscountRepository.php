@@ -1,13 +1,15 @@
 <?php namespace App\Repositories\Quote\Discount;
 
-use App\Builder\Pagination\Paginator;
 use App\Contracts\Repositories\Quote\Discount\MultiYearDiscountRepositoryInterface;
+use App\Models\Quote\Discount\MultiYearDiscount;
 use App\Http\Requests\Discount \ {
     StoreMultiYearDiscountRequest,
     UpdateMultiYearDiscountRequest
 };
-use App\Models\Quote\Discount\MultiYearDiscount;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent \ {
+    Model,
+    Builder
+};
 
 class MultiYearDiscountRepository extends DiscountRepository implements MultiYearDiscountRepositoryInterface
 {
@@ -15,34 +17,7 @@ class MultiYearDiscountRepository extends DiscountRepository implements MultiYea
 
     public function __construct(MultiYearDiscount $multiYearDiscount)
     {
-        parent::__construct();
         $this->multiYearDiscount = $multiYearDiscount;
-    }
-
-    public function all(): Paginator
-    {
-        $activated = $this->filterQuery($this->userQuery()->activated());
-        $deactivated = $this->filterQuery($this->userQuery()->deactivated());
-
-        return $activated->union($deactivated)->apiPaginate();
-    }
-
-    public function search(string $query = ''): Paginator
-    {
-        $searchableFields = [
-            'name^5', 'durations.*^4', 'created_at^3', 'country.name', 'vendor.name'
-        ];
-
-        $items = $this->searchOnElasticsearch($this->multiYearDiscount, $searchableFields, $query);
-
-        $activated = $this->buildQuery($this->multiYearDiscount, $items, function ($query) {
-            return $this->filterQuery($query->userCollaboration()->with('country', 'vendor')->activated());
-        });
-        $deactivated = $this->buildQuery($this->multiYearDiscount, $items, function ($query) {
-            return $this->filterQuery($query->userCollaboration()->with('country', 'vendor')->deactivated());
-        });
-
-        return $activated->union($deactivated)->apiPaginate();
     }
 
     public function userQuery(): Builder
@@ -90,5 +65,30 @@ class MultiYearDiscountRepository extends DiscountRepository implements MultiYea
             \App\Http\Query\Discount\OrderByDurationsValue::class,
             \App\Http\Query\Discount\OrderByDurationsDuration::class
         ];
+    }
+
+    protected function filterableQuery()
+    {
+        return [
+            $this->userQuery()->activated(),
+            $this->userQuery()->deactivated()
+        ];
+    }
+
+    protected function searchableModel(): Model
+    {
+        return $this->multiYearDiscount;
+    }
+
+    protected function searchableFields(): array
+    {
+        return [
+            'name^5', 'durations.*^4', 'created_at^3', 'country.name', 'vendor.name'
+        ];
+    }
+
+    protected function searchableScope(Builder $query)
+    {
+        return $query->userCollaboration()->with('country', 'vendor');
     }
 }

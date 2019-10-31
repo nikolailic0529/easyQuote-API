@@ -1,7 +1,7 @@
 <?php namespace App\Repositories;
 
-use App\Models\Data\Language;
 use App\Contracts\Repositories\LanguageRepositoryInterface;
+use App\Models\Data\Language;
 use Cache;
 
 class LanguageRepository implements LanguageRepositoryInterface

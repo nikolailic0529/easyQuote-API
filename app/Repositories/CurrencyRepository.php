@@ -1,7 +1,7 @@
 <?php namespace App\Repositories;
 
-use App\Models\Data\Currency;
 use App\Contracts\Repositories\CurrencyRepositoryInterface;
+use App\Models\Data\Currency;
 
 class CurrencyRepository implements CurrencyRepositoryInterface
 {
@@ -14,6 +14,8 @@ class CurrencyRepository implements CurrencyRepositoryInterface
 
     public function all()
     {
-        return $this->ordered()->get();
+        return Cache::rememberForever('all-currencies', function () {
+            return $this->ordered()->get();
+        });
     }
 }
