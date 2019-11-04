@@ -86,7 +86,7 @@ interface QuoteServiceInterface
      * Export Quote in PDF format.
      *
      * @param Quote $quote
-     * @return [type]
+     * @return array
      */
     public function export(Quote $quote);
 }

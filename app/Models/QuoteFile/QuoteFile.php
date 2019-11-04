@@ -31,7 +31,7 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         SoftDeletes;
 
     protected $fillable = [
-        'original_file_path', 'original_file_name', 'file_type', 'pages', 'quote_file_format_id'
+        'original_file_path', 'original_file_name', 'file_type', 'pages', 'quote_file_format_id', 'quote_id'
     ];
 
     public function scopeOrdered($query)
@@ -67,6 +67,11 @@ class QuoteFile extends UuidModel implements HasOrderedScope
     public function scopePaymentSchedules($query)
     {
         return $query->where('file_type', 'Payment Schedule');
+    }
+
+    public function scopeGeneratedPdf($query)
+    {
+        return $query->where('file_type', 'Generated PDF');
     }
 
     public function isExcel()

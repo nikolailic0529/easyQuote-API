@@ -24,10 +24,10 @@ interface QuoteFileRepositoryInterface
     /**
      * Create a new Quote File
      * Associate with File Format
-     * @param \App\Requests\StoreQuoteFileRequest $request
+     * @param array $attributes
      * @return \App\Models\QuoteFile\QuoteFile
      */
-    public function create(StoreQuoteFileRequest $request);
+    public function create(array $attributes);
 
     /**
      * Store Imported Raw Data by QuoteFile

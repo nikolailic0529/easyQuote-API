@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent \ {
     Model,
     Builder
 };
-use DB;
+use DB, Storage;
 
 class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubmittedRepositoryInterface
 {
@@ -34,6 +34,11 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         return $this->quote->query()->currentUser()->submitted()->with('customer', 'company');
     }
 
+    public function findByRfq(string $rfq): Quote
+    {
+        return $this->quote->submitted()->orderBy('updated_at', 'desc')->rfq($rfq)->firstOrFail();
+    }
+
     public function find(string $id): Quote
     {
         return $this->userQuery()->whereId($id)->firstOrFail();
@@ -41,9 +46,38 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     public function rfq(string $rfq): array
     {
-        $quote = $this->quote->submitted()->rfq($rfq)->firstOrFail();
+        $quote = $this->findByRfq($rfq);
+
+        blank($quote->submitted_data) && abort('404', 'Sorry, no data found by this RFQ number.');
 
         return $quote->submitted_data;
+    }
+
+    public function price(string $rfq)
+    {
+        $file = $this->findByRfq($rfq)->priceList->original_file_path;
+
+        blank($file) && abort('404', 'Sorry, no files found.');
+
+        return Storage::path($file);
+    }
+
+    public function schedule(string $rfq)
+    {
+        $file = $this->findByRfq($rfq)->paymentSchedule->original_file_path;
+
+        blank($file) && abort('404', 'Sorry, no files found.');
+
+        return Storage::path($file);
+    }
+
+    public function pdf(string $rfq)
+    {
+        $file = $this->findByRfq($rfq)->generatedPdf->original_file_path;
+
+        blank($file) && abort('404', 'Sorry, no files found.');
+
+        return Storage::path($file);
     }
 
     public function delete(string $id)

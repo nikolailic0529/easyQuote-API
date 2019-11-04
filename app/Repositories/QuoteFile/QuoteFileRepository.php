@@ -45,32 +45,32 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         return $this->quoteFile->make($array);
     }
 
-    public function create(StoreQuoteFileRequest $request)
+    public function create(array $attributes)
     {
-        $clientFileName = $request->quote_file->getClientOriginalName();
+        $clientFileName = $attributes['quote_file']->getClientOriginalName();
         $fileName = Str::limit(File::name($clientFileName), 50, '');
         $extension = File::extension($clientFileName);
         $original_file_name = "{$fileName}.{$extension}";
 
-        $quoteFile = $request->user()->quoteFiles()->make(
-            $request->merge(compact('original_file_name'))->all()
+        $quoteFile = request()->user()->quoteFiles()->make(
+            array_merge($attributes, compact('original_file_name'))
         );
 
-        $format = $request->format;
-
-        if($request->has('data_select_separator_id') && $format->extension === 'csv') {
-            $separator = $this->dataSelectSeparator->whereId($request->data_select_separator_id)->first();
+        if(isset($attributes['data_select_separator_id']) && isset($attributes['format']) && $attributes['format']->extension === 'csv') {
+            $separator = $this->dataSelectSeparator->whereId($attributes['data_select_separator_id'])->first();
 
             $quoteFile->dataSelectSeparator()->associate($separator);
         }
 
-        $quoteFile->format()->associate($format);
+        if(isset($attributes['format'])) {
+            $quoteFile->format()->associate($attributes['format']);
+        }
 
         $quoteFile->markAsDrafted();
 
-        if(($quoteFile->isPdf() || $quoteFile->isWord()) && $request->has('rawData'))
+        if(($quoteFile->isPdf() || $quoteFile->isWord()) && isset($attributes['rawData']))
         {
-            $this->createRawData($quoteFile, $request->rawData);
+            $this->createRawData($quoteFile, $attributes['rawData']);
         }
 
         return $quoteFile->makeHidden('user');

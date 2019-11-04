@@ -50,7 +50,7 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
 
     public function userQuery(): Builder
     {
-        return $this->user->query()->userCollaborationExcept();
+        return $this->user->query();
     }
 
     public function find(string $id): User

@@ -33,8 +33,8 @@ class ScheduleData extends UuidModel
 
     public function getValueAttribute()
     {
-        if (blank($this->attributes['value'])) {
-            return;
+        if (!isset($this->attributes['value'])) {
+            return null;
         }
 
         $keys = $this->rowsHeaderToArray();

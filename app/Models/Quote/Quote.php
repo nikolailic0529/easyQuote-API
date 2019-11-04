@@ -156,6 +156,11 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         return $this->hasOne(QuoteFile::class)->paymentSchedules()->withDefault(QuoteFile::make([]));
     }
 
+    public function generatedPdf()
+    {
+        return $this->hasOne(QuoteFile::class)->generatedPdf()->withDefault(QuoteFile::make([]));
+    }
+
     public function appendJoins()
     {
         return $this->setAppends(

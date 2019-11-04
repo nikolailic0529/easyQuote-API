@@ -27,7 +27,7 @@ use App\Http\Requests \ {
 };
 use App\Http\Resources\QuoteResource;
 use Illuminate\Support\Collection;
-use Cache, Arr;
+use Cache, Arr, Storage;
 use Illuminate\Database\Eloquent\Builder;
 
 class QuoteRepository implements QuoteRepositoryInterface
@@ -286,11 +286,9 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     public function submit(Quote $quote): void
     {
-        // $pdf_file = $this->quoteService->export($quote);
-
-        // $submitted_data = (new QuoteResource($quote))->prepend(compact('pdf_file'))->resolve();
-
-        $quote->submit();
+        $this->quoteService->export($quote);
+        $submitted_data = (new QuoteResource($quote))->resolve();
+        $quote->submit($submitted_data);
     }
 
     public function draft(Quote $quote): void

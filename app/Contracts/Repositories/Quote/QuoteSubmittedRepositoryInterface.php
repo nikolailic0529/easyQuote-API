@@ -38,12 +38,44 @@ interface QuoteSubmittedRepositoryInterface
     public function find(string $id): Quote;
 
     /**
-     * Find Submitted Quotes by RFQ number.
+     * Find Submitted Quote by RFQ number.
+     *
+     * @param string $rfq
+     * @return array
+     */
+    public function findByRfq(string $rfq): Quote;
+
+    /**
+     * Find Submitted Quote Data by RFQ number.
      *
      * @param string $rfq
      * @return array
      */
     public function rfq(string $rfq): array;
+
+    /**
+     * Submitted Price List by RFQ number.
+     *
+     * @param string $rfq
+     * @return mixed
+     */
+    public function price(string $rfq);
+
+    /**
+     * Submitted Payment Schedule File by RFQ number.
+     *
+     * @param string $rfq
+     * @return mixed
+     */
+    public function schedule(string $rfq);
+
+    /**
+     * Submitted Generated PDF file by RFQ number.
+     *
+     * @param string $rfq
+     * @return mixed
+     */
+    public function pdf(string $rfq);
 
     /**
      * Delete Submitted Quote.

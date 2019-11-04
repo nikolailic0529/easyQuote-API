@@ -1,6 +1,7 @@
 <?php namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Storage;
 
 class QuoteResource extends JsonResource
 {
@@ -18,8 +19,15 @@ class QuoteResource extends JsonResource
     public function toArray($request)
     {
         return array_merge($this->prepend, [
-            'price_list_file' => $this->priceList->original_file_path,
-            'payment_schedule_file' => $this->paymentSchedule->original_file_path,
+            'pdf_file' => $this->when($this->generatedPdf->original_file_path, function () {
+                return route('s4.pdf', ['rfq' => $this->customer->rfq]);
+            }),
+            'price_list_file' => $this->when($this->priceList->original_file_path, function () {
+                return route('s4.price', ['rfq' => $this->customer->rfq]);
+            }),
+            'payment_schedule_file' => $this->when($this->paymentSchedule->original_file_path, function () {
+                return route('s4.schedule', ['rfq' => $this->customer->rfq]);
+            }),
             'quote_data' => [
                 'first_page' => [
                     'template_name' => $this->quoteTemplate->name,

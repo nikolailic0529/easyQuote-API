@@ -1,6 +1,10 @@
 <?php namespace App\Services;
 
-use App\Contracts\Services\QuoteServiceInterface;
+use App\Contracts \ {
+    Services\QuoteServiceInterface,
+    Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository,
+    Repositories\QuoteFile\FileFormatRepositoryInterface as FileFormatRepository
+};
 use App\Http\Resources\QuoteResource;
 use App\Models\Quote \ {
     Quote,
@@ -8,7 +12,8 @@ use App\Models\Quote \ {
     Margin\CountryMargin
 };
 use Illuminate\Support\Collection;
-use Storage, Closure, Str, Arr;
+use Illuminate\Http\UploadedFile;
+use Storage, Closure, Str, Arr, File;
 
 class QuoteService implements QuoteServiceInterface
 {
@@ -19,9 +24,15 @@ class QuoteService implements QuoteServiceInterface
      */
     protected $pdf;
 
-    public function __construct()
+    protected $quoteFile;
+
+    protected $fileFormat;
+
+    public function __construct(QuoteFileRepository $quoteFile, FileFormatRepository $fileFormat)
     {
         $this->pdf = app('snappy.pdf.wrapper');
+        $this->quoteFile = $quoteFile;
+        $this->fileFormat = $fileFormat;
     }
 
     public function interact(Quote $quote, $interactable): Quote
@@ -195,7 +206,8 @@ class QuoteService implements QuoteServiceInterface
     {
         $this->prepareQuoteReview($quote);
 
-        $data = (new QuoteResource($quote))->resolve()['quote_data'];
+        $resource = (new QuoteResource($quote))->resolve();
+        $data = $resource['quote_data'];
         $design = $quote->quoteTemplate->form_values_data;
 
         if(isset($design['payment_page'])) {
@@ -205,20 +217,21 @@ class QuoteService implements QuoteServiceInterface
 
         $company_logos = $quote->quoteTemplate->company->getLogoDimensionsAttribute(true, true) ?? [];
         $vendor_logos = $quote->quoteTemplate->vendor->getLogoDimensionsAttribute(true, true) ?? [];
-
         $images = array_merge($company_logos, $vendor_logos);
 
-        // return view('quotes.pdf', compact('data', 'design', 'images'));
+        $hash = md5($quote->customer->rfq . time());
+        $filename = "{$quote->customer->rfq}_{$hash}.pdf";
+        $original_file_path = "{$quote->user->quoteFilesDirectory}/$filename";
+        $path = storage_path("app/{$original_file_path}");
+        $this->pdf->loadView('quotes.pdf', compact('data', 'design', 'images'))->save($path);
 
-        $pdf = $this->pdf->loadView('quotes.pdf', compact('data', 'design', 'images'))
-            ->inline('quotation.pdf');
+        $quote_file = new UploadedFile($path, $filename);
+        $format = $this->fileFormat->whereInExtension(['pdf']);
+        $quote_id = $quote->id;
+        $file_type = 'Generated PDF';
 
-        return $pdf;
-
-        // $path = "{$quote->user->quoteFilesDirectory}/submitted/quotation_{$quote->customer->rfq}.pdf";
-        // Storage::put($path, $pdf);
-
-        // return $path;
+        $quote->generatedPdf()->delete();
+        $this->quoteFile->create(compact('quote_file', 'format', 'file_type', 'original_file_path', 'quote_id'));
     }
 
     public function prepareRows(Quote $quote): void

@@ -92,7 +92,7 @@ class ParserService implements ParserServiceInterface
                 break;
         }
 
-        return $request->merge($mergeData);
+        return array_merge($request->validated(), $mergeData);
     }
 
     public function handle(HandleQuoteFileRequest $request)
