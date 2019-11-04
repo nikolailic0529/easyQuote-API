@@ -1,12 +1,10 @@
 <?php namespace App\Contracts\Repositories\Quote;
 
-use App\Builder\Pagination\Paginator;
 use App\Models\Quote\Quote;
 use App\Http\Requests \ {
     StoreQuoteStateRequest,
     GetQuoteTemplatesRequest,
-    MappingReviewRequest,
-    ReviewAppliedMarginRequest
+    MappingReviewRequest
 };
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -37,7 +35,7 @@ interface QuoteRepositoryInterface
     public function getTemplates(GetQuoteTemplatesRequest $request);
 
     /**
-     * Get Rows Data by Attached Columns
+     * Get Rows Data by Attached Columns.
      *
      * @param MappingReviewRequest $request
      * @return \Illuminate\Support\Collection
@@ -45,7 +43,14 @@ interface QuoteRepositoryInterface
     public function step2(MappingReviewRequest $request);
 
     /**
-     * Find User's Quote
+     * Get User's Quotes Query.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function userQuery(): Builder;
+
+    /**
+     * Find Collaboration Quote.
      *
      * @param Quote $quote
      * @return \App\Models\Quote\Quote
@@ -53,21 +58,21 @@ interface QuoteRepositoryInterface
     public function find(string $id);
 
     /**
-     * Find User's Quote with Modifications
+     * Find Collaboration Quote with Calculated Total Price.
      *
      * @param string $id
      * @return \App\Models\Quote\Quote
      */
-    public function getWithModifications(string $id);
+    public function preparedQuote(string $id);
 
     /**
-     * Set/Create Margin for Quote
+     * Set/Create Margin for Quote.
      *
      * @param Quote $quote
      * @param array|null $attributes
      * @return \App\Models\Quote\Margin\CountryMargin
      */
-    public function setMargin(Quote $quote, $attributes);
+    public function setMargin(Quote $quote, ?array $attributes);
 
     /**
      * Set Discounts for Quote
@@ -80,7 +85,7 @@ interface QuoteRepositoryInterface
     public function setDiscounts(Quote $quote, $attributes, $detach);
 
     /**
-     * Get acceptable Discounts for the specified Quote
+     * Get acceptable Discounts for the specified Quote.
      *
      * @param string $quoteId
      * @return \Illuminate\Database\Eloquent\Collection
@@ -88,7 +93,7 @@ interface QuoteRepositoryInterface
     public function discounts(string $quoteId);
 
     /**
-     * Review Quote pages
+     * Review Quote pages.
      *
      * @param string $quoteId
      * @return \Illuminate\Database\Eloquent\Collection
@@ -96,7 +101,7 @@ interface QuoteRepositoryInterface
     public function review(string $quoteId);
 
     /**
-     * Retrieve Quote Mapping Review Data
+     * Retrieve Quote Mapping Review Data.
      *
      * @param Quote $quote
      * @param bool|null $clearCache
@@ -105,11 +110,36 @@ interface QuoteRepositoryInterface
     public function mappingReviewData(Quote $quote, $clearCache = null);
 
     /**
-     * Find Rows by query
+     * Find Rows by query.
      *
      * @param string $id
      * @param string $query
      * @return \Illuminate\Support\Collection
      */
     public function rows(string $id, string $query = ''): Collection;
+
+    /**
+     * Draft or Submit specified Quote.
+     *
+     * @param Collection $state
+     * @param Quote $quote
+     * @return void
+     */
+    public function draftOrSubmit(Collection $state, Quote $quote): void;
+
+    /**
+     * Store Submittable Data for S4 and Submit Quote.
+     *
+     * @param Quote $quote
+     * @return void
+     */
+    public function submit(Quote $quote): void;
+
+    /**
+     * Remove Stored Submittable Data and Mark Quote as Drafted.
+     *
+     * @param Quote $quote
+     * @return void
+     */
+    public function draft(Quote $quote): void;
 }

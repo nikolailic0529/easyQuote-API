@@ -1,6 +1,11 @@
 <?php namespace App\Repositories\Quote;
 
-use App\Contracts\Repositories\Quote\QuoteSubmittedRepositoryInterface;
+use App\Contracts\Repositories \ {
+    Quote\QuoteSubmittedRepositoryInterface,
+    QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
+};
+use App\Contracts\Services\QuoteServiceInterface as QuoteService;
+use App\Http\Resources\QuoteResource;
 use App\Repositories\SearchableRepository;
 use App\Models\Quote\Quote;
 use Illuminate\Database\Eloquent \ {
@@ -13,19 +18,32 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 {
     protected $quote;
 
-    public function __construct(Quote $quote)
+    protected $quoteFile;
+
+    protected $quoteService;
+
+    public function __construct(Quote $quote, QuoteFileRepository $quoteFile, QuoteService $quoteService)
     {
         $this->quote = $quote;
+        $this->quoteFile = $quoteFile;
+        $this->quoteService = $quoteService;
     }
 
     public function userQuery(): Builder
     {
-        return $this->quote->userCollaboration()->submitted()->with('customer', 'company');
+        return $this->quote->query()->currentUser()->submitted()->with('customer', 'company');
     }
 
     public function find(string $id): Quote
     {
         return $this->userQuery()->whereId($id)->firstOrFail();
+    }
+
+    public function rfq(string $rfq): array
+    {
+        $quote = $this->quote->submitted()->rfq($rfq)->firstOrFail();
+
+        return $quote->submitted_data;
     }
 
     public function delete(string $id)
@@ -48,24 +66,33 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         $quote = $this->find($id)->load('company', 'vendor', 'country', 'discounts', 'customer');
 
         $replicatedQuote = $quote->replicate();
-        $replicatedQuote->user_id = request()->user()->id;
 
-        $pass = $replicatedQuote->push() && $replicatedQuote->unSubmit();
+        $pass = $replicatedQuote->unSubmit();
+
+        /**
+         * Discounts Replication
+         */
+        $discounts = DB::table('quote_discount')
+            ->select(DB::raw("'{$replicatedQuote->id}' `quote_id`"), 'discount_id', 'duration')
+            ->where('quote_id', $quote->id);
+        DB::table('quote_discount')->insertUsing(['quote_id', 'discount_id', 'duration'], $discounts);
 
         /**
          * Mapping Replication
          */
-        DB::insert("
-            insert into `quote_field_column` (quote_id, template_field_id, importable_column_id, is_default_enabled)
-            select '{$replicatedQuote->id}' quote_id, template_field_id, importable_column_id, is_default_enabled
-            from `quote_field_column` where quote_id = '{$quote->id}'
-        ");
+        $mapping = DB::table('quote_field_column')
+            ->select(DB::raw("'{$replicatedQuote->id}' as `quote_id`"), 'template_field_id', 'importable_column_id', 'is_default_enabled')
+            ->where('quote_id', $quote->id);
+        DB::table('quote_field_column')->insertUsing(
+            ['quote_id', 'template_field_id', 'importable_column_id', 'is_default_enabled'],
+            $mapping
+        );
 
         $quoteFilesToSave = collect();
 
         $priceList = $quote->quoteFiles()->priceLists()->first();
         if(isset($priceList)) {
-            $quoteFilesToSave->push($this->quoteFileRepository->replicatePriceList($priceList));
+            $quoteFilesToSave->push($this->quoteFile->replicatePriceList($priceList));
         }
 
         $schedule = $quote->quoteFiles()->paymentSchedules()->with('scheduleData')->first();
@@ -127,6 +154,6 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     protected function searchableScope(Builder $query)
     {
-        return $query->userCollaboration()->with('customer', 'company');
+        return $query->currentUser()->with('customer', 'company');
     }
 }

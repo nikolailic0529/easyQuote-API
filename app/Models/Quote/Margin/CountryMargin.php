@@ -18,12 +18,8 @@ class CountryMargin extends Margin
 
     public function scopeQuoteAcceptable(Builder $query, Quote $quote): Builder
     {
-        return $query->whereHas('vendor', function ($query) use ($quote) {
-                return $query->whereId($quote->vendor_id);
-            })
-            ->whereHas('country', function ($query) use ($quote) {
-                return $query->whereId($quote->country_id);
-            });
+        return $query->whereVendorId($quote->vendor_id)
+            ->whereCountryId($quote->country_id);
     }
 
     public function toSearchArray()

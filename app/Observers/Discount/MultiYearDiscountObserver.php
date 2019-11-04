@@ -25,7 +25,6 @@ class MultiYearDiscountObserver
     {
         return $multiYearDiscount
             ->query()
-            ->userCollaboration()
             ->where('id', '!=', $multiYearDiscount->id)
             ->where('vendor_id', $multiYearDiscount->vendor_id)
             ->durationIn($multiYearDiscount->years)

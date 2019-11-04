@@ -46,27 +46,28 @@ class TemplatesUpdate extends Command
         $this->info("Updating System Defined Templates...");
 
         $templates = json_decode(file_get_contents(database_path('seeds/models/quote_templates.json')), true);
+        $design = json_decode(file_get_contents(database_path('seeds/models/template_designs.json')), true);
 
         $templateFields = TemplateField::system()->pluck('id')->toArray();
 
-        collect($templates)->each(function ($template) use ($templateFields) {
+        collect($templates)->each(function ($template) use ($templateFields, $design) {
 
-            collect($template['companies'])->each(function ($vat) use ($template, $templateFields) {
+            collect($template['companies'])->each(function ($vat) use ($template, $templateFields, $design) {
                 $company = Company::whereVat($vat)->first();
 
-                collect($template['vendors'])->each(function ($vendorCode) use ($company, $template, $templateFields) {
+                collect($template['vendors'])->each(function ($vendorCode) use ($company, $template, $templateFields, $design) {
                     $vendor = Vendor::whereShortCode($vendorCode)->first();
                     $vendor_id = $vendor->id;
                     $company_id = $company->id;
                     $is_system = true;
 
                     $companyShortCode = Str::short($company->name);
-                    $name = "{$companyShortCode} {$vendor->short_code}  {$template['name']}";
+                    $name = "{$companyShortCode} {$vendor->short_code} {$template['name']}";
                     $countries = Country::whereIn('iso_3166_2', $template['countries'])->pluck('id')->toArray();
 
-                    $template = QuoteTemplate::firstOrCreate(
-                        compact('company_id', 'vendor_id', 'is_system'),
-                        compact('name', 'company_id', 'vendor_id', 'is_system')
+                    $template = QuoteTemplate::updateOrCreate(
+                        compact('name', 'company_id', 'vendor_id', 'is_system'),
+                        array_merge(compact('name', 'company_id', 'vendor_id', 'is_system'), $design)
                     );
 
                     $template->templateFields()->syncWithoutDetaching($templateFields);

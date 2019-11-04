@@ -2,27 +2,27 @@
     {
         "name": "Administrator",
         "permissions": [
-            "view_collaboration_users", "invite_collaboration_users", "update_collaboration_users", "delete_collaboration_users", "reset_collaboration_users_password",
-            "view_roles", "create_roles", "update_own_roles", "delete_own_roles",
-            "view_quotes", "create_quotes", "update_collaboration_quotes", "delete_collaboration_quotes", "submit_quotes",
-            "view_quote_files", "create_quote_files", "update_collaboration_quote_files", "handle_collaboration_quote_files", "delete_collaboration_quote_files",
-            "view_templates", "create_templates", "update_collaboration_templates", "delete_collaboration_templates",
-            "view_companies", "create_companies", "update_collaboration_companies", "delete_collaboration_companies",
-            "view_vendors", "create_vendors", "update_collaboration_vendors", "delete_collaboration_vendors",
-            "view_discounts", "create_discounts", "update_collaboration_discounts", "delete_collaboration_discounts",
-            "view_margins", "create_margins", "update_collaboration_margins", "delete_collaboration_margins"
+            "view_users", "invite_collaboration_users", "update_users", "delete_users", "reset_users_password",
+            "view_roles", "create_roles", "update_roles", "delete_roles",
+            "view_quotes", "create_quotes", "update_quotes", "delete_quotes", "submit_quotes",
+            "view_quote_files", "create_quote_files", "update_quote_files", "handle_quote_files", "delete_quote_files",
+            "view_templates", "create_templates", "update_templates", "delete_templates",
+            "view_companies", "create_companies", "update_companies", "delete_companies",
+            "view_vendors", "create_vendors", "update_vendors", "delete_vendors",
+            "view_discounts", "create_discounts", "update_discounts", "delete_discounts",
+            "view_margins", "create_margins", "update_margins", "delete_margins"
         ]
     },
     {
         "name": "Sales Manager",
         "permissions": [
-            "view_quotes", "create_quotes", "update_own_quotes", "delete_own_quotes", "submit_quotes",
-            "view_quote_files", "create_quote_files", "update_own_quote_files", "handle_own_quote_files", "delete_own_quote_files",
-            "view_templates", "create_templates", "update_own_templates", "delete_own_templates",
-            "view_companies", "create_companies", "update_own_companies", "delete_own_companies",
-            "view_vendors", "create_vendors", "update_own_vendors", "delete_own_vendors",
-            "view_discounts", "create_discounts", "update_own_discounts", "delete_own_discounts",
-            "view_margins", "create_margins", "update_own_margins", "delete_own_margins"
+            "view_quotes", "create_quotes", "update_quotes", "delete_quotes", "submit_quotes",
+            "view_quote_files", "create_quote_files", "update_quote_files", "handle_quote_files", "delete_quote_files",
+            "view_templates", "create_templates", "update_templates", "delete_templates",
+            "view_companies", "create_companies", "update_companies", "delete_companies",
+            "view_vendors", "create_vendors", "update_vendors", "delete_vendors",
+            "view_discounts", "create_discounts", "update_discounts", "delete_discounts",
+            "view_margins", "create_margins", "update_margins", "delete_margins"
         ]
     }
 ]

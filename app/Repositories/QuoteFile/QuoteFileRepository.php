@@ -37,7 +37,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     public function all()
     {
-        return $this->quoteFile->userCollaboration()->ordered()->get();
+        return $this->quoteFile->ordered()->get();
     }
 
     public function make(array $array)
@@ -197,7 +197,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     public function find(String $id)
     {
-        return $this->quoteFile->query()->userCollaboration()->whereId($id)->firstOrFail();
+        return $this->quoteFile->query()->whereId($id)->firstOrFail();
     }
 
     public function exists(String $id)

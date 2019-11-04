@@ -22,7 +22,7 @@ class PromotionalDiscountRepository extends DiscountRepository implements Promot
 
     public function userQuery(): Builder
     {
-        return $this->promotionalDiscount->query()->userCollaboration()->with('country', 'vendor');
+        return $this->promotionalDiscount->query()->with('country', 'vendor');
     }
 
     public function find(string $id): PromotionalDiscount
@@ -89,6 +89,6 @@ class PromotionalDiscountRepository extends DiscountRepository implements Promot
 
     protected function searchableScope(Builder $query)
     {
-        return $query->userCollaboration()->with('country', 'vendor');
+        return $query->with('country', 'vendor');
     }
 }

@@ -2,13 +2,13 @@
 
 use App\Contracts\Repositories \ {
     Quote\QuoteRepositoryInterface,
+    Quote\Margin\MarginRepositoryInterface as MarginRepository,
     QuoteTemplate\QuoteTemplateRepositoryInterface as QuoteTemplateRepository,
     QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
 };
 use App\Contracts\Services\QuoteServiceInterface as QuoteService;
 use App\Models \ {
     Company,
-    Vendor,
     Quote\Quote,
     Quote\Discount as QuoteDiscount,
     QuoteFile\QuoteFile,
@@ -25,9 +25,10 @@ use App\Http\Requests \ {
     GetQuoteTemplatesRequest,
     MappingReviewRequest
 };
+use App\Http\Resources\QuoteResource;
 use Illuminate\Support\Collection;
-use Elasticsearch\Client as Elasticsearch;
-use Setting, Cache;
+use Cache, Arr;
+use Illuminate\Database\Eloquent\Builder;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
@@ -38,6 +39,8 @@ class QuoteRepository implements QuoteRepositoryInterface
     protected $quoteFile;
 
     protected $quoteFileRepository;
+
+    protected $margin;
 
     protected $quoteDiscount;
 
@@ -51,23 +54,18 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     protected $dataSelectSeparator;
 
-    protected $defaultPage;
-
-    protected $search;
-
     public function __construct(
         Quote $quote,
         QuoteService $quoteService,
         QuoteFile $quoteFile,
         QuoteTemplateRepository $quoteTemplate,
         QuoteFileRepository $quoteFileRepository,
+        MarginRepository $margin,
         QuoteDiscount $quoteDiscount,
         TemplateField $templateField,
         ImportableColumn $importableColumn,
         Company $company,
-        Vendor $vendor,
         DataSelectSeparator $dataSelectSeparator,
-        Elasticsearch $search,
         MultiYearDiscount $multiYearDiscount,
         PrePayDiscount $prePayDiscount,
         PromotionalDiscount $promotionalDiscount,
@@ -76,15 +74,13 @@ class QuoteRepository implements QuoteRepositoryInterface
         $this->quote = $quote;
         $this->quoteFile = $quoteFile;
         $this->quoteFileRepository = $quoteFileRepository;
+        $this->margin = $margin;
         $this->quoteDiscount = $quoteDiscount;
         $this->quoteTemplate = $quoteTemplate;
         $this->templateField = $templateField;
         $this->importableColumn = $importableColumn;
         $this->company = $company;
-        $this->vendor = $vendor;
         $this->dataSelectSeparator = $dataSelectSeparator;
-        $this->defaultPage = Setting::get('parser.default_page');
-        $this->search = $search;
         $this->quoteService = $quoteService;
 
         /**
@@ -103,7 +99,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         $quoteData = $state->get('quote_data');
 
         if($request->has('quote_id')) {
-            $quote = $user->quotes()->whereId($request->quote_id)->firstOrFail();
+            $quote = $this->find($request->quote_id);
         } else {
             $quote = $user->quotes()->make();
         }
@@ -112,7 +108,7 @@ class QuoteRepository implements QuoteRepositoryInterface
             $quote->fill($quoteData);
         }
 
-        $this->draftQuote($state, $quote);
+        $this->draftOrSubmit($state, $quote);
         $this->storeQuoteFilesState($state, $quote);
         $this->detachScheduleIfRequested($state, $quote);
         $this->attachColumnsToFields($state, $quote);
@@ -120,26 +116,29 @@ class QuoteRepository implements QuoteRepositoryInterface
         $this->setMargin($quote, $request->margin);
         $this->setDiscounts($quote, $request->discounts, $request->discounts_detach);
 
-        $quote = $quote->loadJoins()->setAppends(['field_column']);
-
         Cache::forget("quote_list_price:{$quote->id}");
 
-        return $quote;
+        return $quote->only('id');
+    }
+
+    public function userQuery(): Builder
+    {
+        return $this->quote->query()->currentUser();
     }
 
     public function findOrNew(string $id)
     {
-        return $this->quote->whereId($id)->firstOrNew();
+        return $this->userQuery()->whereId($id)->firstOrNew();
     }
 
     public function find(string $id)
     {
-        $quote = $this->quote->userCollaboration()->whereId($id)->withJoins()->firstOrFail()->appendJoins();
+        $quote = $this->userQuery()->whereId($id)->withJoins()->firstOrFail()->appendJoins();
 
         return $quote;
     }
 
-    public function getWithModifications(string $id)
+    public function preparedQuote(string $id)
     {
         $quote = $this->find($id);
 
@@ -190,37 +189,42 @@ class QuoteRepository implements QuoteRepositoryInterface
         return $this->mappingReviewData($quote);
     }
 
-    public function setMargin(Quote $quote, $attributes)
+    public function setMargin(Quote $quote, ?array $attributes): void
     {
-        if(!isset($attributes) || !is_array($attributes) || empty($attributes)) {
-            return null;
+        if(blank($attributes) || blank($quote->country_id) || blank($quote->vendor_id)) {
+            return;
         }
 
-        if(isset($attributes['delete']) && $attributes['delete']) {
-            return $quote->deleteCountryMargin();
+        if(isset($attributes['delete']) && (bool) $attributes['delete']) {
+            $quote->deleteCountryMargin();
+            return;
         }
 
-        unset($quote->computableRows, $quote->list_price);
+        $quote->countryMargin()->dissociate();
 
-        return $quote->createCountryMargin($attributes);
+        $countryMargin = $this->margin->firstOrCreate($quote, $attributes);
+        $quote->countryMargin()->associate($countryMargin);
+        $quote->margin_data = array_merge($countryMargin->only('value', 'method', 'is_fixed'), ['type' => 'By Country']);
+        $quote->type = $attributes['quote_type'];
+
+        $quote->save();
     }
 
-    public function setDiscounts(Quote $quote, $attributes, $detach)
+    public function setDiscounts(Quote $quote, $attributes, $detach): void
     {
         if((bool) $detach === true) {
+            $quote->resetCustomDiscount();
             $quote->discounts()->detach();
-
-            return $quote;
+            return;
         }
 
         if(!isset($attributes) || !is_array($attributes) || empty($attributes)) {
-            return null;
+            return;
         }
 
         $quoteDiscounts = collect($attributes)->mapWithKeys(function ($discount) {
             $id = $this->quoteDiscount->where('discountable_id', $discount['id'])->firstOrFail()->id;
             $duration = $discount['duration'] ?? null;
-
             return [$id => compact('duration')];
         });
 
@@ -230,7 +234,7 @@ class QuoteRepository implements QuoteRepositoryInterface
             $quote->resetCustomDiscount();
         }
 
-        return $quote->load('discounts');
+        return;
     }
 
     public function discounts(string $id)
@@ -238,19 +242,15 @@ class QuoteRepository implements QuoteRepositoryInterface
         $quote = $this->find($id);
 
         $multi_year = $this->multiYearDiscount
-            ->userCollaboration()
             ->quoteAcceptable($quote)
             ->get();
         $pre_pay = $this->prePayDiscount
-            ->userCollaboration()
             ->quoteAcceptable($quote)
             ->get();
         $promotions = $this->promotionalDiscount
-            ->userCollaboration()
             ->quoteAcceptable($quote)
             ->get();
         $snd = $this->snd
-            ->userCollaboration()
             ->quoteAcceptable($quote)
             ->get();
 
@@ -261,90 +261,9 @@ class QuoteRepository implements QuoteRepositoryInterface
     {
         $quote = $this->find($quoteId);
 
-        $quote->computableRows = $quote->calculate_list_price ? $quote->rowsDataByColumnsCalculated(true)->get() : $quote->rowsDataByColumns(true)->get();
+        $this->quoteService->prepareQuoteReview($quote);
 
-        /**
-         * Possible Interactions with Margins and Discounts
-         */
-        $this->interactWithModels($quote);
-
-        /**
-         * Calculate List Price if not calculated after interactions
-         */
-        if(((float) $quote->list_price) === 0.00) {
-            $quote->list_price = $quote->countTotalPrice();
-        }
-
-        /**
-         * Calculate Schedule Total Prices based on Margin Percentage
-         */
-        $this->quoteService->calculateSchedulePrices($quote);
-
-        $equipment_address = $quote->customer->hardwareAddresses()->first()->address_1 ?? null;
-        $hardware_contact = $quote->customer->hardwareContacts()->first();
-        $hardware_contact_name = $hardware_contact->contact_name ?? null;
-        $hardware_contact_phone = $hardware_contact->phone ?? null;
-
-        $software_address = $quote->customer->softwareAddresses()->first()->address_1 ?? null;
-        $software_contact = $quote->customer->softwareContacts()->first();
-        $software_contact_name = $software_contact->contact_name ?? null;
-        $software_contact_phone = $software_contact->phone ?? null;
-
-        $coverage_period = "{$quote->customer->support_start} to {$quote->customer->support_end}";
-
-        $quote = $this->addBuyPriceColumn($quote);
-
-        $pages = collect();
-
-        $first_page = [
-            'id' => $quote->id,
-            'template_name' => $quote->quoteTemplate->name,
-            'customer_name' => $quote->customer->name,
-            'company_name' => $quote->company->name,
-            'company_logo' => $quote->company->logo,
-            'vendor_name' => $quote->vendor->name,
-            'vendor_logo' => $quote->vendor->logo,
-            'support_start' => $quote->customer->support_start,
-            'support_end' => $quote->customer->support_end,
-            'valid_until' => $quote->customer->valid_until,
-            'quotation_number' => $quote->customer->rfq,
-            'service_level' => $quote->customer->service_level,
-            'list_price' => $quote->list_price_formatted,
-            'applicable_discounts' => $quote->applicable_discounts_formatted,
-            'final_price' => $quote->final_price,
-            'payment_terms' => $quote->customer->payment_terms,
-            'invoicing_terms' => $quote->customer->invoicing_terms,
-            'full_name' => $quote->user->full_name,
-            'date' => $quote->updated_at
-        ];
-
-        $data_pages = [
-            'pricing_document' => $quote->pricing_document,
-            'service_agreement_id' => $quote->service_agreement_id,
-            'system_handle' => $quote->system_handle,
-            'equipment_address' => $equipment_address,
-            'hardware_contact' => $hardware_contact_name,
-            'hardware_phone' => $hardware_contact_phone,
-            'software_address' => $software_address,
-            'software_contact' => $software_contact_name,
-            'software_phone' => $software_contact_phone,
-            'coverage_period' => $coverage_period,
-            'rows' => $quote->computableRows
-        ];
-
-        $last_page = [
-            'additional_details' => $quote->additional_details
-        ];
-
-        $payment_schedule = [
-            'period' => $coverage_period,
-            'data' => $quote->scheduleData->value
-        ];
-
-        $pages = $pages->merge(compact('first_page', 'data_pages', 'last_page', 'payment_schedule'));
-
-
-        return $pages;
+        return (new QuoteResource($quote))->resolve()['quote_data'];
     }
 
     public function mappingReviewData(Quote $quote, $clearCache = null)
@@ -365,82 +284,51 @@ class QuoteRepository implements QuoteRepositoryInterface
         return $this->find($id)->rowsDataByColumnsGroupable($query)->get();
     }
 
-    private function interactWithModels(Quote $quote)
+    public function submit(Quote $quote): void
     {
-        /**
-         * Possible interaction with Margin percentage.
-         */
-        $this->quoteService->interactWithMargin($quote);
+        // $pdf_file = $this->quoteService->export($quote);
 
-        /**
-         * Possible interaction with Discounts.
-         */
-        $this->quoteService->interact(
-            $quote,
-            collect($quote->discounts)->prepend($quote->custom_discount)
-        );
+        // $submitted_data = (new QuoteResource($quote))->prepend(compact('pdf_file'))->resolve();
 
-        return $quote;
+        $quote->submit();
     }
 
-    private function addBuyPriceColumn(Quote $quote)
+    public function draft(Quote $quote): void
     {
-        if(!isset($quote->computableRows)) {
-            return $quote;
-        }
-
-        $margin_percentage = $quote->margin_percentage;
-
-        $quote->computableRows->transform(function ($row) use ($margin_percentage) {
-            $row->buy_price = round($row->price - ($row->price * ($margin_percentage / 100)), 2);
-            return $row;
-        });
-
-        return $quote;
+        $quote->submitted_data = null;
+        $quote->markAsDrafted();
     }
 
-    private function draftQuote(Collection $state, Quote $quote): Quote
+    public function draftOrSubmit(Collection $state, Quote $quote): void
     {
         if(!$state->has('save') || !$state->get('save')) {
-            $quote->markAsDrafted();
-            return $quote;
+            $this->draft($quote);
+            return;
         }
 
         if($state->get('save')) {
-            $quote->submit();
+            $this->submit($quote);
         }
-
-        return $quote;
     }
 
-    private function markRowsAsSelectedOrUnSelected(
-        Collection $state,
-        Quote $quote,
-        string $markAsSelected = 'markAsSelected',
-        string $markAsUnSelected = 'markAsUnSelected'
-    ): Quote {
-        if(!isset($state['quote_data']['selected_rows'])) {
-            return $quote;
+    private function markRowsAsSelectedOrUnSelected(Collection $state, Quote $quote, bool $reject = false): void
+    {
+        if(!isset($state['quote_data']['selected_rows']) && !isset($state['quote_data']['selected_rows_is_rejected'])) {
+            return;
         };
 
         if(isset($state['quote_data']['selected_rows_is_rejected']) && $state['quote_data']['selected_rows_is_rejected']) {
-            $markAsSelected = 'markAsUnSelected';
-            $markAsUnSelected = 'markAsSelected';
+            $reject = true;
         };
 
-        $selectedRowsIds = data_get($state, 'quote_data.selected_rows');
+        $selectedRowsIds = data_get($state, 'quote_data.selected_rows') ?? [];
 
-        $notSelectedRows = $quote->rowsData()->whereNotIn('imported_rows.id', $selectedRowsIds);
+        $quote->rowsData()->update(['is_selected' => false]);
 
-        $notSelectedRows->each(function ($importedRow) use ($markAsUnSelected) {
-            $importedRow->{$markAsUnSelected}();
-        });
+        $scope = $reject ? 'whereNotIn' : 'whereIn';
 
-        $selectedRows = $quote->rowsData()->whereIn('imported_rows.id', $selectedRowsIds);
-
-        $selectedRows->each(function ($importedRow) use ($markAsSelected) {
-            $importedRow->{$markAsSelected}();
-        });
+        $quote->rowsData()->{$scope}('imported_rows.id', $selectedRowsIds)
+            ->update(['is_selected' => true]);
 
         /**
          * Recalculate User's Margin Percentage After Select Rows
@@ -452,7 +340,7 @@ class QuoteRepository implements QuoteRepositoryInterface
          */
         Cache::forget("mapping-review-data:{$quote->id}");
 
-        return $quote;
+        return;
     }
 
     private function calculateMarginPercentage(Quote $quote): Quote
@@ -472,10 +360,10 @@ class QuoteRepository implements QuoteRepositoryInterface
         return $quote;
     }
 
-    private function attachColumnsToFields(Collection $state, Quote $quote): Quote
+    private function attachColumnsToFields(Collection $state, Quote $quote): void
     {
         if(!isset($state['quote_data']['field_column'])) {
-            return $quote;
+            return;
         }
 
         collect(data_get($state, 'quote_data.field_column'))->each(function ($relation) use ($quote) {
@@ -503,14 +391,12 @@ class QuoteRepository implements QuoteRepositoryInterface
          * Clear Cache Mapping Review Data when Mapping is changed
          */
         Cache::forget("mapping-review-data:{$quote->id}");
-
-        return $quote;
     }
 
-    private function storeQuoteFilesState(Collection $state, Quote $quote): Quote
+    private function storeQuoteFilesState(Collection $state, Quote $quote): void
     {
         if(!isset($state['quote_data']['files'])) {
-            return $quote;
+            return;
         }
 
         $stateFiles = collect(data_get($state, 'quote_data.files'));
@@ -524,18 +410,14 @@ class QuoteRepository implements QuoteRepositoryInterface
 
             $quoteFile->quote()->associate($quote)->save();
         });
-
-        return $quote;
     }
 
-    private function detachScheduleIfRequested(Collection $state, Quote $quote): Quote
+    private function detachScheduleIfRequested(Collection $state, Quote $quote): void
     {
         if(!isset($state['quote_data']['detach_schedule']) || !$state['quote_data']['detach_schedule']) {
-            return $quote;
+            return;
         }
 
         $quote->quoteFiles()->paymentSchedules()->delete();
-
-        return $quote;
     }
 }

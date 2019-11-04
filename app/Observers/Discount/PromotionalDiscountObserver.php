@@ -25,7 +25,6 @@ class PromotionalDiscountObserver
     {
         return $promotionalDiscount
             ->query()
-            ->userCollaboration()
             ->where('id', '!=', $promotionalDiscount->id)
             ->where('vendor_id', $promotionalDiscount->vendor_id)
             ->where('value', $promotionalDiscount->value)

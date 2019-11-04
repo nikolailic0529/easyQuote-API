@@ -2,16 +2,21 @@
 
 trait Submittable
 {
-    public function submit()
+    public function submit(?array $submitted_data = null)
     {
-        return $this->forceFill([
-            'submitted_at' => now()->toDateTimeString()
-        ])->save();
+        $fill = ['submitted_at' => now()->toDateTimeString()];
+
+        if(filled($submitted_data)) {
+            $fill = array_merge($fill, compact('submitted_data'));
+        }
+
+        return $this->forceFill($fill)->save();
     }
 
     public function unSubmit()
     {
         return $this->forceFill([
+            'submitted_data' => null,
             'submitted_at' => null
         ])->save();
     }

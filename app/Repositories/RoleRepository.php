@@ -35,7 +35,7 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
 
     public function userQuery(): Builder
     {
-        return $this->role->query()->userCollaboration();
+        return $this->role->query();
     }
 
     public function find(string $id): Role
@@ -102,6 +102,6 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
 
     protected function searchableScope(Builder $query)
     {
-        return $query->userCollaboration();
+        return $query;
     }
 }

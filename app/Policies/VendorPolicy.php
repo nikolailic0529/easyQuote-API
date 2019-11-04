@@ -35,7 +35,9 @@ class VendorPolicy
      */
     public function view(User $user, Vendor $vendor)
     {
-        return $user->collaboration_id === $vendor->collaboration_id || $vendor->isSystem();
+        if($user->can('view_vendors')) {
+            return true;
+        }
     }
 
     /**
@@ -64,12 +66,8 @@ class VendorPolicy
             return Response::deny(__('vendor.system_updating_exception'));
         }
 
-        if($user->can('update_collaboration_vendors')) {
-            return $user->collaboration_id === $vendor->collaboration_id;
-        }
-
-        if($user->can('update_own_vendors')) {
-            return $user->id === $vendor->user_id;
+        if($user->can('update_vendors')) {
+            return true;
         }
     }
 
@@ -86,12 +84,8 @@ class VendorPolicy
             return Response::deny(__('vendor.system_deleting_exception'));
         }
 
-        if($user->can('delete_collaboration_vendors')) {
-            return $user->collaboration_id === $vendor->collaboration_id;
-        }
-
-        if($user->can('delete_own_vendors')) {
-            return $user->id === $vendor->user_id;
+        if($user->can('delete_vendors')) {
+            return true;
         }
     }
 }

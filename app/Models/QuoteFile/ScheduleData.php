@@ -21,4 +21,25 @@ class ScheduleData extends UuidModel
     protected $casts = [
         'value' => 'array'
     ];
+
+    public function rowsHeaderToArray(): array
+    {
+        return [
+            'from' => __('From'),
+            'to' => __('To'),
+            'price' => __('Price')
+        ];
+    }
+
+    public function getValueAttribute()
+    {
+        if (blank($this->attributes['value'])) {
+            return;
+        }
+
+        $keys = $this->rowsHeaderToArray();
+
+        return collect(json_decode($this->attributes['value'], true))
+            ->sortKeysByKeys($keys);
+    }
 }

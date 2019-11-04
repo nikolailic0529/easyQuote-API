@@ -8,7 +8,6 @@ use App\Traits \ {
     BelongsToUser,
     Image\HasImage,
     Image\HasLogo,
-    Collaboration\BelongsToCollaboration,
     Search\Searchable,
     Systemable
 };
@@ -18,7 +17,6 @@ class Vendor extends UuidModel implements WithImage, ActivatableInterface
 {
     use HasLogo,
         HasImage,
-        BelongsToCollaboration,
         BelongsToCountries,
         BelongsToUser,
         Activatable,

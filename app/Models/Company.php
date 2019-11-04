@@ -9,7 +9,6 @@ use App\Traits \ {
     BelongsToVendors,
     Image\HasImage,
     Image\HasLogo,
-    Collaboration\BelongsToCollaboration,
     Systemable
 };
 use App\Traits\Search\Searchable;
@@ -18,7 +17,6 @@ class Company extends UuidModel implements WithImage, ActivatableInterface
 {
     use HasLogo,
         HasImage,
-        BelongsToCollaboration,
         BelongsToVendors,
         BelongsToUser,
         Activatable,

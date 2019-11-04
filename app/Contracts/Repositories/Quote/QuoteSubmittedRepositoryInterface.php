@@ -2,6 +2,7 @@
 
 use App\Models\Quote\Quote;
 use App\Builder\Pagination\Paginator;
+use App\Http\Resources\QuoteResource;
 use Illuminate\Database\Eloquent\Builder;
 
 interface QuoteSubmittedRepositoryInterface
@@ -35,6 +36,14 @@ interface QuoteSubmittedRepositoryInterface
      * @return \App\Models\Quote
      */
     public function find(string $id): Quote;
+
+    /**
+     * Find Submitted Quotes by RFQ number.
+     *
+     * @param string $rfq
+     * @return array
+     */
+    public function rfq(string $rfq): array;
 
     /**
      * Delete Submitted Quote.

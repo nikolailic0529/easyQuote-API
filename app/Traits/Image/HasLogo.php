@@ -1,6 +1,6 @@
 <?php namespace App\Traits\Image;
 
-use Str, ImageIntervention;
+use Str, File;
 
 trait HasLogo
 {
@@ -42,22 +42,26 @@ trait HasLogo
         return $this->makeVisible('logo')->setAppends(['logo']);
     }
 
-    public function getLogoDimensionsAttribute()
+    public function getLogoDimensionsAttribute(?bool $withKeys = false, ?bool $absPath = false)
     {
         if(!is_array($this->logo)) {
             return $this->logo;
         }
 
         $name = Str::snake(class_basename($this));
+        $method = $withKeys ? 'mapWithKeys' : 'transform';
 
-        return collect($this->logo)->values()->transform(function ($src, $key) use ($name) {
+        return collect($this->logo)->values()->{$method}(function ($src, $key) use ($name, $withKeys, $absPath) {
             $id = $name . '_logo_x' . ($key + 1);
             $width = $this->thumbnailProperties()[$key]['width'];
             $height = $this->thumbnailProperties()[$key]['height'];
             $label = "Logo {$width}X{$height}";
             $is_image = true;
+            $src = $absPath ? File::abspath($src) : $src;
 
-            return compact('id', 'label', 'src', 'is_image');
+            $entity = compact('id', 'label', 'src', 'is_image');
+
+            return $withKeys ? [$id => $src] : $entity;
         })->toArray();
     }
 }

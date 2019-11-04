@@ -7,6 +7,7 @@ use App\Http\Requests\Margin \ {
     UpdateCountryMarginRequest
 };
 use App\Models\Quote\Margin\CountryMargin;
+use App\Models\Quote\Quote;
 use Illuminate\Database\Eloquent \ {
     Model,
     Builder
@@ -23,7 +24,7 @@ class MarginRepository extends SearchableRepository implements MarginRepositoryI
 
     public function userQuery(): Builder
     {
-        return $this->countryMargin->query()->userCollaboration()->with('country', 'vendor');
+        return $this->countryMargin->query()->with('country', 'vendor');
     }
 
     public function data(): array
@@ -38,6 +39,23 @@ class MarginRepository extends SearchableRepository implements MarginRepositoryI
     public function create(StoreCountryMarginRequest $request): CountryMargin
     {
         return $request->user()->countryMargins()->create($request->validated());
+    }
+
+    public function firstOrCreate(Quote $quote, array $attributes): CountryMargin
+    {
+        $attributes = array_merge(
+            array_intersect_key($attributes, array_flip($this->countryMargin->getFillable())),
+            $quote->only('vendor_id', 'country_id')
+        );
+
+        $countryMargin = $this->userQuery()->quoteAcceptable($quote)->firstOrNew($attributes);
+
+        if($countryMargin->isDirty()) {
+            $countryMargin->user()->associate(request()->user());
+            $countryMargin->save();
+        }
+
+        return $countryMargin;
     }
 
     public function update(UpdateCountryMarginRequest $request, string $id): CountryMargin
@@ -102,6 +120,6 @@ class MarginRepository extends SearchableRepository implements MarginRepositoryI
 
     protected function searchableScope(Builder $query)
     {
-        return $query->userCollaboration()->with('country', 'vendor');
+        return $query->with('country', 'vendor');
     }
 }

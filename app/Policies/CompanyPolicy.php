@@ -35,7 +35,9 @@ class CompanyPolicy
      */
     public function view(User $user, Company $company)
     {
-        return $user->collaboration_id === $company->collaboration_id || $company->isSystem();
+        if($user->can('view_companies')) {
+            return true;
+        }
     }
 
     /**
@@ -64,12 +66,8 @@ class CompanyPolicy
             return Response::deny(__('company.system_updating_exception'));
         }
 
-        if($user->can('update_collaboration_companies')) {
-            return $user->collaboration_id === $company->collaboration_id;
-        }
-
-        if($user->can('update_own_companies')) {
-            return $user->id === $company->user_id;
+        if($user->can('update_companies')) {
+            return true;
         }
     }
 
@@ -86,12 +84,8 @@ class CompanyPolicy
             return Response::deny(__('company.system_deleting_exception'));
         }
 
-        if($user->can('delete_collaboration_companies')) {
-            return $user->collaboration_id === $company->collaboration_id;
-        }
-
-        if($user->can('update_own_companies')) {
-            return $user->id === $company->user_id;
+        if($user->can('delete_companies')) {
+            return true;
         }
     }
 }

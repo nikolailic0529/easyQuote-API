@@ -39,7 +39,7 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
 
     public function userQuery(): Builder
     {
-        return $this->company->query()->userCollaboration()->with('image', 'vendors');
+        return $this->company->query()->with('image', 'vendors');
     }
 
     public function find(string $id): Company
@@ -127,6 +127,6 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
 
     protected function searchableScope(Builder $query)
     {
-        return $query->userCollaboration()->with('image', 'vendors');
+        return $query->with('image', 'vendors');
     }
 }

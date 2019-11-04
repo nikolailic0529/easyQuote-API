@@ -15,7 +15,7 @@ class UserPolicy
      */
     public function viewAny(User $user)
     {
-        if($user->can('view_collaboration_users')) {
+        if($user->can('view_users')) {
             return true;
         }
     }
@@ -29,8 +29,8 @@ class UserPolicy
      */
     public function view(User $user, User $collaborator)
     {
-        if($user->can('view_collaboration_users')) {
-            return $user->id === $collaborator->collaboration_id;
+        if($user->can('view_users')) {
+            return true;
         }
     }
 
@@ -56,8 +56,8 @@ class UserPolicy
      */
     public function update(User $user, User $collaborator)
     {
-        if($user->can('update_collaboration_users')) {
-            return $user->id === $collaborator->collaboration_id;
+        if($user->can('update_users')) {
+            return true;
         }
     }
 
@@ -70,8 +70,8 @@ class UserPolicy
      */
     public function delete(User $user, User $collaborator)
     {
-        if($user->can('delete_collaboration_users')) {
-            return $user->id === $collaborator->collaboration_id;
+        if($user->can('delete_users')) {
+            return true;
         }
     }
 }

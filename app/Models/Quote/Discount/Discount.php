@@ -10,15 +10,14 @@ use App\Traits \ {
     BelongsToCountry,
     BelongsToUser,
     BelongsToVendor,
-    Search\Searchable,
-    Collaboration\BelongsToCollaboration
+    Search\Searchable
 };
 use App\Models\Quote\Discount as QuoteDiscount;
 use Arr;
 
 abstract class Discount extends UuidModel implements ActivatableInterface
 {
-    use Activatable, Searchable, BelongsToCountry, BelongsToVendor, BelongsToUser, BelongsToCollaboration;
+    use Activatable, Searchable, BelongsToCountry, BelongsToVendor, BelongsToUser;
 
     protected $perPage = 8;
 

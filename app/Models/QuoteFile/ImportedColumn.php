@@ -18,6 +18,8 @@ class ImportedColumn extends UuidModel
 {
     use BelongsToImportableColumn, BelongsToImportedRow, Draftable, SoftDeletes, HasSystemScope;
 
+    public $timestamps = false;
+
     protected $fillable = [
         'value', 'header', 'importable_column_id', 'imported_row_id'
     ];

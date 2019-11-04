@@ -22,7 +22,7 @@ class MultiYearDiscountRepository extends DiscountRepository implements MultiYea
 
     public function userQuery(): Builder
     {
-        return $this->multiYearDiscount->query()->userCollaboration()->with('country', 'vendor');
+        return $this->multiYearDiscount->query()->with('country', 'vendor');
     }
 
     public function find(string $id): MultiYearDiscount
@@ -89,6 +89,6 @@ class MultiYearDiscountRepository extends DiscountRepository implements MultiYea
 
     protected function searchableScope(Builder $query)
     {
-        return $query->userCollaboration()->with('country', 'vendor');
+        return $query->with('country', 'vendor');
     }
 }

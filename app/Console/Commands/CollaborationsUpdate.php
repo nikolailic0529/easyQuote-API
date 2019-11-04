@@ -55,33 +55,7 @@ class CollaborationsUpdate extends Command
 
         $this->reAssignAdministrators();
 
-        $administrators = User::administrators()->get();
-
-        $administrators->each(function ($administrator) {
-            $administrator->collaboration_id = $administrator->id;
-            $administrator->save();
-            $this->output->write('.');
-        });
-
         $this->info("\nCollaborations for Administrators were updated!");
-
-
-        $this->updateModelCollaborations(
-            [
-                Role::class,
-                Quote::class,
-                QuoteFile::class,
-                QuoteTemplate::class,
-                TemplateField::class,
-                MultiYearDiscount::class,
-                PrePayDiscount::class,
-                PromotionalDiscount::class,
-                SND::class,
-                CountryMargin::class,
-                Company::class,
-                Vendor::class
-            ]
-        );
     }
 
     /**
@@ -99,25 +73,5 @@ class CollaborationsUpdate extends Command
             ->each(function ($user) {
                 $user->assignRole('Administrator');
             });
-    }
-
-    protected function updateModelCollaborations(array $models)
-    {
-        foreach ($models as $model) {
-            $plural = Str::plural(class_basename($model));
-            $this->info("Updating Collaborations for {$plural}...");
-
-            $entries = $model::whereHas('user', function ($query) {
-                $query->administrators();
-            })->get();
-
-            $entries->each(function ($entry) {
-                $entry->collaboration_id = $entry->user_id;
-                $entry->save();
-                $this->output->write('.');
-            });
-
-            $this->info("\nCollaborations for {$plural} were updated!");
-        }
     }
 }

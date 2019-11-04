@@ -60,7 +60,7 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
 
     public function data(): SupportCollection
     {
-        $roles = $this->role->userCollaboration()->get(['id', 'name']);
+        $roles = $this->role->get(['id', 'name']);
         $countries = $this->country->all();
         $timezones = $this->timezone->all();
 

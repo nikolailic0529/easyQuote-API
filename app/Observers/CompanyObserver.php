@@ -47,7 +47,6 @@ class CompanyObserver
     {
         return $company
             ->query()
-            ->userCollaboration()
             ->where('id', '!=', $company->id)
             ->where(function ($query) use ($company) {
                 $query->where('name', $company->name)

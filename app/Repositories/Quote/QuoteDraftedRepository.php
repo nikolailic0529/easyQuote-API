@@ -19,7 +19,7 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
 
     public function userQuery(): Builder
     {
-        return $this->quote->userCollaboration()->drafted()->with('customer', 'company');
+        return $this->quote->query()->currentUser()->drafted()->with('customer', 'company');
     }
 
     public function find(string $id): Quote
@@ -86,6 +86,6 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
 
     protected function searchableScope(Builder $query)
     {
-        return $query->userCollaboration()->with('customer', 'company');
+        return $query->currentUser()->with('customer', 'company');
     }
 }

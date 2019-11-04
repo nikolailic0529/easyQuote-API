@@ -13,12 +13,7 @@ class QuoteTemplateObserver
      */
     public function replicating(QuoteTemplate $quoteTemplate)
     {
-        $name = "{$quoteTemplate->name} [copy]";
-        $user_id = request()->user()->id;
-        $collaboration_id = request()->user()->collaboration_id;
-        $is_system = false;
-
-        $quoteTemplate->forceFill(compact('name', 'user_id', 'collaboration_id', 'is_system'));
+        $quoteTemplate->name = "{$quoteTemplate->name} [copy]";
     }
 
     /**

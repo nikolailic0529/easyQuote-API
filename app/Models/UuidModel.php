@@ -19,13 +19,11 @@ class UuidModel extends Model
         parent::boot();
 
         static::creating(function ($model) {
-            $model->{$model->getKeyName()} = Uuid::generate(4)->string;
-            $model->fireModelEvent('generated', false);
+            static::generateId($model);
         });
 
         static::replicating(function ($model) {
-            $model->{$model->getKeyName()} = Uuid::generate(4)->string;
-            $model->fireModelEvent('generated', false);
+            static::generateId($model);
         });
     }
 
@@ -87,6 +85,12 @@ class UuidModel extends Model
     public static function generated($callback)
     {
         static::registerModelEvent('generated', $callback);
+    }
+
+    public static function generateId(Model $model)
+    {
+        $model->{$model->getKeyName()} = Uuid::generate(4)->string;
+        $model->fireModelEvent('generated', false);
     }
 
     private function formatDate($date)

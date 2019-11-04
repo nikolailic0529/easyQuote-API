@@ -35,7 +35,9 @@ class RolePolicy
      */
     public function view(User $user, Role $role)
     {
-        return $user->id === $role->user_id || $role->isSystem();
+        if($user->can('view_roles')) {
+            return true;
+        }
     }
 
     /**
@@ -64,8 +66,8 @@ class RolePolicy
             return Response::deny('role.system_updating_exception');
         }
 
-        if($user->can('update_own_roles')) {
-            return $user->id === $role->user_id;
+        if($user->can('update_roles')) {
+            return true;
         }
     }
 
@@ -82,8 +84,8 @@ class RolePolicy
             return Response::deny('role.system_deleting_exception');
         }
 
-        if($user->can('delete_own_roles')) {
-            return $user->id === $role->user_id;
+        if($user->can('delete_roles')) {
+            return true;
         }
     }
 }

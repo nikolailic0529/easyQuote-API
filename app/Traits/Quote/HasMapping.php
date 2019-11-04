@@ -11,7 +11,7 @@ trait HasMapping
 {
     public function fieldsColumns()
     {
-        return $this->hasMany(FieldColumn::class);
+        return $this->hasMany(FieldColumn::class)->with('templateField');
     }
 
     public function templateFields()
@@ -57,10 +57,8 @@ trait HasMapping
         return $this->templateFields()->detach();
     }
 
-    public function rowsDataByColumns($selected = false)
+    public function rowsDataByColumns(?array $flags = null)
     {
-        $fieldsColumns = $this->fieldsColumns()->with('importableColumn', 'templateField')->get();
-
         $query = DB::table('imported_rows')
             ->select('imported_rows.id', 'imported_rows.is_selected')
             ->join('quote_files', 'quote_files.id', '=', 'imported_rows.quote_file_id')
@@ -68,11 +66,20 @@ trait HasMapping
                 $join->where('customers.id', $this->customer_id);
             });
 
-        if($selected) {
-            $query->where('imported_rows.is_selected', true);
+        if(isset($flags)) {
+            foreach ($flags as $flag) {
+                switch ($flag) {
+                    case 'default_selected':
+                        $query->select('imported_rows.id', DB::raw('true as `is_selected`'));
+                        break;
+                    case 'where_selected':
+                        $query->where('imported_rows.is_selected', true);
+                        break;
+                }
+            }
         }
 
-        $fieldsColumns->each(function ($mapping) use ($query) {
+        $this->fieldsColumns->each(function ($mapping) use ($query) {
             if ($mapping->is_default_enabled) {
                 switch ($mapping->templateField->name) {
                     case 'date_from':
@@ -115,6 +122,7 @@ trait HasMapping
                                     `imported_columns`.`name` = ?,
                                     date_format(
                                         coalesce(
+                                            if(trim(`imported_columns`.`value`) = '', `customers`.`{$default}`, null),
                                             str_to_date(`imported_columns`.`value`, '%d.%m.%Y'),
                                             str_to_date(`imported_columns`.`value`, '%d/%m/%Y'),
                                             str_to_date(`imported_columns`.`value`, '%Y.%m.%d'),
@@ -159,12 +167,16 @@ trait HasMapping
             ->groupBy('imported_rows.id');
     }
 
-    public function rowsDataByColumnsCalculated(bool $selected = false)
+    public function rowsDataByColumnsCalculated(?array $flags = null)
     {
+        if(!$this->calculate_list_price) {
+            return $this->rowsDataByColumns($flags);
+        }
+
         $columns = $this->templateFieldsToArray('price');
 
         return DB::query()
-            ->fromSub($this->rowsDataByColumns($selected), 'rows_data')
+            ->fromSub($this->rowsDataByColumns($flags), 'rows_data')
             ->select(
                 array_merge(
                     $columns,
@@ -175,7 +187,7 @@ trait HasMapping
 
     public function rowsDataByColumnsGroupable(string $query = '')
     {
-        return $this->rowsDataByColumns()
+        return $this->rowsDataByColumns(['default_selected'])
             ->join('imported_columns as groupable', function ($join) use ($query) {
                 $join->on('groupable.imported_row_id', '=', 'imported_rows.id')
                     ->whereRaw('match(groupable.value) against (?)', [$query]);
@@ -184,14 +196,14 @@ trait HasMapping
 
     public function countTotalPrice()
     {
-        $sub = $this->calculate_list_price ? $this->rowsDataByColumnsCalculated(true) : $this->rowsDataByColumns(true);
-        $subQuery = DB::query()->fromSub($sub, 'rows_data');
-
         if(!$this->templateFields->contains('name', 'price')) {
             return 0.00;
         }
 
-        return $subQuery->sum('price');
+        $sub = $this->rowsDataByColumnsCalculated(['where_selected']);
+        $query = DB::query()->fromSub($sub, 'rows_data');
+
+        return $query->sum('price');
     }
 
     public function getFieldColumnAttribute()
@@ -220,5 +232,14 @@ trait HasMapping
         }
 
         return $this->templateFields->whereNotIn('name', $except)->sortBy('order')->pluck('name')->toArray();
+    }
+
+    public function rowsHeaderToArray(...$except)
+    {
+        if(is_array(head($except))) {
+            $except = head($except);
+        }
+
+        return $this->templateFields->whereNotIn('name', $except)->sortBy('order')->pluck('header', 'name')->toArray();
     }
 }

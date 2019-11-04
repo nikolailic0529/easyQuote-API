@@ -16,10 +16,6 @@ trait HasGroupDescriptionAttribute
             return Arr::only($group, ['name', 'search_text']);
         }, $value));
 
-        if($this->attributes['group_description'] === $groups) {
-            return;
-        }
-
         $this->attributes['group_description'] = $groups;
 
         $this->createGroupDescription($value);
@@ -27,10 +23,11 @@ trait HasGroupDescriptionAttribute
 
     public function createGroupDescription(array $value)
     {
-        $this->rowsData()->whereNotNull('group_name')->update(['group_name' => null]);
+        $this->rowsData()->update(['is_selected' => false, 'group_name' => null]);
 
         foreach ($value as $group) {
-            $this->rowsData()->whereIn('imported_rows.id', $group['rows'])->update(['group_name' => $group['name']]);
+            $this->rowsData()->whereIn('imported_rows.id', $group['rows'])
+                ->update(['is_selected' => true, 'group_name' => $group['name']]);
         }
     }
 }

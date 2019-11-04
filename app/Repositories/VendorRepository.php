@@ -29,7 +29,7 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
 
     public function userQuery(): Builder
     {
-        return $this->vendor->query()->userCollaboration()->with('image', 'countries');
+        return $this->vendor->query()->with('image', 'countries');
     }
 
     public function find(string $id): Vendor
@@ -119,6 +119,6 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
 
     protected function searchableScope(Builder $query)
     {
-        return $query->userCollaboration()->with('image', 'countries');
+        return $query->with('image', 'countries');
     }
 }

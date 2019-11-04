@@ -46,11 +46,11 @@ trait HasMorphableDiscounts
 
     public function getApplicableDiscountsFormattedAttribute()
     {
-        return number_format($this->attributes['applicable_discounts'] ?? 0, 2);
+        return number_format($this->applicable_discounts ?? 0, 2);
     }
 
     public function getApplicableDiscountsAttribute()
     {
-        return round((float) ($this->attributes['applicable_discounts'] ?? 0), 2);
+        return round((float) ($this->applicable_discounts ?? 0), 2);
     }
 }

@@ -35,7 +35,9 @@ class QuoteTemplatePolicy
      */
     public function view(User $user, QuoteTemplate $quoteTemplate)
     {
-        return $user->collaboration_id === $quoteTemplate->collaboration_id || $quoteTemplate->isSystem();
+        if($user->can('view_templates')) {
+            return true;
+        }
     }
 
     /**
@@ -64,12 +66,8 @@ class QuoteTemplatePolicy
             return Response::deny(__('template.system_updating_exception'));
         }
 
-        if($user->can('update_collaboration_templates')) {
-            return $user->collaboration_id === $quoteTemplate->collaboration_id;
-        }
-
-        if($user->can('update_own_templates')) {
-            return $user->id === $quoteTemplate->user_id;
+        if($user->can('update_templates')) {
+            return true;
         }
     }
 
@@ -86,12 +84,8 @@ class QuoteTemplatePolicy
             return Response::deny(__('template.system_deleting_exception'));
         }
 
-        if($user->can('delete_collaboration_templates')) {
-            return $user->collaboration_id === $quoteTemplate->collaboration_id;
-        }
-
-        if($user->can('update_own_templates')) {
-            return $user->id === $quoteTemplate->user_id;
+        if($user->can('delete_templates')) {
+            return true;
         }
     }
 

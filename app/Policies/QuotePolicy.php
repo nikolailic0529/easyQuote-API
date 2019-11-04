@@ -32,7 +32,9 @@ class QuotePolicy
      */
     public function view(User $user, Quote $quote)
     {
-        return $user->collaboration_id === $quote->collaboration_id;
+        if($user->can('view_quotes')) {
+            return true;
+        }
     }
 
     /**
@@ -57,12 +59,8 @@ class QuotePolicy
      */
     public function update(User $user, Quote $quote)
     {
-        if($user->can('update_collaboration_quotes')) {
-            return $user->collaboration_id === $quote->collaboration_id;
-        }
-
-        if($user->can('update_own_quotes')) {
-            return $user->id === $quote->user_id;
+        if($user->can('update_quotes')) {
+            return true;
         }
     }
 
@@ -75,12 +73,8 @@ class QuotePolicy
      */
     public function delete(User $user, Quote $quote)
     {
-        if($user->can('delete_collaboration_quotes')) {
-            return $user->collaboration_id === $quote->collaboration_id;
-        }
-
-        if($user->can('update_own_quotes')) {
-            return $user->id === $quote->user_id;
+        if($user->can('delete_quotes')) {
+            return true;
         }
     }
 

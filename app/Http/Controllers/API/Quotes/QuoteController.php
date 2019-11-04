@@ -39,7 +39,7 @@ class QuoteController extends Controller
         $this->authorize('view', $quote);
 
         return response()->json(
-            $this->quote->getWithModifications($quote->id)
+            $this->quote->preparedQuote($quote->id)
         );
     }
 

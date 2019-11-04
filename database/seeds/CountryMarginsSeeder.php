@@ -39,15 +39,12 @@ class CountryMarginsSeeder extends Seeder
 
             $margin = compact('vendor_id', 'is_fixed', 'method', 'quote_type', 'value');
 
-            User::all()->each(function ($user) use ($countries, $margin) {
-                $user_id = $user->id;
+            $countries->each(function ($country) use ($margin) {
+                $country_id = $country->id;
+                $user_id = null;
 
-                $countries->each(function ($country) use ($margin, $user_id) {
-                    $country_id = $country->id;
-
-                    CountryMargin::create(array_merge($margin, compact('country_id', 'user_id')));
-                    $this->command->getOutput()->write('.');
-                });
+                CountryMargin::create(array_merge($margin, compact('country_id', 'user_id')));
+                $this->command->getOutput()->write('.');
             });
         });
         $this->command->line("\n");

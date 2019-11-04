@@ -4,7 +4,7 @@
         "quote_type": "New",
         "value": 18,
         "is_fixed": false,
-        "method": "Standard",
+        "method": "No Margin",
         "countries": [
             "GB"
         ]
@@ -14,7 +14,7 @@
         "quote_type": "New",
         "value": 20,
         "is_fixed": false,
-        "method": "Standard",
+        "method": "No Margin",
         "countries": [
             "FR"
         ]
@@ -24,7 +24,7 @@
         "quote_type": "Renewal",
         "value": 15,
         "is_fixed": false,
-        "method": "Standard",
+        "method": "No Margin",
         "countries": [
             "FR"
         ]
@@ -34,7 +34,7 @@
         "quote_type": "New",
         "value": 15,
         "is_fixed": false,
-        "method": "Standard",
+        "method": "No Margin",
         "countries": [
             "NL", "SE"
         ]
@@ -44,7 +44,7 @@
         "quote_type": "New",
         "value": 10,
         "is_fixed": false,
-        "method": "Standard",
+        "method": "No Margin",
         "countries": [
             "AT", "BE"
         ]
@@ -54,7 +54,7 @@
         "quote_type": "New",
         "value": 16,
         "is_fixed": false,
-        "method": "Standard",
+        "method": "No Margin",
         "countries": [
             "IE"
         ]
@@ -64,7 +64,7 @@
         "quote_type": "New",
         "value": 18,
         "is_fixed": false,
-        "method": "Standard",
+        "method": "No Margin",
         "countries": [
             "NO", "DK", "US"
         ]
@@ -74,7 +74,7 @@
         "quote_type": "New",
         "value": 20,
         "is_fixed": false,
-        "method": "Standard",
+        "method": "No Margin",
         "countries": [
             "CA"
         ]

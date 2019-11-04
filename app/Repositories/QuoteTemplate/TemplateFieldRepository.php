@@ -31,7 +31,6 @@ class TemplateFieldRepository extends SearchableRepository implements TemplateFi
     public function userQuery(): Builder
     {
         return $this->templateField->query()
-            ->userCollaboration()
             ->with('userQuoteTemplates:id,name', 'templateFieldType');
     }
 
@@ -106,6 +105,6 @@ class TemplateFieldRepository extends SearchableRepository implements TemplateFi
 
     protected function searchableScope(Builder $query)
     {
-        return $query->userCollaboration()->with('userQuoteTemplates:id,name', 'templateFieldType');
+        return $query->with('userQuoteTemplates:id,name', 'templateFieldType');
     }
 }

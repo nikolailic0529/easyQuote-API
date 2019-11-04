@@ -23,6 +23,10 @@ trait BelongsToCollaboration
 
             $model->collaboration_id = $model->user->collaboration_id;
         });
+
+        static::replicating(function (Model $model) {
+            $model->collaboration_id = request()->user()->collaboration_id;
+        });
     }
 
     public function administrator()

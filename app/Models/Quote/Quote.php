@@ -25,12 +25,12 @@ use App\Traits \ {
     Quote\HasPricesAttributes,
     Quote\HasMapping,
     Quote\HasCustomDiscountAttribute,
-    QuoteTemplate\BelongsToQuoteTemplate,
-    Collaboration\BelongsToCollaboration
+    Quote\HasGroupDescriptionAttribute,
+    Quote\HasSubmittedDataAttribute,
+    QuoteTemplate\BelongsToQuoteTemplate
 };
-use App\Traits\Quote\HasGroupDescriptionAttribute;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Carbon\Carbon;
 use Setting, Arr;
 
 class Quote extends CompletableModel implements HasOrderedScope, ActivatableInterface
@@ -44,7 +44,6 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         BelongsToCountry,
         BelongsToMargin,
         BelongsToQuoteTemplate,
-        BelongsToCollaboration,
         Draftable,
         Submittable,
         Activatable,
@@ -54,11 +53,14 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         HasPricesAttributes,
         HasMapping,
         HasCustomDiscountAttribute,
-        HasGroupDescriptionAttribute;
+        HasGroupDescriptionAttribute,
+        HasSubmittedDataAttribute;
 
     public $computableRows = null;
 
-    public $list_price = null;
+    public $list_price = 0.0;
+
+    public $applicable_discounts = 0.0;
 
     protected $perPage = 8;
 
@@ -122,6 +124,13 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         return $query->with($this->joins());
     }
 
+    public function scopeRfq($query, string $rfq)
+    {
+        return $query->whereHas('customer', function ($query) use ($rfq) {
+            $query->whereRfq($rfq);
+        });
+    }
+
     public function loadJoins()
     {
         return $this->load($this->joins());
@@ -135,6 +144,16 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
     public function selectedRowsData()
     {
         return $this->rowsData()->selected();
+    }
+
+    public function priceList()
+    {
+        return $this->hasOne(QuoteFile::class)->priceLists()->withDefault(QuoteFile::make([]));
+    }
+
+    public function paymentSchedule()
+    {
+        return $this->hasOne(QuoteFile::class)->paymentSchedules()->withDefault(QuoteFile::make([]));
     }
 
     public function appendJoins()

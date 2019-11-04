@@ -5,6 +5,7 @@ use App\Models\Quote \ {
     Discount,
     Margin\CountryMargin
 };
+use Closure;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 
@@ -19,6 +20,14 @@ interface QuoteServiceInterface
      * @return \App\Models\Quote\Quote
      */
     public function interact(Quote $quote, $model): Quote;
+
+    /**
+     * Interact with all posible Quote Models
+     *
+     * @param Quote $quote
+     * @return void
+     */
+    public function interactWithModels(Quote $quote): void;
 
     /**
      * Interact Quote model with Country Margin
@@ -53,4 +62,31 @@ interface QuoteServiceInterface
      * @return \App\Models\Quote\Quote
      */
     public function interactWithDiscount(Quote $quote, $discount): Quote;
+
+    /**
+     * Modify Column in Quote Computable Rows
+     *
+     * @param Quote $quote
+     * @param string $column
+     * @param Closure $callback
+     * @return void
+     */
+    public function modifyColumn(Quote $quote, string $column, Closure $callback): void;
+
+    /**
+     * Performing all necessary operations with Quote instance.
+     * Retrieving Selected Rows Data, Interactions with Margins, Discounts, Calculation Total List Price.
+     *
+     * @param Quote $quote
+     * @return void
+     */
+    public function prepareQuoteReview(Quote $quote): void;
+
+    /**
+     * Export Quote in PDF format.
+     *
+     * @param Quote $quote
+     * @return [type]
+     */
+    public function export(Quote $quote);
 }

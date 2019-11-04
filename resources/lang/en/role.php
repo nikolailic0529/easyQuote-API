@@ -12,12 +12,12 @@ return [
                 'view_quotes'
             ],
             'Read & Write' => [
-                'create_quotes', 'update_own_quotes',
-                'create_quote_files', 'update_own_quote_files', 'handle_own_quote_files',
+                'create_quotes', 'update_quotes',
+                'create_quote_files', 'update_quote_files', 'handle_quote_files',
             ],
             'Read, Write and Delete' => [
-                'create_quotes', 'update_own_quotes', 'delete_own_quotes',
-                'create_quote_files', 'update_own_quote_files', 'handle_own_quote_files', 'delete_own_quote_files'
+                'create_quotes', 'update_quotes', 'delete_quotes',
+                'create_quote_files', 'update_quote_files', 'handle_quote_files', 'delete_quote_files'
             ]
         ],
         'Templates' => [
@@ -25,10 +25,10 @@ return [
                 'view_templates'
             ],
             'Read & Write' => [
-                'create_templates', 'update_own_templates'
+                'create_templates', 'update_templates'
             ],
             'Read, Write and Delete' => [
-                'create_templates', 'update_own_templates', 'delete_own_templates'
+                'create_templates', 'update_templates', 'delete_templates'
             ]
         ],
         'Companies' => [
@@ -36,10 +36,10 @@ return [
                 'view_companies'
             ],
             'Read & Write' => [
-                'create_companies', 'update_own_companies'
+                'create_companies', 'update_companies'
             ],
             'Read, Write and Delete' => [
-                'create_companies', 'update_own_companies', 'delete_own_companies'
+                'create_companies', 'update_companies', 'delete_companies'
             ]
         ],
         'Vendors' => [
@@ -47,10 +47,10 @@ return [
                 'view_vendors'
             ],
             'Read & Write' => [
-                'create_vendors', 'update_own_vendors'
+                'create_vendors', 'update_vendors'
             ],
             'Read, Write and Delete' => [
-                'create_vendors', 'update_own_vendors', 'delete_own_vendors'
+                'create_vendors', 'update_vendors', 'delete_vendors'
             ]
         ],
         'Margins' => [
@@ -58,10 +58,10 @@ return [
                 'view_margins'
             ],
             'Read & Write' => [
-                'create_margins', 'update_own_margins'
+                'create_margins', 'update_margins'
             ],
             'Read, Write and Delete' => [
-                'create_margins', 'update_own_margins', 'delete_own_margins'
+                'create_margins', 'update_margins', 'delete_margins'
             ]
         ],
         'Discounts' => [
@@ -69,10 +69,10 @@ return [
                 'view_discounts'
             ],
             'Read & Write' => [
-                'create_discounts', 'update_own_discounts'
+                'create_discounts', 'update_discounts'
             ],
             'Read, Write and Delete' => [
-                'create_discounts', 'update_own_discounts', 'delete_own_discounts'
+                'create_discounts', 'update_discounts', 'delete_discounts'
             ]
         ]
     ],

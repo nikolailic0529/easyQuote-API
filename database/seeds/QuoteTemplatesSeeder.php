@@ -28,14 +28,19 @@ class QuoteTemplatesSeeder extends Seeder
 
         $templates = json_decode(file_get_contents(__DIR__ . '/models/quote_templates.json'), true);
 
+        $design = json_decode(file_get_contents(database_path('seeds/models/template_designs.json')), true);
+        $form_data = json_encode($design['form_data']);
+        $form_values_data = json_encode($design['form_values_data']);
+        $design = compact('form_data', 'form_values_data');
+
         $templateFields = collect(TemplateField::select('id')->get()->each->setAppends([])->toArray())->filter()->flatten();
 
-        collect($templates)->each(function ($template) use ($templateFields) {
+        collect($templates)->each(function ($template) use ($templateFields, $design) {
 
-            collect($template['companies'])->each(function ($vat) use ($template, $templateFields) {
+            collect($template['companies'])->each(function ($vat) use ($template, $templateFields, $design) {
                 $company = Company::whereVat($vat)->first();
 
-                collect($template['vendors'])->each(function ($vendorCode) use ($company, $template, $templateFields) {
+                collect($template['vendors'])->each(function ($vendorCode) use ($company, $template, $templateFields, $design) {
                     $vendor = Vendor::whereShortCode($vendorCode)->first();
                     $vendor_id = $vendor->id;
                     $company_id = $company->id;
@@ -48,7 +53,10 @@ class QuoteTemplatesSeeder extends Seeder
                     $name = "{$companyShortCode} {$vendor->short_code} $templateName";
 
                     DB::table('quote_templates')->insert(
-                        compact('id', 'name', 'is_system', 'company_id', 'vendor_id', 'created_at', 'updated_at', 'activated_at')
+                        array_merge(
+                            compact('id', 'name', 'is_system', 'company_id', 'vendor_id', 'created_at', 'updated_at', 'activated_at'),
+                            $design
+                        )
                     );
 
                     $templateFields->each(function ($template_field_id) use ($quote_template_id) {

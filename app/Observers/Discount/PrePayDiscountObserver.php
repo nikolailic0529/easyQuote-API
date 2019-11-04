@@ -25,7 +25,6 @@ class PrePayDiscountObserver
     {
         return $prePayDiscount
             ->query()
-            ->userCollaboration()
             ->where('id', '!=', $prePayDiscount->id)
             ->where('vendor_id', $prePayDiscount->vendor_id)
             ->durationIn($prePayDiscount->years)

@@ -1,15 +1,29 @@
 <?php namespace App\Services;
 
 use App\Contracts\Services\QuoteServiceInterface;
+use App\Http\Resources\QuoteResource;
 use App\Models\Quote \ {
     Quote,
     Discount,
     Margin\CountryMargin
 };
-use Str;
+use Illuminate\Support\Collection;
+use Storage, Closure, Str, Arr;
 
 class QuoteService implements QuoteServiceInterface
 {
+    /**
+     * DomPDF
+     *
+     * @var Barryvdh\Snappy\PdfWrapper
+     */
+    protected $pdf;
+
+    public function __construct()
+    {
+        $this->pdf = app('snappy.pdf.wrapper');
+    }
+
     public function interact(Quote $quote, $interactable): Quote
     {
         if($interactable instanceof CountryMargin) {
@@ -25,6 +39,19 @@ class QuoteService implements QuoteServiceInterface
         }
 
         return $quote;
+    }
+
+    public function interactWithModels(Quote $quote): void
+    {
+        /**
+         * Possible interaction with Margin percentage.
+         */
+        $this->interactWithMargin($quote);
+
+        /**
+         * Possible interaction with Discounts.
+         */
+        $this->interact($quote, collect($quote->discounts)->prepend($quote->custom_discount));
     }
 
     public function interactWithCountryMargin(Quote $quote, CountryMargin $countryMargin): Quote
@@ -60,16 +87,13 @@ class QuoteService implements QuoteServiceInterface
         $divider = (100 - $quote->countryMargin->value) / 100;
 
         if((float) $divider === 0.0) {
-            $quote->computableRows->transform(function ($row) {
-                $row->price = 0.0;
-                return $row;
-            });
+            data_fill($quote->computableRows, '*.price', 0.0);
 
             $quote->list_price = 0.0;
             return $quote;
         }
 
-        $quote->list_price = 0;
+        $quote->list_price = 0.0;
 
         $quote->computableRows->transform(function ($row) use ($divider, $quote) {
             $row->price = round($row->price / $divider, 2);
@@ -113,11 +137,8 @@ class QuoteService implements QuoteServiceInterface
 
         $divider = (100 - $quote->countryMargin->value) / 100;
 
-        if($divider === 0.0) {
-            $quote->scheduleData->value = collect($quote->scheduleData->value)->map(function ($payment) {
-                $payment['price'] = 0.00;
-                return $payment;
-            });
+        if((float) $divider === 0.0) {
+            data_fill($quote->scheduleData->value, '*.price', 0.0);
 
             return $quote;
         }
@@ -128,6 +149,91 @@ class QuoteService implements QuoteServiceInterface
         });
 
         return $quote;
+    }
+
+    public function prepareQuoteReview(Quote $quote): void
+    {
+        $quote->computableRows = $quote->rowsDataByColumnsCalculated(['where_selected'])->get();
+
+        if(!isset($quote->computableRows->first()->price)) {
+            data_fill($quote->computableRows, '*.price', 0.0);
+        }
+
+        /**
+         * Possible Interactions with Margins and Discounts
+         */
+        $this->interactWithModels($quote);
+
+        /**
+         * Calculate List Price if not calculated after interactions
+         */
+        if((float) $quote->list_price === 0.0) {
+            $quote->list_price = $quote->countTotalPrice();
+        }
+
+        /**
+         * Calculate Schedule Total Prices based on Margin Percentage
+         */
+        $this->calculateSchedulePrices($quote);
+
+        $this->prepareRows($quote);
+    }
+
+    public function modifyColumn(Quote $quote, string $column, Closure $callback): void
+    {
+        if(!isset($quote->computableRows)) {
+            return;
+        }
+
+        $quote->computableRows->transform(function ($row) use ($column, $callback) {
+            $row->{$column} = $callback($row);
+            return $row;
+        });
+    }
+
+    public function export(Quote $quote)
+    {
+        $this->prepareQuoteReview($quote);
+
+        $data = (new QuoteResource($quote))->resolve()['quote_data'];
+        $design = $quote->quoteTemplate->form_values_data;
+
+        if(isset($design['payment_page'])) {
+            $design['payment_schedule'] = $design['payment_page'];
+            unset($design['payment_page']);
+        }
+
+        $company_logos = $quote->quoteTemplate->company->getLogoDimensionsAttribute(true, true) ?? [];
+        $vendor_logos = $quote->quoteTemplate->vendor->getLogoDimensionsAttribute(true, true) ?? [];
+
+        $images = array_merge($company_logos, $vendor_logos);
+
+        // return view('quotes.pdf', compact('data', 'design', 'images'));
+
+        $pdf = $this->pdf->loadView('quotes.pdf', compact('data', 'design', 'images'))
+            ->inline('quotation.pdf');
+
+        return $pdf;
+
+        // $path = "{$quote->user->quoteFilesDirectory}/submitted/quotation_{$quote->customer->rfq}.pdf";
+        // Storage::put($path, $pdf);
+
+        // return $path;
+    }
+
+    public function prepareRows(Quote $quote): void
+    {
+        $quote->computableRows->sortKeysByKeys($quote->rowsHeaderToArray());
+
+        // $this->modifyColumn($quote, 'buy_price', function ($row) use ($quote) {
+        //     return round($row->price - ($row->price * ($quote->margin_percentage / 100)), 2);
+        // });
+
+        if(isset(head($quote->computableRows)->price)) {
+            $this->modifyColumn($quote, 'price', function ($row) {
+                return round($row->price, 2);
+            });
+        }
     }
 
     private function calculateDiscountValue($discount, float $price, float $list_price): float

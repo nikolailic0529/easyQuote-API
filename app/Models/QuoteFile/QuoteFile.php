@@ -13,8 +13,7 @@ use App\Traits \ {
     Draftable,
     Handleable,
     HasScheduleData,
-    Import\Automappable,
-    Collaboration\BelongsToCollaboration
+    Import\Automappable
 };
 use App\Contracts\HasOrderedScope;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -26,7 +25,6 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         HasScheduleData,
         BelongsToQuote,
         BelongsToUser,
-        BelongsToCollaboration,
         HasFileFormat,
         Handleable,
         Draftable,

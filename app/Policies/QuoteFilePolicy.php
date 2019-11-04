@@ -32,7 +32,9 @@ class QuoteFilePolicy
      */
     public function view(User $user, QuoteFile $quoteFile)
     {
-        return $user->collaboration_id === $quoteFile->collaboration_id;
+        if($user->can('view_quote_files')) {
+            return true;
+        }
     }
 
     /**
@@ -57,12 +59,8 @@ class QuoteFilePolicy
      */
     public function update(User $user, QuoteFile $quoteFile)
     {
-        if($user->can('update_collaboration_quote_files')) {
-            return $user->collaboration_id === $quoteFile->collaboration_id;
-        }
-
-        if($user->can('update_own_quote_files')) {
-            return $user->id === $quoteFile->user_id;
+        if($user->can('update_quote_files')) {
+            return true;
         }
     }
 
@@ -75,12 +73,8 @@ class QuoteFilePolicy
      */
     public function delete(User $user, QuoteFile $quoteFile)
     {
-        if($user->can('delete_collaboration_quote_files')) {
-            return $user->collaboration_id === $quoteFile->collaboration_id;
-        }
-
-        if($user->can('delete_own_quote_files')) {
-            return $user->id === $quoteFile->user_id;
+        if($user->can('delete_quote_files')) {
+            return true;
         }
     }
 
@@ -93,12 +87,8 @@ class QuoteFilePolicy
      */
     public function handle(User $user, QuoteFile $quoteFile)
     {
-        if($user->can('handle_collaboration_quote_files')) {
-            return $user->collaboration_id === $quoteFile->collaboration_id;
-        }
-
-        if($user->can('handle_own_quote_files')) {
-            return $user->id === $quoteFile->user_id;
+        if($user->can('handle_quote_files')) {
+            return true;
         }
     }
 }

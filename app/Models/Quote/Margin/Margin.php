@@ -8,7 +8,6 @@ use App\Models \ {
 use App\Traits \ {
     BelongsToUser,
     BelongsToVendor,
-    Collaboration\BelongsToCollaboration,
     Activatable
 };
 use Illuminate\Database\Eloquent \ {
@@ -20,7 +19,7 @@ use Str;
 
 abstract class Margin extends UuidModel implements HasOrderedScope, ActivatableInterface
 {
-    use BelongsToCollaboration, BelongsToUser, BelongsToVendor, SoftDeletes, Activatable;
+    use BelongsToUser, BelongsToVendor, SoftDeletes, Activatable;
 
     protected $perPage = 8;
 

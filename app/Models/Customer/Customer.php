@@ -80,6 +80,31 @@ class Customer extends UuidModel
         return $this->contacts()->where('contact_type', 'Software');
     }
 
+    public function getEquipmentAddressAttribute()
+    {
+        return $this->hardwareAddresses->first(null, $this->hardwareAddresses()->make([]));
+    }
+
+    public function getHardwareContactAttribute()
+    {
+        return $this->hardwareContacts->first(null, $this->hardwareContacts()->make([]));
+    }
+
+    public function getSoftwareAddressAttribute()
+    {
+        return $this->softwareAddresses->first(null, $this->softwareAddresses()->make([]));
+    }
+
+    public function getSoftwareContactAttribute()
+    {
+        return $this->softwareContacts->first(null, $this->softwareContacts()->make([]));
+    }
+
+    public function getCoveragePeriodAttribute()
+    {
+        return "{$this->support_start} to {$this->support_end}";
+    }
+
     private function formatDate($value, $default, $isDefaultEnabled)
     {
         if($isDefaultEnabled || !isset($value)) {

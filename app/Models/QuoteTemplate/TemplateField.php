@@ -10,7 +10,6 @@ use App\Traits \ {
     Activatable,
     BelongsToUser,
     BelongsToTemplateFieldType,
-    Collaboration\BelongsToCollaboration,
     Systemable
 };
 use App\Contracts\HasOrderedScope;
@@ -20,8 +19,7 @@ use Str;
 
 class TemplateField extends UuidModel implements HasOrderedScope, ActivatableInterface
 {
-    use BelongsToCollaboration,
-        BelongsToUser,
+    use BelongsToUser,
         BelongsToTemplateFieldType,
         Systemable,
         Activatable,

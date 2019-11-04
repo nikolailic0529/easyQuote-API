@@ -23,7 +23,6 @@ use App\Traits \ {
     Company\HasCompanies,
     QuoteTemplate\HasQuoteTemplates,
     QuoteTemplate\HasTemplateFields,
-    Collaboration\BelongsToCollaboration,
     Collaboration\HasInvitations,
     Search\Searchable
 };
@@ -47,7 +46,6 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
         HasCompanies,
         HasQuoteTemplates,
         HasTemplateFields,
-        BelongsToCollaboration,
         Activatable,
         Searchable;
 
@@ -102,7 +100,6 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
     public function interact($model)
     {
         if($model instanceof Invitation) {
-            $this->attributes['collaboration_id'] = $model->attributes['user_id'];
             $this->assignRole($model->role);
             return $this->save() && $model->delete();
         }

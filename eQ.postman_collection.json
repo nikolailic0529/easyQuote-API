@@ -14,11 +14,11 @@
 						{
 							"listen": "test",
 							"script": {
-								"id": "9821c968-eb8a-4d80-ac10-0864c4d84c43",
+								"id": "1218ce25-a1d6-4c50-9bcf-313054db9ee4",
 								"exec": [
 									"let response = pm.response.json();\r",
-									"pm.environment.set('country_id_1', response[0].id);\r",
-									"pm.environment.set('country_id_2', response[1].id);"
+									"pm.environment.set('country_id_1', response[2].id);\r",
+									"pm.environment.set('country_id_2', response[3].id);"
 								],
 								"type": "text/javascript"
 							}
@@ -160,6 +160,999 @@
 			]
 		},
 		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "List / Search",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "3caadb95-fa4d-412b-ae7c-a8c28421c40c",
+								"exec": [
+									"let response = pm.response.json();\r",
+									"pm.environment.set('role_id', response.data[0].id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/users/?per_page=40",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"users",
+								""
+							],
+							"query": [
+								{
+									"key": "order_by_created_at",
+									"value": "desc",
+									"disabled": true
+								},
+								{
+									"key": "order_by_name",
+									"value": "desc",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "MCA",
+									"disabled": true
+								},
+								{
+									"key": "per_page",
+									"value": "40"
+								},
+								{
+									"key": "search",
+									"value": "sup",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/users/{{user_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"users",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "2b5b1563-1f83-4e9b-9d6b-e30081cebdb3",
+								"exec": [
+									"let response = pm.response.json();\r",
+									"\r",
+									"if(response.roles) {\r",
+									"    pm.environment.set('role_id', response.roles[0].id);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/users/create?",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"users",
+								"create"
+							],
+							"query": [
+								{
+									"key": "order_by_created_at",
+									"value": "desc",
+									"disabled": true
+								},
+								{
+									"key": "order_by_name",
+									"value": "asc",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "MCA",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Invite",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "916fd03b-df35-49f7-96dc-7a0c4df37aee",
+								"exec": [
+									"let response = pm.response.json();\r",
+									"\r",
+									"if(response.id) {\r",
+									"    pm.environment.set('role_id', response.id);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Administrator",
+									"type": "text"
+								},
+								{
+									"key": "privileges[0][module]",
+									"value": "Quotes",
+									"type": "text"
+								},
+								{
+									"key": "privileges[0][privilege]",
+									"value": "Read & Write",
+									"type": "text"
+								},
+								{
+									"key": "privileges[1][module]",
+									"value": "Templates",
+									"type": "text"
+								},
+								{
+									"key": "privileges[1][privilege]",
+									"value": "Read, Write and Delete",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/users/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"users",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "first_name",
+									"value": "First name 2",
+									"type": "text"
+								},
+								{
+									"key": "middle_name",
+									"value": "Middle name 2",
+									"type": "text"
+								},
+								{
+									"key": "last_name",
+									"value": "Last name 2",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "example7@example.com",
+									"type": "text"
+								},
+								{
+									"key": "country_id",
+									"value": "{{country_id}}",
+									"type": "text"
+								},
+								{
+									"key": "timezone_id",
+									"value": "{{timezone_id}}",
+									"type": "text"
+								},
+								{
+									"key": "role_id",
+									"value": "{{role_id}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/users/fd81d19e-7a25-400b-93de-ff870e7abd42",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"users",
+								"fd81d19e-7a25-400b-93de-ff870e7abd42"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/users/{{user_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"users",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Activate",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/users/activate/f141457b-64ba-42cd-b19e-fc9553af5037",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"users",
+								"activate",
+								"f141457b-64ba-42cd-b19e-fc9553af5037"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deactivate",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/users/deactivate/{{user_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"users",
+								"deactivate",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Roles",
+			"item": [
+				{
+					"name": "List / Search",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "3caadb95-fa4d-412b-ae7c-a8c28421c40c",
+								"exec": [
+									"let response = pm.response.json();\r",
+									"pm.environment.set('role_id', response.data[0].id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/roles/?per_page=40",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"roles",
+								""
+							],
+							"query": [
+								{
+									"key": "order_by_created_at",
+									"value": "desc",
+									"disabled": true
+								},
+								{
+									"key": "order_by_name",
+									"value": "desc",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "MCA",
+									"disabled": true
+								},
+								{
+									"key": "per_page",
+									"value": "40"
+								},
+								{
+									"key": "search",
+									"value": "sup",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/roles/{{role_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"roles",
+								"{{role_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/roles/create?",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"roles",
+								"create"
+							],
+							"query": [
+								{
+									"key": "order_by_created_at",
+									"value": "desc",
+									"disabled": true
+								},
+								{
+									"key": "order_by_name",
+									"value": "asc",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "MCA",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Store",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "916fd03b-df35-49f7-96dc-7a0c4df37aee",
+								"exec": [
+									"let response = pm.response.json();\r",
+									"\r",
+									"if(response.id) {\r",
+									"    pm.environment.set('role_id', response.id);\r",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Administrator",
+									"type": "text"
+								},
+								{
+									"key": "privileges[0][module]",
+									"value": "Quotes",
+									"type": "text"
+								},
+								{
+									"key": "privileges[0][privilege]",
+									"value": "Read & Write",
+									"type": "text"
+								},
+								{
+									"key": "privileges[1][module]",
+									"value": "Templates",
+									"type": "text"
+								},
+								{
+									"key": "privileges[1][privilege]",
+									"value": "Read, Write and Delete",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/roles/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"roles",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "name",
+									"value": "Sales Manager 3",
+									"type": "text"
+								},
+								{
+									"key": "privileges[0][module]",
+									"value": "Quotes",
+									"type": "text"
+								},
+								{
+									"key": "privileges[0][privilege]",
+									"value": "Read & Write",
+									"type": "text"
+								},
+								{
+									"key": "privileges[1][module]",
+									"value": "Templates",
+									"type": "text"
+								},
+								{
+									"key": "privileges[1][privilege]",
+									"value": "Read, Write and Delete",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/roles/{{role_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"roles",
+								"{{role_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "is_fixed",
+									"value": "0",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/roles/{{role_id}}/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"roles",
+								"{{role_id}}",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Activate",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/roles/activate/{{role_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"roles",
+								"activate",
+								"{{role_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deactivate",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/roles/deactivate/{{role_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"roles",
+								"deactivate",
+								"{{role_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
 			"name": "Quote Files",
 			"item": [
 				{
@@ -202,7 +1195,7 @@
 								{
 									"key": "quote_file",
 									"type": "file",
-									"src": "/C:/Users/Strelenko/Desktop/easyQuote/sample.docx"
+									"src": "/C:/Users/Devengine/Desktop/easyQuote/samples/Data/UK/1HPE360.csv"
 								},
 								{
 									"key": "file_type",
@@ -262,7 +1255,7 @@
 							}
 						],
 						"url": {
-							"raw": "http://localhost:8000/api/quotes/files",
+							"raw": "http://localhost:8000/api/quotes/file",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -271,7 +1264,7 @@
 							"path": [
 								"api",
 								"quotes",
-								"files"
+								"file"
 							]
 						}
 					},
@@ -325,14 +1318,13 @@
 								},
 								{
 									"key": "data_select_separator_id",
-									"value": "1978b20f-27d3-4960-bd11-cdb00b91e340",
+									"value": "b10d58d0-5329-47ca-b493-08dc5572e991",
 									"type": "text"
 								},
 								{
 									"key": "page",
 									"value": "1",
-									"type": "text",
-									"disabled": true
+									"type": "text"
 								},
 								{
 									"key": "quote_id",
@@ -342,7 +1334,7 @@
 							]
 						},
 						"url": {
-							"raw": "http://localhost:8000/api/quotes/handle",
+							"raw": "http://localhost:8000/api/quotes/handle/",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -351,7 +1343,8 @@
 							"path": [
 								"api",
 								"quotes",
-								"handle"
+								"handle",
+								""
 							]
 						}
 					},
@@ -424,9 +1417,9 @@
 										"id": "d5cc7a5a-1a62-453f-b8fd-7bb20eaae8ab",
 										"exec": [
 											"let response = pm.response.json();\r",
-											"pm.environment.set('company_id', response.companies[1].id);\r",
-											"pm.environment.set('vendor_id', response.companies[1].vendors[2].id);\r",
-											"pm.environment.set('country_id', response.companies[1].vendors[2].countries[0].id);"
+											"pm.environment.set('company_id', response.companies[0].id);\r",
+											"pm.environment.set('vendor_id', response.companies[0].vendors[0].id);\r",
+											"pm.environment.set('country_id', response.companies[0].vendors[0].countries[0].id);"
 										],
 										"type": "text/javascript"
 									}
@@ -482,22 +1475,22 @@
 							"name": "Step 1 [Set Template]",
 							"event": [
 								{
-									"listen": "prerequest",
+									"listen": "test",
 									"script": {
-										"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+										"id": "cb8fbd0a-d9b7-4918-bf2d-eb654e9fe2d4",
 										"exec": [
-											""
+											"let response = pm.response.json();\r",
+											"pm.environment.set('quote_template_id', response[0].id);"
 										],
 										"type": "text/javascript"
 									}
 								},
 								{
-									"listen": "test",
+									"listen": "prerequest",
 									"script": {
-										"id": "9fc86bde-d6bd-4e8b-92e6-b73cebe9cb2a",
+										"id": "054e287a-ee2e-4ec0-b62b-16199a476aac",
 										"exec": [
-											"let response = pm.response.json();\r",
-											"pm.environment.set('quote_template_id', response[0].id);"
+											""
 										],
 										"type": "text/javascript"
 									}
@@ -563,9 +1556,20 @@
 							"name": "Step 2 [Mapping Review]",
 							"event": [
 								{
+									"listen": "test",
+									"script": {
+										"id": "267f1b67-fada-4374-afee-639a6e4a12c3",
+										"exec": [
+											"let response = pm.response.json();\r",
+											"pm.environment.set('groupable_rows', response.map(row => row.id));"
+										],
+										"type": "text/javascript"
+									}
+								},
+								{
 									"listen": "prerequest",
 									"script": {
-										"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+										"id": "5630f82b-1ef5-4111-944f-cfffebc91bf5",
 										"exec": [
 											""
 										],
@@ -598,6 +1602,11 @@
 										{
 											"key": "quote_id",
 											"value": "{{quote_id}}",
+											"type": "text"
+										},
+										{
+											"key": "search",
+											"value": "CZC81646WM",
 											"type": "text"
 										}
 									]
@@ -776,7 +1785,7 @@
 									}
 								],
 								"url": {
-									"raw": "http://localhost:8000/api/quotes/drafted/?order_by_company_name=asc&order_by_rfq=desc&order_by_support_end=desc&order_by_support_start=asc&order_by_valid_until=desc",
+									"raw": "http://localhost:8000/api/quotes/drafted/?per_page=30&order_by_name=desc",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -791,22 +1800,40 @@
 									"query": [
 										{
 											"key": "order_by_company_name",
-											"value": "asc"
+											"value": "asc",
+											"disabled": true
 										},
 										{
 											"key": "order_by_rfq",
-											"value": "desc"
+											"value": "asc",
+											"disabled": true
 										},
 										{
 											"key": "order_by_support_end",
-											"value": "desc"
+											"value": "asc",
+											"disabled": true
 										},
 										{
 											"key": "order_by_support_start",
-											"value": "asc"
+											"value": "asc",
+											"disabled": true
 										},
 										{
 											"key": "order_by_valid_until",
+											"value": "desc",
+											"disabled": true
+										},
+										{
+											"key": "per_page",
+											"value": "30"
+										},
+										{
+											"key": "search",
+											"value": "sup",
+											"disabled": true
+										},
+										{
+											"key": "order_by_name",
 											"value": "desc"
 										}
 									]
@@ -930,7 +1957,7 @@
 									}
 								],
 								"url": {
-									"raw": "http://localhost:8000/api/quotes/drafted/bda80a60-e028-11e9-885e-03a81df29dd2",
+									"raw": "http://localhost:8000/api/quotes/drafted/d07d23a0-e580-11e9-b1ac-01afb6c6d9cd",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -940,7 +1967,7 @@
 										"api",
 										"quotes",
 										"drafted",
-										"bda80a60-e028-11e9-885e-03a81df29dd2"
+										"d07d23a0-e580-11e9-b1ac-01afb6c6d9cd"
 									]
 								}
 							},
@@ -990,7 +2017,7 @@
 									}
 								],
 								"url": {
-									"raw": "http://localhost:8000/api/quotes/drafted/{{quote_id}}",
+									"raw": "http://localhost:8000/api/quotes/drafted/75f75380-df6d-11e9-8faa-83a5a6c5a02b",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -1000,7 +2027,7 @@
 										"api",
 										"quotes",
 										"drafted",
-										"{{quote_id}}"
+										"75f75380-df6d-11e9-8faa-83a5a6c5a02b"
 									]
 								}
 							},
@@ -1217,7 +2244,7 @@
 									}
 								],
 								"url": {
-									"raw": "http://localhost:8000/api/quotes/submitted/bda80a60-e028-11e9-885e-03a81df29dd2",
+									"raw": "http://localhost:8000/api/quotes/submitted/{{quote_id}}",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -1227,7 +2254,7 @@
 										"api",
 										"quotes",
 										"submitted",
-										"bda80a60-e028-11e9-885e-03a81df29dd2"
+										"{{quote_id}}"
 									]
 								}
 							},
@@ -1504,7 +2531,7 @@
 								"exec": [
 									"let response = pm.response.json();\r",
 									"\r",
-									"if(response.id) {\r",
+									"if(response && response.id) {\r",
 									"    pm.environment.set('quote_id', response.id);\r",
 									"}"
 								],
@@ -1527,14 +2554,15 @@
 						"header": [
 							{
 								"key": "Accept",
+								"type": "text",
 								"value": "application/json",
-								"type": "text"
+								"disabled": true
 							},
 							{
 								"key": "Content-Type",
 								"name": "Content-Type",
-								"value": "application/x-www-form-urlencoded",
-								"type": "text"
+								"type": "text",
+								"value": "application/x-www-form-urlencoded"
 							}
 						],
 						"body": {
@@ -1584,13 +2612,19 @@
 								},
 								{
 									"key": "save",
-									"value": "0",
+									"value": "1",
 									"description": "True to save Quote | False to draft Quote",
 									"type": "text"
 								},
 								{
 									"key": "quote_data[field_column][0][template_field_id]",
-									"value": "7761207a-2039-4313-97c3-42dc8f7e573f",
+									"value": "070ebd74-7287-4bd7-9424-ee733301c810",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[field_column][0][importable_column_id]",
+									"value": "9e4b0732-d8b3-4fb1-9264-110247f75ccc",
 									"type": "text",
 									"disabled": true
 								},
@@ -1601,14 +2635,14 @@
 									"disabled": true
 								},
 								{
-									"key": "quote_data[field_column][0][importable_column_id]",
-									"value": "",
+									"key": "quote_data[field_column][1][template_field_id]",
+									"value": "71308020-72ec-4880-9fe7-9fcd890af0cb",
 									"type": "text",
 									"disabled": true
 								},
 								{
-									"key": "quote_data[field_column][0][default_value]",
-									"value": "e9f46495-59bc-4992-b2f1-800320e70f52",
+									"key": "quote_data[field_column][1][importable_column_id]",
+									"value": "b108eb50-ee57-11e9-85e8-9f2fa757bbc5",
 									"type": "text",
 									"disabled": true
 								},
@@ -1625,53 +2659,47 @@
 								},
 								{
 									"key": "quote_data[selected_rows][]",
-									"value": "77006940-e6a6-11e9-a9fa-2183316c84b3",
+									"value": "a71068c0-fba1-11e9-8555-d8f2cacd2aed",
 									"type": "text",
 									"disabled": true
 								},
 								{
 									"key": "quote_data[selected_rows][]",
-									"value": "7703c850-e6a6-11e9-8d90-2d8c1c274ee2",
+									"value": "a71069b7-fba1-11e9-8555-d8f2cacd2aed",
 									"type": "text",
 									"disabled": true
 								},
 								{
 									"key": "quote_data[selected_rows_is_rejected]",
-									"value": "0",
-									"type": "text",
-									"disabled": true
+									"value": "1",
+									"description": "New|Renewal",
+									"type": "text"
 								},
 								{
 									"key": "margin[quote_type]",
-									"value": "Renewal",
-									"description": "New|Renewal",
-									"type": "text",
-									"disabled": true
+									"value": "New",
+									"type": "text"
 								},
 								{
 									"key": "margin[type]",
 									"value": "By Country",
-									"type": "text",
-									"disabled": true
+									"description": "No Margin|Standard",
+									"type": "text"
 								},
 								{
 									"key": "margin[method]",
-									"value": "Standard",
-									"description": "No Margin|Standard",
-									"type": "text",
-									"disabled": true
+									"value": "No Margin",
+									"type": "text"
 								},
 								{
 									"key": "margin[value]",
-									"value": "5",
-									"type": "text",
-									"disabled": true
+									"value": "0",
+									"type": "text"
 								},
 								{
 									"key": "margin[is_fixed]",
 									"value": "0",
-									"type": "text",
-									"disabled": true
+									"type": "text"
 								},
 								{
 									"key": "margin[delete]",
@@ -1687,25 +2715,31 @@
 								},
 								{
 									"key": "discounts[0][id]",
-									"value": "bfefa160-e581-11e9-befe-e71f9e812dae",
+									"value": "c65bab1c-18f1-4374-9628-16c53c774aa8",
 									"type": "text",
 									"disabled": true
 								},
 								{
 									"key": "discounts[0][duration]",
-									"value": "1",
+									"value": "3",
 									"type": "text",
 									"disabled": true
 								},
 								{
 									"key": "discounts[1][id]",
-									"value": "e7170090-e4f3-11e9-86ea-a98afd5c1867",
+									"value": "661e0b05-f842-44ab-9a53-bcc7027be407",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "discounts[1][duration]",
+									"value": "1",
 									"type": "text",
 									"disabled": true
 								},
 								{
 									"key": "discounts[2][id]",
-									"value": "61c7fdb0-e4fe-11e9-839d-d7f079dbc907",
+									"value": "743e4f50-c9c6-4d3b-a81a-70732f614602",
 									"type": "text",
 									"disabled": true
 								},
@@ -1742,7 +2776,77 @@
 								{
 									"key": "quote_data[checkbox_status]",
 									"value": "{\"check_from\":true,\"check_to\":true}",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "save",
+									"value": "1",
 									"type": "text"
+								},
+								{
+									"key": "quote_data[buy_price]",
+									"value": "90",
+									"type": "text"
+								},
+								{
+									"key": "quote_data[calculate_list_price]",
+									"value": "0",
+									"type": "text"
+								},
+								{
+									"key": "quote_data[custom_discount]",
+									"value": "10",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[group_description][0][name]",
+									"value": "Test Group 2",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[group_description][0][search_text]",
+									"value": " 123",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[group_description][0][rows][0]",
+									"value": "05b2f9aa-a65b-49e9-a0d1-e15afa503484",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[group_description][0][rows][1]",
+									"value": "485e4e11-5f45-4736-a9d3-5b7e2d25215f",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[group_description][1][name]",
+									"value": "Group 3",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[group_description][1][search_text]",
+									"value": " 124",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[group_description][1][rows][0]",
+									"value": "c247b41d-fab8-11e9-96fa-d8f2cacd2aed",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "quote_data[group_description][1][rows][1]",
+									"value": "c247b56a-fab8-11e9-96fa-d8f2cacd2aed",
+									"type": "text",
+									"disabled": true
 								}
 							],
 							"options": {
@@ -1776,22 +2880,22 @@
 					"name": "Get all S4 Customers",
 					"event": [
 						{
-							"listen": "prerequest",
+							"listen": "test",
 							"script": {
-								"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+								"id": "194f4369-9f57-4a10-a0d3-781cd48a3220",
 								"exec": [
-									""
+									"let response = pm.response.json();\r",
+									"pm.environment.set('customer_id', response[1].id);"
 								],
 								"type": "text/javascript"
 							}
 						},
 						{
-							"listen": "test",
+							"listen": "prerequest",
 							"script": {
-								"id": "341bae87-08e6-4cf3-9bea-cab1b31bc148",
+								"id": "3417d9bb-5045-4e40-adff-5208576f411b",
 								"exec": [
-									"let response = pm.response.json();\r",
-									"pm.environment.set('customer_id', response[0].id);"
+									""
 								],
 								"type": "text/javascript"
 							}
@@ -1837,9 +2941,19 @@
 					"name": "Get S4 Customer",
 					"event": [
 						{
+							"listen": "test",
+							"script": {
+								"id": "74a1ca9b-290f-4aad-9489-b1da89ccaac2",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
 							"listen": "prerequest",
 							"script": {
-								"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+								"id": "fe73465f-0285-48fc-af0d-b392d4dee767",
 								"exec": [
 									""
 								],
@@ -1867,7 +2981,7 @@
 							}
 						],
 						"url": {
-							"raw": "http://localhost:8000/api/quotes/customer/",
+							"raw": "http://localhost:8000/api/quotes/customers/4c08b634-5534-42c9-bda6-e0d3e2f31933/",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -1876,7 +2990,8 @@
 							"path": [
 								"api",
 								"quotes",
-								"customer",
+								"customers",
+								"4c08b634-5534-42c9-bda6-e0d3e2f31933",
 								""
 							]
 						}
@@ -1929,7 +3044,7 @@
 							]
 						},
 						"url": {
-							"raw": "http://localhost:8000/api/margins/?order_by_vendor=asc&search=12",
+							"raw": "http://localhost:8000/api/margins/?order_by_vendor=asc&page=1&per_page=80",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -1947,8 +3062,8 @@
 									"disabled": true
 								},
 								{
-									"key": "order_by_country",
-									"value": "asc",
+									"key": "order_by_value",
+									"value": "desc",
 									"disabled": true
 								},
 								{
@@ -1957,7 +3072,26 @@
 								},
 								{
 									"key": "search",
-									"value": "12"
+									"value": "12",
+									"disabled": true
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "order_by_created_at",
+									"value": "asc",
+									"disabled": true
+								},
+								{
+									"key": "per_page",
+									"value": "80"
+								},
+								{
+									"key": "order_by_country",
+									"value": "asc",
+									"disabled": true
 								}
 							]
 						}
@@ -1966,9 +3100,6 @@
 				},
 				{
 					"name": "Get Country Margin",
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
-					},
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -1994,16 +3125,6 @@
 								"type": "text"
 							}
 						],
-						"body": {
-							"mode": "urlencoded",
-							"urlencoded": [
-								{
-									"key": "is_fixed",
-									"value": "0",
-									"type": "text"
-								}
-							]
-						},
 						"url": {
 							"raw": "http://localhost:8000/api/margins/{{country_margin_id}}",
 							"protocol": "http",
@@ -2069,7 +3190,7 @@
 								},
 								{
 									"key": "is_fixed",
-									"value": "1",
+									"value": "0",
 									"type": "text"
 								},
 								{
@@ -2084,7 +3205,7 @@
 								},
 								{
 									"key": "value",
-									"value": "2",
+									"value": "2.034",
 									"type": "text"
 								}
 							]
@@ -2162,7 +3283,7 @@
 								},
 								{
 									"key": "value",
-									"value": "5.00",
+									"value": "2.4",
 									"type": "text"
 								}
 							]
@@ -2231,68 +3352,6 @@
 								"api",
 								"margins",
 								"50381280-e10b-11e9-87b9-2958066c8f28"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get percentages by Country Margins",
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{token}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "POST",
-						"header": [
-							{
-								"key": "Accept",
-								"value": "application/json",
-								"type": "text"
-							}
-						],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{
-									"key": "quote_type",
-									"value": "New",
-									"type": "text"
-								},
-								{
-									"key": "type",
-									"value": "No Margin",
-									"type": "text"
-								},
-								{
-									"key": "method",
-									"value": "No Margin",
-									"type": "text"
-								},
-								{
-									"key": "quote_id",
-									"value": "{{quote_id}}",
-									"type": "text"
-								}
-							]
-						},
-						"url": {
-							"raw": "http://localhost:8000/api/margins/percentages",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"margins",
-								"percentages"
 							]
 						}
 					},
@@ -2456,7 +3515,7 @@
 									]
 								},
 								"url": {
-									"raw": "http://localhost:8000/api/discounts/multi_year/?order_by_vendor=asc&search=12",
+									"raw": "http://localhost:8000/api/discounts/multi_year/?per_page=10",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -2471,7 +3530,7 @@
 									"query": [
 										{
 											"key": "order_by_created_at",
-											"value": "asc",
+											"value": "desc",
 											"disabled": true
 										},
 										{
@@ -2481,11 +3540,32 @@
 										},
 										{
 											"key": "order_by_vendor",
-											"value": "asc"
+											"value": "desc",
+											"disabled": true
+										},
+										{
+											"key": "order_by_name",
+											"value": "asc",
+											"disabled": true
 										},
 										{
 											"key": "search",
-											"value": "12"
+											"value": "2",
+											"disabled": true
+										},
+										{
+											"key": "per_page",
+											"value": "10"
+										},
+										{
+											"key": "order_by_durations_duration",
+											"value": "desc",
+											"disabled": true
+										},
+										{
+											"key": "order_by_durations_value",
+											"value": "asc",
+											"disabled": true
 										}
 									]
 								}
@@ -2588,7 +3668,7 @@
 									"formdata": [
 										{
 											"key": "name",
-											"value": "MultiYear discount 2",
+											"value": "MultiYear discount 33",
 											"type": "text"
 										},
 										{
@@ -2608,7 +3688,7 @@
 										},
 										{
 											"key": "durations[0][value]",
-											"value": "133",
+											"value": "5",
 											"type": "text"
 										}
 									]
@@ -2661,8 +3741,23 @@
 									"mode": "urlencoded",
 									"urlencoded": [
 										{
-											"key": "is_fixed",
-											"value": "0",
+											"key": "durations[0][duration]",
+											"value": "1",
+											"type": "text"
+										},
+										{
+											"key": "durations[0][value]",
+											"value": "5.51",
+											"type": "text"
+										},
+										{
+											"key": "durations[1][duration]",
+											"value": "2",
+											"type": "text"
+										},
+										{
+											"key": "durations[1][value]",
+											"value": "10.22",
 											"type": "text"
 										}
 									]
@@ -2811,7 +3906,7 @@
 									}
 								],
 								"url": {
-									"raw": "http://localhost:8000/api/discounts/promotions/deactivate/{{promotional_discount_id}}",
+									"raw": "http://localhost:8000/api/discounts/multi_year/deactivate/{{multi_year_discount_id}}",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -2820,9 +3915,9 @@
 									"path": [
 										"api",
 										"discounts",
-										"promotions",
+										"multi_year",
 										"deactivate",
-										"{{promotional_discount_id}}"
+										"{{multi_year_discount_id}}"
 									]
 								}
 							},
@@ -2876,7 +3971,7 @@
 									]
 								},
 								"url": {
-									"raw": "http://localhost:8000/api/discounts/pre_pay/?order_by_vendor=asc&search=12",
+									"raw": "http://localhost:8000/api/discounts/pre_pay/?order_by_vendor=asc&per_page=20",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -2905,7 +4000,12 @@
 										},
 										{
 											"key": "search",
-											"value": "12"
+											"value": "12",
+											"disabled": true
+										},
+										{
+											"key": "per_page",
+											"value": "20"
 										}
 									]
 								}
@@ -3008,7 +4108,7 @@
 									"formdata": [
 										{
 											"key": "name",
-											"value": "PrePay discount 2",
+											"value": "PrePay discount 3",
 											"type": "text"
 										},
 										{
@@ -3023,13 +4123,19 @@
 										},
 										{
 											"key": "durations[0][duration]",
-											"value": "1",
+											"value": "3",
 											"type": "text"
 										},
 										{
 											"key": "durations[0][value]",
-											"value": "133",
+											"value": "12",
 											"type": "text"
+										},
+										{
+											"key": "durations",
+											"value": "",
+											"type": "text",
+											"disabled": true
 										}
 									]
 								},
@@ -3311,7 +4417,7 @@
 									]
 								},
 								"url": {
-									"raw": "http://localhost:8000/api/discounts/promotions/?order_by_vendor=asc&search=12",
+									"raw": "http://localhost:8000/api/discounts/promotions/?order_by_name=asc&order_by_durations_duration=desc&per_page=10",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -3325,6 +4431,10 @@
 									],
 									"query": [
 										{
+											"key": "order_by_name",
+											"value": "asc"
+										},
+										{
 											"key": "order_by_created_at",
 											"value": "asc",
 											"disabled": true
@@ -3336,11 +4446,31 @@
 										},
 										{
 											"key": "order_by_vendor",
-											"value": "asc"
+											"value": "asc",
+											"disabled": true
 										},
 										{
 											"key": "search",
-											"value": "12"
+											"value": "12",
+											"disabled": true
+										},
+										{
+											"key": "order_by_minimum_limit",
+											"value": "asc",
+											"disabled": true
+										},
+										{
+											"key": "order_by_durations_value",
+											"value": "desc",
+											"disabled": true
+										},
+										{
+											"key": "order_by_durations_duration",
+											"value": "desc"
+										},
+										{
+											"key": "per_page",
+											"value": "10"
 										}
 									]
 								}
@@ -3349,9 +4479,6 @@
 						},
 						{
 							"name": "Get",
-							"protocolProfileBehavior": {
-								"disableBodyPruning": true
-							},
 							"request": {
 								"auth": {
 									"type": "bearer",
@@ -3377,16 +4504,6 @@
 										"value": "application/x-www-form-urlencoded"
 									}
 								],
-								"body": {
-									"mode": "urlencoded",
-									"urlencoded": [
-										{
-											"key": "is_fixed",
-											"value": "0",
-											"type": "text"
-										}
-									]
-								},
 								"url": {
 									"raw": "http://localhost:8000/api/discounts/promotions/{{promotional_discount_id}}",
 									"protocol": "http",
@@ -3518,6 +4635,11 @@
 										{
 											"key": "minimum_limit",
 											"value": "100.50",
+											"type": "text"
+										},
+										{
+											"key": "value",
+											"value": "12",
 											"type": "text"
 										}
 									]
@@ -3731,7 +4853,7 @@
 									]
 								},
 								"url": {
-									"raw": "http://localhost:8000/api/discounts/snd/?order_by_vendor=asc&search=12&order_by_value=desc",
+									"raw": "http://localhost:8000/api/discounts/snd/?order_by_vendor=asc&order_by_value=desc",
 									"protocol": "http",
 									"host": [
 										"localhost"
@@ -3759,12 +4881,13 @@
 											"value": "asc"
 										},
 										{
-											"key": "search",
-											"value": "12"
-										},
-										{
 											"key": "order_by_value",
 											"value": "desc"
+										},
+										{
+											"key": "search",
+											"value": "sn discount 2",
+											"disabled": true
 										}
 									]
 								}
@@ -3867,7 +4990,7 @@
 									"formdata": [
 										{
 											"key": "name",
-											"value": "SN Discount 3",
+											"value": "SN Discount 4",
 											"type": "text"
 										},
 										{
@@ -3882,7 +5005,7 @@
 										},
 										{
 											"key": "value",
-											"value": "12",
+											"value": "2",
 											"type": "text"
 										}
 									]
@@ -4143,6 +5266,9 @@
 							}
 						}
 					],
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -4168,6 +5294,16 @@
 								"type": "text"
 							}
 						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "search",
+									"value": "cis",
+									"type": "text"
+								}
+							]
+						},
 						"url": {
 							"raw": "http://localhost:8000/api/vendors/?per_page=40&order_by_short_code=asc",
 							"protocol": "http",
@@ -4267,9 +5403,6 @@
 				},
 				{
 					"name": "Find by Country",
-					"protocolProfileBehavior": {
-						"disableBodyPruning": true
-					},
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -4295,18 +5428,8 @@
 								"value": "application/x-www-form-urlencoded"
 							}
 						],
-						"body": {
-							"mode": "urlencoded",
-							"urlencoded": [
-								{
-									"key": "is_fixed",
-									"value": "0",
-									"type": "text"
-								}
-							]
-						},
 						"url": {
-							"raw": "http://localhost:8000/api/vendors/country/{{country_id_1}}",
+							"raw": "http://localhost:8000/api/vendors/country/{{country_id_2}}",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -4316,7 +5439,7 @@
 								"api",
 								"vendors",
 								"country",
-								"{{country_id_1}}"
+								"{{country_id_2}}"
 							]
 						}
 					},
@@ -4361,12 +5484,12 @@
 							"formdata": [
 								{
 									"key": "name",
-									"value": "Brocade14",
+									"value": "asdasdasd",
 									"type": "text"
 								},
 								{
 									"key": "short_code",
-									"value": "BRO9134",
+									"value": "BRO9sasdasdadasdasdasdasdasd",
 									"type": "text"
 								},
 								{
@@ -4382,7 +5505,8 @@
 								{
 									"key": "countries[1]",
 									"value": "{{country_id_2}}",
-									"type": "text"
+									"type": "text",
+									"disabled": true
 								}
 							]
 						},
@@ -4434,7 +5558,7 @@
 							"formdata": [
 								{
 									"key": "name",
-									"value": "McAfeed1212",
+									"value": "McAfeed1212335",
 									"type": "text"
 								},
 								{
@@ -4470,7 +5594,7 @@
 							]
 						},
 						"url": {
-							"raw": "http://localhost:8000/api/vendors/f339a100-e35a-11e9-bea8-2192a37233ae",
+							"raw": "http://localhost:8000/api/vendors/{{user_vendor_id}}",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -4479,7 +5603,7 @@
 							"path": [
 								"api",
 								"vendors",
-								"f339a100-e35a-11e9-bea8-2192a37233ae"
+								"{{user_vendor_id}}"
 							]
 						}
 					},
@@ -4660,7 +5784,7 @@
 							}
 						],
 						"url": {
-							"raw": "http://localhost:8000/api/companies/?per_page=40&order_by_short_code=asc",
+							"raw": "http://localhost:8000/api/companies/?per_page=40&order_by_phone=asc",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -4679,7 +5803,7 @@
 								},
 								{
 									"key": "order_by_name",
-									"value": "asc",
+									"value": "desc",
 									"disabled": true
 								},
 								{
@@ -4692,8 +5816,33 @@
 									"value": "40"
 								},
 								{
-									"key": "order_by_short_code",
+									"key": "order_by_vat",
+									"value": "desc",
+									"disabled": true
+								},
+								{
+									"key": "order_by_phone",
 									"value": "asc"
+								},
+								{
+									"key": "order_by_website",
+									"value": "asc",
+									"disabled": true
+								},
+								{
+									"key": "order_by_type",
+									"value": "asc",
+									"disabled": true
+								},
+								{
+									"key": "order_by_category",
+									"value": "desc",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "sup",
+									"disabled": true
 								}
 							]
 						}
@@ -4849,18 +5998,18 @@
 							"formdata": [
 								{
 									"key": "name",
-									"value": "Google",
+									"value": "Google2",
 									"type": "text"
 								},
 								{
 									"key": "category",
-									"value": "Business Partner",
+									"value": "",
 									"description": "End User|Reseller|Business Partner",
 									"type": "text"
 								},
 								{
 									"key": "vat",
-									"value": "GB844653576",
+									"value": "GB8446535762",
 									"type": "text"
 								},
 								{
@@ -4892,12 +6041,14 @@
 								{
 									"key": "vendors[]",
 									"value": "{{vendor_id_1}}",
-									"type": "text"
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "vendors[]",
 									"value": "{{vendor_id_2}}",
-									"type": "text"
+									"type": "text",
+									"disabled": true
 								}
 							]
 						},
@@ -4949,17 +6100,17 @@
 							"formdata": [
 								{
 									"key": "name",
-									"value": "Google",
+									"value": "Google2",
 									"type": "text"
 								},
 								{
 									"key": "category",
-									"value": "Business Partner",
+									"value": "",
 									"type": "text"
 								},
 								{
 									"key": "vat",
-									"value": "GB844653576",
+									"value": "GB844653572",
 									"type": "text"
 								},
 								{
@@ -4985,12 +6136,14 @@
 								{
 									"key": "vendors[]",
 									"value": "8284c275-7584-462b-9723-cafa10fceb83",
-									"type": "text"
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "vendors[]",
 									"value": "0a2bd2e7-5e8f-43a5-bb3f-6ef8ad6dac3e",
-									"type": "text"
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "logo",
@@ -5005,7 +6158,7 @@
 							]
 						},
 						"url": {
-							"raw": "http://localhost:8000/api/companies/{{user_company_id}}",
+							"raw": "http://localhost:8000/api/companies/{{user_company_id}}/",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -5014,7 +6167,8 @@
 							"path": [
 								"api",
 								"companies",
-								"{{user_company_id}}"
+								"{{user_company_id}}",
+								""
 							]
 						}
 					},
@@ -5058,7 +6212,7 @@
 							]
 						},
 						"url": {
-							"raw": "http://localhost:8000/api/companies/{{user_company_id}}",
+							"raw": "http://localhost:8000/api/companies/{{user_company_id}}/",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -5067,7 +6221,8 @@
 							"path": [
 								"api",
 								"companies",
-								"{{user_company_id}}"
+								"{{user_company_id}}",
+								""
 							]
 						}
 					},
@@ -5101,7 +6256,7 @@
 							}
 						],
 						"url": {
-							"raw": "http://localhost:8000/api/companies/activate/{{user_vendor_id}}",
+							"raw": "http://localhost:8000/api/companies/activate/{{user_company_id}}",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -5111,7 +6266,7 @@
 								"api",
 								"companies",
 								"activate",
-								"{{user_vendor_id}}"
+								"{{user_company_id}}"
 							]
 						}
 					},
@@ -5175,9 +6330,7 @@
 							"script": {
 								"id": "8c2da9f8-aff4-4e16-abf6-13491c0849f4",
 								"exec": [
-									"let response = pm.response.json();\r",
-									"pm.environment.set('vendor_id_1', response.data[0].id);\r",
-									"pm.environment.set('vendor_id_2', response.data[1].id);"
+									""
 								],
 								"type": "text/javascript"
 							}
@@ -5209,7 +6362,7 @@
 							}
 						],
 						"url": {
-							"raw": "http://localhost:8000/api/templates/?per_page=40&order_by_short_code=asc",
+							"raw": "http://localhost:8000/api/templates/?search=&per_page=40&order_by_created_at=asc&order_by_name=asc&order_by_company_name=asc&order_by_vendor_name=asc",
 							"protocol": "http",
 							"host": [
 								"localhost"
@@ -5233,15 +6386,26 @@
 								},
 								{
 									"key": "search",
-									"value": "MCA",
-									"disabled": true
+									"value": ""
 								},
 								{
 									"key": "per_page",
 									"value": "40"
 								},
 								{
-									"key": "order_by_short_code",
+									"key": "order_by_created_at",
+									"value": "asc"
+								},
+								{
+									"key": "order_by_name",
+									"value": "asc"
+								},
+								{
+									"key": "order_by_company_name",
+									"value": "asc"
+								},
+								{
+									"key": "order_by_vendor_name",
 									"value": "asc"
 								}
 							]
@@ -5344,7 +6508,7 @@
 							"formdata": [
 								{
 									"key": "name",
-									"value": "SWH HPE UK 123",
+									"value": "SWH HPE UK 2",
 									"type": "text"
 								},
 								{
@@ -5413,31 +6577,21 @@
 							}
 						],
 						"body": {
-							"mode": "formdata",
-							"formdata": [
+							"mode": "urlencoded",
+							"urlencoded": [
 								{
-									"key": "name",
-									"value": "SWH HPE UK 2",
+									"key": "form_data[name]",
+									"value": "value",
 									"type": "text"
 								},
 								{
-									"key": "countries[0]",
-									"value": "{{country_id_1}}",
+									"key": "form_data[name_2]",
+									"value": "value",
 									"type": "text"
 								},
 								{
-									"key": "countries[1]",
-									"value": "{{country_id_2}}",
-									"type": "text"
-								},
-								{
-									"key": "company_id",
-									"value": "{{company_id}}",
-									"type": "text"
-								},
-								{
-									"key": "vendor_id",
-									"value": "{{vendor_id}}",
+									"key": "form_values_data[name]",
+									"value": "value",
 									"type": "text"
 								}
 							]
@@ -5598,9 +6752,752 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Designer",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/templates/designer/{{quote_template_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"templates",
+								"designer",
+								"{{quote_template_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Copy",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/templates/copy/{{user_template_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"templates",
+								"copy",
+								"{{user_template_id}}"
+							]
+						}
+					},
+					"response": []
 				}
 			],
 			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Template Fields",
+			"item": [
+				{
+					"name": "List / Search",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "8c2da9f8-aff4-4e16-abf6-13491c0849f4",
+								"exec": [
+									"let response = pm.response.json();\r",
+									"pm.environment.set('vendor_id_1', response.data[0].id);\r",
+									"pm.environment.set('vendor_id_2', response.data[1].id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/template_fields/?per_page=40&order_by_short_code=asc",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"template_fields",
+								""
+							],
+							"query": [
+								{
+									"key": "order_by_created_at",
+									"value": "desc",
+									"disabled": true
+								},
+								{
+									"key": "order_by_name",
+									"value": "desc",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "MCA",
+									"disabled": true
+								},
+								{
+									"key": "per_page",
+									"value": "40"
+								},
+								{
+									"key": "order_by_short_code",
+									"value": "asc"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": []
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/template_fields/{{user_template_field_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"template_fields",
+								"{{user_template_field_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "310f472b-7a51-4927-a297-62df2cd00f66",
+								"exec": [
+									"let response = pm.response.json();\r",
+									"pm.environment.set('field_type_id', response.types.find(({name}) => name === 'textbox').id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/template_fields/create/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"template_fields",
+								"create",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Store",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "916fd03b-df35-49f7-96dc-7a0c4df37aee",
+								"exec": [
+									"let response = pm.response.json();\r",
+									"pm.environment.set('user_template_field_id', response.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "header",
+									"value": " Sample Template Field 3",
+									"type": "text"
+								},
+								{
+									"key": "default_value",
+									"value": "10",
+									"type": "text"
+								},
+								{
+									"key": "template_field_type_id",
+									"value": "{{field_type_id}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/template_fields/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"template_fields",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "header",
+									"value": " Sample Template Field 2",
+									"type": "text"
+								},
+								{
+									"key": "default_value",
+									"value": "10sadasd",
+									"type": "text"
+								},
+								{
+									"key": "template_field_type_id",
+									"value": "{{field_type_id}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/template_fields/{{user_template_field_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"template_fields",
+								"{{user_template_field_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "is_fixed",
+									"value": "0",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/template_fields/{{user_template_field_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"template_fields",
+								"{{user_template_field_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Activate",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/template_fields/activate/{{user_template_field_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"template_fields",
+								"activate",
+								"{{user_template_field_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Deactivate",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/template_fields/deactivate/{{user_template_field_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"template_fields",
+								"deactivate",
+								"{{user_template_field_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "S4",
+			"item": [
+				{
+					"name": "Get Quotes by RFQ",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/s4/quotes/CQ000000248A9E",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"s4",
+								"quotes",
+								"CQ000000248A9E"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Invitation",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "67be9e3b-67c3-4049-aad6-4b56b78516e8",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/x-www-form-urlencoded"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8000/api/auth/signup/6b29c891df9c34dab26493fa29772cdc",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"auth",
+						"signup",
+						"6b29c891df9c34dab26493fa29772cdc"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Sign Up by Invitation",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "67be9e3b-67c3-4049-aad6-4b56b78516e8",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"type": "text",
+						"value": "application/json"
+					},
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/x-www-form-urlencoded"
+					}
+				],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "first_name",
+							"value": "First name",
+							"type": "text"
+						},
+						{
+							"key": "middle_name",
+							"value": "Middle name",
+							"type": "text"
+						},
+						{
+							"key": "last_name",
+							"value": "Last name",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "password",
+							"type": "text"
+						},
+						{
+							"key": "country_id",
+							"value": "{{country_id}}",
+							"type": "text"
+						},
+						{
+							"key": "timezone_id",
+							"value": "{{timezone_id}}",
+							"type": "text"
+						},
+						{
+							"key": "password_confirmation",
+							"value": "password",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8000/api/auth/signup/9411eec98721e1a98d5cf7db4d180113",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"auth",
+						"signup",
+						"9411eec98721e1a98d5cf7db4d180113"
+					]
+				}
+			},
+			"response": []
 		},
 		{
 			"name": "Sign Up",

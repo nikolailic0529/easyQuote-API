@@ -24,7 +24,7 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
 
     public function userQuery(): Builder
     {
-        return $this->quoteTemplate->query()->userCollaboration()->with('company:id,name', 'vendor:id,name', 'countries:id,name');
+        return $this->quoteTemplate->query()->with('company:id,name', 'vendor:id,name', 'countries:id,name');
     }
 
     public function find(string $id): QuoteTemplate
@@ -148,6 +148,6 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
 
     protected function searchableScope(Builder $query)
     {
-        return $query->userCollaboration()->with('company:id,name', 'vendor:id,name', 'countries:id,name');
+        return $query->with('company:id,name', 'vendor:id,name', 'countries:id,name');
     }
 }

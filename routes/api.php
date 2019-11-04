@@ -23,6 +23,10 @@ Route::group(['namespace' => 'API'], function () {
         Route::get('countries', 'CountriesController'); // exclusive high throttle rate
     });
 
+    Route::group(['prefix' => 's4', 'middleware' => 'throttle:60,1'], function () {
+        Route::get('quotes/{rfq}', 'S4QuoteController');
+    });
+
     Route::group(['middleware' => 'auth:api'], function () {
         Route::group(['middleware' => 'throttle:60,1'], function () {
             Route::resource('users', 'UserController', ['only' => config('route.crud')]);

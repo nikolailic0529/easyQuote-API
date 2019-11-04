@@ -22,7 +22,7 @@ class SNDrepository extends DiscountRepository implements SNDrepositoryInterface
 
     public function userQuery(): Builder
     {
-        return $this->snd->query()->userCollaboration()->with('country', 'vendor');
+        return $this->snd->query()->with('country', 'vendor');
     }
 
     public function find(string $id): SND
@@ -88,6 +88,6 @@ class SNDrepository extends DiscountRepository implements SNDrepositoryInterface
 
     protected function searchableScope(Builder $query)
     {
-        return $query->userCollaboration()->with('country', 'vendor');
+        return $query->with('country', 'vendor');
     }
 }

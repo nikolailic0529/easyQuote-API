@@ -32,7 +32,9 @@ class DiscountPolicy
      */
     public function view(User $user, Discount $discount)
     {
-        return $user->collaboration_id === $discount->collaboration_id;
+        if($user->can('view_discounts')) {
+            return true;
+        }
     }
 
     /**
@@ -57,12 +59,8 @@ class DiscountPolicy
      */
     public function update(User $user, Discount $discount)
     {
-        if($user->can('update_collaboration_discounts')) {
-            return $user->collaboration_id === $discount->collaboration_id;
-        }
-
-        if($user->can('update_own_discounts')) {
-            return $user->id === $discount->user_id;
+        if($user->can('update_discounts')) {
+            return true;
         }
     }
 
@@ -75,12 +73,8 @@ class DiscountPolicy
      */
     public function delete(User $user, Discount $discount)
     {
-        if($user->can('delete_collaboration_discounts')) {
-            return $user->collaboration_id === $discount->collaboration_id;
-        }
-
-        if($user->can('delete_own_discounts')) {
-            return $user->id === $discount->user_id;
+        if($user->can('delete_discounts')) {
+            return true;
         }
     }
 }

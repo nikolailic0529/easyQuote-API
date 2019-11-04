@@ -63,7 +63,6 @@ class TemplateFieldObserver
     {
         return $templateField
             ->query()
-            ->userCollaboration()
             ->where('id', '!=', $templateField->id)
             ->where(function ($query) use ($templateField) {
                 $query->where('name', $templateField->name)

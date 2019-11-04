@@ -12,7 +12,6 @@ use App\Traits \ {
     Draftable,
     Systemable,
     Search\Searchable,
-    Collaboration\BelongsToCollaboration,
     HasQuotes
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -24,7 +23,6 @@ class QuoteTemplate extends UuidModel implements ActivatableInterface
         BelongsToCompany,
         BelongsToVendor,
         BelongsToCountries,
-        BelongsToCollaboration,
         HasQuotes,
         Draftable,
         Activatable,

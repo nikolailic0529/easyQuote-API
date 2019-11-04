@@ -25,7 +25,6 @@ class SNDobserver
     {
         return $snd
             ->query()
-            ->userCollaboration()
             ->where('id', '!=', $snd->id)
             ->where('vendor_id', $snd->vendor_id)
             ->where('value', $snd->value)

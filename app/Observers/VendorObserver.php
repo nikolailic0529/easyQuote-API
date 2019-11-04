@@ -47,7 +47,6 @@ class VendorObserver
     {
         return $vendor
             ->query()
-            ->userCollaboration()
             ->where('id', '!=', $vendor->id)
             ->where(function ($query) use ($vendor) {
                 $query->where('name', $vendor->name)

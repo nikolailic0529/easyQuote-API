@@ -102,7 +102,8 @@ use Elasticsearch \ {
     Client as ElasticsearchClient,
     ClientBuilder as ElasticsearchBuilder
 };
-use Schema, Str, Arr;
+use Illuminate\Support\Collection;
+use Schema, Storage, Blade, File, Str, Arr;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -240,6 +241,16 @@ class AppServiceProvider extends ServiceProvider
             return implode(', ', array_map(function ($item) use ($append) {
                 return "`{$item}`{$append}";
             }, $value));
+        });
+
+        File::macro('abspath', function (string $value) {
+            return storage_path('app\public' . str_replace(asset('storage'), '', $value));
+        });
+
+        Collection::macro('sortKeysByKeys', function (array $keys) {
+            return self::transform(function ($row) use ($keys) {
+                return array_replace($keys, array_intersect_key((array) $row, $keys));
+            });
         });
     }
 

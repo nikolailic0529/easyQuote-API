@@ -32,7 +32,9 @@ class MarginPolicy
      */
     public function view(User $user, Margin $margin)
     {
-        return $user->collaboration_id === $margin->collaboration_id;
+        if($user->can('view_margins')) {
+            return true;
+        }
     }
 
     /**
@@ -57,12 +59,8 @@ class MarginPolicy
      */
     public function update(User $user, Margin $margin)
     {
-        if($user->can('update_collaboration_margins')) {
-            return $user->collaboration_id === $margin->collaboration_id;
-        }
-
-        if($user->can('update_own_margins')) {
-            return $user->id === $margin->user_id;
+        if($user->can('update_margins')) {
+            return true;
         }
     }
 
@@ -75,12 +73,8 @@ class MarginPolicy
      */
     public function delete(User $user, Margin $margin)
     {
-        if($user->can('delete_collaboration_margins')) {
-            return $user->collaboration_id === $margin->collaboration_id;
-        }
-
-        if($user->can('delete_own_margins')) {
-            return $user->id === $margin->user_id;
+        if($user->can('delete_margins')) {
+            return true;
         }
     }
 }

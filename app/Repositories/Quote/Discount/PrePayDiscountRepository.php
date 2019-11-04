@@ -22,7 +22,7 @@ class PrePayDiscountRepository extends DiscountRepository implements PrePayDisco
 
     public function userQuery(): Builder
     {
-        return $this->prePayDiscount->query()->userCollaboration()->with('country', 'vendor');
+        return $this->prePayDiscount->query()->with('country', 'vendor');
     }
 
     public function find(string $id): PrePayDiscount
@@ -91,6 +91,6 @@ class PrePayDiscountRepository extends DiscountRepository implements PrePayDisco
 
     protected function searchableScope(Builder $query)
     {
-        return $query->userCollaboration()->with('country', 'vendor');
+        return $query->with('country', 'vendor');
     }
 }
