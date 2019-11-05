@@ -17,7 +17,6 @@ class CompleteInvitationRequest extends FormRequest
             'last_name' => 'required|string',
             'password' => 'required|string|min:6|confirmed',
             'phone' => 'string|phone',
-            'country_id' => 'required|string|size:36|exists:countries,id',
             'timezone_id' => 'required|string|size:36|exists:timezones,id'
         ];
     }

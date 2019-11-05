@@ -212,11 +212,11 @@ trait HasMapping
             return [];
         }
 
-        $quoteTemplate = $this->quoteTemplate()->with(['templateFields.fieldColumn' => function ($query) {
+        $this->quoteTemplate->load(['templateFields.fieldColumn' => function ($query) {
             return $query->where('quote_id', $this->id)->withDefault(FieldColumn::make([]));
-        }])->first();
+        }]);
 
-        $templateFields = $quoteTemplate->templateFields->map(function ($templateField) {
+        $templateFields = $this->quoteTemplate->templateFields->map(function ($templateField) {
             $template_field_id = $templateField->id;
             $template_field_name = $templateField->name;
             return array_merge(compact('template_field_id', 'template_field_name'), $templateField->fieldColumn->toArray());

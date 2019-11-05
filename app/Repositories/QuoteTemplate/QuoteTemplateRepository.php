@@ -32,7 +32,8 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
         $quoteTemplate = $this->userQuery()
             ->whereId($id)
             ->with('templateFields.templateFieldType')
-            ->firstOrFail();
+            ->firstOrFail()
+            ->makeVisible(['form_data', 'form_values_data']);
 
         $quoteTemplate->templateFields->each(function ($field) {
             $field->type = $field->templateFieldType->name;
@@ -45,14 +46,16 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
     public function findByCompanyVendorCountry(string $companyId, string $vendorId, string $countryId)
     {
         return $this->userQuery()
-            ->with('templateFields')
             ->where('quote_templates.company_id', $companyId)
             ->where('quote_templates.vendor_id', $vendorId)
             ->join('country_quote_template', function ($join) use ($countryId) {
                 $join->on('quote_templates.id', '=', 'country_quote_template.quote_template_id')
                     ->where('country_id', $countryId);
             })
-            ->get();
+            ->get(['quote_templates.id', 'quote_templates.name'])
+            ->each(function ($template) {
+                $template->makeHiddenExcept(['id', 'name']);
+            });
     }
 
     public function designer(string $id): SupportCollection
@@ -129,8 +132,8 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
     protected function filterableQuery()
     {
         return [
-            $this->userQuery()->activated(),
-            $this->userQuery()->deactivated()
+            $this->userQuery()->select('id', 'name', 'company_id', 'vendor_id', 'is_system', 'activated_at')->activated(),
+            $this->userQuery()->select('id', 'name', 'company_id', 'vendor_id', 'is_system', 'activated_at')->deactivated()
         ];
     }
 

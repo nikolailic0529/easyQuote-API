@@ -1,6 +1,5 @@
 <?php namespace App\Contracts\Repositories\QuoteFile;
 
-use App\Http\Requests\StoreQuoteFileRequest;
 use App\Models \ {
     Quote\Quote,
     QuoteFile\QuoteFile
@@ -28,6 +27,15 @@ interface QuoteFileRepositoryInterface
      * @return \App\Models\QuoteFile\QuoteFile
      */
     public function create(array $attributes);
+
+    /**
+     * Create a new Generated PDF Quote File.
+     *
+     * @param Quote $quote
+     * @param array $attributes
+     * @return \App\Models\QuoteFile\QuoteFile|null
+     */
+    public function createPdf(Quote $quote, array $attributes);
 
     /**
      * Store Imported Raw Data by QuoteFile

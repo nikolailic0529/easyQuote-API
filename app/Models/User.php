@@ -55,7 +55,7 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
      * @var array
      */
     protected $fillable = [
-        'first_name', 'middle_name', 'last_name', 'country_id', 'timezone_id', 'email', 'password',
+        'first_name', 'middle_name', 'last_name', 'timezone_id', 'email', 'password',
     ];
 
     /**
@@ -77,7 +77,7 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
     ];
 
     protected $appends = [
-        'role_name'
+        'role_id', 'role_name'
     ];
 
     public function getFullNameAttribute()
@@ -105,8 +105,18 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
         }
     }
 
+    public function getRoleAttribute()
+    {
+        return $this->roles->first(null, Role::make([]));
+    }
+
+    public function getRoleIdAttribute()
+    {
+        return $this->role->id;
+    }
+
     public function getRoleNameAttribute()
     {
-        return $this->roles->first(null, Role::make([]))->name;
+        return $this->role->name;
     }
 }

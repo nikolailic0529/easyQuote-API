@@ -197,19 +197,6 @@ class Role extends UuidModel implements RoleContract, ActivatableInterface
         return $this->permissions->contains('id', $permission->id);
     }
 
-    public function setPrivilegesAttribute($value)
-    {
-        $privilege = collect(__('role.privileges'))->first();
-        $privileges = collect($value);
-        $defaultPrivileges = collect(__('role.modules'))->keys()
-            ->diff($privileges->pluck('module')->toArray())
-            ->map(function ($module) use ($privilege) {
-                return compact('module', 'privilege');
-            });
-
-        $this->attributes['privileges'] = json_encode($defaultPrivileges->merge($privileges));
-    }
-
     public function syncPrivileges($privileges = null)
     {
         $privileges = $privileges ?? $this->privileges;

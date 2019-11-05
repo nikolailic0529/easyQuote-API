@@ -26,9 +26,14 @@ class UpdateUserRequest extends FormRequest
             'first_name' => 'string',
             'middle_name' => 'nullable|string',
             'last_name' => 'string',
-            'email' => 'string|email|unique:users',
-            'phone' => 'nullable|string|phone',
-            'country_id' => 'string|uuid|exists:countries,id',
+            'email' => [
+                'string',
+                'email',
+                Rule::unique('users', 'email')->where(function ($query) {
+                    $query->where('id', '!=', request('user')->id);
+                })
+            ],
+            'phone' => 'nullable|string|min:4',
             'timezone_id' => 'string|uuid|exists:timezones,id',
             'role_id' => [
                 'string',

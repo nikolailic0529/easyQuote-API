@@ -71,7 +71,7 @@ class TemplatesUpdate extends Command
                     );
 
                     $template->templateFields()->syncWithoutDetaching($templateFields);
-                    $template->countries()->syncWithoutDetaching($countries);
+                    $template->countries()->sync($countries);
 
                     $this->output->write('.');
                 });

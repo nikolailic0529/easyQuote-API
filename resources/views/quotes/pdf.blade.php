@@ -1,42 +1,55 @@
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-<link rel="stylesheet" href="{{ public_path('css\bootstrap.min.css') }}"/>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+@if (isset($html) && $html)
+    <link rel="stylesheet" href="{{ asset('css\bootstrap.min.css') }}"/>
+@else
+    <link rel="stylesheet" href="{{ public_path('css\bootstrap.min.css') }}"/>
+@endif
 <style>
-    html {
-        font-size: 16px;
-        font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";
-    }
-    body {
-        font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";
-    }
-    .h1, .h2, .h3, .h4, .h5, .h6, h1, h2, h3, h4, h5, h6 {
-        margin-bottom: .5rem;
-        font-weight: 500;
-        line-height: 1.2;
-        font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol","Noto Color Emoji";
+    html, body {
+        font-size: 18px;
     }
     h5,.h5 {
-        font-size: 1.09375rem
+        font-size: 1.25rem
+    }
+    b {
+        font-weight: 600
     }
     .blue-text {
         color: #1876bd;
+        margin-bottom: .5rem
     }
-    .dashed-border {
-        border: 1px dashed #dedede;
-        padding: 10px;
-        margin-bottom: 20px;
-        font-size: .75rem;
+    .details {
+        margin-bottom: 2rem;
     }
     .page-break {
         page-break-after: always;
     }
-    thead {
-        display: table-header-group
+    .table {
+        font-size: 14px;
+        margin-bottom: 0;
+        border-color: #1c6ea4;
+        border-width: 2px;
+        border-style: solid;
+        color: #000
     }
-    tfoot {
-        display: table-row-group
+    thead {
+        display: table-row-group;
+        background-color: #eee;
+        font-size: .8888888888888889rem
     }
     tr {
         page-break-inside: avoid
+    }
+    .table-striped>tbody>tr:nth-of-type(odd) {
+        background-color: #d0e4f5
+    }
+    .table-striped>tbody>tr:nth-of-type(even) {
+        background-color: #eee
+    }
+    .table-bordered>thead>tr>th, .table-bordered>tbody>tr>th, .table-bordered>tfoot>tr>th, .table-bordered>thead>tr>td, .table-bordered>tbody>tr>td, .table-bordered>tfoot>tr>td {
+        border-color: #aaa;
+        border-bottom: 0
     }
 </style>
 <body>
@@ -45,7 +58,7 @@
     <div class="page-break"></div>
 
     <h5 class="blue-text">{{ __('Quotation Detail') }}</h5>
-    <div class="dashed-border">
+    <div class="details">
         @include ('quotes.components.page', ['page_name' => 'data_pages'])
     </div>
 

@@ -18,7 +18,6 @@ class UserSignUpRequest extends FormRequest
             'email' => 'required|string|email|unique:users',
             'password' => 'required|string|min:6|confirmed',
             'phone' => 'string|phone',
-            'country_id' => 'required|string|size:36|exists:countries,id',
             'timezone_id' => 'required|string|size:36|exists:timezones,id'
         ];
     }

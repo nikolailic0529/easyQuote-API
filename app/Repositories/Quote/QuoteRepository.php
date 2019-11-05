@@ -289,6 +289,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         $this->quoteService->export($quote);
         $submitted_data = (new QuoteResource($quote))->resolve();
         $quote->submit($submitted_data);
+        $quote->customer->submit();
     }
 
     public function draft(Quote $quote): void

@@ -2,21 +2,25 @@
 
 use App\Contracts\Repositories\QuoteFile \ {
     QuoteFileRepositoryInterface,
-    ImportableColumnRepositoryInterface
+    ImportableColumnRepositoryInterface as ImportableColumnRepository,
+    FileFormatRepositoryInterface as FileFormatRepository
 };
 use App\Models \ {
+    Quote\Quote,
     QuoteFile\QuoteFile,
     QuoteFile\ImportedColumn,
     QuoteFile\DataSelectSeparator,
     QuoteFile\ImportedRow
 };
-use App\Http\Requests\StoreQuoteFileRequest;
+use Illuminate\Http\UploadedFile;
 use ErrorException;
 use Storage, Str, File, DB;
 
 class QuoteFileRepository implements QuoteFileRepositoryInterface
 {
     protected $quoteFile;
+
+    protected $fileFormat;
 
     protected $dataSelectSeparator;
 
@@ -26,10 +30,12 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     public function __construct(
         QuoteFile $quoteFile,
+        FileFormatRepository $fileFormat,
         DataSelectSeparator $dataSelectSeparator,
-        ImportableColumnRepositoryInterface $importableColumn
+        ImportableColumnRepository $importableColumn
     ) {
         $this->quoteFile = $quoteFile;
+        $this->fileFormat = $fileFormat;
         $this->dataSelectSeparator = $dataSelectSeparator;
         $this->importableColumn = $importableColumn;
         $this->systemImportableColumns = $importableColumn->allSystem();
@@ -74,6 +80,22 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         }
 
         return $quoteFile->makeHidden('user');
+    }
+
+    public function createPdf(Quote $quote, array $attributes)
+    {
+        if(!isset($attributes['path']) || !isset($attributes['filename'])) {
+            return null;
+        }
+
+        $original_file_path = $attributes['path'];
+        $quote_file = new UploadedFile($attributes['path'], $attributes['filename']);
+        $format = $this->fileFormat->whereInExtension(['pdf']);
+        $quote_id = $quote->id;
+        $file_type = 'Generated PDF';
+
+        $quote->generatedPdf()->delete();
+        return $this->create(compact('quote_file', 'format', 'file_type', 'original_file_path', 'quote_id'));
     }
 
     public function createRawData(QuoteFile $quoteFile, array $array)

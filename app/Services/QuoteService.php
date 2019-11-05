@@ -2,8 +2,7 @@
 
 use App\Contracts \ {
     Services\QuoteServiceInterface,
-    Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository,
-    Repositories\QuoteFile\FileFormatRepositoryInterface as FileFormatRepository
+    Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
 };
 use App\Http\Resources\QuoteResource;
 use App\Models\Quote \ {
@@ -11,6 +10,7 @@ use App\Models\Quote \ {
     Discount,
     Margin\CountryMargin
 };
+use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
 use Illuminate\Http\UploadedFile;
 use Storage, Closure, Str, Arr, File;
@@ -26,13 +26,10 @@ class QuoteService implements QuoteServiceInterface
 
     protected $quoteFile;
 
-    protected $fileFormat;
-
-    public function __construct(QuoteFileRepository $quoteFile, FileFormatRepository $fileFormat)
+    public function __construct(QuoteFileRepository $quoteFile)
     {
         $this->pdf = app('snappy.pdf.wrapper');
         $this->quoteFile = $quoteFile;
-        $this->fileFormat = $fileFormat;
     }
 
     public function interact(Quote $quote, $interactable): Quote
@@ -190,19 +187,7 @@ class QuoteService implements QuoteServiceInterface
         $this->prepareRows($quote);
     }
 
-    public function modifyColumn(Quote $quote, string $column, Closure $callback): void
-    {
-        if(!isset($quote->computableRows)) {
-            return;
-        }
-
-        $quote->computableRows->transform(function ($row) use ($column, $callback) {
-            $row->{$column} = $callback($row);
-            return $row;
-        });
-    }
-
-    public function export(Quote $quote)
+    public function prepareQuoteExport(Quote $quote): array
     {
         $this->prepareQuoteReview($quote);
 
@@ -219,19 +204,47 @@ class QuoteService implements QuoteServiceInterface
         $vendor_logos = $quote->quoteTemplate->vendor->getLogoDimensionsAttribute(true, true) ?? [];
         $images = array_merge($company_logos, $vendor_logos);
 
+        return compact('data', 'design', 'images');
+    }
+
+    public function modifyColumn(Quote $quote, string $column, Closure $callback): void
+    {
+        if(!isset($quote->computableRows)) {
+            return;
+        }
+
+        $quote->computableRows->transform(function ($row) use ($column, $callback) {
+            $row->{$column} = $callback($row);
+            return $row;
+        });
+    }
+
+    public function export(Quote $quote)
+    {
+        $export = $this->prepareQuoteExport($quote);
+
+        if(blank($export['design'])) {
+            return;
+        };
+
         $hash = md5($quote->customer->rfq . time());
         $filename = "{$quote->customer->rfq}_{$hash}.pdf";
         $original_file_path = "{$quote->user->quoteFilesDirectory}/$filename";
         $path = storage_path("app/{$original_file_path}");
-        $this->pdf->loadView('quotes.pdf', compact('data', 'design', 'images'))->save($path);
+        $this->pdf->loadView('quotes.pdf', $export)->save($path);
 
-        $quote_file = new UploadedFile($path, $filename);
-        $format = $this->fileFormat->whereInExtension(['pdf']);
-        $quote_id = $quote->id;
-        $file_type = 'Generated PDF';
+        $this->quoteFile->createPdf($quote, compact('path', 'filename'));
+    }
 
-        $quote->generatedPdf()->delete();
-        $this->quoteFile->create(compact('quote_file', 'format', 'file_type', 'original_file_path', 'quote_id'));
+    public function inlinePdf(Quote $quote, bool $html = false)
+    {
+        $export = array_merge($this->prepareQuoteExport($quote), compact('html'));
+
+        if($html) {
+            return view('quotes.pdf', $export);
+        }
+
+        return $this->pdf->loadView('quotes.pdf', $export)->inline();
     }
 
     public function prepareRows(Quote $quote): void

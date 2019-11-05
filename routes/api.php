@@ -25,6 +25,7 @@ Route::group(['namespace' => 'API'], function () {
 
     Route::group(['prefix' => 's4', 'as' => 's4.', 'middleware' => 'throttle:60,1'], function () {
         Route::get('quotes/{rfq}', 'S4QuoteController@show')->name('quote');
+        Route::post('quotes', 'S4QuoteController@store')->name('store');
         Route::get('quotes/{rfq}/price', 'S4QuoteController@price')->name('price');
         Route::get('quotes/{rfq}/schedule', 'S4QuoteController@schedule')->name('schedule');
         Route::get('quotes/{rfq}/pdf', 'S4QuoteController@pdf')->name('pdf');

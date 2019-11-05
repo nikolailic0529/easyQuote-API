@@ -5,9 +5,8 @@ use App\Models\Quote \ {
     Discount,
     Margin\CountryMargin
 };
+use Illuminate\Http\Response;
 use Closure;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Illuminate\Support\Collection;
 
 interface QuoteServiceInterface
 {
@@ -81,6 +80,22 @@ interface QuoteServiceInterface
      * @return void
      */
     public function prepareQuoteReview(Quote $quote): void;
+
+    /**
+     * Prepare Quote Data for PDF rendering.
+     *
+     * @param Quote $quote
+     * @return array
+     */
+    public function prepareQuoteExport(Quote $quote): array;
+
+    /**
+     * Inline output Generated PDF Quote file.
+     *
+     * @param Quote $quote
+     * @return mixed
+     */
+    public function inlinePdf(Quote $quote);
 
     /**
      * Export Quote in PDF format.
