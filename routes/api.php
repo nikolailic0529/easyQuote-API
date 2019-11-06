@@ -36,6 +36,10 @@ Route::group(['namespace' => 'API'], function () {
             Route::resource('users', 'UserController', ['only' => config('route.crud')]);
             Route::put('users/activate/{user}', 'UserController@activate');
             Route::put('users/deactivate/{user}', 'UserController@deactivate');
+
+            Route::apiResource('invitations', 'InvitationController', ['only' => config('route.r')]);
+            Route::put('invitations/resend/{invitation}', 'InvitationController@resend');
+            Route::put('invitations/cancel/{invitation}', 'InvitationController@cancel');
         });
 
         Route::group(['middleware' => 'throttle:60,1'], function () {

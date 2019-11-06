@@ -32,8 +32,10 @@ class AuthController extends Controller
      */
     public function signup(UserSignUpRequest $request)
     {
+        $this->user->createAdministrator($request->validated());
+
         return response()->json(
-            $this->user->createAdministrator($request->validated())
+            $this->auth->authenticate($request)
         );
     }
 
@@ -59,8 +61,10 @@ class AuthController extends Controller
      */
     public function signupCollaborator(CompleteInvitationRequest $request, Invitation $invitation)
     {
+        $this->user->createCollaborator($request->validated(), $invitation);
+
         return response()->json(
-            $this->user->createCollaborator($request->validated(), $invitation)
+            $this->auth->authenticate($request->merge(['email' => $invitation->email])->all())
         );
     }
 

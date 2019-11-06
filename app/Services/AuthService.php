@@ -7,7 +7,8 @@ use App\Contracts \ {
 use App\Http\Requests\UserSignInRequest;
 use Laravel\Passport\PersonalAccessTokenResult;
 use Carbon\Carbon;
-use Auth;
+use Auth, Arr;
+use Illuminate\Http\Request;
 
 class AuthService implements AuthServiceInterface
 {
@@ -18,11 +19,15 @@ class AuthService implements AuthServiceInterface
         $this->accessAttempt = $accessAttempt;
     }
 
-    public function authenticate(UserSignInRequest $request)
+    public function authenticate($request)
     {
-        $attempt = $this->storeAccessAttempt($request->validated());
+        if ($request instanceof Request) {
+            $request = $request->validated();
+        }
 
-        $this->checkCredentials($request->only('email', 'password'));
+        $attempt = $this->storeAccessAttempt($request);
+
+        $this->checkCredentials(Arr::only($request, ['email', 'password']));
 
         $token = $this->generateToken($request);
 
@@ -50,12 +55,12 @@ class AuthService implements AuthServiceInterface
         return $this->accessAttempt->create($payload);
     }
 
-    public function generateToken(UserSignInRequest $request): PersonalAccessTokenResult
+    public function generateToken(array $attributes): PersonalAccessTokenResult
     {
-        $tokenResult = $request->user()->createToken('Personal Access Token');
+        $tokenResult = request()->user()->createToken('Personal Access Token');
         $token = $tokenResult->token;
 
-        if((bool) $request->remember_me) {
+        if(isset($attributes['remember_me']) && (bool) $attributes['remember_me']) {
             $token->expires_at = Carbon::now()->addWeeks(1);
         }
 

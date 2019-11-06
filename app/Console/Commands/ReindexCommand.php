@@ -14,7 +14,8 @@ use App\Models \ {
     Quote\Discount\MultiYearDiscount,
     Quote\Discount\PrePayDiscount,
     Quote\Discount\PromotionalDiscount,
-    Quote\Discount\SND
+    Quote\Discount\SND,
+    Collaboration\Invitation
 };
 use Str;
 
@@ -66,7 +67,8 @@ class ReindexCommand extends Command
                 PromotionalDiscount::class,
                 SND::class,
                 Company::class,
-                Vendor::class
+                Vendor::class,
+                Invitation::class
             ]
         );
     }

@@ -25,18 +25,18 @@ interface AuthServiceInterface
     /**
      * Generate and return token for authenticated user
      *
-     * @param UserSignInRequest $request
+     * @param array $attributes
      * @return \Laravel\Passport\PersonalAccessTokenResult
      */
-    public function generateToken(UserSignInRequest $request): PersonalAccessTokenResult;
+    public function generateToken(array $attributes): PersonalAccessTokenResult;
 
     /**
      * Authenticate User
      *
-     * @param UserSignInRequest $request
+     * @param UserSignInRequest|array $request
      * @return mixed
      */
-    public function authenticate(UserSignInRequest $request);
+    public function authenticate($request);
 
     /**
      * Response when Successful Authentication

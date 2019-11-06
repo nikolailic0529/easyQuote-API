@@ -90,6 +90,8 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
 
     public function createCollaborator(array $attributes, Invitation $invitation): User
     {
+        $invitation->isExpired && abort(406, __('invitation.expired_exception'));
+
         $user = $this->create(array_merge($attributes, $invitation->only('email')));
         $user->interact($invitation);
 
@@ -103,7 +105,11 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
 
     public function invitation(string $token): Invitation
     {
-        return $this->invitation->whereInvitationToken($token)->firstOrFail()->makeHiddenExcept(['email', 'role_name']);
+        $invitation = $this->invitation->whereInvitationToken($token)->firstOrFail()->makeHiddenExcept(['email', 'role_name']);
+
+        $invitation->isExpired && abort(406, __('invitation.expired_exception'));
+
+        return $invitation;
     }
 
     public function update(UpdateUserRequest $request, string $id): bool

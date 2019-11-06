@@ -16,4 +16,15 @@ class InvitationObserver
     {
         Mail::send(new InvitationMail($invitation));
     }
+
+    /**
+     * Handle the invitation "resended" event.
+     *
+     * @param Invitation $invitation
+     * @return void
+     */
+    public function resended(Invitation $invitation)
+    {
+        Mail::send(new InvitationMail($invitation));
+    }
 }

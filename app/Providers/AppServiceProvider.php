@@ -34,10 +34,11 @@ use App\Contracts \ {
     Repositories\VendorRepositoryInterface,
     Repositories\CompanyRepositoryInterface,
     Repositories\RoleRepositoryInterface,
+    Repositories\InvitationRepositoryInterface,
+    Repositories\Quote\QuoteDraftedRepositoryInterface,
+    Repositories\Quote\QuoteSubmittedRepositoryInterface,
     Services\QuoteServiceInterface
 };
-use App\Contracts\Repositories\Quote\QuoteDraftedRepositoryInterface;
-use App\Contracts\Repositories\Quote\QuoteSubmittedRepositoryInterface;
 use App\Models \ {
     Company,
     Vendor,
@@ -87,6 +88,7 @@ use App\Repositories \ {
     Quote\Discount\SNDrepository,
     VendorRepository,
     CompanyRepository,
+    InvitationRepository,
     RoleRepository
 };
 use App\Repositories\Quote\QuoteDraftedRepository;
@@ -136,7 +138,8 @@ class AppServiceProvider extends ServiceProvider
         PdfParserInterface::class => PdfParser::class,
         RoleRepositoryInterface::class => RoleRepository::class,
         QuoteDraftedRepositoryInterface::class => QuoteDraftedRepository::class,
-        QuoteSubmittedRepositoryInterface::class => QuoteSubmittedRepository::class
+        QuoteSubmittedRepositoryInterface::class => QuoteSubmittedRepository::class,
+        InvitationRepositoryInterface::class => InvitationRepository::class
     ];
 
     /**
