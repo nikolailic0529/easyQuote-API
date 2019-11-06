@@ -10,7 +10,7 @@ class InvitationMail extends Mailable
     use Queueable, SerializesModels;
 
     /**
-     * Invitation instance
+     * Invitation instance.
      *
      * @var \App\Models\Collaboration\Invitation
      */
@@ -34,6 +34,7 @@ class InvitationMail extends Mailable
     public function build()
     {
         return $this->to($this->invitation->email)
+            ->subject(__('mail.subjects.invitation'))
             ->markdown('emails.invitation')
             ->with($this->invitation->toArray());
     }

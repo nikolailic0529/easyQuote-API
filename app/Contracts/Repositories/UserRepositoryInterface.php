@@ -11,6 +11,7 @@ use App\Models \ {
     Collaboration\Invitation
 };
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as IlluminateCollection;
 use Illuminate\Support\Collection;
 
 interface UserRepositoryInterface
@@ -133,4 +134,11 @@ interface UserRepositoryInterface
      * @return bool
      */
     public function delete(string $id): bool;
+
+    /**
+     * Retrieve All Users who have Administrator role.
+     *
+     * @return IlluminateCollection
+     */
+    public function administrators(): IlluminateCollection;
 }

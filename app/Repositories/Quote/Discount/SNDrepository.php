@@ -8,7 +8,8 @@ use App\Http\Requests\Discount \ {
 };
 use Illuminate\Database\Eloquent \ {
     Model,
-    Builder
+    Builder,
+    ModelNotFoundException
 };
 
 class SNDrepository extends DiscountRepository implements SNDrepositoryInterface
@@ -27,7 +28,11 @@ class SNDrepository extends DiscountRepository implements SNDrepositoryInterface
 
     public function find(string $id): SND
     {
-        return $this->userQuery()->whereId($id)->firstOrFail();
+        try {
+            return $this->userQuery()->whereId($id)->firstOrFail();
+        } catch (ModelNotFoundException $exception) {
+            abort(404, __('discount.404'));
+        }
     }
 
     public function create(StoreSNDrequest $request): SND

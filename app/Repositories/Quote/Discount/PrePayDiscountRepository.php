@@ -8,7 +8,8 @@ use App\Http\Requests\Discount \ {
 };
 use Illuminate\Database\Eloquent \ {
     Model,
-    Builder
+    Builder,
+    ModelNotFoundException
 };
 
 class PrePayDiscountRepository extends DiscountRepository implements PrePayDiscountRepositoryInterface
@@ -27,7 +28,11 @@ class PrePayDiscountRepository extends DiscountRepository implements PrePayDisco
 
     public function find(string $id): PrePayDiscount
     {
-        return $this->userQuery()->whereId($id)->firstOrFail();
+        try {
+            return $this->userQuery()->whereId($id)->firstOrFail();
+        } catch (ModelNotFoundException $exception) {
+            abort(404, __('discount.404'));
+        }
     }
 
     public function create(StorePrePayDiscountRequest $request): PrePayDiscount

@@ -15,6 +15,7 @@ use App\Traits \ {
     HasQuotes
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Arr;
 
 class QuoteTemplate extends UuidModel implements ActivatableInterface
 {
@@ -47,5 +48,14 @@ class QuoteTemplate extends UuidModel implements ActivatableInterface
     public function isAttached()
     {
         return $this->quotes()->exists();
+    }
+
+    public function toSearchArray()
+    {
+        $this->load('countries:name', 'vendor');
+
+        $this->makeHidden(['form_data', 'form_values_data']);
+
+        return $this->toArray();
     }
 }

@@ -33,7 +33,7 @@ class AuthController extends Controller
     public function signup(UserSignUpRequest $request)
     {
         return response()->json(
-            (bool) $this->user->createAdministrator($request->validated())
+            $this->user->createAdministrator($request->validated())
         );
     }
 
@@ -60,7 +60,7 @@ class AuthController extends Controller
     public function signupCollaborator(CompleteInvitationRequest $request, Invitation $invitation)
     {
         return response()->json(
-            (bool) $this->user->createCollaborator($request->validated(), $invitation)
+            $this->user->createCollaborator($request->validated(), $invitation)
         );
     }
 

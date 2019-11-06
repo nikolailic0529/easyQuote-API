@@ -3,8 +3,11 @@
 namespace App\Exceptions;
 
 use Exception;
+use App\Mail\FailureReportMail;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Support\Facades\Mail;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class Handler extends ExceptionHandler
 {
@@ -35,6 +38,10 @@ class Handler extends ExceptionHandler
      */
     public function report(Exception $exception)
     {
+        if(!$exception instanceof ModelNotFoundException && !($exception instanceof HttpException && $exception->getStatusCode() === 401)) {
+            Mail::send(new FailureReportMail($exception));
+        }
+
         parent::report($exception);
     }
 
@@ -47,20 +54,6 @@ class Handler extends ExceptionHandler
      */
     public function render($request, Exception $exception)
     {
-        if($exception instanceof ModelNotFoundException) {
-            switch ($exception->getModel()) {
-                case \App\Models\Quote\Margin\CountryMargin::class:
-                    abort(404, __('margin.404'));
-                    break;
-                case \App\Models\Quote\Discount\MultiYearDiscount::class:
-                case \App\Models\Quote\Discount\PrePayDiscount::class:
-                case \App\Models\Quote\Discount\PromotionalDiscount::class:
-                case \App\Models\Quote\Discount\SND::class:
-                    abort(404, __('discount.404'));
-                    break;
-            }
-        }
-
         return parent::render($request, $exception);
     }
 }

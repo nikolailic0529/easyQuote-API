@@ -126,6 +126,11 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         return $this->find($id)->deactivate();
     }
 
+    public function administrators(): Collection
+    {
+        return $this->user->administrators()->get();
+    }
+
     protected function filterQueryThrough(): array
     {
         return [
@@ -159,6 +164,6 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
 
     protected function searchableScope(Builder $query)
     {
-        return $query->userCollaborationExcept();
+        return $query;
     }
 }

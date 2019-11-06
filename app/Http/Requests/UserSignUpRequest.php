@@ -17,7 +17,7 @@ class UserSignUpRequest extends FormRequest
             'last_name' => 'required|string',
             'email' => 'required|string|email|unique:users',
             'password' => 'required|string|min:6|confirmed',
-            'phone' => 'string|phone',
+            'phone' => 'nullable|string|min:4',
             'timezone_id' => 'required|string|size:36|exists:timezones,id'
         ];
     }

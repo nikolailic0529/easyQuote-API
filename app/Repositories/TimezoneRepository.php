@@ -16,7 +16,7 @@ class TimezoneRepository implements TimezoneRepositoryInterface
     public function all()
     {
         return Cache::rememberForever('all-timezones', function () {
-            return $this->timezone->ordered()->get(['id', 'value']);
+            return $this->timezone->ordered()->get(['id', 'text', 'value']);
         });
     }
 }

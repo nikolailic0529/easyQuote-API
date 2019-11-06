@@ -8,7 +8,8 @@ use App\Http\Requests\Discount \ {
 };
 use Illuminate\Database\Eloquent \ {
     Model,
-    Builder
+    Builder,
+    ModelNotFoundException
 };
 
 class PromotionalDiscountRepository extends DiscountRepository implements PromotionalDiscountRepositoryInterface
@@ -27,7 +28,11 @@ class PromotionalDiscountRepository extends DiscountRepository implements Promot
 
     public function find(string $id): PromotionalDiscount
     {
-        return $this->userQuery()->whereId($id)->firstOrFail();
+        try {
+            return $this->userQuery()->whereId($id)->firstOrFail();
+        } catch (ModelNotFoundException $exception) {
+            abort(404, __('discount.404'));
+        }
     }
 
     public function create(StorePromotionalDiscountRequest $request): PromotionalDiscount

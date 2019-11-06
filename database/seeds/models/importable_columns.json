@@ -13,6 +13,7 @@
             "product_nu",
             "product nu",
             "item",
+            "line",
             "line no",
             "proof of purchase",
             "numéro de produit",
@@ -48,6 +49,7 @@
         "name": "date_from",
         "order": 3,
         "aliases": [
+            "start",
             "start date",
             "date_from",
             "coverage period from",
@@ -66,6 +68,7 @@
         "name": "date_to",
         "order": 4,
         "aliases": [
+            "end",
             "end date",
             "date_to",
             "coverage period to",

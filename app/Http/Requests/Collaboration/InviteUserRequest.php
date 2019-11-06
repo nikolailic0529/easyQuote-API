@@ -24,14 +24,12 @@ class InviteUserRequest extends FormRequest
     {
         return [
             'email' => 'required|string|email|unique:users',
+            'host' => 'required|string|url',
             'role_id' => [
                 'required',
                 'string',
                 'uuid',
-                Rule::exists('roles', 'id')->where(function ($query) {
-                    $query->where('collaboration_id', request()->user()->id)
-                        ->orWhere('is_system', true);
-                })
+                'exists:roles,id'
             ]
         ];
     }

@@ -17,6 +17,8 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
 {
     protected $quoteTemplate;
 
+    protected $selectable = ['id', 'name', 'company_id', 'vendor_id', 'is_system', 'activated_at'];
+
     public function __construct(QuoteTemplate $quoteTemplate)
     {
         $this->quoteTemplate = $quoteTemplate;
@@ -52,7 +54,7 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
                 $join->on('quote_templates.id', '=', 'country_quote_template.quote_template_id')
                     ->where('country_id', $countryId);
             })
-            ->get(['quote_templates.id', 'quote_templates.name'])
+            ->get(['id', 'name'])
             ->each(function ($template) {
                 $template->makeHiddenExcept(['id', 'name']);
             });
@@ -132,8 +134,8 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
     protected function filterableQuery()
     {
         return [
-            $this->userQuery()->select('id', 'name', 'company_id', 'vendor_id', 'is_system', 'activated_at')->activated(),
-            $this->userQuery()->select('id', 'name', 'company_id', 'vendor_id', 'is_system', 'activated_at')->deactivated()
+            $this->userQuery()->select($this->selectable)->activated(),
+            $this->userQuery()->select($this->selectable)->deactivated()
         ];
     }
 
@@ -145,12 +147,12 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
     protected function searchableFields(): array
     {
         return [
-            'name^5', 'created_at^3'
+            'name^5', 'countries.name^4', 'vendor.name^4', 'created_at^3'
         ];
     }
 
     protected function searchableScope(Builder $query)
     {
-        return $query->with('company:id,name', 'vendor:id,name', 'countries:id,name');
+        return $query->with('company:id,name', 'vendor:id,name', 'countries:id,name')->select($this->selectable);
     }
 }

@@ -30,8 +30,6 @@ class UsersSeeder extends Seeder
         $administratorRole = Role::findByName('Administrator');
 
         collect($users)->each(function ($user) use ($administratorRole, $faker) {
-
-            $countryId = Country::orderByRaw("RAND()")->first()->id;
             $timezoneId = Timezone::orderByRaw("RAND()")->first()->id;
 
             $user = User::create([
@@ -40,7 +38,6 @@ class UsersSeeder extends Seeder
                 'middle_name' => $faker->firstName,
                 'last_name' => $faker->lastName,
                 'password' => isset($user['password']) ? bcrypt($user['password']) : '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
-                'country_id' => $countryId,
                 'timezone_id' => $timezoneId
             ]);
 

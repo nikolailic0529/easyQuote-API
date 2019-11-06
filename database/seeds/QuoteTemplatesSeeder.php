@@ -37,8 +37,9 @@ class QuoteTemplatesSeeder extends Seeder
 
         collect($templates)->each(function ($template) use ($templateFields, $design) {
 
-            collect($template['companies'])->each(function ($vat) use ($template, $templateFields, $design) {
-                $company = Company::whereVat($vat)->first();
+            collect($template['companies'])->each(function ($companyData) use ($template, $templateFields, $design) {
+                $company = Company::whereVat($companyData['vat'])->first();
+                $company->acronym = $companyData['acronym'];
 
                 collect($template['vendors'])->each(function ($vendorCode) use ($company, $template, $templateFields, $design) {
                     $vendor = Vendor::whereShortCode($vendorCode)->first();
@@ -48,9 +49,8 @@ class QuoteTemplatesSeeder extends Seeder
                     $is_system = true;
                     $created_at = $updated_at = $activated_at = now()->toDateTimeString();
 
-                    $templateName = $template['name'];
-                    $companyShortCode = Str::short($company->name);
-                    $name = "{$companyShortCode} {$vendor->short_code} $templateName";
+                    $templateName = $template['new_name'];
+                    $name = "{$company->acronym}-{$vendor->short_code}-{$templateName}";
 
                     DB::table('quote_templates')->insert(
                         array_merge(

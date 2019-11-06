@@ -1,7 +1,7 @@
 @component('mail::message')
-# Invitation for easyQuote Collaboration
+# You are invited!
 
-You have been invited by {{ $user_email }} for collaboration as {{ $role_name }}.
+You have been invited to join easyQuote.
 
 @component('mail::button', ['url' => $url])
 Complete registration

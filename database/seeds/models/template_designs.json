@@ -629,6 +629,21 @@
                         "is_required":false,
                         "attached_child_id":"0d86193d-1afb-4874-b3a6-03477e38c6ce",
                         "attached_element_id":"736ac1e0-52c8-4f80-bc81-7bae72e10102"
+                    },
+                    {
+                        "id":"coverage_period_to",
+                        "name":"coverage_period_to",
+                        "type":"tag",
+                        "class":"s4-form-control",
+                        "label":"Coverage Period To",
+                        "value":null,
+                        "is_field":true,
+                        "is_image":false,
+                        "droppable":false,
+                        "is_system":true,
+                        "is_required":false,
+                        "attached_child_id":"0d86193d-1afb-4874-b3a6-03477e38c6ce",
+                        "attached_element_id":"736ac1e0-52c8-4f80-bc81-7bae72e10102"
                     }
                     ],
                     "position":2
@@ -3190,7 +3205,22 @@
                           "is_required":false,
                           "attached_child_id":"0d86193d-1afb-4874-b3a6-03477e38c6ce",
                           "attached_element_id":"736ac1e0-52c8-4f80-bc81-7bae72e10102"
-                       }
+                       },
+                       {
+                        "id":"coverage_period_to",
+                        "name":"coverage_period_to",
+                        "type":"tag",
+                        "class":"s4-form-control",
+                        "label":"Coverage Period To",
+                        "value":null,
+                        "is_field":true,
+                        "is_image":false,
+                        "droppable":false,
+                        "is_system":true,
+                        "is_required":false,
+                        "attached_child_id":"0d86193d-1afb-4874-b3a6-03477e38c6ce",
+                        "attached_element_id":"736ac1e0-52c8-4f80-bc81-7bae72e10102"
+                        }
                     ],
                     "position":2
                  },
@@ -4033,7 +4063,7 @@
                  },
                  {
                     "id":"49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                    "class":"col-lg-3",
+                    "class":"col-lg-6",
                     "controls":[
                        {
                           "id":"final_price",

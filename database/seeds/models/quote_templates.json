@@ -1,10 +1,20 @@
 [
     {
         "name": "English template",
+        "new_name": "English",
         "companies": [
-            "GB758501125",
-            "GB847657576",
-            "CHE109482812"
+            {
+                "vat": "GB758501125",
+                "acronym": "SWH"
+            },
+            {
+                "vat": "GB847657576",
+                "acronym": "EPD"
+            },
+            {
+                "vat": "CHE109482812",
+                "acronym": "THG"
+            }
         ],
         "vendors": [
             "HPE", "LEN", "IBM", "CIS"
@@ -15,10 +25,20 @@
     },
     {
         "name": "French template",
+        "new_name": "French",
         "companies": [
-            "GB758501125",
-            "GB847657576",
-            "CHE109482812"
+            {
+                "vat": "GB758501125",
+                "acronym": "SWH"
+            },
+            {
+                "vat": "GB847657576",
+                "acronym": "EPD"
+            },
+            {
+                "vat": "CHE109482812",
+                "acronym": "THG"
+            }
         ],
         "vendors": [
             "HPE", "LEN", "IBM", "CIS"

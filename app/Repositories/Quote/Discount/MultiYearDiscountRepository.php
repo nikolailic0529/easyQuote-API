@@ -8,7 +8,8 @@ use App\Http\Requests\Discount \ {
 };
 use Illuminate\Database\Eloquent \ {
     Model,
-    Builder
+    Builder,
+    ModelNotFoundException
 };
 
 class MultiYearDiscountRepository extends DiscountRepository implements MultiYearDiscountRepositoryInterface
@@ -27,7 +28,11 @@ class MultiYearDiscountRepository extends DiscountRepository implements MultiYea
 
     public function find(string $id): MultiYearDiscount
     {
-        return $this->userQuery()->whereId($id)->firstOrFail();
+        try {
+            return $this->userQuery()->whereId($id)->firstOrFail();
+        } catch (ModelNotFoundException $exception) {
+            abort(404, __('discount.404'));
+        }
     }
 
     public function create(StoreMultiYearDiscountRequest $request): MultiYearDiscount

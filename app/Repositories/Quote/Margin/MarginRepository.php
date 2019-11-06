@@ -10,7 +10,8 @@ use App\Models\Quote\Margin\CountryMargin;
 use App\Models\Quote\Quote;
 use Illuminate\Database\Eloquent \ {
     Model,
-    Builder
+    Builder,
+    ModelNotFoundException
 };
 
 class MarginRepository extends SearchableRepository implements MarginRepositoryInterface
@@ -68,7 +69,11 @@ class MarginRepository extends SearchableRepository implements MarginRepositoryI
 
     public function find(string $id)
     {
-        return $this->userQuery()->whereId($id)->firstOrFail();
+        try {
+            return $this->userQuery()->whereId($id)->firstOrFail();
+        } catch (ModelNotFoundException $exception) {
+            abort(404, __('margin.404'));
+        }
     }
 
     public function delete(string $id)

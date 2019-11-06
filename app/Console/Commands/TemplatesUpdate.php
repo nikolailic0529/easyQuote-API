@@ -52,8 +52,9 @@ class TemplatesUpdate extends Command
 
         collect($templates)->each(function ($template) use ($templateFields, $design) {
 
-            collect($template['companies'])->each(function ($vat) use ($template, $templateFields, $design) {
-                $company = Company::whereVat($vat)->first();
+            collect($template['companies'])->each(function ($companyData) use ($template, $templateFields, $design) {
+                $company = Company::whereVat($companyData['vat'])->first();
+                $company->acronym = $companyData['acronym'];
 
                 collect($template['vendors'])->each(function ($vendorCode) use ($company, $template, $templateFields, $design) {
                     $vendor = Vendor::whereShortCode($vendorCode)->first();
@@ -62,7 +63,7 @@ class TemplatesUpdate extends Command
                     $is_system = true;
 
                     $companyShortCode = Str::short($company->name);
-                    $name = "{$companyShortCode} {$vendor->short_code} {$template['name']}";
+                    $name = "{$company->acronym}-{$vendor->short_code}-{$template['new_name']}";
                     $countries = Country::whereIn('iso_3166_2', $template['countries'])->pluck('id')->toArray();
 
                     $template = QuoteTemplate::updateOrCreate(

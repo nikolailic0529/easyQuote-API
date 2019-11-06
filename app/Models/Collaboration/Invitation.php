@@ -11,7 +11,7 @@ class Invitation extends UuidModel
     use BelongsToUser, BelongsToRole;
 
     protected $fillable = [
-        'email', 'user_id', 'role_id'
+        'email', 'user_id', 'role_id', 'host'
     ];
 
     protected $appends = [
@@ -38,9 +38,8 @@ class Invitation extends UuidModel
     public function getUrlAttribute()
     {
         $invitation_token = $this->attributes['invitation_token'];
-        $ui_url = config('app.ui_url');
 
-        return "{$ui_url}/#/signup/{$invitation_token}";
+        return "{$this->host}/#/signup/{$invitation_token}";
     }
 
     public function getUserEmailAttribute()
