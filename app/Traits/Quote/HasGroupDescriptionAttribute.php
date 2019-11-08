@@ -16,6 +16,7 @@ trait HasGroupDescriptionAttribute
 
     public function getGroupDescriptionAttribute()
     {
-        return array_values(json_decode($this->attributes['group_description'], true) ?? []);
+        $group_description = json_decode($this->attributes['group_description'], true);
+        return is_null($group_description) ? null : array_values($group_description);
     }
 }
