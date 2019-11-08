@@ -64,7 +64,7 @@ class AuthController extends Controller
         $this->user->createCollaborator($request->validated(), $invitation);
 
         return response()->json(
-            $this->auth->authenticate($request->merge(['email' => $invitation->email])->all())
+            $this->auth->authenticate($request->merge($invitation->only('email'))->all())
         );
     }
 

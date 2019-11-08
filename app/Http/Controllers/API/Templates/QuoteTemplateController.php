@@ -3,9 +3,11 @@
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface as QuoteTemplateRepository;
 use App\Http\Requests\QuoteTemplate \ {
+    StoreQuoteTemplateImageRequest,
     StoreQuoteTemplateRequest,
     UpdateQuoteTemplateRequest
 };
+use App\Models\Image;
 use App\Models\QuoteTemplate\QuoteTemplate;
 
 class QuoteTemplateController extends Controller

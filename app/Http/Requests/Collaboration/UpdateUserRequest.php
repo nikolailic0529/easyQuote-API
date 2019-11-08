@@ -35,14 +35,7 @@ class UpdateUserRequest extends FormRequest
             ],
             'phone' => 'nullable|string|min:4',
             'timezone_id' => 'string|uuid|exists:timezones,id',
-            'role_id' => [
-                'string',
-                'uuid',
-                Rule::exists('roles', 'id')->where(function ($query) {
-                    $query->where('collaboration_id', request()->user()->id)
-                        ->orWhere('is_system', true);
-                })
-            ]
+            'role_id' => 'string|uuid|exists:roles,id'
         ];
     }
 }

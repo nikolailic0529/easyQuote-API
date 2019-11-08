@@ -17,7 +17,11 @@
     }
     .blue-text {
         color: #1876bd;
-        margin-bottom: .5rem
+        margin-bottom: .5rem;
+        margin-top: 1.25rem
+    }
+    .page-break ~ .blue-text {
+        margin-top: 0
     }
     .details {
         margin-bottom: 2rem;
@@ -57,7 +61,11 @@
 
     <div class="page-break"></div>
 
-    <h5 class="blue-text">{{ __('Quotation Detail') }}</h5>
+    <div class="row form-group">
+        <div class="col-lg-12 border-right">
+            <h5 class="blue-text">{{ __('Quotation Detail') }}</h5>
+        </div>
+    </div>
     <div class="details">
         @include ('quotes.components.page', ['page_name' => 'data_pages'])
     </div>

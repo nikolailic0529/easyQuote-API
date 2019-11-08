@@ -1,18 +1,18 @@
 <?php namespace App\Http\Controllers\API\Quotes;
 
 use App\Http\Controllers\Controller;
-use App\Contracts\Repositories \ {
+use App\Contracts\Repositories\{
     Quote\QuoteRepositoryInterface as QuoteRepository,
     QuoteTemplate\TemplateFieldRepositoryInterface as TemplateFieldRepository,
     Quote\Margin\MarginRepositoryInterface as MarginRepository
 };
-use App\Http\Requests \ {
+use App\Http\Requests\{
     StoreQuoteStateRequest,
     GetQuoteTemplatesRequest,
-    MappingReviewRequest,
-    ReviewAppliedMarginRequest
+    MappingReviewRequest
 };
-use App\Models \ {
+use App\Http\Requests\Quote\StoreGroupDescriptionRequest;
+use App\Models\{
     Quote\Quote
 };
 
@@ -45,7 +45,7 @@ class QuoteController extends Controller
 
     public function storeState(StoreQuoteStateRequest $request)
     {
-        if($request->has('quote_id')) {
+        if ($request->has('quote_id')) {
             $this->authorize('update', $this->quote->find($request->quote_id));
         } else {
             $this->authorize('create', Quote::class);
@@ -67,7 +67,7 @@ class QuoteController extends Controller
     {
         $this->authorize('view', $this->quote->find($request->quote_id));
 
-        if($request->has('search')) {
+        if ($request->has('search')) {
             return response()->json(
                 $this->quote->rows($request->quote_id, $request->search)
             );
@@ -78,11 +78,26 @@ class QuoteController extends Controller
         );
     }
 
+    /**
+     * Show Grouped Rows.
+     *
+     * @param Quote $quote
+     * @return \Illuminate\Http\Response
+     */
+    public function rowsGroups(Quote $quote)
+    {
+        $this->authorize('view', $quote);
+
+        return response()->json(
+            $this->quote->rowsGroups($quote->id)
+        );
+    }
+
     public function templates(GetQuoteTemplatesRequest $request)
     {
         $templates = $this->quote->getTemplates($request);
 
-        if($templates->isEmpty()) {
+        if ($templates->isEmpty()) {
             abort(404, __('template.404'));
         }
 
@@ -123,6 +138,38 @@ class QuoteController extends Controller
 
         return response()->json(
             $this->quote->review($quote->id)
+        );
+    }
+
+    /**
+     * Store Rows Group Description for specified Quote.
+     *
+     * @param StoreGroupDescriptionRequest $request
+     * @param Quote $quote
+     * @return \Illuminate\Http\Response
+     */
+    public function storeGroupDescription(StoreGroupDescriptionRequest $request, Quote $quote)
+    {
+        $this->authorize('update', $quote);
+
+        return response()->json(
+            $this->quote->createGroupDescription($request, $quote->id)
+        );
+    }
+
+    /**
+     * Remove specified Rows Group Description from specified Quote.
+     *
+     * @param Quote $quote
+     * @param string $group
+     * @return \Illuminate\Http\Response
+     */
+    public function destroyGroupDescription(Quote $quote, string $group)
+    {
+        $this->authorize('update', $quote);
+
+        return response()->json(
+            $this->quote->deleteGroupDescription($group, $quote->id)
         );
     }
 }

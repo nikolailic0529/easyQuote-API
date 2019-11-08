@@ -55,7 +55,7 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
      * @var array
      */
     protected $fillable = [
-        'first_name', 'middle_name', 'last_name', 'timezone_id', 'email', 'password',
+        'first_name', 'middle_name', 'last_name', 'timezone_id', 'email', 'password', 'role_id'
     ];
 
     /**
@@ -118,5 +118,14 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
     public function getRoleNameAttribute()
     {
         return $this->role->name;
+    }
+
+    public function setRoleIdAttribute(string $value)
+    {
+        if (!Role::whereId($value)->exists()) {
+            return;
+        }
+
+        $this->assignRole(Role::whereId($value)->firstOrFail());
     }
 }

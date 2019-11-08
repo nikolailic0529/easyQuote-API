@@ -6,6 +6,7 @@ use App\Http\Requests \ {
     GetQuoteTemplatesRequest,
     MappingReviewRequest
 };
+use App\Http\Requests\Quote\StoreGroupDescriptionRequest;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -117,6 +118,32 @@ interface QuoteRepositoryInterface
      * @return \Illuminate\Support\Collection
      */
     public function rows(string $id, string $query = ''): Collection;
+
+    /**
+     * Retrieve Groups of Imported Rows.
+     *
+     * @param string $id
+     * @return Collection
+     */
+    public function rowsGroups(string $id): Collection;
+
+    /**
+     * Create Rows Group Description for specified Quote.
+     *
+     * @param StoreGroupDescriptionRequest $request
+     * @param string $quote_id
+     * @return Collection
+     */
+    public function createGroupDescription(StoreGroupDescriptionRequest $request, string $quote_id): Collection;
+
+    /**
+     * Delete specified Rows Group Description from specified Quote.
+     *
+     * @param string $id
+     * @param string $quote_id
+     * @return bool
+     */
+    public function deleteGroupDescription(string $id, string $quote_id): bool;
 
     /**
      * Draft or Submit specified Quote.

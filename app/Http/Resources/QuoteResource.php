@@ -62,7 +62,9 @@ class QuoteResource extends JsonResource
                     'coverage_period' => $this->customer->coverage_period,
                     'coverage_period_from' => $this->customer->support_start,
                     'coverage_period_to' => $this->customer->support_end,
-                    'rows_header' => $this->rowsHeaderToArray(),
+                    'rows_header' => $this->when($this->has_group_description, function() {
+                        return array_merge(['group_name' => 'Group'], $this->rowsHeaderToArray());
+                    },  $this->rowsHeaderToArray()),
                     'rows' => $this->computableRows
                 ],
                 'last_page' => [

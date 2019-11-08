@@ -4,9 +4,11 @@ use App\Contracts\Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface;
 use App\Repositories\SearchableRepository;
 use App\Models\QuoteTemplate\QuoteTemplate;
 use App\Http\Requests\QuoteTemplate \ {
+    StoreQuoteTemplateImageRequest,
     StoreQuoteTemplateRequest,
     UpdateQuoteTemplateRequest
 };
+use App\Models\Image;
 use Illuminate\Database\Eloquent \ {
     Model,
     Builder

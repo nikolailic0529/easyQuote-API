@@ -5,6 +5,10 @@
         </tr>
     </thead>
     <tbody>
-        @each ('quotes.components.data.row', $data[$page_name][$data_key] ?? [], 'row')
+        @isset (head($data[$page_name][$data_key])['group_name'])
+            @each ('quotes.components.data.group', $data[$page_name][$data_key] ?? [], 'group')
+        @else
+            @each ('quotes.components.data.row', $data[$page_name][$data_key] ?? [], 'row')
+        @endisset
     </tbody>
 </table>

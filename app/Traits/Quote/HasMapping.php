@@ -1,6 +1,8 @@
-<?php namespace App\Traits\Quote;
+<?php
 
-use App\Models \ {
+namespace App\Traits\Quote;
+
+use App\Models\{
     Quote\FieldColumn,
     QuoteFile\ImportableColumn,
     QuoteTemplate\TemplateField
@@ -36,9 +38,10 @@ trait HasMapping
         $attributes = array_intersect_key($attributes, (new FieldColumn)->getAttributes());
         $attributes = array_merge($attributes, compact('importable_column_id'));
 
-        if($this->templateFields()->whereId($template_field_id)->exists()) {
+        if ($this->templateFields()->whereId($template_field_id)->exists()) {
             return $this->templateFields()->updateExistingPivot(
-                $template_field_id, $attributes
+                $template_field_id,
+                $attributes
             );
         }
 
@@ -66,7 +69,7 @@ trait HasMapping
                 $join->where('customers.id', $this->customer_id);
             });
 
-        if(isset($flags)) {
+        if (isset($flags)) {
             foreach ($flags as $flag) {
                 switch ($flag) {
                     case 'default_selected':
@@ -98,7 +101,6 @@ trait HasMapping
                         );
                         break;
                 }
-
             } else {
                 switch ($mapping->templateField->name) {
                     case 'price':
@@ -167,13 +169,14 @@ trait HasMapping
             ->groupBy('imported_rows.id');
     }
 
-    public function rowsDataByColumnsCalculated(?array $flags = null)
+    public function rowsDataByColumnsCalculated(?array $flags = null, bool $calculate = false)
     {
-        if(!$this->calculate_list_price) {
+        if (!$calculate) {
             return $this->rowsDataByColumns($flags);
         }
 
         $columns = $this->templateFieldsToArray('price');
+        array_unshift($columns, 'rows_data.id');
 
         return DB::query()
             ->fromSub($this->rowsDataByColumns($flags), 'rows_data')
@@ -194,9 +197,37 @@ trait HasMapping
             });
     }
 
+    public function getFlattenOrGroupedRows(?array $flags = null, bool $calculate = false)
+    {
+        if (!$this->has_group_description) {
+            return $this->rowsDataByColumnsCalculated($flags, $calculate)->get();
+        }
+
+        return $this->getGroupedRows($flags, $calculate);
+    }
+
+    public function getGroupedRows(?array $flags = null, bool $calculate = false)
+    {
+        $selectable = array_merge(
+            ['rows_data.id', 'groups.group_name'],
+            $this->templateFieldsToArray()
+        );
+
+        $groups = DB::query()->fromSub($this->rowsDataByColumnsCalculated($flags, $calculate), 'rows_data')
+            ->select($selectable)
+            ->join('imported_rows as groups', function ($join) {
+                $join->on('groups.id', '=', 'rows_data.id')
+                    ->whereNotNull('groups.group_name');
+            })
+            ->groupBy('rows_data.id')
+            ->get();
+
+        return $groups;
+    }
+
     public function countTotalPrice()
     {
-        if(!$this->templateFields->contains('name', 'price')) {
+        if (!$this->templateFields->contains('name', 'price')) {
             return 0.00;
         }
 
@@ -208,7 +239,7 @@ trait HasMapping
 
     public function getFieldColumnAttribute()
     {
-        if(!isset($this->quoteTemplate) || !isset($this->quoteTemplate->templateFields)) {
+        if (!isset($this->quoteTemplate) || !isset($this->quoteTemplate->templateFields)) {
             return [];
         }
 
@@ -227,7 +258,7 @@ trait HasMapping
 
     public function templateFieldsToArray(...$except)
     {
-        if(is_array(head($except))) {
+        if (is_array(head($except))) {
             $except = head($except);
         }
 
@@ -236,7 +267,7 @@ trait HasMapping
 
     public function rowsHeaderToArray(...$except)
     {
-        if(is_array(head($except))) {
+        if (is_array(head($except))) {
             $except = head($except);
         }
 

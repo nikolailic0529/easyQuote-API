@@ -43,7 +43,8 @@ class InvitationRepository extends SearchableRepository implements InvitationRep
             \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\Invitation\OrderByEmail::class,
-            \App\Http\Query\Invitation\OrderByRole::class
+            \App\Http\Query\Invitation\OrderByRole::class,
+            \App\Http\Query\Invitation\OrderByExpiresAt::class
         ];
     }
 

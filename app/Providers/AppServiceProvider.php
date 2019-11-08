@@ -105,7 +105,7 @@ use Elasticsearch \ {
     ClientBuilder as ElasticsearchBuilder
 };
 use Illuminate\Support\Collection;
-use Schema, Storage, Blade, File, Str, Arr;
+use Schema, Storage, Blade, File, Str, Arr, Validator;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -246,6 +246,18 @@ class AppServiceProvider extends ServiceProvider
             }, $value));
         });
 
+        Collection::macro('exceptEach', function (...$keys) {
+            if (!is_iterable((array) head($this->items))) {
+                return $this;
+            }
+
+            foreach ($this->items as &$item) {
+                $item = collect($item)->except($keys);
+            }
+
+            return $this;
+        });
+
         File::macro('abspath', function (string $value) {
             return storage_path('app\public' . str_replace(asset('storage'), '', $value));
         });
@@ -254,6 +266,13 @@ class AppServiceProvider extends ServiceProvider
             return self::transform(function ($row) use ($keys) {
                 return array_replace($keys, array_intersect_key((array) $row, $keys));
             });
+        });
+
+        Collection::macro('rowsToGroups', function (string $groupable) {
+            return $this->groupBy($groupable)->transform(function ($rows, $key) use ($groupable) {
+                $rows = collect($rows)->exceptEach($groupable);
+                return [$groupable => $key, 'rows' => $rows];
+            })->values();
         });
     }
 

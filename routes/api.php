@@ -102,6 +102,9 @@ Route::group(['namespace' => 'API'], function () {
         Route::group(['prefix' => 'quotes', 'namespace' => 'Quotes'], function () {
             Route::post('handle', 'QuoteFilesController@handle'); // exclusive high throttle rate
             Route::get('/get/{quote}', 'QuoteController@quote'); // exclusive high throttle rate
+            Route::get('/groups/{quote}', 'QuoteController@rowsGroups'); // exclusive high throttle rate
+            Route::post('/groups/{quote}', 'QuoteController@storeGroupDescription');
+            Route::delete('/groups/{quote}/{group}', 'QuoteController@destroyGroupDescription');
 
             Route::group(['middleware' => 'throttle:60,1'], function () {
                 Route::get('/discounts/{quote}', 'QuoteController@discounts');

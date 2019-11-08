@@ -4,11 +4,10 @@ use App\Contracts \ {
     Services\AuthServiceInterface,
     Repositories\AccessAttemptRepositoryInterface
 };
-use App\Http\Requests\UserSignInRequest;
 use Laravel\Passport\PersonalAccessTokenResult;
+use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Auth, Arr;
-use Illuminate\Http\Request;
 
 class AuthService implements AuthServiceInterface
 {

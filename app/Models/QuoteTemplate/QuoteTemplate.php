@@ -14,6 +14,7 @@ use App\Traits \ {
     Search\Searchable,
     HasQuotes
 };
+use App\Traits\Image\HasImages;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Arr;
 
@@ -25,6 +26,7 @@ class QuoteTemplate extends UuidModel implements ActivatableInterface
         BelongsToVendor,
         BelongsToCountries,
         HasQuotes,
+        HasImages,
         Draftable,
         Activatable,
         Systemable,

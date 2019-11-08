@@ -84,12 +84,12 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     public function createPdf(Quote $quote, array $attributes)
     {
-        if(!isset($attributes['path']) || !isset($attributes['filename'])) {
+        if(!isset($attributes['original_file_path']) || !isset($attributes['filename'])) {
             return null;
         }
 
-        $original_file_path = $attributes['path'];
-        $quote_file = new UploadedFile($attributes['path'], $attributes['filename']);
+        $original_file_path = $attributes['original_file_path'];
+        $quote_file = new UploadedFile(Storage::path($attributes['original_file_path']), $attributes['filename']);
         $format = $this->fileFormat->whereInExtension(['pdf']);
         $quote_id = $quote->id;
         $file_type = 'Generated PDF';

@@ -25,10 +25,12 @@ use App\Http\Requests \ {
     GetQuoteTemplatesRequest,
     MappingReviewRequest
 };
+use App\Http\Requests\Quote\StoreGroupDescriptionRequest;
 use App\Http\Resources\QuoteResource;
 use Illuminate\Support\Collection;
-use Cache, Arr, Storage;
+use Cache, Arr, Storage, DB;
 use Illuminate\Database\Eloquent\Builder;
+use Webpatser\Uuid\Uuid;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
@@ -284,6 +286,20 @@ class QuoteRepository implements QuoteRepositoryInterface
         return $this->find($id)->rowsDataByColumnsGroupable($query)->get();
     }
 
+    public function rowsGroups(string $id): Collection
+    {
+        $quote = $this->find($id);
+        $groups = $quote->getGroupedRows();
+        $group_description = collect($quote->group_description);
+
+        return $groups->groupBy('group_name')->transform(function ($rows, $group_name) use ($group_description) {
+            $id = $group_description->firstWhere('name', '===', $group_name)['id'] ?? null;
+            $rows = collect($rows)->exceptEach('group_name');
+
+            return compact('id', 'group_name', 'rows');
+        })->values();
+    }
+
     public function submit(Quote $quote): void
     {
         $this->quoteService->export($quote);
@@ -308,6 +324,51 @@ class QuoteRepository implements QuoteRepositoryInterface
         if($state->get('save')) {
             $this->submit($quote);
         }
+    }
+
+    public function createGroupDescription(StoreGroupDescriptionRequest $request, string $quote_id): Collection
+    {
+        $quote = $this->find($quote_id);
+
+        $data = collect($request->validated());
+        $group = $data->only(['name', 'search_text'])->prepend(Uuid::generate(4)->string, 'id');
+
+        $rows = $data->get('rows', []);
+
+        $quote->rowsData()->whereIn('imported_rows.id', $rows)
+            ->update(['group_name' => $group->get('name')]);
+
+        $quote->group_description = collect($quote->group_description)->values()->push($group);
+
+        $quote->save();
+
+        return $group;
+    }
+
+    public function deleteGroupDescription(string $id, string $quote_id): bool
+    {
+        $quote = $this->find($quote_id);
+
+        $group_description = collect($quote->group_description);
+
+        $removableKey = $group_description->search(function ($group, $key) use ($id) {
+            return $group['id'] === $id;
+        });
+
+        if ($removableKey === false) {
+            return false;
+        }
+
+        $removableGroup = $group_description->get($removableKey);
+
+        $quote->rowsData()->whereGroupName($removableGroup['name'])
+            ->update(['group_name' => null]);
+
+        $group_description->forget($removableKey)->values();
+
+        $quote->group_description = $group_description;
+
+        return $quote->save();
     }
 
     private function markRowsAsSelectedOrUnSelected(Collection $state, Quote $quote, bool $reject = false): void

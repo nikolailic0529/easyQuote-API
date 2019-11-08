@@ -130,14 +130,6 @@ class StoreQuoteStateRequest extends FormRequest
             'quote_data.buy_price' => 'nullable|numeric|min:0',
             'quote_data.custom_discount' => 'nullable|numeric|min:0',
             /**
-             * Rows group description
-             */
-            'quote_data.group_description' => 'nullable|array',
-            'quote_data.group_description.*.name' => 'required|string|min:1|distinct',
-            'quote_data.group_description.*.search_text' => 'required|string|min:1|distinct',
-            'quote_data.group_description.*.rows' => 'required|array|distinct',
-            'quote_data.group_description.*.rows.*' => 'required|string|uuid|distinct|exists:imported_rows,id',
-            /**
              * Margin
              */
             'margin.quote_type' => [

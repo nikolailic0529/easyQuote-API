@@ -39,6 +39,6 @@ class ImportableColumnRepository implements ImportableColumnRepositoryInterface
 
     public function findByName(string $name): ImportableColumn
     {
-        return $this->importableColumn->whereName($name)->firstOrFail();
+        return $this->importableColumn->system()->whereName($name)->firstOrFail();
     }
 }

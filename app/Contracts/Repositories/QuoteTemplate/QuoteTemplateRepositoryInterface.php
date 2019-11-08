@@ -2,9 +2,11 @@
 
 use App\Builder\Pagination\Paginator;
 use App\Http\Requests\QuoteTemplate \ {
+    StoreQuoteTemplateImageRequest,
     StoreQuoteTemplateRequest,
     UpdateQuoteTemplateRequest
 };
+use App\Models\Image;
 use App\Models\QuoteTemplate\QuoteTemplate;
 use Illuminate\Support\Collection;
 
