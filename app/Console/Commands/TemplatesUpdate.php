@@ -24,7 +24,7 @@ class TemplatesUpdate extends Command
      *
      * @var string
      */
-    protected $description = 'Command description';
+    protected $description = 'Update System Defined Templates';
 
     /**
      * Create a new command instance.
@@ -79,6 +79,6 @@ class TemplatesUpdate extends Command
             });
         });
 
-        $this->info("\nSystem Defined Roles were updated!");
+        $this->info("\nSystem Defined Templates were updated!");
     }
 }

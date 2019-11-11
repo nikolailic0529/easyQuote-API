@@ -39,13 +39,18 @@ class VendorsUpdate extends Command
      */
     public function handle()
     {
+        $this->info("Updating System Defined Vendors...");
+
         $vendors = json_decode(file_get_contents(database_path('seeds/models/vendors.json')), true);
 
         collect($vendors)->each(function ($vendorData) {
             $vendor = Vendor::whereShortCode($vendorData['short_code'])->first();
             $countries = Country::whereIn('iso_3166_2', $vendorData['countries'])->get();
-
             $vendor->countries()->sync($countries);
+
+            $this->output->write('.');
         });
+
+        $this->info("\nSystem Defined Vendors were updated!");
     }
 }

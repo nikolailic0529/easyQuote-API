@@ -1,9 +1,9 @@
-<?php
+<?php namespace App\Console\Commands;
 
-namespace App\Console\Commands;
-
-use App\Models\Company;
-use App\Models\Vendor;
+use App\Models \ {
+    Company,
+    Vendor
+};
 use Illuminate\Console\Command;
 
 class CompaniesUpdate extends Command
@@ -39,15 +39,18 @@ class CompaniesUpdate extends Command
      */
     public function handle()
     {
+        $this->info("Updating System Defined Companies...");
+
         $companies = json_decode(file_get_contents(database_path('seeds/models/companies.json')), true);
 
         collect($companies)->each(function ($companyData) {
-
             $company = Company::whereVat($companyData['vat'])->first();
-
             $vendors = Vendor::whereIn('short_code', $companyData['vendors'])->get();
-
             $company->vendors()->sync($vendors);
+
+            $this->output->write('.');
         });
+
+        $this->info("\nSystem Defined Companies were updated!");
     }
 }

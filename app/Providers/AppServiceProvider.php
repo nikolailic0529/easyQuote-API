@@ -268,10 +268,13 @@ class AppServiceProvider extends ServiceProvider
             });
         });
 
-        Collection::macro('rowsToGroups', function (string $groupable) {
-            return $this->groupBy($groupable)->transform(function ($rows, $key) use ($groupable) {
+        Collection::macro('rowsToGroups', function (string $groupable, ?Collection $meta = null) {
+            return $this->groupBy($groupable)->transform(function ($rows, $key) use ($groupable, $meta) {
+                $meta = isset($meta)
+                    ? $meta->firstWhere('name', '===', $key) ?? []
+                    : [];
                 $rows = collect($rows)->exceptEach($groupable);
-                return [$groupable => $key, 'rows' => $rows];
+                return array_merge($meta, [$groupable => $key, 'rows' => $rows]);
             })->values();
         });
     }

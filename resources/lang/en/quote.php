@@ -13,5 +13,6 @@ return [
         'Additional Detail' => 99,
         'Complete' => 100
     ],
-    'required_fields_exception' => 'Required Fields are missing.'
+    'required_fields_exception' => 'Required Fields are missing.',
+    'no_found_rfq_exception' => 'Sorry, no data found by this RFQ number.'
 ];

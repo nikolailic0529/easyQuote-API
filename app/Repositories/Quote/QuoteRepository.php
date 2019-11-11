@@ -23,14 +23,16 @@ use App\Models \ {
 use App\Http\Requests \ {
     StoreQuoteStateRequest,
     GetQuoteTemplatesRequest,
-    MappingReviewRequest
+    MappingReviewRequest,
+    Quote\MoveGroupDescriptionRowsRequest,
+    Quote\StoreGroupDescriptionRequest,
+    Quote\UpdateGroupDescriptionRequest
 };
-use App\Http\Requests\Quote\StoreGroupDescriptionRequest;
 use App\Http\Resources\QuoteResource;
 use Illuminate\Support\Collection;
-use Cache, Arr, Storage, DB;
 use Illuminate\Database\Eloquent\Builder;
 use Webpatser\Uuid\Uuid;
+use Cache;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
@@ -100,15 +102,11 @@ class QuoteRepository implements QuoteRepositoryInterface
         $state = collect($request->validated());
         $quoteData = $state->get('quote_data');
 
-        if($request->has('quote_id')) {
-            $quote = $this->find($request->quote_id);
-        } else {
-            $quote = $user->quotes()->make();
-        }
+        $quote = $request->has('quote_id')
+            ? $this->find($request->quote_id)
+            : $user->quotes()->make();
 
-        if(isset($quoteData)) {
-            $quote->fill($quoteData);
-        }
+        filled($quoteData) && $quote->fill($quoteData);
 
         $this->draftOrSubmit($state, $quote);
         $this->storeQuoteFilesState($state, $quote);
@@ -193,11 +191,11 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     public function setMargin(Quote $quote, ?array $attributes): void
     {
-        if(blank($attributes) || blank($quote->country_id) || blank($quote->vendor_id)) {
+        if (blank($attributes) || blank($quote->country_id) || blank($quote->vendor_id)) {
             return;
         }
 
-        if(isset($attributes['delete']) && (bool) $attributes['delete']) {
+        if (isset($attributes['delete']) && (bool) $attributes['delete']) {
             $quote->deleteCountryMargin();
             return;
         }
@@ -214,13 +212,13 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     public function setDiscounts(Quote $quote, $attributes, $detach): void
     {
-        if((bool) $detach === true) {
+        if ((bool) $detach === true) {
             $quote->resetCustomDiscount();
             $quote->discounts()->detach();
             return;
         }
 
-        if(!isset($attributes) || !is_array($attributes) || empty($attributes)) {
+        if (!isset($attributes) || !is_array($attributes) || empty($attributes)) {
             return;
         }
 
@@ -232,7 +230,7 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $quote->discounts()->sync($quoteDiscounts);
 
-        if($quote->custom_discount > 0) {
+        if ($quote->custom_discount > 0) {
             $quote->resetCustomDiscount();
         }
 
@@ -243,18 +241,10 @@ class QuoteRepository implements QuoteRepositoryInterface
     {
         $quote = $this->find($id);
 
-        $multi_year = $this->multiYearDiscount
-            ->quoteAcceptable($quote)
-            ->get();
-        $pre_pay = $this->prePayDiscount
-            ->quoteAcceptable($quote)
-            ->get();
-        $promotions = $this->promotionalDiscount
-            ->quoteAcceptable($quote)
-            ->get();
-        $snd = $this->snd
-            ->quoteAcceptable($quote)
-            ->get();
+        $multi_year = $this->multiYearDiscount->quoteAcceptable($quote)->get();
+        $pre_pay = $this->prePayDiscount->quoteAcceptable($quote)->get();
+        $promotions = $this->promotionalDiscount->quoteAcceptable($quote)->get();
+        $snd = $this->snd->quoteAcceptable($quote)->get();
 
         return compact('multi_year', 'pre_pay', 'promotions', 'snd');
     }
@@ -272,7 +262,7 @@ class QuoteRepository implements QuoteRepositoryInterface
     {
         $cacheKey = "mapping-review-data:{$quote->id}";
 
-        if(isset($clearCache) && $clearCache) {
+        if (isset($clearCache) && $clearCache) {
             Cache::forget($cacheKey);
         }
 
@@ -289,15 +279,10 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function rowsGroups(string $id): Collection
     {
         $quote = $this->find($id);
-        $groups = $quote->getGroupedRows();
-        $group_description = collect($quote->group_description);
+        $groups = $quote->groupedRows()->get();
+        $groups_meta = $quote->getGroupDescriptionWithMeta();
 
-        return $groups->groupBy('group_name')->transform(function ($rows, $group_name) use ($group_description) {
-            $id = $group_description->firstWhere('name', '===', $group_name)['id'] ?? null;
-            $rows = collect($rows)->exceptEach('group_name');
-
-            return compact('id', 'group_name', 'rows');
-        })->values();
+        return $groups->rowsToGroups('group_name', $groups_meta)->exceptEach('group_name');
     }
 
     public function submit(Quote $quote): void
@@ -316,14 +301,31 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     public function draftOrSubmit(Collection $state, Quote $quote): void
     {
-        if(!$state->has('save') || !$state->get('save')) {
+        if (!$state->has('save') || !$state->get('save')) {
             $this->draft($quote);
             return;
         }
 
-        if($state->get('save')) {
+        if ($state->get('save')) {
             $this->submit($quote);
         }
+    }
+
+    public function findGroupDescription(string $id, string $quote_id): Collection
+    {
+        $quote = $this->find($quote_id);
+
+        $group_key = $quote->findGroupDescription($id);
+        $group_key === false && abort(404, 'The Group Description is not found.');
+
+        $group = collect($quote->group_description)->get($group_key);
+        $groups_meta = $quote->getGroupDescriptionWithMeta(null, false, $group['name']);
+
+        $group = $quote->groupedRows(null, false, $group['name'])->get()
+            ->rowsToGroups('group_name', $groups_meta)->exceptEach('group_name')
+            ->first();
+
+        return $group;
     }
 
     public function createGroupDescription(StoreGroupDescriptionRequest $request, string $quote_id): Collection
@@ -338,11 +340,63 @@ class QuoteRepository implements QuoteRepositoryInterface
         $quote->rowsData()->whereIn('imported_rows.id', $rows)
             ->update(['group_name' => $group->get('name')]);
 
-        $quote->group_description = collect($quote->group_description)->values()->push($group);
+        $quote->group_description = collect($quote->group_description)->push($group)->values();
 
         $quote->save();
 
         return $group;
+    }
+
+    public function updateGroupDescription(UpdateGroupDescriptionRequest $request, string $id, string $quote_id): bool
+    {
+        $quote = $this->find($quote_id);
+
+        $group_description = collect($quote->group_description);
+
+        $data = collect($request->validated());
+        $group = $data->only(['name', 'search_text'])->toArray();
+        $rows = $data->get('rows', []);
+
+        $updatableKey = $quote->findGroupDescription($id);
+
+        if ($updatableKey === false) {
+            return false;
+        }
+
+        $updatableGroup = $group_description->get($updatableKey);
+
+        $quote->rowsData()->whereGroupName($updatableGroup['name'])
+            ->update(['group_name' => null]);
+
+        $quote->rowsData()->whereIn('imported_rows.id', $rows)
+            ->update(['group_name' => $group['name']]);
+
+        $updatedGroup = array_merge($updatableGroup, $group);
+
+        $quote->group_description = collect($quote->group_description)->put($updatableKey, $updatedGroup)->values();
+
+        return $quote->save();
+    }
+
+    public function moveGroupDescriptionRows(MoveGroupDescriptionRowsRequest $request, string $quote_id): bool
+    {
+        $quote = $this->find($quote_id);
+
+        $group_description = collect($quote->group_description);
+
+        $from_group_key = $quote->findGroupDescription($request->from_group_id);
+        $to_group_key = $quote->findGroupDescription($request->to_group_id);
+
+        if ($from_group_key === false || $to_group_key === false) {
+            return false;
+        }
+
+        $from_group = $group_description->get($from_group_key);
+        $to_group = $group_description->get($to_group_key);
+
+        return $quote->rowsData()->whereGroupName($from_group['name'])
+            ->whereIn('imported_rows.id', $request->rows)
+            ->update(['group_name' => $to_group['name']]);
     }
 
     public function deleteGroupDescription(string $id, string $quote_id): bool
@@ -351,9 +405,7 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $group_description = collect($quote->group_description);
 
-        $removableKey = $group_description->search(function ($group, $key) use ($id) {
-            return $group['id'] === $id;
-        });
+        $removableKey = $quote->findGroupDescription($id);
 
         if ($removableKey === false) {
             return false;
@@ -364,20 +416,20 @@ class QuoteRepository implements QuoteRepositoryInterface
         $quote->rowsData()->whereGroupName($removableGroup['name'])
             ->update(['group_name' => null]);
 
-        $group_description->forget($removableKey)->values();
+        $group_description->forget($removableKey);
 
-        $quote->group_description = $group_description;
+        $quote->group_description = $group_description->isEmpty() ? null : $group_description->values();
 
         return $quote->save();
     }
 
     private function markRowsAsSelectedOrUnSelected(Collection $state, Quote $quote, bool $reject = false): void
     {
-        if(!isset($state['quote_data']['selected_rows']) && !isset($state['quote_data']['selected_rows_is_rejected'])) {
+        if (!isset($state['quote_data']['selected_rows']) && !isset($state['quote_data']['selected_rows_is_rejected'])) {
             return;
         };
 
-        if(isset($state['quote_data']['selected_rows_is_rejected']) && $state['quote_data']['selected_rows_is_rejected']) {
+        if (isset($state['quote_data']['selected_rows_is_rejected']) && $state['quote_data']['selected_rows_is_rejected']) {
             $reject = true;
         };
 
@@ -407,7 +459,7 @@ class QuoteRepository implements QuoteRepositoryInterface
     {
         $quote->list_price = $quote->countTotalPrice();
 
-        if(((float) $quote->list_price) === 0.00) {
+        if ((float) $quote->list_price === 0.0) {
             $quote->margin_percentage = 0;
             $quote->save();
 
@@ -422,7 +474,7 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     private function attachColumnsToFields(Collection $state, Quote $quote): void
     {
-        if(!isset($state['quote_data']['field_column'])) {
+        if (!isset($state['quote_data']['field_column'])) {
             return;
         }
 
@@ -431,13 +483,13 @@ class QuoteRepository implements QuoteRepositoryInterface
             $importableColumnId = $relation['importable_column_id'] ?? null;
             $attributes = collect($relation)->except(['template_field_id', 'importable_column_id'])->all();
 
-            if(!isset($templateFieldId)) {
+            if (!isset($templateFieldId)) {
                 return true;
             }
 
             $templateField = $this->templateField->whereId($templateFieldId)->first();
 
-            if(!isset($importableColumnId) && !(isset($attributes['is_default_enabled']) && $attributes['is_default_enabled'])) {
+            if (!isset($importableColumnId) && !(isset($attributes['is_default_enabled']) && $attributes['is_default_enabled'])) {
                 $quote->detachTemplateField($templateField);
                 return true;
             }
@@ -455,7 +507,7 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     private function storeQuoteFilesState(Collection $state, Quote $quote): void
     {
-        if(!isset($state['quote_data']['files'])) {
+        if (!isset($state['quote_data']['files'])) {
             return;
         }
 
@@ -464,7 +516,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         $stateFiles->each(function ($fileId) use ($quote) {
             $quoteFile = $this->quoteFile->whereId($fileId)->first();
 
-            if($quote->quoteFiles()->whereId($fileId)->exists()) {
+            if ($quote->quoteFiles()->whereId($fileId)->exists()) {
                 return true;
             }
 
@@ -474,7 +526,7 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     private function detachScheduleIfRequested(Collection $state, Quote $quote): void
     {
-        if(!isset($state['quote_data']['detach_schedule']) || !$state['quote_data']['detach_schedule']) {
+        if (!isset($state['quote_data']['detach_schedule']) || !$state['quote_data']['detach_schedule']) {
             return;
         }
 

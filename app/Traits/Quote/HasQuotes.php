@@ -6,6 +6,6 @@ trait HasQuotes
 {
     public function quotes()
     {
-        $this->hasMany(Quote::class);
+        return $this->hasMany(Quote::class);
     }
 }

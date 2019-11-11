@@ -83,4 +83,17 @@ class InvitationController extends Controller
             $this->invitation->resend($invitation->invitation_token)
         );
     }
+
+    /**
+     * Remove the specified Invitation from storage.
+     *
+     * @param Invitation $invitation
+     * @return void
+     */
+    public function destroy(Invitation $invitation)
+    {
+        return response()->json(
+            $this->invitation->delete($invitation->invitation_token)
+        );
+    }
 }

@@ -7,7 +7,7 @@ use Illuminate\Queue\SerializesModels;
 
 class InvitationMail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use SerializesModels;
 
     /**
      * Invitation instance.

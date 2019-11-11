@@ -51,6 +51,19 @@
 				},
 				{
 					"name": "Get timezones",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "4c6270bf-1a3f-427a-8d55-364eaff4272a",
+								"exec": [
+									"let response = pm.response.json();\r",
+									"pm.environment.set('timezone_id', response[0].id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
 						"header": [
@@ -404,28 +417,18 @@
 							"mode": "formdata",
 							"formdata": [
 								{
-									"key": "name",
-									"value": "Administrator",
+									"key": "email",
+									"value": "test@test.com",
 									"type": "text"
 								},
 								{
-									"key": "privileges[0][module]",
-									"value": "Quotes",
+									"key": "role_id",
+									"value": "{{role_id}}",
 									"type": "text"
 								},
 								{
-									"key": "privileges[0][privilege]",
-									"value": "Read & Write",
-									"type": "text"
-								},
-								{
-									"key": "privileges[1][module]",
-									"value": "Templates",
-									"type": "text"
-								},
-								{
-									"key": "privileges[1][privilege]",
-									"value": "Read, Write and Delete",
+									"key": "host",
+									"value": "http://chris.com",
 									"type": "text"
 								}
 							]
@@ -655,6 +658,268 @@
 								"users",
 								"deactivate",
 								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "Invitations",
+			"item": [
+				{
+					"name": "List / Search",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "3caadb95-fa4d-412b-ae7c-a8c28421c40c",
+								"exec": [
+									"let response = pm.response.json();\r",
+									"pm.environment.set('role_id', response.data[0].id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/users/?per_page=40",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"users",
+								""
+							],
+							"query": [
+								{
+									"key": "order_by_created_at",
+									"value": "desc",
+									"disabled": true
+								},
+								{
+									"key": "order_by_name",
+									"value": "desc",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "MCA",
+									"disabled": true
+								},
+								{
+									"key": "per_page",
+									"value": "40"
+								},
+								{
+									"key": "search",
+									"value": "sup",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/users/{{user_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"users",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Resend",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/invitations/resend/82c0d6d8434b0dee0a011e27cbfa375b",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"invitations",
+								"resend",
+								"82c0d6d8434b0dee0a011e27cbfa375b"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/users/deactivate/{{user_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"users",
+								"deactivate",
+								"{{user_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"url": {
+							"raw": "http://localhost:8000/api/invitations/340bd421-23d8-4c02-9195-67ef44897429",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"invitations",
+								"340bd421-23d8-4c02-9195-67ef44897429"
 							]
 						}
 					},
@@ -1408,6 +1673,402 @@
 				{
 					"name": "Steps",
 					"item": [
+						{
+							"name": "Group Description",
+							"item": [
+								{
+									"name": "Store Group Description",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"id": "cb8fbd0a-d9b7-4918-bf2d-eb654e9fe2d4",
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"id": "054e287a-ee2e-4ec0-b62b-16199a476aac",
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "POST",
+										"header": [
+											{
+												"key": "Accept",
+												"type": "text",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "formdata",
+											"formdata": [
+												{
+													"key": "name",
+													"value": "Group 1",
+													"type": "text"
+												},
+												{
+													"key": "search_text",
+													"value": "123",
+													"type": "text"
+												},
+												{
+													"key": "rows[0]",
+													"value": "54393472-9747-4e9f-bacb-0566007cbecc",
+													"type": "text"
+												},
+												{
+													"key": "rows[1]",
+													"value": "60d70ffd-7840-4c41-b45f-58a053835ee3",
+													"type": "text"
+												}
+											]
+										},
+										"url": {
+											"raw": "http://localhost:8000/api/quotes/groups/{{quote_id}}",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8000",
+											"path": [
+												"api",
+												"quotes",
+												"groups",
+												"{{quote_id}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Update Group Description",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"id": "cb8fbd0a-d9b7-4918-bf2d-eb654e9fe2d4",
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"id": "054e287a-ee2e-4ec0-b62b-16199a476aac",
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Accept",
+												"type": "text",
+												"value": "application/json"
+											},
+											{
+												"key": "Content-Type",
+												"name": "Content-Type",
+												"value": "application/x-www-form-urlencoded",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "urlencoded",
+											"urlencoded": [
+												{
+													"key": "name",
+													"value": "Group 1",
+													"type": "text"
+												},
+												{
+													"key": "search_text",
+													"value": "123",
+													"type": "text"
+												},
+												{
+													"key": "rows[0]",
+													"value": "54393472-9747-4e9f-bacb-0566007cbecc",
+													"type": "text"
+												},
+												{
+													"key": "rows[1]",
+													"value": "60d70ffd-7840-4c41-b45f-58a053835ee3",
+													"type": "text"
+												}
+											]
+										},
+										"url": {
+											"raw": "http://localhost:8000/api/quotes/groups/{{quote_id}}/a423e211-0026-4bcf-819e-512bb427d136",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8000",
+											"path": [
+												"api",
+												"quotes",
+												"groups",
+												"{{quote_id}}",
+												"a423e211-0026-4bcf-819e-512bb427d136"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Move Group Description Rows",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"id": "cb8fbd0a-d9b7-4918-bf2d-eb654e9fe2d4",
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"id": "054e287a-ee2e-4ec0-b62b-16199a476aac",
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Accept",
+												"type": "text",
+												"value": "application/json"
+											},
+											{
+												"key": "Content-Type",
+												"name": "Content-Type",
+												"type": "text",
+												"value": "application/x-www-form-urlencoded"
+											}
+										],
+										"body": {
+											"mode": "urlencoded",
+											"urlencoded": [
+												{
+													"key": "from_group_id",
+													"value": "344a0a32-78c1-4293-b2fd-cabba431af60",
+													"type": "text"
+												},
+												{
+													"key": "to_group_id",
+													"value": "34f78939-7de1-4f8c-838a-56b591f03e01",
+													"type": "text"
+												},
+												{
+													"key": "rows[0]",
+													"value": "9488767b-df39-4d09-8efc-92ff5ed588b9",
+													"type": "text"
+												},
+												{
+													"key": "rows[1]",
+													"value": "c66aed32-ff2b-40eb-a35d-09a20b4f78d5",
+													"type": "text"
+												}
+											]
+										},
+										"url": {
+											"raw": "http://localhost:8000/api/quotes/groups/{{quote_id}}",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8000",
+											"path": [
+												"api",
+												"quotes",
+												"groups",
+												"{{quote_id}}"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Delete Group Description",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"id": "cb8fbd0a-d9b7-4918-bf2d-eb654e9fe2d4",
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										},
+										{
+											"listen": "prerequest",
+											"script": {
+												"id": "054e287a-ee2e-4ec0-b62b-16199a476aac",
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "DELETE",
+										"header": [
+											{
+												"key": "Accept",
+												"type": "text",
+												"value": "application/json"
+											}
+										],
+										"url": {
+											"raw": "http://localhost:8000/api/quotes/groups/{{quote_id}}/e80e899c-1852-4be1-bb21-aaa6c4802432",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8000",
+											"path": [
+												"api",
+												"quotes",
+												"groups",
+												"{{quote_id}}",
+												"e80e899c-1852-4be1-bb21-aaa6c4802432"
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Get Quote Rows Groups",
+									"event": [
+										{
+											"listen": "prerequest",
+											"script": {
+												"id": "df7a931a-b0a2-426b-a504-5ddf7e2aecd4",
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										},
+										{
+											"listen": "test",
+											"script": {
+												"id": "7ed90f23-faba-4220-825a-1b492265dfea",
+												"exec": [
+													""
+												],
+												"type": "text/javascript"
+											}
+										}
+									],
+									"request": {
+										"auth": {
+											"type": "bearer",
+											"bearer": [
+												{
+													"key": "token",
+													"value": "{{token}}",
+													"type": "string"
+												}
+											]
+										},
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"type": "text",
+												"value": "application/json"
+											}
+										],
+										"url": {
+											"raw": "http://localhost:8000/api/quotes/groups/{{quote_id}}",
+											"protocol": "http",
+											"host": [
+												"localhost"
+											],
+											"port": "8000",
+											"path": [
+												"api",
+												"quotes",
+												"groups",
+												"{{quote_id}}"
+											]
+										}
+									},
+									"response": []
+								}
+							],
+							"protocolProfileBehavior": {},
+							"_postman_isSubFolder": true
+						},
 						{
 							"name": "Step 1",
 							"event": [
@@ -2555,8 +3216,7 @@
 							{
 								"key": "Accept",
 								"type": "text",
-								"value": "application/json",
-								"disabled": true
+								"value": "application/json"
 							},
 							{
 								"key": "Content-Type",
@@ -2571,7 +3231,8 @@
 								{
 									"key": "quote_id",
 									"value": "{{quote_id}}",
-									"type": "text"
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "quote_data[company_id]",
@@ -2612,7 +3273,7 @@
 								},
 								{
 									"key": "save",
-									"value": "1",
+									"value": "0",
 									"description": "True to save Quote | False to draft Quote",
 									"type": "text"
 								},
@@ -2678,40 +3339,43 @@
 								{
 									"key": "margin[quote_type]",
 									"value": "New",
-									"type": "text"
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "margin[type]",
 									"value": "By Country",
 									"description": "No Margin|Standard",
-									"type": "text"
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "margin[method]",
 									"value": "No Margin",
-									"type": "text"
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "margin[value]",
-									"value": "0",
-									"type": "text"
+									"value": "10",
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "margin[is_fixed]",
 									"value": "0",
-									"type": "text"
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "margin[delete]",
 									"value": "1",
-									"type": "text",
-									"disabled": true
+									"type": "text"
 								},
 								{
 									"key": "quote_data[detach_schedule]",
 									"value": "1",
-									"type": "text",
-									"disabled": true
+									"type": "text"
 								},
 								{
 									"key": "discounts[0][id]",
@@ -2787,18 +3451,19 @@
 								{
 									"key": "quote_data[buy_price]",
 									"value": "90",
-									"type": "text"
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "quote_data[calculate_list_price]",
 									"value": "0",
-									"type": "text"
+									"type": "text",
+									"disabled": true
 								},
 								{
 									"key": "quote_data[custom_discount]",
 									"value": "10",
-									"type": "text",
-									"disabled": true
+									"type": "text"
 								},
 								{
 									"key": "quote_data[group_description][0][name]",
@@ -2885,7 +3550,8 @@
 								"id": "194f4369-9f57-4a10-a0d3-781cd48a3220",
 								"exec": [
 									"let response = pm.response.json();\r",
-									"pm.environment.set('customer_id', response[1].id);"
+									"pm.environment.set('customer_id', response[1].id);\r",
+									"pm.environment.set('customers_count', response.length);"
 								],
 								"type": "text/javascript"
 							}
@@ -7339,6 +8005,37 @@
 								"s4",
 								"quotes",
 								"CQ000000248A9E"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Receive Quote Data from S4",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"customer_name\"  : \"ABC Co Ltd\",\n\t\"rfq_number\" : \"CQ000000248A9E\",\n    \"service_level\" : \"9X5 On-site: SBD to 30/04/2021\",\n    \"quotation_valid_until\" : \"11/15/2019\",\n\t\"support_start_date\" : \"10/29/2019\",\n\t\"support_end_date\" : \"10/29/2022\",\n\t\"payment_terms\" : \"30 days after invoice date\",\n\t\"invoicing_terms\" : \"Upfront\",\n\t\"addresses\" : [\n\t\t{\n\t\t\t\"address_type\" :  \"Equipment\",\n\t\t\t\"address_1\" :  \"Level 215, 628 Bourke Street\",\n\t\t\t\"address_2\" : null,\n\t\t\t\"city\" : \"MELBOURNE\",\n\t\t\t\"state\" : \"VICTORIA\",\n\t\t\t\"state_code\" : \"VC\",\n\t\t\t\"post_code\" : \"3000\",\n\t\t\t\"country_code\" : \"GB\",\n\t\t\t\"contact_name\" : \"Smith\",\n\t\t\t\"contact_number\" : \"0123456789\"\n\t\t},\n\t\t{\n\t\t\t\"address_type\" :  \"Software\",\n\t\t\t\"address_1\" :  \"Level 225, 989 Bourke Street\",\n\t\t\t\"address_2\" : null,\n\t\t\t\"city\" : \"MELBOURNE\",\n\t\t\t\"state\" : \"VICTORIA\",\n\t\t\t\"state_code\" : \"VC\",\n\t\t\t\"post_code\" : \"3000\",\n\t\t\t\"country_code\" : \"GB\",\n\t\t\t\"contact_name\" : \"John  Doe\",\n\t\t\t\"contact_number\" : \"0123456789\"\n\t\t}\t\t\n\t]\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/s4/quotes",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"s4",
+								"quotes"
 							]
 						}
 					},

@@ -23,7 +23,17 @@ class InviteUserRequest extends FormRequest
     public function rules()
     {
         return [
-            'email' => 'required|string|email|unique:users|unique:invitations',
+            'email' => [
+                'required',
+                'string',
+                'email',
+                Rule::unique('users', 'email')->where(function ($query) {
+                    $query->whereNull('deleted_at');
+                }),
+                Rule::unique('invitations', 'email')->where(function ($query) {
+                    $query->whereNull('deleted_at');
+                })
+            ],
             'host' => 'required|string|url',
             'role_id' => [
                 'required',

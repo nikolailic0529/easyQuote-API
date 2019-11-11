@@ -7,6 +7,7 @@ class Timezone extends UuidModel implements HasOrderedScope
 {
     public function scopeOrdered($query)
     {
-        return $query->orderBy('offset', 'desc');
+        return $query->orderByRaw("field(`text`, '(UTC+01:00) Edinburgh, London', '(UTC) Edinburgh, London') desc")
+            ->orderBy('offset');
     }
 }

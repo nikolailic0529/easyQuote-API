@@ -21,18 +21,21 @@ class CustomersSeeder extends Seeder
         $customers = json_decode(file_get_contents(__DIR__ . '/models/customers.json'), true);
 
         collect($customers)->each(function ($customer) {
-            DB::table('customers')->insert([
-                'id' => (string) Uuid::generate(4),
-                'name' => $customer['name'],
-                'rfq' => $customer['rfq'],
-                'valid_until' => now()->create($customer['valid_until'])->toDateTimeString(),
-                'support_start' => now()->create($customer['support_start'])->toDateTimeString(),
-                'support_end' => now()->create($customer['support_end'])->toDateTimeString(),
-                'payment_terms' => $customer['payment_terms'],
-                'invoicing_terms' => $customer['invoicing_terms'],
-                'service_level' => $customer['service_level'],
-                'created_at' => now()->toDateTimeString()
-            ]);
+            collect()->times(6)->each(function ($time) use ($customer) {
+                $rfq = "CQ00" . mb_strtoupper(uniqid());
+                DB::table('customers')->insert([
+                    'id' => (string) Uuid::generate(4),
+                    'name' => $customer['name'],
+                    'rfq' => $rfq,
+                    'valid_until' => now()->create($customer['valid_until'])->addDays(rand(101, 300))->toDateTimeString(),
+                    'support_start' => now()->create($customer['support_start'])->addDays(rand(1, 100))->toDateTimeString(),
+                    'support_end' => now()->create($customer['support_end'])->addDays(rand(101, 300))->toDateTimeString(),
+                    'payment_terms' => $customer['payment_terms'],
+                    'invoicing_terms' => $customer['invoicing_terms'],
+                    'service_level' => $customer['service_level'],
+                    'created_at' => now()->toDateTimeString()
+                ]);
+            });
         });
     }
 }

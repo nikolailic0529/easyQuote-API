@@ -32,7 +32,7 @@ interface InvitationRepositoryInterface
     public function userQuery(): Builder;
 
     /**
-     * Find Invitation.
+     * Find specified Invitation.
      *
      * @param string $id
      * @return Invitation
@@ -40,18 +40,26 @@ interface InvitationRepositoryInterface
     public function find(string $id): Invitation;
 
     /**
-     * Resend Invitation.
+     * Resend specified Invitation.
      *
      * @param string $id
-     * @return boolean
+     * @return bool
      */
     public function resend(string $id): bool;
 
     /**
-     * Cancel Invitation.
+     * Cancel specified Invitation.
      *
      * @param string $id
-     * @return boolean
+     * @return bool
      */
     public function cancel(string $id): bool;
+
+    /**
+     * Delete specified Invitation.
+     *
+     * @param string $id
+     * @return bool
+     */
+    public function delete(string $id): bool;
 }

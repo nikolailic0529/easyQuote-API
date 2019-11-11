@@ -6,6 +6,6 @@ trait BelongsToCustomer
 {
     public function customer()
     {
-        return $this->belongsTo(Customer::class);
+        return $this->belongsTo(Customer::class)->withDefault(Customer::make([]));
     }
 }

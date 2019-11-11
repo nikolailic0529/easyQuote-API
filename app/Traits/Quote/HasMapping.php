@@ -1,13 +1,11 @@
-<?php
-
-namespace App\Traits\Quote;
+<?php namespace App\Traits\Quote;
 
 use App\Models\{
     Quote\FieldColumn,
     QuoteFile\ImportableColumn,
     QuoteTemplate\TemplateField
 };
-use Illuminate\Support\Facades\DB;
+use DB, Arr;
 
 trait HasMapping
 {
@@ -129,6 +127,7 @@ trait HasMapping
                                             str_to_date(`imported_columns`.`value`, '%d/%m/%Y'),
                                             str_to_date(`imported_columns`.`value`, '%Y.%m.%d'),
                                             str_to_date(`imported_columns`.`value`, '%Y/%m/%d'),
+                                            str_to_date(`imported_columns`.`value`, '%Y-%d-%m'),
                                             if(`imported_columns`.`value` regexp '^[0-9]{5}$', date_add(date_add(date(if(`imported_columns`.`value` < 60, '1899-12-31', '1899-12-30')), interval floor(`imported_columns`.`value`) day), interval floor(86400*(`imported_columns`.`value`-floor(`imported_columns`.`value`))) second), null),
                                             `customers`.`{$default}`
                                         ),
@@ -171,12 +170,14 @@ trait HasMapping
 
     public function rowsDataByColumnsCalculated(?array $flags = null, bool $calculate = false)
     {
-        if (!$calculate) {
+        $templateFields = $this->templateFieldsToArray();
+
+        if (!$calculate || !in_array('price', $templateFields)) {
             return $this->rowsDataByColumns($flags);
         }
 
         $columns = $this->templateFieldsToArray('price');
-        array_unshift($columns, 'rows_data.id');
+        array_unshift($columns, 'id');
 
         return DB::query()
             ->fromSub($this->rowsDataByColumns($flags), 'rows_data')
@@ -203,26 +204,45 @@ trait HasMapping
             return $this->rowsDataByColumnsCalculated($flags, $calculate)->get();
         }
 
-        return $this->getGroupedRows($flags, $calculate);
+        return $this->groupedRows($flags, $calculate)->get();
     }
 
-    public function getGroupedRows(?array $flags = null, bool $calculate = false)
+    public function groupedRows(?array $flags = null, bool $calculate = false, ?string $group_name = null)
     {
         $selectable = array_merge(
             ['rows_data.id', 'groups.group_name'],
             $this->templateFieldsToArray()
         );
 
-        $groups = DB::query()->fromSub($this->rowsDataByColumnsCalculated($flags, $calculate), 'rows_data')
+        return DB::query()->fromSub($this->rowsDataByColumnsCalculated($flags, $calculate), 'rows_data')
             ->select($selectable)
-            ->join('imported_rows as groups', function ($join) {
+            ->join('imported_rows as groups', function ($join) use ($flags, $group_name) {
                 $join->on('groups.id', '=', 'rows_data.id')
                     ->whereNotNull('groups.group_name');
-            })
-            ->groupBy('rows_data.id')
-            ->get();
 
-        return $groups;
+                filled($group_name) && $join->whereGroupName($group_name);
+            })
+            ->groupBy('rows_data.id');
+    }
+
+    public function groupedRowsMeta(?array $flags = null, bool $calculate = false, ?string $group_name = null)
+    {
+        return DB::query()->fromSub($this->groupedRows($flags, $calculate, $group_name), 'rows_data')
+            ->groupBy('group_name')
+            ->select('group_name')
+            ->selectRaw('sum(`price`) as `total_price`')
+            ->selectRaw('count(`id`) as `total_count`');
+    }
+
+    public function getGroupDescriptionWithMeta(?array $flags = null, bool $calculate = false, ?string $group_name = null)
+    {
+        $groups = $this->groupedRows($flags, $calculate, $group_name)->get();
+        $groups_meta = $this->groupedRowsMeta($flags, $calculate, $group_name)->get();
+        $groups_description = collect($this->group_description);
+
+        return $groups_meta->transform(function ($group) use ($groups_description) {
+            return array_merge($groups_description->firstWhere('name', '===', $group->group_name) ?? [], (array) $group);
+        });
     }
 
     public function countTotalPrice()
@@ -231,7 +251,7 @@ trait HasMapping
             return 0.00;
         }
 
-        $sub = $this->rowsDataByColumnsCalculated(['where_selected']);
+        $sub = $this->rowsDataByColumnsCalculated(['where_selected'], $this->calculate_list_price);
         $query = DB::query()->fromSub($sub, 'rows_data');
 
         return $query->sum('price');

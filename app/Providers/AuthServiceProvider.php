@@ -8,12 +8,14 @@ use App\Models \ {
     Quote\Discount\Discount,
     QuoteFile\QuoteFile,
     QuoteTemplate\QuoteTemplate,
+    Collaboration\Invitation,
     Role,
     User
 };
 use App\Policies \ {
     CompanyPolicy,
     DiscountPolicy,
+    InvitationPolicy,
     MarginPolicy,
     QuoteFilePolicy,
     QuotePolicy,
@@ -41,7 +43,8 @@ class AuthServiceProvider extends ServiceProvider
         Discount::class => DiscountPolicy::class,
         Margin::class => MarginPolicy::class,
         Role::class => RolePolicy::class,
-        User::class => UserPolicy::class
+        User::class => UserPolicy::class,
+        Invitation::class => InvitationPolicy::class
     ];
 
     /**

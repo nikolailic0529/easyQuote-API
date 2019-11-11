@@ -7,7 +7,7 @@
                 "child": [
                     {
                         "id": "7e7313c6-26a7-4c66-a63a-42a44297c67f",
-                        "class": "col-lg-12 border-right",
+                        "class": "col-lg-12",
                         "controls": [
                             {
                                 "id": "04bb6182-2768-486b-9961-1b5bdebaefbf",
@@ -42,7 +42,7 @@
                 "child": [
                     {
                         "id": "20b8033e-434b-47ac-96c0-dfb361dcc6d3",
-                        "class": "col-lg-12 border-right",
+                        "class": "col-lg-12",
                         "controls": [
                             {
                                 "id": "cd2c69d9-4956-494a-9a82-a20d4a7e3ed2",
@@ -147,7 +147,7 @@
                     },
                     {
                         "id": "9e8a0b77-2bc4-4fde-9f18-5250907a425d",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "service_agreement_id",
@@ -216,7 +216,7 @@
                     },
                     {
                         "id": "9e8a0b77-2bc4-4fde-9f18-5250907a425d",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "system_handle",
@@ -318,7 +318,7 @@
                     },
                     {
                         "id": "9e8a0b77-2bc4-4fde-9f18-5250907a425d",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "software_address",
@@ -420,7 +420,7 @@
                     },
                     {
                         "id": "9e8a0b77-2bc4-4fde-9f18-5250907a425d",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "software_contact",
@@ -522,7 +522,7 @@
                     },
                     {
                         "id": "9e8a0b77-2bc4-4fde-9f18-5250907a425d",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "software_phone",
@@ -638,7 +638,7 @@
                     },
                     {
                         "id": "9e8a0b77-2bc4-4fde-9f18-5250907a425d",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [],
                         "position": 4
                     }
@@ -664,11 +664,11 @@
                     },
                     {
                         "id": "e55b70b4-aff8-4ed0-9494-de475df75061",
-                        "class": "col-lg-3",
+                        "class": "col-lg-3 border-right",
                         "controls": [
                             {
                                 "id": "company_logo_x3",
-                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/companies/KnugoKUD2Y07P63COsSyRWgH7a11CzUrmFTEiUMn@x2.png",
+                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/companies/KnugoKUD2Y07P63COsSyRWgH7a11CzUrmFTEiUMn@x3.png",
                                 "name": "company_logo_x3",
                                 "type": "img",
                                 "class": "s4-form-control",
@@ -687,11 +687,11 @@
                     },
                     {
                         "id": "4dec1008-5367-4324-bc9f-00e24a187276",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "vendor_logo_x3",
-                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/vendors/zFVhzOfBAR9JzQEM0qeNUbpmuPsFUCFCb8zgxCaP@x2.png",
+                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/vendors/zFVhzOfBAR9JzQEM0qeNUbpmuPsFUCFCb8zgxCaP@x3.png",
                                 "name": "vendor_logo_x3",
                                 "type": "img",
                                 "class": "s4-form-control",
@@ -767,7 +767,7 @@
                     },
                     {
                         "id": "8c2d140b-2c01-4705-9ce0-69a155e1a3dc",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [],
                         "position": 3
                     }
@@ -830,7 +830,7 @@
                     },
                     {
                         "id": "a4087ad4-0893-423e-af63-9d4c4cb6c6f6",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -893,7 +893,7 @@
                     },
                     {
                         "id": "a4087ad4-0893-423e-af63-9d4c4cb6c6f6",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -911,7 +911,7 @@
                 "child": [
                     {
                         "id": "7142a607-6e91-4d36-8c73-6432feddd182",
-                        "class": "col-lg-12 border-right",
+                        "class": "col-lg-12",
                         "controls": [
                             {
                                 "id": "ae1e9dc9-9458-4172-a2b7-6086a29ce1b0",
@@ -991,7 +991,7 @@
                     },
                     {
                         "id": "a4087ad4-0893-423e-af63-9d4c4cb6c6f6",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [],
                         "position": 3
                     }
@@ -1009,7 +1009,7 @@
                 "child": [
                     {
                         "id": "88647d86-d061-43d5-9078-1e232b5ea47e",
-                        "class": "col-lg-12 border-right",
+                        "class": "col-lg-12",
                         "controls": [
                             {
                                 "id": "0b2402a3-38de-47f8-a0f6-83b7c3cc3764",
@@ -1089,7 +1089,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -1152,7 +1152,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -1215,7 +1215,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -1278,7 +1278,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -1341,7 +1341,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -1404,7 +1404,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -1483,7 +1483,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -1546,7 +1546,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [],
                         "position": 3
                     }
@@ -1609,7 +1609,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -1627,7 +1627,7 @@
                 "child": [
                     {
                         "id": "88647d86-d061-43d5-9078-1e232b5ea47e",
-                        "class": "col-lg-12 border-right",
+                        "class": "col-lg-12",
                         "controls": [
                             {
                                 "id": "d8413f5a-86f4-4228-a282-be3dd3699fa0",
@@ -1691,7 +1691,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -1738,7 +1738,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -1785,7 +1785,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -1832,7 +1832,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -1879,7 +1879,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -1943,7 +1943,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -2007,7 +2007,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -2071,7 +2071,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -2097,11 +2097,11 @@
                     },
                     {
                         "id": "271be802-e645-4b7f-863c-efb911a1089a",
-                        "class": "col-lg-3",
+                        "class": "col-lg-3 border-right",
                         "controls": [
                             {
                                 "id": "company_logo_x3",
-                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/companies/KnugoKUD2Y07P63COsSyRWgH7a11CzUrmFTEiUMn@x2.png",
+                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/companies/KnugoKUD2Y07P63COsSyRWgH7a11CzUrmFTEiUMn@x3.png",
                                 "name": "company_logo_x3",
                                 "type": "img",
                                 "class": "s4-form-control",
@@ -2120,11 +2120,11 @@
                     },
                     {
                         "id": "af8777bb-6c28-4d30-86b3-e3ab425d8b8b",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "vendor_logo_x3",
-                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/vendors/zFVhzOfBAR9JzQEM0qeNUbpmuPsFUCFCb8zgxCaP@x2.png",
+                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/vendors/zFVhzOfBAR9JzQEM0qeNUbpmuPsFUCFCb8zgxCaP@x3.png",
                                 "name": "vendor_logo_x3",
                                 "type": "img",
                                 "class": "s4-form-control",
@@ -2200,7 +2200,7 @@
                     },
                     {
                         "id": "8c2d140b-2c01-4705-9ce0-69a155e1a3dc",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [],
                         "position": 3
                     }
@@ -2263,7 +2263,7 @@
                     },
                     {
                         "id": "734443b1-7d3b-45d2-9e14-97b396e88080",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -2326,7 +2326,7 @@
                     },
                     {
                         "id": "734443b1-7d3b-45d2-9e14-97b396e88080",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -2344,7 +2344,7 @@
                 "child": [
                     {
                         "id": "04d9adf1-8257-4001-b6bf-6fbfc250532f",
-                        "class": "col-lg-12 border-right",
+                        "class": "col-lg-12",
                         "controls": [
                             {
                                 "id": "087c4ed7-f16b-4250-b025-69ec72801d2f",
@@ -2379,7 +2379,7 @@
                 "child": [
                     {
                         "id": "04d9adf1-8257-4001-b6bf-6fbfc250532f",
-                        "class": "col-lg-12 border-right",
+                        "class": "col-lg-12",
                         "controls": [
                             {
                                 "id": "f86c0d28-b074-4758-9295-43d8cbe1214b",
@@ -2464,7 +2464,7 @@
                 "child": [
                     {
                         "id": "7e7313c6-26a7-4c66-a63a-42a44297c67f",
-                        "class": "col-lg-12 border-right",
+                        "class": "col-lg-12",
                         "controls": [
                             {
                                 "id": "04bb6182-2768-486b-9961-1b5bdebaefbf",
@@ -2499,7 +2499,7 @@
                 "child": [
                     {
                         "id": "20b8033e-434b-47ac-96c0-dfb361dcc6d3",
-                        "class": "col-lg-12 border-right",
+                        "class": "col-lg-12",
                         "controls": [
                             {
                                 "id": "cd2c69d9-4956-494a-9a82-a20d4a7e3ed2",
@@ -2604,7 +2604,7 @@
                     },
                     {
                         "id": "9e8a0b77-2bc4-4fde-9f18-5250907a425d",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "service_agreement_id",
@@ -2673,7 +2673,7 @@
                     },
                     {
                         "id": "9e8a0b77-2bc4-4fde-9f18-5250907a425d",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "system_handle",
@@ -2775,7 +2775,7 @@
                     },
                     {
                         "id": "9e8a0b77-2bc4-4fde-9f18-5250907a425d",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "software_address",
@@ -2877,7 +2877,7 @@
                     },
                     {
                         "id": "9e8a0b77-2bc4-4fde-9f18-5250907a425d",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "software_contact",
@@ -2979,7 +2979,7 @@
                     },
                     {
                         "id": "9e8a0b77-2bc4-4fde-9f18-5250907a425d",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "software_phone",
@@ -3095,7 +3095,7 @@
                     },
                     {
                         "id": "9e8a0b77-2bc4-4fde-9f18-5250907a425d",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [],
                         "position": 4
                     }
@@ -3121,11 +3121,11 @@
                     },
                     {
                         "id": "e55b70b4-aff8-4ed0-9494-de475df75061",
-                        "class": "col-lg-3",
+                        "class": "col-lg-3 border-right",
                         "controls": [
                             {
                                 "id": "company_logo_x3",
-                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/companies/KnugoKUD2Y07P63COsSyRWgH7a11CzUrmFTEiUMn@x2.png",
+                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/companies/KnugoKUD2Y07P63COsSyRWgH7a11CzUrmFTEiUMn@x3.png",
                                 "name": "company_logo_x3",
                                 "type": "img",
                                 "class": "s4-form-control",
@@ -3144,11 +3144,11 @@
                     },
                     {
                         "id": "4dec1008-5367-4324-bc9f-00e24a187276",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "vendor_logo_x3",
-                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/vendors/zFVhzOfBAR9JzQEM0qeNUbpmuPsFUCFCb8zgxCaP@x2.png",
+                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/vendors/zFVhzOfBAR9JzQEM0qeNUbpmuPsFUCFCb8zgxCaP@x3.png",
                                 "name": "vendor_logo_x3",
                                 "type": "img",
                                 "class": "s4-form-control",
@@ -3224,7 +3224,7 @@
                     },
                     {
                         "id": "8c2d140b-2c01-4705-9ce0-69a155e1a3dc",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [],
                         "position": 3
                     }
@@ -3287,7 +3287,7 @@
                     },
                     {
                         "id": "a4087ad4-0893-423e-af63-9d4c4cb6c6f6",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -3350,7 +3350,7 @@
                     },
                     {
                         "id": "a4087ad4-0893-423e-af63-9d4c4cb6c6f6",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -3368,7 +3368,7 @@
                 "child": [
                     {
                         "id": "7142a607-6e91-4d36-8c73-6432feddd182",
-                        "class": "col-lg-12 border-right",
+                        "class": "col-lg-12",
                         "controls": [
                             {
                                 "id": "ae1e9dc9-9458-4172-a2b7-6086a29ce1b0",
@@ -3448,7 +3448,7 @@
                     },
                     {
                         "id": "a4087ad4-0893-423e-af63-9d4c4cb6c6f6",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [],
                         "position": 3
                     }
@@ -3466,7 +3466,7 @@
                 "child": [
                     {
                         "id": "88647d86-d061-43d5-9078-1e232b5ea47e",
-                        "class": "col-lg-12 border-right",
+                        "class": "col-lg-12",
                         "controls": [
                             {
                                 "id": "0b2402a3-38de-47f8-a0f6-83b7c3cc3764",
@@ -3546,7 +3546,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -3609,7 +3609,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -3672,7 +3672,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -3735,7 +3735,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -3798,7 +3798,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -3861,7 +3861,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -3940,7 +3940,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -4003,7 +4003,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [],
                         "position": 3
                     }
@@ -4066,7 +4066,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -4084,7 +4084,7 @@
                 "child": [
                     {
                         "id": "88647d86-d061-43d5-9078-1e232b5ea47e",
-                        "class": "col-lg-12 border-right",
+                        "class": "col-lg-12",
                         "controls": [
                             {
                                 "id": "d8413f5a-86f4-4228-a282-be3dd3699fa0",
@@ -4148,7 +4148,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -4195,7 +4195,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -4242,7 +4242,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -4289,7 +4289,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -4336,7 +4336,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -4400,7 +4400,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -4464,7 +4464,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -4528,7 +4528,7 @@
                     },
                     {
                         "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -4554,11 +4554,11 @@
                     },
                     {
                         "id": "271be802-e645-4b7f-863c-efb911a1089a",
-                        "class": "col-lg-3",
+                        "class": "col-lg-3 border-right",
                         "controls": [
                             {
                                 "id": "company_logo_x3",
-                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/companies/KnugoKUD2Y07P63COsSyRWgH7a11CzUrmFTEiUMn@x2.png",
+                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/companies/KnugoKUD2Y07P63COsSyRWgH7a11CzUrmFTEiUMn@x3.png",
                                 "name": "company_logo_x3",
                                 "type": "img",
                                 "class": "s4-form-control",
@@ -4577,11 +4577,11 @@
                     },
                     {
                         "id": "af8777bb-6c28-4d30-86b3-e3ab425d8b8b",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "vendor_logo_x3",
-                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/vendors/zFVhzOfBAR9JzQEM0qeNUbpmuPsFUCFCb8zgxCaP@x2.png",
+                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/vendors/zFVhzOfBAR9JzQEM0qeNUbpmuPsFUCFCb8zgxCaP@x3.png",
                                 "name": "vendor_logo_x3",
                                 "type": "img",
                                 "class": "s4-form-control",
@@ -4657,7 +4657,7 @@
                     },
                     {
                         "id": "8c2d140b-2c01-4705-9ce0-69a155e1a3dc",
-                        "class": "col-lg-3 border-right",
+                        "class": "col-lg-3",
                         "controls": [],
                         "position": 3
                     }
@@ -4720,7 +4720,7 @@
                     },
                     {
                         "id": "734443b1-7d3b-45d2-9e14-97b396e88080",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -4783,7 +4783,7 @@
                     },
                     {
                         "id": "734443b1-7d3b-45d2-9e14-97b396e88080",
-                        "class": "col-lg-6 border-right",
+                        "class": "col-lg-6",
                         "controls": [],
                         "position": 3
                     }
@@ -4801,7 +4801,7 @@
                 "child": [
                     {
                         "id": "04d9adf1-8257-4001-b6bf-6fbfc250532f",
-                        "class": "col-lg-12 border-right",
+                        "class": "col-lg-12",
                         "controls": [
                             {
                                 "id": "087c4ed7-f16b-4250-b025-69ec72801d2f",
@@ -4836,7 +4836,7 @@
                 "child": [
                     {
                         "id": "04d9adf1-8257-4001-b6bf-6fbfc250532f",
-                        "class": "col-lg-12 border-right",
+                        "class": "col-lg-12",
                         "controls": [
                             {
                                 "id": "f86c0d28-b074-4758-9295-43d8cbe1214b",

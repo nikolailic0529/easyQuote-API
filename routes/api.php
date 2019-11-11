@@ -37,7 +37,7 @@ Route::group(['namespace' => 'API'], function () {
             Route::put('users/activate/{user}', 'UserController@activate');
             Route::put('users/deactivate/{user}', 'UserController@deactivate');
 
-            Route::apiResource('invitations', 'InvitationController', ['only' => config('route.r')]);
+            Route::apiResource('invitations', 'InvitationController', ['only' => config('route.rd')]);
             Route::put('invitations/resend/{invitation}', 'InvitationController@resend');
             Route::put('invitations/cancel/{invitation}', 'InvitationController@cancel');
         });
@@ -103,8 +103,11 @@ Route::group(['namespace' => 'API'], function () {
             Route::post('handle', 'QuoteFilesController@handle'); // exclusive high throttle rate
             Route::get('/get/{quote}', 'QuoteController@quote'); // exclusive high throttle rate
             Route::get('/groups/{quote}', 'QuoteController@rowsGroups'); // exclusive high throttle rate
-            Route::post('/groups/{quote}', 'QuoteController@storeGroupDescription');
-            Route::delete('/groups/{quote}/{group}', 'QuoteController@destroyGroupDescription');
+            Route::get('/groups/{quote}/{group}', 'QuoteController@showGroupDescription'); // exclusive high throttle rate
+            Route::post('/groups/{quote}', 'QuoteController@storeGroupDescription'); // exclusive high throttle rate
+            Route::patch('/groups/{quote}/{group}', 'QuoteController@updateGroupDescription'); // exclusive high throttle rate
+            Route::put('/groups/{quote}', 'QuoteController@moveGroupDescriptionRows'); // exclusive high throttle rate
+            Route::delete('/groups/{quote}/{group}', 'QuoteController@destroyGroupDescription'); // exclusive high throttle rate
 
             Route::group(['middleware' => 'throttle:60,1'], function () {
                 Route::get('/discounts/{quote}', 'QuoteController@discounts');

@@ -4,9 +4,11 @@ use App\Models\Quote\Quote;
 use App\Http\Requests \ {
     StoreQuoteStateRequest,
     GetQuoteTemplatesRequest,
-    MappingReviewRequest
+    MappingReviewRequest,
+    Quote\MoveGroupDescriptionRowsRequest,
+    Quote\StoreGroupDescriptionRequest,
+    Quote\UpdateGroupDescriptionRequest
 };
-use App\Http\Requests\Quote\StoreGroupDescriptionRequest;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -128,6 +130,15 @@ interface QuoteRepositoryInterface
     public function rowsGroups(string $id): Collection;
 
     /**
+     * Retrieve specified Rows Group from specified Quote.
+     *
+     * @param string $id
+     * @param string $quote_id
+     * @return Collection
+     */
+    public function findGroupDescription(string $id, string $quote_id): Collection;
+
+    /**
      * Create Rows Group Description for specified Quote.
      *
      * @param StoreGroupDescriptionRequest $request
@@ -135,6 +146,25 @@ interface QuoteRepositoryInterface
      * @return Collection
      */
     public function createGroupDescription(StoreGroupDescriptionRequest $request, string $quote_id): Collection;
+
+    /**
+     * Update specified Rows Group Description for specified Quote.
+     *
+     * @param UpdateGroupDescriptionRequest $request
+     * @param string $id
+     * @param string $quote_id
+     * @return bool
+     */
+    public function updateGroupDescription(UpdateGroupDescriptionRequest $request, string $id, string $quote_id): bool;
+
+    /**
+     * Move specified Rows to specified Rows Group Description for specified Quote.
+     *
+     * @param MoveGroupDescriptionRowsRequest $request
+     * @param string $quote_id
+     * @return bool
+     */
+    public function moveGroupDescriptionRows(MoveGroupDescriptionRowsRequest $request, string $quote_id): bool;
 
     /**
      * Delete specified Rows Group Description from specified Quote.

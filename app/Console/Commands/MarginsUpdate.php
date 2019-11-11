@@ -1,6 +1,4 @@
-<?php
-
-namespace App\Console\Commands;
+<?php namespace App\Console\Commands;
 
 use App\Models\Quote\Margin\CountryMargin;
 use Illuminate\Console\Command;

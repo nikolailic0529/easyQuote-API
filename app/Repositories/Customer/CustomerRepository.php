@@ -18,7 +18,7 @@ class CustomerRepository implements CustomerRepositoryInterface
 
     public function all()
     {
-        return $this->customer->drafted()->get();
+        return $this->customer->doesntHave('quotes')->drafted()->get();
     }
 
     public function find(string $id)

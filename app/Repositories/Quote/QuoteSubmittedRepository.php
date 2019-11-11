@@ -5,7 +5,6 @@ use App\Contracts\Repositories \ {
     QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
 };
 use App\Contracts\Services\QuoteServiceInterface as QuoteService;
-use App\Http\Resources\QuoteResource;
 use App\Repositories\SearchableRepository;
 use App\Models\Quote\Quote;
 use Illuminate\Database\Eloquent \ {
@@ -48,36 +47,39 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     {
         $quote = $this->findByRfq($rfq);
 
-        blank($quote->submitted_data) && abort('404', 'Sorry, no data found by this RFQ number.');
+        blank($quote->submitted_data) && abort('404', __('quote.no_found_rfq_exception'));
 
         return $quote->submitted_data;
     }
 
     public function price(string $rfq)
     {
-        $file = $this->findByRfq($rfq)->priceList->original_file_path;
+        $path = $this->findByRfq($rfq)->priceList->original_file_path;
+        $storage_path = Storage::path($path);
 
-        blank($file) && abort('404', 'Sorry, no files found.');
+        (blank($path) || Storage::exists($storage_path)) && abort('404', __('quote_file.not_exists_exception'));
 
-        return Storage::path($file);
+        return $storage_path;
     }
 
     public function schedule(string $rfq)
     {
-        $file = $this->findByRfq($rfq)->paymentSchedule->original_file_path;
+        $path = $this->findByRfq($rfq)->paymentSchedule->original_file_path;
+        $storage_path = Storage::path($path);
 
-        blank($file) && abort('404', 'Sorry, no files found.');
+        (blank($path) || Storage::exists($storage_path)) && abort('404', __('quote_file.not_exists_exception'));
 
-        return Storage::path($file);
+        return $storage_path;
     }
 
     public function pdf(string $rfq)
     {
-        $file = $this->findByRfq($rfq)->generatedPdf->original_file_path;
+        $path = $this->findByRfq($rfq)->generatedPdf->original_file_path;
+        $storage_path = Storage::path($path);
 
-        blank($file) && abort('404', 'Sorry, no files found.');
+        (blank($path) || Storage::exists($storage_path)) && abort('404', __('quote_file.not_exists_exception'));
 
-        return Storage::path($file);
+        return $storage_path;
     }
 
     public function delete(string $id)

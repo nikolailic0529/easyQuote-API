@@ -1,22 +1,7 @@
 <?php namespace App\Console\Commands;
 
-use App\Models \ {
-    Role,
-    User,
-    Vendor,
-    Company,
-    Quote\Quote,
-    QuoteFile\QuoteFile,
-    QuoteTemplate\QuoteTemplate,
-    QuoteTemplate\TemplateField,
-    Quote\Discount\MultiYearDiscount,
-    Quote\Discount\PrePayDiscount,
-    Quote\Discount\PromotionalDiscount,
-    Quote\Discount\SND,
-    Quote\Margin\CountryMargin
-};
+use App\Models\User;
 use Illuminate\Console\Command;
-use Str;
 
 class CollaborationsUpdate extends Command
 {

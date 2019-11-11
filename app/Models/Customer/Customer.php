@@ -4,13 +4,20 @@ use App\Models\UuidModel;
 use App\Traits \ {
     HasAddresses,
     HasContacts,
-    Submittable
+    Submittable,
+    Quote\HasQuotes
 };
 use Illuminate\Support\Carbon;
 
 class Customer extends UuidModel
 {
-    use HasAddresses, HasContacts, Submittable;
+    use HasAddresses, HasContacts, Submittable, HasQuotes;
+
+    protected $attributes = [
+        'support_start' => null,
+        'support_end' => null,
+        'valid_until' => null
+    ];
 
     protected $fillable = [
         'name',

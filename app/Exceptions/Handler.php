@@ -4,10 +4,8 @@ namespace App\Exceptions;
 
 use Exception;
 use App\Mail\FailureReportMail;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
-use Illuminate\Support\Facades\Mail;
-use Symfony\Component\HttpKernel\Exception\HttpException;
+use Mail;
 
 class Handler extends ExceptionHandler
 {
@@ -17,7 +15,11 @@ class Handler extends ExceptionHandler
      * @var array
      */
     protected $dontReport = [
-        //
+        \Symfony\Component\HttpKernel\Exception\HttpException::class,
+        \Illuminate\Auth\AuthenticationException::class,
+        \Illuminate\Auth\Access\AuthorizationException::class,
+        \Illuminate\Database\Eloquent\ModelNotFoundException::class,
+        \Illuminate\Validation\ValidationException::class
     ];
 
     /**
@@ -38,9 +40,7 @@ class Handler extends ExceptionHandler
      */
     public function report(Exception $exception)
     {
-        if(!$exception instanceof ModelNotFoundException && !($exception instanceof HttpException && $exception->getStatusCode() === 401)) {
-            Mail::send(new FailureReportMail($exception));
-        }
+        Mail::send(new FailureReportMail($exception));
 
         parent::report($exception);
     }

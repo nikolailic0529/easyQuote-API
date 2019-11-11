@@ -9,9 +9,11 @@ use App\Contracts\Repositories\{
 use App\Http\Requests\{
     StoreQuoteStateRequest,
     GetQuoteTemplatesRequest,
-    MappingReviewRequest
+    MappingReviewRequest,
+    Quote\MoveGroupDescriptionRowsRequest,
+    Quote\StoreGroupDescriptionRequest,
+    Quote\UpdateGroupDescriptionRequest
 };
-use App\Http\Requests\Quote\StoreGroupDescriptionRequest;
 use App\Models\{
     Quote\Quote
 };
@@ -142,6 +144,22 @@ class QuoteController extends Controller
     }
 
     /**
+     * Show specified Rows Group Description from specified Quote.
+     *
+     * @param Quote $quote
+     * @param string $group
+     * @return \Illuminate\Http\Request
+     */
+    public function showGroupDescription(Quote $quote, string $group)
+    {
+        $this->authorize('view', $quote);
+
+        return response()->json(
+            $this->quote->findGroupDescription($group, $quote->id)
+        );
+    }
+
+    /**
      * Store Rows Group Description for specified Quote.
      *
      * @param StoreGroupDescriptionRequest $request
@@ -154,6 +172,39 @@ class QuoteController extends Controller
 
         return response()->json(
             $this->quote->createGroupDescription($request, $quote->id)
+        );
+    }
+
+    /**
+     * Store Rows Group Description for specified Quote.
+     *
+     * @param UpdateGroupDescriptionRequest $request
+     * @param Quote $quote
+     * @param string $group
+     * @return \Illuminate\Http\Response
+     */
+    public function updateGroupDescription(UpdateGroupDescriptionRequest $request, Quote $quote, string $group)
+    {
+        $this->authorize('update', $quote);
+
+        return response()->json(
+            $this->quote->updateGroupDescription($request, $group, $quote->id)
+        );
+    }
+
+    /**
+     * Move specified Rows to specified Rows Group Description for specified Quote.
+     *
+     * @param MoveGroupDescriptionRowsRequest $request
+     * @param Quote $quote
+     * @return \Illuminate\Http\Response
+     */
+    public function moveGroupDescriptionRows(MoveGroupDescriptionRowsRequest $request, Quote $quote)
+    {
+        $this->authorize('update', $quote);
+
+        return response()->json(
+            $this->quote->moveGroupDescriptionRows($request, $quote->id)
         );
     }
 

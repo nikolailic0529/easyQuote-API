@@ -4,8 +4,7 @@ use App\Contracts\Repositories\InvitationRepositoryInterface;
 use App\Models\Collaboration\Invitation;
 use Illuminate\Database\Eloquent \ {
     Model,
-    Builder,
-    Collection
+    Builder
 };
 
 class InvitationRepository extends SearchableRepository implements InvitationRepositoryInterface
@@ -35,6 +34,11 @@ class InvitationRepository extends SearchableRepository implements InvitationRep
     public function cancel(string $token): bool
     {
         return $this->find($token)->cancel();
+    }
+
+    public function delete(string $token): bool
+    {
+        return $this->find($token)->delete();
     }
 
     protected function filterQueryThrough(): array

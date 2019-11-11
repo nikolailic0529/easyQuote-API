@@ -143,7 +143,9 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
             \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\User\OrderByEmail::class,
-            \App\Http\Query\User\OrderByFullname::class,
+            \App\Http\Query\User\OrderByName::class,
+            \App\Http\Query\User\OrderByFirstname::class,
+            \App\Http\Query\User\OrderByLastname::class,
             \App\Http\Query\User\OrderByRole::class
         ];
     }
