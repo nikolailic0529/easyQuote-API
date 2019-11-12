@@ -357,13 +357,10 @@ class QuoteRepository implements QuoteRepositoryInterface
         $group = $data->only(['name', 'search_text'])->toArray();
         $rows = $data->get('rows', []);
 
-        $updatableKey = $quote->findGroupDescription($id);
+        $group_key = $quote->findGroupDescription($id);
+        $group_key === false && abort(404, 'The Group Description is not found.');
 
-        if ($updatableKey === false) {
-            return false;
-        }
-
-        $updatableGroup = $group_description->get($updatableKey);
+        $updatableGroup = $group_description->get($group_key);
 
         $quote->rowsData()->whereGroupName($updatableGroup['name'])
             ->update(['group_name' => null]);
@@ -373,7 +370,7 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $updatedGroup = array_merge($updatableGroup, $group);
 
-        $quote->group_description = collect($quote->group_description)->put($updatableKey, $updatedGroup)->values();
+        $quote->group_description = collect($quote->group_description)->put($group_key, $updatedGroup)->values();
 
         return $quote->save();
     }
@@ -387,9 +384,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         $from_group_key = $quote->findGroupDescription($request->from_group_id);
         $to_group_key = $quote->findGroupDescription($request->to_group_id);
 
-        if ($from_group_key === false || $to_group_key === false) {
-            return false;
-        }
+        ($from_group_key === false || $to_group_key === false) && abort(404, 'The From or To Group Description is not found.');
 
         $from_group = $group_description->get($from_group_key);
         $to_group = $group_description->get($to_group_key);
@@ -405,18 +400,15 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $group_description = collect($quote->group_description);
 
-        $removableKey = $quote->findGroupDescription($id);
+        $group_key = $quote->findGroupDescription($id);
+        $group_key === false && abort(404, 'The Group Description is not found.');
 
-        if ($removableKey === false) {
-            return false;
-        }
-
-        $removableGroup = $group_description->get($removableKey);
+        $removableGroup = $group_description->get($group_key);
 
         $quote->rowsData()->whereGroupName($removableGroup['name'])
             ->update(['group_name' => null]);
 
-        $group_description->forget($removableKey);
+        $group_description->forget($group_key);
 
         $quote->group_description = $group_description->isEmpty() ? null : $group_description->values();
 

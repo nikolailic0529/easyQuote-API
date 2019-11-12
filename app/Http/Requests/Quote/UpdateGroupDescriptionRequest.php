@@ -1,6 +1,7 @@
 <?php namespace App\Http\Requests\Quote;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateGroupDescriptionRequest extends FormRequest
 {
@@ -22,10 +23,22 @@ class UpdateGroupDescriptionRequest extends FormRequest
     public function rules()
     {
         return [
-            'name' => 'required|string|min:1',
+            'name' => [
+                'required',
+                'string',
+                'min:1',
+                Rule::notIn(collect($this->quote->group_description)->where('id', '!==', $this->group)->pluck('name'))
+            ],
             'search_text' => 'required|string|min:1',
             'rows' => 'required|array',
             'rows.*' => 'required|string|uuid|exists:imported_rows,id'
+        ];
+    }
+
+    public function messages()
+    {
+        return [
+            'name.not_in' => 'The selected Group name is already taken.'
         ];
     }
 }

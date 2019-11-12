@@ -175,6 +175,7 @@ class ParserService implements ParserServiceInterface
             return false;
         };
 
+        $quote->resetGroupDescription();
         $quoteFile->clearException();
         $quoteFile->quote()->associate($quote)->save();
         $this->routeParser($quoteFile);

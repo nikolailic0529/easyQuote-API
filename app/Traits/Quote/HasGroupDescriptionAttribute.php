@@ -18,4 +18,11 @@ trait HasGroupDescriptionAttribute
             return isset($group['id']) && $group['id'] === $id;
         });
     }
+
+    public function resetGroupDescription()
+    {
+        return $this->forceFill([
+            'group_description' => null
+        ])->save();
+    }
 }

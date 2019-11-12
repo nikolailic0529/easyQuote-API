@@ -176,17 +176,14 @@ trait HasMapping
             return $this->rowsDataByColumns($flags);
         }
 
-        $columns = $this->templateFieldsToArray('price');
+        $columns = array_diff($templateFields, ['price']);
         array_unshift($columns, 'id');
 
-        return DB::query()
-            ->fromSub($this->rowsDataByColumns($flags), 'rows_data')
-            ->select(
-                array_merge(
-                    $columns,
-                    [DB::raw("(`price` / 30 * greatest(datediff(str_to_date(`date_to`, '%d/%m/%Y'), str_to_date(`date_from`, '%d/%m/%Y')), 0)) as `price`")]
-                )
-            );
+        $calculatedPrice = DB::raw("(`price` / 30 * greatest(datediff(str_to_date(`date_to`, '%d/%m/%Y'), str_to_date(`date_from`, '%d/%m/%Y')), 0)) as `price`");
+
+        in_array('price', $templateFields) && array_push($columns, $calculatedPrice);
+
+        return DB::query()->fromSub($this->rowsDataByColumns($flags), 'rows_data')->select($columns);
     }
 
     public function rowsDataByColumnsGroupable(string $query = '')
@@ -194,8 +191,10 @@ trait HasMapping
         return $this->rowsDataByColumns(['default_selected'])
             ->join('imported_columns as groupable', function ($join) use ($query) {
                 $join->on('groupable.imported_row_id', '=', 'imported_rows.id')
-                    ->whereRaw('match(groupable.value) against (?)', [$query]);
-            });
+                    ->whereRaw('match(`groupable`.`value`) against (?)', [$query]);
+            })
+            ->whereNull('group_name')
+            ->orderByRaw('match(`groupable`.`value`) against (?) desc', [$query]);
     }
 
     public function getFlattenOrGroupedRows(?array $flags = null, bool $calculate = false)
@@ -210,7 +209,7 @@ trait HasMapping
     public function groupedRows(?array $flags = null, bool $calculate = false, ?string $group_name = null)
     {
         $selectable = array_merge(
-            ['rows_data.id', 'groups.group_name'],
+            ['rows_data.id', DB::raw("true as `is_selected`"), 'groups.group_name'],
             $this->templateFieldsToArray()
         );
 
@@ -227,11 +226,14 @@ trait HasMapping
 
     public function groupedRowsMeta(?array $flags = null, bool $calculate = false, ?string $group_name = null)
     {
-        return DB::query()->fromSub($this->groupedRows($flags, $calculate, $group_name), 'rows_data')
+        $query = DB::query()->fromSub($this->groupedRows($flags, $calculate, $group_name), 'rows_data')
             ->groupBy('group_name')
             ->select('group_name')
-            ->selectRaw('sum(`price`) as `total_price`')
             ->selectRaw('count(`id`) as `total_count`');
+
+        in_array('price', $this->templateFieldsToArray()) && $query->selectRaw('sum(`price`) as `total_price`');;
+
+        return $query;
     }
 
     public function getGroupDescriptionWithMeta(?array $flags = null, bool $calculate = false, ?string $group_name = null)
