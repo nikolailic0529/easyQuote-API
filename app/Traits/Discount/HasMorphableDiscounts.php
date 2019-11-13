@@ -1,6 +1,8 @@
-<?php namespace App\Traits\Discount;
+<?php
 
-use App\Models\Quote \ {
+namespace App\Traits\Discount;
+
+use App\Models\Quote\{
     Discount,
     Discount\MultiYearDiscount,
     Discount\PrePayDiscount,
@@ -13,7 +15,7 @@ trait HasMorphableDiscounts
 {
     public function getDiscountsSumAttribute()
     {
-        if(!isset($this->discounts)) {
+        if (!isset($this->discounts)) {
             $this->load('discounts')->withPivot('duration')->with('discountable');
         }
 

@@ -1,6 +1,8 @@
-<?php namespace App\Policies;
+<?php
 
-use App\Models \ {
+namespace App\Policies;
+
+use App\Models\{
     User,
     QuoteTemplate\TemplateField
 };

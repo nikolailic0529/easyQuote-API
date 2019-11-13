@@ -1,6 +1,8 @@
-<?php namespace App\Console\Commands;
+<?php
 
-use App\Models \ {
+namespace App\Console\Commands;
+
+use App\Models\{
     Vendor,
     Data\Country
 };

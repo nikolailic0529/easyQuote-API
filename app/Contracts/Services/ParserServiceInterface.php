@@ -1,7 +1,9 @@
-<?php namespace App\Contracts\Services;
+<?php
+
+namespace App\Contracts\Services;
 
 use App\Models\QuoteFile\QuoteFile;
-use App\Http\Requests \ {
+use App\Http\Requests\{
     StoreQuoteFileRequest,
     HandleQuoteFileRequest
 };

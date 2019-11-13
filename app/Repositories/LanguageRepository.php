@@ -1,4 +1,6 @@
-<?php namespace App\Repositories;
+<?php
+
+namespace App\Repositories;
 
 use App\Contracts\Repositories\LanguageRepositoryInterface;
 use App\Models\Data\Language;

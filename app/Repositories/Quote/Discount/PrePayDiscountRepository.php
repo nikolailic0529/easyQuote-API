@@ -1,12 +1,14 @@
-<?php namespace App\Repositories\Quote\Discount;
+<?php
+
+namespace App\Repositories\Quote\Discount;
 
 use App\Contracts\Repositories\Quote\Discount\PrePayDiscountRepositoryInterface;
 use App\Models\Quote\Discount\PrePayDiscount;
-use App\Http\Requests\Discount \ {
+use App\Http\Requests\Discount\{
     StorePrePayDiscountRequest,
     UpdatePrePayDiscountRequest
 };
-use Illuminate\Database\Eloquent \ {
+use Illuminate\Database\Eloquent\{
     Model,
     Builder,
     ModelNotFoundException

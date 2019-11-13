@@ -1,13 +1,15 @@
-<?php namespace App\Repositories\Quote;
+<?php
 
-use App\Contracts\Repositories \ {
+namespace App\Repositories\Quote;
+
+use App\Contracts\Repositories\{
     Quote\QuoteSubmittedRepositoryInterface,
     QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
 };
 use App\Contracts\Services\QuoteServiceInterface as QuoteService;
 use App\Repositories\SearchableRepository;
 use App\Models\Quote\Quote;
-use Illuminate\Database\Eloquent \ {
+use Illuminate\Database\Eloquent\{
     Model,
     Builder
 };
@@ -127,16 +129,16 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         $quoteFilesToSave = collect();
 
         $priceList = $quote->quoteFiles()->priceLists()->first();
-        if(isset($priceList)) {
+        if (isset($priceList)) {
             $quoteFilesToSave->push($this->quoteFile->replicatePriceList($priceList));
         }
 
         $schedule = $quote->quoteFiles()->paymentSchedules()->with('scheduleData')->first();
-        if(isset($schedule)) {
+        if (isset($schedule)) {
             $replicatedSchedule = $schedule->replicate();
             unset($replicatedSchedule->scheduleData);
             $replicatedSchedule->save();
-            if(isset($schedule->scheduleData)) {
+            if (isset($schedule->scheduleData)) {
                 $replicatedSchedule->scheduleData()->save($schedule->scheduleData->replicate());
             }
 

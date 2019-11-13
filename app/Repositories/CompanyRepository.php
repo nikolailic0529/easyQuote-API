@@ -1,12 +1,14 @@
-<?php namespace App\Repositories;
+<?php
+
+namespace App\Repositories;
 
 use App\Contracts\Repositories\CompanyRepositoryInterface;
-use App\Http\Requests\Company \ {
+use App\Http\Requests\Company\{
     StoreCompanyRequest,
     UpdateCompanyRequest
 };
 use App\Models\Company;
-use Illuminate\Database\Eloquent \ {
+use Illuminate\Database\Eloquent\{
     Model,
     Builder,
     Collection
@@ -28,7 +30,7 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
         $categories = __('company.categories');
         $data = collect(compact('types', 'categories'));
 
-        if(!empty($additionalData)) {
+        if (!empty($additionalData)) {
             collect($additionalData)->each(function ($array, $key) use ($data) {
                 $data->put($key, $array);
             });

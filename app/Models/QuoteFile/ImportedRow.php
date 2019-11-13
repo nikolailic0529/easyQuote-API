@@ -1,8 +1,9 @@
-<?php namespace App\Models\QuoteFile;
+<?php
 
-use App\Jobs\CreateColumnsData;
+namespace App\Models\QuoteFile;
+
 use App\Models\UuidModel;
-use App\Traits \ {
+use App\Traits\{
     BelongsToUser,
     BelongsToQuoteFile,
     HasColumnsData,
@@ -41,7 +42,7 @@ class ImportedRow extends UuidModel
      */
     public function save(array $options = [])
     {
-        if(!isset($this->columnsDataToCreate)) {
+        if (!isset($this->columnsDataToCreate)) {
             return parent::save($options);
         }
 

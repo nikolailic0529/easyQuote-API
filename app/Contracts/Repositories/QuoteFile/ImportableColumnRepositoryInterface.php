@@ -1,4 +1,6 @@
-<?php namespace App\Contracts\Repositories\QuoteFile;
+<?php
+
+namespace App\Contracts\Repositories\QuoteFile;
 
 use App\Models\QuoteFile\ImportableColumn;
 

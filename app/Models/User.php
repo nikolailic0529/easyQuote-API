@@ -1,15 +1,17 @@
-<?php namespace App\Models;
+<?php
+
+namespace App\Models;
 
 use App\Contracts\ActivatableInterface;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Laravel\Passport\HasApiTokens;
-use App\Models \ {
+use App\Models\{
     Role,
     AuthenticableUser,
     Collaboration\Invitation
 };
-use App\Traits \ {
+use App\Traits\{
     Activatable,
     HasCountry,
     HasTimezone,
@@ -99,7 +101,7 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
 
     public function interact($model)
     {
-        if($model instanceof Invitation) {
+        if ($model instanceof Invitation) {
             $this->assignRole($model->role);
             return $this->save() && $model->delete();
         }

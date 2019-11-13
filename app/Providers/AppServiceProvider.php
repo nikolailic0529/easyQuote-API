@@ -1,4 +1,6 @@
-<?php namespace App\Providers;
+<?php
+
+namespace App\Providers;
 
 use Laravel\Passport\Passport;
 use Laravel\Passport\Client;
@@ -6,7 +8,7 @@ use Laravel\Passport\PersonalAccessClient;
 use Webpatser\Uuid\Uuid;
 use Illuminate\Support\ServiceProvider;
 use App\Http\Controllers\API\AuthController;
-use App\Contracts \ {
+use App\Contracts\{
     Services\AuthServiceInterface,
     Services\ParserServiceInterface,
     Services\WordParserInterface,
@@ -39,7 +41,7 @@ use App\Contracts \ {
     Repositories\Quote\QuoteSubmittedRepositoryInterface,
     Services\QuoteServiceInterface
 };
-use App\Models \ {
+use App\Models\{
     Company,
     Vendor,
     Quote\Quote,
@@ -52,7 +54,7 @@ use App\Models \ {
     QuoteTemplate\TemplateField,
     Collaboration\Invitation
 };
-use App\Observers \ {
+use App\Observers\{
     CompanyObserver,
     VendorObserver,
     QuoteObserver,
@@ -65,7 +67,7 @@ use App\Observers \ {
     TemplateFieldObserver,
     Collaboration\InvitationObserver
 };
-use App\Repositories \ {
+use App\Repositories\{
     TimezoneRepository,
     CountryRepository,
     UserRepository,
@@ -93,14 +95,14 @@ use App\Repositories \ {
 };
 use App\Repositories\Quote\QuoteDraftedRepository;
 use App\Repositories\Quote\QuoteSubmittedRepository;
-use App\Services \ {
+use App\Services\{
     AuthService,
     ParserService,
     WordParser,
     QuoteService,
     PdfParser\PdfParser
 };
-use Elasticsearch \ {
+use Elasticsearch\{
     Client as ElasticsearchClient,
     ClientBuilder as ElasticsearchBuilder
 };
@@ -202,11 +204,11 @@ class AppServiceProvider extends ServiceProvider
     protected function registerMacro()
     {
         Str::macro('header', function ($value, $default = null, $perform = true) {
-            if(!$perform) {
+            if (!$perform) {
                 return $value;
             }
 
-            if(!isset($value)) {
+            if (!isset($value)) {
                 return $default;
             }
 
@@ -220,11 +222,19 @@ class AppServiceProvider extends ServiceProvider
         Str::macro('price', function ($value, $format = null) {
             $value = round((float) preg_replace('/[^\d\.]/', '', $value), 2);
 
-            if(isset($format) && $format) {
+            if (isset($format) && $format) {
                 return number_format($value, 2);
             }
 
             return $value;
+        });
+
+        Str::macro('decimal', function ($value) {
+            if (!is_string($value) || !is_numeric($value)) {
+                return $value;
+            }
+
+            return number_format((float) $value, 2);
         });
 
         Str::macro('short', function ($value) {
@@ -251,6 +261,8 @@ class AppServiceProvider extends ServiceProvider
                 return $this;
             }
 
+            is_iterable(head($keys)) && $keys = head($keys);
+
             foreach ($this->items as &$item) {
                 $item = collect($item)->except($keys);
             }
@@ -269,13 +281,19 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Collection::macro('rowsToGroups', function (string $groupable, ?Collection $meta = null) {
-            return $this->groupBy($groupable)->transform(function ($rows, $key) use ($groupable, $meta) {
+            $groups = $this->groupBy($groupable)->transform(function ($rows, $key) use ($groupable, $meta) {
                 $meta = isset($meta)
                     ? $meta->firstWhere('name', '===', $key) ?? []
                     : [];
                 $rows = collect($rows)->exceptEach($groupable);
-                return array_merge($meta, [$groupable => $key, 'rows' => $rows]);
+                return array_merge((array) $meta, [$groupable => $key, 'rows' => $rows]);
             })->values();
+
+            filled($meta) && $meta->whereNotIn($groupable, $groups->pluck($groupable))->each(function ($meta) use ($groups) {
+                $groups->push(array_merge($meta, ['rows' => collect()]));
+            });
+
+            return $groups;
         });
     }
 

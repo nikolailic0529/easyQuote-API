@@ -1,6 +1,6 @@
-<?php namespace App\Contracts\Repositories\QuoteFile;
+<?php
 
-use App\Http\Requests\StoreQuoteFileRequest;
+namespace App\Contracts\Repositories\QuoteFile;
 
 interface FileFormatRepositoryInterface
 {

@@ -21,7 +21,6 @@ class TemplateFieldsSeeder extends Seeder
 
         $templateFields = json_decode(file_get_contents(__DIR__ . '/models/template_fields.json'), true);
 
-
         collect($templateFields)->each(function ($field) {
             $typeId = TemplateFieldType::whereName($field['type'])->first()->id;
 

@@ -1,7 +1,7 @@
 <?php namespace App\Models\QuoteTemplate;
 
-use App\Contracts\ActivatableInterface;
 use App\Models\UuidModel;
+use App\Contracts\ActivatableInterface;
 use App\Traits \ {
     Activatable,
     BelongsToCompany,
@@ -12,11 +12,10 @@ use App\Traits \ {
     Draftable,
     Systemable,
     Search\Searchable,
-    HasQuotes
+    HasQuotes,
+    Image\HasImages
 };
-use App\Traits\Image\HasImages;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Arr;
 
 class QuoteTemplate extends UuidModel implements ActivatableInterface
 {

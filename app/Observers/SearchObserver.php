@@ -1,4 +1,6 @@
-<?php namespace App\Observers;
+<?php
+
+namespace App\Observers;
 
 use Elasticsearch\Client;
 
@@ -14,7 +16,7 @@ class SearchObserver
 
     public function saved($model)
     {
-        if(app()->runningInConsole()) {
+        if (app()->runningInConsole()) {
             return;
         }
 
@@ -32,7 +34,7 @@ class SearchObserver
 
     public function deleted($model)
     {
-        if(app()->runningInConsole()) {
+        if (app()->runningInConsole()) {
             return;
         }
         try {

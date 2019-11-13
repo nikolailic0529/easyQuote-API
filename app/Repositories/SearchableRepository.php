@@ -1,8 +1,10 @@
-<?php namespace App\Repositories;
+<?php
+
+namespace App\Repositories;
 
 use App\Builder\Pagination\Paginator;
 use App\Contracts\ActivatableInterface;
-use Illuminate\Database\Eloquent \ {
+use Illuminate\Database\Eloquent\{
     Builder,
     Model
 };
@@ -16,7 +18,7 @@ abstract class SearchableRepository
     {
         $filterableQuery = $this->filterableQuery();
 
-        if(is_array($filterableQuery)) {
+        if (is_array($filterableQuery)) {
             $query = $this->filterQuery(array_shift($filterableQuery));
 
             collect($filterableQuery)->each(function ($union) use ($query) {
@@ -35,7 +37,7 @@ abstract class SearchableRepository
 
         $items = $this->searchOnElasticsearch($model, $this->searchableFields(), $query);
 
-        if($model instanceof ActivatableInterface) {
+        if ($model instanceof ActivatableInterface) {
             $activated = $this->buildQuery($model, $items, function ($query) {
                 $this->searchableScope($query)->activated();
                 $this->filterQuery($query);
@@ -68,7 +70,7 @@ abstract class SearchableRepository
 
         $query = $model->query();
 
-        if(is_callable($scope)) {
+        if (is_callable($scope)) {
             call_user_func($scope, $query);
         }
 

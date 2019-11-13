@@ -1,15 +1,17 @@
-<?php namespace App\Repositories;
+<?php
+
+namespace App\Repositories;
 
 use App\Contracts\Repositories\RoleRepositoryInterface;
-use App\Models \ {
+use App\Models\{
     Role,
     Permission
 };
-use App\Http\Requests\Role \ {
+use App\Http\Requests\Role\{
     StoreRoleRequest,
     UpdateRoleRequest
 };
-use Illuminate\Database\Eloquent \ {
+use Illuminate\Database\Eloquent\{
     Model,
     Builder
 };

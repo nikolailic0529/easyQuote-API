@@ -1,8 +1,9 @@
 <?php
 
+use App\Models\Customer\Customer;
 use Illuminate\Database\Seeder;
 
-class CustomersSeeder extends Seeder
+class S4ContractSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -11,17 +12,10 @@ class CustomersSeeder extends Seeder
      */
     public function run()
     {
-        //Empty the customers table
-        Schema::disableForeignKeyConstraints();
-
-        DB::table('customers')->delete();
-
-        Schema::enableForeignKeyConstraints();
-
         $customers = json_decode(file_get_contents(__DIR__ . '/models/customers.json'), true);
 
         collect($customers)->each(function ($customer) {
-            collect()->times(8)->each(function ($time) use ($customer) {
+            collect()->times(6)->each(function ($time) use ($customer) {
                 $rfq = "CQ00" . mb_strtoupper(uniqid());
                 DB::table('customers')->insert([
                     'id' => (string) Uuid::generate(4),
@@ -37,5 +31,14 @@ class CustomersSeeder extends Seeder
                 ]);
             });
         });
+
+        $addresses = head(json_decode(file_get_contents(__DIR__ . '/models/customers_addresses.json'), true))['addresses'];
+        $contacts = head(json_decode(file_get_contents(__DIR__ . '/models/customers_contacts.json'), true))['contacts'];
+
+        Customer::doesntHave('quotes')->doesntHave('addresses')->doesntHave('contacts')->get()
+            ->each(function ($customer) use ($addresses, $contacts) {
+                $customer->addresses()->createMany($addresses);
+                $customer->contacts()->createMany($contacts);
+            });
     }
 }

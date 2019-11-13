@@ -1,6 +1,8 @@
-<?php namespace App\Console\Commands;
+<?php
 
-use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface as ImportableColumnRepository;
+namespace App\Console\Commands;
+
+use App\Models\QuoteFile\ImportableColumn;
 use Illuminate\Console\Command;
 
 class ImportableColumnsUpdate extends Command
@@ -17,26 +19,7 @@ class ImportableColumnsUpdate extends Command
      *
      * @var string
      */
-    protected $description = 'Update Importable Columns Aliases';
-
-    /**
-     * Importable Column Repository
-     *
-     * @var \App\Repositories\QuoteFile\ImportableColumnRepository
-     */
-    protected $importableColumn;
-
-    /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct(ImportableColumnRepository $importableColumn)
-    {
-        parent::__construct();
-
-        $this->importableColumn = $importableColumn;
-    }
+    protected $description = 'Update System Defined Importable Columns';
 
     /**
      * Execute the console command.
@@ -45,17 +28,23 @@ class ImportableColumnsUpdate extends Command
      */
     public function handle()
     {
+        $this->info("Updating System Defined Importable Columns...");
+
         $importable_columns = json_decode(file_get_contents(database_path('seeds/models/importable_columns.json')), true);
 
         collect($importable_columns)->each(function ($column) {
-            $importableColumn = $this->importableColumn->findByName($column['name']);
+            $importableColumn = ImportableColumn::firstOrCreate(
+                ['name' => $column['name'], 'is_system' => true],
+                $column
+            );
 
             collect($column['aliases'])->each(function ($alias) use ($importableColumn) {
                 $importableColumn->aliases()->firstOrCreate(compact('alias'));
-                $this->output->write('.');
             });
+
+            $this->output->write('.');
         });
 
-        $this->info("\nImportable Columns Aliases were updated!");
+        $this->info("\nSystem Defined Importable Columns were updated!");
     }
 }

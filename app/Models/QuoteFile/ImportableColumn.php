@@ -1,12 +1,14 @@
-<?php namespace App\Models\QuoteFile;
+<?php
 
-use App\Models \ {
+namespace App\Models\QuoteFile;
+
+use App\Models\{
     UuidModel,
     QuoteFile\ImportableColumnAlias
 };
 use App\Contracts\HasOrderedScope;
 use App\Models\Quote\FieldColumn;
-use App\Traits \ {
+use App\Traits\{
     HasColumnsData,
     HasSystemScope,
     BelongsToUser
@@ -19,7 +21,7 @@ class ImportableColumn extends UuidModel implements HasOrderedScope
     public $timestamps = false;
 
     protected $fillable = [
-        'header', 'name'
+        'header', 'name', 'order'
     ];
 
     protected $hidden = [

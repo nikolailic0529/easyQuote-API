@@ -1,4 +1,6 @@
-<?php namespace App\Models\QuoteTemplate;
+<?php
+
+namespace App\Models\QuoteTemplate;
 
 use App\Models\UuidModel;
 use App\Traits\BelongsToTemplateFields;

@@ -1,4 +1,6 @@
-<?php namespace App\Observers;
+<?php
+
+namespace App\Observers;
 
 use App\Models\QuoteTemplate\QuoteTemplate;
 
@@ -46,11 +48,11 @@ class QuoteTemplateObserver
      */
     public function deleting(QuoteTemplate $quoteTemplate)
     {
-        if(app()->runningInConsole()) {
+        if (app()->runningInConsole()) {
             return;
         }
 
-        if($quoteTemplate->isAttached()) {
+        if ($quoteTemplate->isAttached()) {
             throw new \ErrorException(__('template.attached_deleting_exception'));
         }
     }

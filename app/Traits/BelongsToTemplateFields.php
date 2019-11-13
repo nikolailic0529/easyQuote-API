@@ -1,4 +1,6 @@
-<?php namespace App\Traits;
+<?php
+
+namespace App\Traits;
 
 use App\Models\QuoteTemplate\TemplateField;
 use Illuminate\Database\Eloquent\Model;
@@ -20,7 +22,7 @@ trait BelongsToTemplateFields
 
     public function syncTemplateFields($templateFields)
     {
-        if(!is_array($templateFields)) {
+        if (!is_array($templateFields)) {
             return false;
         }
 

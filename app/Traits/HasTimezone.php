@@ -1,9 +1,13 @@
-<?php namespace App\Traits;
+<?php
+
+namespace App\Traits;
+
+use App\Models\Data\Timezone;
 
 trait HasTimezone
 {
     public function timezone()
     {
-        return $this->hasOne(App\Timezone::class);
+        return $this->hasOne(Timezone::class);
     }
 }

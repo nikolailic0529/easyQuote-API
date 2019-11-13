@@ -1,6 +1,8 @@
-<?php namespace App\Imports;
+<?php
 
-use Maatwebsite\Excel \ {
+namespace App\Imports;
+
+use Maatwebsite\Excel\{
     Concerns\WithEvents,
     Concerns\WithChunkReading,
     Events\BeforeSheet,

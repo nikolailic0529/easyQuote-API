@@ -1,6 +1,8 @@
-<?php namespace App\Models\Quote\Margin;
+<?php
 
-use App\Traits \ {
+namespace App\Models\Quote\Margin;
+
+use App\Traits\{
     BelongsToCountry,
     Search\Searchable
 };

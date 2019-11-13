@@ -1,4 +1,6 @@
-<?php namespace App\Policies;
+<?php
+
+namespace App\Policies;
 
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
@@ -15,7 +17,7 @@ class UserPolicy
      */
     public function viewAny(User $user)
     {
-        if($user->can('view_users')) {
+        if ($user->can('view_users')) {
             return true;
         }
     }
@@ -29,7 +31,7 @@ class UserPolicy
      */
     public function view(User $user, User $collaborator)
     {
-        if($user->can('view_users')) {
+        if ($user->can('view_users')) {
             return true;
         }
     }
@@ -42,7 +44,7 @@ class UserPolicy
      */
     public function create(User $user)
     {
-        if($user->can('invite_collaboration_users')) {
+        if ($user->can('invite_collaboration_users')) {
             return true;
         }
     }
@@ -56,7 +58,7 @@ class UserPolicy
      */
     public function update(User $user, User $collaborator)
     {
-        if($user->can('update_users')) {
+        if ($user->can('update_users')) {
             return true;
         }
     }
@@ -70,7 +72,7 @@ class UserPolicy
      */
     public function delete(User $user, User $collaborator)
     {
-        if($user->can('delete_users')) {
+        if ($user->can('delete_users')) {
             return true;
         }
     }

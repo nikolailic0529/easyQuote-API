@@ -1,4 +1,6 @@
-<?php namespace App\Contracts\Repositories\Quote;
+<?php
+
+namespace App\Contracts\Repositories\Quote;
 
 use App\Builder\Pagination\Paginator;
 use App\Models\Quote\Quote;

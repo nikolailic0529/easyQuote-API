@@ -12,10 +12,7 @@ use App\Models\Quote\{
     Discount,
     Margin\CountryMargin
 };
-use Illuminate\Http\Response;
-use Illuminate\Support\Collection;
-use Illuminate\Http\UploadedFile;
-use Storage, Closure, Str, Arr, File;
+use Storage, Closure, Str;
 
 class QuoteService implements QuoteServiceInterface
 {
@@ -258,18 +255,17 @@ class QuoteService implements QuoteServiceInterface
 
         $quote->computableRows->sortKeysByKeys($keys);
 
-        // $this->modifyColumn($quote, 'buy_price', function ($row) use ($quote) {
-        //     return round($row->price - ($row->price * ($quote->margin_percentage / 100)), 2);
-        // });
-
         if (isset($quote->computableRows->first()['price'])) {
             $this->modifyColumn($quote, 'price', function ($row) {
-                return round($row['price'], 2);
+                return Str::decimal($row['price']);
             });
         }
 
+        $quote->computableRows = $quote->computableRows->exceptEach($quote->hiddenFieldsToArray());
+
         if ($quote->has_group_description) {
-            $quote->computableRows = $quote->computableRows->rowsToGroups('group_name');
+            $groups_meta = $quote->getGroupDescriptionWithMeta(null, $quote->calculate_list_price);
+            $quote->computableRows = $quote->computableRows->rowsToGroups('group_name', $groups_meta)->exceptEach('group_name');
         }
     }
 

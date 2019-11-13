@@ -1,6 +1,8 @@
-<?php namespace App\Services;
+<?php
 
-use App\Contracts \ {
+namespace App\Services;
+
+use App\Contracts\{
     Services\AuthServiceInterface,
     Repositories\AccessAttemptRepositoryInterface
 };
@@ -59,7 +61,7 @@ class AuthService implements AuthServiceInterface
         $tokenResult = request()->user()->createToken('Personal Access Token');
         $token = $tokenResult->token;
 
-        if(isset($attributes['remember_me']) && (bool) $attributes['remember_me']) {
+        if (isset($attributes['remember_me']) && (bool) $attributes['remember_me']) {
             $token->expires_at = Carbon::now()->addWeeks(1);
         }
 

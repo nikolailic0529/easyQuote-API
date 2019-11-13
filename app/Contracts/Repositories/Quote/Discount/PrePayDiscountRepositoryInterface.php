@@ -1,7 +1,9 @@
-<?php namespace App\Contracts\Repositories\Quote\Discount;
+<?php
+
+namespace App\Contracts\Repositories\Quote\Discount;
 
 use App\Builder\Pagination\Paginator;
-use App\Http\Requests\Discount \ {
+use App\Http\Requests\Discount\{
     StorePrePayDiscountRequest,
     UpdatePrePayDiscountRequest
 };

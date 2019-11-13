@@ -1,6 +1,8 @@
-<?php namespace App\Models\Data;
+<?php
 
-use App\Models \ {
+namespace App\Models\Data;
+
+use App\Models\{
     UuidModel
 };
 use App\Contracts\HasOrderedScope;

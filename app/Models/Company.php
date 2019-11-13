@@ -1,17 +1,21 @@
-<?php namespace App\Models;
+<?php
 
-use App\Contracts\ActivatableInterface;
-use App\Contracts\WithImage;
+namespace App\Models;
+
 use App\Models\UuidModel;
-use App\Traits \ {
+use App\Contracts\{
+    WithImage,
+    ActivatableInterface
+};
+use App\Traits\{
     Activatable,
     BelongsToUser,
     BelongsToVendors,
     Image\HasImage,
     Image\HasLogo,
+    Search\Searchable,
     Systemable
 };
-use App\Traits\Search\Searchable;
 
 class Company extends UuidModel implements WithImage, ActivatableInterface
 {
@@ -40,7 +44,7 @@ class Company extends UuidModel implements WithImage, ActivatableInterface
 
     public function syncVendors($vendors)
     {
-        if(!is_array($vendors)) {
+        if (!is_array($vendors)) {
             return false;
         }
 

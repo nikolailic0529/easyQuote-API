@@ -1,4 +1,6 @@
-<?php namespace App\Observers;
+<?php
+
+namespace App\Observers;
 
 use App\Models\Quote\Margin\CountryMargin;
 
@@ -12,11 +14,11 @@ class MarginObserver
      */
     public function saving(CountryMargin $countryMargin)
     {
-        if(app()->runningInConsole()) {
+        if (app()->runningInConsole()) {
             return;
         }
 
-        if($this->exists($countryMargin)) {
+        if ($this->exists($countryMargin)) {
             throw new \ErrorException(__('margin.exists_exception'));
         }
     }

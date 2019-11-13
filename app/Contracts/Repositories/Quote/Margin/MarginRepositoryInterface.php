@@ -1,17 +1,17 @@
-<?php namespace App\Contracts\Repositories\Quote\Margin;
+<?php
+
+namespace App\Contracts\Repositories\Quote\Margin;
 
 use App\Builder\Pagination\Paginator;
-use App\Http\Requests\Margin \ {
-    GetPercentagesCountryMarginsRequest,
+use App\Http\Requests\Margin\{
     StoreCountryMarginRequest,
     UpdateCountryMarginRequest
 };
-use App\Models\Quote\Margin\CountryMargin;
-use App\Models\Quote\Quote;
-use Illuminate\Database\Eloquent \ {
-    Builder,
-    Collection
+use App\Models\Quote\{
+    Quote,
+    Margin\CountryMargin
 };
+use Illuminate\Database\Eloquent\Builder;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 interface MarginRepositoryInterface

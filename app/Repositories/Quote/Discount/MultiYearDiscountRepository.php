@@ -1,12 +1,14 @@
-<?php namespace App\Repositories\Quote\Discount;
+<?php
+
+namespace App\Repositories\Quote\Discount;
 
 use App\Contracts\Repositories\Quote\Discount\MultiYearDiscountRepositoryInterface;
 use App\Models\Quote\Discount\MultiYearDiscount;
-use App\Http\Requests\Discount \ {
+use App\Http\Requests\Discount\{
     StoreMultiYearDiscountRequest,
     UpdateMultiYearDiscountRequest
 };
-use Illuminate\Database\Eloquent \ {
+use Illuminate\Database\Eloquent\{
     Model,
     Builder,
     ModelNotFoundException

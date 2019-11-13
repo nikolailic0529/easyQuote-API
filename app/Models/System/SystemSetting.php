@@ -1,4 +1,6 @@
-<?php namespace App\Models\System;
+<?php
+
+namespace App\Models\System;
 
 use App\Models\UuidModel;
 
@@ -20,7 +22,7 @@ class SystemSetting extends UuidModel
 
     protected function getCastType($key)
     {
-        if($key === 'value') {
+        if ($key === 'value') {
             return $this->type;
         }
 
@@ -29,7 +31,7 @@ class SystemSetting extends UuidModel
 
     public function setTypeAttribute($value)
     {
-        if(in_array($value, $this->types)) {
+        if (in_array($value, $this->types)) {
             return $this->type = $value;
         }
 

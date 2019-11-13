@@ -1,4 +1,6 @@
-<?php namespace App\Http\Controllers\API\Quotes;
+<?php
+
+namespace App\Http\Controllers\API\Quotes;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\{
@@ -14,9 +16,7 @@ use App\Http\Requests\{
     Quote\StoreGroupDescriptionRequest,
     Quote\UpdateGroupDescriptionRequest
 };
-use App\Models\{
-    Quote\Quote
-};
+use App\Models\Quote\Quote;
 
 class QuoteController extends Controller
 {

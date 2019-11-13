@@ -1,12 +1,14 @@
-<?php namespace App\Http\Controllers\API\Discounts;
+<?php
+
+namespace App\Http\Controllers\API\Discounts;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\Quote\Discount\MultiYearDiscountRepositoryInterface as MultiYearDiscountRepository;
-use App\Http\Requests\Discount \ {
+use App\Http\Requests\Discount\{
     StoreMultiYearDiscountRequest,
     UpdateMultiYearDiscountRequest
 };
-use App\Models\Quote\Discount \ {
+use App\Models\Quote\Discount\{
     Discount,
     MultiYearDiscount
 };
@@ -29,7 +31,7 @@ class MultiYearDiscountController extends Controller
      */
     public function index()
     {
-        if(request()->filled('search')) {
+        if (request()->filled('search')) {
             return response()->json(
                 $this->multiYearDiscount->search(request('search'))
             );

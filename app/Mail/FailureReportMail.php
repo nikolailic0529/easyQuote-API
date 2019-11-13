@@ -4,10 +4,8 @@ namespace App\Mail;
 
 use Exception;
 use App\Contracts\Repositories\UserRepositoryInterface as UserRepository;
-use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
 class FailureReportMail extends Mailable
 {

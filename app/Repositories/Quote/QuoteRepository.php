@@ -1,13 +1,15 @@
-<?php namespace App\Repositories\Quote;
+<?php
 
-use App\Contracts\Repositories \ {
+namespace App\Repositories\Quote;
+
+use App\Contracts\Repositories\{
     Quote\QuoteRepositoryInterface,
     Quote\Margin\MarginRepositoryInterface as MarginRepository,
     QuoteTemplate\QuoteTemplateRepositoryInterface as QuoteTemplateRepository,
     QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
 };
 use App\Contracts\Services\QuoteServiceInterface as QuoteService;
-use App\Models \ {
+use App\Models\{
     Company,
     Quote\Quote,
     Quote\Discount as QuoteDiscount,
@@ -20,7 +22,7 @@ use App\Models \ {
     Quote\Discount\PromotionalDiscount,
     Quote\Discount\SND
 };
-use App\Http\Requests \ {
+use App\Http\Requests\{
     StoreQuoteStateRequest,
     GetQuoteTemplatesRequest,
     MappingReviewRequest,
@@ -233,8 +235,6 @@ class QuoteRepository implements QuoteRepositoryInterface
         if ($quote->custom_discount > 0) {
             $quote->resetCustomDiscount();
         }
-
-        return;
     }
 
     public function discounts(string $id)
@@ -279,10 +279,10 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function rowsGroups(string $id): Collection
     {
         $quote = $this->find($id);
-        $groups = $quote->groupedRows()->get();
+        $grouped_rows = $quote->groupedRows()->get();
         $groups_meta = $quote->getGroupDescriptionWithMeta();
 
-        return $groups->rowsToGroups('group_name', $groups_meta)->exceptEach('group_name');
+        return $grouped_rows->rowsToGroups('group_name', $groups_meta)->exceptEach('group_name');
     }
 
     public function submit(Quote $quote): void

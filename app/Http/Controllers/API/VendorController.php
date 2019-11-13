@@ -1,8 +1,10 @@
-<?php namespace App\Http\Controllers\API;
+<?php
+
+namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\VendorRepositoryInterface as VendorRepository;
-use App\Http\Requests\Vendor \ {
+use App\Http\Requests\Vendor\{
     StoreVendorRequest,
     UpdateVendorRequest
 };
@@ -25,7 +27,7 @@ class VendorController extends Controller
      */
     public function index()
     {
-        if(request()->filled('search')) {
+        if (request()->filled('search')) {
             return response()->json(
                 $this->vendor->search(request('search'))
             );

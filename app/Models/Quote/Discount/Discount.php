@@ -1,18 +1,20 @@
-<?php namespace App\Models\Quote\Discount;
+<?php
+
+namespace App\Models\Quote\Discount;
 
 use App\Contracts\ActivatableInterface;
-use App\Models \ {
+use App\Models\{
     UuidModel,
-    Quote\Quote
+    Quote\Quote,
+    Quote\Discount as QuoteDiscount
 };
-use App\Traits \ {
+use App\Traits\{
     Activatable,
     BelongsToCountry,
     BelongsToUser,
     BelongsToVendor,
     Search\Searchable
 };
-use App\Models\Quote\Discount as QuoteDiscount;
 use Arr;
 
 abstract class Discount extends UuidModel implements ActivatableInterface
@@ -57,8 +59,8 @@ abstract class Discount extends UuidModel implements ActivatableInterface
     public function scopeQuoteAcceptable($query, Quote $quote)
     {
         return $query->whereHas('country', function ($query) use ($quote) {
-                $query->whereId($quote->country_id);
-            })
+            $query->whereId($quote->country_id);
+        })
             ->whereHas('vendor', function ($query) use ($quote) {
                 $query->whereId($quote->vendor_id);
             });

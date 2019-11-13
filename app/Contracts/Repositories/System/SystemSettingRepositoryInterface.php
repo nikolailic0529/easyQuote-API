@@ -1,4 +1,6 @@
-<?php namespace App\Contracts\Repositories\System;
+<?php
+
+namespace App\Contracts\Repositories\System;
 
 interface SystemSettingRepositoryInterface
 {

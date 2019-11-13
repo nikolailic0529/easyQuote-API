@@ -1,6 +1,8 @@
-<?php namespace App\Contracts\Repositories\QuoteFile;
+<?php
 
-use App\Models \ {
+namespace App\Contracts\Repositories\QuoteFile;
+
+use App\Models\{
     Quote\Quote,
     QuoteFile\QuoteFile
 };

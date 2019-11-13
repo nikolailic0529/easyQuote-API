@@ -1,10 +1,12 @@
-<?php namespace App\Models\QuoteFile;
+<?php
 
-use App\Models \ {
+namespace App\Models\QuoteFile;
+
+use App\Models\{
     UuidModel,
     QuoteFile\ImportableColumn
 };
-use App\Traits \ {
+use App\Traits\{
     Draftable,
     BelongsToImportedRow,
     BelongsToImportableColumn,
@@ -32,14 +34,14 @@ class ImportedColumn extends UuidModel
     public function associateImportableColumnOrCreate($importableColumn, Collection $carry)
     {
         $carryHasImportableColumn = $carry->contains(function ($column) use ($importableColumn) {
-            if(!isset($importableColumn->id)) {
+            if (!isset($importableColumn->id)) {
                 return false;
             }
 
             return $column->importableColumn->id === $importableColumn->id;
         });
 
-        if($importableColumn instanceof ImportableColumn && !$carryHasImportableColumn) {
+        if ($importableColumn instanceof ImportableColumn && !$carryHasImportableColumn) {
             $this->importableColumn()->associate($importableColumn);
 
             return $importableColumn;
@@ -49,7 +51,7 @@ class ImportedColumn extends UuidModel
         $name = Str::columnName($header);
         $user = request()->user();
 
-        if(!isset($this->header) || mb_strlen(trim($this->header)) === 0) {
+        if (!isset($this->header) || mb_strlen(trim($this->header)) === 0) {
             $alias = $header = __('parser.unknown_column_header');
             $name = Str::columnName($header);
             $importableColumn = $user->importableColumns()->where('name', $name)->firstOrCreate(compact('header', 'name'));
@@ -70,7 +72,7 @@ class ImportedColumn extends UuidModel
 
     public function getValueAttribute()
     {
-        if(!isset($this->template_field_name) || $this->template_field_name !== 'price') {
+        if (!isset($this->template_field_name) || $this->template_field_name !== 'price') {
             return $this->attributes['value'];
         }
 

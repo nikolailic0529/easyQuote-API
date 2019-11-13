@@ -1,4 +1,6 @@
-<?php namespace App\Traits\Import;
+<?php
+
+namespace App\Traits\Import;
 
 trait Proccessable
 {

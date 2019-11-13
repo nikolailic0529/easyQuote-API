@@ -1,11 +1,11 @@
-<?php namespace App\Contracts\Services;
+<?php
 
-use App\Models\Quote \ {
+namespace App\Contracts\Services;
+
+use App\Models\Quote\{
     Quote,
-    Discount,
     Margin\CountryMargin
 };
-use Illuminate\Http\Response;
 use Closure;
 
 interface QuoteServiceInterface

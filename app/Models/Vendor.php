@@ -1,8 +1,10 @@
-<?php namespace App\Models;
+<?php
+
+namespace App\Models;
 
 use App\Contracts\ActivatableInterface;
 use App\Contracts\WithImage;
-use App\Traits \ {
+use App\Traits\{
     Activatable,
     BelongsToCountries,
     BelongsToUser,

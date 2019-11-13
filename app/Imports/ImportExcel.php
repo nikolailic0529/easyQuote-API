@@ -1,8 +1,10 @@
-<?php namespace App\Imports;
+<?php
+
+namespace App\Imports;
 
 use App\Models\QuoteFile\QuoteFile;
 use Illuminate\Support\Collection;
-use Maatwebsite\Excel \ {
+use Maatwebsite\Excel\{
     Row,
     Concerns\WithHeadingRow,
     Concerns\Importable,
@@ -50,25 +52,27 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
     protected $importableSheetData = [];
 
-    public function __construct(QuoteFile $quoteFile) {
+    public function __construct(QuoteFile $quoteFile)
+    {
         $this->quoteFile = $quoteFile->load('user');
         $this->user = $quoteFile->user;
         $this->importableColumn = app(ImportableColumnRepository::class);
         $this->systemImportableColumns = $this->importableColumn->allSystem();
 
-        HeadingRowFormatter::default('none');
+        HeadingRowFormatter::
+        default('none');
     }
 
     public function onRow(Row $row)
     {
-        if($row->getIndex() < $this->startRow) {
+        if ($row->getIndex() < $this->startRow) {
             return null;
         }
 
         $row = $row->toCollection(null, true);
         $importableRow = $this->fetchRow($row);
 
-        if(!$this->checkColumnsData($importableRow['imported_columns'])) {
+        if (!$this->checkColumnsData($importableRow['imported_columns'])) {
             return null;
         };
 
@@ -86,7 +90,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
                 $worksheet = $event->sheet->getDelegate();
                 $highestRow = $worksheet->getHighestRow();
 
-                while(!$this->checkHeadingRow($worksheet) && $this->headingRow < $highestRow) {
+                while (!$this->checkHeadingRow($worksheet) && $this->headingRow < $highestRow) {
                     continue;
                 }
 
@@ -96,7 +100,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
                 $this->importSheetData();
             },
             AfterImport::class => function ($event) {
-                if($this->rowsCount < 1) {
+                if ($this->rowsCount < 1) {
                     $this->quoteFile->setException(__('parser.no_rows_exception'));
                     $this->quoteFile->markAsUnHandled();
                 }
@@ -116,7 +120,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
     private function importSheetData()
     {
-        if(empty($this->importableSheetData)) {
+        if (empty($this->importableSheetData)) {
             return;
         }
 
@@ -145,7 +149,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         $this->mapHeaders($worksheet);
         $this->mapRequiredHeaders();
 
-        if(!$this->requiredHeadersPresent()) {
+        if (!$this->requiredHeadersPresent()) {
             $this->startRow++;
             $this->headingRow++;
             return false;
@@ -174,7 +178,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         $coverageReg = '/((?<!from|to)[ ]*coverage[ ]*?(period)?(?!from|to))|((?<!fra|til)[ ]*dæknings[ ]*periode[ ]*(?<!fra|til))/i';
         $coverageExists = preg_grep($coverageReg, $headingRow);
 
-        if(!$coverageExists) {
+        if (!$coverageExists) {
             return;
         }
 
@@ -187,18 +191,18 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         $foundStart = false;
         $foundEnd = false;
         foreach ($cellIterator as $cell) {
-            if(preg_match($coverageReg, $cell->getValue()) && !$foundStart) {
+            if (preg_match($coverageReg, $cell->getValue()) && !$foundStart) {
                 $cell->setValue(__("parser.coverage_period.{$lang}.from"));
                 $foundStart = $cellIterator->getCurrentColumnIndex();
                 continue;
             }
 
-            if($foundStart && $cell->getValue() === null) {
+            if ($foundStart && $cell->getValue() === null) {
                 $foundEnd = $cellIterator->getCurrentColumnIndex();
                 continue;
             }
 
-            if($foundStart && $foundEnd && $cell->getValue() !== null) {
+            if ($foundStart && $foundEnd && $cell->getValue() !== null) {
                 $end = (int) ($foundStart + floor(($foundEnd - $foundStart) / 2) + 1);
                 $worksheet->setCellValueByColumnAndRow($end, $this->headingRow, __("parser.coverage_period.{$lang}.to"));
                 break;
@@ -217,8 +221,8 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
     private function checkAndLimitHeader(string $header)
     {
-        if($this->quoteFile->isCsv()) {
-            if(Str::length($header) > 100) {
+        if ($this->quoteFile->isCsv()) {
+            if (Str::length($header) > 100) {
                 $this->quoteFile->setException(__('parser.separator_exception'));
                 $this->quoteFile->markAsUnHandled();
                 throw new \ErrorException(__('parser.separator_exception'));
@@ -248,7 +252,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         ];
 
         $imported_columns = $row->map(function ($value, $header) use ($row, $imported_row_id) {
-            if(isset($value)) {
+            if (isset($value)) {
                 $value = preg_replace('/(^[\h]+)|([\h]+$)/um', '', str_replace('_x000D_', '', $value));
             }
 
@@ -276,13 +280,13 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
             $column = $aliasesMapping->search(function ($aliases) use ($header) {
                 $matchingHeader = preg_quote($header, '~');
                 $match = preg_grep("~^{$matchingHeader}.*?~i", $aliases);
-                if(empty($match)) {
+                if (empty($match)) {
                     return false;
                 }
                 return true;
             });
 
-            if(!$column) {
+            if (!$column) {
                 $alias = $header;
                 $name = Str::columnName($header);
 

@@ -1,4 +1,6 @@
-<?php namespace App\Traits\Image;
+<?php
+
+namespace App\Traits\Image;
 
 use Str, File;
 
@@ -6,7 +8,7 @@ trait HasLogo
 {
     public function getLogoAttribute()
     {
-        if(!isset($this->image)) {
+        if (!isset($this->image)) {
             return null;
         }
 
@@ -44,7 +46,7 @@ trait HasLogo
 
     public function getLogoDimensionsAttribute(?bool $withKeys = false, ?bool $absPath = false)
     {
-        if(!is_array($this->logo)) {
+        if (!is_array($this->logo)) {
             return $this->logo;
         }
 

@@ -1,4 +1,6 @@
-<?php namespace App\Observers;
+<?php
+
+namespace App\Observers;
 
 use App\Models\QuoteTemplate\TemplateField;
 
@@ -12,11 +14,11 @@ class TemplateFieldObserver
      */
     public function saving(TemplateField $templateField)
     {
-        if(app()->runningInConsole()) {
+        if (app()->runningInConsole()) {
             return;
         }
 
-        if($this->exists($templateField)) {
+        if ($this->exists($templateField)) {
             throw new \ErrorException(__('template_field.exists_exception'));
         }
     }
@@ -29,11 +31,11 @@ class TemplateFieldObserver
      */
     public function updating(TemplateField $templateField)
     {
-        if(app()->runningInConsole()) {
+        if (app()->runningInConsole()) {
             return;
         }
 
-        if($templateField->isSystem()) {
+        if ($templateField->isSystem()) {
             throw new \ErrorException(__('template_field.system_updating_exception'));
         }
     }
@@ -46,15 +48,15 @@ class TemplateFieldObserver
      */
     public function deleting(TemplateField $templateField)
     {
-        if(app()->runningInConsole()) {
+        if (app()->runningInConsole()) {
             return;
         }
 
-        if($templateField->isSystem()) {
+        if ($templateField->isSystem()) {
             throw new \ErrorException(__('template_field.system_deleting_exception'));
         }
 
-        if($templateField->isAttached()) {
+        if ($templateField->isAttached()) {
             throw new \ErrorException(__('template_field.attached_deleting_exception'));
         }
     }

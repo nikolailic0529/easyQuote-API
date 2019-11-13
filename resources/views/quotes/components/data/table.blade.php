@@ -5,7 +5,7 @@
         </tr>
     </thead>
     <tbody>
-        @isset (head($data[$page_name][$data_key])['group_name'])
+        @isset (head($data[$page_name][$data_key])['rows'])
             @each ('quotes.components.data.group', $data[$page_name][$data_key] ?? [], 'group')
         @else
             @each ('quotes.components.data.row', $data[$page_name][$data_key] ?? [], 'row')

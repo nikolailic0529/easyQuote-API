@@ -1,12 +1,12 @@
-<?php namespace App\Contracts\Repositories\QuoteTemplate;
+<?php
+
+namespace App\Contracts\Repositories\QuoteTemplate;
 
 use App\Builder\Pagination\Paginator;
-use App\Http\Requests\QuoteTemplate \ {
-    StoreQuoteTemplateImageRequest,
+use App\Http\Requests\QuoteTemplate\{
     StoreQuoteTemplateRequest,
     UpdateQuoteTemplateRequest
 };
-use App\Models\Image;
 use App\Models\QuoteTemplate\QuoteTemplate;
 use Illuminate\Support\Collection;
 

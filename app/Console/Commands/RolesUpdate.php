@@ -1,7 +1,9 @@
-<?php namespace App\Console\Commands;
+<?php
+
+namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Models \ {
+use App\Models\{
     Role,
     Permission
 };

@@ -1,7 +1,9 @@
-<?php namespace App\Contracts\Repositories;
+<?php
+
+namespace App\Contracts\Repositories;
 
 use App\Models\Role;
-use App\Http\Requests\Role \ {
+use App\Http\Requests\Role\{
     StoreRoleRequest,
     UpdateRoleRequest
 };

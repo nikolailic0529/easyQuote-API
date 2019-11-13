@@ -1,4 +1,6 @@
-<?php namespace App\Traits\Margin;
+<?php
+
+namespace App\Traits\Margin;
 
 trait HasMarginPercentageAttribute
 {

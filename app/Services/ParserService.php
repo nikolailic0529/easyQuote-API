@@ -1,6 +1,8 @@
-<?php namespace App\Services;
+<?php
 
-use App\Contracts \ {
+namespace App\Services;
+
+use App\Contracts\{
     Services\ParserServiceInterface,
     Services\WordParserInterface as WordParser,
     Services\PdfParserInterface as PdfParser,
@@ -10,19 +12,19 @@ use App\Contracts \ {
     Repositories\QuoteFile\FileFormatRepositoryInterface as FileFormatRepository,
     Repositories\QuoteFile\DataSelectSeparatorRepositoryInterface as DataSelectSeparatorRepository
 };
-use App\Imports\CountPages;
-use App\Models \ {
+use App\Models\{
     Quote\Quote,
     QuoteFile\QuoteFile
 };
-use App\Http\Requests \ {
+use App\Http\Requests\{
     StoreQuoteFileRequest,
     HandleQuoteFileRequest
 };
-use App\Imports \ {
+use App\Imports\{
     ImportCsv,
     ImportExcel,
-    ImportExcelSchedule
+    ImportExcelSchedule,
+    CountPages
 };
 use Excel, Storage, File, Setting, Cache;
 
@@ -99,7 +101,7 @@ class ParserService implements ParserServiceInterface
     {
         $quote = $this->quote->find($request->quote_id);
 
-        if(!$quote->quoteTemplate()->exists()) {
+        if (!$quote->quoteTemplate()->exists()) {
             throw new \ErrorException(__('parser.quote_has_not_template_exception'));
         };
 
@@ -109,24 +111,15 @@ class ParserService implements ParserServiceInterface
 
         $separator = $request->data_select_separator_id;
 
-        $handled = $this->handleOrRetrieve($quote, $quoteFile, $separator);
+        $this->handleOrRetrieve($quote, $quoteFile, $separator);
 
         $quoteFile->throwExceptionIfExists();
 
-        if(!$quoteFile->isSchedule()) {
-            $processed = $quoteFile->processing_percentage;
-            $status = $quoteFile->processing_status;
-
-            if($processed > 1 && $quoteFile->isNotAutomapped()) {
-                $this->mapColumnsToFields($quote, $quoteFile);
-            }
-
-        } else {
-            $status = 'completed';
-            $processed = 100;
+        if ($quoteFile->isPrice() && $quoteFile->isNotAutomapped() && $quoteFile->processing_percentage > 1) {
+            $this->mapColumnsToFields($quote, $quoteFile);
         }
 
-        return compact('status', 'processed');
+        return $quoteFile->processing_state;
     }
 
     public function mapColumnsToFields(Quote $quote, QuoteFile $quoteFile)
@@ -142,7 +135,7 @@ class ParserService implements ParserServiceInterface
             return $query->whereHas('importableColumn');
         }])->processed()->first();
 
-        if(!isset($rowData)) {
+        if (blank($rowData)) {
             return;
         }
 
@@ -151,7 +144,7 @@ class ParserService implements ParserServiceInterface
         $columnsData->each(function ($columnData) use ($quote, $templateFields) {
             $templateField = $templateFields->where('name', $columnData->importableColumn->name)->first();
 
-            if(!isset($templateField)) {
+            if (!isset($templateField)) {
                 return true;
             }
 
@@ -167,11 +160,11 @@ class ParserService implements ParserServiceInterface
 
     public function handleOrRetrieve(Quote $quote, QuoteFile $quoteFile, $separator)
     {
-        if(($quoteFile->isHandled() && $quoteFile->isPrice()) || ($quoteFile->isHandled() && $quoteFile->isSchedule() && !$quoteFile->isNewPage(request()->page))) {
+        if (($quoteFile->isHandled() && $quoteFile->isPrice()) || ($quoteFile->isHandled() && $quoteFile->isSchedule() && !$quoteFile->isNewPage(request()->page))) {
             return false;
         }
 
-        if(($quoteFile->isHandled() && $quoteFile->isPrice()) && !($quoteFile->isCsv() && $quoteFile->isNewSeparator($separator))) {
+        if (($quoteFile->isHandled() && $quoteFile->isPrice()) && !($quoteFile->isCsv() && $quoteFile->isNewSeparator($separator))) {
             return false;
         };
 
@@ -220,13 +213,14 @@ class ParserService implements ParserServiceInterface
     {
         $rawData = $this->quoteFile->getRawData($quoteFile)->toArray();
 
-        if($quoteFile->isSchedule()) {
+        if ($quoteFile->isSchedule()) {
             $pageData = collect($rawData)->firstWhere('page', $quoteFile->imported_page);
 
             $parsedData = $this->pdfParser->parseSchedule($pageData);
 
             $this->quoteFile->createScheduleData(
-                $quoteFile, $parsedData
+                $quoteFile,
+                $parsedData
             );
 
             return $quoteFile->markAsHandled();
@@ -235,7 +229,8 @@ class ParserService implements ParserServiceInterface
         $parsedData = $this->pdfParser->parse($rawData);
 
         $this->quoteFile->createRowsData(
-            $quoteFile, $parsedData
+            $quoteFile,
+            $parsedData
         );
 
         return $quoteFile->markAsHandled();
@@ -243,7 +238,7 @@ class ParserService implements ParserServiceInterface
 
     public function handleExcel(QuoteFile $quoteFile)
     {
-        if($quoteFile->isSchedule()) {
+        if ($quoteFile->isSchedule()) {
             return $this->importExcelSchedule($quoteFile);
         }
 
@@ -252,7 +247,7 @@ class ParserService implements ParserServiceInterface
 
     public function handleCsv(QuoteFile $quoteFile)
     {
-        if(request()->has('data_select_separator_id')) {
+        if (request()->has('data_select_separator_id')) {
             $dataSelectSeparator = $this->dataSelectSeparator->find(request()->data_select_separator_id);
             $quoteFile->dataSelectSeparator()->associate($dataSelectSeparator)->save();
         }
@@ -341,7 +336,7 @@ class ParserService implements ParserServiceInterface
 
         $sheetCount = $import->getSheetCount();
 
-        if($sheetCount === 0) {
+        if ($sheetCount === 0) {
             throw new \ErrorException(__('parser.excel.unreadable_file_exception'));
         }
 
@@ -354,7 +349,7 @@ class ParserService implements ParserServiceInterface
 
         $extensions = collect(File::extension($file));
 
-        if($extensions->first() === 'txt') {
+        if ($extensions->first() === 'txt') {
             $extensions->push('csv');
         }
 

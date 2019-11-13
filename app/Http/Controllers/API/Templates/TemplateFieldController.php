@@ -1,8 +1,10 @@
-<?php namespace App\Http\Controllers\API\Templates;
+<?php
+
+namespace App\Http\Controllers\API\Templates;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\QuoteTemplate\TemplateFieldRepositoryInterface as TemplateFieldRepository;
-use App\Http\Requests\QuoteTemplate \ {
+use App\Http\Requests\QuoteTemplate\{
     StoreTemplateFieldRequest,
     UpdateTemplateFieldRequest
 };
@@ -23,7 +25,7 @@ class TemplateFieldController extends Controller
      */
     public function index()
     {
-        if(request()->filled('search')) {
+        if (request()->filled('search')) {
             return response()->json(
                 $this->templateField->search(request('search'))
             );

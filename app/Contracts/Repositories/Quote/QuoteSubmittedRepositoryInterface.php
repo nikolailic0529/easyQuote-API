@@ -1,8 +1,9 @@
-<?php namespace App\Contracts\Repositories\Quote;
+<?php
+
+namespace App\Contracts\Repositories\Quote;
 
 use App\Models\Quote\Quote;
 use App\Builder\Pagination\Paginator;
-use App\Http\Resources\QuoteResource;
 use Illuminate\Database\Eloquent\Builder;
 
 interface QuoteSubmittedRepositoryInterface

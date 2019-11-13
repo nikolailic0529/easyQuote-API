@@ -1,20 +1,24 @@
-<?php namespace App\Models\Quote\Margin;
+<?php
 
-use App\Contracts\ActivatableInterface;
-use App\Models \ {
+namespace App\Models\Quote\Margin;
+
+use App\Contracts\{
+    ActivatableInterface,
+    HasOrderedScope
+};
+use App\Models\{
     UuidModel,
     Quote\Quote
 };
-use App\Traits \ {
+use App\Traits\{
     BelongsToUser,
     BelongsToVendor,
     Activatable
 };
-use Illuminate\Database\Eloquent \ {
+use Illuminate\Database\Eloquent\{
     Builder,
     SoftDeletes
 };
-use App\Contracts\HasOrderedScope;
 use Str;
 
 abstract class Margin extends UuidModel implements HasOrderedScope, ActivatableInterface
@@ -76,13 +80,13 @@ abstract class Margin extends UuidModel implements HasOrderedScope, ActivatableI
     {
         $value = (float) $value;
 
-        if($this->isPercentage()) {
+        if ($this->isPercentage()) {
             $computedValue = $value + ($value * ($this->diff_value / 100));
         } else {
             $computedValue = $value + $this->diff_value;
         }
 
-        if($computedValue < 0) {
+        if ($computedValue < 0) {
             return 0;
         }
 
@@ -91,7 +95,7 @@ abstract class Margin extends UuidModel implements HasOrderedScope, ActivatableI
 
     public function getDiffValueAttribute()
     {
-        if(Str::snake($this->method) === 'no_margin') {
+        if (Str::snake($this->method) === 'no_margin') {
             return $this->value;
         }
 

@@ -1,4 +1,6 @@
-<?php namespace App\Observers\Discount;
+<?php
+
+namespace App\Observers\Discount;
 
 use App\Models\Quote\Discount\SND;
 
@@ -12,11 +14,11 @@ class SNDobserver
      */
     public function saving(SND $snd)
     {
-        if(app()->runningInConsole()) {
+        if (app()->runningInConsole()) {
             return;
         }
 
-        if($this->exists($snd)) {
+        if ($this->exists($snd)) {
             throw new \ErrorException(__('discount.exists_exception'));
         }
     }

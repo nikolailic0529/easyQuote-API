@@ -1,10 +1,12 @@
-<?php namespace App\Policies;
+<?php
 
-use App\Models \ {
+namespace App\Policies;
+
+use App\Models\{
     User,
     Vendor
 };
-use Illuminate\Auth\Access \ {
+use Illuminate\Auth\Access\{
     HandlesAuthorization,
     Response
 };
@@ -21,7 +23,7 @@ class VendorPolicy
      */
     public function viewAny(User $user)
     {
-        if($user->can('view_vendors')) {
+        if ($user->can('view_vendors')) {
             return true;
         }
     }
@@ -35,7 +37,7 @@ class VendorPolicy
      */
     public function view(User $user, Vendor $vendor)
     {
-        if($user->can('view_vendors')) {
+        if ($user->can('view_vendors')) {
             return true;
         }
     }
@@ -48,7 +50,7 @@ class VendorPolicy
      */
     public function create(User $user)
     {
-        if($user->can('create_vendors')) {
+        if ($user->can('create_vendors')) {
             return true;
         }
     }
@@ -62,11 +64,11 @@ class VendorPolicy
      */
     public function update(User $user, Vendor $vendor)
     {
-        if($vendor->isSystem()) {
+        if ($vendor->isSystem()) {
             return Response::deny(__('vendor.system_updating_exception'));
         }
 
-        if($user->can('update_vendors')) {
+        if ($user->can('update_vendors')) {
             return true;
         }
     }
@@ -80,11 +82,11 @@ class VendorPolicy
      */
     public function delete(User $user, Vendor $vendor)
     {
-        if($vendor->isSystem()) {
+        if ($vendor->isSystem()) {
             return Response::deny(__('vendor.system_deleting_exception'));
         }
 
-        if($user->can('delete_vendors')) {
+        if ($user->can('delete_vendors')) {
             return true;
         }
     }

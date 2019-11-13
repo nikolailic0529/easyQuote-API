@@ -1,4 +1,6 @@
-<?php namespace App\Traits\Image;
+<?php
+
+namespace App\Traits\Image;
 
 use App\Models\Image;
 

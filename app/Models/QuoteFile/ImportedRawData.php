@@ -1,8 +1,10 @@
-<?php namespace App\Models\QuoteFile;
+<?php
+
+namespace App\Models\QuoteFile;
 
 use App\Models\UuidModel;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Traits \ {
+use App\Traits\{
     Draftable,
     BelongsToQuoteFile,
     BelongsToUser

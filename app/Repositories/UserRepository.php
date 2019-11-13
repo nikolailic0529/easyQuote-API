@@ -1,20 +1,22 @@
-<?php namespace App\Repositories;
+<?php
 
-use App\Contracts\Repositories \ {
+namespace App\Repositories;
+
+use App\Contracts\Repositories\{
     UserRepositoryInterface,
     CountryRepositoryInterface as CountryRepository,
     TimezoneRepositoryInterface as TimezoneRepository
 };
-use App\Http\Requests \ {
+use App\Http\Requests\{
     Collaboration\InviteUserRequest,
     Collaboration\UpdateUserRequest
 };
-use App\Models \ {
+use App\Models\{
     User,
     Role,
     Collaboration\Invitation
 };
-use Illuminate\Database\Eloquent \ {
+use Illuminate\Database\Eloquent\{
     Model,
     Builder,
     Collection

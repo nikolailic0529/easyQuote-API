@@ -1,19 +1,23 @@
-<?php namespace App\Models\QuoteTemplate;
+<?php
 
-use App\Contracts\ActivatableInterface;
-use App\Models \ {
+namespace App\Models\QuoteTemplate;
+
+use App\Contracts\{
+    ActivatableInterface,
+    HasOrderedScope
+};
+use App\Models\{
     UuidModel,
     QuoteFile\ImportableColumn,
     Quote\FieldColumn
 };
-use App\Traits \ {
+use App\Traits\{
     Activatable,
     BelongsToUser,
     BelongsToTemplateFieldType,
-    Systemable
+    Systemable,
+    Search\Searchable
 };
-use App\Contracts\HasOrderedScope;
-use App\Traits\Search\Searchable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Str;
 
@@ -29,7 +33,14 @@ class TemplateField extends UuidModel implements HasOrderedScope, ActivatableInt
     protected $table = 'template_fields';
 
     protected $fillable = [
-        'header', 'default_value', 'template_field_type_id'
+        'header',
+        'name',
+        'is_requred',
+        'is_system',
+        'is_column',
+        'order',
+        'default_value',
+        'template_field_type_id'
     ];
 
     protected $hidden = [
@@ -84,7 +95,7 @@ class TemplateField extends UuidModel implements HasOrderedScope, ActivatableInt
 
     public function getTypeAttribute()
     {
-        if(!isset($this->templateFieldType)) {
+        if (!isset($this->templateFieldType)) {
             return null;
         }
 

@@ -1,4 +1,6 @@
-<?php namespace App\Models\Quote\Discount;
+<?php
+
+namespace App\Models\Quote\Discount;
 
 use App\Traits\Discount\HasDurationsAttribute;
 

@@ -112,6 +112,9 @@ class StoreQuoteStateRequest extends FormRequest
             'quote_data.field_column.*.is_default_enabled' => [
                 'boolean',
             ],
+            'quote_data.field_column.*.is_preview_visible' => [
+                'boolean',
+            ],
             'quote_data.field_column.*.default_value' => [
                 'string',
                 'min:1'

@@ -1,4 +1,6 @@
-<?php namespace App\Traits\Quote;
+<?php
+
+namespace App\Traits\Quote;
 
 use App\Models\{
     Quote\FieldColumn,
@@ -176,12 +178,15 @@ trait HasMapping
             return $this->rowsDataByColumns($flags);
         }
 
-        $columns = array_diff($templateFields, ['price']);
+        $columns = $templateFields;
         array_unshift($columns, 'id');
 
         $calculatedPrice = DB::raw("(`price` / 30 * greatest(datediff(str_to_date(`date_to`, '%d/%m/%Y'), str_to_date(`date_from`, '%d/%m/%Y')), 0)) as `price`");
 
-        in_array('price', $templateFields) && array_push($columns, $calculatedPrice);
+        if (Arr::has(array_flip($templateFields), ['price', 'date_to', 'date_from'])) {
+            $columns = array_diff($columns, ['price']);
+            array_push($columns, $calculatedPrice);
+        };
 
         return DB::query()->fromSub($this->rowsDataByColumns($flags), 'rows_data')->select($columns);
     }
@@ -231,26 +236,34 @@ trait HasMapping
             ->select('group_name')
             ->selectRaw('count(`id`) as `total_count`');
 
-        in_array('price', $this->templateFieldsToArray()) && $query->selectRaw('sum(`price`) as `total_price`');;
+        in_array('price', $this->templateFieldsToArray()) && $query->selectRaw('cast(sum(`price`) as decimal(15,2)) as `total_price`');;
 
         return $query;
     }
 
     public function getGroupDescriptionWithMeta(?array $flags = null, bool $calculate = false, ?string $group_name = null)
     {
-        $groups = $this->groupedRows($flags, $calculate, $group_name)->get();
-        $groups_meta = $this->groupedRowsMeta($flags, $calculate, $group_name)->get();
+        $groups_meta = collect(json_decode(json_encode($this->groupedRowsMeta($flags, $calculate, $group_name)->get()), true));
         $groups_description = collect($this->group_description);
 
-        return $groups_meta->transform(function ($group) use ($groups_description) {
-            return array_merge($groups_description->firstWhere('name', '===', $group->group_name) ?? [], (array) $group);
+        return $groups_description->transform(function ($group) use ($groups_meta) {
+            return array_merge($group, $groups_meta->firstWhere('group_name', '===', $group['name']) ?? $this->defaultGroupMeta($group['name']));
         });
+    }
+
+    public function defaultGroupMeta(?string $group_name = null)
+    {
+        return [
+            'group_name' => $group_name,
+            'total_count' => 0,
+            'total_price' => '0.00'
+        ];
     }
 
     public function countTotalPrice()
     {
         if (!$this->templateFields->contains('name', 'price')) {
-            return 0.00;
+            return 0.0;
         }
 
         $sub = $this->rowsDataByColumnsCalculated(['where_selected'], $this->calculate_list_price);
@@ -294,5 +307,10 @@ trait HasMapping
         }
 
         return $this->templateFields->whereNotIn('name', $except)->sortBy('order')->pluck('header', 'name')->toArray();
+    }
+
+    public function hiddenFieldsToArray()
+    {
+        return $this->fieldsColumns->where('is_preview_visible', false)->pluck('templateField.name')->toArray();
     }
 }

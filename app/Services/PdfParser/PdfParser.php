@@ -1,4 +1,6 @@
-<?php namespace App\Services\PdfParser;
+<?php
+
+namespace App\Services\PdfParser;
 
 use App\Contracts\Services\PdfParserInterface;
 use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface as ImportableColumnRepository;
@@ -118,7 +120,7 @@ class PdfParser implements PdfParserInterface
             })->values();
         });
 
-        if($matches['account']->isEmpty() || $matches['payment']->isEmpty() || $matches['payment_dates']->isEmpty() || $matches['payment_dates_options']->isEmpty()) {
+        if ($matches['account']->isEmpty() || $matches['payment']->isEmpty() || $matches['payment_dates']->isEmpty() || $matches['payment_dates_options']->isEmpty()) {
             throw new \ErrorException(__('parser.not_schedule_exception'));
         }
 
@@ -140,7 +142,7 @@ class PdfParser implements PdfParserInterface
         $colsMapping = collect($matches['cols'])->filter(function ($value) {
             return !is_null($value);
         })->values()->map(function ($value) use ($datesRegexp) {
-            return (boolean) preg_match($datesRegexp, $value);
+            return (bool) preg_match($datesRegexp, $value);
         });
 
         foreach ($paymentDatesOptions as $paymentOption) {
@@ -196,7 +198,7 @@ class PdfParser implements PdfParserInterface
         $description = collect($array['description']);
 
         $description->transform(function ($value) {
-            if(is_null($value)) {
+            if (is_null($value)) {
                 return $value;
             }
 
@@ -206,7 +208,6 @@ class PdfParser implements PdfParserInterface
             $value = preg_replace('/\s{2,}/', ' ', $value);
 
             return $value;
-
         })->toArray();
 
         return array_merge($array, compact('description'));
@@ -214,11 +215,11 @@ class PdfParser implements PdfParserInterface
 
     private function setBinPath()
     {
-        if(in_array(config('app.env'), ['local', 'testing'])) {
+        if (in_array(config('app.env'), ['local', 'testing'])) {
             return $this->binPath = app_path(config('pdfparser.pdftotext.win'));
         }
 
-        if(config('app.env') === 'production' && !config('pdfparser.pdftotext.default_bin')) {
+        if (config('app.env') === 'production' && !config('pdfparser.pdftotext.default_bin')) {
             return $this->binPath = config('pdfparser.pdftotext.linux');
         }
     }
@@ -232,13 +233,11 @@ class PdfParser implements PdfParserInterface
         foreach ($periodFrom as $key => $row) {
             $nextKey = $key + 1;
 
-            if(!(
-                isset($periodFrom[$key]) &&
+            if (!(isset($periodFrom[$key]) &&
                 isset($periodFrom[$nextKey]) &&
                 !isset($periodTo[$key]) &&
                 !isset($periodTo[$nextKey]) &&
-                $productNo[$key] === $productNo[$nextKey]
-            )) {
+                $productNo[$key] === $productNo[$nextKey])) {
                 continue;
             }
 

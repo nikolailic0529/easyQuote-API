@@ -1,6 +1,8 @@
-<?php namespace App\Traits\Discount;
+<?php
 
-use App\Models\Quote\Discount \ {
+namespace App\Traits\Discount;
+
+use App\Models\Quote\Discount\{
     MultiYearDiscount,
     PrePayDiscount,
     PromotionalDiscount,

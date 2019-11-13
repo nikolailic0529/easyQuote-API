@@ -1,4 +1,6 @@
-<?php namespace App\Observers;
+<?php
+
+namespace App\Observers;
 
 use App\Models\Company;
 
@@ -12,11 +14,11 @@ class CompanyObserver
      */
     public function saving(Company $company)
     {
-        if(app()->runningInConsole()) {
+        if (app()->runningInConsole()) {
             return;
         }
 
-        if($this->exists($company)) {
+        if ($this->exists($company)) {
             throw new \ErrorException(__('company.exists_exception'));
         }
     }

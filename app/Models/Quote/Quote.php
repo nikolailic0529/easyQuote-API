@@ -1,14 +1,16 @@
-<?php namespace App\Models\Quote;
+<?php
+
+namespace App\Models\Quote;
 
 use App\Contracts\ActivatableInterface;
 use App\Contracts\HasOrderedScope;
-use App\Models \ {
+use App\Models\{
     CompletableModel,
     QuoteFile\ImportedRow,
     QuoteFile\QuoteFile
 };
 use App\Models\QuoteFile\ScheduleData;
-use App\Traits \ {
+use App\Traits\{
     Activatable,
     HasQuoteFiles,
     BelongsToUser,
@@ -203,14 +205,14 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
 
         return Arr::except(
             $this->toArray(),
-                [
-                    'margin_data',
-                    'checkbox_status',
-                    'calculate_list_price',
-                    'vendor.logo',
-                    'company.logo'
-                ]
-            );
+            [
+                'margin_data',
+                'checkbox_status',
+                'calculate_list_price',
+                'vendor.logo',
+                'company.logo'
+            ]
+        );
     }
 
     public function getCompletenessDictionary()
@@ -220,14 +222,15 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
 
     public function getClosingDateAttribute()
     {
-        if(!isset($this->attributes['closing_date'])) {
+        if (!isset($this->attributes['closing_date'])) {
             return null;
         }
 
         return Carbon::parse($this->attributes['closing_date'])->format('d/m/Y');
     }
 
-    private function joins() {
+    private function joins()
+    {
         return [
             'quoteFiles' => function ($query) {
                 return $query->isNotHandledSchedule();

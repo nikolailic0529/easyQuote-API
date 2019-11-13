@@ -1,4 +1,6 @@
-<?php namespace App\Http\Controllers\API\Quotes;
+<?php
+
+namespace App\Http\Controllers\API\Quotes;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\Customer\CustomerRepositoryInterface as CustomerRepository;

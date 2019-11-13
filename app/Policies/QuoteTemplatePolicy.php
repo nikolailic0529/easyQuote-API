@@ -1,10 +1,12 @@
-<?php namespace App\Policies;
+<?php
 
-use App\Models \ {
+namespace App\Policies;
+
+use App\Models\{
     User,
     QuoteTemplate\QuoteTemplate
 };
-use Illuminate\Auth\Access \ {
+use Illuminate\Auth\Access\{
     HandlesAuthorization,
     Response
 };
@@ -21,7 +23,7 @@ class QuoteTemplatePolicy
      */
     public function viewAny(User $user)
     {
-        if($user->can('view_templates')) {
+        if ($user->can('view_templates')) {
             return true;
         }
     }
@@ -35,7 +37,7 @@ class QuoteTemplatePolicy
      */
     public function view(User $user, QuoteTemplate $quoteTemplate)
     {
-        if($user->can('view_templates')) {
+        if ($user->can('view_templates')) {
             return true;
         }
     }
@@ -48,7 +50,7 @@ class QuoteTemplatePolicy
      */
     public function create(User $user)
     {
-        if($user->can('create_templates')) {
+        if ($user->can('create_templates')) {
             return true;
         }
     }
@@ -62,11 +64,11 @@ class QuoteTemplatePolicy
      */
     public function update(User $user, QuoteTemplate $quoteTemplate)
     {
-        if($quoteTemplate->isSystem()) {
+        if ($quoteTemplate->isSystem()) {
             return Response::deny(__('template.system_updating_exception'));
         }
 
-        if($user->can('update_templates')) {
+        if ($user->can('update_templates')) {
             return true;
         }
     }
@@ -80,11 +82,11 @@ class QuoteTemplatePolicy
      */
     public function delete(User $user, QuoteTemplate $quoteTemplate)
     {
-        if($quoteTemplate->isSystem()) {
+        if ($quoteTemplate->isSystem()) {
             return Response::deny(__('template.system_deleting_exception'));
         }
 
-        if($user->can('delete_templates')) {
+        if ($user->can('delete_templates')) {
             return true;
         }
     }

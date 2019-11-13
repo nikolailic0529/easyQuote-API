@@ -1,11 +1,13 @@
-<?php namespace App\Contracts\Repositories;
+<?php
+
+namespace App\Contracts\Repositories;
 
 interface AccessAttemptRepositoryInterface
 {
     /**
      * Get all access attempts
      *
-     * @return \Illuminate\Database\Eloquent\Collection 
+     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function all();
 
@@ -14,5 +16,5 @@ interface AccessAttemptRepositoryInterface
      * @params Array $array
      * @return \App\Models\AccessAttempt
      */
-    public function create(Array $array);
+    public function create(array $array);
 }

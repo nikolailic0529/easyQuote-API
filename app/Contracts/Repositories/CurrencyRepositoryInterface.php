@@ -1,11 +1,13 @@
-<?php namespace App\Contracts\Repositories;
+<?php
+
+namespace App\Contracts\Repositories;
 
 interface CurrencyRepositoryInterface
 {
     /**
      * Get all currencies
      *
-     * @return \Illuminate\Database\Eloquent\Collection 
+     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function all();
 }

@@ -1,18 +1,20 @@
-<?php namespace App\Models;
+<?php
+
+namespace App\Models;
 
 use App\Contracts\ActivatableInterface;
-use App\Models \ {
+use App\Models\{
     UuidModel,
     Permission
 };
-use App\Traits \ {
+use App\Traits\{
     Activatable,
     BelongsToUser,
     Collaboration\BelongsToCollaboration,
     Search\Searchable,
     Systemable
 };
-use Spatie\Permission \ {
+use Spatie\Permission\{
     Guard,
     Traits\HasPermissions,
     Traits\RefreshesPermissionCache,
@@ -21,7 +23,7 @@ use Spatie\Permission \ {
     Exceptions\RoleAlreadyExists,
     Contracts\Role as RoleContract
 };
-use Illuminate\Database\Eloquent \ {
+use Illuminate\Database\Eloquent\{
     SoftDeletes,
     Relations\MorphToMany,
     Relations\BelongsToMany
@@ -62,7 +64,7 @@ class Role extends UuidModel implements RoleContract, ActivatableInterface
     {
         $attributes['guard_name'] = $attributes['guard_name'] ?? 'web';
 
-        if(!app()->runningInConsole()) {
+        if (!app()->runningInConsole()) {
             $attributes['user_id'] = $attributes['user_id'] ?? request()->user()->id;
         }
 
@@ -128,7 +130,7 @@ class Role extends UuidModel implements RoleContract, ActivatableInterface
 
         $role = static::where('name', $name)->where('guard_name', $guardName)->first();
 
-        if (! $role) {
+        if (!$role) {
             throw RoleDoesNotExist::named($name);
         }
 
@@ -141,7 +143,7 @@ class Role extends UuidModel implements RoleContract, ActivatableInterface
 
         $role = static::where('id', $id)->where('guard_name', $guardName)->first();
 
-        if (! $role) {
+        if (!$role) {
             throw RoleDoesNotExist::withId($id);
         }
 
@@ -162,7 +164,7 @@ class Role extends UuidModel implements RoleContract, ActivatableInterface
 
         $role = static::where('name', $name)->where('guard_name', $guardName)->first();
 
-        if (! $role) {
+        if (!$role) {
             return static::query()->create(['name' => $name, 'guard_name' => $guardName]);
         }
 
@@ -190,7 +192,7 @@ class Role extends UuidModel implements RoleContract, ActivatableInterface
             $permission = $permissionClass->findById($permission, $this->getDefaultGuardName());
         }
 
-        if (! $this->getGuardNames()->contains($permission->guard_name)) {
+        if (!$this->getGuardNames()->contains($permission->guard_name)) {
             throw GuardDoesNotMatch::create($permission->guard_name, $this->getGuardNames());
         }
 

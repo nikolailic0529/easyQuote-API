@@ -1,10 +1,12 @@
-<?php namespace App\Policies;
+<?php
 
-use App\Models \ {
+namespace App\Policies;
+
+use App\Models\{
     User,
     Company
 };
-use Illuminate\Auth\Access \ {
+use Illuminate\Auth\Access\{
     HandlesAuthorization,
     Response
 };
@@ -21,7 +23,7 @@ class CompanyPolicy
      */
     public function viewAny(User $user)
     {
-        if($user->can('view_companies')) {
+        if ($user->can('view_companies')) {
             return true;
         }
     }
@@ -35,7 +37,7 @@ class CompanyPolicy
      */
     public function view(User $user, Company $company)
     {
-        if($user->can('view_companies')) {
+        if ($user->can('view_companies')) {
             return true;
         }
     }
@@ -48,7 +50,7 @@ class CompanyPolicy
      */
     public function create(User $user)
     {
-        if($user->can('create_companies')) {
+        if ($user->can('create_companies')) {
             return true;
         }
     }
@@ -62,11 +64,11 @@ class CompanyPolicy
      */
     public function update(User $user, Company $company)
     {
-        if($company->isSystem()) {
+        if ($company->isSystem()) {
             return Response::deny(__('company.system_updating_exception'));
         }
 
-        if($user->can('update_companies')) {
+        if ($user->can('update_companies')) {
             return true;
         }
     }
@@ -80,11 +82,11 @@ class CompanyPolicy
      */
     public function delete(User $user, Company $company)
     {
-        if($company->isSystem()) {
+        if ($company->isSystem()) {
             return Response::deny(__('company.system_deleting_exception'));
         }
 
-        if($user->can('delete_companies')) {
+        if ($user->can('delete_companies')) {
             return true;
         }
     }

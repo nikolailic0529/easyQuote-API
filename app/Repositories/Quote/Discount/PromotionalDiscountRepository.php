@@ -1,12 +1,14 @@
-<?php namespace App\Repositories\Quote\Discount;
+<?php
+
+namespace App\Repositories\Quote\Discount;
 
 use App\Contracts\Repositories\Quote\Discount\PromotionalDiscountRepositoryInterface;
 use App\Models\Quote\Discount\PromotionalDiscount;
-use App\Http\Requests\Discount \ {
+use App\Http\Requests\Discount\{
     StorePromotionalDiscountRequest,
     UpdatePromotionalDiscountRequest
 };
-use Illuminate\Database\Eloquent \ {
+use Illuminate\Database\Eloquent\{
     Model,
     Builder,
     ModelNotFoundException

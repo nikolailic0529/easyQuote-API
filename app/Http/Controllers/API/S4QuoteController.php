@@ -1,6 +1,8 @@
-<?php namespace App\Http\Controllers\API;
+<?php
 
-use App\Contracts\Repositories \ {
+namespace App\Http\Controllers\API;
+
+use App\Contracts\Repositories\{
     Quote\QuoteSubmittedRepositoryInterface as QuoteSubmittedRepository,
     Customer\CustomerRepositoryInterface as CustomerRepository
 };

@@ -1,4 +1,6 @@
-<?php namespace App\Traits\Collaboration;
+<?php
+
+namespace App\Traits\Collaboration;
 
 use App\Models\Collaboration\Invitation;
 

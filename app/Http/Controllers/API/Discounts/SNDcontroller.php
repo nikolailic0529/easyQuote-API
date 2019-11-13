@@ -1,12 +1,14 @@
-<?php namespace App\Http\Controllers\API\Discounts;
+<?php
+
+namespace App\Http\Controllers\API\Discounts;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\Quote\Discount\SNDrepositoryInterface as SNDrepository;
-use App\Http\Requests\Discount \ {
+use App\Http\Requests\Discount\{
     StoreSNDrequest,
     UpdateSNDrequest
 };
-use App\Models\Quote\Discount \ {
+use App\Models\Quote\Discount\{
     Discount,
     SND
 };
@@ -28,7 +30,7 @@ class SNDcontroller extends Controller
      */
     public function index()
     {
-        if(request()->filled('search')) {
+        if (request()->filled('search')) {
             return response()->json(
                 $this->snd->search(request('search'))
             );

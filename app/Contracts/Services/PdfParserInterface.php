@@ -1,4 +1,6 @@
-<?php namespace App\Contracts\Services;
+<?php
+
+namespace App\Contracts\Services;
 
 interface PdfParserInterface
 {

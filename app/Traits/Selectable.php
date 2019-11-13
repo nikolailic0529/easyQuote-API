@@ -1,4 +1,6 @@
-<?php namespace App\Traits;
+<?php
+
+namespace App\Traits;
 
 trait Selectable
 {
@@ -18,7 +20,7 @@ trait Selectable
 
     public function isSelected()
     {
-        return (boolean) $this->is_selected;
+        return (bool) $this->is_selected;
     }
 
     public function scopeSelected($query)

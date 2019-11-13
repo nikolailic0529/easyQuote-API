@@ -1,4 +1,6 @@
-<?php namespace App\Observers\Discount;
+<?php
+
+namespace App\Observers\Discount;
 
 use App\Models\Quote\Discount\MultiYearDiscount;
 
@@ -12,11 +14,11 @@ class MultiYearDiscountObserver
      */
     public function saving(MultiYearDiscount $multiYearDiscount)
     {
-        if(app()->runningInConsole()) {
+        if (app()->runningInConsole()) {
             return;
         }
 
-        if($this->exists($multiYearDiscount)) {
+        if ($this->exists($multiYearDiscount)) {
             throw new \ErrorException(__('discount.exists_exception'));
         }
     }

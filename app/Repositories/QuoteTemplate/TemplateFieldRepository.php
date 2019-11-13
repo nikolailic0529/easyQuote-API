@@ -1,16 +1,18 @@
-<?php namespace App\Repositories\QuoteTemplate;
+<?php
+
+namespace App\Repositories\QuoteTemplate;
 
 use App\Contracts\Repositories\QuoteTemplate\TemplateFieldRepositoryInterface;
-use App\Http\Requests\QuoteTemplate \ {
+use App\Http\Requests\QuoteTemplate\{
     StoreTemplateFieldRequest,
     UpdateTemplateFieldRequest
 };
-use App\Models\QuoteTemplate \ {
+use App\Models\QuoteTemplate\{
     TemplateField,
     TemplateFieldType
 };
 use App\Repositories\SearchableRepository;
-use Illuminate\Database\Eloquent \ {
+use Illuminate\Database\Eloquent\{
     Model,
     Builder
 };

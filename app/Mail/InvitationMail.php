@@ -1,7 +1,6 @@
 <?php namespace App\Mail;
 
 use App\Models\Collaboration\Invitation;
-use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 

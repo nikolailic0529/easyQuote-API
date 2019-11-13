@@ -1,4 +1,6 @@
-<?php namespace App\Observers;
+<?php
+
+namespace App\Observers;
 
 use App\Models\Vendor;
 
@@ -12,11 +14,11 @@ class VendorObserver
      */
     public function saving(Vendor $vendor)
     {
-        if(app()->runningInConsole()) {
+        if (app()->runningInConsole()) {
             return;
         }
 
-        if($this->exists($vendor)) {
+        if ($this->exists($vendor)) {
             throw new \ErrorException(__('vendor.exists_exception'));
         }
     }

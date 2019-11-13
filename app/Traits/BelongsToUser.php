@@ -1,7 +1,9 @@
-<?php namespace App\Traits;
+<?php
+
+namespace App\Traits;
 
 use App\Models\User;
-use Illuminate\Database\Eloquent \ {
+use Illuminate\Database\Eloquent\{
     Builder,
     Model
 };

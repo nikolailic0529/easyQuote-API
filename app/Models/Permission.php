@@ -1,16 +1,22 @@
-<?php namespace App\Models;
+<?php
+
+namespace App\Models;
 
 use App\Models\UuidModel;
-use Spatie\Permission\Guard;
+use Spatie\Permission\{
+    Guard,
+    PermissionRegistrar,
+    Traits\HasRoles,
+    Traits\RefreshesPermissionCache,
+    Exceptions\PermissionAlreadyExists,
+    Exceptions\PermissionDoesNotExist,
+    Contracts\Permission as PermissionContract,
+};
+use Illuminate\Database\Eloquent\Relations\{
+    MorphToMany,
+    BelongsToMany
+};
 use Illuminate\Support\Collection;
-use Spatie\Permission\Traits\HasRoles;
-use Spatie\Permission\PermissionRegistrar;
-use Spatie\Permission\Traits\RefreshesPermissionCache;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
-use Spatie\Permission\Exceptions\PermissionDoesNotExist;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Spatie\Permission\Exceptions\PermissionAlreadyExists;
-use Spatie\Permission\Contracts\Permission as PermissionContract;
 
 class Permission extends UuidModel implements PermissionContract
 {
@@ -90,7 +96,7 @@ class Permission extends UuidModel implements PermissionContract
     {
         $guardName = $guardName ?? Guard::getDefaultName(static::class);
         $permission = static::getPermissions(['name' => $name, 'guard_name' => $guardName])->first();
-        if (! $permission) {
+        if (!$permission) {
             throw PermissionDoesNotExist::create($name, $guardName);
         }
 
@@ -112,7 +118,7 @@ class Permission extends UuidModel implements PermissionContract
         $guardName = $guardName ?? Guard::getDefaultName(static::class);
         $permission = static::getPermissions(['id' => $id, 'guard_name' => $guardName])->first();
 
-        if (! $permission) {
+        if (!$permission) {
             throw PermissionDoesNotExist::withId($id, $guardName);
         }
 
@@ -132,7 +138,7 @@ class Permission extends UuidModel implements PermissionContract
         $guardName = $guardName ?? Guard::getDefaultName(static::class);
         $permission = static::getPermissions(['name' => $name, 'guard_name' => $guardName])->first();
 
-        if (! $permission) {
+        if (!$permission) {
             return static::query()->create(['name' => $name, 'guard_name' => $guardName]);
         }
 

@@ -1,6 +1,10 @@
-<?php namespace App\Providers;
+<?php
 
-use App\Models \ {
+namespace App\Providers;
+
+use App\Models\{
+    User,
+    Role,
     Company,
     Vendor,
     Quote\Quote,
@@ -8,11 +12,9 @@ use App\Models \ {
     Quote\Discount\Discount,
     QuoteFile\QuoteFile,
     QuoteTemplate\QuoteTemplate,
-    Collaboration\Invitation,
-    Role,
-    User
+    Collaboration\Invitation
 };
-use App\Policies \ {
+use App\Policies\{
     CompanyPolicy,
     DiscountPolicy,
     InvitationPolicy,

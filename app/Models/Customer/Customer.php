@@ -1,7 +1,9 @@
-<?php namespace App\Models\Customer;
+<?php
+
+namespace App\Models\Customer;
 
 use App\Models\UuidModel;
-use App\Traits \ {
+use App\Traits\{
     HasAddresses,
     HasContacts,
     Submittable,

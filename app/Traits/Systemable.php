@@ -1,7 +1,11 @@
-<?php namespace App\Traits;
+<?php
 
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
+namespace App\Traits;
+
+use Illuminate\Database\Eloquent\{
+    Builder,
+    Model
+};
 
 trait Systemable
 {

@@ -1,9 +1,11 @@
-<?php namespace App\Imports;
+<?php
 
-use App\Models \ {
+namespace App\Imports;
+
+use App\Models\{
     QuoteFile\QuoteFile
 };
-use Maatwebsite\Excel \ {
+use Maatwebsite\Excel\{
     Concerns\Importable,
     Concerns\WithMultipleSheets
 };
@@ -26,7 +28,8 @@ class ImportExcelSchedule implements WithMultipleSheets
      */
     protected $importableSheet;
 
-    public function __construct(QuoteFile $quoteFile) {
+    public function __construct(QuoteFile $quoteFile)
+    {
         $this->quoteFile = $quoteFile;
         $this->importableSheet = $this->quoteFile->imported_page - 1;
     }

@@ -1,4 +1,6 @@
-<?php namespace App\Traits;
+<?php
+
+namespace App\Traits;
 
 trait Submittable
 {
@@ -6,7 +8,7 @@ trait Submittable
     {
         $fill = ['submitted_at' => now()->toDateTimeString()];
 
-        if(filled($submitted_data)) {
+        if (filled($submitted_data)) {
             $fill = array_merge($fill, compact('submitted_data'));
         }
 

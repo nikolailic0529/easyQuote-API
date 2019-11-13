@@ -1,4 +1,6 @@
-<?php namespace App\Observers\Collaboration;
+<?php
+
+namespace App\Observers\Collaboration;
 
 use App\Mail\InvitationMail;
 use App\Models\Collaboration\Invitation;

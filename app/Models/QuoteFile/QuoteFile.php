@@ -1,12 +1,14 @@
-<?php namespace App\Models\QuoteFile;
+<?php
 
-use App\Models \ {
+namespace App\Models\QuoteFile;
+
+use App\Models\{
     UuidModel,
     QuoteFile\ImportedRawData,
     QuoteFile\ImportedRow,
     QuoteFile\DataSelectSeparator
 };
-use App\Traits \ {
+use App\Traits\{
     BelongsToUser,
     BelongsToQuote,
     HasFileFormat,
@@ -96,7 +98,7 @@ class QuoteFile extends UuidModel implements HasOrderedScope
 
     public function isNewSeparator($id)
     {
-        if(!$this->propertyExists('dataSelectSeparator') || !isset($id)) {
+        if (!$this->propertyExists('dataSelectSeparator') || !isset($id)) {
             return false;
         }
 
@@ -122,8 +124,8 @@ class QuoteFile extends UuidModel implements HasOrderedScope
 
     public function setImportedPage($imported_page = null)
     {
-        if(!isset($imported_page)) {
-            if($this->isPrice()) {
+        if (!isset($imported_page)) {
+            if ($this->isPrice()) {
                 $imported_page = ($this->isExcel() || $this->isCsv() || $this->isWord()) ? 1 : 2;
             } else {
                 $imported_page = $this->pages;
@@ -154,9 +156,21 @@ class QuoteFile extends UuidModel implements HasOrderedScope
 
     public function getProcessingStatusAttribute()
     {
+        if ($this->isSchedule()) {
+            return 'completed';
+        }
+
         $percentage = $this->getAttribute('processing_percentage');
 
         return $percentage >= 100 ? 'completed' : 'processing';
+    }
+
+    public function getProcessingStateAttribute()
+    {
+        return [
+            'status' => $this->processing_status,
+            'processed' => $this->processing_percentage
+        ];
     }
 
     public function setException(string $message)
@@ -178,25 +192,30 @@ class QuoteFile extends UuidModel implements HasOrderedScope
     {
         $exception = $this->getAttribute('exception');
 
-        if($exception) {
+        if ($exception) {
             throw new \ErrorException($exception);
         }
     }
 
     public function getProcessingPercentageAttribute()
     {
+        if ($this->isSchedule()) {
+            return 100;
+        }
+
         $rowsCount = $this->getAttribute('rows_count') ?: 1;
         $processedRowsCount = $this->getAttribute('rows_processed_count');
 
-        if($processedRowsCount > $rowsCount) {
+        if ($processedRowsCount > $rowsCount) {
             $rowsCount = $processedRowsCount;
         }
 
         return floor($processedRowsCount / $rowsCount * 100);
     }
 
-    public function isNewPage($page) {
-        if(!isset($page)) {
+    public function isNewPage($page)
+    {
+        if (!isset($page)) {
             return false;
         }
 
@@ -205,13 +224,13 @@ class QuoteFile extends UuidModel implements HasOrderedScope
 
     private function isFormat($ext)
     {
-        if(!$this->propertyExists('format')) {
+        if (!$this->propertyExists('format')) {
             return false;
         }
 
         $extension = $this->format->extension;
 
-        if(gettype($ext) === 'array') {
+        if (gettype($ext) === 'array') {
             return in_array($extension, $ext);
         }
 

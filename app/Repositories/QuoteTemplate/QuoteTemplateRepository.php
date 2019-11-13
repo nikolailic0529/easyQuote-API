@@ -1,13 +1,15 @@
-<?php namespace App\Repositories\QuoteTemplate;
+<?php
+
+namespace App\Repositories\QuoteTemplate;
 
 use App\Contracts\Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface;
 use App\Repositories\SearchableRepository;
 use App\Models\QuoteTemplate\QuoteTemplate;
-use App\Http\Requests\QuoteTemplate \ {
+use App\Http\Requests\QuoteTemplate\{
     StoreQuoteTemplateRequest,
     UpdateQuoteTemplateRequest
 };
-use Illuminate\Database\Eloquent \ {
+use Illuminate\Database\Eloquent\{
     Model,
     Builder
 };

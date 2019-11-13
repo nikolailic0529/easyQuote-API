@@ -1,11 +1,13 @@
-<?php namespace App\Repositories\QuoteFile;
+<?php
 
-use App\Contracts\Repositories\QuoteFile \ {
+namespace App\Repositories\QuoteFile;
+
+use App\Contracts\Repositories\QuoteFile\{
     QuoteFileRepositoryInterface,
     ImportableColumnRepositoryInterface as ImportableColumnRepository,
     FileFormatRepositoryInterface as FileFormatRepository
 };
-use App\Models \ {
+use App\Models\{
     Quote\Quote,
     QuoteFile\QuoteFile,
     QuoteFile\ImportedColumn,
@@ -62,20 +64,19 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
             array_merge($attributes, compact('original_file_name'))
         );
 
-        if(isset($attributes['data_select_separator_id']) && isset($attributes['format']) && $attributes['format']->extension === 'csv') {
+        if (isset($attributes['data_select_separator_id']) && isset($attributes['format']) && $attributes['format']->extension === 'csv') {
             $separator = $this->dataSelectSeparator->whereId($attributes['data_select_separator_id'])->first();
 
             $quoteFile->dataSelectSeparator()->associate($separator);
         }
 
-        if(isset($attributes['format'])) {
+        if (isset($attributes['format'])) {
             $quoteFile->format()->associate($attributes['format']);
         }
 
         $quoteFile->markAsDrafted();
 
-        if(($quoteFile->isPdf() || $quoteFile->isWord()) && isset($attributes['rawData']))
-        {
+        if (($quoteFile->isPdf() || $quoteFile->isWord()) && isset($attributes['rawData'])) {
             $this->createRawData($quoteFile, $attributes['rawData']);
         }
 
@@ -84,7 +85,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     public function createPdf(Quote $quote, array $attributes)
     {
-        if(!isset($attributes['original_file_path']) || !isset($attributes['filename'])) {
+        if (!isset($attributes['original_file_path']) || !isset($attributes['filename'])) {
             return null;
         }
 
@@ -169,7 +170,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
             array_push($importedRows, ...$pageRows);
         }
 
-        if(count($importedRows) < 1) {
+        if (count($importedRows) < 1) {
             $quoteFile->setException(__('parser.no_rows_exception'));
             $quoteFile->markAsUnHandled();
             throw new ErrorException(__('parser.no_rows_exception'));
@@ -259,7 +260,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     public function deleteExcept(QuoteFile $quoteFile)
     {
-        if($quoteFile->isSchedule()) {
+        if ($quoteFile->isSchedule()) {
             return $this->deletePaymentSchedulesExcept($quoteFile);
         }
 
@@ -268,7 +269,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     public function replicatePriceList(QuoteFile $quoteFile)
     {
-        if($quoteFile->isSchedule()) {
+        if ($quoteFile->isSchedule()) {
             return $quoteFile;
         }
 
@@ -290,16 +291,18 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
                 on temp_imported_columns.temp_imported_row_id = `imported_columns`.imported_row_id
             join (select id as row_id, quote_file_id, page, is_selected, processed_at from imported_rows) as imported_rows
                 on imported_rows.row_id = `imported_columns`.imported_row_id
-                where imported_rows.quote_file_id = :quote_file_id'
-            , compact('quote_file_id'));
+                where imported_rows.quote_file_id = :quote_file_id',
+            compact('quote_file_id')
+        );
 
         /**
          * Inserting Imported Rows with new Ids
          */
         DB::insert(
             'insert into `imported_rows` (id, user_id, quote_file_id, page, is_selected, processed_at)
-            select new_imported_row_id, :user_id, :new_quote_file_id, page, is_selected, processed_at from new_imported_columns group by new_imported_row_id'
-        , compact('user_id', 'new_quote_file_id'));
+            select new_imported_row_id, :user_id, :new_quote_file_id, page, is_selected, processed_at from new_imported_columns group by new_imported_row_id',
+            compact('user_id', 'new_quote_file_id')
+        );
 
         /**
          * Inserting Imported Columns with new Ids and new assigned Imported Rows Ids

@@ -1,4 +1,6 @@
-<?php namespace App\Repositories\Customer;
+<?php
+
+namespace App\Repositories\Customer;
 
 use App\Contracts\Repositories\Customer\CustomerRepositoryInterface;
 use Illuminate\Foundation\Http\FormRequest;

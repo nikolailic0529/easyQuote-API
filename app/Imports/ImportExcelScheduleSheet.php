@@ -1,7 +1,9 @@
-<?php namespace App\Imports;
+<?php
+
+namespace App\Imports;
 
 use App\Models\QuoteFile\QuoteFile;
-use Maatwebsite\Excel \ {
+use Maatwebsite\Excel\{
     Row,
     Concerns\OnEachRow,
     Concerns\WithEvents,
@@ -34,24 +36,24 @@ class ImportExcelScheduleSheet implements OnEachRow, WithEvents, WithChunkReadin
     {
         $row = $row->toArray(null, true);
 
-        if($this->hasMatched(['from', 'to', 'price'])) {
+        if ($this->hasMatched(['from', 'to', 'price'])) {
             return;
         }
 
-        if(!$this->hasMatched(['from'])) {
-            if(preg_grep('/Support Account Reference.*/i', $row) && $this->hasDates($row)) {
+        if (!$this->hasMatched(['from'])) {
+            if (preg_grep('/Support Account Reference.*/i', $row) && $this->hasDates($row)) {
                 $this->matched['from'] = $row;
             };
             return;
         }
 
-        if(!$this->hasMatched(['to']) && $this->hasDates($row)) {
+        if (!$this->hasMatched(['to']) && $this->hasDates($row)) {
             $this->matched['to'] = $row;
             return;
         }
 
-        if(!$this->hasMatched(['price'])) {
-            if(preg_grep('/Reseller cost.*/i', $row)) {
+        if (!$this->hasMatched(['price'])) {
+            if (preg_grep('/Reseller cost.*/i', $row)) {
                 $this->matched['price'] = $row;
             }
             return;
@@ -67,7 +69,7 @@ class ImportExcelScheduleSheet implements OnEachRow, WithEvents, WithChunkReadin
     {
         return [
             AfterSheet::class => function ($event) {
-                if(!$this->hasMatched(['from', 'to', 'price'])) {
+                if (!$this->hasMatched(['from', 'to', 'price'])) {
                     $this->quoteFile->setException(__('parser.not_schedule_exception'));
                     throw new \ErrorException(__('parser.not_schedule_exception'));
                 }

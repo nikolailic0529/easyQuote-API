@@ -1,4 +1,6 @@
-<?php namespace App\Repositories\Quote\Discount;
+<?php
+
+namespace App\Repositories\Quote\Discount;
 
 use App\Repositories\SearchableRepository;
 

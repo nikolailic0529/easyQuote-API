@@ -1,4 +1,6 @@
-<?php namespace App\Contracts\Services;
+<?php
+
+namespace App\Contracts\Services;
 
 use App\Http\Requests\UserSignInRequest;
 use Laravel\Passport\PersonalAccessTokenResult;

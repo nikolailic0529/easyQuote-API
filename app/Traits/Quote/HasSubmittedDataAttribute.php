@@ -1,4 +1,6 @@
-<?php namespace App\Traits\Quote;
+<?php
+
+namespace App\Traits\Quote;
 
 trait HasSubmittedDataAttribute
 {

@@ -1,7 +1,9 @@
-<?php namespace App\Contracts\Repositories\Quote;
+<?php
+
+namespace App\Contracts\Repositories\Quote;
 
 use App\Models\Quote\Quote;
-use App\Http\Requests \ {
+use App\Http\Requests\{
     StoreQuoteStateRequest,
     GetQuoteTemplatesRequest,
     MappingReviewRequest,

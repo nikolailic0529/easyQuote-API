@@ -1,4 +1,6 @@
-<?php namespace App\Traits\Collaboration;
+<?php
+
+namespace App\Traits\Collaboration;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -8,16 +10,16 @@ trait BelongsToCollaboration
     public static function bootBelongsToCollaboration()
     {
         static::generated(function (Model $model) {
-            if(isset($model->collaboration_id)) {
+            if (isset($model->collaboration_id)) {
                 return;
             }
 
-            if($model instanceof User) {
+            if ($model instanceof User) {
                 $model->collaboration_id = $model->id;
                 return;
             }
 
-            if(!isset($model->user)) {
+            if (!isset($model->user)) {
                 return;
             }
 

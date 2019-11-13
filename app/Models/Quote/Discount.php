@@ -1,6 +1,8 @@
-<?php namespace App\Models\Quote;
+<?php
 
-use App\Models\Quote\Discount \ {
+namespace App\Models\Quote;
+
+use App\Models\Quote\Discount\{
     MultiYearDiscount,
     PrePayDiscount,
     PromotionalDiscount,
@@ -44,25 +46,25 @@ class Discount extends UuidModel
         $total = (float) $total;
         $discount = $this->discountable;
 
-        if($discount instanceof MultiYearDiscount || $discount instanceof PrePayDiscount) {
+        if ($discount instanceof MultiYearDiscount || $discount instanceof PrePayDiscount) {
             $durations = collect($discount->durations);
             $percentage = (float) ($durations->where('duration', $this->duration)->first()['value'] ?? $durations->first()['value']);
 
             return $percentage;
         }
 
-        if($discount instanceof PromotionalDiscount) {
+        if ($discount instanceof PromotionalDiscount) {
             $percentage = (float) $discount->value;
             $limit = $discount->minimum_limit;
 
-            if($limit <= $total) {
+            if ($limit <= $total) {
                 return $percentage;
             }
 
             return 0;
         }
 
-        if($discount instanceof SND) {
+        if ($discount instanceof SND) {
             return (float) $discount->value;
         }
     }
@@ -73,25 +75,25 @@ class Discount extends UuidModel
         $total = (float) $total;
         $discount = $this->discountable;
 
-        if($discount instanceof MultiYearDiscount || $discount instanceof PrePayDiscount) {
+        if ($discount instanceof MultiYearDiscount || $discount instanceof PrePayDiscount) {
             $durations = collect($discount->durations);
             $percentage = (float) ($durations->where('duration', $this->duration)->first()['value'] ?? $durations->first()['value']);
 
             return $value * $percentage / 100;
         }
 
-        if($discount instanceof PromotionalDiscount) {
+        if ($discount instanceof PromotionalDiscount) {
             $percentage = (float) $discount->value;
             $limit = $discount->minimum_limit;
 
-            if($limit <= $total) {
+            if ($limit <= $total) {
                 return $value * $percentage / 100;
             }
 
             return 0;
         }
 
-        if($discount instanceof SND) {
+        if ($discount instanceof SND) {
             $percentage = (float) $discount->value;
 
             return $value * $percentage / 100;

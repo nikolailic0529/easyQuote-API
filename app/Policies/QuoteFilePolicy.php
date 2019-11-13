@@ -1,6 +1,8 @@
-<?php namespace App\Policies;
+<?php
 
-use App\Models \ {
+namespace App\Policies;
+
+use App\Models\{
     User,
     QuoteFile\QuoteFile
 };
@@ -18,7 +20,7 @@ class QuoteFilePolicy
      */
     public function viewAny(User $user)
     {
-        if($user->can('view_quote_files')) {
+        if ($user->can('view_quote_files')) {
             return true;
         }
     }
@@ -32,7 +34,7 @@ class QuoteFilePolicy
      */
     public function view(User $user, QuoteFile $quoteFile)
     {
-        if($user->can('view_quote_files')) {
+        if ($user->can('view_quote_files')) {
             return true;
         }
     }
@@ -45,7 +47,7 @@ class QuoteFilePolicy
      */
     public function create(User $user)
     {
-        if($user->can('create_quote_files')) {
+        if ($user->can('create_quote_files')) {
             return true;
         }
     }
@@ -59,7 +61,7 @@ class QuoteFilePolicy
      */
     public function update(User $user, QuoteFile $quoteFile)
     {
-        if($user->can('update_quote_files')) {
+        if ($user->can('update_quote_files')) {
             return true;
         }
     }
@@ -73,7 +75,7 @@ class QuoteFilePolicy
      */
     public function delete(User $user, QuoteFile $quoteFile)
     {
-        if($user->can('delete_quote_files')) {
+        if ($user->can('delete_quote_files')) {
             return true;
         }
     }
@@ -87,7 +89,7 @@ class QuoteFilePolicy
      */
     public function handle(User $user, QuoteFile $quoteFile)
     {
-        if($user->can('handle_quote_files')) {
+        if ($user->can('handle_quote_files')) {
             return true;
         }
     }

@@ -1,12 +1,14 @@
-<?php namespace App\Http\Controllers\API\Discounts;
+<?php
+
+namespace App\Http\Controllers\API\Discounts;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\Quote\Discount\PromotionalDiscountRepositoryInterface as PromotionalDiscountRepository;
-use App\Http\Requests\Discount \ {
+use App\Http\Requests\Discount\{
     StorePromotionalDiscountRequest,
     UpdatePromotionalDiscountRequest
 };
-use App\Models\Quote\Discount \ {
+use App\Models\Quote\Discount\{
     Discount,
     PromotionalDiscount
 };
@@ -28,7 +30,7 @@ class PromotionalDiscountController extends Controller
      */
     public function index()
     {
-        if(request()->filled('search')) {
+        if (request()->filled('search')) {
             return response()->json(
                 $this->promotionalDiscount->search(request('search'))
             );

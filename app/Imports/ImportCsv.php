@@ -1,4 +1,6 @@
-<?php namespace App\Imports;
+<?php
+
+namespace App\Imports;
 
 use App\Models\QuoteFile\QuoteFile;
 use League\Csv\Reader;
@@ -109,7 +111,7 @@ class ImportCsv
     {
         $this->quoteFile = $quoteFile;
 
-        if(isset($quoteFile->dataSelectSeparator->separator)) {
+        if (isset($quoteFile->dataSelectSeparator->separator)) {
             $this->delimiter = $quoteFile->dataSelectSeparator->separator;
         }
 
@@ -170,7 +172,7 @@ class ImportCsv
 
     private function checkHeader()
     {
-        if(mb_strlen($this->header[0]) > 100) {
+        if (mb_strlen($this->header[0]) > 100) {
             $this->quoteFile->setException(__('parser.separator_exception'));
             throw new \ErrorException(__('parser.separator_exception'));
         }
@@ -179,7 +181,7 @@ class ImportCsv
     private function filterHeader(array $header)
     {
         return collect($header)->map(function ($name, $key) {
-            if(mb_strlen(trim($name)) === 0) {
+            if (mb_strlen(trim($name)) === 0) {
                 return "Unknown Header {$key}";
             }
             return $name;
@@ -228,13 +230,13 @@ class ImportCsv
             $importable_column_id = $aliasesMapping->search(function ($aliases) use ($header) {
                 $matchingHeader = preg_quote($header, '~');
                 $match = preg_grep("~^{$matchingHeader}.*?~i", $aliases);
-                if(empty($match)) {
+                if (empty($match)) {
                     return false;
                 }
                 return true;
             });
 
-            if(!$importable_column_id) {
+            if (!$importable_column_id) {
                 $alias = $header;
                 $name = Str::columnName($header);
 
@@ -252,10 +254,11 @@ class ImportCsv
         })->toArray();
     }
 
-    private function setImportableFilePath(QuoteFile $quoteFile, $filePath) {
+    private function setImportableFilePath(QuoteFile $quoteFile, $filePath)
+    {
         $path = isset($filePath) ? $filePath : $quoteFile->original_file_path;
 
-        if(isset($quoteFile->fullPath) && $quoteFile->fullPath) {
+        if (isset($quoteFile->fullPath) && $quoteFile->fullPath) {
             unset($quoteFile->fullPath);
         } else {
             $path = Storage::path($path);

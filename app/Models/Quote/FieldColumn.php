@@ -1,7 +1,9 @@
-<?php namespace App\Models\Quote;
+<?php
+
+namespace App\Models\Quote;
 
 use Illuminate\Database\Eloquent\Relations\Pivot;
-use App\Traits \ {
+use App\Traits\{
     BelongsToQuote,
     BelongsToImportableColumn,
     BelongsToTemplateField
@@ -20,6 +22,7 @@ class FieldColumn extends Pivot
     protected $attributes = [
         'importable_column_id' => null,
         'is_default_enabled' => false,
+        'is_preview_visible' => true,
         'default_value' => null
     ];
 

@@ -1,6 +1,8 @@
-<?php namespace App\Policies;
+<?php
 
-use App\Models \ {
+namespace App\Policies;
+
+use App\Models\{
     User,
     Quote\Quote
 };
@@ -18,7 +20,7 @@ class QuotePolicy
      */
     public function viewAny(User $user)
     {
-        if($user->can('view_quotes')) {
+        if ($user->can('view_quotes')) {
             return true;
         }
     }
@@ -32,7 +34,7 @@ class QuotePolicy
      */
     public function view(User $user, Quote $quote)
     {
-        if($user->can('view_quotes')) {
+        if ($user->can('view_quotes')) {
             return true;
         }
     }
@@ -45,7 +47,7 @@ class QuotePolicy
      */
     public function create(User $user)
     {
-        if($user->can('create_quotes')) {
+        if ($user->can('create_quotes')) {
             return true;
         }
     }
@@ -59,7 +61,7 @@ class QuotePolicy
      */
     public function update(User $user, Quote $quote)
     {
-        if($user->can('update_quotes')) {
+        if ($user->can('update_quotes')) {
             return true;
         }
     }
@@ -73,7 +75,7 @@ class QuotePolicy
      */
     public function delete(User $user, Quote $quote)
     {
-        if($user->can('delete_quotes')) {
+        if ($user->can('delete_quotes')) {
             return true;
         }
     }

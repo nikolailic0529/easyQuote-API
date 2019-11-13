@@ -1,8 +1,10 @@
-<?php namespace App\Repositories;
+<?php
+
+namespace App\Repositories;
 
 use App\Contracts\Repositories\InvitationRepositoryInterface;
 use App\Models\Collaboration\Invitation;
-use Illuminate\Database\Eloquent \ {
+use Illuminate\Database\Eloquent\{
     Model,
     Builder
 };

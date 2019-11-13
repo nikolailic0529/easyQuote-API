@@ -1,4 +1,6 @@
-<?php namespace App\Traits\Vendor;
+<?php
+
+namespace App\Traits\Vendor;
 
 use App\Models\Vendor;
 

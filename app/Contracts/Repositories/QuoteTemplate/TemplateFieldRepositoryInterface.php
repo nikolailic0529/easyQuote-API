@@ -1,7 +1,9 @@
-<?php namespace App\Contracts\Repositories\QuoteTemplate;
+<?php
+
+namespace App\Contracts\Repositories\QuoteTemplate;
 
 use App\Builder\Pagination\Paginator;
-use App\Http\Requests\QuoteTemplate \ {
+use App\Http\Requests\QuoteTemplate\{
     StoreTemplateFieldRequest,
     UpdateTemplateFieldRequest
 };

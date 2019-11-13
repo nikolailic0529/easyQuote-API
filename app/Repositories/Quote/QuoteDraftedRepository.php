@@ -1,9 +1,11 @@
-<?php namespace App\Repositories\Quote;
+<?php
+
+namespace App\Repositories\Quote;
 
 use App\Contracts\Repositories\Quote\QuoteDraftedRepositoryInterface;
 use App\Repositories\SearchableRepository;
 use App\Models\Quote\Quote;
-use Illuminate\Database\Eloquent \ {
+use Illuminate\Database\Eloquent\{
     Model,
     Builder
 };

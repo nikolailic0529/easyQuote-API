@@ -1,13 +1,13 @@
-<?php namespace App\Http\Controllers\API\Templates;
+<?php
+
+namespace App\Http\Controllers\API\Templates;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface as QuoteTemplateRepository;
-use App\Http\Requests\QuoteTemplate \ {
-    StoreQuoteTemplateImageRequest,
+use App\Http\Requests\QuoteTemplate\{
     StoreQuoteTemplateRequest,
     UpdateQuoteTemplateRequest
 };
-use App\Models\Image;
 use App\Models\QuoteTemplate\QuoteTemplate;
 
 class QuoteTemplateController extends Controller
@@ -27,7 +27,7 @@ class QuoteTemplateController extends Controller
      */
     public function index()
     {
-        if(request()->filled('search')) {
+        if (request()->filled('search')) {
             return response()->json(
                 $this->quoteTemplate->search(request('search'))
             );

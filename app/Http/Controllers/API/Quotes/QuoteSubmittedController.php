@@ -1,4 +1,6 @@
-<?php namespace App\Http\Controllers\API\Quotes;
+<?php
+
+namespace App\Http\Controllers\API\Quotes;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\Quote\QuoteSubmittedRepositoryInterface as QuoteRepository;
@@ -21,7 +23,7 @@ class QuoteSubmittedController extends Controller
      */
     public function index()
     {
-        if(request()->filled('search')) {
+        if (request()->filled('search')) {
             return response()->json(
                 $this->quote->search(request('search'))
             );

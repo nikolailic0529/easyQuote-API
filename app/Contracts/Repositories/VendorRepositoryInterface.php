@@ -1,8 +1,10 @@
-<?php namespace App\Contracts\Repositories;
+<?php
+
+namespace App\Contracts\Repositories;
 
 use App\Builder\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
-use App\Http\Requests\Vendor \ {
+use App\Http\Requests\Vendor\{
     StoreVendorRequest,
     UpdateVendorRequest
 };

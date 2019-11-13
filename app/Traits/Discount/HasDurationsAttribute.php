@@ -1,4 +1,6 @@
-<?php namespace App\Traits\Discount;
+<?php
+
+namespace App\Traits\Discount;
 
 use DB;
 

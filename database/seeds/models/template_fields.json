@@ -3,18 +3,26 @@
         "header": "Product No",
         "name": "product_no",
         "is_required": true,
+        "is_system": true,
+        "is_column": true,
         "type": "textbox",
         "order": 1
     },
     {
         "header": "Description",
         "name": "description",
+        "is_required": false,
+        "is_system": true,
+        "is_column": true,
         "type": "textbox",
         "order": 2
     },
     {
         "header": "Serial Number",
         "name": "serial_no",
+        "is_required": false,
+        "is_system": true,
+        "is_column": true,
         "type": "textbox",
         "order": 3
     },
@@ -22,6 +30,8 @@
         "header": "From Date",
         "name": "date_from",
         "is_required": true,
+        "is_system": true,
+        "is_column": true,
         "type": "date",
         "order": 4
     },
@@ -29,12 +39,17 @@
         "header": "To Date",
         "name": "date_to",
         "is_required": true,
+        "is_system": true,
+        "is_column": true,
         "type": "date",
         "order": 5
     },
     {
         "header": "Quantity",
         "name": "qty",
+        "is_required": false,
+        "is_system": true,
+        "is_column": true,
         "type": "textbox",
         "order": 6
     },
@@ -42,7 +57,18 @@
         "header": "Price",
         "name": "price",
         "is_required": true,
+        "is_system": true,
+        "is_column": true,
         "type": "textbox",
         "order": 7
+    },
+    {
+        "header": "Searchable",
+        "name": "searchable",
+        "is_required": false,
+        "is_system": true,
+        "is_column": true,
+        "type": "textbox",
+        "order": 8
     }
 ]

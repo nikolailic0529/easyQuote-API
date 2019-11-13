@@ -1,15 +1,14 @@
-<?php namespace App\Http\Controllers\API\Margins;
+<?php
+
+namespace App\Http\Controllers\API\Margins;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\Quote\Margin\MarginRepositoryInterface as MarginRepository;
-use App\Http\Requests\Margin \ {
+use App\Http\Requests\Margin\{
     StoreCountryMarginRequest,
     UpdateCountryMarginRequest
 };
-use App\Models\Quote\Margin \ {
-    Margin,
-    CountryMargin
-};
+use App\Models\Quote\Margin\CountryMargin;
 
 class CountryMarginController extends Controller
 {
@@ -28,7 +27,7 @@ class CountryMarginController extends Controller
      */
     public function index()
     {
-        if(request()->filled('search')) {
+        if (request()->filled('search')) {
             return response()->json(
                 $this->margin->search(request('search'))
             );

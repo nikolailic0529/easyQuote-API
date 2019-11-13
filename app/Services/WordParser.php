@@ -1,11 +1,13 @@
-<?php namespace App\Services;
+<?php
+
+namespace App\Services;
 
 use App\Contracts\Services\WordParserInterface;
-use App\Contracts\Repositories\QuoteFile \ {
+use App\Contracts\Repositories\QuoteFile\{
     ImportableColumnRepositoryInterface as ImportableColumnRepository,
     DataSelectSeparatorRepositoryInterface as DataSelectSeparatorRepository
 };
-use Devengine\PhpWord \ {
+use Devengine\PhpWord\{
     IOFactory,
     PhpWord,
     Element\Table,
@@ -54,7 +56,7 @@ class WordParser implements WordParserInterface
 
         $rows = $this->load($filePath, $storage)->getTables()->getRows($columns);
 
-        if(empty($rows)) {
+        if (empty($rows)) {
             throw new \ErrorException(__('parser.word.no_columns_exception'));
         }
 
@@ -77,7 +79,7 @@ class WordParser implements WordParserInterface
 
     public function getTables(PhpWord $phpWord = null)
     {
-        if(is_null($phpWord)) {
+        if (is_null($phpWord)) {
             $phpWord = $this->phpWord;
         }
 
@@ -92,7 +94,7 @@ class WordParser implements WordParserInterface
 
     public function getRows(Collection $columns, WordParser $wordParser = null)
     {
-        if(is_null($wordParser)) {
+        if (is_null($wordParser)) {
             $wordParser = $this;
         }
 
@@ -106,13 +108,13 @@ class WordParser implements WordParserInterface
             foreach ($aliases as $alias) {
                 $foundRowsByAlias = $wordParser->findRows($alias->alias);
 
-                if(!empty($foundRowsByAlias)) {
+                if (!empty($foundRowsByAlias)) {
                     $foundRowsByColumn = $foundRowsByAlias;
                     break;
                 }
             }
 
-            if(!empty($foundRowsByColumn)) {
+            if (!empty($foundRowsByColumn)) {
                 $rows = $foundRowsByColumn;
                 break;
             }
@@ -123,19 +125,19 @@ class WordParser implements WordParserInterface
 
     public function findRows(string $needle, array $tables = [])
     {
-        if(empty($tables)) {
+        if (empty($tables)) {
             $tables = $this->tables;
         }
 
         $cellPath = $this->findCell($tables, $needle);
 
-        if(!$cellPath) {
+        if (!$cellPath) {
             return [];
         }
 
         $header = $this->normalizeHeader($tables, $cellPath);
 
-        if(count($header) < $this->minHeadersCount) {
+        if (count($header) < $this->minHeadersCount) {
             return [];
         }
 
@@ -157,7 +159,8 @@ class WordParser implements WordParserInterface
         return compact('header', 'rows');
     }
 
-    private function normalizeHeader(array $tables, array $path) {
+    private function normalizeHeader(array $tables, array $path)
+    {
         $path = array_splice($path, 0, -1);
         $row = $tables;
 
@@ -176,7 +179,7 @@ class WordParser implements WordParserInterface
     {
         $coverageSearch = preg_grep('/^Coverage period/i', $row);
 
-        if(empty($coverageSearch)) {
+        if (empty($coverageSearch)) {
             return $row;
         }
 
@@ -194,7 +197,8 @@ class WordParser implements WordParserInterface
         return array_merge($beforeCoverage, $afterCoverage);
     }
 
-    private function simplifyRow(array $row) {
+    private function simplifyRow(array $row)
+    {
         $simpleRow = [];
 
         foreach ($row as $cell) {
@@ -204,8 +208,9 @@ class WordParser implements WordParserInterface
         return $simpleRow;
     }
 
-    private function extractTextValue(array $array) {
-        if(isset($array['text'])) {
+    private function extractTextValue(array $array)
+    {
+        if (isset($array['text'])) {
             return $array['text'];
         }
 
@@ -214,7 +219,7 @@ class WordParser implements WordParserInterface
                 return $value['text'];
             }
 
-            if(is_array($value) && $result = $this->extractTextValue($value)) {
+            if (is_array($value) && $result = $this->extractTextValue($value)) {
                 return $result;
             }
         }
@@ -253,31 +258,31 @@ class WordParser implements WordParserInterface
             $row = [];
             $cells = [];
 
-            foreach($rowElement->getCells() as $cellElement) {
+            foreach ($rowElement->getCells() as $cellElement) {
                 $cell = [];
                 $cellTextArray = [];
                 $table = [];
 
-                foreach($cellElement->getElements() as $element) {
+                foreach ($cellElement->getElements() as $element) {
 
-                    if($this->isTableInstance($element)) {
+                    if ($this->isTableInstance($element)) {
                         $table = $this->readTable($element);
                     }
 
-                    if($this->isTextRunInstance($element)) {
+                    if ($this->isTextRunInstance($element)) {
                         foreach ($element->getElements() as $element) {
-                            if($this->isTextInstance($element)) {
+                            if ($this->isTextInstance($element)) {
                                 $cellTextArray[] = trim($element->getText());
                             }
                         }
                     }
                 }
 
-                if(!empty($table)) {
+                if (!empty($table)) {
                     $cell = array_merge($cell, compact('table'));
                 }
 
-                if(!empty($cellTextArray)) {
+                if (!empty($cellTextArray)) {
                     $text = implode(' ', $cellTextArray);
                     $cell = array_merge($cell, compact('text'));
                 }
@@ -293,16 +298,16 @@ class WordParser implements WordParserInterface
 
     private function extractTables($element)
     {
-        if($this->isTableInstance($element)) {
+        if ($this->isTableInstance($element)) {
             array_push($this->tables, $element);
         }
 
-        if(!method_exists($element, 'getElements')) {
+        if (!method_exists($element, 'getElements')) {
             return false;
         }
 
         foreach ($element->getElements() as $element) {
-            if($this->isTableInstance($element)) {
+            if ($this->isTableInstance($element)) {
                 return array_push($this->tables, $element);
             }
 
@@ -372,15 +377,15 @@ class WordParser implements WordParserInterface
         $columnsCount = count($header);
 
         $mappedRows = array_map(function ($row) {
-           $cells = array_filter($row['cells'], function ($cell) {
-               return isset($cell['text']);
-           });
+            $cells = array_filter($row['cells'], function ($cell) {
+                return isset($cell['text']);
+            });
 
-           $cells = array_map(function ($cell) {
+            $cells = array_map(function ($cell) {
                 return $cell['text'];
-           }, $cells);
+            }, $cells);
 
-           return compact('cells');
+            return compact('cells');
         }, $rows);
 
         $filteredRows = array_filter($mappedRows, function ($row) use ($columnsCount) {

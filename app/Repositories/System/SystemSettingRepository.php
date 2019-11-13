@@ -1,4 +1,6 @@
-<?php namespace App\Repositories\System;
+<?php
+
+namespace App\Repositories\System;
 
 use App\Contracts\Repositories\System\SystemSettingRepositoryInterface;
 use App\Models\System\SystemSetting;

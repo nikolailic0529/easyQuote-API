@@ -1,12 +1,14 @@
-<?php namespace App\Http\Controllers\API;
+<?php
+
+namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests \ {
+use App\Http\Requests\{
     UserSignUpRequest,
     UserSignInRequest,
     Collaboration\CompleteInvitationRequest
 };
-use App\Contracts \ {
+use App\Contracts\{
     Repositories\UserRepositoryInterface,
     Services\AuthServiceInterface
 };

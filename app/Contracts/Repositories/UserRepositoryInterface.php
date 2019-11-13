@@ -1,12 +1,13 @@
-<?php namespace App\Contracts\Repositories;
+<?php
+
+namespace App\Contracts\Repositories;
 
 use App\Builder\Pagination\Paginator;
-use App\Http\Requests\Collaboration \ {
+use App\Http\Requests\Collaboration\{
     InviteUserRequest,
     UpdateUserRequest
 };
-use App\Http\Requests\UserSignUpRequest;
-use App\Models \ {
+use App\Models\{
     User,
     Collaboration\Invitation
 };

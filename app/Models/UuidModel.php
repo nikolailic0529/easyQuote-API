@@ -1,4 +1,6 @@
-<?php namespace App\Models;
+<?php
+
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Webpatser\Uuid\Uuid;
@@ -95,7 +97,7 @@ class UuidModel extends Model
 
     private function formatDate($date)
     {
-        if(!isset($date)) {
+        if (!isset($date)) {
             return null;
         }
 

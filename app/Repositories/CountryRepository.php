@@ -1,4 +1,6 @@
-<?php namespace App\Repositories;
+<?php
+
+namespace App\Repositories;
 
 use App\Contracts\Repositories\CountryRepositoryInterface;
 use App\Models\Data\Country;

@@ -1,4 +1,6 @@
-<?php namespace App\Models;
+<?php
+
+namespace App\Models;
 
 class Image extends UuidModel
 {
@@ -19,7 +21,7 @@ class Image extends UuidModel
     {
         $thumbnails = $this->attributes['thumbnails'];
 
-        if(!isset($thumbnails)) {
+        if (!isset($thumbnails)) {
             return null;
         }
 

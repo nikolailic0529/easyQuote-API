@@ -1,4 +1,6 @@
-<?php namespace App\Traits\Search;
+<?php
+
+namespace App\Traits\Search;
 
 use App\Observers\SearchObserver;
 

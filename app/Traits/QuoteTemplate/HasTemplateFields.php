@@ -1,4 +1,6 @@
-<?php namespace App\Traits\QuoteTemplate;
+<?php
+
+namespace App\Traits\QuoteTemplate;
 
 use App\Models\QuoteTemplate\TemplateField;
 

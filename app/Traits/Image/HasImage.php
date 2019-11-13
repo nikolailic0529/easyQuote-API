@@ -1,9 +1,13 @@
-<?php namespace App\Traits\Image;
+<?php
+
+namespace App\Traits\Image;
 
 use App\Contracts\WithImage;
 use App\Models\Image;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Http\File;
+use Illuminate\Http\{
+    File,
+    UploadedFile
+};
 use ImageIntervention, Storage, Str;
 
 trait HasImage
@@ -15,13 +19,13 @@ trait HasImage
 
     public function createImage($file, $fake = false)
     {
-        if((!$file instanceof UploadedFile || !$this instanceof WithImage) && !$fake) {
+        if (!$fake && (!$file instanceof UploadedFile || !$this instanceof WithImage)) {
             return $this;
         }
 
         $modelImagesDir = $this->imagesDirectory();
 
-        if($fake) {
+        if ($fake) {
             $original = Storage::putFile("public/$modelImagesDir", new File(base_path($file)), 'public');
             $original = Str::after($original, 'public/');
         } else {
@@ -29,7 +33,7 @@ trait HasImage
         }
 
         $thumbnails = collect($this->thumbnailProperties())->mapWithKeys(function ($size, $key) use ($original, $modelImagesDir) {
-            if(!isset($size['width']) || !isset($size['height'])) {
+            if (!isset($size['width']) || !isset($size['height'])) {
                 return true;
             }
 

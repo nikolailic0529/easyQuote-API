@@ -1,8 +1,10 @@
-<?php namespace App\Console\Commands;
+<?php
+
+namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Elasticsearch\Client as ElasticsearchClient;
-use App\Models \ {
+use App\Models\{
     User,
     Role,
     Company,

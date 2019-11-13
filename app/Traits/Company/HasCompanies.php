@@ -1,4 +1,6 @@
-<?php namespace App\Traits\Company;
+<?php
+
+namespace App\Traits\Company;
 
 use App\Models\Company;
 

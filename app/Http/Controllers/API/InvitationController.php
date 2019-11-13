@@ -1,4 +1,6 @@
-<?php namespace App\Http\Controllers\API;
+<?php
+
+namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\InvitationRepositoryInterface as InvitationRepository;
@@ -21,7 +23,7 @@ class InvitationController extends Controller
      */
     public function index()
     {
-        if(request()->filled('search')) {
+        if (request()->filled('search')) {
             return response()->json(
                 $this->invitation->search(request('search'))
             );

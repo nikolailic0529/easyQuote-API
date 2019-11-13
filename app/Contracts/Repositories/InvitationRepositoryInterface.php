@@ -1,10 +1,9 @@
-<?php namespace App\Contracts\Repositories;
+<?php
+
+namespace App\Contracts\Repositories;
 
 use App\Builder\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
-use App\Http\Requests\Collaboration \ {
-    InviteUserRequest
-};
 use App\Models\Collaboration\Invitation;
 
 interface InvitationRepositoryInterface

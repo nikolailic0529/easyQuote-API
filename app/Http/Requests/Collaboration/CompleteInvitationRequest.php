@@ -13,7 +13,7 @@ class CompleteInvitationRequest extends FormRequest
     {
         return [
             'first_name' => 'required|string',
-            'middle_name' => 'required|string',
+            'middle_name' => 'nullable|string',
             'last_name' => 'required|string',
             'password' => 'required|string|min:6|confirmed',
             'phone' => 'nullable|string|min:4',

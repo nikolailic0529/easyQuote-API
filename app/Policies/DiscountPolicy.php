@@ -1,6 +1,8 @@
-<?php namespace App\Policies;
+<?php
 
-use App\Models \ {
+namespace App\Policies;
+
+use App\Models\{
     User,
     Quote\Discount\Discount
 };
@@ -18,7 +20,7 @@ class DiscountPolicy
      */
     public function viewAny(User $user)
     {
-        if($user->can('view_discounts')) {
+        if ($user->can('view_discounts')) {
             return true;
         }
     }
@@ -32,7 +34,7 @@ class DiscountPolicy
      */
     public function view(User $user, Discount $discount)
     {
-        if($user->can('view_discounts')) {
+        if ($user->can('view_discounts')) {
             return true;
         }
     }
@@ -45,7 +47,7 @@ class DiscountPolicy
      */
     public function create(User $user)
     {
-        if($user->can('create_discounts')) {
+        if ($user->can('create_discounts')) {
             return true;
         }
     }
@@ -59,7 +61,7 @@ class DiscountPolicy
      */
     public function update(User $user, Discount $discount)
     {
-        if($user->can('update_discounts')) {
+        if ($user->can('update_discounts')) {
             return true;
         }
     }
@@ -73,7 +75,7 @@ class DiscountPolicy
      */
     public function delete(User $user, Discount $discount)
     {
-        if($user->can('delete_discounts')) {
+        if ($user->can('delete_discounts')) {
             return true;
         }
     }

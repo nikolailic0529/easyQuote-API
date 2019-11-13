@@ -1,7 +1,9 @@
-<?php namespace App\Models\Collaboration;
+<?php
+
+namespace App\Models\Collaboration;
 
 use App\Models\UuidModel;
-use App\Traits \ {
+use App\Traits\{
     BelongsToUser,
     BelongsToRole,
     Search\Searchable

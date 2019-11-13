@@ -1,14 +1,16 @@
-<?php namespace App\Repositories\Quote\Margin;
+<?php
+
+namespace App\Repositories\Quote\Margin;
 
 use App\Contracts\Repositories\Quote\Margin\MarginRepositoryInterface;
 use App\Repositories\SearchableRepository;
-use App\Http\Requests\Margin \ {
+use App\Http\Requests\Margin\{
     StoreCountryMarginRequest,
     UpdateCountryMarginRequest
 };
 use App\Models\Quote\Margin\CountryMargin;
 use App\Models\Quote\Quote;
-use Illuminate\Database\Eloquent \ {
+use Illuminate\Database\Eloquent\{
     Model,
     Builder,
     ModelNotFoundException
@@ -51,7 +53,7 @@ class MarginRepository extends SearchableRepository implements MarginRepositoryI
 
         $countryMargin = $this->userQuery()->quoteAcceptable($quote)->firstOrNew($attributes);
 
-        if($countryMargin->isDirty()) {
+        if ($countryMargin->isDirty()) {
             $countryMargin->user()->associate(request()->user());
             $countryMargin->save();
         }

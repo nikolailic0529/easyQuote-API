@@ -1,9 +1,11 @@
-<?php namespace App\Http\Controllers\API;
+<?php
+
+namespace App\Http\Controllers\API;
 
 use App\Contracts\Repositories\RoleRepositoryInterface as RoleRepository;
 use App\Models\Role;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Role \ {
+use App\Http\Requests\Role\{
     StoreRoleRequest,
     UpdateRoleRequest
 };
@@ -25,7 +27,7 @@ class RoleController extends Controller
      */
     public function index()
     {
-        if(request()->filled('search')) {
+        if (request()->filled('search')) {
             return response()->json(
                 $this->role->search(request('search'))
             );

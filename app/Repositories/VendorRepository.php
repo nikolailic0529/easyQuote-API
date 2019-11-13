@@ -1,12 +1,14 @@
-<?php namespace App\Repositories;
+<?php
+
+namespace App\Repositories;
 
 use App\Contracts\Repositories\VendorRepositoryInterface;
-use App\Http\Requests\Vendor \ {
+use App\Http\Requests\Vendor\{
     StoreVendorRequest,
     UpdateVendorRequest
 };
 use App\Models\Vendor;
-use Illuminate\Database\Eloquent \ {
+use Illuminate\Database\Eloquent\{
     Model,
     Builder,
     Collection

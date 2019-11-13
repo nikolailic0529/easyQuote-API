@@ -113,5 +113,13 @@
             "pris",
             "upfront betaling"
         ]
+    },
+    {
+        "header": "Searchable",
+        "name": "searchable",
+        "order": 7,
+        "aliases": [
+            "searchable"
+        ]
     }
 ]

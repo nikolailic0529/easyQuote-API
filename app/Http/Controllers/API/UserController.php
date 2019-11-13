@@ -1,12 +1,11 @@
-<?php namespace App\Http\Controllers\API;
+<?php
+
+namespace App\Http\Controllers\API;
 
 use App\Contracts\Repositories\UserRepositoryInterface as UserRepository;
-use App\Models \ {
-    User,
-    Collaboration\Invitation
-};
+use App\Models\User;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Collaboration \ {
+use App\Http\Requests\Collaboration\{
     InviteUserRequest,
     UpdateUserRequest
 };
@@ -28,7 +27,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        if(request()->filled('search')) {
+        if (request()->filled('search')) {
             return response()->json(
                 $this->user->search(request('search'))
             );

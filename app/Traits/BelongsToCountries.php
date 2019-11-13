@@ -1,4 +1,6 @@
-<?php namespace App\Traits;
+<?php
+
+namespace App\Traits;
 
 use App\Models\Data\Country;
 
@@ -11,7 +13,7 @@ trait BelongsToCountries
 
     public function syncCountries($countries)
     {
-        if(!is_array($countries)) {
+        if (!is_array($countries)) {
             return false;
         }
 
