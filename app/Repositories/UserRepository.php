@@ -9,12 +9,20 @@ use App\Contracts\Repositories\{
 };
 use App\Http\Requests\{
     Collaboration\InviteUserRequest,
-    Collaboration\UpdateUserRequest
+    Collaboration\UpdateUserRequest,
+    PasswordResetRequest as AppPasswordResetRequest,
+    StoreResetPasswordRequest,
+    UpdateProfileRequest
 };
 use App\Models\{
     User,
     Role,
-    Collaboration\Invitation
+    Collaboration\Invitation,
+    PasswordReset
+};
+use App\Notifications\{
+    PasswordResetRequest,
+    PasswordResetSuccess
 };
 use Illuminate\Database\Eloquent\{
     Model,
@@ -22,7 +30,7 @@ use Illuminate\Database\Eloquent\{
     Collection
 };
 use Illuminate\Support\Collection as SupportCollection;
-use Hash;
+use Arr, Hash;
 
 class UserRepository extends SearchableRepository implements UserRepositoryInterface
 {
@@ -32,6 +40,8 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
 
     protected $invitation;
 
+    protected $passwordReset;
+
     protected $country;
 
     protected $timezone;
@@ -40,12 +50,14 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         User $user,
         Role $role,
         Invitation $invitation,
+        PasswordReset $passwordReset,
         CountryRepository $country,
         TimezoneRepository $timezone
     ) {
         $this->user = $user;
         $this->role = $role;
         $this->invitation = $invitation;
+        $this->passwordReset = $passwordReset;
         $this->country = $country;
         $this->timezone = $timezone;
     }
@@ -119,6 +131,21 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         return $this->find($id)->update($request->validated());
     }
 
+    public function updateOwnProfile(UpdateProfileRequest $request): bool
+    {
+        $request->user()->createImage($request->picture, ['width' => 120, 'height' => 120]);
+        $request->user()->deleteImageWhen($request->delete_picture);
+
+        $attributes = Arr::except($request->validated(), ['password']);
+
+        if ($request->change_password) {
+            $password = Hash::make($request->password);
+            $attributes = array_merge($attributes, compact('password'));
+        }
+
+        return $request->user()->update($attributes);
+    }
+
     public function delete(string $id): bool
     {
         return $this->find($id)->delete();
@@ -137,6 +164,38 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
     public function administrators(): Collection
     {
         return $this->user->administrators()->get();
+    }
+
+    public function resetPassword(StoreResetPasswordRequest $request, string $id): bool
+    {
+        $user = $this->find($id);
+        $user_id = $user->id;
+        $expires_at = now()->addHours(12)->toDateTimeString();
+
+        $passwordReset = $this->passwordReset->updateOrCreate(
+            compact('user_id'),
+            array_merge($request->validated(), compact('expires_at'))
+        );
+
+        try {
+            $user->notify(new PasswordResetRequest($passwordReset));
+            return true;
+        } catch (\Exception $exception) {
+            return false;
+        }
+    }
+
+    public function performResetPassword(AppPasswordResetRequest $request, string $token): bool
+    {
+        $passwordReset = $this->passwordReset->whereToken($token)->firstOrFail();
+
+        $passwordReset->isExpired && abort(406, __('password_reset.expired_exception'));
+
+        $password = Hash::make($request->password);
+
+        $passwordReset->user->notify(new PasswordResetSuccess);
+
+        return $passwordReset->user->update(compact('password')) && $passwordReset->delete();
     }
 
     protected function filterQueryThrough(): array

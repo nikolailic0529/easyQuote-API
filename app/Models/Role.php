@@ -10,7 +10,6 @@ use App\Models\{
 use App\Traits\{
     Activatable,
     BelongsToUser,
-    Collaboration\BelongsToCollaboration,
     Search\Searchable,
     Systemable
 };
@@ -33,7 +32,6 @@ class Role extends UuidModel implements RoleContract, ActivatableInterface
 {
     use HasPermissions,
         RefreshesPermissionCache,
-        BelongsToCollaboration,
         BelongsToUser,
         Searchable,
         SoftDeletes,

@@ -44,7 +44,7 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
         $user = request()->user();
 
         $vendor = $user->vendors()->create($request->validated());
-        $vendor->createImage($request->logo);
+        $vendor->createLogo($request->logo);
         $vendor->syncCountries($request->countries);
         $vendor->load('countries');
         $vendor->appendLogo();
@@ -57,7 +57,7 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
         $vendor = $this->find($id);
 
         $vendor->update($request->validated());
-        $vendor->createImage($request->logo);
+        $vendor->createLogo($request->logo);
         $vendor->syncCountries($request->countries);
         $vendor->load('countries');
         $vendor->appendLogo();

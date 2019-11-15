@@ -6,13 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\{
     UserSignUpRequest,
     UserSignInRequest,
-    Collaboration\CompleteInvitationRequest
+    Collaboration\CompleteInvitationRequest,
+    PasswordResetRequest,
+    UpdateProfileRequest
 };
 use App\Contracts\{
     Repositories\UserRepositoryInterface,
     Services\AuthServiceInterface
 };
-use App\Models\Collaboration\Invitation;
+use App\Models\{
+    Collaboration\Invitation,
+    PasswordReset
+};
 
 class AuthController extends Controller
 {
@@ -47,7 +52,7 @@ class AuthController extends Controller
      * @param Invitation $invitation
      * @return \Illuminate\Http\Response
      */
-    public function invitation(Invitation $invitation)
+    public function showInvitation(Invitation $invitation)
     {
         return response()->json(
             $this->user->invitation($invitation->invitation_token)
@@ -103,7 +108,35 @@ class AuthController extends Controller
     public function user()
     {
         return response()->json(
-            request()->user()
+            request()->user()->makeVisible('privileges')
+        );
+    }
+
+    /**
+     * Update Current User's Profile.
+     *
+     * @param UpdateProfileRequest $request
+     * @return \Illuminate\Http\Response
+     */
+    public function updateOwnProfile(UpdateProfileRequest $request)
+    {
+        return response()->json(
+            $this->user->updateOwnProfile($request)
+        );
+    }
+
+    /**
+     * Perform Reset Password.
+     *
+     * @param ResetPassword $reset
+     * @return void
+     */
+    public function resetPassword(PasswordResetRequest $request, PasswordReset $reset)
+    {
+        $this->user->performResetPassword($request, $reset->token);
+
+        return response()->json(
+            $this->auth->authenticate(array_merge($request->merge(['email' => $reset->user->email])->all()))
         );
     }
 }

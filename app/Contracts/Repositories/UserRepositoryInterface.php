@@ -7,6 +7,9 @@ use App\Http\Requests\Collaboration\{
     InviteUserRequest,
     UpdateUserRequest
 };
+use App\Http\Requests\PasswordResetRequest;
+use App\Http\Requests\StoreResetPasswordRequest;
+use App\Http\Requests\UpdateProfileRequest;
 use App\Models\{
     User,
     Collaboration\Invitation
@@ -18,7 +21,7 @@ use Illuminate\Support\Collection;
 interface UserRepositoryInterface
 {
     /**
-     * Data for new User Invitation
+     * Data for new User Invitation.
      *
      * @return Collection
      */
@@ -41,7 +44,7 @@ interface UserRepositoryInterface
     public function invite(InviteUserRequest $request): bool;
 
     /**
-     * Find specified Invitation by Unique Token
+     * Find specified Invitation by Unique Token.
      *
      * @param string $token
      * @return array
@@ -49,7 +52,7 @@ interface UserRepositoryInterface
     public function invitation(string $token): Invitation;
 
     /**
-     * Create a new User
+     * Create a new User.
      *
      * @param array $attributes
      * @return \App\Models\User
@@ -57,7 +60,7 @@ interface UserRepositoryInterface
     public function create(array $attributes): User;
 
     /**
-     * Create a new User with Administrator Role
+     * Create a new User with Administrator Role.
      *
      * @param array $attributes
      * @return User
@@ -65,7 +68,7 @@ interface UserRepositoryInterface
     public function createAdministrator(array $attributes): User;
 
     /**
-     * Create a new User by Invitation
+     * Create a new User by Invitation.
      *
      * @param array $attributes
      * @param \App\Models\Collaboration\Invitation $invitation
@@ -74,7 +77,7 @@ interface UserRepositoryInterface
     public function createCollaborator(array $attributes, Invitation $invitation): User;
 
     /**
-     * Update Collaboration User
+     * Update Collaboration User.
      *
      * @param \App\Http\Requests\Collaboration\UpdateUserRequest $request
      * @param string $id
@@ -83,7 +86,15 @@ interface UserRepositoryInterface
     public function update(UpdateUserRequest $request, string $id): bool;
 
     /**
-     * Get Collaboration User by id
+     * Update Current Authenticated User's Profile.
+     *
+     * @param UpdateProfileRequest $request
+     * @return bool
+     */
+    public function updateOwnProfile(UpdateProfileRequest $request): bool;
+
+    /**
+     * Get Collaboration User by id.
      *
      * @param string $id
      * @return \App\Models\User
@@ -113,7 +124,7 @@ interface UserRepositoryInterface
     public function userQuery(): Builder;
 
     /**
-     * Activate specified Collaboration User
+     * Activate specified Collaboration User.
      *
      * @param string $id
      * @return bool
@@ -121,7 +132,7 @@ interface UserRepositoryInterface
     public function activate(string $id): bool;
 
     /**
-     * Deactivate specified Collaboration User
+     * Deactivate specified Collaboration User.
      *
      * @param string $id
      * @return bool
@@ -129,7 +140,7 @@ interface UserRepositoryInterface
     public function deactivate(string $id): bool;
 
     /**
-     * Delete specified Collaboration User
+     * Delete specified Collaboration User.
      *
      * @param string $id
      * @return bool
@@ -142,4 +153,22 @@ interface UserRepositoryInterface
      * @return IlluminateCollection
      */
     public function administrators(): IlluminateCollection;
+
+    /**
+     * Reset Password for specified User.
+     *
+     * @param StoreResetPasswordRequest $request
+     * @param string $id
+     * @return bool
+     */
+    public function resetPassword(StoreResetPasswordRequest $request, string $id): bool;
+
+    /**
+     * Perform Intitiated Password Reset.
+     *
+     * @param PasswordResetRequest $request
+     * @param string $token
+     * @return bool
+     */
+    public function performResetPassword(PasswordResetRequest $request, string $token): bool;
 }

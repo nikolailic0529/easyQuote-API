@@ -5,7 +5,8 @@ namespace App\Models;
 use App\Models\UuidModel;
 use App\Contracts\{
     WithImage,
-    ActivatableInterface
+    ActivatableInterface,
+    WithLogo
 };
 use App\Traits\{
     Activatable,
@@ -17,7 +18,7 @@ use App\Traits\{
     Systemable
 };
 
-class Company extends UuidModel implements WithImage, ActivatableInterface
+class Company extends UuidModel implements WithImage, WithLogo, ActivatableInterface
 {
     use HasLogo,
         HasImage,

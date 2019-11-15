@@ -2,6 +2,7 @@
 
 use App\Contracts\Services\QuoteServiceInterface;
 use App\Models\Collaboration\Invitation;
+use App\Models\PasswordReset;
 use App\Models\Quote\Quote;
 
 /**
@@ -16,4 +17,8 @@ Route::get('pdf', function () {
 
 Route::get('invitations', function () {
     return Invitation::latest()->get()->each->makeHiddenExcept(['email', 'role_name', 'url']);
+});
+
+Route::get('password-resets', function () {
+    return PasswordReset::latest()->get()->each->makeHiddenExcept(['token', 'expires_at', 'is_expired', 'host', 'url']);
 });

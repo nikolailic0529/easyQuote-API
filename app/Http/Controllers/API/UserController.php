@@ -9,6 +9,7 @@ use App\Http\Requests\Collaboration\{
     InviteUserRequest,
     UpdateUserRequest
 };
+use App\Http\Requests\StoreResetPasswordRequest;
 
 class UserController extends Controller
 {
@@ -112,6 +113,8 @@ class UserController extends Controller
      */
     public function activate(User $user)
     {
+        $this->authorize('update', $user);
+
         return response()->json(
             $this->user->activate($user->id)
         );
@@ -125,8 +128,26 @@ class UserController extends Controller
      */
     public function deactivate(User $user)
     {
+        $this->authorize('update', $user);
+
         return response()->json(
             $this->user->deactivate($user->id)
+        );
+    }
+
+    /**
+     * Initiate Reset Password for specified User.
+     *
+     * @param StoreResetPasswordRequest $request
+     * @param User $user
+     * @return void
+     */
+    public function resetPassword(StoreResetPasswordRequest $request, User $user)
+    {
+        $this->authorize('update', $user);
+
+        return response()->json(
+            $this->user->resetPassword($request, $user->id)
         );
     }
 }

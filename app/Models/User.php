@@ -2,7 +2,10 @@
 
 namespace App\Models;
 
-use App\Contracts\ActivatableInterface;
+use App\Contracts\{
+    ActivatableInterface,
+    WithImage
+};
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Laravel\Passport\HasApiTokens;
@@ -26,11 +29,13 @@ use App\Traits\{
     QuoteTemplate\HasQuoteTemplates,
     QuoteTemplate\HasTemplateFields,
     Collaboration\HasInvitations,
-    Search\Searchable
+    Search\Searchable,
+    Image\HasImage
 };
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInterface
+class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInterface, WithImage
 {
     use HasRoles,
         HasImportableColumns,
@@ -49,7 +54,9 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
         HasQuoteTemplates,
         HasTemplateFields,
         Activatable,
-        Searchable;
+        Searchable,
+        SoftDeletes,
+        HasImage;
 
     /**
      * The attributes that are mass assignable.
@@ -57,7 +64,7 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
      * @var array
      */
     protected $fillable = [
-        'first_name', 'middle_name', 'last_name', 'timezone_id', 'email', 'password', 'role_id'
+        'first_name', 'middle_name', 'last_name', 'timezone_id', 'email', 'password', 'role_id', 'phone'
     ];
 
     /**
@@ -66,7 +73,7 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
      * @var array
      */
     protected $hidden = [
-        'password', 'remember_token', 'roles'
+        'password', 'remember_token', 'roles', 'updated_at', 'deleted_at', 'privileges', 'image'
     ];
 
     /**
@@ -76,10 +83,11 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'must_change_password' => 'boolean'
     ];
 
     protected $appends = [
-        'role_id', 'role_name'
+        'role_id', 'role_name', 'picture', 'privileges'
     ];
 
     public function getFullNameAttribute()
@@ -129,5 +137,24 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
         }
 
         $this->assignRole(Role::whereId($value)->firstOrFail());
+    }
+
+    public function getPrivilegesAttribute()
+    {
+        return $this->role->privileges;
+    }
+
+    public function imagesDirectory(): string
+    {
+        return "images/users";
+    }
+
+    public function getPictureAttribute()
+    {
+        if (!isset($this->image->attributes['original'])) {
+            return null;
+        }
+
+        return asset('storage/' . $this->image->attributes['original']);
     }
 }

@@ -10,11 +10,4 @@ interface WithImage
      * @return string
      */
     public function imagesDirectory(): string;
-
-    /**
-     * With and Height for thumbnail
-     *
-     * @return array
-     */
-    public function thumbnailProperties(): array;
 }

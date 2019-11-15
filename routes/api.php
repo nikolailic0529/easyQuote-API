@@ -4,12 +4,14 @@ Route::group(['namespace' => 'API'], function () {
     Route::group(['prefix' => 'auth', 'middleware' => 'throttle:120,1'], function () {
         Route::post('signin', 'AuthController@signin')->name('signin');
         Route::post('signup', 'AuthController@signup')->name('signup');
-        Route::get('signup/{invitation}', 'AuthController@invitation');
+        Route::get('signup/{invitation}', 'AuthController@showInvitation');
         Route::post('signup/{invitation}', 'AuthController@signupCollaborator');
+        Route::post('reset-password/{reset}', 'AuthController@resetPassword');
 
         Route::group(['middleware' => 'auth:api'], function () {
             Route::get('logout', 'AuthController@logout');
             Route::get('user', 'AuthController@user');
+            Route::post('user', 'AuthController@updateOwnProfile');
         });
     });
 
@@ -36,6 +38,7 @@ Route::group(['namespace' => 'API'], function () {
             Route::resource('users', 'UserController', ['only' => config('route.crud')]);
             Route::put('users/activate/{user}', 'UserController@activate');
             Route::put('users/deactivate/{user}', 'UserController@deactivate');
+            Route::patch('users/reset-password/{user}', 'UserController@resetPassword');
 
             Route::apiResource('invitations', 'InvitationController', ['only' => config('route.rd')]);
             Route::put('invitations/resend/{invitation}', 'InvitationController@resend');

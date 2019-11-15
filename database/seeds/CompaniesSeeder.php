@@ -46,7 +46,7 @@ class CompaniesSeeder extends Seeder
                 $createdCompany->vendors()->attach($vendor);
             });
 
-            $createdCompany->createImage($company['logo'], true);
+            $createdCompany->createLogo($company['logo'], true);
         });
     }
 }

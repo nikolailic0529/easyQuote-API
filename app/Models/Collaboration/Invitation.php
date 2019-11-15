@@ -6,16 +6,18 @@ use App\Models\UuidModel;
 use App\Traits\{
     BelongsToUser,
     BelongsToRole,
+    CanGenerateToken,
+    Expirable,
     Search\Searchable
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Invitation extends UuidModel
 {
-    use BelongsToUser, BelongsToRole, SoftDeletes, Searchable;
+    use BelongsToUser, BelongsToRole, SoftDeletes, Searchable, CanGenerateToken, Expirable;
 
     protected $fillable = [
-        'email', 'user_id', 'role_id', 'host', 'expires_at'
+        'email', 'user_id', 'role_id', 'host'
     ];
 
     protected $hidden = [
@@ -23,15 +25,11 @@ class Invitation extends UuidModel
     ];
 
     protected $appends = [
-        'user_email', 'role_name', 'url', 'is_expired'
+        'user_email', 'role_name', 'url'
     ];
 
     protected $observables = [
         'resended', 'canceled'
-    ];
-
-    protected $dates = [
-        'expires_at'
     ];
 
     protected static function boot()
@@ -53,13 +51,11 @@ class Invitation extends UuidModel
     /**
      * Get Url with Invitation Token.
      *
-     * @return mixed
+     * @return string
      */
-    public function getUrlAttribute()
+    public function getUrlAttribute(): string
     {
-        $invitation_token = $this->attributes['invitation_token'];
-
-        return "{$this->host}/#/signup/{$invitation_token}";
+        return "{$this->host}/#/signup/{$this->attributes['token']}";
     }
 
     public function getUserEmailAttribute()
@@ -75,11 +71,6 @@ class Invitation extends UuidModel
     public function getRouteKeyName()
     {
         return 'invitation_token';
-    }
-
-    public function generateToken(): string
-    {
-        return substr(md5($this->attributes['id'] . $this->attributes['email'] . time()), 0, 32);
     }
 
     public function resend()
@@ -98,24 +89,5 @@ class Invitation extends UuidModel
         return $this->forceFill([
             'expires_at' => null
         ])->save();
-    }
-
-    public function scopeExpired($query)
-    {
-        return $query->whereNull('expires_at')
-            ->orWhere('expires_at', '<', now()->toDateTimeString())
-            ->limit(999999999);
-    }
-
-    public function scopeNonExpired($query)
-    {
-        return $query->whereNotNull('expires_at')
-            ->where('expires_at', '>', now()->toDateTimeString())
-            ->limit(999999999);
-    }
-
-    public function getIsExpiredAttribute()
-    {
-        return is_null($this->expires_at) || $this->expires_at->lt(now());
     }
 }

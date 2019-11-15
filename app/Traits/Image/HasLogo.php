@@ -2,10 +2,60 @@
 
 namespace App\Traits\Image;
 
-use Str, File;
+use App\Contracts\{
+    WithImage,
+    WithLogo
+};
+use Illuminate\Http\{
+    File as IlluminateFile,
+    UploadedFile
+};
+use ImageIntervention, Storage, Str, File;
 
 trait HasLogo
 {
+    public function createLogo($file, $fake = false)
+    {
+        if (!$fake && (!$file instanceof UploadedFile || !$this instanceof WithLogo || !$this instanceof WithImage)) {
+            return $this;
+        }
+
+        $modelImagesDir = $this->imagesDirectory();
+
+        $original = $fake
+            ? Str::after(Storage::putFile("public/{$modelImagesDir}", new IlluminateFile(base_path($file)), 'public'), 'public/')
+            : $file->store($modelImagesDir, 'public');
+
+        $thumbnails = collect($this->thumbnailProperties())->mapWithKeys(function ($size, $key) use ($original, $modelImagesDir) {
+            if (!isset($size['width']) || !isset($size['height'])) {
+                return true;
+            }
+
+            $image = ImageIntervention::make(Storage::path("public/{$original}"));
+            $image->resize($size['width'], $size['height'], function ($constraint) {
+                $constraint->aspectRatio();
+                $constraint->upsize();
+            });
+
+            $key++;
+            $imageKey = "x{$key}";
+
+            $thumbnail = "{$modelImagesDir}/{$image->filename}@{$imageKey}.{$image->extension}";
+            $image->save(Storage::path("public/{$thumbnail}"));
+
+            return [$imageKey => $thumbnail];
+        });
+
+        if(blank($thumbnails)) {
+            return $this;
+        }
+
+        $this->image()->delete();
+        $this->image()->create(compact('original', 'thumbnails'));
+
+        return $this->load('image');
+    }
+
     public function getLogoAttribute()
     {
         if (!isset($this->image)) {

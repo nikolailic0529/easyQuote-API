@@ -54,7 +54,7 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
         $user = request()->user();
 
         $company = $user->companies()->create($request->validated());
-        $company->createImage($request->logo);
+        $company->createLogo($request->logo);
         $company->syncVendors($request->vendors);
         $company->load('vendors')->appendLogo();
 
@@ -66,7 +66,7 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
         $company = $this->find($id);
 
         $company->update($request->validated());
-        $company->createImage($request->logo);
+        $company->createLogo($request->logo);
         $company->syncVendors($request->vendors);
         $company->load('vendors')->appendLogo();
 

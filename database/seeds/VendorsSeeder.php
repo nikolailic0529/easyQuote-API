@@ -38,7 +38,7 @@ class VendorsSeeder extends Seeder
             ]);
 
             $createdVendor = Vendor::whereId($vendorId)->first();
-            $createdVendor->createImage($vendor['logo'], true);
+            $createdVendor->createLogo($vendor['logo'], true);
 
             collect($vendor['countries'])->each(function ($countryIso) use ($createdVendor) {
                 $country = Country::where('iso_3166_2', $countryIso)->first();

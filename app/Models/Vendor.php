@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
-use App\Contracts\ActivatableInterface;
-use App\Contracts\WithImage;
+use App\Contracts\{
+    ActivatableInterface,
+    WithImage,
+    WithLogo
+};
 use App\Traits\{
     Activatable,
     BelongsToCountries,
@@ -15,7 +18,7 @@ use App\Traits\{
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Vendor extends UuidModel implements WithImage, ActivatableInterface
+class Vendor extends UuidModel implements WithImage, WithLogo, ActivatableInterface
 {
     use HasLogo,
         HasImage,
