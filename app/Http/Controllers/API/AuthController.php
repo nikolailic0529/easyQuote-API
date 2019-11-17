@@ -139,4 +139,19 @@ class AuthController extends Controller
             $this->auth->authenticate(array_merge($request->merge(['email' => $reset->user->email])->all()))
         );
     }
+
+    /**
+     * Verify the specified PasswordReset Token.
+     * Returns False if is expired or doesn't exist.
+     * Return True if the token isn't expired and exists.
+     *
+     * @param string $reset
+     * @return void
+     */
+    public function verifyPasswordReset(string $reset)
+    {
+        return response()->json(
+            $this->user->verifyPasswordReset($reset)
+        );
+    }
 }

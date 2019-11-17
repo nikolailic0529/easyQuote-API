@@ -73,6 +73,14 @@ interface QuoteServiceInterface
     public function modifyColumn(Quote $quote, string $column, Closure $callback): void;
 
     /**
+     * Assign Computable Rows for next operations.
+     *
+     * @param Quote $quote
+     * @return void
+     */
+    public function assignComputableRows(Quote $quote): void;
+
+    /**
      * Performing all necessary operations with Quote instance.
      * Retrieving Selected Rows Data, Interactions with Margins, Discounts, Calculation Total List Price.
      *

@@ -9,7 +9,6 @@ use App\Traits\{
     Submittable,
     Quote\HasQuotes
 };
-use Illuminate\Support\Carbon;
 
 class Customer extends UuidModel
 {
@@ -42,27 +41,26 @@ class Customer extends UuidModel
     ];
 
     protected $casts = [
-        'created_at' => 'datetime:d/m/Y',
-        'valid_until' => 'datetime:d/m/Y',
-        'support_start' => 'datetime:d/m/Y',
-        'support_end' => 'datetime:d/m/Y'
+        'valid_until' => 'datetime',
+        'support_start' => 'datetime',
+        'support_end' => 'datetime'
     ];
 
     protected $dateTimeFormat = 'd/m/Y';
 
     public function getSupportStartAttribute()
     {
-        return Carbon::parse($this->attributes['support_start'])->format($this->dateTimeFormat);
+        return $this->asDateTime($this->attributes['support_start'])->format($this->dateTimeFormat);
     }
 
     public function getSupportEndAttribute()
     {
-        return Carbon::parse($this->attributes['support_end'])->format($this->dateTimeFormat);
+        return $this->asDateTime($this->attributes['support_end'])->format($this->dateTimeFormat);
     }
 
     public function getValidUntilAttribute()
     {
-        return Carbon::parse($this->attributes['valid_until'])->format($this->dateTimeFormat);
+        return $this->asDateTime($this->attributes['valid_until'])->format($this->dateTimeFormat);
     }
 
     public function getCoveragePeriodAttribute()
@@ -82,16 +80,16 @@ class Customer extends UuidModel
 
     public function setSupportStartDateAttribute($value)
     {
-        $this->support_start = $value;
+        $this->attributes['support_start'] = $value;
     }
 
     public function setSupportEndDateAttribute($value)
     {
-        $this->support_end = $value;
+        $this->attributes['support_end'] = $value;
     }
 
     public function setQuotationValidUntilAttribute($value)
     {
-        $this->valid_until = $value;
+        $this->attributes['valid_until'] = $value;
     }
 }

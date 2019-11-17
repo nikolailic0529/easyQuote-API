@@ -65,7 +65,7 @@ class RolePolicy
     public function update(User $user, Role $role)
     {
         if ($role->isSystem()) {
-            return Response::deny('role.system_updating_exception');
+            return Response::deny(__('role.system_updating_exception'));
         }
 
         if ($user->can('update_roles')) {
@@ -83,7 +83,7 @@ class RolePolicy
     public function delete(User $user, Role $role)
     {
         if ($role->isSystem()) {
-            return Response::deny('role.system_deleting_exception');
+            return Response::deny(__('role.system_deleting_exception'));
         }
 
         if ($user->can('delete_roles')) {

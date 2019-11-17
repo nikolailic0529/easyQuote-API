@@ -11,6 +11,7 @@ use App\Http\Requests\{
     Quote\StoreGroupDescriptionRequest,
     Quote\UpdateGroupDescriptionRequest
 };
+use App\Http\Requests\Quote\TryDiscountsRequest;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -80,7 +81,7 @@ interface QuoteRepositoryInterface
     public function setMargin(Quote $quote, ?array $attributes);
 
     /**
-     * Set Discounts for Quote
+     * Set Discounts for Quote.
      *
      * @param Quote $quote
      * @param array|null $attributes
@@ -90,12 +91,30 @@ interface QuoteRepositoryInterface
     public function setDiscounts(Quote $quote, $attributes, $detach);
 
     /**
+     * Fresh Attributes already attached Discounts.
+     *
+     * @param Quote $quote
+     * @return void
+     */
+    public function freshDiscounts(Quote $quote): void;
+
+    /**
      * Get acceptable Discounts for the specified Quote.
      *
      * @param string $quoteId
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function discounts(string $quoteId);
+
+    /**
+     * Return passed Discounts in the Request with calculated Total Margin after each passed Discount.
+     *
+     * @param TryDiscountsRequest|array $attributes
+     * @param Quote|string $quote
+     * @param bool $group
+     * @return Collection
+     */
+    public function tryDiscounts($attributes, $quote, bool $group = true): Collection;
 
     /**
      * Review Quote pages.
@@ -201,4 +220,13 @@ interface QuoteRepositoryInterface
      * @return void
      */
     public function draft(Quote $quote): void;
+
+    /**
+     * Hide specified Fields in Quote Review screen and generated PDF.
+     *
+     * @param Collection $state
+     * @param Quote $quote
+     * @return void
+     */
+    public function hideFields(Collection $state, Quote $quote): void;
 }

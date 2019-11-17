@@ -18,7 +18,7 @@ class Discount extends UuidModel
     ];
 
     protected $appends = [
-        'discount_type', 'duration'
+        'discount_type', 'duration', 'margin_percentage'
     ];
 
     public function discountable()
@@ -38,7 +38,14 @@ class Discount extends UuidModel
 
     public function getDurationAttribute()
     {
-        return $this->pivot->duration;
+        return $this->attributes['duration'] ?? $this->pivot->duration ?? null;
+    }
+
+    public function getMarginPercentageAttribute()
+    {
+        $value = $this->attributes['margin_percentage'] ?? $this->pivot->margin_percentage ?? null;
+
+        return isset($value) ? number_format($value, 2) : null;
     }
 
     public function getValue($total)
@@ -67,41 +74,32 @@ class Discount extends UuidModel
         if ($discount instanceof SND) {
             return (float) $discount->value;
         }
+
+        return 0;
     }
 
     public function calculateDiscount($value, $total)
     {
         $value = (float) $value;
-        $total = (float) $total;
-        $discount = $this->discountable;
 
-        if ($discount instanceof MultiYearDiscount || $discount instanceof PrePayDiscount) {
-            $durations = collect($discount->durations);
-            $percentage = (float) ($durations->where('duration', $this->duration)->first()['value'] ?? $durations->first()['value']);
-
-            return $value * $percentage / 100;
-        }
-
-        if ($discount instanceof PromotionalDiscount) {
-            $percentage = (float) $discount->value;
-            $limit = $discount->minimum_limit;
-
-            if ($limit <= $total) {
-                return $value * $percentage / 100;
-            }
-
-            return 0;
-        }
-
-        if ($discount instanceof SND) {
-            $percentage = (float) $discount->value;
-
-            return $value * $percentage / 100;
-        }
+        return $value * $this->getValue($total) / 100;
     }
 
     public function scopeDiscountType($query, string $class)
     {
         return $query->whereHasMorph('discountable', $class);
+    }
+
+    public function toAttachableArray()
+    {
+        return [$this->id => $this->only('duration', 'margin_percentage')];
+    }
+
+    public function toDiscountableArray()
+    {
+        $id = $this->discountable_id;
+        $duration = $this->duration;
+
+        return compact('id', 'duration');
     }
 }

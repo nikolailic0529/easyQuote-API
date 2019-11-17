@@ -18,7 +18,7 @@ trait HasCustomDiscountAttribute
 
     public function resetCustomDiscount()
     {
-        return $this->forceFill([
+        return $this->fresh()->forceFill([
             'custom_discount' => 0
         ])->save();
     }

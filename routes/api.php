@@ -6,6 +6,7 @@ Route::group(['namespace' => 'API'], function () {
         Route::post('signup', 'AuthController@signup')->name('signup');
         Route::get('signup/{invitation}', 'AuthController@showInvitation');
         Route::post('signup/{invitation}', 'AuthController@signupCollaborator');
+        Route::get('reset-password/{reset}', 'AuthController@verifyPasswordReset');
         Route::post('reset-password/{reset}', 'AuthController@resetPassword');
 
         Route::group(['middleware' => 'auth:api'], function () {
@@ -114,6 +115,7 @@ Route::group(['namespace' => 'API'], function () {
 
             Route::group(['middleware' => 'throttle:60,1'], function () {
                 Route::get('/discounts/{quote}', 'QuoteController@discounts');
+                Route::post('/try-discounts/{quote}', 'QuoteController@tryDiscounts');
                 Route::get('/review/{quote}', 'QuoteController@review');
                 Route::post('state', 'QuoteController@storeState');
 

@@ -24,7 +24,7 @@ class SystemSettingsSeeder extends Seeder
             DB::table('system_settings')->insert([
                 'id' => (string) Uuid::generate(4),
                 'key' => $setting['key'],
-                'value' => $setting['value'],
+                'value' => is_array($setting['value']) ? json_encode($setting['value'], true) : $setting['value'],
                 'type' => $setting['type'] ?? 'string'
             ]);
         });

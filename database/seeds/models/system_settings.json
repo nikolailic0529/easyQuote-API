@@ -1,11 +1,42 @@
 [
     {
         "key": "parser.default_separator",
-        "value": "Tab"
+        "value": "Tab",
+        "type": "string"
     },
     {
         "key": "parser.default_page",
         "value": 2,
         "type": "integer"
+    },
+    {
+        "key": "base_currency",
+        "value": "GPB",
+        "type": "string"
+    },
+    {
+        "key": "file_upload_size",
+        "value": 2,
+        "type": "integer"
+    },
+    {
+        "key": "price_calculation_duration",
+        "value": "day",
+        "type": "string"
+    },
+    {
+        "key": "notification_time",
+        "value": 1,
+        "type": "integer"
+    },
+    {
+        "key": "exchange_rates_update",
+        "value": "2019-11-17 09:28:19",
+        "type": "datetime"
+    },
+    {
+        "key": "supported_file_types",
+        "value": ["CSV", "PDF", "XLSX", "XLS", "DOCX"],
+        "type": "array"
     }
 ]

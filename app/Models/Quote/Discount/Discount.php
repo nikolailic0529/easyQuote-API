@@ -23,6 +23,10 @@ abstract class Discount extends UuidModel implements ActivatableInterface
 
     protected $perPage = 8;
 
+    protected $hidden = [
+        'deleted_at', 'drafted_at'
+    ];
+
     protected static function boot()
     {
         parent::boot();
@@ -64,5 +68,10 @@ abstract class Discount extends UuidModel implements ActivatableInterface
             ->whereHas('vendor', function ($query) use ($quote) {
                 $query->whereId($quote->vendor_id);
             });
+    }
+
+    public function getDiscountTypeAttribute()
+    {
+        return class_basename($this);
     }
 }

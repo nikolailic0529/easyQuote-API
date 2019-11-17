@@ -15,8 +15,10 @@ class SystemSetting extends UuidModel
     ];
 
     protected $types = [
-        'string', 'integer', 'array'
+        'string', 'integer', 'array', 'datetime'
     ];
+
+    protected $dateTimeFormat = 'd/m/Y';
 
     public $timestamps = false;
 

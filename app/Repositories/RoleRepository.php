@@ -54,6 +54,7 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
     {
         $role = $this->find($id);
         $role->update($request->validated());
+        $role->syncPrivileges();
 
         return $role;
     }

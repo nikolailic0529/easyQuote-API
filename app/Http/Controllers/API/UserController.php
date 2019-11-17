@@ -18,7 +18,6 @@ class UserController extends Controller
     public function __construct(UserRepository $user)
     {
         $this->user = $user;
-        $this->authorizeResource(User::class, 'user');
     }
 
     /**
@@ -28,6 +27,8 @@ class UserController extends Controller
      */
     public function index()
     {
+        $this->authorize('viewAny', User::class);
+
         if (request()->filled('search')) {
             return response()->json(
                 $this->user->search(request('search'))
@@ -59,6 +60,8 @@ class UserController extends Controller
      */
     public function show(User $user)
     {
+        $this->authorize('view', $user);
+
         return response()->json(
             $this->user->find($user->id)
         );
@@ -73,6 +76,8 @@ class UserController extends Controller
      */
     public function store(InviteUserRequest $request)
     {
+        $this->authorize('create', User::class);
+
         return response()->json(
             $this->user->invite($request)
         );
@@ -87,6 +92,8 @@ class UserController extends Controller
      */
     public function update(UpdateUserRequest $request, User $user)
     {
+        $this->authorize('update', $user);
+
         return response()->json(
             $this->user->update($request, $user->id)
         );
@@ -100,6 +107,8 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
+        $this->authorize('delete', $user);
+
         return response()->json(
             $this->user->delete($user->id)
         );

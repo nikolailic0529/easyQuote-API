@@ -198,6 +198,13 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         return $passwordReset->user->update(compact('password')) && $passwordReset->delete();
     }
 
+    public function verifyPasswordReset(string $token): bool
+    {
+        $passwordReset = $this->passwordReset->whereToken($token)->first();
+
+        return isset($passwordReset) && !$passwordReset->isExpired;
+    }
+
     protected function filterQueryThrough(): array
     {
         return [

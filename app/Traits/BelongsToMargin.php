@@ -18,8 +18,9 @@ trait BelongsToMargin
 
     public function deleteCountryMargin()
     {
-        $this->countryMargin()->dissociate();
+        $freshModel = $this->fresh();
+        $freshModel->countryMargin()->dissociate();
 
-        return $this->save();
+        return $freshModel->save();
     }
 }

@@ -73,22 +73,16 @@ abstract class Margin extends UuidModel implements HasOrderedScope, ActivatableI
     /**
      * Value Calculation
      *
-     * @param [string|int|float] $value
+     * @param string|int|float $value
      * @return float
      */
-    public function calculate($value)
+    public function calculate($value): float
     {
         $value = (float) $value;
 
-        if ($this->isPercentage()) {
-            $computedValue = $value + ($value * ($this->diff_value / 100));
-        } else {
-            $computedValue = $value + $this->diff_value;
-        }
-
-        if ($computedValue < 0) {
-            return 0;
-        }
+        $computedValue = $this->isPercentage()
+            ? $value + ($value * ($this->diff_value / 100))
+            : $value + $this->diff_value;
 
         return $computedValue;
     }

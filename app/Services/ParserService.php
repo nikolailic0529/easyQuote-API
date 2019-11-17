@@ -14,7 +14,8 @@ use App\Contracts\{
 };
 use App\Models\{
     Quote\Quote,
-    QuoteFile\QuoteFile
+    QuoteFile\QuoteFile,
+    Quote\FieldColumn
 };
 use App\Http\Requests\{
     StoreQuoteFileRequest,
@@ -139,18 +140,16 @@ class ParserService implements ParserServiceInterface
             return;
         }
 
-        $columnsData = $rowData->columnsData;
+        $defaultAttributes = app(FieldColumn::class)->defaultAttributesToArray();
 
-        $columnsData->each(function ($columnData) use ($quote, $templateFields) {
-            $templateField = $templateFields->where('name', $columnData->importableColumn->name)->first();
+        $rowData->columnsData->each(function ($column) use ($quote, $templateFields, $defaultAttributes) {
+            $templateField = $templateFields->where('name', $column->importableColumn->name)->first();
 
             if (!isset($templateField)) {
                 return true;
             }
 
-            $is_default_enabled = false;
-
-            $quote->attachColumnToField($templateField, $columnData->importableColumn, compact('is_default_enabled'));
+            $quote->attachColumnToField($templateField, $column->importableColumn, $defaultAttributes);
         });
 
         Cache::forget("mapping-review-data:{$quote->id}");

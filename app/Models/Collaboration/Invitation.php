@@ -55,7 +55,7 @@ class Invitation extends UuidModel
      */
     public function getUrlAttribute(): string
     {
-        return "{$this->host}/#/signup/{$this->attributes['token']}";
+        return "{$this->host}/signup/{$this->attributes['invitation_token']}";
     }
 
     public function getUserEmailAttribute()

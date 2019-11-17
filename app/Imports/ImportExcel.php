@@ -46,11 +46,15 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
     protected $headersMapping;
 
+    protected $headersCount = 0;
+
     protected $requiredHeadersMapping;
 
     protected $rowsCount = 0;
 
     protected $importableSheetData = [];
+
+    protected $chunkSize = 500;
 
     public function __construct(QuoteFile $quoteFile)
     {
@@ -59,8 +63,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         $this->importableColumn = app(ImportableColumnRepository::class);
         $this->systemImportableColumns = $this->importableColumn->allSystem();
 
-        HeadingRowFormatter::
-        default('none');
+        HeadingRowFormatter::default('none');
     }
 
     public function onRow(Row $row)
@@ -79,6 +82,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         $this->makeRow($importableRow);
 
         $this->increaseRowsCount();
+        $this->performChunkInsert();
     }
 
     public function registerEvents(): array
@@ -118,17 +122,31 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         return $this->headingRow;
     }
 
+    private function performChunkInsert()
+    {
+        if (count(Arr::pluck($this->importableSheetData, 'imported_columns'), true) < $this->chunkSize * $this->headersCount) {
+            return;
+        }
+
+        $this->performInsert(array_splice($this->importableSheetData, 0, $this->chunkSize));
+    }
+
+    private function performInsert(array $data)
+    {
+        $importableRows = Arr::pluck($data, 'imported_row');
+        $importableColumns = Arr::collapse(Arr::pluck($data, 'imported_columns.*'));
+
+        DB::table('imported_rows')->insert($importableRows);
+        DB::table('imported_columns')->insert($importableColumns);
+    }
+
     private function importSheetData()
     {
         if (empty($this->importableSheetData)) {
             return;
         }
 
-        $importableRows = Arr::pluck($this->importableSheetData, 'imported_row');
-        $importableColumns = Arr::collapse(Arr::pluck($this->importableSheetData, 'imported_columns.*'));
-
-        DB::table('imported_rows')->insert($importableRows);
-        DB::table('imported_columns')->insert($importableColumns);
+        $this->performInsert($this->importableSheetData);
     }
 
     private function beforeNextSheet()
@@ -234,6 +252,8 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
     private function makeRow(array $row)
     {
+        $row['imported_columns'] = $row['imported_columns']->toArray();
+
         array_push($this->importableSheetData, $row);
     }
 
@@ -302,6 +322,8 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
             return [$header => $column];
         });
+
+        $this->headersCount = $mapping->count();
     }
 
     private function mapRequiredHeaders()

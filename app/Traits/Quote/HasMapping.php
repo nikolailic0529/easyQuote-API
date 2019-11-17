@@ -7,7 +7,7 @@ use App\Models\{
     QuoteFile\ImportableColumn,
     QuoteTemplate\TemplateField
 };
-use DB, Arr;
+use DB, Arr, Cache;
 
 trait HasMapping
 {
@@ -306,11 +306,38 @@ trait HasMapping
             $except = head($except);
         }
 
+        $except = array_unique(array_merge($except, $this->hiddenFieldsToArray()));
+
         return $this->templateFields->whereNotIn('name', $except)->sortBy('order')->pluck('header', 'name')->toArray();
     }
 
     public function hiddenFieldsToArray()
     {
         return $this->fieldsColumns->where('is_preview_visible', false)->pluck('templateField.name')->toArray();
+    }
+
+    public function getHiddenFieldsAttribute()
+    {
+        return $this->hiddenFieldsToArray();
+    }
+
+    public function getComputableRowsCacheKeyAttribute()
+    {
+        return "quote-computable-rows:{$this->id}";
+    }
+
+    public function forgetCachedComputableRows()
+    {
+        return Cache::forget($this->computableRowsCacheKey);
+    }
+
+    public function getMappingReviewCacheKeyAttribute()
+    {
+        return "mapping-review-data:{$this->id}";
+    }
+
+    public function forgetCachedMappingReview()
+    {
+        return Cache::forget($this->mappingReviewCacheKey);
     }
 }

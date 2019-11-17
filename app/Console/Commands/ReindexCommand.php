@@ -56,6 +56,12 @@ class ReindexCommand extends Command
      */
     public function handle()
     {
+        /**
+         * Perform deleting on all indices
+         */
+        $this->info("Deleting all indexes...");
+        $this->elasticsearch->indices()->delete(['index' => '_all']);
+
         $this->handleModels(
             [
                 User::class,

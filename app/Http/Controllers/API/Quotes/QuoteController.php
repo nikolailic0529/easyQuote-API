@@ -16,6 +16,7 @@ use App\Http\Requests\{
     Quote\StoreGroupDescriptionRequest,
     Quote\UpdateGroupDescriptionRequest
 };
+use App\Http\Requests\Quote\TryDiscountsRequest;
 use App\Models\Quote\Quote;
 
 class QuoteController extends Controller
@@ -125,6 +126,23 @@ class QuoteController extends Controller
 
         return response()->json(
             $this->quote->discounts($quote->id)
+        );
+    }
+
+    /**
+     * Try Apply Discounts to the Quote List Price.
+     * Return passed discounts with calculated Total Margin after each passed Discount.
+     *
+     * @param TryDiscountsRequest $request
+     * @param Quote $quote
+     * @return \Illuminate\Http\Response
+     */
+    public function tryDiscounts(TryDiscountsRequest $request, Quote $quote)
+    {
+        $this->authorize('view', $quote);
+
+        return response()->json(
+            $this->quote->tryDiscounts($request, $quote->id)
         );
     }
 

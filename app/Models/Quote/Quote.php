@@ -175,7 +175,8 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
                 'margin_percentage_without_discounts',
                 'user_margin_percentage',
                 'list_price',
-                'has_group_description'
+                'has_group_description',
+                'hidden_fields'
             ]
         );
     }

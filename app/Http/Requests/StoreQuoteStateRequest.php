@@ -138,6 +138,10 @@ class StoreQuoteStateRequest extends FormRequest
             'quote_data.calculate_list_price' => 'boolean',
             'quote_data.buy_price' => 'nullable|numeric|min:0',
             'quote_data.custom_discount' => 'nullable|numeric|min:0',
+
+            'quote_data.hidden_fields' => 'array',
+            'quote_data.hidden_fields.*' => 'string|in:searchable,description,qty',
+
             /**
              * Margin
              */
@@ -174,6 +178,7 @@ class StoreQuoteStateRequest extends FormRequest
                 'exists:discounts,discountable_id'
             ],
             'discounts.*.duration' => [
+                'nullable',
                 'integer',
                 'min:0'
             ],

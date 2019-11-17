@@ -56,6 +56,7 @@
             "coverage_from",
             "coverage_period_from",
             "coverage period from",
+            "coverage start",
             "start_date",
             "startdate",
             "dæknings periode fra",
@@ -77,6 +78,7 @@
             "coverage period to",
             "end_date",
             "enddate",
+            "coverage end",
             "dæknings periode til",
             "til",
             "couverture au"
@@ -111,7 +113,11 @@
             "subtotal",
             "prix",
             "pris",
-            "upfront betaling"
+            "upfront betaling",
+            "line item total list price",
+            "line item monthly list price",
+            "line item total net price",
+            "line item monthly net price"
         ]
     },
     {

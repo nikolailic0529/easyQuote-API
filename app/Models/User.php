@@ -34,6 +34,7 @@ use App\Traits\{
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Traits\HasRoles;
+use Arr;
 
 class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInterface, WithImage
 {
@@ -136,7 +137,7 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
             return;
         }
 
-        $this->assignRole(Role::whereId($value)->firstOrFail());
+        $this->syncRoles(Role::whereId($value)->firstOrFail());
     }
 
     public function getPrivilegesAttribute()
@@ -156,5 +157,10 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
         }
 
         return asset('storage/' . $this->image->attributes['original']);
+    }
+
+    public function toSearchArray()
+    {
+        return Arr::except($this->toArray(), ['email_verified_at', 'must_change_password', 'timezone_id', 'role_id', 'picture']);
     }
 }

@@ -16,7 +16,7 @@ trait HasMorphableDiscounts
     public function getDiscountsSumAttribute()
     {
         if (!isset($this->discounts)) {
-            $this->load('discounts')->withPivot('duration')->with('discountable');
+            $this->load('discounts')->withPivot(['duration'])->with('discountable');
         }
 
         return $this->discounts
@@ -27,13 +27,11 @@ trait HasMorphableDiscounts
 
     public function discounts()
     {
-        $discountsOrder = Arr::quote($this->discountsOrder());
-
         return $this->belongsToMany(Discount::class, 'quote_discount')
-            ->withPivot('duration')
+            ->withPivot('duration', 'margin_percentage')
             ->with('discountable')
             ->whereHasMorph('discountable', $this->discountsOrder())
-            ->orderByRaw("field(`discounts`.`discountable_type`, {$discountsOrder})", 'desc');
+            ->orderByRaw("field(`discounts`.`discountable_type`, {$this->discountsOrderToString()})", 'desc');
     }
 
     public function discountsOrder(): array
@@ -44,6 +42,11 @@ trait HasMorphableDiscounts
             PromotionalDiscount::class,
             SND::class
         ];
+    }
+
+    public function discountsOrderToString(): string
+    {
+        return Arr::quote($this->discountsOrder());
     }
 
     public function getApplicableDiscountsFormattedAttribute()

@@ -43,7 +43,7 @@ class PasswordReset extends UuidModel
      */
     public function getUrlAttribute(): string
     {
-        return "{$this->host}/#/reset/{$this->attributes['token']}";
+        return "{$this->host}/reset/{$this->attributes['token']}";
     }
 
     public function getRouteKeyName()

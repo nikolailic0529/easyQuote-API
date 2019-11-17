@@ -171,4 +171,12 @@ interface UserRepositoryInterface
      * @return bool
      */
     public function performResetPassword(PasswordResetRequest $request, string $token): bool;
+
+    /**
+     * Verify the specified PasswordReset Token.
+     *
+     * @param string $token
+     * @return bool
+     */
+    public function verifyPasswordReset(string $token): bool;
 }

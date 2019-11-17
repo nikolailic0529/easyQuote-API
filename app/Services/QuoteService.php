@@ -12,7 +12,7 @@ use App\Models\Quote\{
     Discount,
     Margin\CountryMargin
 };
-use Storage, Closure, Str;
+use Storage, Closure, Str, Cache;
 
 class QuoteService implements QuoteServiceInterface
 {
@@ -58,6 +58,8 @@ class QuoteService implements QuoteServiceInterface
         /**
          * Possible interaction with Discounts.
          */
+        $quote->applicable_discounts = 0;
+
         $this->interact($quote, collect($quote->discounts)->prepend($quote->custom_discount));
     }
 
@@ -133,6 +135,16 @@ class QuoteService implements QuoteServiceInterface
             return $row;
         });
 
+        if (!$discount instanceof Discount) {
+            return $quote;
+        }
+
+        $listPriceAfterDiscount = $quote->list_price - $quote->applicable_discounts;
+
+        $discount->margin_percentage = (float) $listPriceAfterDiscount !== 0.0
+            ? round((($listPriceAfterDiscount - $quote->buy_price) / $listPriceAfterDiscount) * 100, 2)
+            : 0.0;
+
         return $quote;
     }
 
@@ -158,13 +170,20 @@ class QuoteService implements QuoteServiceInterface
         return $quote;
     }
 
-    public function prepareQuoteReview(Quote $quote): void
+    public function assignComputableRows(Quote $quote): void
     {
-        $quote->computableRows = $quote->getFlattenOrGroupedRows(['where_selected'], $quote->calculate_list_price);
+        $quote->computableRows = Cache::rememberForever($quote->computableRowsCacheKey, function () use ($quote) {
+            return $quote->getFlattenOrGroupedRows(['where_selected'], $quote->calculate_list_price);
+        });
 
         if (!isset($quote->computableRows->first()->price)) {
             data_fill($quote->computableRows, '*.price', 0.0);
         }
+    }
+
+    public function prepareQuoteReview(Quote $quote): void
+    {
+        $this->assignComputableRows($quote);
 
         /**
          * Possible Interactions with Margins and Discounts

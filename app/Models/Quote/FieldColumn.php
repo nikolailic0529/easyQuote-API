@@ -13,6 +13,8 @@ class FieldColumn extends Pivot
 {
     use BelongsToQuote, BelongsToImportableColumn, BelongsToTemplateField;
 
+    public $timestamps = false;
+
     protected $table = 'quote_field_column';
 
     protected $hidden = [
@@ -30,4 +32,9 @@ class FieldColumn extends Pivot
         'is_default_enabled' => 'boolean',
         'default_value' => 'string'
     ];
+
+    public function defaultAttributesToArray(): array
+    {
+        return array_diff_key($this->getAttributes(), array_flip(['importable_column_id']));
+    }
 }
