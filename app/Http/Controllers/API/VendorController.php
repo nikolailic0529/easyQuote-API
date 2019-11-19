@@ -21,7 +21,7 @@ class VendorController extends Controller
     }
 
     /**
-     * Display a listing of the User's Vendors.
+     * Display a listing of the Vendors.
      *
      * @return \Illuminate\Http\Response
      */

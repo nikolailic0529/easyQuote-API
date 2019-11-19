@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\{
     Builder,
     Collection
 };
-use Cache;
 
 class VendorRepository extends SearchableRepository implements VendorRepositoryInterface
 {
@@ -82,9 +81,7 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
 
     public function country(string $id): Collection
     {
-        $user_id = request()->user()->id;
-
-        return Cache::remember("vendors-country:{$id}:{$user_id}", 30, function () use ($id) {
+        return cache()->tags('vendors')->sear("vendors-country:{$id}", function () use ($id) {
             return $this->userQuery()->country($id)->activated()->get();
         });
     }

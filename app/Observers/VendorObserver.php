@@ -42,7 +42,7 @@ class VendorObserver
      */
     public function deleting(Vendor $vendor)
     {
-        //
+        cache()->tags('vendors')->flush();
     }
 
     private function exists(Vendor $vendor)

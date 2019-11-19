@@ -25,7 +25,10 @@ class SystemSettingsSeeder extends Seeder
                 'id' => (string) Uuid::generate(4),
                 'key' => $setting['key'],
                 'value' => is_array($setting['value']) ? json_encode($setting['value'], true) : $setting['value'],
-                'type' => $setting['type'] ?? 'string'
+                'type' => $setting['type'] ?? 'string',
+                'possible_values' => isset($setting['possible_values']) ? json_encode($setting['possible_values'], true) : null,
+                'is_read_only' => $setting['is_read_only'] ?? false,
+                'label_format' => $setting['label_format'] ?? null
             ]);
         });
     }

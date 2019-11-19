@@ -16,8 +16,8 @@ class CurrencyRepository implements CurrencyRepositoryInterface
 
     public function all()
     {
-        return Cache::rememberForever('all-currencies', function () {
-            return $this->ordered()->get();
+        return cache()->sear('all-currencies', function () {
+            return $this->currency->ordered()->get();
         });
     }
 }

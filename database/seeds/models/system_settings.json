@@ -2,41 +2,118 @@
     {
         "key": "parser.default_separator",
         "value": "Tab",
-        "type": "string"
+        "type": "string",
+        "is_read_only": false
     },
     {
         "key": "parser.default_page",
         "value": 2,
-        "type": "integer"
+        "type": "integer",
+        "is_read_only": false
     },
     {
         "key": "base_currency",
-        "value": "GPB",
-        "type": "string"
+        "value": "GBP",
+        "type": "string",
+        "is_read_only": false,
+        "possible_values": [
+            {
+                "label": "GBP (British Pound Sterling)",
+                "value": "GBP"
+            },
+            {
+                "label": "EUR (Euro)",
+                "value": "EUR"
+            },
+            {
+                "label": "USD (US Dollar)",
+                "value": "USD"
+            },
+            {
+                "label": "AUD (Australian Dollar)",
+                "value": "AUD"
+            },
+            {
+                "label": "CAD (Canadian Dollar)",
+                "value": "CAD"
+            }
+        ]
     },
     {
         "key": "file_upload_size",
         "value": 2,
-        "type": "integer"
+        "type": "integer",
+        "is_read_only": false,
+        "possible_values": [
+            {
+                "label": "2 MB",
+                "value": 2
+            },
+            {
+                "label": "5 MB",
+                "value": 5
+            },
+            {
+                "label": "10 MB",
+                "value": 10
+            }
+        ]
     },
     {
         "key": "price_calculation_duration",
         "value": "day",
-        "type": "string"
+        "type": "string",
+        "is_read_only": false,
+        "possible_values": [
+            {
+                "label": "Day",
+                "value": "day"
+            },
+            {
+                "label": "Month",
+                "value": "month"
+            },
+            {
+                "label": "Quaterly",
+                "value": "quaterly"
+            },
+            {
+                "label": "Yearly",
+                "value": "yearly"
+            }
+        ]
     },
     {
         "key": "notification_time",
         "value": 1,
-        "type": "integer"
+        "type": "integer",
+        "is_read_only": false,
+        "possible_values": [
+            {
+                "label": "1 Week Before Closing Date",
+                "value": 1
+            },
+            {
+                "label": "2 Weeks Before Closing Date",
+                "value": 2
+            },
+            {
+                "label": "3 Weeks Before Closing Date",
+                "value": 3
+            }
+        ]
     },
     {
         "key": "exchange_rates_update",
         "value": "2019-11-17 09:28:19",
-        "type": "datetime"
+        "type": "datetime",
+        "is_read_only": true,
+        "label_format": "Last Update was done :value"
     },
     {
         "key": "supported_file_types",
         "value": ["CSV", "PDF", "XLSX", "XLS", "DOCX"],
-        "type": "array"
+        "type": "array",
+        "is_read_only": true
     }
 ]

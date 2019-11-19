@@ -35,7 +35,7 @@ use App\Http\Resources\QuoteResource;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Builder;
 use Webpatser\Uuid\Uuid;
-use Cache, DB, Arr, Str;
+use DB, Arr, Str;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
@@ -132,7 +132,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         $this->setMargin($quote, $request->margin);
         $this->setDiscounts($quote, $request->discounts, $request->discounts_detach);
 
-        Cache::forget("quote_list_price:{$quote->id}");
+        cache()->forget("quote_list_price:{$quote->id}");
 
         return $quote->only('id');
     }
@@ -284,12 +284,26 @@ class QuoteRepository implements QuoteRepositoryInterface
     {
         $quote = $this->find($id);
 
-        $multi_year = $this->multiYearDiscount->quoteAcceptable($quote)->get();
-        $pre_pay = $this->prePayDiscount->quoteAcceptable($quote)->get();
-        $promotions = $this->promotionalDiscount->quoteAcceptable($quote)->get();
-        $snd = $this->snd->quoteAcceptable($quote)->get();
+        $discounts = $this->morphDiscount->whereHasMorph('discountable', $quote->discountsOrder(), function ($query) use ($quote) {
+            $query->quoteAcceptable($quote);
+        })->get()->pluck('discountable');
 
-        return compact('multi_year', 'pre_pay', 'promotions', 'snd');
+        $expectingDiscounts = ['multi_year' => [], 'pre_pay' => [], 'promotions' => [], 'snd' => []];
+
+        return $discounts->groupBy(function ($discount) {
+            switch ($discount->discount_type) {
+                case 'PromotionalDiscount':
+                    $type = 'PromotionsDiscount';
+                    break;
+                case 'SND':
+                    $type = 'sndDiscount';
+                    break;
+                default:
+                    $type = $discount->discount_type;
+                    break;
+            }
+            return Str::snake(Str::before($type, 'Discount'));
+        })->union($expectingDiscounts);
     }
 
     public function tryDiscounts($attributes, $quote, bool $group = true): Collection
@@ -357,7 +371,7 @@ class QuoteRepository implements QuoteRepositoryInterface
     {
         $clearCache && $quote->forgetCachedMappingReview();
 
-        return Cache::rememberForever($quote->mappingReviewCacheKey, function () use ($quote) {
+        return cache()->sear($quote->mappingReviewCacheKey, function () use ($quote) {
             return $quote->rowsDataByColumns()->get();
         });
     }

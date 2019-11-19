@@ -5,5 +5,6 @@ return [
     'crd' => ['index', 'show', 'store', 'destroy'],
     'cr' => ['index', 'show', 'store'],
     'rd' => ['index', 'show', 'destroy'],
+    'ru' => ['index', 'show', 'update'],
     'r' => ['index', 'show']
 ];

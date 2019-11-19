@@ -29,4 +29,12 @@ trait HasDurationsAttribute
     {
         return collect($this->durations)->pluck('duration')->toArray();
     }
+
+    public function setDurationsAttribute(array $durations)
+    {
+        $this->attributes['durations'] = collect($durations)->transform(function ($duration) {
+            $duration['value'] = $this->asDecimal($duration['value'], 2);
+            return $duration;
+        })->toJson();
+    }
 }
