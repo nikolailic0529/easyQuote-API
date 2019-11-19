@@ -28,10 +28,7 @@ class QuoteTemplatesSeeder extends Seeder
 
         $templates = json_decode(file_get_contents(__DIR__ . '/models/quote_templates.json'), true);
 
-        $design = json_decode(file_get_contents(database_path('seeds/models/template_designs.json')), true);
-        $form_data = json_encode($design['form_data']);
-        $form_values_data = json_encode($design['form_values_data']);
-        $design = compact('form_data', 'form_values_data');
+        $design = file_get_contents(database_path('seeds/models/template_designs.json'));
 
         $templateFields = collect(TemplateField::select('id')->get()->each->setAppends([])->toArray())->filter()->flatten();
 
@@ -51,6 +48,10 @@ class QuoteTemplatesSeeder extends Seeder
 
                     $templateName = $template['new_name'];
                     $name = "{$company->acronym}-{$vendor->short_code}-{$templateName}";
+
+                    $designData = array_merge($vendor->getLogoDimensionsAttribute(true), $company->getLogoDimensionsAttribute(true));
+
+                    $design = $this->parseDesign($design, $designData);
 
                     DB::table('quote_templates')->insert(
                         array_merge(
@@ -72,5 +73,17 @@ class QuoteTemplatesSeeder extends Seeder
                 });
             });
         });
+    }
+
+    protected function parseDesign(string $design, array $data)
+    {
+        $design = preg_replace_callback('/{{(.*)}}/m', function ($item) use ($data) {
+            return $data[last($item)] ?? null;
+        }, $design);
+
+        $design = json_decode($design, true);
+        $form_data = json_encode($design['form_data']);
+        $form_values_data = json_encode($design['form_values_data']);
+        return compact('form_data', 'form_values_data');
     }
 }

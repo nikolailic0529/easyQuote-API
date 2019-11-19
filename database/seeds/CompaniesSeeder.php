@@ -32,6 +32,7 @@ class CompaniesSeeder extends Seeder
                 'id' => $companyId,
                 'name' => $company['name'],
                 'vat' => $company['vat'],
+                'type' => $company['type'],
                 'is_system' => true,
                 'created_at' => now()->toDateTimeString(),
                 'updated_at' => now()->toDateTimeString(),

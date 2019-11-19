@@ -6,10 +6,7 @@ use App\Models\{
     User,
     Company
 };
-use Illuminate\Auth\Access\{
-    HandlesAuthorization,
-    Response
-};
+use Illuminate\Auth\Access\HandlesAuthorization;
 
 class CompanyPolicy
 {
@@ -65,7 +62,7 @@ class CompanyPolicy
     public function update(User $user, Company $company)
     {
         if ($company->isSystem()) {
-            return Response::deny(__('company.system_updating_exception'));
+            return $this->deny(__('company.system_updating_exception'));
         }
 
         if ($user->can('update_companies')) {
@@ -83,7 +80,7 @@ class CompanyPolicy
     public function delete(User $user, Company $company)
     {
         if ($company->isSystem()) {
-            return Response::deny(__('company.system_deleting_exception'));
+            return $this->deny(__('company.system_deleting_exception'));
         }
 
         if ($user->can('delete_companies')) {

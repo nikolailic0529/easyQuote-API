@@ -196,10 +196,10 @@ trait HasMapping
         return $this->rowsDataByColumns(['default_selected'])
             ->join('imported_columns as groupable', function ($join) use ($query) {
                 $join->on('groupable.imported_row_id', '=', 'imported_rows.id')
-                    ->whereRaw('match(`groupable`.`value`) against (?)', [$query]);
+                    ->whereRaw("match(`groupable`.`value`) against ('+\"{$query}\"' in boolean mode)");
             })
             ->whereNull('group_name')
-            ->orderByRaw('match(`groupable`.`value`) against (?) desc', [$query]);
+            ->orderByRaw("match(`groupable`.`value`) against ('+\"{$query}\"' in boolean mode) desc");
     }
 
     public function getFlattenOrGroupedRows(?array $flags = null, bool $calculate = false)

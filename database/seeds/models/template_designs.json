@@ -668,7 +668,7 @@
                         "controls": [
                             {
                                 "id": "company_logo_x3",
-                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/companies/KnugoKUD2Y07P63COsSyRWgH7a11CzUrmFTEiUMn@x3.png",
+                                "src": "{{company_logo_x3}}",
                                 "name": "company_logo_x3",
                                 "type": "img",
                                 "class": "s4-form-control",
@@ -691,7 +691,7 @@
                         "controls": [
                             {
                                 "id": "vendor_logo_x3",
-                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/vendors/zFVhzOfBAR9JzQEM0qeNUbpmuPsFUCFCb8zgxCaP@x3.png",
+                                "src": "{{vendor_logo_x3}}",
                                 "name": "vendor_logo_x3",
                                 "type": "img",
                                 "class": "s4-form-control",
@@ -2101,7 +2101,7 @@
                         "controls": [
                             {
                                 "id": "company_logo_x3",
-                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/companies/KnugoKUD2Y07P63COsSyRWgH7a11CzUrmFTEiUMn@x3.png",
+                                "src": "{{company_logo_x3}}",
                                 "name": "company_logo_x3",
                                 "type": "img",
                                 "class": "s4-form-control",
@@ -2124,7 +2124,7 @@
                         "controls": [
                             {
                                 "id": "vendor_logo_x3",
-                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/vendors/zFVhzOfBAR9JzQEM0qeNUbpmuPsFUCFCb8zgxCaP@x3.png",
+                                "src": "{{vendor_logo_x3}}",
                                 "name": "vendor_logo_x3",
                                 "type": "img",
                                 "class": "s4-form-control",
@@ -3125,7 +3125,7 @@
                         "controls": [
                             {
                                 "id": "company_logo_x3",
-                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/companies/KnugoKUD2Y07P63COsSyRWgH7a11CzUrmFTEiUMn@x3.png",
+                                "src": "{{company_logo_x3}}",
                                 "name": "company_logo_x3",
                                 "type": "img",
                                 "class": "s4-form-control",
@@ -3148,7 +3148,7 @@
                         "controls": [
                             {
                                 "id": "vendor_logo_x3",
-                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/vendors/zFVhzOfBAR9JzQEM0qeNUbpmuPsFUCFCb8zgxCaP@x3.png",
+                                "src": "{{vendor_logo_x3}}",
                                 "name": "vendor_logo_x3",
                                 "type": "img",
                                 "class": "s4-form-control",
@@ -4558,7 +4558,7 @@
                         "controls": [
                             {
                                 "id": "company_logo_x3",
-                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/companies/KnugoKUD2Y07P63COsSyRWgH7a11CzUrmFTEiUMn@x3.png",
+                                "src": "{{company_logo_x3}}",
                                 "name": "company_logo_x3",
                                 "type": "img",
                                 "class": "s4-form-control",
@@ -4581,7 +4581,7 @@
                         "controls": [
                             {
                                 "id": "vendor_logo_x3",
-                                "src": "http://phpstack-321403-984936.cloudwaysapps.com/easyquote-api/public/storage/images/vendors/zFVhzOfBAR9JzQEM0qeNUbpmuPsFUCFCb8zgxCaP@x3.png",
+                                "src": "{{vendor_logo_x3}}",
                                 "name": "vendor_logo_x3",
                                 "type": "img",
                                 "class": "s4-form-control",

@@ -72,8 +72,14 @@ class UserPolicy
      */
     public function delete(User $user, User $collaborator)
     {
-        if ($user->can('delete_users')) {
-            return true;
+        if (!$user->can('delete_users')) {
+            return false;
         }
+
+        if ($user->id === $collaborator->id) {
+            return $this->deny(__('user.self_deleting_exception'));
+        }
+
+        return true;
     }
 }

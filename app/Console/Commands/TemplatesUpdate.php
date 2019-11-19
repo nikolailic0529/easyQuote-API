@@ -48,7 +48,7 @@ class TemplatesUpdate extends Command
         $this->info("Updating System Defined Templates...");
 
         $templates = json_decode(file_get_contents(database_path('seeds/models/quote_templates.json')), true);
-        $design = json_decode(file_get_contents(database_path('seeds/models/template_designs.json')), true);
+        $design = file_get_contents(database_path('seeds/models/template_designs.json'));
 
         $templateFields = TemplateField::system()->pluck('id')->toArray();
 
@@ -68,6 +68,9 @@ class TemplatesUpdate extends Command
                     $name = "{$company->acronym}-{$vendor->short_code}-{$template['new_name']}";
                     $countries = Country::whereIn('iso_3166_2', $template['countries'])->pluck('id')->toArray();
 
+                    $designData = array_merge($vendor->getLogoDimensionsAttribute(true), $company->getLogoDimensionsAttribute(true));
+                    $design = $this->parseDesign($design, $designData);
+
                     $template = QuoteTemplate::updateOrCreate(
                         compact('name', 'company_id', 'vendor_id', 'is_system'),
                         array_merge(compact('name', 'company_id', 'vendor_id', 'is_system'), $design)
@@ -82,5 +85,14 @@ class TemplatesUpdate extends Command
         });
 
         $this->info("\nSystem Defined Templates were updated!");
+    }
+
+    protected function parseDesign(string $design, array $data)
+    {
+        $design = preg_replace_callback('/{{(.*)}}/m', function ($item) use ($data) {
+            return $data[last($item)] ?? null;
+        }, $design);
+
+        return json_decode($design, true);
     }
 }

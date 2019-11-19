@@ -37,6 +37,7 @@ Route::group(['namespace' => 'API'], function () {
     Route::group(['middleware' => 'auth:api'], function () {
         Route::group(['middleware' => 'throttle:60,1'], function () {
             Route::apiResource('settings', 'SystemSettingController', ['only' => config('route.ru')]);
+            Route::patch('settings', 'SystemSettingController@updateMany');
         });
 
         Route::group(['middleware' => 'throttle:60,1'], function () {

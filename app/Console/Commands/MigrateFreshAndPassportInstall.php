@@ -43,6 +43,7 @@ class MigrateFreshAndPassportInstall extends Command
         $this->call('passport:install', [
             '--force' => true
         ]);
+        $this->call('search:reindex');
         $this->call('optimize:clear');
     }
 }

@@ -149,7 +149,7 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
     protected function searchableFields(): array
     {
         return [
-            'name^5', 'countries.name^4', 'vendor.name^4', 'created_at^3'
+            'name^5', 'countries.name^4', 'vendor.name^4', 'company.name^4', 'created_at^3'
         ];
     }
 

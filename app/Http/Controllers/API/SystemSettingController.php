@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Contracts\Repositories\System\SystemSettingRepositoryInterface as SystemSettingRepository;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\System\UpdateManySystemSettingsRequest;
 use App\Http\Requests\System\UpdateSystemSettingRequest;
 use App\Models\System\SystemSetting;
 
@@ -53,6 +54,20 @@ class SystemSettingController extends Controller
     {
         return response()->json(
             $this->systemSetting->update($request, $setting->id)
+        );
+    }
+
+    /**
+     * Update many System Settings in storage.
+     *
+     * @param  UpdateManySystemSettingsRequest  $request
+     * @param  \App\Models\System\SystemSetting $setting
+     * @return \Illuminate\Http\Response
+     */
+    public function updateMany(UpdateManySystemSettingsRequest $request)
+    {
+        return response()->json(
+            $this->systemSetting->updateMany($request)
         );
     }
 }

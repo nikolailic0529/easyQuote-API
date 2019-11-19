@@ -21,6 +21,11 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
         return $this->systemSetting->whereId($id)->firstOrFail();
     }
 
+    public function findMany(array $ids): Collection
+    {
+        return $this->systemSetting->whereIn('id', $ids)->get();
+    }
+
     public function get(string $key)
     {
         $setting = $this->systemSetting->where('key', $key)->firstOrNew([]);
@@ -41,8 +46,33 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
         return $this->find($id)->update($attributes);
     }
 
+    public function updateMany($attributes): bool
+    {
+        if ($attributes instanceof Request) {
+            $attributes = $attributes->validated();
+        }
+
+        if (!is_array($attributes) || !is_array(head($attributes))) {
+            return false;
+        }
+
+        $systemSettings = $this->findMany(data_get($attributes, '*.id'));
+
+        $attributes = collect($attributes);
+
+        $updated = $systemSettings->reduce(function ($carry, $systemSetting) use ($attributes) {
+            $systemSetting->value = data_get($attributes->firstWhere('id', '===', $systemSetting->id), 'value');
+            $carry->push($systemSetting->save());
+            return $carry;
+        }, collect());
+
+        return $systemSettings->count() === $updated->filter()->count();
+    }
+
     public function all(): Collection
     {
-        return $this->systemSetting->whereNotIn('key', ['parser.default_separator', 'parser.default_page'])->get();
+        return $this->systemSetting->whereNotIn('key', ['parser.default_separator', 'parser.default_page'])
+            ->orderBy('is_read_only')
+            ->get();
     }
 }

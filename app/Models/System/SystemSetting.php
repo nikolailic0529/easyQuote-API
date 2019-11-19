@@ -90,6 +90,10 @@ class SystemSetting extends UuidModel
 
     public function getFieldTypeAttribute()
     {
+        if ($this->is_read_only) {
+            return 'label';
+        }
+
         return is_array($this->possible_values) ? 'dropdown' : 'textbox';
     }
 }

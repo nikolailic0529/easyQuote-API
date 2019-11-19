@@ -50,17 +50,17 @@ class Customer extends UuidModel
 
     public function getSupportStartAttribute()
     {
-        return $this->asDateTime($this->attributes['support_start'])->format($this->dateTimeFormat);
+        return now()->parse($this->attributes['support_start'])->format($this->dateTimeFormat);
     }
 
     public function getSupportEndAttribute()
     {
-        return $this->asDateTime($this->attributes['support_end'])->format($this->dateTimeFormat);
+        return now()->parse($this->attributes['support_end'])->format($this->dateTimeFormat);
     }
 
     public function getValidUntilAttribute()
     {
-        return $this->asDateTime($this->attributes['valid_until'])->format($this->dateTimeFormat);
+        return now()->parse($this->attributes['valid_until'])->format($this->dateTimeFormat);
     }
 
     public function getCoveragePeriodAttribute()

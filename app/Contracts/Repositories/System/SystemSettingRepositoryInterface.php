@@ -17,6 +17,14 @@ interface SystemSettingRepositoryInterface
     public function find(string $id): SystemSetting;
 
     /**
+     * Find Many System Settings.
+     *
+     * @param array $ids
+     * @return IlluminateCollection
+     */
+    public function findMany(array $ids): IlluminateCollection;
+
+    /**
      * Get System Setting value by provided key.
      *
      * @param string $key
@@ -25,13 +33,21 @@ interface SystemSettingRepositoryInterface
     public function get(string $key);
 
     /**
-     * Set System Setting value by provided key.
+     * Update a value for specified System Setting.
      *
      * @param \Illumintate\Http\Request|array $attributes
      * @param string $id
      * @return bool
      */
     public function update($attributes, string $id): bool;
+
+    /**
+     * Update values for multiple System Settings.
+     *
+     * @param \Illumintate\Http\Request|array $attributes
+     * @return bool
+     */
+    public function updateMany($attributes): bool;
 
     /**
      * Retrieve all existing System Settings with current and possible values.

@@ -53,7 +53,7 @@ class QuoteTemplate extends UuidModel implements ActivatableInterface
 
     public function toSearchArray()
     {
-        $this->load('countries:name', 'vendor');
+        $this->load('countries:name', 'vendor', 'company');
 
         $this->makeHidden(['form_data', 'form_values_data']);
 
