@@ -230,11 +230,11 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Str::macro('decimal', function ($value) {
-            if (!is_string($value) || !is_numeric($value)) {
+            if (!is_string($value) && !is_numeric($value)) {
                 return $value;
             }
 
-            return number_format((float) $value, 2);
+            return number_format(round((float) $value, 2), 2, '.', '');
         });
 
         Str::macro('short', function ($value) {
@@ -280,17 +280,23 @@ class AppServiceProvider extends ServiceProvider
             });
         });
 
-        Collection::macro('rowsToGroups', function (string $groupable, ?Collection $meta = null) {
+        Collection::macro('rowsToGroups', function (string $groupable, ?Collection $meta = null, bool $recalculate = false) {
             $groups = $this->groupBy($groupable)->transform(function ($rows, $key) use ($groupable, $meta) {
                 $meta = isset($meta)
                     ? $meta->firstWhere('name', '===', $key) ?? []
                     : [];
                 $rows = collect($rows)->exceptEach($groupable);
-                return array_merge((array) $meta, [$groupable => $key, 'rows' => $rows]);
+                $headers_count = count($rows->first());
+                return array_merge((array) $meta, ['headers_count' => $headers_count, $groupable => $key, 'rows' => $rows]);
             })->values();
 
             filled($meta) && $meta->whereNotIn($groupable, $groups->pluck($groupable))->each(function ($meta) use ($groups) {
                 $groups->push(array_merge($meta, ['rows' => collect()]));
+            });
+
+            $recalculate && $groups->transform(function ($group) {
+                data_set($group, 'total_price', Str::decimal($group['rows']->sum('price')));
+                return $group;
             });
 
             return $groups;

@@ -172,7 +172,7 @@ class QuoteService implements QuoteServiceInterface
 
     public function assignComputableRows(Quote $quote): void
     {
-        $quote->computableRows = Cache::rememberForever($quote->computableRowsCacheKey, function () use ($quote) {
+        $quote->computableRows = cache()->sear($quote->computableRowsCacheKey, function () use ($quote) {
             return $quote->getFlattenOrGroupedRows(['where_selected'], $quote->calculate_list_price);
         });
 
@@ -268,7 +268,7 @@ class QuoteService implements QuoteServiceInterface
 
     public function prepareRows(Quote $quote): void
     {
-        $keys = $quote->has_group_description
+        $keys = $quote->has_group_description && $quote->use_groups
             ? array_merge($quote->rowsHeaderToArray(), array_flip(['group_name']))
             : $quote->rowsHeaderToArray();
 
@@ -282,9 +282,9 @@ class QuoteService implements QuoteServiceInterface
 
         $quote->computableRows = $quote->computableRows->exceptEach($quote->hiddenFieldsToArray());
 
-        if ($quote->has_group_description) {
+        if ($quote->has_group_description && $quote->use_groups) {
             $groups_meta = $quote->getGroupDescriptionWithMeta(null, $quote->calculate_list_price);
-            $quote->computableRows = $quote->computableRows->rowsToGroups('group_name', $groups_meta)->exceptEach('group_name');
+            $quote->computableRows = $quote->computableRows->rowsToGroups('group_name', $groups_meta, true)->exceptEach('group_name');
         }
     }
 

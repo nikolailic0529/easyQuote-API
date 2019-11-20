@@ -1,1 +1,1 @@
-{!! $value !!}
+<span class="{{ $class }}">{!! $value !!}</span>

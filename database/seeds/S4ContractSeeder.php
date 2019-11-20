@@ -13,12 +13,14 @@ class S4ContractSeeder extends Seeder
     public function run()
     {
         $customers = json_decode(file_get_contents(__DIR__ . '/models/customers.json'), true);
+        $addresses = head(json_decode(file_get_contents(__DIR__ . '/models/customers_addresses.json'), true))['addresses'];
+        $contacts = head(json_decode(file_get_contents(__DIR__ . '/models/customers_contacts.json'), true))['contacts'];
 
-        collect($customers)->each(function ($customer) {
-            collect()->times(6)->each(function ($time) use ($customer) {
+        collect($customers)->each(function ($customer) use ($addresses, $contacts) {
+            collect()->times(6)->each(function ($time) use ($customer, $addresses, $contacts) {
                 $rfq = "CQ00" . mb_strtoupper(uniqid());
-                DB::table('customers')->insert([
-                    'id' => (string) Uuid::generate(4),
+
+                $customer = Customer::create([
                     'name' => $customer['name'],
                     'rfq' => $rfq,
                     'valid_until' => now()->create($customer['valid_until'])->addDays(rand(101, 300))->toDateTimeString(),
@@ -26,19 +28,12 @@ class S4ContractSeeder extends Seeder
                     'support_end' => now()->create($customer['support_end'])->addDays(rand(101, 300))->toDateTimeString(),
                     'payment_terms' => $customer['payment_terms'],
                     'invoicing_terms' => $customer['invoicing_terms'],
-                    'service_level' => $customer['service_level'],
-                    'created_at' => now()->toDateTimeString()
+                    'service_level' => $customer['service_level']
                 ]);
-            });
-        });
 
-        $addresses = head(json_decode(file_get_contents(__DIR__ . '/models/customers_addresses.json'), true))['addresses'];
-        $contacts = head(json_decode(file_get_contents(__DIR__ . '/models/customers_contacts.json'), true))['contacts'];
-
-        Customer::doesntHave('quotes')->doesntHave('addresses')->doesntHave('contacts')->get()
-            ->each(function ($customer) use ($addresses, $contacts) {
                 $customer->addresses()->createMany($addresses);
                 $customer->contacts()->createMany($contacts);
             });
+        });
     }
 }

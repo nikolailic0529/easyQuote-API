@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Models \ {
+    Quote\Quote,
     Company,
     Vendor,
     Data\Country,
@@ -12,6 +13,8 @@ use Str;
 
 class StoreQuoteStateRequest extends FormRequest
 {
+    protected $quote;
+
     protected $company;
 
     protected $vendor;
@@ -25,6 +28,7 @@ class StoreQuoteStateRequest extends FormRequest
     protected $margin;
 
     public function __construct(
+        Quote $quote,
         Company $company,
         Vendor $vendor,
         Country $country,
@@ -127,6 +131,19 @@ class StoreQuoteStateRequest extends FormRequest
                 'exists:imported_rows,id'
             ],
             'quote_data.selected_rows_is_rejected' => 'boolean',
+            'quote_data.use_groups' => [
+                'boolean',
+                function ($attribute, $value, $fail) {
+                    if (blank($this->quote_id) || !$value) {
+                        return;
+                    }
+
+                    $quote = Quote::whereId($this->quote_id)->firstOrFail();
+                    if ($quote->has_not_group_description) {
+                        $fail('For using the Grouped Rows assign at least one group.');
+                    }
+                }
+            ],
             'quote_data.last_drafted_step' => 'string|max:20',
             'quote_data.pricing_document' => 'string|max:40|min:2',
             'quote_data.service_agreement_id' => 'string|max:40|min:2',

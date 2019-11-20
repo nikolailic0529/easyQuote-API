@@ -1,1 +1,1 @@
-<h5 class="blue-text">{{ $value }}</h5>
+<h5 class="{{ $class }} blue-text">{{ $value }}</h5>

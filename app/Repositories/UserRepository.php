@@ -131,10 +131,12 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         return $this->find($id)->update($request->validated());
     }
 
-    public function updateOwnProfile(UpdateProfileRequest $request): bool
+    public function updateOwnProfile(UpdateProfileRequest $request): User
     {
-        $request->user()->createImage($request->picture, ['width' => 120, 'height' => 120]);
-        $request->user()->deleteImageWhen($request->delete_picture);
+        $user = $request->user();
+
+        $user->createImage($request->picture, ['width' => 120, 'height' => 120]);
+        $user->deleteImageWhen($request->delete_picture);
 
         $attributes = Arr::except($request->validated(), ['password']);
 
@@ -143,7 +145,10 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
             $attributes = array_merge($attributes, compact('password'));
         }
 
-        return $request->user()->update($attributes);
+        $user->update($attributes);
+        $user->makeVisible('privileges');
+
+        return $user;
     }
 
     public function delete(string $id): bool

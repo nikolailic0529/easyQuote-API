@@ -9,7 +9,7 @@ use App\Models\Quote\{
     Discount\PromotionalDiscount,
     Discount\SND
 };
-use Arr;
+use Arr, Str;
 
 trait HasMorphableDiscounts
 {
@@ -51,7 +51,7 @@ trait HasMorphableDiscounts
 
     public function getApplicableDiscountsFormattedAttribute()
     {
-        return number_format($this->applicable_discounts ?? 0, 2);
+        return Str::decimal($this->applicable_discounts ?? 0);
     }
 
     public function getApplicableDiscountsAttribute()

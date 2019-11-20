@@ -337,11 +337,14 @@ class QuoteRepository implements QuoteRepositoryInterface
          */
         $this->quoteService->interactWithModels($quote);
 
+        $interactedDiscounts = $quote->discounts;
+        unset($quote->discounts);
+
         if (!$group) {
-            return $quote->discounts;
+            return $interactedDiscounts;
         }
 
-        return $quote->discounts->groupBy(function ($discount) {
+        return $interactedDiscounts->groupBy(function ($discount) {
             $type = $discount->discount_type === 'PromotionalDiscount' ? 'PromotionsDiscount' : $discount->discount_type;
             return Str::snake(Str::before($type, 'Discount'));
         });
@@ -449,6 +452,8 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $quote->save();
 
+        $quote->forgetCachedComputableRows();
+
         return $group;
     }
 
@@ -477,6 +482,8 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $quote->group_description = collect($quote->group_description)->put($group_key, $updatedGroup)->values();
 
+        $quote->forgetCachedComputableRows();
+
         return $quote->save();
     }
 
@@ -494,9 +501,13 @@ class QuoteRepository implements QuoteRepositoryInterface
         $from_group = $group_description->get($from_group_key);
         $to_group = $group_description->get($to_group_key);
 
-        return $quote->rowsData()->whereGroupName($from_group['name'])
+        $updated = $quote->rowsData()->whereGroupName($from_group['name'])
             ->whereIn('imported_rows.id', $request->rows)
             ->update(['group_name' => $to_group['name']]);
+
+        $quote->forgetCachedComputableRows();
+
+        return $updated;
     }
 
     public function deleteGroupDescription(string $id, string $quote_id): bool
@@ -506,6 +517,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         $group_description = collect($quote->group_description);
 
         $group_key = $quote->findGroupDescription($id);
+
         abort_if($group_key === false, 404, 'The Group Description is not found.');
 
         $removableGroup = $group_description->get($group_key);
@@ -517,7 +529,11 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $quote->group_description = $group_description->isEmpty() ? null : $group_description->values();
 
-        return $quote->save();
+        $saved = $quote->save();
+
+        $quote->forgetCachedComputableRows();
+
+        return $saved;
     }
 
     private function markRowsAsSelectedOrUnSelected(Collection $state, Quote $quote, bool $reject = false): void

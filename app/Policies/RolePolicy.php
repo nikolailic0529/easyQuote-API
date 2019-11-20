@@ -6,10 +6,7 @@ use App\Models\{
     User,
     Role
 };
-use Illuminate\Auth\Access\{
-    HandlesAuthorization,
-    Response
-};
+use Illuminate\Auth\Access\HandlesAuthorization;
 
 class RolePolicy
 {
@@ -23,9 +20,7 @@ class RolePolicy
      */
     public function viewAny(User $user)
     {
-        if ($user->can('view_roles')) {
-            return true;
-        }
+        return $user->can('view_roles');
     }
 
     /**
@@ -37,9 +32,7 @@ class RolePolicy
      */
     public function view(User $user, Role $role)
     {
-        if ($user->can('view_roles')) {
-            return true;
-        }
+        return $user->can('view_roles');
     }
 
     /**
@@ -50,9 +43,7 @@ class RolePolicy
      */
     public function create(User $user)
     {
-        if ($user->can('create_roles')) {
-            return true;
-        }
+        return $user->can('create_roles');
     }
 
     /**
@@ -65,12 +56,10 @@ class RolePolicy
     public function update(User $user, Role $role)
     {
         if ($role->isSystem()) {
-            return Response::deny(__('role.system_updating_exception'));
+            return $this->deny(__('role.system_updating_exception'));
         }
 
-        if ($user->can('update_roles')) {
-            return true;
-        }
+        return $user->can('update_roles');
     }
 
     /**
@@ -83,11 +72,9 @@ class RolePolicy
     public function delete(User $user, Role $role)
     {
         if ($role->isSystem()) {
-            return Response::deny(__('role.system_deleting_exception'));
+            return $this->deny(__('role.system_deleting_exception'));
         }
 
-        if ($user->can('delete_roles')) {
-            return true;
-        }
+        return $user->can('delete_roles');
     }
 }

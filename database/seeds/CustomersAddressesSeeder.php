@@ -22,7 +22,7 @@ class CustomersAddressesSeeder extends Seeder
         $addresses = json_decode(file_get_contents(__DIR__ . '/models/customers_addresses.json'), true);
 
         collect($addresses)->each(function ($address) {
-            Customer::where('rfq', $address['rfq'])->get()->each(function ($customer) use ($address) {
+            Customer::all()->each(function ($customer) use ($address) {
                 collect($address['addresses'])->each(function ($address) use ($customer) {
                     $customer->addresses()->create($address);
                 });

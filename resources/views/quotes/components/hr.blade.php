@@ -1,3 +1,1 @@
-<div class="{{ $class }}">
-    <hr/>
-</div>
+<hr class="{{ $class }}"/>

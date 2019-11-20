@@ -13,7 +13,7 @@
             },
             {
                 "address_1": "Level 9, 628 Bourke Street",
-                "address_type": "Hardware",
+                "address_type": "Equipment",
                 "city": "MELBOURNE",
                 "state": "VICTORIA",
                 "state_code": "VC",
@@ -36,7 +36,7 @@
             },
             {
                 "address_1": "Level 9, 628 Bourke Street",
-                "address_type": "Hardware",
+                "address_type": "Equipment",
                 "city": "MELBOURNE",
                 "state": "VICTORIA",
                 "state_code": "VC",

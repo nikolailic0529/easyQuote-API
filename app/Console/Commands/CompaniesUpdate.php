@@ -7,6 +7,7 @@ use App\Models\{
     Vendor
 };
 use Illuminate\Console\Command;
+use Arr;
 
 class CompaniesUpdate extends Command
 {
@@ -47,8 +48,10 @@ class CompaniesUpdate extends Command
 
         collect($companies)->each(function ($companyData) {
             $company = Company::whereVat($companyData['vat'])->first();
+            $company->update(Arr::only($companyData, ['type']));
             $vendors = Vendor::whereIn('short_code', $companyData['vendors'])->get();
             $company->vendors()->sync($vendors);
+            $company->createLogo($companyData['logo'], true);
 
             $this->output->write('.');
         });

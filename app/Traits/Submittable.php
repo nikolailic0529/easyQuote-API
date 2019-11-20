@@ -6,6 +6,10 @@ trait Submittable
 {
     public function submit(?array $submitted_data = null)
     {
+        if (blank($this->id)) {
+            return false;
+        }
+
         $fill = ['submitted_at' => now()->toDateTimeString()];
 
         if (filled($submitted_data)) {

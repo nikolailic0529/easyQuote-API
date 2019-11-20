@@ -1,26 +1,33 @@
 html, body {
     font-size: 18px;
 }
-h5,.h5 {
-    font-size: 1.25rem
+
+h5, .h5 {
+    font-size: 1.5rem;
 }
+
 b {
     font-weight: 600
 }
+
 .blue-text {
     color: #1876bd;
     margin-bottom: .5rem;
     margin-top: 1.25rem
 }
-.page-break ~ .blue-text {
+
+.page-break~.blue-text {
     margin-top: 0
 }
+
 .details {
     margin-bottom: 2rem;
 }
+
 .page-break {
     page-break-after: always;
 }
+
 .table {
     font-size: 14px;
     margin-bottom: 0;
@@ -29,25 +36,75 @@ b {
     border-style: solid;
     color: #000
 }
+
 thead {
     display: table-row-group;
     background-color: #eee;
     font-size: .8888888888888889rem
 }
+
 tr {
     page-break-inside: avoid
 }
+
+.page-break-avoid {
+    page-break-after: avoid;
+}
+
 .table-striped>tbody>tr:nth-of-type(odd) {
     background-color: #d0e4f5
 }
+
 .table-striped>tbody>tr:nth-of-type(even) {
     background-color: #eee
 }
+
 .table-bordered>thead>tr>th, .table-bordered>tbody>tr>th, .table-bordered>tfoot>tr>th, .table-bordered>thead>tr>td, .table-bordered>tbody>tr>td, .table-bordered>tfoot>tr>td {
     border-color: #aaa;
     border-bottom: 0
 }
+
 .border-right {
     border-right: 1px solid;
     border-color: #eee
+}
+
+.blue {
+    color: #1876BD !important;
+}
+
+hr.blue {
+    border-top: 1px solid #1876BD !important;
+}
+
+.bold {
+    font-weight: bold !important;
+}
+
+.text-nowrap {
+    white-space: nowrap!important;
+}
+
+.text-size-12 {
+    font-size: 12px!important;
+}
+
+.text-size-14 {
+    font-size: 14px!important;
+}
+
+.text-size-16 {
+    font-size: 16px!important;
+}
+
+.text-size-17 {
+    font-size: 17px!important;
+}
+
+.br-0 {
+    border-right: 0!important;
+}
+
+.bl-0 {
+    border-left: 0!important;
 }

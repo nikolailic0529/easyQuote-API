@@ -22,7 +22,7 @@ class CustomersContactsSeeder extends Seeder
         $contacts = json_decode(file_get_contents(__DIR__ . '/models/customers_contacts.json'), true);
 
         collect($contacts)->each(function ($contact) {
-            Customer::where('rfq', $contact['rfq'])->get()->each(function ($customer) use ($contact) {
+            Customer::all()->each(function ($customer) use ($contact) {
                 collect($contact['contacts'])->each(function ($contact) use ($customer) {
                     $customer->contacts()->create($contact);
                 });

@@ -1,23 +1,24 @@
 <?php
 
 namespace App\Traits\Quote;
+use Str;
 
 trait HasPricesAttributes
 {
     public function getListPriceAttribute()
     {
-        return round((float) ($this->list_price ?? 0), 2);
+        return round((float) $this->list_price ?? 0, 2);
     }
 
     public function getListPriceFormattedAttribute()
     {
-        return number_format($this->getAttribute('list_price'), 2);
+        return Str::decimal($this->list_price);
     }
 
     public function getFinalPriceAttribute()
     {
-        $final_price = ((float) $this->getAttribute('list_price')) - ((float) $this->getAttribute('applicable_discounts'));
+        $final_price = ((float) $this->list_price - (float) $this->applicable_discounts);
 
-        return number_format($final_price, 2);
+        return Str::decimal($final_price);
     }
 }

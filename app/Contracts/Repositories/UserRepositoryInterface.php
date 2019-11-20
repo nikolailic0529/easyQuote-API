@@ -89,9 +89,9 @@ interface UserRepositoryInterface
      * Update Current Authenticated User's Profile.
      *
      * @param UpdateProfileRequest $request
-     * @return bool
+     * @return \App\Models\User
      */
-    public function updateOwnProfile(UpdateProfileRequest $request): bool;
+    public function updateOwnProfile(UpdateProfileRequest $request): User;
 
     /**
      * Get Collaboration User by id.

@@ -17,7 +17,7 @@
     {
         "name": "Sales Manager",
         "permissions": [
-            "view_quotes", "create_quotes", "update_quotes", "delete_quotes", "submit_quotes",
+            "view_own_quotes", "create_quotes", "update_own_quotes", "delete_own_quotes", "submit_own_quotes",
             "view_quote_files", "create_quote_files", "update_quote_files", "handle_quote_files", "delete_quote_files",
             "view_templates", "create_templates", "update_templates", "delete_templates",
             "view_companies", "create_companies", "update_companies", "delete_companies",

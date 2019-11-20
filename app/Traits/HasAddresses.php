@@ -13,46 +13,31 @@ trait HasAddresses
 
     public function hardwareAddresses()
     {
-        return $this->addresses()->where('address_type', 'Hardware');
+        return $this->addresses()->type('Hardware');
     }
 
     public function equipmentAddresses()
     {
-        return $this->addresses()->where('address_type', 'Equipment');
+        return $this->addresses()->type('Equipment');
     }
 
     public function softwareAddresses()
     {
-        return $this->addresses()->where('address_type', 'Software');
+        return $this->addresses()->type('Software');
     }
 
-    public function hardwareContacts()
+    public function equipmentAddress()
     {
-        return $this->contacts()->where('contact_type', 'Hardware');
+        return $this->morphOne(Address::class, 'addressable')->type('Equipment')->withDefault($this->hardwareAddresses()->make([]));
     }
 
-    public function softwareContacts()
+    public function hardwareAddress()
     {
-        return $this->contacts()->where('contact_type', 'Software');
+        return $this->morphOne(Address::class, 'addressable')->type('Hardware')->withDefault($this->hardwareAddresses()->make([]));
     }
 
-    public function getEquipmentAddressAttribute()
+    public function softwareAddress()
     {
-        return $this->equipmentAddresses->first(null, $this->equipmentAddresses()->make([]));
-    }
-
-    public function getHardwareContactAttribute()
-    {
-        return $this->hardwareContacts->first(null, $this->hardwareContacts()->make([]));
-    }
-
-    public function getSoftwareAddressAttribute()
-    {
-        return $this->softwareAddresses->first(null, $this->softwareAddresses()->make([]));
-    }
-
-    public function getSoftwareContactAttribute()
-    {
-        return $this->softwareContacts->first(null, $this->softwareContacts()->make([]));
+        return $this->morphOne(Address::class, 'addressable')->type('Software')->withDefault($this->hardwareAddresses()->make([]));
     }
 }

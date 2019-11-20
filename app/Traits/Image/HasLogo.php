@@ -41,7 +41,7 @@ trait HasLogo
             $imageKey = "x{$key}";
 
             $thumbnail = "{$modelImagesDir}/{$image->filename}@{$imageKey}.{$image->extension}";
-            $image->save(Storage::path("public/{$thumbnail}"));
+            $image->save(Storage::path("public/{$thumbnail}"), 100);
 
             return [$imageKey => $thumbnail];
         });

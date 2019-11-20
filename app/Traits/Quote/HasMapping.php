@@ -124,7 +124,7 @@ trait HasMapping
                                     `imported_columns`.`name` = ?,
                                     date_format(
                                         coalesce(
-                                            if(trim(`imported_columns`.`value`) = '', `customers`.`{$default}`, null),
+                                            if(length(trim(`imported_columns`.`value`)) = 0, `customers`.`{$default}`, null),
                                             str_to_date(`imported_columns`.`value`, '%d.%m.%Y'),
                                             str_to_date(`imported_columns`.`value`, '%d/%m/%Y'),
                                             str_to_date(`imported_columns`.`value`, '%Y.%m.%d'),
@@ -144,7 +144,14 @@ trait HasMapping
                         break;
                     default:
                         $query->selectRaw(
-                            "max(if(`imported_columns`.`name` = ?, `imported_columns`.`value`, null)) as {$mapping->templateField->name}",
+                            "max(if(`imported_columns`.`name` = ?,
+                                coalesce(
+                                    if(length(trim(`imported_columns`.`value`)) = 0, null, `imported_columns`.`value`),
+                                    'N/A'
+                                ),
+                                null
+                                )
+                            ) as {$mapping->templateField->name}",
                             [$mapping->templateField->name]
                         );
                         break;
@@ -204,7 +211,7 @@ trait HasMapping
 
     public function getFlattenOrGroupedRows(?array $flags = null, bool $calculate = false)
     {
-        if (!$this->has_group_description) {
+        if (!$this->has_group_description || !$this->use_groups) {
             return $this->rowsDataByColumnsCalculated($flags, $calculate)->get();
         }
 
@@ -226,7 +233,8 @@ trait HasMapping
 
                 filled($group_name) && $join->whereGroupName($group_name);
             })
-            ->groupBy('rows_data.id');
+            ->groupBy('rows_data.id')
+            ->orderBy('groups.group_name');
     }
 
     public function groupedRowsMeta(?array $flags = null, bool $calculate = false, ?string $group_name = null)

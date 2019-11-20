@@ -20,9 +20,7 @@ class QuotePolicy
      */
     public function viewAny(User $user)
     {
-        if ($user->can('view_quotes')) {
-            return true;
-        }
+        return $user->can('view_quotes') || $user->can('view_own_quotes');
     }
 
     /**
@@ -37,6 +35,10 @@ class QuotePolicy
         if ($user->can('view_quotes')) {
             return true;
         }
+
+        if ($user->can('view_own_quotes')) {
+            return $user->id === $quote->user_id;
+        }
     }
 
     /**
@@ -47,9 +49,7 @@ class QuotePolicy
      */
     public function create(User $user)
     {
-        if ($user->can('create_quotes')) {
-            return true;
-        }
+        return $user->can('create_quotes');
     }
 
     /**
@@ -64,6 +64,10 @@ class QuotePolicy
         if ($user->can('update_quotes')) {
             return true;
         }
+
+        if ($user->can('update_own_quotes')) {
+            return $user->id === $quote->user_id;
+        }
     }
 
     /**
@@ -77,6 +81,10 @@ class QuotePolicy
     {
         if ($user->can('delete_quotes')) {
             return true;
+        }
+
+        if ($user->can('delete_own_quotes')) {
+            return $user->id === $quote->user_id;
         }
     }
 

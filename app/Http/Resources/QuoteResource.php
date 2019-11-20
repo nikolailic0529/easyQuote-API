@@ -53,33 +53,33 @@ class QuoteResource extends JsonResource
                     'pricing_document' => $this->pricing_document,
                     'service_agreement_id' => $this->service_agreement_id,
                     'system_handle' => $this->system_handle,
-                    'equipment_address' => $this->customer->equipment_address->address_1,
-                    'hardware_contact' => $this->customer->hardware_contact->contact_name,
-                    'hardware_phone' => $this->customer->hardware_contact->phone,
-                    'software_address' => $this->customer->software_address->address_1,
-                    'software_contact' => $this->customer->software_contact->contact_name,
-                    'software_phone' => $this->customer->software_contact->phone,
+                    'equipment_address' => $this->customer->equipmentAddress->address_1,
+                    'hardware_contact' => $this->customer->hardwareContact->contact_name,
+                    'hardware_phone' => $this->customer->hardwareContact->phone,
+                    'software_address' => $this->customer->softwareAddress->address_1,
+                    'software_contact' => $this->customer->softwareContact->contact_name,
+                    'software_phone' => $this->customer->softwareContact->phone,
                     'coverage_period' => $this->customer->coverage_period,
                     'coverage_period_from' => $this->customer->support_start,
                     'coverage_period_to' => $this->customer->support_end,
-                    'rows_header' => $this->when($this->has_group_description, function() {
-                        return array_merge(['group_name' => 'Group'], $this->rowsHeaderToArray());
-                    },  $this->rowsHeaderToArray()),
+                    'rows_header' => $this->rowsHeaderToArray(),
                     'rows' => $this->computableRows
                 ],
                 'last_page' => [
                     'additional_details' => $this->additional_details
                 ],
-                'payment_schedule' => [
-                    'company_name' => $this->company->name,
-                    'vendor_name' => $this->vendor->name,
-                    'customer_name' => $this->customer->name,
-                    'support_start' => $this->customer->support_start,
-                    'support_end' => $this->customer->support_end,
-                    'period' => $this->customer->coverage_period,
-                    'rows_header' => $this->scheduleData->rowsHeaderToArray(),
-                    'data' => $this->scheduleData->value
-                ]
+                'payment_schedule' => $this->when($this->scheduleData, function () {
+                    return [
+                        'company_name' => $this->company->name,
+                        'vendor_name' => $this->vendor->name,
+                        'customer_name' => $this->customer->name,
+                        'support_start' => $this->customer->support_start,
+                        'support_end' => $this->customer->support_end,
+                        'period' => $this->customer->coverage_period,
+                        'rows_header' => $this->scheduleData->rowsHeaderToArray(),
+                        'data' => $this->scheduleData->value
+                    ];
+                })
             ]
         ]);
     }

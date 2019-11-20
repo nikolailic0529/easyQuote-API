@@ -49,6 +49,7 @@ class VendorsUpdate extends Command
             $vendor = Vendor::whereShortCode($vendorData['short_code'])->first();
             $countries = Country::whereIn('iso_3166_2', $vendorData['countries'])->get();
             $vendor->countries()->sync($countries);
+            $vendor->createLogo($vendorData['logo'], true);
 
             $this->output->write('.');
         });
