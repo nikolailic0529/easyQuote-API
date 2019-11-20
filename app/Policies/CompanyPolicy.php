@@ -61,9 +61,9 @@ class CompanyPolicy
      */
     public function update(User $user, Company $company)
     {
-        if ($company->isSystem()) {
-            return $this->deny(__('company.system_updating_exception'));
-        }
+        // if ($company->isSystem()) {
+        //     return $this->deny(__('company.system_updating_exception'));
+        // }
 
         if ($user->can('update_companies')) {
             return true;

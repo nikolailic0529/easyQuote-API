@@ -32,7 +32,7 @@ trait HasImage
         }
 
         $storageDir = "public/{$modelImagesDir}";
-        Storage::missing($storageDir) && Storage::makeDirectory($storageDir);
+        !Storage::exists($storageDir) && Storage::makeDirectory($storageDir);
 
         $original = "{$modelImagesDir}/{$file->hashName()}";
         $image->save(Storage::path("public/{$original}"));

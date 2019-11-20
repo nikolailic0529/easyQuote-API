@@ -29,7 +29,7 @@ class Company extends UuidModel implements WithImage, WithLogo, ActivatableInter
         Systemable;
 
     protected $fillable = [
-        'name', 'category', 'vat', 'type', 'email', 'website', 'phone'
+        'name', 'category', 'vat', 'type', 'email', 'website', 'phone', 'default_vendor_id'
     ];
 
     protected $hidden = [

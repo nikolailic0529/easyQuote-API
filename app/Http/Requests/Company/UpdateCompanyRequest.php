@@ -64,7 +64,8 @@ class UpdateCompanyRequest extends FormRequest
             'phone' => 'nullable|string|min:4',
             'website' => 'nullable|string|min:4',
             'vendors' => 'array',
-            'vendors.*' => 'required|uuid|exists:vendors,id'
+            'vendors.*' => 'required|uuid|exists:vendors,id',
+            'default_vendor_id' => 'nullable|uuid|exists:vendors,id'
         ];
     }
 }
