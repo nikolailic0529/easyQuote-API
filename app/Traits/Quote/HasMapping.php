@@ -215,7 +215,7 @@ trait HasMapping
             return $this->rowsDataByColumnsCalculated($flags, $calculate)->get();
         }
 
-        return $this->groupedRows($flags, $calculate)->get();
+        return $this->groupedRows(null, $calculate)->get();
     }
 
     public function groupedRows(?array $flags = null, bool $calculate = false, ?string $group_name = null)
@@ -274,7 +274,12 @@ trait HasMapping
             return 0.0;
         }
 
-        $sub = $this->rowsDataByColumnsCalculated(['where_selected'], $this->calculate_list_price);
+        if (!$this->has_group_description || !$this->use_groups) {
+            $sub = $this->rowsDataByColumnsCalculated(['where_selected'], $this->calculate_list_price);
+        } else {
+            $sub = $this->groupedRows(null, $this->calculate_list_price);
+        }
+
         $query = DB::query()->fromSub($sub, 'rows_data');
 
         return $query->sum('price');

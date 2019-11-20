@@ -178,6 +178,21 @@ class QuoteRepository implements QuoteRepositoryInterface
         $companies = $this->company->with('vendors.countries')->get();
 
         /**
+         * Sorting Vendors by default_vendor_id Company's attribute.
+         */
+        $companies->transform(function ($company) {
+            $vendors = $company->vendors;
+            $vendors = $vendors->sortByDesc(function ($vendor) use ($company) {
+                return $vendor->id === $company->default_vendor_id;
+            })->values();
+
+            unset($company->vendors);
+            $company->vendors = $vendors;
+
+            return $company;
+        });
+
+        /**
          * Re-order Companies (Support Warehouse on the 1st place)
          */
         $companies = $companies->sortByDesc(function ($company) {

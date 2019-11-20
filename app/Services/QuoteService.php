@@ -93,7 +93,7 @@ class QuoteService implements QuoteServiceInterface
             return $quote;
         }
 
-        $divider = (100 - $quote->countryMargin->value) / 100;
+        $divider = (100 - ($quote->countryMargin->value - $quote->custom_discount)) / 100;
 
         if ((float) $divider === 0.0) {
             data_fill($quote->computableRows, '*.price', 0.0);
@@ -121,6 +121,23 @@ class QuoteService implements QuoteServiceInterface
 
         if (!isset($quote->list_price) || (float) $quote->list_price === 0.0) {
             $quote->list_price = $quote->countTotalPrice();
+        }
+
+        if (is_numeric($discount)) {
+            $originalListPrice = $quote->list_price;
+            $marginPercentageAfterDiscount = ($quote->margin_percentage_without_discounts - $discount) / 100;
+            $divider = 1 - $marginPercentageAfterDiscount;
+
+            if ((float) $divider === 0.0) {
+                $quote->list_price = 0.0;
+                return $quote;
+            }
+
+            $buyPriceAfterDiscount = $quote->buy_price / $divider;
+
+            $quote->applicable_discounts += $quote->list_price - $buyPriceAfterDiscount;
+
+            return $quote;
         }
 
         $quote->computableRows->transform(function ($row) use ($discount, $quote) {
