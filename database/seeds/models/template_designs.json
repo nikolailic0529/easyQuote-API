@@ -843,11 +843,11 @@
             },
             {
                 "id": "4915df8d-0480-4a10-b881-bc3f0e2cd110",
-                "name": "Single Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "24222f6f-b4e6-44f2-bd81-d8465a1f8b47",
-                        "class": "col-lg-12",
+                        "class": "col-lg-4",
                         "controls": [
                             {
                                 "id": "6be62079-0092-4fde-9d08-24bc1967e25f",
@@ -856,7 +856,7 @@
                                 "name": "l-1",
                                 "show": true,
                                 "type": "label",
-                                "class": "blue h5",
+                                "class": "blue",
                                 "label": "Label",
                                 "value": "Quotation for",
                                 "is_field": true,
@@ -869,22 +869,10 @@
                             }
                         ],
                         "position": 1
-                    }
-                ],
-                "class": "single-column field-dragger",
-                "order": 1,
-                "controls": [],
-                "is_field": false,
-                "droppable": false,
-                "decoration": "1"
-            },
-            {
-                "id": "eb1e8eb2-2616-455c-aa10-52578736687e",
-                "name": "Single Column",
-                "child": [
+                    },
                     {
                         "id": "24222f6f-b4e6-44f2-bd81-d8465a1f8b47",
-                        "class": "col-lg-12",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "vendor_name",
@@ -892,7 +880,7 @@
                                 "name": "vendor_name",
                                 "show": true,
                                 "type": "tag",
-                                "class": "s4-form-control blue h5",
+                                "class": "s4-form-control blue",
                                 "label": "Vendor Full Name",
                                 "value": null,
                                 "is_field": true,
@@ -904,7 +892,7 @@
                                 "attached_element_id": "eb1e8eb2-2616-455c-aa10-52578736687e"
                             }
                         ],
-                        "position": 1
+                        "position": 2
                     }
                 ],
                 "class": "single-column field-dragger",
@@ -912,7 +900,7 @@
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "1"
+                "decoration": "2+1"
             },
             {
                 "id": "205bb944-4333-4add-baa7-5ae17bf238a9",
@@ -1083,11 +1071,11 @@
             },
             {
                 "id": "be234931-7998-40c4-9b23-16b113c57e21",
-                "name": "Three Column",
+                "name": "Single Column",
                 "child": [
                     {
                         "id": "7142a607-6e91-4d36-8c73-6432feddd182",
-                        "class": "col-lg-4",
+                        "class": "col-lg-12",
                         "controls": [
                             {
                                 "id": "2e77e288-76dc-4e71-9f7c-b4f75b0c4890",
@@ -1108,17 +1096,29 @@
                             }
                         ],
                         "position": 1
-                    },
+                    }
+                ],
+                "class": "single-column field-dragger",
+                "order": 3,
+                "controls": [],
+                "is_field": false,
+                "droppable": false,
+                "decoration": "1"
+            },
+            {
+                "id": "be234931-7998-40c4-9b23-16b113c57e21",
+                "name": "Single Column",
+                "child": [
                     {
                         "id": "7142a607-6e91-4d36-8c73-6432feddd182",
-                        "class": "col-lg-6",
+                        "class": "col-lg-12",
                         "controls": [
                             {
                                 "id": "service_level",
                                 "name": "service_level",
                                 "show": true,
                                 "type": "tag",
-                                "class": "s4-form-control blue",
+                                "class": "s4-form-control",
                                 "label": "Service Level",
                                 "value": null,
                                 "is_field": true,
@@ -1130,21 +1130,15 @@
                                 "attached_element_id": "be234931-7998-40c4-9b23-16b113c57e21"
                             }
                         ],
-                        "position": 2
-                    },
-                    {
-                        "id": "a4087ad4-0893-423e-af63-9d4c4cb6c6f6",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
+                        "position": 1
                     }
                 ],
-                "class": "three-column field-dragger",
-                "order": 3,
+                "class": "single-column field-dragger",
+                "order": 4,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "1"
             },
             {
                 "id": "a8661be5-1b81-43ad-a614-2fefc2db80eb",
@@ -2316,11 +2310,11 @@
             },
             {
                 "id": "4915df8d-0480-4a10-b881-bc3f0e2cd110",
-                "name": "Single Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "24222f6f-b4e6-44f2-bd81-d8465a1f8b47",
-                        "class": "col-lg-12",
+                        "class": "col-lg-4",
                         "controls": [
                             {
                                 "id": "6be62079-0092-4fde-9d08-24bc1967e25f",
@@ -2329,7 +2323,7 @@
                                 "name": "l-1",
                                 "show": true,
                                 "type": "label",
-                                "class": "blue h5",
+                                "class": "blue",
                                 "label": "Label",
                                 "value": "Quotation for",
                                 "is_field": true,
@@ -2342,22 +2336,10 @@
                             }
                         ],
                         "position": 1
-                    }
-                ],
-                "class": "single-column field-dragger",
-                "order": 1,
-                "controls": [],
-                "is_field": false,
-                "droppable": false,
-                "decoration": "1"
-            },
-            {
-                "id": "eb1e8eb2-2616-455c-aa10-52578736687e",
-                "name": "Single Column",
-                "child": [
+                    },
                     {
                         "id": "24222f6f-b4e6-44f2-bd81-d8465a1f8b47",
-                        "class": "col-lg-12",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "vendor_name",
@@ -2365,7 +2347,7 @@
                                 "name": "vendor_name",
                                 "show": true,
                                 "type": "tag",
-                                "class": "s4-form-control blue h5",
+                                "class": "s4-form-control blue",
                                 "label": "Vendor Full Name",
                                 "value": null,
                                 "is_field": true,
@@ -2377,7 +2359,7 @@
                                 "attached_element_id": "eb1e8eb2-2616-455c-aa10-52578736687e"
                             }
                         ],
-                        "position": 1
+                        "position": 2
                     }
                 ],
                 "class": "single-column field-dragger",
@@ -2385,7 +2367,7 @@
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "1"
+                "decoration": "2+1"
             },
             {
                 "id": "c83dff46-b6ef-4553-bc69-775d3694a487",
@@ -3479,11 +3461,11 @@
             },
             {
                 "id": "4915df8d-0480-4a10-b881-bc3f0e2cd110",
-                "name": "Single Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "24222f6f-b4e6-44f2-bd81-d8465a1f8b47",
-                        "class": "col-lg-12",
+                        "class": "col-lg-4",
                         "controls": [
                             {
                                 "id": "6be62079-0092-4fde-9d08-24bc1967e25f",
@@ -3492,7 +3474,7 @@
                                 "name": "l-1",
                                 "show": true,
                                 "type": "label",
-                                "class": "blue h5",
+                                "class": "blue",
                                 "label": "Label",
                                 "value": "Quotation for",
                                 "is_field": true,
@@ -3505,22 +3487,10 @@
                             }
                         ],
                         "position": 1
-                    }
-                ],
-                "class": "single-column field-dragger",
-                "order": 1,
-                "controls": [],
-                "is_field": false,
-                "droppable": false,
-                "decoration": "1"
-            },
-            {
-                "id": "eb1e8eb2-2616-455c-aa10-52578736687e",
-                "name": "Single Column",
-                "child": [
+                    },
                     {
                         "id": "24222f6f-b4e6-44f2-bd81-d8465a1f8b47",
-                        "class": "col-lg-12",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "vendor_name",
@@ -3528,7 +3498,7 @@
                                 "name": "vendor_name",
                                 "show": true,
                                 "type": "tag",
-                                "class": "s4-form-control blue h5",
+                                "class": "s4-form-control blue",
                                 "label": "Vendor Full Name",
                                 "value": null,
                                 "is_field": true,
@@ -3540,7 +3510,7 @@
                                 "attached_element_id": "eb1e8eb2-2616-455c-aa10-52578736687e"
                             }
                         ],
-                        "position": 1
+                        "position": 2
                     }
                 ],
                 "class": "single-column field-dragger",
@@ -3548,7 +3518,7 @@
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "1"
+                "decoration": "2+1"
             },
             {
                 "id": "205bb944-4333-4add-baa7-5ae17bf238a9",
@@ -3719,11 +3689,11 @@
             },
             {
                 "id": "be234931-7998-40c4-9b23-16b113c57e21",
-                "name": "Three Column",
+                "name": "Single Column",
                 "child": [
                     {
                         "id": "7142a607-6e91-4d36-8c73-6432feddd182",
-                        "class": "col-lg-4",
+                        "class": "col-lg-12",
                         "controls": [
                             {
                                 "id": "2e77e288-76dc-4e71-9f7c-b4f75b0c4890",
@@ -3744,17 +3714,29 @@
                             }
                         ],
                         "position": 1
-                    },
+                    }
+                ],
+                "class": "single-column field-dragger",
+                "order": 3,
+                "controls": [],
+                "is_field": false,
+                "droppable": false,
+                "decoration": "1"
+            },
+            {
+                "id": "be234931-7998-40c4-9b23-16b113c57e21",
+                "name": "Single Column",
+                "child": [
                     {
                         "id": "7142a607-6e91-4d36-8c73-6432feddd182",
-                        "class": "col-lg-6",
+                        "class": "col-lg-12",
                         "controls": [
                             {
                                 "id": "service_level",
                                 "name": "service_level",
                                 "show": true,
                                 "type": "tag",
-                                "class": "s4-form-control blue",
+                                "class": "s4-form-control",
                                 "label": "Service Level",
                                 "value": null,
                                 "is_field": true,
@@ -3766,21 +3748,15 @@
                                 "attached_element_id": "be234931-7998-40c4-9b23-16b113c57e21"
                             }
                         ],
-                        "position": 2
-                    },
-                    {
-                        "id": "a4087ad4-0893-423e-af63-9d4c4cb6c6f6",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
+                        "position": 1
                     }
                 ],
-                "class": "three-column field-dragger",
-                "order": 3,
+                "class": "single-column field-dragger",
+                "order": 4,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "1"
             },
             {
                 "id": "a8661be5-1b81-43ad-a614-2fefc2db80eb",
@@ -4952,11 +4928,11 @@
             },
             {
                 "id": "4915df8d-0480-4a10-b881-bc3f0e2cd110",
-                "name": "Single Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "24222f6f-b4e6-44f2-bd81-d8465a1f8b47",
-                        "class": "col-lg-12",
+                        "class": "col-lg-4",
                         "controls": [
                             {
                                 "id": "6be62079-0092-4fde-9d08-24bc1967e25f",
@@ -4965,7 +4941,7 @@
                                 "name": "l-1",
                                 "show": true,
                                 "type": "label",
-                                "class": "blue h5",
+                                "class": "blue",
                                 "label": "Label",
                                 "value": "Quotation for",
                                 "is_field": true,
@@ -4978,22 +4954,10 @@
                             }
                         ],
                         "position": 1
-                    }
-                ],
-                "class": "single-column field-dragger",
-                "order": 1,
-                "controls": [],
-                "is_field": false,
-                "droppable": false,
-                "decoration": "1"
-            },
-            {
-                "id": "eb1e8eb2-2616-455c-aa10-52578736687e",
-                "name": "Single Column",
-                "child": [
+                    },
                     {
                         "id": "24222f6f-b4e6-44f2-bd81-d8465a1f8b47",
-                        "class": "col-lg-12",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "vendor_name",
@@ -5001,7 +4965,7 @@
                                 "name": "vendor_name",
                                 "show": true,
                                 "type": "tag",
-                                "class": "s4-form-control blue h5",
+                                "class": "s4-form-control blue",
                                 "label": "Vendor Full Name",
                                 "value": null,
                                 "is_field": true,
@@ -5013,7 +4977,7 @@
                                 "attached_element_id": "eb1e8eb2-2616-455c-aa10-52578736687e"
                             }
                         ],
-                        "position": 1
+                        "position": 2
                     }
                 ],
                 "class": "single-column field-dragger",
@@ -5021,7 +4985,7 @@
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "1"
+                "decoration": "2+1"
             },
             {
                 "id": "c83dff46-b6ef-4553-bc69-775d3694a487",

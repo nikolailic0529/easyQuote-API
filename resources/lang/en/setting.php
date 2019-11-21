@@ -20,7 +20,9 @@ return [
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         ],
         'csv' => [
-            'text/csv'
+            'text/csv',
+            'text/plain',
+            'application/vnd.ms-excel',
         ]
     ]
 ];
