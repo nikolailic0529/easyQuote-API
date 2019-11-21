@@ -66,8 +66,8 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
     {
         $template = $this->find($id)->load('company', 'vendor.image');
 
-        $company_logos = $template->company->appendLogo()->logoDimensions;
-        $vendor_logos = $template->vendor->appendLogo()->logoDimensions;
+        $company_logos = $template->company->appendLogo()->logoDimensions ?? [];
+        $vendor_logos = $template->vendor->appendLogo()->logoDimensions ?? [];
 
         $designer = collect(__('template.designer'))->transform(function ($page) {
             return collect($page)->transform(function ($tag) {
@@ -85,7 +85,7 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
         $quoteTemplate = request()->user()->quoteTemplates()->create($request->validated());
         $quoteTemplate->syncCountries($request->countries);
 
-        return $quoteTemplate->load('company', 'vendor', 'countries', 'templateFields');
+        return $quoteTemplate->load('company', 'vendor', 'countries', 'templateFields', 'currency');
     }
 
     public function update(UpdateQuoteTemplateRequest $request, string $id): QuoteTemplate
@@ -94,7 +94,7 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
         $quoteTemplate->update($request->validated());
         $quoteTemplate->syncCountries($request->countries);
 
-        return $quoteTemplate->load('company', 'vendor', 'countries', 'templateFields');
+        return $quoteTemplate->load('company', 'vendor', 'countries', 'templateFields', 'currency');
     }
 
     public function delete(string $id): bool

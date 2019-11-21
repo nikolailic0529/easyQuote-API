@@ -124,7 +124,6 @@ class QuoteService implements QuoteServiceInterface
         }
 
         if (is_numeric($discount)) {
-            $originalListPrice = $quote->list_price;
             $marginPercentageAfterDiscount = ($quote->margin_percentage_without_discounts - $discount) / 100;
             $divider = 1 - $marginPercentageAfterDiscount;
 
@@ -134,7 +133,6 @@ class QuoteService implements QuoteServiceInterface
             }
 
             $buyPriceAfterDiscount = $quote->buy_price / $divider;
-
             $quote->applicable_discounts += $quote->list_price - $buyPriceAfterDiscount;
 
             return $quote;

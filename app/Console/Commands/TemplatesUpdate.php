@@ -19,7 +19,7 @@ class TemplatesUpdate extends Command
      *
      * @var string
      */
-    protected $signature = 'templates:update';
+    protected $signature = 'eq:templates-update';
 
     /**
      * The console command description.
@@ -55,11 +55,11 @@ class TemplatesUpdate extends Command
         collect($templates)->each(function ($template) use ($templateFields, $design) {
 
             collect($template['companies'])->each(function ($companyData) use ($template, $templateFields, $design) {
-                $company = Company::whereVat($companyData['vat'])->first();
+                $company = Company::whereVat($companyData['vat'])->firstOrFail();
                 $company->acronym = $companyData['acronym'];
 
                 collect($template['vendors'])->each(function ($vendorCode) use ($company, $template, $templateFields, $design) {
-                    $vendor = Vendor::whereShortCode($vendorCode)->first();
+                    $vendor = Vendor::whereShortCode($vendorCode)->firstOrFail();
                     $vendor_id = $vendor->id;
                     $company_id = $company->id;
                     $is_system = true;

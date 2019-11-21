@@ -38,7 +38,9 @@ trait HasGroupDescriptionAttribute
     {
         $value = (bool) $value;
 
-        if ($this->attributes['use_groups'] !== $value) {
+        $this->calculateMarginPercentage();
+
+        if ((bool) $this->use_groups !== $value) {
             $this->forgetCachedComputableRows();
         }
 

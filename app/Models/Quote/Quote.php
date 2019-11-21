@@ -211,7 +211,8 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
                 'checkbox_status',
                 'calculate_list_price',
                 'vendor.logo',
-                'company.logo'
+                'company.logo',
+                'discounts'
             ]
         );
     }

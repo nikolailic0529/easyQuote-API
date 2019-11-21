@@ -4,21 +4,21 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 
-class MigrateFreshAndPassportInstall extends Command
+class eqUpdate extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'eq:db-reset';
+    protected $signature = 'eq:update';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Fresh migrates, force install Passport, clear Cache';
+    protected $description = 'Run necessary commands after pulling the code';
 
     /**
      * Create a new command instance.
@@ -37,12 +37,16 @@ class MigrateFreshAndPassportInstall extends Command
      */
     public function handle()
     {
-        $this->call('migrate:fresh', [
-            '--seed' => true
-        ]);
-        $this->call('passport:install', [
+        $this->call('migrate', [
             '--force' => true
         ]);
+        $this->call('eq:parser-update');
+        $this->call('eq:collaborations-update');
+        $this->call('eq:companies-update');
+        $this->call('eq:vendors-update');
+        $this->call('eq:roles-update');
+        $this->call('eq:settings-sync');
+        $this->call('eq:templates-update');
         $this->call('eq:search-reindex');
         $this->call('optimize:clear');
     }

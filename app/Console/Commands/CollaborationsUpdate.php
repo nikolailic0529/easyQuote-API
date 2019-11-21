@@ -12,14 +12,14 @@ class CollaborationsUpdate extends Command
      *
      * @var string
      */
-    protected $signature = 'collaborations:update';
+    protected $signature = 'eq:collaborations-update';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Assign collaboration_id attribute to Models which were created by Users with Administrator Role';
+    protected $description = 'Assign Administrator Role to the Users from the list';
 
     /**
      * Create a new command instance.

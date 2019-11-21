@@ -15,7 +15,7 @@ class RolesUpdate extends Command
      *
      * @var string
      */
-    protected $signature = 'roles:update';
+    protected $signature = 'eq:roles-update';
 
     /**
      * The console command description.

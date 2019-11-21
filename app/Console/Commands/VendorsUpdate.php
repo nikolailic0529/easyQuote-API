@@ -15,7 +15,7 @@ class VendorsUpdate extends Command
      *
      * @var string
      */
-    protected $signature = 'vendors:update';
+    protected $signature = 'eq:vendors-update';
 
     /**
      * The console command description.

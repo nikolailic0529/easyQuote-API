@@ -112,7 +112,7 @@
     },
     {
         "key": "supported_file_types",
-        "value": ["CSV", "PDF", "XLSX", "XLS", "DOCX"],
+        "value": ["CSV", "PDF", "XLSX", "DOCX"],
         "type": "array",
         "is_read_only": true
     }

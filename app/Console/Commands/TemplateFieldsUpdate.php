@@ -16,7 +16,7 @@ class TemplateFieldsUpdate extends Command
      *
      * @var string
      */
-    protected $signature = 'templatefields:update';
+    protected $signature = 'eq:templatefields-update';
 
     /**
      * The console command description.

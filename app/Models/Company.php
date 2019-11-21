@@ -6,27 +6,30 @@ use App\Models\UuidModel;
 use App\Contracts\{
     WithImage,
     ActivatableInterface,
+    HasOrderedScope,
     WithLogo
 };
 use App\Traits\{
     Activatable,
     BelongsToUser,
-    BelongsToVendors,
     Image\HasImage,
     Image\HasLogo,
     Search\Searchable,
-    Systemable
+    Systemable,
+    Quote\HasQuotes,
+    QuoteTemplate\HasQuoteTemplates
 };
 
-class Company extends UuidModel implements WithImage, WithLogo, ActivatableInterface
+class Company extends UuidModel implements WithImage, WithLogo, ActivatableInterface, HasOrderedScope
 {
     use HasLogo,
         HasImage,
-        BelongsToVendors,
         BelongsToUser,
         Activatable,
         Searchable,
-        Systemable;
+        Systemable,
+        HasQuoteTemplates,
+        HasQuotes;
 
     protected $fillable = [
         'name', 'category', 'vat', 'type', 'email', 'website', 'phone', 'default_vendor_id'
@@ -57,5 +60,21 @@ class Company extends UuidModel implements WithImage, WithLogo, ActivatableInter
         return $query->whereHas('vendors', function ($query) use ($id) {
             $query->where('vendors.id', $id);
         });
+    }
+
+    public function vendors()
+    {
+        return $this->belongsToMany(Vendor::class)->join('companies', 'companies.id', '=', 'company_vendor.company_id')
+            ->orderByRaw("field(`vendors`.`id`, `companies`.`default_vendor_id`, null) desc");
+    }
+
+    public function scopeOrdered($query)
+    {
+        return $query->orderByRaw("field(`vat`, 'GB758501125', null) desc");
+    }
+
+    public function inUse()
+    {
+        return $this->quotes()->exists() || $this->quoteTemplates()->exists();
     }
 }

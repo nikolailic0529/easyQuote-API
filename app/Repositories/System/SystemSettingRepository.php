@@ -29,8 +29,13 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
     public function get(string $key)
     {
         $setting = $this->systemSetting->where('key', $key)->firstOrNew([]);
+        $value = $setting->value;
 
-        return $setting->value;
+        if ($key === 'supported_file_types' && is_array($value) && in_array('CSV', $value)) {
+            array_push($value, 'TXT');
+        }
+
+        return $value;
     }
 
     public function update($attributes, string $id): bool

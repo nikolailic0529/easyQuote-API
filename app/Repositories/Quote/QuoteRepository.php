@@ -35,7 +35,7 @@ use App\Http\Resources\QuoteResource;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Builder;
 use Webpatser\Uuid\Uuid;
-use DB, Arr, Str;
+use DB, Arr, Str, Setting;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
@@ -175,33 +175,17 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     public function step1()
     {
-        $companies = $this->company->with('vendors.countries')->get();
-
-        /**
-         * Sorting Vendors by default_vendor_id Company's attribute.
-         */
-        $companies->transform(function ($company) {
-            $vendors = $company->vendors;
-            $vendors = $vendors->sortByDesc(function ($vendor) use ($company) {
-                return $vendor->id === $company->default_vendor_id;
-            })->values();
-
-            unset($company->vendors);
-            $company->vendors = $vendors;
-
-            return $company;
-        });
-
-        /**
-         * Re-order Companies (Support Warehouse on the 1st place)
-         */
-        $companies = $companies->sortByDesc(function ($company) {
-            return $company->vat === 'GB758501125';
-        })->values();
+        $companies = $this->company->with('vendors.countries')->ordered()->get();
 
         $data_select_separators = $this->dataSelectSeparator->all();
 
-        return compact('data_select_separators', 'companies');
+        $supported_file_types = collect(Setting::get('supported_file_types'))
+            ->map(function ($type) {
+                $type = strtolower($type);
+                return __("setting.supported_file_types.{$type}");
+            })->collapse();
+
+        return compact('supported_file_types', 'data_select_separators', 'companies');
     }
 
     public function getTemplates(GetQuoteTemplatesRequest $request)
@@ -573,7 +557,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         /**
          * Recalculate User's Margin Percentage after select Rows.
          */
-        $this->calculateMarginPercentage($quote);
+        $quote->calculateMarginPercentage();
 
         /**
          * Fresh Discounts Margin Percentage.
@@ -589,23 +573,6 @@ class QuoteRepository implements QuoteRepositoryInterface
          * Clear Cache Computable Rows when Selected Rows were changed.
          */
         $quote->forgetCachedComputableRows();
-    }
-
-    private function calculateMarginPercentage(Quote $quote): Quote
-    {
-        $quote->list_price = $quote->countTotalPrice();
-
-        if ((float) $quote->list_price === 0.0) {
-            $quote->margin_percentage = 0;
-            $quote->save();
-
-            return $quote;
-        }
-
-        $quote->margin_percentage = round((($quote->list_price - $quote->buy_price) / $quote->list_price) * 100, 2);
-        $quote->save();
-
-        return $quote;
     }
 
     private function attachColumnsToFields(Collection $state, Quote $quote): void

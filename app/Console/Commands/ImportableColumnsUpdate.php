@@ -12,7 +12,7 @@ class ImportableColumnsUpdate extends Command
      *
      * @var string
      */
-    protected $signature = 'importablecolumns:update';
+    protected $signature = 'eq:parser-update';
 
     /**
      * The console command description.

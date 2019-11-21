@@ -301,6 +301,16 @@ class AppServiceProvider extends ServiceProvider
 
             return $groups;
         });
+
+        Arr::macro('lower', function (array $array) {
+            return array_map(function ($item) {
+                if (!is_string($item)) {
+                    return $item;
+                }
+
+                return mb_strtolower($item);
+            }, $array);
+        });
     }
 
     protected function passportSettings()

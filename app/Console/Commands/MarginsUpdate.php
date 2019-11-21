@@ -13,7 +13,7 @@ class MarginsUpdate extends Command
      *
      * @var string
      */
-    protected $signature = 'margins:update';
+    protected $signature = 'eq:margins-update';
 
     /**
      * The console command description.

@@ -23,4 +23,15 @@ trait HasMarginPercentageAttribute
     {
         return round((float) $this->attributes['margin_percentage'], 2);
     }
+
+    public function calculateMarginPercentage()
+    {
+        $this->list_price = $this->countTotalPrice();
+
+        $margin_percentage = (float) $this->list_price !== 0.0
+            ? round((($this->list_price - $this->buy_price) / $this->list_price) * 100, 2)
+            : 0.0;
+
+        return $this->forceFill(compact('margin_percentage'))->saveOrFail();
+    }
 }

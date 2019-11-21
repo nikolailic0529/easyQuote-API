@@ -8,5 +8,19 @@ return [
         'notification_time' => 'Notification Time',
         'exchange_rates_update' => 'Exchange Rates Update',
         'supported_file_types' => 'Supported File Types'
+    ],
+    'supported_file_types' => [
+        'pdf' => [
+            'application/pdf'
+        ],
+        'docx' => [
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ],
+        'xlsx' => [
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        ],
+        'csv' => [
+            'text/csv'
+        ]
     ]
 ];

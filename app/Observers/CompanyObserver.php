@@ -42,7 +42,13 @@ class CompanyObserver
      */
     public function deleting(Company $company)
     {
-        //
+        if (app()->runningInConsole()) {
+            return;
+        }
+
+        if ($company->inUse()) {
+            throw new \ErrorException(__('company.in_use_deleting_exception'));
+        }
     }
 
     private function exists(Company $company)

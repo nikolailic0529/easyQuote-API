@@ -16,7 +16,7 @@ class CompaniesUpdate extends Command
      *
      * @var string
      */
-    protected $signature = 'companies:update';
+    protected $signature = 'eq:companies-update';
 
     /**
      * The console command description.
