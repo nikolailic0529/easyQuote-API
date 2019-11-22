@@ -98,6 +98,22 @@ interface QuoteServiceInterface
     public function prepareQuoteExport(Quote $quote): array;
 
     /**
+     * Format Computable Rows.
+     *
+     * @param Quote $quote
+     * @return void
+     */
+    public function prepareRows(Quote $quote): void;
+
+    /**
+     * Format Payment Schedule.
+     *
+     * @param Quote $quote
+     * @return void
+     */
+    public function prepareSchedule(Quote $quote): void;
+
+    /**
      * Inline output Generated PDF Quote file.
      *
      * @param Quote $quote

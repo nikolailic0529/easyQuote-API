@@ -847,7 +847,7 @@
                 "child": [
                     {
                         "id": "24222f6f-b4e6-44f2-bd81-d8465a1f8b47",
-                        "class": "col-lg-4",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "6be62079-0092-4fde-9d08-24bc1967e25f",
@@ -872,7 +872,7 @@
                     },
                     {
                         "id": "24222f6f-b4e6-44f2-bd81-d8465a1f8b47",
-                        "class": "col-lg-8",
+                        "class": "col-lg-9",
                         "controls": [
                             {
                                 "id": "vendor_name",
@@ -895,16 +895,16 @@
                         "position": 2
                     }
                 ],
-                "class": "single-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 1,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "2"
             },
             {
                 "id": "205bb944-4333-4add-baa7-5ae17bf238a9",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "0ac510f6-44c7-45cb-8d38-44e022c57ec0",
@@ -932,7 +932,7 @@
                     },
                     {
                         "id": "4ac79f88-cd5d-433b-a64c-a85c3b9ff52e",
-                        "class": "col-lg-3",
+                        "class": "col-lg-9",
                         "controls": [
                             {
                                 "id": "customer_name",
@@ -952,24 +952,18 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "a4087ad4-0893-423e-af63-9d4c4cb6c6f6",
-                        "class": "col-lg-6",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "2"
             },
             {
                 "id": "44ee34b7-4ab7-44da-9134-9994259f85d0",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "0ac510f6-44c7-45cb-8d38-44e022c57ec0",
@@ -997,7 +991,7 @@
                     },
                     {
                         "id": "4ac79f88-cd5d-433b-a64c-a85c3b9ff52e",
-                        "class": "col-lg-3",
+                        "class": "col-lg-9",
                         "controls": [
                             {
                                 "id": "company_name",
@@ -1017,20 +1011,14 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "a4087ad4-0893-423e-af63-9d4c4cb6c6f6",
-                        "class": "col-lg-6",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "2"
             },
             {
                 "id": "8c74b0d3-f439-4383-a442-e4386fb957d9",
@@ -1617,7 +1605,7 @@
                                 "type": "label",
                                 "class": null,
                                 "label": "Label",
-                                "value": "(All prices are excluding applicable taxes)",
+                                "value": " (All prices are excluding applicable taxes)",
                                 "is_field": true,
                                 "is_image": false,
                                 "droppable": false,
@@ -2314,7 +2302,7 @@
                 "child": [
                     {
                         "id": "24222f6f-b4e6-44f2-bd81-d8465a1f8b47",
-                        "class": "col-lg-4",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "6be62079-0092-4fde-9d08-24bc1967e25f",
@@ -2339,7 +2327,7 @@
                     },
                     {
                         "id": "24222f6f-b4e6-44f2-bd81-d8465a1f8b47",
-                        "class": "col-lg-8",
+                        "class": "col-lg-9",
                         "controls": [
                             {
                                 "id": "vendor_name",
@@ -2362,20 +2350,20 @@
                         "position": 2
                     }
                 ],
-                "class": "single-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 1,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "2"
             },
             {
                 "id": "c83dff46-b6ef-4553-bc69-775d3694a487",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "176fea14-5e5a-41d2-aa98-bcc2e0f66b93",
-                        "class": "col-lg-4",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "f86c0d28-b074-4758-9295-43d8cbe1214b",
@@ -2399,7 +2387,7 @@
                     },
                     {
                         "id": "9ccab411-7583-4400-90bf-975e1601b9d4",
-                        "class": "col-lg-6",
+                        "class": "col-lg-9",
                         "controls": [
                             {
                                 "id": "customer_name",
@@ -2419,28 +2407,22 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "734443b1-7d3b-45d2-9e14-97b396e88080",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "2"
             },
             {
                 "id": "54682e57-49d0-47c0-bb51-44233fa41438",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "176fea14-5e5a-41d2-aa98-bcc2e0f66b93",
-                        "class": "col-lg-4",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "f86c0d28-b074-4758-9295-43d8cbe1214b",
@@ -2464,7 +2446,7 @@
                     },
                     {
                         "id": "9ccab411-7583-4400-90bf-975e1601b9d4",
-                        "class": "col-lg-6",
+                        "class": "col-lg-9",
                         "controls": [
                             {
                                 "id": "company_name",
@@ -2484,20 +2466,14 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "734443b1-7d3b-45d2-9e14-97b396e88080",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "2"
             },
             {
                 "id": "13612e0d-7a90-420f-88cc-73ea17046865",
@@ -3465,7 +3441,7 @@
                 "child": [
                     {
                         "id": "24222f6f-b4e6-44f2-bd81-d8465a1f8b47",
-                        "class": "col-lg-4",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "6be62079-0092-4fde-9d08-24bc1967e25f",
@@ -3490,7 +3466,7 @@
                     },
                     {
                         "id": "24222f6f-b4e6-44f2-bd81-d8465a1f8b47",
-                        "class": "col-lg-8",
+                        "class": "col-lg-9",
                         "controls": [
                             {
                                 "id": "vendor_name",
@@ -3513,20 +3489,20 @@
                         "position": 2
                     }
                 ],
-                "class": "single-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 1,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "2"
             },
             {
                 "id": "205bb944-4333-4add-baa7-5ae17bf238a9",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "0ac510f6-44c7-45cb-8d38-44e022c57ec0",
-                        "class": "col-lg-4",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "2e77e288-76dc-4e71-9f7c-b4f75b0c4890",
@@ -3550,7 +3526,7 @@
                     },
                     {
                         "id": "4ac79f88-cd5d-433b-a64c-a85c3b9ff52e",
-                        "class": "col-lg-6",
+                        "class": "col-lg-9",
                         "controls": [
                             {
                                 "id": "customer_name",
@@ -3570,28 +3546,22 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "a4087ad4-0893-423e-af63-9d4c4cb6c6f6",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "2"
             },
             {
                 "id": "44ee34b7-4ab7-44da-9134-9994259f85d0",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "0ac510f6-44c7-45cb-8d38-44e022c57ec0",
-                        "class": "col-lg-4",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "2e77e288-76dc-4e71-9f7c-b4f75b0c4890",
@@ -3615,7 +3585,7 @@
                     },
                     {
                         "id": "4ac79f88-cd5d-433b-a64c-a85c3b9ff52e",
-                        "class": "col-lg-6",
+                        "class": "col-lg-9",
                         "controls": [
                             {
                                 "id": "company_name",
@@ -3635,20 +3605,14 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "a4087ad4-0893-423e-af63-9d4c4cb6c6f6",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "2"
             },
             {
                 "id": "8c74b0d3-f439-4383-a442-e4386fb957d9",
@@ -4235,7 +4199,7 @@
                                 "type": "label",
                                 "class": null,
                                 "label": "Label",
-                                "value": "(All prices are excluding applicable taxes)",
+                                "value": " (All prices are excluding applicable taxes)",
                                 "is_field": true,
                                 "is_image": false,
                                 "droppable": false,
@@ -4932,7 +4896,7 @@
                 "child": [
                     {
                         "id": "24222f6f-b4e6-44f2-bd81-d8465a1f8b47",
-                        "class": "col-lg-4",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "6be62079-0092-4fde-9d08-24bc1967e25f",
@@ -4957,7 +4921,7 @@
                     },
                     {
                         "id": "24222f6f-b4e6-44f2-bd81-d8465a1f8b47",
-                        "class": "col-lg-8",
+                        "class": "col-lg-9",
                         "controls": [
                             {
                                 "id": "vendor_name",
@@ -4980,20 +4944,20 @@
                         "position": 2
                     }
                 ],
-                "class": "single-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 1,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "2"
             },
             {
                 "id": "c83dff46-b6ef-4553-bc69-775d3694a487",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "176fea14-5e5a-41d2-aa98-bcc2e0f66b93",
-                        "class": "col-lg-4",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "f86c0d28-b074-4758-9295-43d8cbe1214b",
@@ -5017,7 +4981,7 @@
                     },
                     {
                         "id": "9ccab411-7583-4400-90bf-975e1601b9d4",
-                        "class": "col-lg-6",
+                        "class": "col-lg-9",
                         "controls": [
                             {
                                 "id": "customer_name",
@@ -5037,28 +5001,22 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "734443b1-7d3b-45d2-9e14-97b396e88080",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "2"
             },
             {
                 "id": "54682e57-49d0-47c0-bb51-44233fa41438",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "176fea14-5e5a-41d2-aa98-bcc2e0f66b93",
-                        "class": "col-lg-4",
+                        "class": "col-lg-3",
                         "controls": [
                             {
                                 "id": "f86c0d28-b074-4758-9295-43d8cbe1214b",
@@ -5082,7 +5040,7 @@
                     },
                     {
                         "id": "9ccab411-7583-4400-90bf-975e1601b9d4",
-                        "class": "col-lg-6",
+                        "class": "col-lg-9",
                         "controls": [
                             {
                                 "id": "company_name",
@@ -5102,20 +5060,14 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "734443b1-7d3b-45d2-9e14-97b396e88080",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "2"
             },
             {
                 "id": "13612e0d-7a90-420f-88cc-73ea17046865",

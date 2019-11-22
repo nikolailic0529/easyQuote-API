@@ -4,6 +4,7 @@ namespace App\Models\Data;
 
 use App\Models\UuidModel;
 use App\Contracts\HasOrderedScope;
+use Setting;
 
 class Currency extends UuidModel implements HasOrderedScope
 {
@@ -13,7 +14,8 @@ class Currency extends UuidModel implements HasOrderedScope
 
     public function scopeOrdered($query)
     {
-        return $query->orderBy('name', 'asc');
+        $base_currency = Setting::get('base_currency');
+        return $query->orderByRaw("field(`currencies`.`code`, ?, null) desc", [$base_currency]);
     }
 
     public function getLabelAttribute()

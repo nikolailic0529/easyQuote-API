@@ -7,18 +7,21 @@ trait HasPricesAttributes
 {
     public function getListPriceAttribute()
     {
-        return round((float) $this->list_price ?? 0, 2);
+        return (float) $this->list_price ?? 0;
     }
 
     public function getListPriceFormattedAttribute()
     {
-        return Str::decimal($this->list_price);
+        return Str::prepend(Str::decimal($this->getAttribute('list_price')), $this->quoteTemplate->currency_symbol);
     }
 
     public function getFinalPriceAttribute()
     {
-        $final_price = ((float) $this->list_price - (float) $this->applicable_discounts);
+        return $this->getAttribute('list_price') - $this->getAttribute('applicable_discounts');
+    }
 
-        return Str::decimal($final_price);
+    public function getFinalPriceFormattedAttribute()
+    {
+        return Str::prepend(Str::decimal($this->getAttribute('final_price')), $this->quoteTemplate->currency_symbol);
     }
 }

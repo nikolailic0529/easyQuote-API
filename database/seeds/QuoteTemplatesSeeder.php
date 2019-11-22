@@ -7,6 +7,8 @@ use App\Models \ {
     Data\Country,
     QuoteTemplate\TemplateField
 };
+use App\Models\Data\Currency;
+use App\Facades\Setting;
 
 class QuoteTemplatesSeeder extends Seeder
 {
@@ -27,18 +29,18 @@ class QuoteTemplatesSeeder extends Seeder
         Schema::enableForeignKeyConstraints();
 
         $templates = json_decode(file_get_contents(__DIR__ . '/models/quote_templates.json'), true);
-
         $design = file_get_contents(database_path('seeds/models/template_designs.json'));
+        $currency_id = Currency::whereCode(Setting::get('base_currency'))->firstOrFail()->id;
 
-        $templateFields = collect(TemplateField::select('id')->get()->each->setAppends([])->toArray())->filter()->flatten();
+        $templateFields = TemplateField::system()->pluck('id')->toArray();
 
-        collect($templates)->each(function ($template) use ($templateFields, $design) {
+        collect($templates)->each(function ($template) use ($templateFields, $design, $currency_id) {
 
-            collect($template['companies'])->each(function ($companyData) use ($template, $templateFields, $design) {
+            collect($template['companies'])->each(function ($companyData) use ($template, $templateFields, $design, $currency_id) {
                 $company = Company::whereVat($companyData['vat'])->first();
                 $company->acronym = $companyData['acronym'];
 
-                collect($template['vendors'])->each(function ($vendorCode) use ($company, $template, $templateFields, $design) {
+                collect($template['vendors'])->each(function ($vendorCode) use ($company, $template, $templateFields, $design, $currency_id) {
                     $vendor = Vendor::whereShortCode($vendorCode)->first();
                     $vendor_id = $vendor->id;
                     $company_id = $company->id;
@@ -55,16 +57,16 @@ class QuoteTemplatesSeeder extends Seeder
 
                     DB::table('quote_templates')->insert(
                         array_merge(
-                            compact('id', 'name', 'is_system', 'company_id', 'vendor_id', 'created_at', 'updated_at', 'activated_at'),
+                            compact('id', 'name', 'is_system', 'company_id', 'vendor_id', 'currency_id', 'created_at', 'updated_at', 'activated_at'),
                             $design
                         )
                     );
 
-                    $templateFields->each(function ($template_field_id) use ($quote_template_id) {
-                        DB::table('quote_template_template_field')->insert(
-                            compact('quote_template_id', 'template_field_id')
-                        );
-                    });
+                    $templateFields = array_map(function ($template_field_id) use ($quote_template_id) {
+                        return compact('quote_template_id', 'template_field_id');
+                    }, $templateFields);
+
+                    DB::table('quote_template_template_field')->insert($templateFields);
 
                     collect($template['countries'])->each(function ($countryIso) use ($quote_template_id) {
                         $country_id = Country::where('iso_3166_2', $countryIso)->first()->id;

@@ -11,6 +11,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
+        $this->call(SystemSettingsSeeder::class);
+        $this->command->info('Seeded the default system settings!');
+
         $this->call(CountriesSeeder::class);
         $this->command->info('Seeded the countries!');
 
@@ -64,9 +67,6 @@ class DatabaseSeeder extends Seeder
 
         $this->call(CustomersContactsSeeder::class);
         $this->command->info('Seeded the S4 customers contacts!');
-
-        $this->call(SystemSettingsSeeder::class);
-        $this->command->info('Seeded the default system settings!');
 
         $this->call(CountryMarginsSeeder::class);
         $this->command->info('Seeded the country margins!');

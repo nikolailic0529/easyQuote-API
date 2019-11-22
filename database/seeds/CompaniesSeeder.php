@@ -27,23 +27,27 @@ class CompaniesSeeder extends Seeder
 
         collect($companies)->each(function ($company) {
             $companyId = (string) Uuid::generate(4);
+            $defaultVendorId = Vendor::whereShortCode($company['default_vendor'])->firstOrFail()->id;
 
             DB::table('companies')->insert([
                 'id' => $companyId,
                 'name' => $company['name'],
                 'vat' => $company['vat'],
                 'type' => $company['type'],
+                'default_vendor_id' => $defaultVendorId,
+                'email' => $company['email'],
+                'phone' => $company['phone'],
+                'website' => $company['website'],
                 'is_system' => true,
                 'created_at' => now()->toDateTimeString(),
                 'updated_at' => now()->toDateTimeString(),
                 'activated_at' => now()->toDateTimeString()
             ]);
 
-            $createdCompany = Company::whereId($companyId)->first();
+            $createdCompany = Company::whereId($companyId)->firstOrFail();
 
             collect($company['vendors'])->each(function ($vendorCode) use ($createdCompany) {
-                $vendor = Vendor::where('short_code', $vendorCode)->first();
-
+                $vendor = Vendor::where('short_code', $vendorCode)->firstOrFail();
                 $createdCompany->vendors()->attach($vendor);
             });
 

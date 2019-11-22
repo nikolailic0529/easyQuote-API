@@ -6,6 +6,8 @@ use App\Models\UuidModel;
 
 class SystemSetting extends UuidModel
 {
+    public $timestamps = false;
+
     protected $fillable = [
         'value', 'type'
     ];
@@ -29,8 +31,6 @@ class SystemSetting extends UuidModel
     ];
 
     protected $dateTimeFormat = 'd/m/Y';
-
-    public $timestamps = false;
 
     protected function getCastType($key)
     {
@@ -95,5 +95,15 @@ class SystemSetting extends UuidModel
         }
 
         return is_array($this->possible_values) ? 'dropdown' : 'textbox';
+    }
+
+    public function getValueCacheKeyAttribute()
+    {
+        return "setting-value:{$this->key}";
+    }
+
+    public function forgetCachedValue()
+    {
+        return cache()->forget($this->valueCacheKey);
     }
 }

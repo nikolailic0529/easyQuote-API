@@ -6,7 +6,8 @@ use App\Contracts\Repositories\{
     Quote\QuoteRepositoryInterface,
     Quote\Margin\MarginRepositoryInterface as MarginRepository,
     QuoteTemplate\QuoteTemplateRepositoryInterface as QuoteTemplateRepository,
-    QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
+    QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository,
+    QuoteFile\DataSelectSeparatorRepositoryInterface as DataSelectSeparatorRepository
 };
 use App\Contracts\Services\QuoteServiceInterface as QuoteService;
 use App\Models\{
@@ -15,12 +16,7 @@ use App\Models\{
     Quote\Discount as QuoteDiscount,
     QuoteFile\QuoteFile,
     QuoteFile\ImportableColumn,
-    QuoteFile\DataSelectSeparator,
-    QuoteTemplate\TemplateField,
-    Quote\Discount\MultiYearDiscount,
-    Quote\Discount\PrePayDiscount,
-    Quote\Discount\PromotionalDiscount,
-    Quote\Discount\SND
+    QuoteTemplate\TemplateField
 };
 use App\Http\Requests\{
     StoreQuoteStateRequest,
@@ -63,14 +59,6 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     protected $morphDiscount;
 
-    protected $multiYearDiscount;
-
-    protected $prePayDiscount;
-
-    protected $promotionalDiscount;
-
-    protected $snd;
-
     public function __construct(
         Quote $quote,
         QuoteService $quoteService,
@@ -82,12 +70,8 @@ class QuoteRepository implements QuoteRepositoryInterface
         TemplateField $templateField,
         ImportableColumn $importableColumn,
         Company $company,
-        DataSelectSeparator $dataSelectSeparator,
-        QuoteDiscount $morphDiscount,
-        MultiYearDiscount $multiYearDiscount,
-        PrePayDiscount $prePayDiscount,
-        PromotionalDiscount $promotionalDiscount,
-        SND $snd
+        DataSelectSeparatorRepository $dataSelectSeparator,
+        QuoteDiscount $morphDiscount
     ) {
         $this->quote = $quote;
         $this->quoteFile = $quoteFile;
@@ -100,15 +84,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         $this->company = $company;
         $this->dataSelectSeparator = $dataSelectSeparator;
         $this->quoteService = $quoteService;
-
-        /**
-         * Discounts
-         */
         $this->morphDiscount = $morphDiscount;
-        $this->multiYearDiscount = $multiYearDiscount;
-        $this->prePayDiscount = $prePayDiscount;
-        $this->promotionalDiscount = $promotionalDiscount;
-        $this->snd = $snd;
     }
 
     public function storeState(StoreQuoteStateRequest $request)
@@ -132,8 +108,6 @@ class QuoteRepository implements QuoteRepositoryInterface
         $this->setMargin($quote, $request->margin);
         $this->setDiscounts($quote, $request->discounts, $request->discounts_detach);
 
-        cache()->forget("quote_list_price:{$quote->id}");
-
         return $quote->only('id');
     }
 
@@ -149,9 +123,7 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     public function find(string $id)
     {
-        $quote = $this->userQuery()->whereId($id)->withJoins()->firstOrFail()->appendJoins();
-
-        return $quote;
+        return $this->userQuery()->whereId($id)->withJoins()->firstOrFail()->appendJoins();
     }
 
     public function preparedQuote(string $id)
@@ -179,11 +151,7 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $data_select_separators = $this->dataSelectSeparator->all();
 
-        $supported_file_types = collect(Setting::get('supported_file_types'))
-            ->map(function ($type) {
-                $type = strtolower($type);
-                return __("setting.supported_file_types.{$type}");
-            })->collapse();
+        $supported_file_types = Setting::get('supported_file_types_ui');
 
         return compact('supported_file_types', 'data_select_separators', 'companies');
     }
@@ -201,7 +169,9 @@ class QuoteRepository implements QuoteRepositoryInterface
     {
         $quote = $this->find($request->quote_id);
 
-        return $this->mappingReviewData($quote);
+        return cache()->sear($quote->mappingReviewCacheKey, function () use ($quote) {
+            return $quote->rowsDataByColumns()->get();
+        });
     }
 
     public function hideFields(Collection $state, Quote $quote): void
@@ -215,12 +185,12 @@ class QuoteRepository implements QuoteRepositoryInterface
         $quote->fieldsColumns()->whereHas('templateField', function ($query) use ($hidden) {
             $query->whereIn('name', $hidden);
         })
-        ->update(['is_preview_visible' => false]);
+            ->update(['is_preview_visible' => false]);
 
         $quote->fieldsColumns()->whereHas('templateField', function ($query) use ($hidden) {
             $query->whereNotIn('name', $hidden);
         })
-        ->update(['is_preview_visible' => true]);
+            ->update(['is_preview_visible' => true]);
     }
 
     public function setMargin(Quote $quote, ?array $attributes): void
@@ -367,15 +337,6 @@ class QuoteRepository implements QuoteRepositoryInterface
         $this->quoteService->prepareQuoteReview($quote);
 
         return data_get((new QuoteResource($quote))->resolve(), 'quote_data');
-    }
-
-    public function mappingReviewData(Quote $quote, $clearCache = null)
-    {
-        $clearCache && $quote->forgetCachedMappingReview();
-
-        return cache()->sear($quote->mappingReviewCacheKey, function () use ($quote) {
-            return $quote->rowsDataByColumns()->get();
-        });
     }
 
     public function rows(string $id, string $query = ''): Collection

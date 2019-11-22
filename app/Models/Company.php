@@ -70,7 +70,7 @@ class Company extends UuidModel implements WithImage, WithLogo, ActivatableInter
 
     public function scopeOrdered($query)
     {
-        return $query->orderByRaw("field(`vat`, 'GB758501125', null) desc");
+        return $query->orderByRaw("field(`vat`, ?, null) desc", ['GB758501125']);
     }
 
     public function inUse()

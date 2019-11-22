@@ -6,6 +6,7 @@ use App\Contracts\Repositories\System\SystemSettingRepositoryInterface;
 use App\Models\System\SystemSetting;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
+use Str, Arr;
 
 class SystemSettingRepository implements SystemSettingRepositoryInterface
 {
@@ -28,14 +29,16 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
 
     public function get(string $key)
     {
-        $setting = $this->systemSetting->where('key', $key)->firstOrNew([]);
-        $value = $setting->value;
+        return cache()->sear("setting-value:{$key}", function () use ($key) {
+            $setting = $this->systemSetting->where('key', $key)->firstOrNew([]);
+            $value = $setting->value;
 
-        if ($key === 'supported_file_types' && is_array($value) && in_array('CSV', $value)) {
-            array_push($value, 'TXT');
-        }
+            if ($this->hasGetMutator($key)) {
+                return $this->mutateSetting($key, $value);
+            }
 
-        return $value;
+            return $value;
+        });
     }
 
     public function update($attributes, string $id): bool
@@ -79,5 +82,57 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
         return $this->systemSetting->whereNotIn('key', ['parser.default_separator', 'parser.default_page'])
             ->orderBy('is_read_only')
             ->get();
+    }
+
+    public function getSupportedFileTypesSetting($value)
+    {
+        if (!in_array('CSV', $value)) {
+            return $value;
+        }
+
+        array_push($value, 'TXT');
+        return $value;
+    }
+
+    public function getSupportedFileTypesUiSetting()
+    {
+        return collect($this->get('supported_file_types'))
+            ->transform(function ($type) {
+                $type = strtolower($type);
+                return __("setting.supported_file_types.{$type}");
+            })->collapse();
+    }
+
+    public function getSupportedFileTypesRequestSetting()
+    {
+        return implode(',', Arr::lower($this->get('supported_file_types')));
+    }
+
+    public function getFileUploadSizeKbSetting()
+    {
+        return $this->get('file_upload_size') * 1000;
+    }
+
+    /**
+     * Determine if a get mutator exists for a setting value.
+     *
+     * @param  string  $key
+     * @return bool
+     */
+    protected function hasGetMutator($key)
+    {
+        return method_exists($this, 'get'.Str::studly($key).'Setting');
+    }
+
+    /**
+     * Get the value of a setting value using its mutator.
+     *
+     * @param  string  $key
+     * @param  mixed  $value
+     * @return mixed
+     */
+    protected function mutateSetting($key, $value)
+    {
+        return $this->{'get'.Str::studly($key).'Setting'}($value);
     }
 }

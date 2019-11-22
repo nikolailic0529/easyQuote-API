@@ -2,6 +2,8 @@
 
 namespace App\Contracts\Repositories\QuoteFile;
 
+use Illuminate\Database\Eloquent\Collection;
+
 interface DataSelectSeparatorRepositoryInterface
 {
     /**
@@ -19,4 +21,11 @@ interface DataSelectSeparatorRepositoryInterface
      * @return \App\Models\QuoteFile\DataSelectSeparator
      */
     public function findByName(string $name);
+
+    /**
+     * Retrieve all available data select separators.
+     *
+     * @return Collection
+     */
+    public function all(): Collection;
 }

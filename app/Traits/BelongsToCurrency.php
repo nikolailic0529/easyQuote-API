@@ -15,4 +15,9 @@ trait BelongsToCurrency
     {
         return $this->belongsTo(Currency::class);
     }
+
+    public function getCurrencySymbolAttribute()
+    {
+        return $this->currency->symbol ?? null;
+    }
 }

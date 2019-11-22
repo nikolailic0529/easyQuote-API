@@ -27,4 +27,15 @@ class QuoteObserver
     {
         return $quote->countryMargin()->dissociate();
     }
+
+    /**
+     * Handle the Quote "saved" event.
+     *
+     * @param Quote $quote
+     * @return void
+     */
+    public function saved(Quote $quote)
+    {
+        $quote->shouldRecalculateMargin && $quote->calculateMarginPercentage();
+    }
 }

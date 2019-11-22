@@ -60,6 +60,8 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
 
     public $computableRows = null;
 
+    public $shouldRecalculateMargin = false;
+
     public $list_price = 0.0;
 
     public $applicable_discounts = 0.0;

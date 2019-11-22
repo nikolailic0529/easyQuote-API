@@ -92,4 +92,9 @@ class Customer extends UuidModel
     {
         $this->attributes['valid_until'] = $value;
     }
+
+    public function scopeNotInUse($query)
+    {
+        return $query->drafted()->doesntHave('quotes');
+    }
 }

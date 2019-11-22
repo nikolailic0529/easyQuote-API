@@ -174,9 +174,9 @@ class ParserService implements ParserServiceInterface
         $this->quoteFile->deleteExcept($quoteFile);
 
         /**
-         * Re-Cache Mapping Review Data After Handling
+         * Clear Cache Mapping Review Data After Handling
          */
-        $this->quote->mappingReviewData($quote, true);
+        $quote->forgetCachedMappingReview();
 
         return true;
     }

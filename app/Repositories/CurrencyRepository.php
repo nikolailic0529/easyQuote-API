@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Contracts\Repositories\CurrencyRepositoryInterface;
 use App\Models\Data\Currency;
+use Setting;
 
 class CurrencyRepository implements CurrencyRepositoryInterface
 {
@@ -16,7 +17,8 @@ class CurrencyRepository implements CurrencyRepositoryInterface
 
     public function all()
     {
-        return cache()->sear('all-currencies', function () {
+        $base_currency = Setting::get('base_currency');
+        return cache()->sear("all-currencies:{$base_currency}", function () {
             return $this->currency->ordered()->get();
         });
     }

@@ -52,7 +52,8 @@ use App\Models\{
     Quote\Discount\SND,
     QuoteTemplate\QuoteTemplate,
     QuoteTemplate\TemplateField,
-    Collaboration\Invitation
+    Collaboration\Invitation,
+    System\SystemSetting
 };
 use App\Observers\{
     CompanyObserver,
@@ -65,7 +66,8 @@ use App\Observers\{
     Discount\SNDobserver,
     QuoteTemplateObserver,
     TemplateFieldObserver,
-    Collaboration\InvitationObserver
+    Collaboration\InvitationObserver,
+    SystemSettingObserver
 };
 use App\Repositories\{
     TimezoneRepository,
@@ -88,13 +90,13 @@ use App\Repositories\{
     Quote\Discount\PromotionalDiscountRepository,
     Quote\Discount\PrePayDiscountRepository,
     Quote\Discount\SNDrepository,
+    Quote\QuoteDraftedRepository,
+    Quote\QuoteSubmittedRepository,
     VendorRepository,
     CompanyRepository,
     InvitationRepository,
     RoleRepository
 };
-use App\Repositories\Quote\QuoteDraftedRepository;
-use App\Repositories\Quote\QuoteSubmittedRepository;
 use App\Services\{
     AuthService,
     ParserService,
@@ -199,6 +201,8 @@ class AppServiceProvider extends ServiceProvider
         TemplateField::observe(TemplateFieldObserver::class);
 
         Invitation::observe(InvitationObserver::class);
+
+        SystemSetting::observe(SystemSettingObserver::class);
     }
 
     protected function registerMacro()
@@ -246,14 +250,8 @@ class AppServiceProvider extends ServiceProvider
             return self::snake(Str::snake(preg_replace('/[^\w\h]/', ' ', $value)));
         });
 
-        Arr::macro('quote', function ($value) {
-            return implode(',', array_map('json_encode', $value));
-        });
-
-        Arr::macro('cols', function (array $value, string $append = '') {
-            return implode(', ', array_map(function ($item) use ($append) {
-                return "`{$item}`{$append}";
-            }, $value));
+        Str::macro('prepend', function (string $value, ?string $prependable) {
+            return filled($prependable) ? "{$prependable} {$value}" : $value;
         });
 
         Collection::macro('exceptEach', function (...$keys) {
@@ -280,13 +278,21 @@ class AppServiceProvider extends ServiceProvider
             });
         });
 
-        Collection::macro('rowsToGroups', function (string $groupable, ?Collection $meta = null, bool $recalculate = false) {
-            $groups = $this->groupBy($groupable)->transform(function ($rows, $key) use ($groupable, $meta) {
+        Collection::macro('rowsToGroups', function (string $groupable, ?Collection $meta = null, bool $recalculate = false, ?string $currency = null) {
+            $groups = $this->groupBy($groupable)->transform(function ($rows, $key) use ($groupable, $meta, $currency) {
                 $meta = isset($meta)
                     ? $meta->firstWhere('name', '===', $key) ?? []
                     : [];
-                $rows = collect($rows)->exceptEach($groupable);
-                $headers_count = count($rows->first());
+                $rows = collect($rows)
+                    ->transform(function ($row) use ($currency) {
+                        data_set($row, 'computable_price', data_get($row, 'price', 0.0));
+                        data_set($row, 'price', Str::prepend(Str::decimal(data_get($row, 'price', 0.0)), $currency));
+                        return $row;
+                    })
+                    ->exceptEach($groupable);
+
+                $headers_count = count($rows->first()) - 1;
+
                 return array_merge((array) $meta, ['headers_count' => $headers_count, $groupable => $key, 'rows' => $rows]);
             })->values();
 
@@ -294,8 +300,14 @@ class AppServiceProvider extends ServiceProvider
                 $groups->push(array_merge($meta, ['rows' => collect()]));
             });
 
-            $recalculate && $groups->transform(function ($group) {
-                data_set($group, 'total_price', Str::decimal($group['rows']->sum('price')));
+            $recalculate && $groups->transform(function ($group) use ($currency) {
+                $total_price = Str::decimal($group['rows']->sum('computable_price'));
+                data_set($group, 'total_price', Str::prepend($total_price, $currency));
+                return $group;
+            });
+
+            $groups->transform(function ($group) {
+                data_set($group, 'rows', $group['rows']->exceptEach('computable_price'));
                 return $group;
             });
 
@@ -310,6 +322,16 @@ class AppServiceProvider extends ServiceProvider
 
                 return mb_strtolower($item);
             }, $array);
+        });
+
+        Arr::macro('quote', function ($value) {
+            return implode(',', array_map('json_encode', $value));
+        });
+
+        Arr::macro('cols', function (array $value, string $append = '') {
+            return implode(', ', array_map(function ($item) use ($append) {
+                return "`{$item}`{$append}";
+            }, $value));
         });
     }
 

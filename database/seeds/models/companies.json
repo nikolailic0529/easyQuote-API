@@ -3,6 +3,10 @@
         "name": "Support Warehouse Ltd",
         "vat": "GB758501125",
         "type": "Internal",
+        "default_vendor": "HPE",
+        "email": "us@supportwarehouse.com",
+        "phone": "1-866-607-0019",
+        "website": "https://www.supportwarehouse.com",
         "vendors": [
             "HPE", "LEN", "IBM", "CIS"
         ],
@@ -12,6 +16,10 @@
         "name": "Europlus Direct",
         "vat": "GB847657576",
         "type": "Internal",
+        "default_vendor": "HPE",
+        "email": "contact@europlusdirect.com",
+        "phone": "+44 (0) 113 887 8650",
+        "website": "https://europlusdirect.com",
         "vendors": [
             "HPE", "LEN", "IBM", "CIS"
         ],
@@ -21,6 +29,10 @@
         "name": "Tesedi Holding Gmbh",
         "vat": "CHE109482812",
         "type": "Internal",
+        "default_vendor": "HPE",
+        "email": "info@tesedi.com",
+        "phone": "+41 43 555 0 200",
+        "website": "https://www.tesedi.com",
         "vendors": [
             "HPE", "LEN", "IBM", "CIS"
         ],

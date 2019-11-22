@@ -178,7 +178,9 @@ class QuoteService implements QuoteServiceInterface
         }
 
         $quote->scheduleData->value = collect($quote->scheduleData->value)->map(function ($payment) use ($divider) {
-            $payment['price'] = round(Str::price($payment['price']) / $divider, 2);
+            $price = data_get($payment, 'price', 0.0);
+            data_set($payment, 'price', Str::price($price) / $divider);
+
             return $payment;
         });
 
@@ -218,6 +220,8 @@ class QuoteService implements QuoteServiceInterface
         $this->calculateSchedulePrices($quote);
 
         $this->prepareRows($quote);
+
+        $this->prepareSchedule($quote);
     }
 
     public function prepareQuoteExport(Quote $quote): array
@@ -289,18 +293,35 @@ class QuoteService implements QuoteServiceInterface
 
         $quote->computableRows->sortKeysByKeys($keys);
 
-        if (isset($quote->computableRows->first()['price'])) {
-            $this->modifyColumn($quote, 'price', function ($row) {
-                return Str::decimal($row['price']);
-            });
-        }
-
         $quote->computableRows = $quote->computableRows->exceptEach($quote->hiddenFieldsToArray());
 
         if ($quote->has_group_description && $quote->use_groups) {
             $groups_meta = $quote->getGroupDescriptionWithMeta(null, $quote->calculate_list_price);
-            $quote->computableRows = $quote->computableRows->rowsToGroups('group_name', $groups_meta, true)->exceptEach('group_name');
+            $quote->computableRows = $quote->computableRows
+                ->rowsToGroups('group_name', $groups_meta, true, $quote->quoteTemplate->currency_symbol)
+                ->exceptEach('group_name');
+
+            return;
         }
+
+        $this->modifyColumn($quote, 'price', function ($row) use ($quote) {
+            return Str::prepend(Str::decimal($row['price']), $quote->quoteTemplate->currency_symbol);
+        });
+    }
+
+    public function prepareSchedule(Quote $quote): void
+    {
+        if (!isset($quote->scheduleData->value)) {
+            return;
+        }
+
+        $quote->scheduleData->value = collect($quote->scheduleData->value)
+            ->transform(function ($payment) use ($quote) {
+                $price = data_get($payment, 'price', 0.0);
+                data_set($payment, 'price', Str::prepend(Str::decimal($price), $quote->quoteTemplate->currency_symbol));
+
+                return $payment;
+            });
     }
 
     private function calculateDiscountValue($discount, float $price, float $list_price): float

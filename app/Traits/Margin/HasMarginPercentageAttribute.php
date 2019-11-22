@@ -32,6 +32,18 @@ trait HasMarginPercentageAttribute
             ? round((($this->list_price - $this->buy_price) / $this->list_price) * 100, 2)
             : 0.0;
 
-        return $this->forceFill(compact('margin_percentage'))->saveOrFail();
+        $this->promiseNotRecalculateMargin();
+
+        $this->forceFill(compact('margin_percentage'))->save();
+    }
+
+    public function promiseRecalculateMargin()
+    {
+        $this->shouldRecalculateMargin = true;
+    }
+
+    public function promiseNotRecalculateMargin()
+    {
+        $this->shouldRecalculateMargin = false;
     }
 }

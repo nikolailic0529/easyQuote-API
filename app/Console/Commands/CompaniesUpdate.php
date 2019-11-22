@@ -48,7 +48,11 @@ class CompaniesUpdate extends Command
 
         collect($companies)->each(function ($companyData) {
             $company = Company::whereVat($companyData['vat'])->first();
-            $company->update(Arr::only($companyData, ['type']));
+            $default_vendor_id = Vendor::whereShortCode($companyData['default_vendor'])->firstOrFail()->id;
+
+            $company->update(
+                array_merge(Arr::only($companyData, ['type', 'email', 'phone', 'website']), compact('default_vendor_id'))
+            );
             $vendors = Vendor::whereIn('short_code', $companyData['vendors'])->get();
             $company->vendors()->sync($vendors);
             $company->createLogo($companyData['logo'], true);

@@ -43,7 +43,7 @@ class QuoteResource extends JsonResource
                     'service_level' => $this->customer->service_level,
                     'list_price' => $this->list_price_formatted,
                     'applicable_discounts' => $this->applicable_discounts_formatted,
-                    'final_price' => $this->final_price,
+                    'final_price' => $this->final_price_formatted,
                     'payment_terms' => $this->customer->payment_terms,
                     'invoicing_terms' => $this->customer->invoicing_terms,
                     'full_name' => $this->user->full_name,
