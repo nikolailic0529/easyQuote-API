@@ -7,7 +7,7 @@ use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface as 
 use Smalot\PdfParser\Parser as SmalotPdfParser;
 use Spatie\PdfToText\Pdf as SpatiePdfParser;
 use Illuminate\Support\LazyCollection;
-use Storage;
+use Storage, Str;
 
 class PdfParser implements PdfParserInterface
 {
@@ -108,7 +108,7 @@ class PdfParser implements PdfParserInterface
         $priceGroup = '(\h{2,}((\p{Sc})?[ ]?(?<price>([\d]+[ ]?,?)?[,\.]?\d+[,\.]?\d+)))';
         $dateGroup = '(?<date>(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{2,4})';
 
-        $regexp = '/(?<payment_dates>(?:system handle|periode de)(?<date>(?:[\ha-z-]+)(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))([\.\/]\d{2,4})(?:[\ha-z-]*?))+$)|(^(\h)?(?!payment (\h+)? schedule)(?:period au)?(?<payment_dates_options>(\g\'date\')+(?:([\ha-z-]+)?)$))|(?<payment>^(?<account>\h?\w[\w\h-]+?)(\h{2,}((\p{Sc})?[ ]?(?<price>([\d]+[ ]?,?)?[,\.]?\d+[,\.]?\d+)))+$)/mi';
+        $regexp = '/(?<payment_dates>(?:system handle|periode de|from)(?<date>(?:[\ha-z-]+)(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))([\.\/]\d{2,4})(?:[\ha-z-]*?))+$)|(^(\h)?(?!payment (\h+)? schedule)(?:period au|to)?(?<payment_dates_options>(\g\'date\')+(?:([\ha-z-]+)?)$))|(?<payment>^(?<account>\h?\w[\w\h-]+?)(\h{2,}((\p{Sc})?[ ]?(?<price>([\d]+[ ]?,?)?[,\.]?\d+[,\.]?\d+)))+$)/mi';
 
         preg_match_all($regexp, $content, $matches, PREG_UNMATCHED_AS_NULL, 0);
 
@@ -120,14 +120,14 @@ class PdfParser implements PdfParserInterface
             })->values();
         });
 
-        if ($matches['account']->isEmpty() || $matches['payment']->isEmpty() || $matches['payment_dates']->isEmpty() || $matches['payment_dates_options']->isEmpty()) {
+        if ($matches['account']->isEmpty() || $matches['payment']->isEmpty() || ($matches['payment_dates']->isEmpty() && $matches['payment_dates_options']->isEmpty())) {
             throw new \ErrorException(__('parser.not_schedule_exception'));
         }
 
-        $account = str_replace(' ', '', $matches['account'][0]);
-        $paymentLines = $matches['payment'];
-        $paymentDatesStandard = $matches['payment_dates'][0];
-        $paymentDatesOptions = $matches['payment_dates_options'];
+        $account = str_replace(' ', '', data_get($matches, 'account.0'));
+        $paymentLines = data_get($matches, 'payment');
+        $paymentDatesStandard = data_get($matches, 'payment_dates.0');
+        $paymentDatesOptions = data_get($matches, 'payment_dates_options', []);
 
         // Payment dates options
         $datesRegexp = "/{$dateGroup}/";
@@ -136,49 +136,60 @@ class PdfParser implements PdfParserInterface
         preg_match_all($datesRegexp, $paymentDatesStandard, $matches);
         $paymentOptions[] = $matches['date'];
 
-        $wholeRegexp = '/(?:periode de|system handle\h+)|(?<cols>(?<date>(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{2,4})|(\b(\w+)\b))/mi';
+        $wholeRegexp = '/(?:periode de|system handle|from\h+)|(?<cols>(?<date>(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{2,4})|(\b(\w+)\b))/mi';
         preg_match_all($wholeRegexp, $paymentDatesStandard, $matches, PREG_UNMATCHED_AS_NULL, 0);
 
         $colsMapping = collect($matches['cols'])->filter(function ($value) {
-            return !is_null($value);
-        })->values()->map(function ($value) use ($datesRegexp) {
+            return isset($value);
+        })->values()->transform(function ($value) use ($datesRegexp) {
             return (bool) preg_match($datesRegexp, $value);
         });
 
+        $colsCount = $colsMapping->filter()->count();
+
         foreach ($paymentDatesOptions as $paymentOption) {
             preg_match_all($datesRegexp, $paymentOption, $matches);
+
+            if (count(data_get($matches, 'date', [])) !== $colsCount) {
+                continue;
+            }
+
             $paymentOptions[] = $matches['date'];
         }
 
         // Payment Lines
         $paymentsRegexp = "/{$priceGroup}/";
-        $paymentLines = collect($paymentLines)->map(function ($paymentLine) use ($paymentsRegexp) {
-            preg_match_all($paymentsRegexp, $paymentLine, $matches);
-            return $matches['price'];
-        })->map(function ($line) use ($colsMapping) {
-            return collect($line)->filter(function ($payment, $key) use ($colsMapping) {
-                return $colsMapping[$key];
+
+        $paymentLines = collect($paymentLines)
+            ->transform(function ($paymentLine) use ($paymentsRegexp) {
+                preg_match_all($paymentsRegexp, $paymentLine, $matches);
+                return data_get($matches, 'price');
+            })->transform(function ($line) use ($colsMapping) {
+                return collect($line)->filter(function ($payment, $key) use ($colsMapping) {
+                    return data_get($colsMapping, $key);
+                })->transform(function ($payment) {
+                    return Str::price($payment, false, true);
+                });
             });
-        });
 
         /**
          * Removal of unnecessary Prices
          */
         $paymentLines->transform(function ($line) use ($paymentOptions) {
-            return collect($line)->splice(0, count($paymentOptions[0]));
+            return collect($line)->splice(0, count(head($paymentOptions)));
         });
 
         $paymentSchedule = [];
 
         $array = [
-            'from' => $paymentOptions[0][0],
-            'to' => $paymentOptions[1][0]
+            'from' => data_get($paymentOptions, '0.0'),
+            'to' => data_get($paymentOptions, '1.0')
         ];
 
         foreach ($paymentLines[0] as $key => $price) {
-            $from = $paymentOptions[0][$key] ?? null;
-            $to = $paymentOptions[1][$key] ?? null;
-            $paymentSchedule[$key] = compact('from', 'to', 'price');
+            $from = data_get($paymentOptions, "0.{$key}");
+            $to = data_get($paymentOptions, "1.{$key}");
+            data_set($paymentSchedule, $key, compact('from', 'to', 'price'));
         };
 
         return $paymentSchedule;

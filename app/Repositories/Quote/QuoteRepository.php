@@ -89,26 +89,28 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     public function storeState(StoreQuoteStateRequest $request)
     {
-        $user = $request->user();
-        $state = collect($request->validated());
-        $quoteData = $state->get('quote_data');
+        return DB::transaction(function () use ($request) {
+            $user = $request->user();
+            $state = collect($request->validated());
+            $quoteData = $state->get('quote_data');
 
-        $quote = $request->has('quote_id')
-            ? $this->find($request->quote_id)
-            : $user->quotes()->make();
+            $quote = $request->has('quote_id')
+                ? $this->find($request->quote_id)
+                : $user->quotes()->make();
 
-        filled($quoteData) && $quote->fill($quoteData);
+            filled($quoteData) && $quote->fill($quoteData);
 
-        $this->draftOrSubmit($state, $quote);
-        $this->storeQuoteFilesState($state, $quote);
-        $this->detachScheduleIfRequested($state, $quote);
-        $this->attachColumnsToFields($state, $quote);
-        $this->hideFields($state, $quote);
-        $this->markRowsAsSelectedOrUnSelected($state, $quote);
-        $this->setMargin($quote, $request->margin);
-        $this->setDiscounts($quote, $request->discounts, $request->discounts_detach);
+            $this->draftOrSubmit($state, $quote);
+            $this->storeQuoteFilesState($state, $quote);
+            $this->detachScheduleIfRequested($state, $quote);
+            $this->attachColumnsToFields($state, $quote);
+            $this->hideFields($state, $quote);
+            $this->markRowsAsSelectedOrUnSelected($state, $quote);
+            $this->setMargin($quote, $request->margin);
+            $this->setDiscounts($quote, $request->discounts, $request->discounts_detach);
 
-        return $quote->only('id');
+            return $quote->only('id');
+        });
     }
 
     public function userQuery(): Builder

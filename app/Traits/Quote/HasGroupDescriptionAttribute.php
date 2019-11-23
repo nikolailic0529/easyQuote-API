@@ -38,9 +38,10 @@ trait HasGroupDescriptionAttribute
     {
         $value = (bool) $value;
 
+        $this->promiseRecalculateMargin();
+
         if ((bool) $this->use_groups !== $value) {
             $this->forgetCachedComputableRows();
-            $this->promiseRecalculateMargin();
         }
 
         $this->attributes['use_groups'] = $value;

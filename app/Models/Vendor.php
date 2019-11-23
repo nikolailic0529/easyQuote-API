@@ -14,7 +14,9 @@ use App\Traits\{
     Image\HasImage,
     Image\HasLogo,
     Search\Searchable,
-    Systemable
+    Systemable,
+    Quote\HasQuotes,
+    QuoteTemplate\HasQuoteTemplates
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -24,6 +26,8 @@ class Vendor extends UuidModel implements WithImage, WithLogo, ActivatableInterf
         HasImage,
         BelongsToCountries,
         BelongsToUser,
+        HasQuotes,
+        HasQuoteTemplates,
         Activatable,
         SoftDeletes,
         Searchable,
@@ -45,5 +49,10 @@ class Vendor extends UuidModel implements WithImage, WithLogo, ActivatableInterf
     {
         $this->makeHidden('logo');
         return $this->toArray();
+    }
+
+    public function inUse()
+    {
+        return $this->quotes()->exists() || $this->quoteTemplates()->exists();
     }
 }

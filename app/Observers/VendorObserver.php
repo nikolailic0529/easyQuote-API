@@ -43,6 +43,14 @@ class VendorObserver
     public function deleting(Vendor $vendor)
     {
         cache()->tags('vendors')->flush();
+
+        if (app()->runningInConsole()) {
+            return;
+        }
+
+        if ($vendor->inUse()) {
+            throw new \ErrorException(__('vendor.in_use_deleting_exception'));
+        }
     }
 
     private function exists(Vendor $vendor)

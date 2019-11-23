@@ -26,6 +26,7 @@
         "order": 1,
         "aliases": [
             "description",
+            "product description",
             "desc",
             "beskrivelse"
         ]
@@ -127,7 +128,8 @@
         "name": "searchable",
         "order": 7,
         "aliases": [
-            "searchable"
+            "searchable",
+            "service agreement id"
         ]
     }
 ]

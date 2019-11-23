@@ -1,10 +1,11 @@
 <?php namespace Tests\Unit\Parser;
 
 use App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface;
-use App\Contracts\Services\ParserServiceInterface;
-use App\Contracts\Services\PdfParserInterface;
-use App\Contracts\Services\WordParserInterface;
-use App\Imports\ImportExcel;
+use App\Contracts\Services\{
+    ParserServiceInterface,
+    PdfParserInterface,
+    WordParserInterface
+};
 use App\Models \ {
     User,
     Vendor,
@@ -18,10 +19,13 @@ use App\Models \ {
 use Tests\TestCase;
 use Illuminate\Support\Str;
 use Symfony\Component\Finder\SplFileInfo;
-use File;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use \File;
 
 abstract class PricesParsingTest extends TestCase
 {
+    use DatabaseTransactions;
+
     protected $parser;
 
     protected $wordParser;
@@ -48,15 +52,6 @@ abstract class PricesParsingTest extends TestCase
         $this->user = $this->fakeUser();
         $this->quote = $this->fakeQuote($this->user);
         $this->quoteFiles = $this->fakeQuoteFiles();
-    }
-
-    public function setDown(): void
-    {
-        parent::setDown();
-
-        $this->quoteFiles->each->forceDelete();
-        $this->quote->forceDelete();
-        $this->user->forceDelete();
     }
 
     /**

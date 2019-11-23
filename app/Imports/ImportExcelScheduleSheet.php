@@ -53,6 +53,7 @@ class ImportExcelScheduleSheet implements OnEachRow, WithEvents, WithChunkReadin
         }
 
         if (!$this->hasMatched(['price'])) {
+
             if (preg_grep('/Reseller cost.*/i', $row)) {
                 $this->matched['price'] = $row;
             }
@@ -111,13 +112,13 @@ class ImportExcelScheduleSheet implements OnEachRow, WithEvents, WithChunkReadin
 
     private function hasDates(array $row)
     {
-        return (bool) preg_grep('/((?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{2,4})/', $row);
+        return (bool) preg_grep('/((?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:[0-9][0-9]))[\.\/]\d{2,4})/', $row);
     }
 
     private function filterDates(array $array)
     {
         return collect($array)->filter(function ($value) {
-            return (bool) preg_match('/((?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{2,4})/', $value);
+            return (bool) preg_match('/((?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:[0-9][0-9]))[\.\/]\d{2,4})/', $value);
         })->values();
     }
 

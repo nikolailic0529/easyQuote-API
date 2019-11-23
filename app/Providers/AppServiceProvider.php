@@ -223,10 +223,24 @@ class AppServiceProvider extends ServiceProvider
             return self::snake(preg_replace('/\W/', '', $value));
         });
 
-        Str::macro('price', function ($value, $format = null) {
-            $value = round((float) preg_replace('/[^\d\.]/', '', $value), 2);
+        Str::macro('price', function ($value, bool $format = false, bool $detectDelimiter = false) {
+            if ($detectDelimiter) {
+                if (preg_match('/\d+ \d+(,)\d{1,2}/', $value)) {
+                    $value = str_replace(',', '.', $value);
+                }
 
-            if (isset($format) && $format) {
+                if (!preg_match('/[,\.]/', $value)) {
+                    $value = str_replace(',', '', $value);
+                }
+
+                if (preg_match('/,/', $value) && !preg_match('/\./', $value)) {
+                    $value = str_replace(',', '.', $value);
+                }
+            }
+
+            $value = (float) preg_replace('/[^\d\.]/', '', $value);
+
+            if ($format) {
                 return number_format($value, 2);
             }
 
