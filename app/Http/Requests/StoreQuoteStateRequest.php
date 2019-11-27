@@ -156,8 +156,25 @@ class StoreQuoteStateRequest extends FormRequest
             'quote_data.buy_price' => 'nullable|numeric|min:0',
             'quote_data.custom_discount' => 'nullable|numeric|min:0',
 
+            /**
+             * Hide Fields in Review Quote Screen.
+             */
             'quote_data.hidden_fields' => 'array',
             'quote_data.hidden_fields.*' => 'string|in:searchable,description,qty',
+
+            /**
+             * Sort Fields by ascending/descending.
+             */
+            'quote_data.sort_fields' => 'array',
+            'quote_data.sort_fields.*.name' => 'required|string|in:product_no,description,serial_no,date_from,date_to,qty,price,searchable',
+            'quote_data.sort_fields.*.direction' => 'required|nullable|string|in:asc,desc',
+
+            /**
+             * Sort Rows Groups by ascending/descending.
+             */
+            'quote_data.sort_group_description' => 'array',
+            'quote_data.sort_group_description.*.name' => 'required|string|in:name,search_text,total_count,total_price',
+            'quote_data.sort_group_description.*.direction' => 'required|nullable|string|in:asc,desc',
 
             /**
              * Margin

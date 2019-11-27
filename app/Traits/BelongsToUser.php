@@ -24,8 +24,13 @@ trait BelongsToUser
 
     public function scopeCurrentUser(Builder $query)
     {
-        return $query->where(function ($query) {
-            $query->where("{$this->getTable()}.user_id", request()->user()->id);
+        return $query->where("{$this->getTable()}.user_id", request()->user()->id);
+    }
+
+    public function scopeCurrentUserWhen(Builder $query, $when)
+    {
+        return $query->when($when, function ($query) {
+            $query->currentUser();
         });
     }
 }

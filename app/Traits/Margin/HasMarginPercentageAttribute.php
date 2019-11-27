@@ -2,8 +2,19 @@
 
 namespace App\Traits\Margin;
 
+use Illuminate\Database\Eloquent\Model;
+
 trait HasMarginPercentageAttribute
 {
+    public static function bootHasMarginPercentageAttribute()
+    {
+        static::updating(function (Model $model) {
+            if ($model->wasChanged('buy_price', 'calculate_list_price')) {
+                method_exists($model, 'promiseRecalculateMargin') && $model->promiseRecalculateMargin();
+            }
+        });
+    }
+
     public function getMarginPercentageAttribute()
     {
         return round($this->user_margin_percentage + $this->country_margin_value - $this->discounts_sum, 2);

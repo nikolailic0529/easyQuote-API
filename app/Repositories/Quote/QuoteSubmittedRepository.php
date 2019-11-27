@@ -6,7 +6,9 @@ use App\Contracts\Repositories\{
     Quote\QuoteSubmittedRepositoryInterface,
     QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
 };
+use App\Builder\Pagination\Paginator;
 use App\Contracts\Services\QuoteServiceInterface as QuoteService;
+use App\Http\Resources\QuoteRepositoryResource;
 use App\Repositories\SearchableRepository;
 use App\Models\Quote\Quote;
 use Illuminate\Database\Eloquent\{
@@ -30,9 +32,26 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         $this->quoteService = $quoteService;
     }
 
+    public function all(): Paginator
+    {
+        $paginator = parent::all();
+
+        return $paginator->setCollection(QuoteRepositoryResource::collection($paginator->getCollection())->collection);
+    }
+
+    public function search(string $query = ''): Paginator
+    {
+        $paginator = parent::search($query);
+
+        return $paginator->setCollection(QuoteRepositoryResource::collection($paginator->getCollection())->collection);
+    }
+
     public function userQuery(): Builder
     {
-        return $this->quote->query()->currentUser()->submitted()->with('customer', 'company');
+        return $this->quote
+            ->currentUserWhen(request()->user()->cant('view_quotes'))
+            ->submitted()
+            ->with('customer', 'company', 'user:id,email,first_name,middle_name,last_name');
     }
 
     public function findByRfq(string $rfq): Quote
@@ -192,6 +211,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     protected function searchableScope(Builder $query)
     {
-        return $query->currentUser()->with('customer', 'company');
+        return $query->currentUserWhen(request()->user()->cant('view_quotes'))
+            ->with('customer', 'company', 'user:id,email,first_name,middle_name,last_name');
     }
 }

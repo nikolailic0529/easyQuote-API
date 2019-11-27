@@ -4,6 +4,8 @@ namespace App\Repositories\Quote;
 
 use App\Contracts\Repositories\Quote\QuoteDraftedRepositoryInterface;
 use App\Repositories\SearchableRepository;
+use App\Builder\Pagination\Paginator;
+use App\Http\Resources\QuoteRepositoryResource;
 use App\Models\Quote\Quote;
 use Illuminate\Database\Eloquent\{
     Model,
@@ -19,9 +21,26 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
         $this->quote = $quote;
     }
 
+    public function all(): Paginator
+    {
+        $paginator = parent::all();
+
+        return $paginator->setCollection(QuoteRepositoryResource::collection($paginator->getCollection())->collection);
+    }
+
+    public function search(string $query = ''): Paginator
+    {
+        $paginator = parent::search($query);
+
+        return $paginator->setCollection(QuoteRepositoryResource::collection($paginator->getCollection())->collection);
+    }
+
     public function userQuery(): Builder
     {
-        return $this->quote->query()->currentUser()->drafted()->with('customer', 'company');
+        return $this->quote
+            ->currentUserWhen(request()->user()->cant('view_quotes'))
+            ->drafted()
+            ->with('customer', 'company', 'user');
     }
 
     public function find(string $id): Quote
@@ -88,6 +107,7 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
 
     protected function searchableScope(Builder $query)
     {
-        return $query->currentUser()->with('customer', 'company');
+        return $query->currentUserWhen(request()->user()->cant('view_quotes'))
+            ->with('customer', 'company', 'user');
     }
 }

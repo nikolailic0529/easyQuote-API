@@ -12,7 +12,7 @@ interface QuoteSubmittedRepositoryInterface
     /**
      * Get All Submitted Quotes.
      *
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return mixed
      */
     public function all();
 
@@ -20,9 +20,9 @@ interface QuoteSubmittedRepositoryInterface
      * Search by Submitted Quotes.
      *
      * @param string $query
-     * @return \App\Builder\Pagination\Paginator
+     * @return mixed
      */
-    public function search(string $query = ''): Paginator;
+    public function search(string $query = '');
 
     /**
      * Get Submitted Quotes Query.

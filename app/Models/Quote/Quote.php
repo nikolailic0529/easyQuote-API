@@ -32,6 +32,7 @@ use App\Traits\{
     QuoteTemplate\BelongsToQuoteTemplate
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
 use Carbon\Carbon;
 use Setting, Arr;
 
@@ -56,7 +57,8 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         HasMapping,
         HasCustomDiscountAttribute,
         HasGroupDescriptionAttribute,
-        HasSubmittedDataAttribute;
+        HasSubmittedDataAttribute,
+        LogsActivity;
 
     public $computableRows = null;
 
@@ -83,9 +85,7 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         'additional_details',
         'checkbox_status',
         'closing_date',
-        'additional_notes',
-        'calculate_list_price',
-        'buy_price'
+        'additional_notes'
     ];
 
     protected $attributes = [
@@ -107,6 +107,33 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         'calculate_list_price' => 'boolean',
         'buy_price' => 'float'
     ];
+
+    protected $hidden = [
+        'deleted_at'
+    ];
+
+    protected static $logAttributes = [
+        'type',
+        'customer_id',
+        'company_id',
+        'vendor_id',
+        'country_id',
+        'quote_template_id',
+        'last_drafted_step',
+        'pricing_document',
+        'service_agreement_id',
+        'system_handle',
+        'additional_details',
+        'closing_date',
+        'additional_notes',
+        'calculate_list_price',
+        'buy_price',
+        'submitted_at'
+    ];
+
+    protected static $logOnlyDirty = true;
+
+    protected static $submitEmptyLogs = false;
 
     public function scopeNewType($query)
     {
@@ -178,7 +205,8 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
                 'user_margin_percentage',
                 'list_price',
                 'has_group_description',
-                'hidden_fields'
+                'hidden_fields',
+                'sort_fields'
             ]
         );
     }

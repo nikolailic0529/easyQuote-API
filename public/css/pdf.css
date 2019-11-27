@@ -108,3 +108,17 @@ hr.blue {
 .bl-0 {
     border-left: 0!important;
 }
+
+.group-name {
+    float: left
+}
+
+.group-meta {
+    display: block;
+    float: right;
+}
+
+.group-meta-item {
+    display: inline-block;
+    margin-left: 1.5em
+}

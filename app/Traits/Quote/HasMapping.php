@@ -83,6 +83,10 @@ trait HasMapping
         }
 
         $this->fieldsColumns->each(function ($mapping) use ($query) {
+            if (filled($mapping->sort)) {
+                $query->orderBy($mapping->templateField->name, $mapping->sort);
+            }
+
             if ($mapping->is_default_enabled) {
                 switch ($mapping->templateField->name) {
                     case 'date_from':
@@ -167,7 +171,7 @@ trait HasMapping
             })
             ->join('template_fields', 'template_fields.id', '=', 'quote_field_column.template_field_id');
 
-        return $query
+        $query
             ->joinSub($importedColumns, 'imported_columns', function ($join) {
                 $join->on('imported_columns.imported_row_id', '=', 'imported_rows.id');
             })
@@ -175,6 +179,8 @@ trait HasMapping
             ->where('quote_files.quote_id', $this->id)
             ->where('quote_files.file_type', __('quote_file.types.price'))
             ->groupBy('imported_rows.id');
+
+        return $query;
     }
 
     public function rowsDataByColumnsCalculated(?array $flags = null, bool $calculate = false)
@@ -332,6 +338,16 @@ trait HasMapping
     public function getHiddenFieldsAttribute()
     {
         return $this->hiddenFieldsToArray();
+    }
+
+    public function getSortFieldsAttribute()
+    {
+        return $this->fieldsColumns->where('sort', '!==', null)->map(function ($fieldColumn) {
+            return [
+                'name' => $fieldColumn->templateField->name,
+                'direction' => $fieldColumn->sort
+            ];
+        })->values();
     }
 
     public function getComputableRowsCacheKeyAttribute()

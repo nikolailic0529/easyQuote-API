@@ -27,6 +27,7 @@
         "morrislaptop/laravel-queue-clear": "^1.2",
         "predis/predis": "^1.1",
         "smalot/pdfparser": "dev-master",
+        "spatie/laravel-activitylog": "^3.9",
         "spatie/laravel-permission": "^3.0",
         "spatie/pdf-to-text": "^1.2",
         "sunra/php-simple-html-dom-parser": "^1.5",

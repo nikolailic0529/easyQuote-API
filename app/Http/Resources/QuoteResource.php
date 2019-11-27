@@ -1,7 +1,6 @@
 <?php namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
-use Storage;
 
 class QuoteResource extends JsonResource
 {

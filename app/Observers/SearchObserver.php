@@ -23,7 +23,6 @@ class SearchObserver
         try {
             $this->elasticsearch->index([
                 'index' => $model->getSearchIndex(),
-                'type' => $model->getSearchType(),
                 'id' => $model->getKey(),
                 'body' => $model->toSearchArray(),
             ]);

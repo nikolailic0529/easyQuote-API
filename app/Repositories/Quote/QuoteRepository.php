@@ -105,6 +105,7 @@ class QuoteRepository implements QuoteRepositoryInterface
             $this->detachScheduleIfRequested($state, $quote);
             $this->attachColumnsToFields($state, $quote);
             $this->hideFields($state, $quote);
+            $this->sortFields($state, $quote);
             $this->markRowsAsSelectedOrUnSelected($state, $quote);
             $this->setMargin($quote, $request->margin);
             $this->setDiscounts($quote, $request->discounts, $request->discounts_detach);
@@ -115,7 +116,7 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     public function userQuery(): Builder
     {
-        return $this->quote->query()->currentUser();
+        return $this->quote->query()->currentUserWhen(request()->user()->cant('view_quotes'));
     }
 
     public function findOrNew(string $id)
@@ -193,6 +194,33 @@ class QuoteRepository implements QuoteRepositoryInterface
             $query->whereNotIn('name', $hidden);
         })
             ->update(['is_preview_visible' => true]);
+
+        $quote->forgetCachedComputableRows();
+    }
+
+    public function sortFields(Collection $state, Quote $quote): void
+    {
+        $sort = data_get($state, 'quote_data.sort_fields');
+
+        if (!isset($sort)) {
+            return;
+        }
+
+        $quote->fieldsColumns()->update(['sort' => null]);
+
+        if (blank($sort)) {
+            return;
+        }
+
+        collect($sort)->groupBy('direction')->each(function ($sort, $direction) use ($quote) {
+            $quote->fieldsColumns()->whereHas('templateField', function ($query) use ($sort) {
+                $query->whereIn('name', Arr::pluck($sort, 'name'));
+            })
+                ->update(['sort' => $direction]);
+        });
+
+        $quote->forgetCachedComputableRows();
+        $quote->forgetCachedMappingReview();
     }
 
     public function setMargin(Quote $quote, ?array $attributes): void
@@ -211,14 +239,24 @@ class QuoteRepository implements QuoteRepositoryInterface
             return;
         }
 
-        $quote->countryMargin()->dissociate();
-
         $countryMargin = $this->margin->firstOrCreate($quote, $attributes);
+
+        if ($countryMargin->id === $quote->country_margin_id) {
+            return;
+        }
+
+        $oldCountryMargin = $quote->countryMargin;
+
         $quote->countryMargin()->associate($countryMargin);
         $quote->margin_data = array_merge($countryMargin->only('value', 'method', 'is_fixed'), ['type' => 'By Country']);
         $quote->type = $attributes['quote_type'];
 
         $quote->save();
+
+        activity()
+            ->performedOn($quote)
+            ->withProperties(['attributes' => $countryMargin, 'old' => $oldCountryMargin])
+            ->log('applied a new country margin');
 
         /**
          * Fresh Discounts Margin Percentage.
@@ -231,12 +269,15 @@ class QuoteRepository implements QuoteRepositoryInterface
         if ((bool) $detach === true) {
             $quote->resetCustomDiscount();
             $quote->discounts()->detach();
+
             return;
         }
 
         if (!isset($attributes) || !is_array($attributes) || empty($attributes)) {
             return;
         }
+
+        $oldDiscounts = $quote->discounts;
 
         $discounts = $this->tryDiscounts($attributes, $quote, false);
 
@@ -246,9 +287,20 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $quote->discounts()->sync($attachableDiscounts);
 
+        $newDiscounts = $quote->load('discounts')->discounts;
+
         if ($quote->custom_discount > 0) {
             $quote->resetCustomDiscount();
         }
+
+        if (Arr::hasntDifferentValues($newDiscounts->pluck('discountable.id'), $oldDiscounts->pluck('discountable.id'))) {
+            return;
+        }
+
+        activity()
+            ->performedOn($quote)
+            ->withProperties(['attributes' => $newDiscounts, 'old' => $oldDiscounts])
+            ->log('applied new discounts');
     }
 
     public function discounts(string $id)
@@ -309,7 +361,8 @@ class QuoteRepository implements QuoteRepositoryInterface
         $this->quoteService->interactWithModels($quote);
 
         $interactedDiscounts = $quote->discounts;
-        unset($quote->discounts);
+        $quote->unsetRelation('discounts');
+        $quote->load('discounts');
 
         if (!$group) {
             return $interactedDiscounts;
@@ -352,7 +405,9 @@ class QuoteRepository implements QuoteRepositoryInterface
         $grouped_rows = $quote->groupedRows()->get();
         $groups_meta = $quote->getGroupDescriptionWithMeta();
 
-        return $grouped_rows->rowsToGroups('group_name', $groups_meta)->exceptEach('group_name');
+        return $grouped_rows->rowsToGroups('group_name', $groups_meta)
+            ->exceptEach('group_name')
+            ->sortByFields($quote->sort_group_description);
     }
 
     public function submit(Quote $quote): void
@@ -491,6 +546,10 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $quote->group_description = $group_description->isEmpty() ? null : $group_description->values();
 
+        if (blank($quote->group_description)) {
+            $quote->sort_group_description = null;
+        }
+
         $saved = $quote->save();
 
         $quote->forgetCachedComputableRows();
@@ -500,7 +559,7 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     private function markRowsAsSelectedOrUnSelected(Collection $state, Quote $quote, bool $reject = false): void
     {
-        if (blank(data_get($state, 'quote_data.selected_rows')) && blank(data_get($state, 'quote_data.selected_rows_is_rejected'))) {
+        if (blank($selectedRowsIds = data_get($state, 'quote_data.selected_rows', [])) && blank(data_get($state, 'quote_data.selected_rows_is_rejected'))) {
             return;
         };
 
@@ -508,14 +567,25 @@ class QuoteRepository implements QuoteRepositoryInterface
             $reject = true;
         };
 
-        $selectedRowsIds = data_get($state, 'quote_data.selected_rows', []);
+        $updatableScope = $reject ? 'whereNotIn' : 'whereIn';
+
+        $oldRowsIds = $quote->rowsData()->selected()->pluck('imported_rows.id')->toArray();
 
         $quote->rowsData()->update(['is_selected' => false]);
 
-        $scope = $reject ? 'whereNotIn' : 'whereIn';
-
-        $quote->rowsData()->{$scope}('imported_rows.id', $selectedRowsIds)
+        $quote->rowsData()->{$updatableScope}('imported_rows.id', $selectedRowsIds)
             ->update(['is_selected' => true]);
+
+        $newRowsIds = $quote->rowsData()->selected()->pluck('imported_rows.id')->toArray();
+
+        if (Arr::hasntDifferentValues($newRowsIds, $oldRowsIds)) {
+            return;
+        }
+
+        activity()
+            ->performedOn($quote)
+            ->withProperties(['attributes' => $newRowsIds, 'old' => $oldRowsIds])
+            ->log('selected new rows');
 
         /**
          * Recalculate User's Margin Percentage after select Rows.
@@ -540,30 +610,46 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     private function attachColumnsToFields(Collection $state, Quote $quote): void
     {
-        if (blank(data_get($state, 'quote_data.field_column'))) {
+        if (blank($fieldsColumns = collect(data_get($state, 'quote_data.field_column')))) {
             return;
         }
 
-        collect(data_get($state, 'quote_data.field_column'))->each(function ($relation) use ($quote) {
-            $templateFieldId = $relation['template_field_id'] ?? null;
-            $importableColumnId = $relation['importable_column_id'] ?? null;
-            $attributes = collect($relation)->except(['template_field_id', 'importable_column_id'])->all();
+        $oldFieldsColumns = $quote->fieldsColumns;
 
-            if (blank($templateFieldId)) {
+        $syncData = $fieldsColumns->filter(function ($fieldColumn) {
+            return (filled(data_get($fieldColumn, 'importable_column_id')) || data_get($fieldColumn, 'is_default_enabled', false));
+        })->keyBy('template_field_id')->exceptEach('template_field_id')->toArray();
+
+        $quote->templateFields()->sync($syncData);
+
+        $newFieldsColumns = $quote->load('fieldsColumns')->fieldsColumns;
+
+        $hasChanges = $newFieldsColumns->contains(function ($newFieldColumn) use ($oldFieldsColumns) {
+            $oldFieldColumn = $oldFieldsColumns->firstWhere('template_field_id', $newFieldColumn['template_field_id']);
+
+            if (blank($oldFieldColumn)) {
                 return true;
             }
 
-            $templateField = $this->templateField->whereId($templateFieldId)->first();
+            $diff = array_udiff_assoc($newFieldColumn->getAttributes(), $oldFieldColumn->getAttributes(), function ($new, $old) {
+                if (is_null($new) || is_null($old)) {
+                    return $new === $old ? 0 : 1;
+                }
 
-            if (blank($importableColumnId) && !(isset($attributes['is_default_enabled']) && $attributes['is_default_enabled'])) {
-                $quote->detachTemplateField($templateField);
-                return true;
-            }
+                return $new <=> $old;
+            });
 
-            $importableColumn = $this->importableColumn->whereId($importableColumnId)->first();
-
-            $quote->attachColumnToField($templateField, $importableColumn, $attributes);
+            return filled($diff);
         });
+
+        if (!$hasChanges) {
+            return;
+        }
+
+        activity()
+            ->performedOn($quote)
+            ->withProperties(['attributes' => $newFieldsColumns, 'old' => $oldFieldsColumns])
+            ->log('changed the quote mapping');
 
         /**
          * Clear Cache Mapping Review Data when Mapping was changed.
@@ -584,15 +670,23 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $stateFiles = collect(data_get($state, 'quote_data.files'));
 
-        $stateFiles->each(function ($fileId) use ($quote) {
-            $quoteFile = $this->quoteFile->whereId($fileId)->first();
+        $existingQuoteFiles = $quote->quoteFiles->pluck('id');
+        $stateFiles = $stateFiles->diff($existingQuoteFiles);
 
-            if ($quote->quoteFiles()->whereId($fileId)->exists()) {
-                return true;
-            }
+        if (blank($stateFiles)) {
+            return;
+        }
 
-            $quoteFile->quote()->associate($quote)->save();
-        });
+        $oldQuoteFiles = $quote->quoteFiles;
+
+        $this->quoteFile->whereIn('id', $stateFiles)->update(['quote_id' => $quote->id]);
+
+        $newQuoteFiles = $quote->load('quoteFiles')->quoteFiles;
+
+        activity()
+            ->performedOn($quote)
+            ->withProperties(['attributes' => $newQuoteFiles, 'old' => $oldQuoteFiles])
+            ->log('attached new quote files');
     }
 
     private function detachScheduleIfRequested(Collection $state, Quote $quote): void
@@ -601,6 +695,14 @@ class QuoteRepository implements QuoteRepositoryInterface
             return;
         }
 
+        if (!$quote->paymentSchedule()->exists()) {
+            return;
+        }
+
         $quote->quoteFiles()->paymentSchedules()->delete();
+
+        activity()
+            ->performedOn($quote)
+            ->log('detached the schedule quote file');
     }
 }

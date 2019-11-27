@@ -30,7 +30,6 @@ interface ParserServiceInterface
      * Check for existing handling
      *
      * @param HandleQuoteFileRequest $request
-     * @param Int $page
      * @return void
      */
     public function handle(HandleQuoteFileRequest $request);
@@ -46,6 +45,7 @@ interface ParserServiceInterface
     /**
      * Handle PDF format Quote File and store parsed data
      * Return collection as parsed rows
+     *
      * @param QuoteFile $quoteFile
      * @return \Illuminate\Support\Collection
      */
@@ -54,6 +54,7 @@ interface ParserServiceInterface
     /**
      * Handle Excel format Quote File and store parsed data
      * Return collection as parsed rows
+     *
      * @param QuoteFile $quoteFile
      * @return \Illuminate\Support\Collection
      */
@@ -63,16 +64,16 @@ interface ParserServiceInterface
      * Determine File format before storing
      * Will throw exception, if File Format doesn't exist
      *
-     * @param String $path
+     * @param string $path
      * @return \App\Models\QuoteFile\QuoteFileFormat
      */
-    public function determineFileFormat(String $path);
+    public function determineFileFormat(string $path);
 
     /**
      * Count pages/sheets in the uploaded Quote File depends on file format
      *
-     * @param String $path
+     * @param string $path
      * @return int
      */
-    public function countPages(String $path);
+    public function countPages(string $path, bool $storage = true);
 }

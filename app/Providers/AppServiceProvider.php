@@ -2,11 +2,13 @@
 
 namespace App\Providers;
 
-use Laravel\Passport\Passport;
-use Laravel\Passport\Client;
-use Laravel\Passport\PersonalAccessClient;
-use Webpatser\Uuid\Uuid;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Passport\{
+    Passport,
+    Client,
+    PersonalAccessClient
+};
+use Webpatser\Uuid\Uuid;
 use App\Http\Controllers\API\AuthController;
 use App\Contracts\{
     Services\AuthServiceInterface,
@@ -29,6 +31,7 @@ use App\Contracts\{
     Repositories\QuoteTemplate\TemplateFieldRepositoryInterface,
     Repositories\Customer\CustomerRepositoryInterface,
     Repositories\System\SystemSettingRepositoryInterface,
+    Repositories\System\OperationRepositoryInterface,
     Repositories\Quote\Discount\MultiYearDiscountRepositoryInterface,
     Repositories\Quote\Discount\PromotionalDiscountRepositoryInterface,
     Repositories\Quote\Discount\PrePayDiscountRepositoryInterface,
@@ -86,6 +89,7 @@ use App\Repositories\{
     QuoteTemplate\TemplateFieldRepository,
     Customer\CustomerRepository,
     System\SystemSettingRepository,
+    System\OperationRepository,
     Quote\Discount\MultiYearDiscountRepository,
     Quote\Discount\PromotionalDiscountRepository,
     Quote\Discount\PrePayDiscountRepository,
@@ -109,7 +113,7 @@ use Elasticsearch\{
     ClientBuilder as ElasticsearchBuilder
 };
 use Illuminate\Support\Collection;
-use Schema, Storage, Blade, File, Str, Arr, Validator;
+use Schema, File, Str, Arr;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -129,6 +133,7 @@ class AppServiceProvider extends ServiceProvider
         DataSelectSeparatorRepositoryInterface::class => DataSelectSeparatorRepository::class,
         CustomerRepositoryInterface::class => CustomerRepository::class,
         SystemSettingRepositoryInterface::class => SystemSettingRepository::class,
+        OperationRepositoryInterface::class => OperationRepository::class,
         MarginRepositoryInterface::class => MarginRepository::class,
         QuoteServiceInterface::class => QuoteService::class,
         MultiYearDiscountRepositoryInterface::class => MultiYearDiscountRepository::class,
@@ -264,8 +269,10 @@ class AppServiceProvider extends ServiceProvider
             return self::snake(Str::snake(preg_replace('/[^\w\h]/', ' ', $value)));
         });
 
-        Str::macro('prepend', function (string $value, ?string $prependable) {
-            return filled($prependable) ? "{$prependable} {$value}" : $value;
+        Str::macro('prepend', function (string $value, ?string $prependable, bool $noBreak = false) {
+            $space = $noBreak ? "\xC2\xA0" : ' ';
+
+            return filled($prependable) ? "{$prependable}{$space}{$value}" : $value;
         });
 
         Collection::macro('exceptEach', function (...$keys) {
@@ -300,12 +307,15 @@ class AppServiceProvider extends ServiceProvider
                 $rows = collect($rows)
                     ->transform(function ($row) use ($currency) {
                         data_set($row, 'computable_price', data_get($row, 'price', 0.0));
-                        data_set($row, 'price', Str::prepend(Str::decimal(data_get($row, 'price', 0.0)), $currency));
+                        data_set($row, 'price', Str::prepend(Str::decimal(data_get($row, 'price', 0.0)), $currency, true));
                         return $row;
                     })
                     ->exceptEach($groupable);
 
-                $headers_count = count($rows->first()) - 1;
+                /**
+                 * Count Headers except computable_price
+                 */
+                $headers_count = $this->wrap($rows->first())->keys()->diff(['computable_price', 'id', 'is_selected'])->count();
 
                 return array_merge((array) $meta, ['headers_count' => $headers_count, $groupable => $key, 'rows' => $rows]);
             })->values();
@@ -316,7 +326,7 @@ class AppServiceProvider extends ServiceProvider
 
             $recalculate && $groups->transform(function ($group) use ($currency) {
                 $total_price = Str::decimal($group['rows']->sum('computable_price'));
-                data_set($group, 'total_price', Str::prepend($total_price, $currency));
+                data_set($group, 'total_price', Str::prepend($total_price, $currency, true));
                 return $group;
             });
 
@@ -326,6 +336,19 @@ class AppServiceProvider extends ServiceProvider
             });
 
             return $groups;
+        });
+
+        Collection::macro('sortByFields', function (?array $sortable) {
+            if (blank($sortable)) {
+                return $this;
+            }
+
+            return transform($this, function ($items) use ($sortable) {
+                return collect($sortable)->reduce(function ($items, $sort) {
+                    $descending = data_get($sort, 'direction') === 'desc' ? true : false;
+                    return $items->sortBy(data_get($sort, 'name'), SORT_REGULAR, $descending);
+                }, $items)->values();
+            });
         });
 
         Arr::macro('lower', function (array $array) {
@@ -346,6 +369,16 @@ class AppServiceProvider extends ServiceProvider
             return implode(', ', array_map(function ($item) use ($append) {
                 return "`{$item}`{$append}";
             }, $value));
+        });
+
+        Arr::macro('hasDifferentValues', function (iterable $array, iterable $array2) {
+            return filled(array_udiff((array) $array, (array) $array2, function ($first, $second) {
+                return $first !== $second ? -1 : 0;
+            }));
+        });
+
+        Arr::macro('hasntDifferentValues', function (iterable $array, iterable $array2) {
+            return !self::hasDifferentValues($array, $array2);
         });
     }
 

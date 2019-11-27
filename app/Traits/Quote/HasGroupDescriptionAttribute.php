@@ -6,8 +6,8 @@ trait HasGroupDescriptionAttribute
 {
     public function initializeHasGroupDescriptionAttribute()
     {
-        $this->casts = array_merge($this->casts, ['group_description' => 'array', 'use_groups' => 'boolean']);
-        $this->fillable = array_merge($this->fillable, ['use_groups']);
+        $this->casts = array_merge($this->casts, ['group_description' => 'array', 'use_groups' => 'boolean', 'sort_group_description' => 'array']);
+        $this->fillable = array_merge($this->fillable, ['use_groups', 'sort_group_description']);
     }
 
     public function getHasGroupDescriptionAttribute()
@@ -30,7 +30,8 @@ trait HasGroupDescriptionAttribute
     public function resetGroupDescription()
     {
         return $this->forceFill([
-            'group_description' => null
+            'group_description' => null,
+            'sort_group_description' => null
         ])->save();
     }
 

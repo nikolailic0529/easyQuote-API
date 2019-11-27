@@ -1,4 +1,6 @@
-<?php namespace Tests\Unit\Parser;
+<?php
+
+namespace Tests\Unit\Parser;
 
 use App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface;
 use App\Contracts\Services\{
@@ -6,7 +8,7 @@ use App\Contracts\Services\{
     PdfParserInterface,
     WordParserInterface
 };
-use App\Models \ {
+use App\Models\{
     User,
     Vendor,
     Company,
@@ -61,41 +63,40 @@ abstract class PricesParsingTest extends TestCase
      */
     public function testPricesProcessing()
     {
-        $this->quoteFiles->each(function ($quoteFile) {
+        $mapping = collect(json_decode(file_get_contents('tests/Unit/Parser/data/prices/mapping.json'), true));
+        $mapping = collect($mapping->get($this->countryName()));
+
+        $this->quoteFiles->each(function ($quoteFile) use ($mapping) {
             $this->parser->routeParser($quoteFile);
+
             $this->assertEquals('completed', $quoteFile->processing_status, $this->message($quoteFile));
+
+            $expectedRowsCount = data_get($mapping->firstWhere('filename', '===', $quoteFile->original_file_name), 'count');
+            $this->assertEquals($quoteFile->rowsData()->count(), $expectedRowsCount);
         });
     }
 
     public function message(QuoteFile $quoteFile)
     {
-        $exception = $quoteFile->exception;
-        if($exception) {
+        if ($quoteFile->exception) {
             return "Parsing is failed without Exception on \nFile: {$quoteFile->original_file_path}";
         }
 
-        return "Parsing is failed with Exception: {$exception} on \nFile: {$quoteFile->original_file_path}";
-
+        return "Parsing is failed with Exception: {$quoteFile->exception} on \nFile: {$quoteFile->original_file_path}";
     }
 
-    /**
-     * Relative path to samples
-     *
-     * @return string
-     */
-    protected function pricesPath()
+    protected function fakeQuoteFiles()
     {
-        $country = Str::before(class_basename($this), 'PricesParsingTest');
-
-        return "tests/Unit/Parser/samples/prices/{$country}";
-    }
-
-    private function fakeQuoteFiles()
-    {
-        $quoteFiles = collect($this->pricesList())->map(function ($file) {
-            $original_file_path = $file->getRealPath();
-            $quote_file_format_id = $this->determineFileFormat($file);
-            return $this->user->quoteFiles()->make(compact('original_file_path', 'quote_file_format_id'));
+        $quoteFiles = collect($this->filesList())->map(function ($file) {
+            return $this->user->quoteFiles()->make([
+                'user_id' => $this->user->id,
+                'original_file_path' => $file->getRealPath(),
+                'quote_file_format_id' => $this->determineFileFormat($file),
+                'file_type' => __('quote_file.types.price'),
+                'pages' => $this->parser->countPages($file->getRealPath(), false),
+                'imported_page' => 1,
+                'original_file_name' => $file->getFilename()
+            ]);
         });
 
         $this->quote->quoteFiles()->saveMany($quoteFiles);
@@ -107,7 +108,7 @@ abstract class PricesParsingTest extends TestCase
         return $quoteFiles;
     }
 
-    private function fakeUser()
+    protected function fakeUser()
     {
         return User::create(
             [
@@ -119,7 +120,7 @@ abstract class PricesParsingTest extends TestCase
         );
     }
 
-    private function fakeQuote(User $user)
+    protected function fakeQuote(User $user)
     {
         return $user->quotes()->create(
             [
@@ -130,22 +131,30 @@ abstract class PricesParsingTest extends TestCase
         );
     }
 
-    private function pricesList()
+    protected function countryName()
     {
-        return File::files($this->pricesPath());
+        return Str::before(class_basename($this), 'PricesParsingTest');
     }
 
-    private function determineFileFormat(SplFileInfo $file) {
+    protected function filesList()
+    {
+        $filesPath = "tests/Unit/Parser/data/prices/{$this->countryName()}";
+
+        return File::files($filesPath);
+    }
+
+    protected function determineFileFormat(SplFileInfo $file)
+    {
         $extensions = collect($file->getExtension());
 
-        if($extensions->first() === 'txt') {
+        if ($extensions->first() === 'txt') {
             $extensions->push('csv');
         }
 
         return QuoteFileFormat::whereIn('extension', $extensions->toArray())->firstOrFail()->id;
     }
 
-    private function preHanlde(QuoteFile $quoteFile)
+    protected function preHanlde(QuoteFile $quoteFile)
     {
         switch ($quoteFile->format->extension) {
             case 'pdf':
@@ -159,7 +168,7 @@ abstract class PricesParsingTest extends TestCase
                 break;
         }
 
-        if($quoteFile->isCsv()) {
+        if ($quoteFile->isCsv()) {
             $quoteFile->fullPath = true;
         }
     }

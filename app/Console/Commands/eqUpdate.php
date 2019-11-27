@@ -54,7 +54,8 @@ class eqUpdate extends Command
          */
         Customer::notInUse()->count() < 29
             && $this->call('db:seed', [
-                '--class' => 'S4ContractSeeder'
+                '--class' => 'S4ContractSeeder',
+                '--force' => true
             ]);
 
         $this->call('eq:search-reindex');

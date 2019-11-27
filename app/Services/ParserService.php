@@ -27,7 +27,7 @@ use App\Imports\{
     ImportExcelSchedule,
     CountPages
 };
-use Excel, Storage, File, Setting, Cache;
+use Excel, Storage, File, Setting, Cache, DB;
 
 class ParserService implements ParserServiceInterface
 {
@@ -152,7 +152,7 @@ class ParserService implements ParserServiceInterface
             $quote->attachColumnToField($templateField, $column->importableColumn, $defaultAttributes);
         });
 
-        Cache::forget("mapping-review-data:{$quote->id}");
+        $quote->forgetCachedMappingReview();
 
         return $quoteFile->markAsAutomapped();
     }
@@ -167,7 +167,6 @@ class ParserService implements ParserServiceInterface
             return false;
         };
 
-        $quote->resetGroupDescription();
         $quoteFile->clearException();
         $quoteFile->quote()->associate($quote)->save();
         $this->routeParser($quoteFile);
@@ -176,36 +175,38 @@ class ParserService implements ParserServiceInterface
         /**
          * Clear Cache Mapping Review Data After Handling
          */
-        $quote->forgetCachedMappingReview();
+        if ($quoteFile->isPrice()) {
+            $quote->forgetCachedMappingReview();
+            $quote->resetGroupDescription();
+        }
 
         return true;
     }
 
     public function routeParser(QuoteFile $quoteFile)
     {
-        $fileFormat = $quoteFile->format->extension;
+        DB::transaction(function () use ($quoteFile) {
+            switch ($quoteFile->format->extension) {
+                case 'pdf':
+                    return $this->handlePdf($quoteFile);
+                    break;
+                case 'csv':
+                    return $this->handleCsv($quoteFile);
+                    break;
+                case 'xlsx':
+                case 'xls':
+                    return $this->handleExcel($quoteFile);
+                    break;
+                case 'doc':
+                case 'docx':
+                    return $this->handleWord($quoteFile);
+                    break;
+            }
+        });
 
-        switch ($fileFormat) {
-            case 'pdf':
-                return $this->handlePdf($quoteFile);
-                break;
-            case 'csv':
-                return $this->handleCsv($quoteFile);
-                break;
-            case 'xlsx':
-            case 'xls':
-                return $this->handleExcel($quoteFile);
-                break;
-            case 'doc':
-            case 'docx':
-                return $this->handleWord($quoteFile);
-                break;
-            default:
-                return response()->json([
-                    'message' => __('parser.no_handleable_file')
-                ], 415);
-                break;
-        }
+        return response()->json([
+            'message' => __('parser.no_handleable_file')
+        ], 415);
     }
 
     public function handlePdf(QuoteFile $quoteFile)
@@ -308,26 +309,26 @@ class ParserService implements ParserServiceInterface
         $quoteFile->markAsHandled();
     }
 
-    public function countPages(string $path)
+    public function countPages(string $path, bool $storage = true)
     {
-        $format = $this->determineFileFormat($path);
+        $format = $this->determineFileFormat($path, $storage);
 
         switch ($format->extension) {
             case 'pdf':
-                return $this->pdfParser->countPages($path);
+                return $this->pdfParser->countPages($path, $storage);
                 break;
             case 'xlsx':
             case 'xls':
-                return $this->countExcelPages($path);
+                return $this->countExcelPages($path, $storage);
             default:
                 return 1;
                 break;
         }
     }
 
-    public function countExcelPages(string $path)
+    public function countExcelPages(string $path, bool $storage = true)
     {
-        $filePath = Storage::path($path);
+        $filePath = $storage ? Storage::path($path) : $path;
 
         $import = new CountPages;
 
@@ -342,9 +343,9 @@ class ParserService implements ParserServiceInterface
         return $import->getSheetCount();
     }
 
-    public function determineFileFormat(string $path)
+    public function determineFileFormat(string $path, bool $storage = true)
     {
-        $file = Storage::path($path);
+        $file = $storage ? Storage::path($path) : $path;
 
         $extensions = collect(File::extension($file));
 

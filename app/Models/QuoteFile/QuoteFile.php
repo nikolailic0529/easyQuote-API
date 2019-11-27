@@ -33,7 +33,13 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         SoftDeletes;
 
     protected $fillable = [
-        'original_file_path', 'original_file_name', 'file_type', 'pages', 'quote_file_format_id', 'quote_id'
+        'original_file_path',
+        'original_file_name',
+        'file_type',
+        'pages',
+        'quote_file_format_id',
+        'quote_id',
+        'imported_page'
     ];
 
     public function scopeOrdered($query)
@@ -122,19 +128,30 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         })->orWhere('file_type', __('quote_file.types.price'));
     }
 
-    public function setImportedPage($imported_page = null)
+    public function setImportedPage(?int $imported_page)
     {
-        if (!isset($imported_page)) {
-            if ($this->isPrice()) {
-                $imported_page = ($this->isExcel() || $this->isCsv() || $this->isWord()) ? 1 : 2;
-            } else {
-                $imported_page = $this->pages;
-            }
+        if (blank($imported_page)) {
+            $imported_page = $this->default_imported_page;
         }
 
-        $this->setAttribute('imported_page', $imported_page);
+        $this->attributes['imported_page'] = $imported_page;
 
         return $this->save();
+    }
+
+    public function getDefaultImportedPageAttribute()
+    {
+        if ($this->isPrice()) {
+            return min((($this->isExcel() || $this->isCsv() || $this->isWord()) ? 1 : 2), $this->pages);
+        }
+
+        return $this->pages;
+    }
+
+    public function getImportedPageAttribute()
+    {
+        return $this->attributes['imported_page']
+            ?? $this->default_imported_page;
     }
 
     public function getRowsCountAttribute()

@@ -12,6 +12,7 @@ use App\Models\Quote\{
     Discount,
     Margin\CountryMargin
 };
+use Illuminate\Support\Collection;
 use Storage, Closure, Str, Cache;
 
 class QuoteService implements QuoteServiceInterface
@@ -60,7 +61,7 @@ class QuoteService implements QuoteServiceInterface
          */
         $quote->applicable_discounts = 0;
 
-        $this->interact($quote, collect($quote->discounts)->prepend($quote->custom_discount));
+        $this->interact($quote, $this->interactableDiscounts($quote));
     }
 
     public function interactWithCountryMargin(Quote $quote, CountryMargin $countryMargin): Quote
@@ -299,13 +300,14 @@ class QuoteService implements QuoteServiceInterface
             $groups_meta = $quote->getGroupDescriptionWithMeta(null, $quote->calculate_list_price);
             $quote->computableRows = $quote->computableRows
                 ->rowsToGroups('group_name', $groups_meta, true, $quote->quoteTemplate->currency_symbol)
-                ->exceptEach('group_name');
+                ->exceptEach('group_name')
+                ->sortByFields($quote->sort_group_description);
 
             return;
         }
 
         $this->modifyColumn($quote, 'price', function ($row) use ($quote) {
-            return Str::prepend(Str::decimal($row['price']), $quote->quoteTemplate->currency_symbol);
+            return Str::prepend(Str::decimal($row['price']), $quote->quoteTemplate->currency_symbol, true);
         });
     }
 
@@ -324,7 +326,20 @@ class QuoteService implements QuoteServiceInterface
             });
     }
 
-    private function calculateDiscountValue($discount, float $price, float $list_price): float
+    protected function interactableDiscounts(Quote $quote): Collection
+    {
+        if (filled($quote->discounts)) {
+            return collect($quote->discounts);
+        }
+
+        if ($quote->custom_discount > 0) {
+            return collect($quote->custom_discount);
+        }
+
+        return collect();
+    }
+
+    protected function calculateDiscountValue($discount, float $price, float $list_price): float
     {
         if ($discount instanceof Discount) {
             return $discount->calculateDiscount($price, $list_price);

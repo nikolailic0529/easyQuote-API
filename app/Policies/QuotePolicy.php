@@ -13,7 +13,7 @@ class QuotePolicy
     use HandlesAuthorization;
 
     /**
-     * Determine whether the user can view any discounts.
+     * Determine whether the user can view any quotes.
      *
      * @param  \App\Models\User  $user
      * @return mixed

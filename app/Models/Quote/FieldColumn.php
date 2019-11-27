@@ -18,14 +18,16 @@ class FieldColumn extends Pivot
     protected $table = 'quote_field_column';
 
     protected $hidden = [
-        'quote_id', 'default_value'
+        'quote_id',
+        'default_value'
     ];
 
     protected $attributes = [
         'importable_column_id' => null,
         'is_default_enabled' => false,
         'is_preview_visible' => true,
-        'default_value' => null
+        'default_value' => null,
+        'sort' => null
     ];
 
     protected $casts = [

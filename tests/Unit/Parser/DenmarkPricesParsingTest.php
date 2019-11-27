@@ -1,5 +1,6 @@
-<?php namespace Tests\Unit\Parser;
+<?php
+
+namespace Tests\Unit\Parser;
 
 class DenmarkPricesParsingTest extends PricesParsingTest
-{
-}
+{ }

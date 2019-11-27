@@ -96,7 +96,11 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         $file_type = 'Generated PDF';
 
         $quote->generatedPdf()->delete();
-        return $this->create(compact('quote_file', 'format', 'file_type', 'original_file_path', 'quote_id'));
+        $quoteFile = $this->create(compact('quote_file', 'format', 'file_type', 'original_file_path', 'quote_id'));
+
+        $quote->load('generatedPdf');
+
+        return $quoteFile;
     }
 
     public function createRawData(QuoteFile $quoteFile, array $array)
@@ -141,7 +145,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     public function createScheduleData(QuoteFile $quoteFile, array $value)
     {
-        $user = request()->user();
+        $user = $quoteFile->user;
 
         /**
          * Delete early imported payment schedule data

@@ -28,7 +28,8 @@
             "description",
             "product description",
             "desc",
-            "beskrivelse"
+            "beskrivelse",
+            "description du produit"
         ]
     },
     {
@@ -42,7 +43,8 @@
             "serial number",
             "sn",
             "serienummer",
-            "serial no"
+            "serial no",
+            "numéro de série"
         ]
     },
     {
@@ -129,7 +131,8 @@
         "order": 7,
         "aliases": [
             "searchable",
-            "service agreement id"
+            "service agreement id",
+            "n° accord service"
         ]
     }
 ]

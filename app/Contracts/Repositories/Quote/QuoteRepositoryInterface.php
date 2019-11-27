@@ -220,4 +220,13 @@ interface QuoteRepositoryInterface
      * @return void
      */
     public function hideFields(Collection $state, Quote $quote): void;
+
+    /**
+     * Set Imported Rows Sorting by Fields (ascending/descending).
+     *
+     * @param Collection $state
+     * @param Quote $quote
+     * @return void
+     */
+    public function sortFields(Collection $state, Quote $quote): void;
 }
