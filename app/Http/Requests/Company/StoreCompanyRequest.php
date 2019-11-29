@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests\Company;
 
+use App\Traits\Request\PreparesNullValues;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreCompanyRequest extends FormRequest
 {
+    use PreparesNullValues;
+
     /**
      * Company types
      *
@@ -68,5 +71,10 @@ class StoreCompanyRequest extends FormRequest
             'vendors.*' => 'required|uuid|exists:vendors,id',
             'default_vendor_id' => 'nullable|uuid|exists:vendors,id'
         ];
+    }
+
+    protected function nullValues()
+    {
+        return ['phone', 'website'];
     }
 }

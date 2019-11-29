@@ -3,7 +3,7 @@
         "name": "Hewlett Packard Enterprise",
         "short_code": "HPE",
         "countries": [
-            "GB", "US", "BE", "CA", "DK", "FR", "NL", "SE", "DE"
+            "GB", "US", "BE", "CA", "DK", "FR", "NL", "SE", "DE", "AT", "IE", "NO", "ZA"
         ],
         "logo": "/database/seeds/models/images/hpe.png"
     },
@@ -11,7 +11,7 @@
         "name": "Lenovo",
         "short_code": "LEN",
         "countries": [
-            "GB", "US", "BE", "CA", "DK", "FR", "NL", "SE", "DE"
+            "GB", "US", "BE", "CA", "DK", "FR", "NL", "SE", "DE", "AT", "IE", "NO", "ZA"
         ],
         "logo": "/database/seeds/models/images/lenovo.png"
     },
@@ -19,7 +19,7 @@
         "name": "IBM",
         "short_code": "IBM",
         "countries": [
-            "GB", "US", "BE", "CA", "DK", "FR", "NL", "SE", "DE"
+            "GB", "US", "BE", "CA", "DK", "FR", "NL", "SE", "DE", "AT", "IE", "NO", "ZA"
         ],
         "logo": "/database/seeds/models/images/ibm.png"
     },
@@ -27,7 +27,7 @@
         "name": "Cisco",
         "short_code": "CIS",
         "countries": [
-            "GB", "US", "BE", "CA", "DK", "FR", "NL", "SE", "DE"
+            "GB", "US", "BE", "CA", "DK", "FR", "NL", "SE", "DE", "AT", "IE", "NO", "ZA"
         ],
         "logo": "/database/seeds/models/images/cisco.png"
     }

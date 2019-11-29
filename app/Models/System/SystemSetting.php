@@ -3,9 +3,12 @@
 namespace App\Models\System;
 
 use App\Models\UuidModel;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class SystemSetting extends UuidModel
 {
+    use LogsActivity;
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -31,6 +34,14 @@ class SystemSetting extends UuidModel
     ];
 
     protected $dateTimeFormat = 'd/m/Y';
+
+    protected static $logAttributes = [
+        'value'
+    ];
+
+    protected static $logOnlyDirty = true;
+
+    protected static $submitEmptyLogs = false;
 
     protected function getCastType($key)
     {

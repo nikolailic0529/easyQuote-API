@@ -24,7 +24,7 @@ interface MarginRepositoryInterface
     public function data(): array;
 
     /**
-     * Get Margins User's query for Authenticated User.
+     * Get Margins query for Authenticated User.
      *
      * @return \Illuminate\Database\Eloquent\Builder
      */
@@ -48,7 +48,7 @@ interface MarginRepositoryInterface
     public function firstOrCreate(Quote $quote, array $attributes): CountryMargin;
 
     /**
-     * Update User's Country Margin.
+     * Update Country Margin.
      *
      * @param UpdateCountryMarginRequest $request
      * @param string $id
@@ -57,7 +57,7 @@ interface MarginRepositoryInterface
     public function update(UpdateCountryMarginRequest $request, string $id): CountryMargin;
 
     /**
-     * Get User's Country Margin by id.
+     * Get Country Margin by id.
      *
      * @param string $id
      * @return CountryMargin|NotFoundHttpException
@@ -65,7 +65,7 @@ interface MarginRepositoryInterface
     public function find(string $id);
 
     /**
-     * Delete specified User's Country Margin.
+     * Delete specified Country Margin.
      *
      * @param string $id
      * @return void
@@ -73,14 +73,22 @@ interface MarginRepositoryInterface
     public function delete(string $id);
 
     /**
-     * Get All User's Country Margins.
+     * Get All Country Margins.
      *
-     * @return Paginator
+     * @return mixed
      */
-    public function all(): Paginator;
+    public function all();
 
     /**
-     * Activate User's Country Margin.
+     * Search through Margins.
+     *
+     * @param string $search
+     * @return mixed
+     */
+    public function search(string $search = '');
+
+    /**
+     * Activate Country Margin.
      *
      * @param string $id
      * @return void
@@ -88,18 +96,10 @@ interface MarginRepositoryInterface
     public function activate(string $id);
 
     /**
-     * Deactivate User's Country Margin.
+     * Deactivate Country Margin.
      *
      * @param string $id
      * @return void
      */
     public function deactivate(string $id);
-
-    /**
-     * Search through Collaboration Margins.
-     *
-     * @param string $search
-     * @return Paginator
-     */
-    public function search(string $search = ''): Paginator;
 }

@@ -32,14 +32,14 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         $this->quoteService = $quoteService;
     }
 
-    public function all(): Paginator
+    public function all()
     {
         $paginator = parent::all();
 
         return $paginator->setCollection(QuoteRepositoryResource::collection($paginator->getCollection())->collection);
     }
 
-    public function search(string $query = ''): Paginator
+    public function search(string $query = '')
     {
         $paginator = parent::search($query);
 

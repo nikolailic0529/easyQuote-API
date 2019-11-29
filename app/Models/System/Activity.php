@@ -3,28 +3,42 @@
 namespace App\Models\System;
 
 use App\Models\UuidModel;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
+use App\Traits\Search\Searchable;
+use Illuminate\Support\{
+    Arr,
+    Collection
+};
+use Illuminate\Database\Eloquent\{
+    Model,
+    Builder,
+    Relations\MorphTo
+};
 use Spatie\Activitylog\Contracts\Activity as ActivityContract;
+use Str;
 
 class Activity extends UuidModel implements ActivityContract
 {
+    use Searchable;
+
     public $guarded = [];
 
     protected $casts = [
         'properties' => 'collection',
     ];
 
+    protected $hidden = [
+        'properties'
+    ];
+
+    protected $dateTimeFormat = 'm/d/y, h:i A';
+
     public function __construct(array $attributes = [])
     {
-        if (! isset($this->connection)) {
+        if (!isset($this->connection)) {
             $this->setConnection(config('activitylog.database_connection'));
         }
 
-        if (! isset($this->table)) {
+        if (!isset($this->table)) {
             $this->setTable(config('activitylog.table_name'));
         }
 
@@ -52,7 +66,7 @@ class Activity extends UuidModel implements ActivityContract
 
     public function changes(): Collection
     {
-        if (! $this->properties instanceof Collection) {
+        if (!$this->properties instanceof Collection) {
             return new Collection();
         }
 
@@ -85,5 +99,64 @@ class Activity extends UuidModel implements ActivityContract
         return $query
             ->where('subject_type', $subject->getMorphClass())
             ->where('subject_id', $subject->getKey());
+    }
+
+    public function scopeForSubjectId(Builder $query, string $subject_id): Builder
+    {
+        return $query->where('subject_id', $subject_id);
+    }
+
+    public function toSearchArray()
+    {
+        $changed_properties = $this->readableChanges->collapse()->pluck('attribute')->unique()->toArray();
+        $causer_name = $this->causer_name;
+        $subject_name = $this->subject_name;
+
+        return array_merge(
+            Arr::only($this->toArray(), ['log_name', 'description', 'created_at']),
+            compact('changed_properties', 'causer_name', 'subject_name')
+        );
+    }
+
+    public function getReadableChangesAttribute()
+    {
+        $expectedChanges = collect(['old' => [], 'attributes' => []]);
+
+        if ($this->changes()->isEmpty()) {
+            return $expectedChanges;
+        }
+
+        return $this->changes()->map(function ($change) {
+            return collect($change)->except('id')->map(function ($value, $key) {
+                $attribute = Str::formatAttributeKey($key);
+
+                if (is_iterable($value)) {
+                    $value = collect($value)->flatten()->implode(', ');
+                }
+
+                if (is_bool($value)) {
+                    $value = $value ? 'Yes' : 'No';
+                }
+
+                $value = blank($value) ? null : (string) $value;
+
+                return compact('attribute', 'value');
+            })->values();
+        })->union($expectedChanges);
+    }
+
+    public function getCauserNameAttribute()
+    {
+        return "{$this->causer->email} ({$this->causer->full_name})";
+    }
+
+    public function getSubjectTypeBaseAttribute()
+    {
+        return Str::spaced(class_basename($this->subject_type));
+    }
+
+    public function getSubjectNameAttribute()
+    {
+        return $this->subject->item_name ?? "{$this->subject_type_base} ({$this->subject_id})";
     }
 }

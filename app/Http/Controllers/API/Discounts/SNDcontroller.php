@@ -30,14 +30,10 @@ class SNDcontroller extends Controller
      */
     public function index()
     {
-        if (request()->filled('search')) {
-            return response()->json(
-                $this->snd->search(request('search'))
-            );
-        }
-
         return response()->json(
-            $this->snd->all()
+            request()->filled('search')
+                ? $this->snd->search(request('search'))
+                : $this->snd->all()
         );
     }
 

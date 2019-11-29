@@ -24,6 +24,5 @@ class QuoteRepositoryResource extends JsonResource
             'customer' => $this->customer,
             'last_drafted_step' => $this->last_drafted_step
         ];
-        return parent::toArray($request);
     }
 }

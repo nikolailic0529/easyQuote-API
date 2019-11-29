@@ -48,42 +48,48 @@ class TemplatesUpdate extends Command
     {
         $this->info("Updating System Defined Templates...");
 
-        $templates = json_decode(file_get_contents(database_path('seeds/models/quote_templates.json')), true);
-        $design = file_get_contents(database_path('seeds/models/template_designs.json'));
-        $currency_id = Currency::whereCode(Setting::get('base_currency'))->firstOrFail()->id;
-        $templateFields = TemplateField::system()->pluck('id')->toArray();
+        activity()->disableLogging();
 
-        foreach ($templates as $templateData) {
+        \DB::transaction(function () {
+            $templates = json_decode(file_get_contents(database_path('seeds/models/quote_templates.json')), true);
+            $design = file_get_contents(database_path('seeds/models/template_designs.json'));
+            $currency_id = Currency::whereCode(Setting::get('base_currency'))->firstOrFail()->id;
+            $templateFields = TemplateField::system()->pluck('id')->toArray();
 
-            foreach ($templateData['companies'] as $companyData) {
-                $company = Company::whereVat($companyData['vat'])->firstOrFail();
-                $company->acronym = $companyData['acronym'];
+            foreach ($templates as $templateData) {
 
-                foreach ($templateData['vendors'] as $vendorCode) {
-                    $vendor = Vendor::whereShortCode($vendorCode)->firstOrFail();
-                    $vendor_id = $vendor->id;
-                    $company_id = $company->id;
-                    $is_system = true;
+                foreach ($templateData['companies'] as $companyData) {
+                    $company = Company::whereVat($companyData['vat'])->firstOrFail();
+                    $company->acronym = $companyData['acronym'];
 
-                    $companyShortCode = Str::short($company->name);
-                    $name = "{$company->acronym}-{$vendor->short_code}-{$templateData['new_name']}";
-                    $countries = Country::whereIn('iso_3166_2', $templateData['countries'])->pluck('id')->toArray();
+                    foreach ($templateData['vendors'] as $vendorCode) {
+                        $vendor = Vendor::whereShortCode($vendorCode)->firstOrFail();
+                        $vendor_id = $vendor->id;
+                        $company_id = $company->id;
+                        $is_system = true;
 
-                    $designData = array_merge($vendor->getLogoDimensionsAttribute(true), $company->getLogoDimensionsAttribute(true));
-                    $parsedDesign = $this->parseDesign($design, $designData);
+                        $companyShortCode = Str::short($company->name);
+                        $name = "{$company->acronym}-{$vendor->short_code}-{$templateData['new_name']}";
+                        $countries = Country::whereIn('iso_3166_2', $templateData['countries'])->pluck('id')->toArray();
 
-                    $template = QuoteTemplate::updateOrCreate(
-                        compact('name', 'company_id', 'vendor_id', 'is_system'),
-                        array_merge(compact('name', 'company_id', 'vendor_id', 'currency_id', 'is_system'), $parsedDesign)
-                    );
+                        $designData = array_merge($vendor->getLogoDimensionsAttribute(true), $company->getLogoDimensionsAttribute(true));
+                        $parsedDesign = $this->parseDesign($design, $designData);
 
-                    $template->templateFields()->syncWithoutDetaching($templateFields);
-                    $template->countries()->sync($countries);
+                        $template = QuoteTemplate::updateOrCreate(
+                            compact('name', 'company_id', 'vendor_id', 'is_system'),
+                            array_merge(compact('name', 'company_id', 'vendor_id', 'currency_id', 'is_system'), $parsedDesign)
+                        );
 
-                    $this->output->write('.');
+                        $template->templateFields()->syncWithoutDetaching($templateFields);
+                        $template->countries()->sync($countries);
+
+                        $this->output->write('.');
+                    }
                 }
             }
-        }
+        });
+
+        activity()->enableLogging();
 
         $this->info("\nSystem Defined Templates were updated!");
     }

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\{
+    Address,
     User,
     Role,
     Company,
@@ -13,9 +14,12 @@ use App\Models\{
     QuoteFile\QuoteFile,
     QuoteTemplate\QuoteTemplate,
     Collaboration\Invitation,
-    System\SystemSetting
+    System\SystemSetting,
+    System\Activity
 };
 use App\Policies\{
+    ActivityPolicy,
+    AddressPolicy,
     CompanyPolicy,
     DiscountPolicy,
     InvitationPolicy,
@@ -49,7 +53,9 @@ class AuthServiceProvider extends ServiceProvider
         Role::class => RolePolicy::class,
         User::class => UserPolicy::class,
         Invitation::class => InvitationPolicy::class,
-        SystemSetting::class => SystemSettingPolicy::class
+        SystemSetting::class => SystemSettingPolicy::class,
+        Activity::class => ActivityPolicy::class,
+        Address::class => AddressPolicy::class
     ];
 
     /**

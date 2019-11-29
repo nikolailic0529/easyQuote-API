@@ -30,14 +30,10 @@ class PromotionalDiscountController extends Controller
      */
     public function index()
     {
-        if (request()->filled('search')) {
-            return response()->json(
-                $this->promotionalDiscount->search(request('search'))
-            );
-        }
-
         return response()->json(
-            $this->promotionalDiscount->all()
+            request()->filled('search')
+                ? $this->promotionalDiscount->search(request('search'))
+                : $this->promotionalDiscount->all()
         );
     }
 

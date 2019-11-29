@@ -2,11 +2,17 @@
 
 namespace App\Models;
 
+use App\Traits\{
+    Activatable,
+    BelongsToCountry,
+    Search\Searchable
+};
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Arr;
 
 class Address extends UuidModel
 {
-    use SoftDeletes;
+    use SoftDeletes, Activatable, BelongsToCountry, Searchable;
 
     protected $fillable = [
         'address_type',
@@ -16,17 +22,12 @@ class Address extends UuidModel
         'state',
         'state_code',
         'post_code',
-        'country_code'
+        'country_id'
     ];
 
     protected $hidden = [
-        'addressable_id', 'addressable_type', 'created_at', 'updated_at', 'deleted_at'
+        'addressable_id', 'addressable_type', 'deleted_at'
     ];
-
-    public function addressable()
-    {
-        return $this->morphTo();
-    }
 
     public function scopeType($query, string $type)
     {

@@ -43,16 +43,22 @@ class VendorsUpdate extends Command
     {
         $this->info("Updating System Defined Vendors...");
 
-        $vendors = json_decode(file_get_contents(database_path('seeds/models/vendors.json')), true);
+        activity()->disableLogging();
 
-        collect($vendors)->each(function ($vendorData) {
-            $vendor = Vendor::whereShortCode($vendorData['short_code'])->first();
-            $countries = Country::whereIn('iso_3166_2', $vendorData['countries'])->get();
-            $vendor->countries()->sync($countries);
-            $vendor->createLogo($vendorData['logo'], true);
+        \DB::transaction(function () {
+            $vendors = json_decode(file_get_contents(database_path('seeds/models/vendors.json')), true);
 
-            $this->output->write('.');
+            collect($vendors)->each(function ($vendorData) {
+                $vendor = Vendor::whereShortCode($vendorData['short_code'])->first();
+                $countries = Country::whereIn('iso_3166_2', $vendorData['countries'])->get();
+                $vendor->countries()->sync($countries);
+                $vendor->createLogo($vendorData['logo'], true);
+
+                $this->output->write('.');
+            });
         });
+
+        activity()->enableLogging();
 
         $this->info("\nSystem Defined Vendors were updated!");
     }

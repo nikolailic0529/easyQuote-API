@@ -14,7 +14,7 @@ use Closure, Arr;
 
 abstract class SearchableRepository
 {
-    public function all(): Paginator
+    public function all()
     {
         $filterableQuery = $this->filterableQuery();
 
@@ -31,7 +31,7 @@ abstract class SearchableRepository
         return $query->apiPaginate();
     }
 
-    public function search(string $query = ''): Paginator
+    public function search(string $query = '')
     {
         $model = $this->searchableModel();
 
@@ -91,7 +91,6 @@ abstract class SearchableRepository
 
         $items = $this->elasticsearch()->search([
             'index' => $model->getSearchIndex(),
-            'type' => $model->getSearchType(),
             'body' => $body
         ]);
 
@@ -104,6 +103,17 @@ abstract class SearchableRepository
             ->send($query)
             ->through($this->filterQueryThrough())
             ->thenReturn();
+    }
+
+    /**
+     * Searchable Scope which will be applied for Query Builder.
+     *
+     * @param Builder
+     * @return Builder
+     */
+    protected function searchableScope(Builder $query)
+    {
+        return $query;
     }
 
     /**
@@ -126,14 +136,6 @@ abstract class SearchableRepository
      * @return Builder|array
      */
     abstract protected function filterableQuery();
-
-    /**
-     * Searchable Scope which will be applied for Query Builder.
-     *
-     * @param Builder
-     * @return Builder
-     */
-    abstract protected function searchableScope(Builder $query);
 
     /**
      * Filter Query over Classes Array.

@@ -14,36 +14,36 @@ use Illuminate\Database\Eloquent\Collection;
 interface VendorRepositoryInterface
 {
     /**
-     * Get all User's Vendors.
+     * Get all Vendors.
      *
-     * @return Paginator
+     * @return mixed
      */
-    public function all(): Paginator;
+    public function all();
 
     /**
-     * Get All User's Vendors without pagination
+     * Get All Vendors without pagination
      *
      * @return Collection
      */
     public function allFlatten(): Collection;
 
     /**
-     * Search over User's Vendors.
+     * Search over Vendors.
      *
      * @param string $query
-     * @return Paginator
+     * @return mixed
      */
-    public function search(string $query = ''): Paginator;
+    public function search(string $query = '');
 
     /**
-     * User's Vendors query.
+     * Vendors query.
      *
      * @return Builder
      */
     public function userQuery(): Builder;
 
     /**
-     * Find User's Vendor.
+     * Find Vendor.
      *
      * @param string $id
      * @return Vendor
@@ -51,7 +51,7 @@ interface VendorRepositoryInterface
     public function find(string $id): Vendor;
 
     /**
-     * Create User's Vendor.
+     * Create Vendor.
      *
      * @param StoreVendorRequest $request
      * @return Vendor
@@ -59,7 +59,7 @@ interface VendorRepositoryInterface
     public function create(StoreVendorRequest $request): Vendor;
 
     /**
-     * Update User's Vendor.
+     * Update Vendor.
      *
      * @param UpdateVendorRequest $request
      * @param string $id
@@ -68,7 +68,7 @@ interface VendorRepositoryInterface
     public function update(UpdateVendorRequest $request, string $id): Vendor;
 
     /**
-     * Delete User's Vendor.
+     * Delete Vendor.
      *
      * @param string $id
      * @return boolean
@@ -76,7 +76,7 @@ interface VendorRepositoryInterface
     public function delete(string $id): bool;
 
     /**
-     * Activate User's Vendor.
+     * Activate Vendor.
      *
      * @param string $id
      * @return boolean
@@ -84,7 +84,7 @@ interface VendorRepositoryInterface
     public function activate(string $id): bool;
 
     /**
-     * Deactivate User's Vendor.
+     * Deactivate Vendor.
      *
      * @param string $id
      * @return boolean
@@ -92,7 +92,7 @@ interface VendorRepositoryInterface
     public function deactivate(string $id): bool;
 
     /**
-     * Find User's Vendors by Country
+     * Find Vendors by Country.
      *
      * @param string $id
      * @return Collection

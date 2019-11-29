@@ -11,17 +11,17 @@ interface InvitationRepositoryInterface
     /**
      * Get all Invitations.
      *
-     * @return Paginator
+     * @return mixed
      */
-    public function all(): Paginator;
+    public function all();
 
     /**
      * Search over Invitations.
      *
      * @param string $query
-     * @return Paginator
+     * @return mixed
      */
-    public function search(string $query = ''): Paginator;
+    public function search(string $query = '');
 
     /**
      * Invitations query.

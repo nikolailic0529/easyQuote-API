@@ -27,14 +27,10 @@ class QuoteTemplateController extends Controller
      */
     public function index()
     {
-        if (request()->filled('search')) {
-            return response()->json(
-                $this->quoteTemplate->search(request('search'))
-            );
-        }
-
         return response()->json(
-            $this->quoteTemplate->all()
+            request()->filled('search')
+                ? $this->quoteTemplate->search(request('search'))
+                : $this->quoteTemplate->all()
         );
     }
 

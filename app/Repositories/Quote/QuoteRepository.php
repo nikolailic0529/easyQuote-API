@@ -90,13 +90,9 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function storeState(StoreQuoteStateRequest $request)
     {
         return DB::transaction(function () use ($request) {
-            $user = $request->user();
-            $state = collect($request->validated());
-            $quoteData = $state->get('quote_data');
-
-            $quote = $request->has('quote_id')
-                ? $this->find($request->quote_id)
-                : $user->quotes()->make();
+            $quote = $request->quote();
+            $state = $request->validatedData();
+            $quoteData = $request->validatedQuoteData();
 
             filled($quoteData) && $quote->fill($quoteData);
 
@@ -179,9 +175,7 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     public function hideFields(Collection $state, Quote $quote): void
     {
-        $hidden = data_get($state, 'quote_data.hidden_fields');
-
-        if (!isset($hidden)) {
+        if (is_null($hidden = data_get($state, 'quote_data.hidden_fields'))) {
             return;
         }
 
@@ -200,9 +194,7 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     public function sortFields(Collection $state, Quote $quote): void
     {
-        $sort = data_get($state, 'quote_data.sort_fields');
-
-        if (!isset($sort)) {
+        if (is_null($sort = data_get($state, 'quote_data.sort_fields'))) {
             return;
         }
 
@@ -245,18 +237,11 @@ class QuoteRepository implements QuoteRepositoryInterface
             return;
         }
 
-        $oldCountryMargin = $quote->countryMargin;
-
         $quote->countryMargin()->associate($countryMargin);
         $quote->margin_data = array_merge($countryMargin->only('value', 'method', 'is_fixed'), ['type' => 'By Country']);
         $quote->type = $attributes['quote_type'];
 
         $quote->save();
-
-        activity()
-            ->performedOn($quote)
-            ->withProperties(['attributes' => $countryMargin, 'old' => $oldCountryMargin])
-            ->log('applied a new country margin');
 
         /**
          * Fresh Discounts Margin Percentage.
@@ -268,7 +253,18 @@ class QuoteRepository implements QuoteRepositoryInterface
     {
         if ((bool) $detach === true) {
             $quote->resetCustomDiscount();
+
+            if ($quote->discounts->isEmpty()) {
+                return;
+            }
+
+            $oldDiscounts = $quote->discounts;
             $quote->discounts()->detach();
+
+            activity()
+                ->on($quote)
+                ->withAttribute('discounts', null, $oldDiscounts->toString('discountable.name'))
+                ->log('updated');
 
             return;
         }
@@ -293,14 +289,12 @@ class QuoteRepository implements QuoteRepositoryInterface
             $quote->resetCustomDiscount();
         }
 
-        if (Arr::hasntDifferentValues($newDiscounts->pluck('discountable.id'), $oldDiscounts->pluck('discountable.id'))) {
-            return;
-        }
+        $diff = $newDiscounts->pluck('discountable.id')->udiff($oldDiscounts->pluck('discountable.id'))->isNotEmpty();
 
         activity()
-            ->performedOn($quote)
-            ->withProperties(['attributes' => $newDiscounts, 'old' => $oldDiscounts])
-            ->log('applied new discounts');
+            ->on($quote)
+            ->withAttribute('discounts', $newDiscounts->toString('discountable.name'), $oldDiscounts->toString('discountable.name'))
+            ->logWhen('updated', $diff);
     }
 
     public function discounts(string $id)
@@ -456,6 +450,7 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function createGroupDescription(StoreGroupDescriptionRequest $request, string $quote_id): Collection
     {
         $quote = $this->find($quote_id);
+        $old_group_description_with_meta = $quote->group_description_with_meta;
 
         $data = collect($request->validated());
         $group = $data->only(['name', 'search_text'])->prepend(Uuid::generate(4)->string, 'id');
@@ -469,6 +464,15 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $quote->save();
 
+        activity()
+            ->on($quote)
+            ->withAttribute(
+                'group_description',
+                $quote->group_description_with_meta->toString('name', 'total_count'),
+                $old_group_description_with_meta->toString('name', 'total_count')
+            )
+            ->log('updated');
+
         $quote->forgetCachedComputableRows();
 
         return $group;
@@ -479,6 +483,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         $quote = $this->find($quote_id);
 
         $group_description = collect($quote->group_description);
+        $old_group_description_with_meta = $quote->group_description_with_meta;
 
         $data = collect($request->validated());
         $group = $data->only(['name', 'search_text'])->toArray();
@@ -499,9 +504,20 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $quote->group_description = collect($quote->group_description)->put($group_key, $updatedGroup)->values();
 
+        $saved = $quote->save();
+
+        activity()
+            ->on($quote)
+            ->withAttribute(
+                'group_description',
+                $quote->group_description_with_meta->toString('name', 'total_count'),
+                $old_group_description_with_meta->toString('name', 'total_count')
+            )
+            ->log('updated');
+
         $quote->forgetCachedComputableRows();
 
-        return $quote->save();
+        return $saved;
     }
 
     public function moveGroupDescriptionRows(MoveGroupDescriptionRowsRequest $request, string $quote_id): bool
@@ -509,6 +525,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         $quote = $this->find($quote_id);
 
         $group_description = collect($quote->group_description);
+        $old_group_description_with_meta = $quote->group_description_with_meta;
 
         $from_group_key = $quote->findGroupDescription($request->from_group_id);
         $to_group_key = $quote->findGroupDescription($request->to_group_id);
@@ -522,6 +539,15 @@ class QuoteRepository implements QuoteRepositoryInterface
             ->whereIn('imported_rows.id', $request->rows)
             ->update(['group_name' => $to_group['name']]);
 
+        activity()
+            ->on($quote)
+            ->withAttribute(
+                'group_description',
+                $quote->group_description_with_meta->toString('name', 'total_count'),
+                $old_group_description_with_meta->toString('name', 'total_count')
+            )
+            ->log('updated');
+
         $quote->forgetCachedComputableRows();
 
         return $updated;
@@ -532,6 +558,7 @@ class QuoteRepository implements QuoteRepositoryInterface
         $quote = $this->find($quote_id);
 
         $group_description = collect($quote->group_description);
+        $old_group_description_with_meta = $quote->group_description_with_meta;
 
         $group_key = $quote->findGroupDescription($id);
 
@@ -552,6 +579,15 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $saved = $quote->save();
 
+        activity()
+            ->on($quote)
+            ->withAttribute(
+                'group_description',
+                $quote->group_description_with_meta->toString('name', 'total_count'),
+                $old_group_description_with_meta->toString('name', 'total_count')
+            )
+            ->log('updated');
+
         $quote->forgetCachedComputableRows();
 
         return $saved;
@@ -569,23 +605,23 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $updatableScope = $reject ? 'whereNotIn' : 'whereIn';
 
-        $oldRowsIds = $quote->rowsData()->selected()->pluck('imported_rows.id')->toArray();
+        $oldRowsIds = $quote->rowsData()->selected()->pluck('imported_rows.id');
 
         $quote->rowsData()->update(['is_selected' => false]);
 
         $quote->rowsData()->{$updatableScope}('imported_rows.id', $selectedRowsIds)
             ->update(['is_selected' => true]);
 
-        $newRowsIds = $quote->rowsData()->selected()->pluck('imported_rows.id')->toArray();
+        $newRowsIds = $quote->rowsData()->selected()->pluck('imported_rows.id');
 
-        if (Arr::hasntDifferentValues($newRowsIds, $oldRowsIds)) {
+        if ($newRowsIds->udiff($oldRowsIds)->isEmpty()) {
             return;
         }
 
         activity()
-            ->performedOn($quote)
-            ->withProperties(['attributes' => $newRowsIds, 'old' => $oldRowsIds])
-            ->log('selected new rows');
+            ->on($quote)
+            ->withAttribute('selected_rows', $newRowsIds->count(), $oldRowsIds->count())
+            ->log('updated');
 
         /**
          * Recalculate User's Margin Percentage after select Rows.
@@ -631,25 +667,12 @@ class QuoteRepository implements QuoteRepositoryInterface
                 return true;
             }
 
-            $diff = array_udiff_assoc($newFieldColumn->getAttributes(), $oldFieldColumn->getAttributes(), function ($new, $old) {
-                if (is_null($new) || is_null($old)) {
-                    return $new === $old ? 0 : 1;
-                }
-
-                return $new <=> $old;
-            });
-
-            return filled($diff);
+            return filled(Arr::isDifferentAssoc($newFieldColumn->getAttributes(), $oldFieldColumn->getAttributes()));
         });
 
         if (!$hasChanges) {
             return;
         }
-
-        activity()
-            ->performedOn($quote)
-            ->withProperties(['attributes' => $newFieldsColumns, 'old' => $oldFieldsColumns])
-            ->log('changed the quote mapping');
 
         /**
          * Clear Cache Mapping Review Data when Mapping was changed.
@@ -664,11 +687,9 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     private function storeQuoteFilesState(Collection $state, Quote $quote): void
     {
-        if (blank(data_get($state, 'quote_data.files'))) {
+        if (blank($stateFiles = collect(data_get($state, 'quote_data.files')))) {
             return;
         }
-
-        $stateFiles = collect(data_get($state, 'quote_data.files'));
 
         $existingQuoteFiles = $quote->quoteFiles->pluck('id');
         $stateFiles = $stateFiles->diff($existingQuoteFiles);
@@ -685,24 +706,16 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         activity()
             ->performedOn($quote)
-            ->withProperties(['attributes' => $newQuoteFiles, 'old' => $oldQuoteFiles])
-            ->log('attached new quote files');
+            ->withAttribute('quote_files', $newQuoteFiles->toString('original_file_name'), $oldQuoteFiles->toString('original_file_name'))
+            ->log('updated');
     }
 
     private function detachScheduleIfRequested(Collection $state, Quote $quote): void
     {
-        if (!data_get($state, 'quote_data.detach_schedule', false)) {
-            return;
-        }
-
-        if (!$quote->paymentSchedule()->exists()) {
+        if (!data_get($state, 'quote_data.detach_schedule', false) || !$quote->paymentSchedule()->exists()) {
             return;
         }
 
         $quote->quoteFiles()->paymentSchedules()->delete();
-
-        activity()
-            ->performedOn($quote)
-            ->log('detached the schedule quote file');
     }
 }

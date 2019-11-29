@@ -6,11 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 trait Activatable
 {
-    public static function bootActivatable()
+    public function initializeActivatable()
     {
         static::creating(function (Model $model) {
             $model->setAttribute('activated_at', now()->toDateTimeString());
         });
+
+        if (property_exists($this, 'logAttributes')) {
+            static::$logAttributes = array_merge(static::$logAttributes, ['activated_at']);
+        }
     }
 
     public function deactivate()

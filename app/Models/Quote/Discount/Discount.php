@@ -15,11 +15,12 @@ use App\Traits\{
     BelongsToVendor,
     Search\Searchable
 };
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Arr;
 
 abstract class Discount extends UuidModel implements ActivatableInterface
 {
-    use Activatable, Searchable, BelongsToCountry, BelongsToVendor, BelongsToUser;
+    use Activatable, Searchable, BelongsToCountry, BelongsToVendor, BelongsToUser, SoftDeletes;
 
     protected $perPage = 8;
 
@@ -41,9 +42,7 @@ abstract class Discount extends UuidModel implements ActivatableInterface
 
     public function getFillable()
     {
-        $fillable = [
-            'country_id', 'vendor_id', 'name'
-        ];
+        $fillable = ['country_id', 'vendor_id', 'name'];
 
         return array_merge($this->fillable, array_diff($fillable, $this->guarded));
     }
@@ -73,5 +72,10 @@ abstract class Discount extends UuidModel implements ActivatableInterface
     public function getDiscountTypeAttribute()
     {
         return class_basename($this);
+    }
+
+    public function getItemNameAttribute()
+    {
+        return $this->name;
     }
 }

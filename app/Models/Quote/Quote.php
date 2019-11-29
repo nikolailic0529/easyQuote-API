@@ -114,11 +114,12 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
 
     protected static $logAttributes = [
         'type',
-        'customer_id',
-        'company_id',
-        'vendor_id',
-        'country_id',
-        'quote_template_id',
+        'customer.name',
+        'company.name',
+        'vendor.name',
+        'country.name',
+        'countryMargin.formatted_value',
+        'quoteTemplate.name',
         'last_drafted_step',
         'pricing_document',
         'service_agreement_id',
@@ -127,6 +128,8 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         'closing_date',
         'additional_notes',
         'calculate_list_price',
+        'custom_discount',
+        'use_groups',
         'buy_price',
         'submitted_at'
     ];
@@ -259,6 +262,13 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         }
 
         return Carbon::parse($this->attributes['closing_date'])->format('d/m/Y');
+    }
+
+    public function getItemNameAttribute()
+    {
+        $customer_rfq = $this->customer->rfq ?? 'unknown RFQ';
+
+        return "Quote ({$customer_rfq})";
     }
 
     private function joins()

@@ -5,6 +5,7 @@ namespace App\Repositories\Quote;
 use App\Contracts\Repositories\Quote\QuoteDraftedRepositoryInterface;
 use App\Repositories\SearchableRepository;
 use App\Builder\Pagination\Paginator;
+use App\Http\Resources\QuoteRepositoryCollection;
 use App\Http\Resources\QuoteRepositoryResource;
 use App\Models\Quote\Quote;
 use Illuminate\Database\Eloquent\{
@@ -21,18 +22,14 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
         $this->quote = $quote;
     }
 
-    public function all(): Paginator
+    public function all()
     {
-        $paginator = parent::all();
-
-        return $paginator->setCollection(QuoteRepositoryResource::collection($paginator->getCollection())->collection);
+        return new QuoteRepositoryCollection(parent::all());
     }
 
-    public function search(string $query = ''): Paginator
+    public function search(string $query = '')
     {
-        $paginator = parent::search($query);
-
-        return $paginator->setCollection(QuoteRepositoryResource::collection($paginator->getCollection())->collection);
+        return new QuoteRepositoryCollection(parent::search($query));
     }
 
     public function userQuery(): Builder

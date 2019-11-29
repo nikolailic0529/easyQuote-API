@@ -32,6 +32,8 @@ class Invitation extends UuidModel
         'resended', 'canceled'
     ];
 
+    protected static $recordEvents = ['created', 'deleted'];
+
     protected static function boot()
     {
         parent::boot();

@@ -44,22 +44,28 @@ class TemplateFieldsUpdate extends Command
     {
         $this->info('Updating System Defined Template Fields...');
 
-        $templateFieldsData = json_decode(file_get_contents(database_path('seeds/models/template_fields.json')), true);
+        activity()->disableLogging();
 
-        $templateFields = collect($templateFieldsData)->map(function ($field) {
-            $template_field_type_id = TemplateFieldType::whereName($field['type'])->firstOrFail()->id;
-            $field = array_merge($field, compact('template_field_type_id'));
+        \DB::transaction(function () {
+            $templateFieldsData = json_decode(file_get_contents(database_path('seeds/models/template_fields.json')), true);
 
-            $templateField = TemplateField::firstOrCreate(['name' => $field['name'], 'is_system' => true], $field);
+            $templateFields = collect($templateFieldsData)->map(function ($field) {
+                $template_field_type_id = TemplateFieldType::whereName($field['type'])->firstOrFail()->id;
+                $field = array_merge($field, compact('template_field_type_id'));
 
-            $this->output->write('.');
+                $templateField = TemplateField::firstOrCreate(['name' => $field['name'], 'is_system' => true], $field);
 
-            return $templateField->id;
+                $this->output->write('.');
+
+                return $templateField->id;
+            });
+
+            QuoteTemplate::all()->each(function ($template) use ($templateFields) {
+                $template->templateFields()->syncWithoutDetaching($templateFields);
+            });
         });
 
-        QuoteTemplate::all()->each(function ($template) use ($templateFields) {
-            $template->templateFields()->syncWithoutDetaching($templateFields);
-        });
+        activity()->enableLogging();
 
         $this->info("\nSystem Defined Template Fields were updated!");
     }

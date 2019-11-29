@@ -6,6 +6,12 @@ use DB;
 
 trait HasDurationsAttribute
 {
+    public function initializeHasDurationsAttribute()
+    {
+        $this->fillable = array_merge($this->fillable, ['durations']);
+        $this->casts = array_merge($this->casts, ['durations' => 'collection']);
+    }
+
     public function scopeDuration($query, $duration, bool $or = false)
     {
         $duration = (int) $duration;
@@ -27,7 +33,7 @@ trait HasDurationsAttribute
 
     public function getYearsAttribute()
     {
-        return collect($this->durations)->pluck('duration')->toArray();
+        return $this->durations->pluck('duration')->toArray();
     }
 
     public function setDurationsAttribute(array $durations)
@@ -36,5 +42,15 @@ trait HasDurationsAttribute
             $duration['value'] = $this->asDecimal($duration['value'], 2);
             return $duration;
         })->toJson();
+    }
+
+    public function getDurationAttribute()
+    {
+        return data_get($this->durations->first(), 'duration');
+    }
+
+    public function getValueAttribute()
+    {
+        return data_get($this->durations->first(), 'value');
     }
 }

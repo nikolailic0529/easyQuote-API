@@ -15,17 +15,17 @@ interface SNDrepositoryInterface
     /**
      * Get all User's SNDs.
      *
-     * @return Paginator
+     * @return mixed
      */
-    public function all(): Paginator;
+    public function all();
 
     /**
      * Search over User's SNDs.
      *
      * @param string $query
-     * @return Paginator
+     * @return mixed
      */
-    public function search(string $query = ''): Paginator;
+    public function search(string $query = '');
 
     /**
      * User's SNDs query.

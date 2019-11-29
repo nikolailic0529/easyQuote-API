@@ -24,17 +24,17 @@ interface RoleRepositoryInterface
     /**
      * Get all Collaboration Roles.
      *
-     * @return Paginator
+     * @return mixed
      */
-    public function all(): Paginator;
+    public function all();
 
     /**
      * Search over Collaboration Roles.
      *
      * @param string $query
-     * @return Paginator
+     * @return mixed
      */
-    public function search(string $query = ''): Paginator;
+    public function search(string $query = '');
 
     /**
      * Collaboration Roles query.

@@ -13,19 +13,19 @@ use Illuminate\Support\Collection;
 interface QuoteTemplateRepositoryInterface
 {
     /**
-     * Get all User's Quote Templates.
+     * Get all Quote Templates.
      *
-     * @return Paginator
+     * @return mixed
      */
-    public function all(): Paginator;
+    public function all();
 
     /**
-     * Search over User's Quote Templates.
+     * Search over Quote Templates.
      *
      * @param string $query
-     * @return Paginator
+     * @return mixed
      */
-    public function search(string $query = ''): Paginator;
+    public function search(string $query = '');
 
     /**
      * Get Quote Template by id.

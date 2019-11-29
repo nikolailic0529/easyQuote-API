@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Webpatser\Uuid\Uuid;
 use App\Builder\ApiBuilder;
-use Carbon\Carbon;
 use Fico7489\Laravel\EloquentJoin\Traits\ExtendRelationsTrait;
 
 class UuidModel extends Model
@@ -15,6 +14,10 @@ class UuidModel extends Model
     public $incrementing = false;
 
     protected $keyType = 'string';
+
+    protected $formatDates = true;
+
+    protected $dateTimeFormat = 'd/m/Y';
 
     protected static function boot()
     {
@@ -95,12 +98,12 @@ class UuidModel extends Model
         $model->fireModelEvent('generated', false);
     }
 
-    private function formatDate($date)
+    protected function formatDate($date)
     {
-        if (!isset($date)) {
-            return null;
+        if (!isset($date) || !$this->formatDates) {
+            return $date;
         }
 
-        return Carbon::createFromFormat('Y-m-d H:i:s', $date)->format('d/m/Y');
+        return now()->createFromFormat('Y-m-d H:i:s', $date)->format($this->dateTimeFormat);
     }
 }

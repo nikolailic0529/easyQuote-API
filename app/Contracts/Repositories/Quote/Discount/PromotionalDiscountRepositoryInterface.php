@@ -15,17 +15,17 @@ interface PromotionalDiscountRepositoryInterface
     /**
      * Get all User's Promotional Discounts.
      *
-     * @return Paginator
+     * @return mixed
      */
-    public function all(): Paginator;
+    public function all();
 
     /**
      * Search over User's Promotional Discounts.
      *
      * @param string $query
-     * @return Paginator
+     * @return mixed
      */
-    public function search(string $query = ''): Paginator;
+    public function search(string $query = '');
 
     /**
      * User's Promotional Discounts query.

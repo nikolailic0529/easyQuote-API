@@ -27,14 +27,10 @@ class VendorController extends Controller
      */
     public function index()
     {
-        if (request()->filled('search')) {
-            return response()->json(
-                $this->vendor->search(request('search'))
-            );
-        }
-
         return response()->json(
-            $this->vendor->all()
+            request()->filled('search')
+                ? $this->vendor->search(request('search'))
+                : $this->vendor->all()
         );
     }
 

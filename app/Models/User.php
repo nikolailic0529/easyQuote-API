@@ -34,6 +34,7 @@ use App\Traits\{
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Traits\HasRoles;
+use Spatie\Activitylog\Traits\LogsActivity;
 use Arr;
 
 class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInterface, WithImage
@@ -57,7 +58,8 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
         Activatable,
         Searchable,
         SoftDeletes,
-        HasImage;
+        HasImage,
+        LogsActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -91,9 +93,17 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
         'role_id', 'role_name', 'picture', 'privileges'
     ];
 
+    protected static $logAttributes = [
+        'first_name', 'middle_name', 'last_name', 'email', 'password', 'phone', 'role.name', 'timezone.text'
+    ];
+
+    protected static $logOnlyDirty = true;
+
+    protected static $submitEmptyLogs = false;
+
     public function getFullNameAttribute()
     {
-        return "{$this->first_name} {$this->middle_name} {$this->last_name}";
+        return "{$this->first_name} {$this->last_name}";
     }
 
     public function scopeAdministrators($query)
@@ -162,5 +172,10 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
     public function toSearchArray()
     {
         return Arr::except($this->toArray(), ['email_verified_at', 'must_change_password', 'timezone_id', 'role_id', 'picture']);
+    }
+
+    public function getItemNameAttribute()
+    {
+        return $this->email;
     }
 }

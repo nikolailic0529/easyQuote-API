@@ -30,20 +30,26 @@ class ImportableColumnsUpdate extends Command
     {
         $this->info("Updating System Defined Importable Columns...");
 
-        $importable_columns = json_decode(file_get_contents(database_path('seeds/models/importable_columns.json')), true);
+        activity()->disableLogging();
 
-        collect($importable_columns)->each(function ($column) {
-            $importableColumn = ImportableColumn::firstOrCreate(
-                ['name' => $column['name'], 'is_system' => true],
-                $column
-            );
+        \DB::transaction(function () {
+            $importable_columns = json_decode(file_get_contents(database_path('seeds/models/importable_columns.json')), true);
 
-            collect($column['aliases'])->each(function ($alias) use ($importableColumn) {
-                $importableColumn->aliases()->firstOrCreate(compact('alias'));
+            collect($importable_columns)->each(function ($column) {
+                $importableColumn = ImportableColumn::firstOrCreate(
+                    ['name' => $column['name'], 'is_system' => true],
+                    $column
+                );
+
+                collect($column['aliases'])->each(function ($alias) use ($importableColumn) {
+                    $importableColumn->aliases()->firstOrCreate(compact('alias'));
+                });
+
+                $this->output->write('.');
             });
-
-            $this->output->write('.');
         });
+
+        activity()->enableLogging();
 
         $this->info("\nSystem Defined Importable Columns were updated!");
     }

@@ -3,16 +3,17 @@
 namespace App\Models\Quote\Discount;
 
 use App\Traits\Discount\HasDurationsAttribute;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class PrePayDiscount extends Discount
 {
-    use HasDurationsAttribute;
+    use HasDurationsAttribute, LogsActivity;
 
-    protected $fillable = [
-        'durations'
+    protected static $logAttributes = [
+        'name', 'country.name', 'vendor.name', 'duration', 'value'
     ];
 
-    protected $casts = [
-        'durations' => 'array'
-    ];
+    protected static $logOnlyDirty = true;
+
+    protected static $submitEmptyLogs = false;
 }

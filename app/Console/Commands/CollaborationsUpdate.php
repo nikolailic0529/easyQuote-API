@@ -38,11 +38,22 @@ class CollaborationsUpdate extends Command
      */
     public function handle()
     {
-        $this->info("Updating Collaborations for Administrators...");
+        $this->info("Reassigning Administrator role for Users...");
 
-        $this->reAssignAdministrators();
+        activity()->disableLogging();
 
-        $this->info("\nCollaborations for Administrators were updated!");
+        $users = json_decode(file_get_contents(database_path('seeds/models/users.json')), true);
+
+        User::whereIn('email', collect($users)->pluck('email')->toArray())
+            ->nonAdministrators()
+            ->get()
+            ->each(function ($user) {
+                $user->assignRole('Administrator');
+            });
+
+        activity()->enableLogging();
+
+        $this->info("\nAdministrators roles for User were reassigned!");
     }
 
     /**
@@ -52,13 +63,6 @@ class CollaborationsUpdate extends Command
      */
     protected function reAssignAdministrators()
     {
-        $users = json_decode(file_get_contents(database_path('seeds/models/users.json')), true);
 
-        User::whereIn('email', collect($users)->pluck('email')->toArray())
-            ->nonAdministrators()
-            ->get()
-            ->each(function ($user) {
-                $user->assignRole('Administrator');
-            });
     }
 }

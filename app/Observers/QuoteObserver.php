@@ -14,7 +14,7 @@ class QuoteObserver
      */
     public function created(Quote $quote)
     {
-        return $quote->activate();
+        //
     }
 
     /**

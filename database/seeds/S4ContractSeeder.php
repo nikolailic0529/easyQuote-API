@@ -1,6 +1,9 @@
 <?php
 
-use App\Models\Customer\Customer;
+use App\Models\{
+    Customer\Customer,
+    Data\Country
+};
 use Illuminate\Database\Seeder;
 
 class S4ContractSeeder extends Seeder
@@ -13,7 +16,16 @@ class S4ContractSeeder extends Seeder
     public function run()
     {
         $customers = json_decode(file_get_contents(__DIR__ . '/models/customers.json'), true);
+
         $addresses = head(json_decode(file_get_contents(__DIR__ . '/models/customers_addresses.json'), true))['addresses'];
+        $addresses = collect($addresses)->transform(function ($address) {
+            $country_id = Country::code(data_get($address, 'country_code'))->firstOrFail()->id;
+            data_set($address, 'country_id', $country_id);
+            unset($address['country_code']);
+
+            return $address;
+        })->toArray();
+
         $contacts = head(json_decode(file_get_contents(__DIR__ . '/models/customers_contacts.json'), true))['contacts'];
 
         collect($customers)->each(function ($customer) use ($addresses, $contacts) {

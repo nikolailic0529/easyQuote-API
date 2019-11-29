@@ -40,23 +40,29 @@ class SystemSettingsSync extends Command
     {
         $this->info('Updating System Settings...');
 
-        $settings = json_decode(file_get_contents(database_path('seeds/models/system_settings.json')), true);
+        activity()->disableLogging();
 
-        collect($settings)->each(function ($setting) {
-            DB::table('system_settings')->updateOrInsert(
-                ['key' => $setting['key']],
-                [
-                    'key' => $setting['key'],
-                    'value' => is_array($setting['value']) ? json_encode($setting['value'], true) : $setting['value'],
-                    'type' => $setting['type'] ?? 'string',
-                    'possible_values' => isset($setting['possible_values']) ? json_encode($setting['possible_values'], true) : null,
-                    'is_read_only' => $setting['is_read_only'] ?? false,
-                    'label_format' => $setting['label_format'] ?? null
-                ]
-            );
+        \DB::transaction(function () {
+            $settings = json_decode(file_get_contents(database_path('seeds/models/system_settings.json')), true);
 
-            $this->output->write('.');
+            collect($settings)->each(function ($setting) {
+                DB::table('system_settings')->updateOrInsert(
+                    ['key' => $setting['key']],
+                    [
+                        'key' => $setting['key'],
+                        'value' => is_array($setting['value']) ? json_encode($setting['value'], true) : $setting['value'],
+                        'type' => $setting['type'] ?? 'string',
+                        'possible_values' => isset($setting['possible_values']) ? json_encode($setting['possible_values'], true) : null,
+                        'is_read_only' => $setting['is_read_only'] ?? false,
+                        'label_format' => $setting['label_format'] ?? null
+                    ]
+                );
+
+                $this->output->write('.');
+            });
         });
+
+        activity()->enableLogging();
 
         $this->info("\nSystem Settings were synchronized!");
     }

@@ -27,6 +27,8 @@ use Illuminate\Database\Eloquent\{
     Relations\MorphToMany,
     Relations\BelongsToMany
 };
+use Spatie\Activitylog\Traits\LogsActivity;
+use Arr;
 
 class Role extends UuidModel implements RoleContract, ActivatableInterface
 {
@@ -36,7 +38,8 @@ class Role extends UuidModel implements RoleContract, ActivatableInterface
         Searchable,
         SoftDeletes,
         Activatable,
-        Systemable;
+        Systemable,
+        LogsActivity;
 
     protected $guarded = ['id'];
 
@@ -45,9 +48,17 @@ class Role extends UuidModel implements RoleContract, ActivatableInterface
     ];
 
     protected $casts = [
-        'privileges' => 'array',
+        'privileges' => 'collection',
         'is_system' => 'boolean'
     ];
+
+    protected static $logAttributes = [
+        'name', 'modules_privileges'
+    ];
+
+    protected static $logOnlyDirty = true;
+
+    protected static $submitEmptyLogs = false;
 
     public function __construct(array $attributes = [])
     {
@@ -197,11 +208,26 @@ class Role extends UuidModel implements RoleContract, ActivatableInterface
         return $this->permissions->contains('id', $permission->id);
     }
 
+    public function setPrivilegesAttribute($value)
+    {
+        if (!Arr::accessible($value)) {
+            return;
+        }
+
+        $modules = array_flip(array_keys(__('role.modules')));
+
+        $value = collect($value)->sortBy(function ($value) use ($modules) {
+            return data_get($modules, data_get($value, 'module'));
+        })->values()->toJson();
+
+        $this->attributes['privileges'] = $value;
+    }
+
     public function syncPrivileges($privileges = null)
     {
-        $privileges = $privileges ?? $this->privileges;
+        $privileges = isset($privileges) ? collect($privileges) : $this->privileges;
 
-        $permissionsNames = collect($privileges)->reduce(function ($carry, $privilege) {
+        $permissionsNames = $privileges->reduce(function ($carry, $privilege) {
             $permissions = __('role.modules')[$privilege['module']][$privilege['privilege']];
             array_push($carry, ...$permissions);
             return $carry;
@@ -212,8 +238,18 @@ class Role extends UuidModel implements RoleContract, ActivatableInterface
         return $this->syncPermissions($permissions);
     }
 
+    public function getModulesPrivilegesAttribute()
+    {
+        return $this->privileges->toString('module', 'privilege');
+    }
+
     public static function administrator()
     {
         return static::whereName('Administrator')->system()->firstOrFail();
+    }
+
+    public function getItemNameAttribute()
+    {
+        return $this->name;
     }
 }

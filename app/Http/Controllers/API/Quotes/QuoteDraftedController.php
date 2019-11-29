@@ -23,14 +23,10 @@ class QuoteDraftedController extends Controller
      */
     public function index()
     {
-        if (request()->filled('search')) {
-            return response()->json(
-                $this->quote->search(request('search'))
-            );
-        }
-
         return response()->json(
-            $this->quote->all()
+            request()->filled('search')
+                ? $this->quote->search(request('search'))
+                : $this->quote->all()
         );
     }
 

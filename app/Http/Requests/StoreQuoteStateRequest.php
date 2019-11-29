@@ -263,6 +263,21 @@ class StoreQuoteStateRequest extends FormRequest
         ];
     }
 
+    public function validatedData()
+    {
+        return collect($this->validated());
+    }
+
+    public function validatedQuoteData()
+    {
+        return $this->validatedData()->get('quote_data');
+    }
+
+    public function quote()
+    {
+        return $this->has('quote_id') ? Quote::whereId($this->quote_id)->first() : $this->user()->quotes()->make();
+    }
+
     protected function getKey(String $model)
     {
         return Str::finish(Str::start($model, 'quote_data.'), '_id');

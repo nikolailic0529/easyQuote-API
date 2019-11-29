@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Elasticsearch\Client as ElasticsearchClient;
 use App\Models\{
+    Address,
     User,
     Role,
     Company,
@@ -19,6 +20,7 @@ use App\Models\{
     Quote\Discount\SND,
     Collaboration\Invitation
 };
+use App\Models\System\Activity;
 use Str;
 
 class ReindexCommand extends Command
@@ -76,7 +78,9 @@ class ReindexCommand extends Command
                 SND::class,
                 Company::class,
                 Vendor::class,
-                Invitation::class
+                Invitation::class,
+                Activity::class,
+                Address::class
             ]
         );
     }

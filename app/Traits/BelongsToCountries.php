@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use App\Models\Data\Country;
+use Arr;
 
 trait BelongsToCountries
 {
@@ -17,7 +18,20 @@ trait BelongsToCountries
             return false;
         }
 
-        return $this->countries()->sync($countries);
+        $oldCountries = $this->countries;
+
+        $changes = $this->countries()->sync($countries);
+
+        if (blank(Arr::flatten($changes))) {
+            return $changes;
+        }
+
+        $newCountries = $this->load('countries')->countries;
+
+        activity()
+            ->on($this)
+            ->withAttribute('countries', $newCountries->toString('name'), $oldCountries->toString('name'))
+            ->log('updated');
     }
 
     public function scopeCountry($query, string $id)

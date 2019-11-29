@@ -22,29 +22,29 @@ interface CompanyRepositoryInterface
     public function data($additionalData = []): Collection;
 
     /**
-     * Get all User's Companies.
+     * Get all Companies.
      *
-     * @return Paginator
+     * @return mixed
      */
-    public function all(): Paginator;
+    public function all();
 
     /**
-     * Search over User's Companies.
+     * Search over Companies.
      *
      * @param string $query
-     * @return Paginator
+     * @return mixed
      */
-    public function search(string $query = ''): Paginator;
+    public function search(string $query = '');
 
     /**
-     * User's Companies query.
+     * Companies query.
      *
      * @return Builder
      */
     public function userQuery(): Builder;
 
     /**
-     * Find User's Company.
+     * Find Company.
      *
      * @param string $id
      * @return Company
@@ -52,7 +52,7 @@ interface CompanyRepositoryInterface
     public function find(string $id): Company;
 
     /**
-     * Create User's Company.
+     * Create Company.
      *
      * @param StoreCompanyRequest $request
      * @return Company
@@ -60,7 +60,7 @@ interface CompanyRepositoryInterface
     public function create(StoreCompanyRequest $request): Company;
 
     /**
-     * Update User's Company.
+     * Update Company.
      *
      * @param UpdateCompanyRequest $request
      * @param string $id
@@ -69,7 +69,7 @@ interface CompanyRepositoryInterface
     public function update(UpdateCompanyRequest $request, string $id): Company;
 
     /**
-     * Delete User's Company.
+     * Delete Company.
      *
      * @param string $id
      * @return boolean
@@ -77,7 +77,7 @@ interface CompanyRepositoryInterface
     public function delete(string $id): bool;
 
     /**
-     * Activate User's Company.
+     * Activate Company.
      *
      * @param string $id
      * @return boolean
@@ -85,7 +85,7 @@ interface CompanyRepositoryInterface
     public function activate(string $id): bool;
 
     /**
-     * Deactivate User's Company.
+     * Deactivate Company.
      *
      * @param string $id
      * @return boolean

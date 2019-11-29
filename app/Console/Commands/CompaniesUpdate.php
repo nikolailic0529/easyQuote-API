@@ -44,21 +44,27 @@ class CompaniesUpdate extends Command
     {
         $this->info("Updating System Defined Companies...");
 
-        $companies = json_decode(file_get_contents(database_path('seeds/models/companies.json')), true);
+        activity()->disableLogging();
 
-        collect($companies)->each(function ($companyData) {
-            $company = Company::whereVat($companyData['vat'])->first();
-            $default_vendor_id = Vendor::whereShortCode($companyData['default_vendor'])->firstOrFail()->id;
+        \DB::transaction(function () {
+            $companies = json_decode(file_get_contents(database_path('seeds/models/companies.json')), true);
 
-            $company->update(
-                array_merge(Arr::only($companyData, ['type', 'email', 'phone', 'website']), compact('default_vendor_id'))
-            );
-            $vendors = Vendor::whereIn('short_code', $companyData['vendors'])->get();
-            $company->vendors()->sync($vendors);
-            $company->createLogo($companyData['logo'], true);
+            collect($companies)->each(function ($companyData) {
+                $company = Company::whereVat($companyData['vat'])->first();
+                $default_vendor_id = Vendor::whereShortCode($companyData['default_vendor'])->firstOrFail()->id;
 
-            $this->output->write('.');
+                $company->update(
+                    array_merge(Arr::only($companyData, ['type', 'email', 'phone', 'website']), compact('default_vendor_id'))
+                );
+                $vendors = Vendor::whereIn('short_code', $companyData['vendors'])->get();
+                $company->vendors()->sync($vendors);
+                $company->createLogo($companyData['logo'], true);
+
+                $this->output->write('.');
+            });
         });
+
+        activity()->enableLogging();
 
         $this->info("\nSystem Defined Companies were updated!");
     }

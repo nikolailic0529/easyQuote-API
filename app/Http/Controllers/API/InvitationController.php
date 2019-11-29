@@ -23,14 +23,10 @@ class InvitationController extends Controller
      */
     public function index()
     {
-        if (request()->filled('search')) {
-            return response()->json(
-                $this->invitation->search(request('search'))
-            );
-        }
-
         return response()->json(
-            $this->invitation->all()
+            request()->filled('search')
+                ? $this->invitation->search(request('search'))
+                : $this->invitation->all()
         );
     }
 

@@ -2,8 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
+
 class Contact extends UuidModel
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'contact_type'
     ];

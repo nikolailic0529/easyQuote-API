@@ -265,6 +265,11 @@ trait HasMapping
         });
     }
 
+    public function getGroupDescriptionWithMetaAttribute()
+    {
+        return $this->getGroupDescriptionWithMeta();
+    }
+
     public function defaultGroupMeta(?string $group_name = null)
     {
         return [

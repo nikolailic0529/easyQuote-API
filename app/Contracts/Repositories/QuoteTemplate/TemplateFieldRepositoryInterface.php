@@ -27,12 +27,12 @@ interface TemplateFieldRepositoryInterface
     public function all();
 
     /**
-     * Search over User's Template Fields.
+     * Search over Template Fields.
      *
      * @param string $query
-     * @return Paginator
+     * @return mixed
      */
-    public function search(string $query = ''): Paginator;
+    public function search(string $query = '');
 
     /**
      * Get Template Field by id.

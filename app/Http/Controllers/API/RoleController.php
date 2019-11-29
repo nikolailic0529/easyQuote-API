@@ -27,14 +27,10 @@ class RoleController extends Controller
      */
     public function index()
     {
-        if (request()->filled('search')) {
-            return response()->json(
-                $this->role->search(request('search'))
-            );
-        }
-
         return response()->json(
-            $this->role->all()
+            request()->filled('search')
+                ? $this->role->search(request('search'))
+                : $this->role->all()
         );
     }
 

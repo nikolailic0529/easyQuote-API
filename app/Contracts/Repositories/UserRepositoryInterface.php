@@ -104,17 +104,17 @@ interface UserRepositoryInterface
     /**
      * Get all Collaboration Users.
      *
-     * @return Paginator
+     * @return mixed
      */
-    public function all(): Paginator;
+    public function all();
 
     /**
      * Search over Collaboration Users.
      *
      * @param string $query
-     * @return Paginator
+     * @return mixed
      */
-    public function search(string $query = ''): Paginator;
+    public function search(string $query = '');
 
     /**
      * Collaboration Users query.

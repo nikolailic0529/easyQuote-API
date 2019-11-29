@@ -15,17 +15,17 @@ interface PrePayDiscountRepositoryInterface
     /**
      * Get all User's PrePay Discounts.
      *
-     * @return Paginator
+     * @return mixed
      */
-    public function all(): Paginator;
+    public function all();
 
     /**
      * Search over User's PrePay Discounts.
      *
      * @param string $query
-     * @return Paginator
+     * @return mixed
      */
-    public function search(string $query = ''): Paginator;
+    public function search(string $query = '');
 
     /**
      * User's PrePay Discounts query.

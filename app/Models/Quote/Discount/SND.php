@@ -2,11 +2,20 @@
 
 namespace App\Models\Quote\Discount;
 
+use App\Traits\Discount\HasValueAttribute;
+use Spatie\Activitylog\Traits\LogsActivity;
+
 class SND extends Discount
 {
+    use HasValueAttribute, LogsActivity;
+
     protected $table = 'sn_discounts';
 
-    protected $fillable = [
-        'value'
+    protected static $logAttributes = [
+        'name', 'country.name', 'vendor.name', 'value'
     ];
+
+    protected static $logOnlyDirty = true;
+
+    protected static $submitEmptyLogs = false;
 }

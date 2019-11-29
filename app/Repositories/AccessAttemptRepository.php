@@ -19,7 +19,7 @@ class AccessAttemptRepository implements AccessAttemptRepositoryInterface
         return $this->accessAttempt->all();
     }
 
-    public function create(array $array)
+    public function create(array $array): AccessAttempt
     {
         return $this->accessAttempt->create($array);
     }

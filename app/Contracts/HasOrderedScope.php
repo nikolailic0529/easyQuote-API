@@ -2,11 +2,15 @@
 
 namespace App\Contracts;
 
+use Illuminate\Database\Eloquent\Builder;
+
 interface HasOrderedScope
 {
     /**
-     * default model sorting
-     * @return Illuminate\Database\Query instance
+     * Default model sorting.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrdered($query);
 }

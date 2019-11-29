@@ -28,5 +28,22 @@ class InvitationObserver
     public function resended(Invitation $invitation)
     {
         Mail::send(new InvitationMail($invitation));
+
+        activity()
+            ->performedOn($invitation)
+            ->log('resended');
+    }
+
+    /**
+     * Handle the invitation "canceled" event.
+     *
+     * @param Invitation $invitation
+     * @return void
+     */
+    public function canceled(Invitation $invitation)
+    {
+        activity()
+            ->performedOn($invitation)
+            ->log('canceled');
     }
 }

@@ -8,7 +8,7 @@ trait HasAddresses
 {
     public function addresses()
     {
-        return $this->morphMany(Address::class, 'addressable');
+        return $this->belongsToMany(Address::class);
     }
 
     public function hardwareAddresses()
@@ -28,16 +28,16 @@ trait HasAddresses
 
     public function equipmentAddress()
     {
-        return $this->morphOne(Address::class, 'addressable')->type('Equipment')->withDefault($this->hardwareAddresses()->make([]));
+        return $this->belongsTo(Address::class)->type('Equipment')->withDefault($this->hardwareAddresses()->make([]));
     }
 
     public function hardwareAddress()
     {
-        return $this->morphOne(Address::class, 'addressable')->type('Hardware')->withDefault($this->hardwareAddresses()->make([]));
+        return $this->belongsTo(Address::class)->type('Hardware')->withDefault($this->hardwareAddresses()->make([]));
     }
 
     public function softwareAddress()
     {
-        return $this->morphOne(Address::class, 'addressable')->type('Software')->withDefault($this->hardwareAddresses()->make([]));
+        return $this->belongsTo(Address::class)->type('Software')->withDefault($this->hardwareAddresses()->make([]));
     }
 }

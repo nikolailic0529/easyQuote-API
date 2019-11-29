@@ -30,14 +30,10 @@ class PrePayDiscountController extends Controller
      */
     public function index()
     {
-        if (request()->filled('search')) {
-            return response()->json(
-                $this->prePayDiscount->search(request('search'))
-            );
-        }
-
         return response()->json(
-            $this->prePayDiscount->all()
+            request()->filled('search')
+                ? $this->prePayDiscount->search(request('search'))
+                : $this->prePayDiscount->all()
         );
     }
 

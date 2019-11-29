@@ -27,14 +27,10 @@ class CountryMarginController extends Controller
      */
     public function index()
     {
-        if (request()->filled('search')) {
-            return response()->json(
-                $this->margin->search(request('search'))
-            );
-        }
-
         return response()->json(
-            $this->margin->all()
+            request()->filled('search')
+                ? $this->margin->search(request('search'))
+                : $this->margin->all()
         );
     }
 

@@ -31,14 +31,10 @@ class MultiYearDiscountController extends Controller
      */
     public function index()
     {
-        if (request()->filled('search')) {
-            return response()->json(
-                $this->multiYearDiscount->search(request('search'))
-            );
-        }
-
         return response()->json(
-            $this->multiYearDiscount->all()
+            request()->filled('search')
+                ? $this->multiYearDiscount->search(request('search'))
+                : $this->multiYearDiscount->all()
         );
     }
 

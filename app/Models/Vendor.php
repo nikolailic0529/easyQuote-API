@@ -19,6 +19,7 @@ use App\Traits\{
     QuoteTemplate\HasQuoteTemplates
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Vendor extends UuidModel implements WithImage, WithLogo, ActivatableInterface
 {
@@ -31,7 +32,8 @@ class Vendor extends UuidModel implements WithImage, WithLogo, ActivatableInterf
         Activatable,
         SoftDeletes,
         Searchable,
-        Systemable;
+        Systemable,
+        LogsActivity;
 
     protected $fillable = [
         'name', 'short_code'
@@ -45,6 +47,14 @@ class Vendor extends UuidModel implements WithImage, WithLogo, ActivatableInterf
         'logo'
     ];
 
+    protected static $logAttributes = [
+        'name', 'short_code'
+    ];
+
+    protected static $logOnlyDirty = true;
+
+    protected static $submitEmptyLogs = false;
+
     public function toSearchArray()
     {
         $this->makeHidden('logo');
@@ -54,5 +64,10 @@ class Vendor extends UuidModel implements WithImage, WithLogo, ActivatableInterf
     public function inUse()
     {
         return $this->quotes()->exists() || $this->quoteTemplates()->exists();
+    }
+
+    public function getItemNameAttribute()
+    {
+        return $this->name;
     }
 }

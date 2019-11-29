@@ -31,7 +31,7 @@ use App\Contracts\{
     Repositories\QuoteTemplate\TemplateFieldRepositoryInterface,
     Repositories\Customer\CustomerRepositoryInterface,
     Repositories\System\SystemSettingRepositoryInterface,
-    Repositories\System\OperationRepositoryInterface,
+    Repositories\System\ActivityRepositoryInterface,
     Repositories\Quote\Discount\MultiYearDiscountRepositoryInterface,
     Repositories\Quote\Discount\PromotionalDiscountRepositoryInterface,
     Repositories\Quote\Discount\PrePayDiscountRepositoryInterface,
@@ -42,6 +42,7 @@ use App\Contracts\{
     Repositories\InvitationRepositoryInterface,
     Repositories\Quote\QuoteDraftedRepositoryInterface,
     Repositories\Quote\QuoteSubmittedRepositoryInterface,
+    Repositories\AddressRepositoryInterface,
     Services\QuoteServiceInterface
 };
 use App\Models\{
@@ -77,6 +78,7 @@ use App\Repositories\{
     CountryRepository,
     UserRepository,
     AccessAttemptRepository,
+    AddressRepository,
     LanguageRepository,
     CurrencyRepository,
     QuoteFile\QuoteFileRepository,
@@ -89,7 +91,7 @@ use App\Repositories\{
     QuoteTemplate\TemplateFieldRepository,
     Customer\CustomerRepository,
     System\SystemSettingRepository,
-    System\OperationRepository,
+    System\ActivityRepository,
     Quote\Discount\MultiYearDiscountRepository,
     Quote\Discount\PromotionalDiscountRepository,
     Quote\Discount\PrePayDiscountRepository,
@@ -113,6 +115,7 @@ use Elasticsearch\{
     ClientBuilder as ElasticsearchBuilder
 };
 use Illuminate\Support\Collection;
+use Spatie\Activitylog\ActivityLogger;
 use Schema, File, Str, Arr;
 
 class AppServiceProvider extends ServiceProvider
@@ -148,7 +151,9 @@ class AppServiceProvider extends ServiceProvider
         RoleRepositoryInterface::class => RoleRepository::class,
         QuoteDraftedRepositoryInterface::class => QuoteDraftedRepository::class,
         QuoteSubmittedRepositoryInterface::class => QuoteSubmittedRepository::class,
-        InvitationRepositoryInterface::class => InvitationRepository::class
+        InvitationRepositoryInterface::class => InvitationRepository::class,
+        ActivityRepositoryInterface::class => ActivityRepository::class,
+        AddressRepositoryInterface::class => AddressRepository::class
     ];
 
     /**
@@ -275,6 +280,25 @@ class AppServiceProvider extends ServiceProvider
             return filled($prependable) ? "{$prependable}{$space}{$value}" : $value;
         });
 
+        Str::macro('formatAttributeKey', function (string $value) {
+            $value = static::before($value, '.');
+
+            if (!ctype_lower($value)) {
+                $value = preg_replace('/\s+/u', '', ucwords($value));
+                $value = static::lower(preg_replace('/(.)(?=[A-Z])/u', '$1 ', $value));
+            }
+
+            return ucwords(str_replace(['-', '_'], ' ', $value));
+        });
+
+        Str::macro('spaced', function (string $value) {
+            if (!ctype_lower($value) && !ctype_upper($value)) {
+                $value = preg_replace('/(.)(?=[A-Z])/u', '$1 ', $value);
+            }
+
+            return $value;
+        });
+
         Collection::macro('exceptEach', function (...$keys) {
             if (!is_iterable((array) head($this->items))) {
                 return $this;
@@ -351,6 +375,29 @@ class AppServiceProvider extends ServiceProvider
             });
         });
 
+        Collection::macro('toString', function (string $key, ?string $additionalKey = null, string $glue = ', ') {
+            if (!isset($additionalKey)) {
+                return $this->pluck($key)->implode($glue);
+            }
+
+            return $this->map(function ($item) use ($key, $additionalKey) {
+                $value = data_get($item, $key);
+                $additionalValue = data_get($item, $additionalKey);
+
+                return "{$value} ($additionalValue)";
+            })->implode($glue);
+        });
+
+        Collection::macro('udiff', function ($items, bool $both = true) {
+            return new static(array_udiff($this->items, $this->getArrayableItems($items), function ($first, $second) use ($both) {
+                if ($both) {
+                    return $first !== $second ? -1 : 0;
+                }
+
+                return $first <=> $second;
+            }));
+        });
+
         Arr::macro('lower', function (array $array) {
             return array_map(function ($item) {
                 if (!is_string($item)) {
@@ -371,14 +418,36 @@ class AppServiceProvider extends ServiceProvider
             }, $value));
         });
 
-        Arr::macro('hasDifferentValues', function (iterable $array, iterable $array2) {
-            return filled(array_udiff((array) $array, (array) $array2, function ($first, $second) {
-                return $first !== $second ? -1 : 0;
-            }));
+        Arr::macro('udiff', function (array $array, array $array2, bool $both = true) {
+            return array_udiff($array, $array2, function ($first, $second) use ($both) {
+                if ($both) {
+                    return $first !== $second ? -1 : 0;
+                }
+
+                return $first <=> $second;
+            });
         });
 
-        Arr::macro('hasntDifferentValues', function (iterable $array, iterable $array2) {
-            return !self::hasDifferentValues($array, $array2);
+        Arr::macro('udiffAssoc', function (array $array, array $array2) {
+            return array_udiff_assoc($array, $array2, function ($first, $second) {
+                if (is_null($first) || is_null($second)) {
+                    return $first === $second ? 0 : 1;
+                }
+
+                return $first <=> $second;
+            });
+        });
+
+        Arr::macro('isDifferentAssoc', function (array $array, array $array2) {
+            return filled(self::udiffAssoc($array, $array2));
+        });
+
+        ActivityLogger::macro('logWhen', function (string $description, $when) {
+            return $when ? $this->log($description) : $this->activity;
+        });
+
+        ActivityLogger::macro('withAttribute', function (string $attribute, $new, $old) {
+            return $this->withProperties(['attributes' => [$attribute => $new], 'old' => [$attribute => $old]]);
         });
     }
 

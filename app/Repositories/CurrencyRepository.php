@@ -18,6 +18,7 @@ class CurrencyRepository implements CurrencyRepositoryInterface
     public function all()
     {
         $base_currency = Setting::get('base_currency');
+
         return cache()->sear("all-currencies:{$base_currency}", function () {
             return $this->currency->ordered()->get();
         });

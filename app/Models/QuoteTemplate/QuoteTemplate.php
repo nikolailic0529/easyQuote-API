@@ -17,6 +17,7 @@ use App\Traits \ {
     Image\HasImages
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class QuoteTemplate extends UuidModel implements ActivatableInterface
 {
@@ -32,7 +33,8 @@ class QuoteTemplate extends UuidModel implements ActivatableInterface
         Activatable,
         Systemable,
         Searchable,
-        SoftDeletes;
+        SoftDeletes,
+        LogsActivity;
 
     protected $fillable = [
         'name', 'company_id', 'vendor_id', 'form_data', 'form_values_data'
@@ -48,6 +50,14 @@ class QuoteTemplate extends UuidModel implements ActivatableInterface
         'form_values_data' => 'array'
     ];
 
+    protected static $logAttributes = [
+        'name', 'company.name', 'vendor.name', 'currency.symbol'
+    ];
+
+    protected static $logOnlyDirty = true;
+
+    protected static $submitEmptyLogs = false;
+
     public function isAttached()
     {
         return $this->quotes()->exists();
@@ -60,5 +70,10 @@ class QuoteTemplate extends UuidModel implements ActivatableInterface
         $this->makeHidden(['form_data', 'form_values_data']);
 
         return $this->toArray();
+    }
+
+    public function getItemNameAttribute()
+    {
+        return $this->name;
     }
 }

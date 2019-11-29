@@ -43,18 +43,24 @@ class RolesUpdate extends Command
     {
         $this->info("Updating System Defined Roles...");
 
-        $roles = json_decode(file_get_contents(database_path('seeds/models/roles.json')), true);
+        activity()->disableLogging();
 
-        collect($roles)->each(function ($attributes) {
-            $role = Role::whereName($attributes['name'])->firstOrFail();
+        \DB::transaction(function () {
+            $roles = json_decode(file_get_contents(database_path('seeds/models/roles.json')), true);
 
-            $permissions = collect($attributes['permissions'])->map(function ($name) {
-                $this->output->write('.');
-                return Permission::where('name', $name)->firstOrCreate(compact('name'));
+            collect($roles)->each(function ($attributes) {
+                $role = Role::whereName($attributes['name'])->firstOrFail();
+
+                $permissions = collect($attributes['permissions'])->map(function ($name) {
+                    $this->output->write('.');
+                    return Permission::where('name', $name)->firstOrCreate(compact('name'));
+                });
+
+                $role->syncPermissions($permissions)->save();
             });
-
-            $role->syncPermissions($permissions)->save();
         });
+
+        activity()->enableLogging();
 
         $this->info("\nSystem Defined Roles were updated!");
     }

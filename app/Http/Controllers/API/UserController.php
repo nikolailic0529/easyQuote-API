@@ -29,14 +29,10 @@ class UserController extends Controller
     {
         $this->authorize('viewAny', User::class);
 
-        if (request()->filled('search')) {
-            return response()->json(
-                $this->user->search(request('search'))
-            );
-        }
-
         return response()->json(
-            $this->user->all()
+            request()->filled('search')
+                ? $this->user->search(request('search'))
+                : $this->user->all()
         );
     }
 

@@ -31,14 +31,10 @@ class CompanyController extends Controller
      */
     public function index()
     {
-        if (request()->filled('search')) {
-            return response()->json(
-                $this->company->search(request('search'))
-            );
-        }
-
         return response()->json(
-            $this->company->all()
+            request()->filled('search')
+                ? $this->company->search(request('search'))
+                : $this->company->all()
         );
     }
 

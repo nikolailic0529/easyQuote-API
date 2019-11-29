@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\S4;
 
+use App\Models\Data\Country;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -31,9 +32,25 @@ class StoreContractRequest extends FormRequest
             'addresses.*.city' => 'required|string|min:2',
             'addresses.*.state' => 'required|string|min:2',
             'addresses.*.post_code' => 'required|string|min:4',
-            'addresses.*.country_code' => 'required|string|size:2',
+            'addresses.*.country_code' => 'required|string|size:2|exists:countries,iso_3166_2',
             'addresses.*.contact_name' => 'required|string|min:2',
             'addresses.*.contact_number' => 'required|string|min:4'
         ];
+    }
+
+    public function validated()
+    {
+        $validated = collect(parent::validated());
+
+        $addresses = collect($validated->get('addresses'))->transform(function ($address) {
+            $country_id = Country::code(data_get($address, 'country_code'))->firstOrFail()->id;
+            data_set($address, 'country_id', $country_id);
+
+            return $address;
+        });
+
+        $validated->put('addresses', $addresses);
+
+        return $validated->toArray();
     }
 }

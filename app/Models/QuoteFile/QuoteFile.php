@@ -19,6 +19,7 @@ use App\Traits\{
 };
 use App\Contracts\HasOrderedScope;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
 use Cache;
 
 class QuoteFile extends UuidModel implements HasOrderedScope
@@ -30,7 +31,8 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         HasFileFormat,
         Handleable,
         Draftable,
-        SoftDeletes;
+        SoftDeletes,
+        LogsActivity;
 
     protected $fillable = [
         'original_file_path',
@@ -41,6 +43,8 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         'quote_id',
         'imported_page'
     ];
+
+    protected static $recordEvents = ['created', 'deleted'];
 
     public function scopeOrdered($query)
     {
@@ -237,6 +241,11 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         }
 
         return $this->attributes['imported_page'] !== ((int) $page);
+    }
+
+    public function getItemNameAttribute()
+    {
+        return "Quote File ({$this->original_file_name})";
     }
 
     private function isFormat($ext)

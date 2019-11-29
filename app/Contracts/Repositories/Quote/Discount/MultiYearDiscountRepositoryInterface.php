@@ -15,17 +15,17 @@ interface MultiYearDiscountRepositoryInterface
     /**
      * Get all User's MultiYear Discounts.
      *
-     * @return Paginator
+     * @return mixed
      */
-    public function all(): Paginator;
+    public function all();
 
     /**
      * Search over User's MultiYear Discounts.
      *
      * @param string $query
-     * @return Paginator
+     * @return mixed
      */
-    public function search(string $query = ''): Paginator;
+    public function search(string $query = '');
 
     /**
      * User's MultiYear Discounts query.

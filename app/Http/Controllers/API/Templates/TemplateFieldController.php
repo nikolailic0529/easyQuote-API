@@ -25,14 +25,10 @@ class TemplateFieldController extends Controller
      */
     public function index()
     {
-        if (request()->filled('search')) {
-            return response()->json(
-                $this->templateField->search(request('search'))
-            );
-        }
-
         return response()->json(
-            $this->templateField->all()
+            request()->filled('search')
+                ? $this->templateField->search(request('search'))
+                : $this->templateField->all()
         );
     }
 

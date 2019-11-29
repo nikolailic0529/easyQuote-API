@@ -3,6 +3,8 @@
         "name": "Administrator",
         "permissions": [
             "view_system_settings", "update_system_settings",
+            "view_activities",
+            "view_addresses", "create_addresses", "update_addresses", "delete_addresses",
             "view_users", "invite_collaboration_users", "update_users", "delete_users", "reset_users_password",
             "view_roles", "create_roles", "update_roles", "delete_roles",
             "view_quotes", "create_quotes", "update_quotes", "delete_quotes", "submit_quotes",
