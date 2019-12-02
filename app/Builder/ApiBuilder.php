@@ -21,7 +21,7 @@ class ApiBuilder extends EloquentJoinBuilder
     {
         $page = $page ?: Paginator::resolveCurrentPage($pageName);
 
-        $perPage = $perPage ?: request('per_page', null);
+        $perPage = $perPage ?: abs(request('per_page', null));
         $perPage = (int) ($perPage ?: $this->model->getPerPage());
 
         $results = ($total = $this->toBase()->getCountForPagination())

@@ -74,10 +74,6 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
 
     public function summary(?string $subject_id = null): Collection
     {
-        if (cache()->has($this->summaryCacheKey($subject_id))) {
-            return cache($this->summaryCacheKey($subject_id));
-        }
-
         $expectedSummaryTypes = ['created' => 0, 'updated' => 0, 'deleted' => 0];
 
         $summary = $this->filterQuery($this->query())
@@ -101,8 +97,6 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
             ->values();
 
         $summary->push(['type' => 'Total', 'count' => $summary->sum('count')]);
-
-        cache([$this->summaryCacheKey($subject_id) => $summary], 30);
 
         return $summary;
     }

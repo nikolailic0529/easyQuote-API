@@ -16,8 +16,8 @@ class CustomPeriod extends Query
 
         ['from' => $from, 'till' => $till] = $this->value;
 
-        $from = now()->createFromFormat('d/m/y', $from)->toDateTimeString();
-        $till = now()->createFromFormat('d/m/y', $till)->toDateTimeString();
+        $from = now()->createFromFormat('Y-m-d', $from)->toDateTimeString();
+        $till = now()->createFromFormat('Y-m-d', $till)->toDateTimeString();
 
         return $builder->where("{$table}.created_at", '>=', $from)
             ->where("{$table}.created_at", '<=', $till);

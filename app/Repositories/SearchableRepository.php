@@ -18,22 +18,17 @@ abstract class SearchableRepository
     {
         $scope = filled(func_get_args()) && func_get_arg(0) instanceof Closure ? func_get_arg(0) : null;
 
-        $filterableQuery = $this->filterableQuery();
+        $filterableQuery = $this->filterableQuery($scope);
 
-        if (is_array($filterableQuery)) {
-            $query = $this->filterQuery(array_shift($filterableQuery));
-            isset($scope) && $scope($query);
-
-            collect($filterableQuery)->each(function ($union) use ($query, $scope) {
-                $additinalQuery = $this->filterQuery($union);
-                isset($scope) && $scope($additinalQuery);
-
-                $query->union($this->filterQuery($additinalQuery));
-            });
-        } else {
-            $query = $this->filterQuery($filterableQuery);
-            isset($scope) && $scope($query);
+        if (!is_array($filterableQuery)) {
+            return $this->filterQuery($filterableQuery)->apiPaginate();
         }
+
+        $query = $this->filterQuery(array_shift($filterableQuery));
+
+        collect($filterableQuery)->each(function ($union) use ($query) {
+            $query->union($this->filterQuery($union));
+        });
 
         return $query->apiPaginate();
     }
@@ -53,23 +48,20 @@ abstract class SearchableRepository
 
         if ($model instanceof ActivatableInterface) {
             $activated = $this->buildQuery($model, $items, function ($query) use ($scope) {
-                isset($scope) && $scope($query);
                 $this->searchableScope($query)->activated();
-                $this->filterQuery($query);
+                $this->filterQuery($query, $scope);
             });
 
             $deactivated = $this->buildQuery($model, $items, function ($query) use ($scope) {
-                isset($scope) && $scope($query);
                 $this->searchableScope($query)->deactivated();
-                $this->filterQuery($query);
+                $this->filterQuery($query, $scope);
             });
 
             $builder = $activated->union($deactivated);
         } else {
             $builder = $this->buildQuery($model, $items, function ($query) use ($scope) {
-                isset($scope) && $scope($query);
                 $this->searchableScope($query);
-                $this->filterQuery($query);
+                $this->filterQuery($query, $scope);
             });
         }
 
@@ -114,12 +106,15 @@ abstract class SearchableRepository
         return $items;
     }
 
-    protected function filterQuery(Builder $query)
+    protected function filterQuery(Builder $query, ?Closure $scope = null)
     {
         return app(Pipeline::class)
             ->send($query)
             ->through($this->filterQueryThrough())
-            ->thenReturn();
+            ->then(function ($passable) use ($scope) {
+                isset($scope) && $scope($passable);
+                return $passable;
+            });
     }
 
     /**

@@ -43,19 +43,21 @@ class GetActivitiesRequest extends FormRequest
             'custom_period.from' => [
                 'required_with:custom_period',
                 'string',
-                'date_format:d/m/y'
+                'date_format:Y-m-d'
             ],
             'custom_period.till' => [
                 'required_with:custom_period',
                 'string',
-                'date_format:d/m/y'
+                'date_format:Y-m-d'
             ],
             'causer_id' => [
                 'nullable',
                 'string',
                 'uuid',
                 'exists:users,id'
-            ]
+            ],
+            'per_page' => 'nullable|numeric',
+            'search' => 'nullable|string'
         ];
     }
 
