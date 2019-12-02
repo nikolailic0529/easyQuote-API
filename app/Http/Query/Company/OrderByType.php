@@ -7,6 +7,6 @@ class OrderByType extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderBy("{$table}.type", request($this->queryName()));
+        return $builder->orderBy("{$table}.type", $this->value);
     }
 }

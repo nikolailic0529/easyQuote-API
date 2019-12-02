@@ -7,6 +7,6 @@ class OrderByQuoteType extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderBy('quote_type', request($this->queryName()));
+        return $builder->orderBy('quote_type', $this->value);
     }
 }

@@ -7,6 +7,6 @@ class OrderByCity extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderBy("{$table}.city", request($this->queryName()));
+        return $builder->orderBy("{$table}.city", $this->value);
     }
 }

@@ -7,6 +7,6 @@ class OrderByValidUntil extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderByJoin('customer.valid_until', request($this->queryName()));
+        return $builder->orderByJoin('customer.valid_until', $this->value);
     }
 }

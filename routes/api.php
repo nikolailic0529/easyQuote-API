@@ -45,10 +45,15 @@ Route::group(['namespace' => 'API'], function () {
             Route::apiResource('settings', 'SystemSettingController', ['only' => config('route.ru')]);
             Route::patch('settings', 'SystemSettingController@updateMany');
 
-            Route::get('activities', 'ActivityController@index');
+            Route::match(['get', 'post'], 'activities', 'ActivityController@index');
+            Route::get('activities/meta', 'ActivityController@meta');
+            Route::match(['get', 'post'], 'activities/export/{type}', 'ActivityController@export')->where('type', 'csv|excel|pdf');
+            Route::match(['get', 'post'], 'activities/subject/{subject}', 'ActivityController@subject');
+            Route::match(['get', 'post'], 'activities/subject/{subject}/export/{type}', 'ActivityController@exportSubject');
         });
 
         Route::group(['middleware' => 'throttle:60,1'], function () {
+            Route::get('users/list', 'UserController@list');
             Route::resource('users', 'UserController', ['only' => config('route.crud')]);
             Route::put('users/activate/{user}', 'UserController@activate');
             Route::put('users/deactivate/{user}', 'UserController@deactivate');

@@ -7,6 +7,6 @@ class OrderByVat extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderBy("{$table}.vat", request($this->queryName()));
+        return $builder->orderBy("{$table}.vat", $this->value);
     }
 }

@@ -17,18 +17,10 @@ use Storage, Closure, Str, Cache;
 
 class QuoteService implements QuoteServiceInterface
 {
-    /**
-     * DomPDF
-     *
-     * @var Barryvdh\Snappy\PdfWrapper
-     */
-    protected $pdf;
-
     protected $quoteFile;
 
     public function __construct(QuoteFileRepository $quoteFile)
     {
-        $this->pdf = app('snappy.pdf.wrapper');
         $this->quoteFile = $quoteFile;
     }
 
@@ -270,7 +262,7 @@ class QuoteService implements QuoteServiceInterface
         $filename = "{$quote->customer->rfq}_{$hash}.pdf";
         $original_file_path = "{$quote->user->quoteFilesDirectory}/$filename";
         $path = Storage::path($original_file_path);
-        $this->pdf->loadView('quotes.pdf', $export)->save(storage_path("app/{$original_file_path}"));
+        $this->pdfWrapper()->loadView('quotes.pdf', $export)->save(storage_path("app/{$original_file_path}"));
 
         $this->quoteFile->createPdf($quote, compact('original_file_path', 'filename'));
     }
@@ -283,7 +275,7 @@ class QuoteService implements QuoteServiceInterface
             return view('quotes.pdf', $export);
         }
 
-        return $this->pdf->loadView('quotes.pdf', $export)->inline();
+        return $this->pdfWrapper()->loadView('quotes.pdf', $export)->inline();
     }
 
     public function prepareRows(Quote $quote): void
@@ -350,5 +342,15 @@ class QuoteService implements QuoteServiceInterface
         }
 
         return 0.0;
+    }
+
+    /**
+     * Return PdfWrapper instance.
+     *
+     * @return \Barryvdh\Snappy\PdfWrapper
+     */
+    protected function pdfWrapper()
+    {
+        return app('snappy.pdf.wrapper');
     }
 }

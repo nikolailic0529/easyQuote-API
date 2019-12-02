@@ -16,16 +16,23 @@ abstract class SearchableRepository
 {
     public function all()
     {
+        $scope = filled(func_get_args()) && func_get_arg(0) instanceof Closure ? func_get_arg(0) : null;
+
         $filterableQuery = $this->filterableQuery();
 
         if (is_array($filterableQuery)) {
             $query = $this->filterQuery(array_shift($filterableQuery));
+            isset($scope) && $scope($query);
 
-            collect($filterableQuery)->each(function ($union) use ($query) {
-                $query->union($this->filterQuery($union));
+            collect($filterableQuery)->each(function ($union) use ($query, $scope) {
+                $additinalQuery = $this->filterQuery($union);
+                isset($scope) && $scope($additinalQuery);
+
+                $query->union($this->filterQuery($additinalQuery));
             });
         } else {
             $query = $this->filterQuery($filterableQuery);
+            isset($scope) && $scope($query);
         }
 
         return $query->apiPaginate();
@@ -33,30 +40,40 @@ abstract class SearchableRepository
 
     public function search(string $query = '')
     {
+        $scope = count(func_get_args()) > 1 && func_get_arg(1) instanceof Closure ? func_get_arg(1) : null;
+
+        return $this->searchBuilder($query, $scope)->apiPaginate();
+    }
+
+    public function searchBuilder(string $query = '', ?Closure $scope = null): Builder
+    {
         $model = $this->searchableModel();
 
         $items = $this->searchOnElasticsearch($model, $this->searchableFields(), $query);
 
         if ($model instanceof ActivatableInterface) {
-            $activated = $this->buildQuery($model, $items, function ($query) {
+            $activated = $this->buildQuery($model, $items, function ($query) use ($scope) {
+                isset($scope) && $scope($query);
                 $this->searchableScope($query)->activated();
                 $this->filterQuery($query);
             });
 
-            $deactivated = $this->buildQuery($model, $items, function ($query) {
-                $this->searchableScope($query);
+            $deactivated = $this->buildQuery($model, $items, function ($query) use ($scope) {
+                isset($scope) && $scope($query);
+                $this->searchableScope($query)->deactivated();
                 $this->filterQuery($query);
             });
 
             $builder = $activated->union($deactivated);
         } else {
-            $builder = $this->buildQuery($model, $items, function ($query) {
+            $builder = $this->buildQuery($model, $items, function ($query) use ($scope) {
+                isset($scope) && $scope($query);
                 $this->searchableScope($query);
                 $this->filterQuery($query);
             });
         }
 
-        return $builder->apiPaginate();
+        return $builder;
     }
 
     protected function elasticsearch()

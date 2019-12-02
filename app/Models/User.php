@@ -17,7 +17,7 @@ use App\Models\{
 use App\Traits\{
     Activatable,
     HasCountry,
-    HasTimezone,
+    BelongsToTimezone,
     HasQuoteFilesDirectory,
     HasQuoteFiles,
     HasQuotes,
@@ -30,7 +30,8 @@ use App\Traits\{
     QuoteTemplate\HasTemplateFields,
     Collaboration\HasInvitations,
     Search\Searchable,
-    Image\HasImage
+    Image\HasImage,
+    Image\HasPictureAttribute
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Traits\HasRoles;
@@ -48,13 +49,14 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
         HasCountry,
         HasInvitations,
         Notifiable,
-        HasTimezone,
+        BelongsToTimezone,
         HasCountryMargins,
         HasDiscounts,
         HasVendors,
         HasCompanies,
         HasQuoteTemplates,
         HasTemplateFields,
+        HasPictureAttribute,
         Activatable,
         Searchable,
         SoftDeletes,
@@ -158,15 +160,6 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
     public function imagesDirectory(): string
     {
         return "images/users";
-    }
-
-    public function getPictureAttribute()
-    {
-        if (!isset($this->image->attributes['original'])) {
-            return null;
-        }
-
-        return asset('storage/' . $this->image->attributes['original']);
     }
 
     public function toSearchArray()

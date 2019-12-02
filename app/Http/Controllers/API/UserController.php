@@ -36,6 +36,15 @@ class UserController extends Controller
         );
     }
 
+    public function list()
+    {
+        $this->authorize('viewAny', User::class);
+
+        return response()->json(
+            $this->user->list()
+        );
+    }
+
     /**
      * Data for creating a new Role.
      *

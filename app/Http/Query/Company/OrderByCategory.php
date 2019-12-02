@@ -7,6 +7,6 @@ class OrderByCategory extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderBy("{$table}.category", request($this->queryName()));
+        return $builder->orderBy("{$table}.category", $this->value);
     }
 }

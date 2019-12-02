@@ -9,7 +9,7 @@ trait BelongsToCountries
 {
     public function countries()
     {
-        return $this->belongsToMany(Country::class);
+        return $this->belongsToMany(Country::class)->orderBy('name');
     }
 
     public function syncCountries($countries)

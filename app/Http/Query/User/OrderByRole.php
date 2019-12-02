@@ -16,7 +16,7 @@ class OrderByRole extends Query
                     ->where("{$model_has_roles}.model_type", '=', $model);
             })
             ->join("roles as {$roles}", "{$roles}.id", '=', "{$model_has_roles}.role_id")
-            ->orderBy("{$roles}.name", request($this->queryName()))
+            ->orderBy("{$roles}.name", $this->value)
             ->groupBy("{$table}.id")
             ->select("{$table}.*");
     }

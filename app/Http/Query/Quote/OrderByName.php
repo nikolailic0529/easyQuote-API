@@ -7,6 +7,6 @@ class OrderByName extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderByJoin('customer.name', request($this->queryName()));
+        return $builder->orderByJoin('customer.name', $this->value);
     }
 }

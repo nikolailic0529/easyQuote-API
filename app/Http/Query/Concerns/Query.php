@@ -18,6 +18,22 @@ abstract class Query
         return $this->applyQuery($next($request), $this->modelTable($next($request)));
     }
 
+    public function __get($key)
+    {
+        $getter = 'get' . ucfirst($key);
+
+        if (!method_exists($this, $getter)) {
+            return;
+        }
+
+        return $this->{$getter}();
+    }
+
+    public function getValue()
+    {
+        return request($this->queryName());
+    }
+
     protected function queryName()
     {
         return Str::snake(class_basename($this));

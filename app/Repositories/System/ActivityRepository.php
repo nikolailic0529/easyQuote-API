@@ -5,10 +5,17 @@ namespace App\Repositories\System;
 use App\Contracts\Repositories\System\ActivityRepositoryInterface;
 use App\Repositories\SearchableRepository;
 use App\Http\Resources\ActivityCollection;
-use App\Models\System\Activity;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
+use App\Models\System\{
+    Activity,
+    ActivityExportCollection
+};
+use Illuminate\Database\Eloquent\{
+    Builder,
+    Model
+};
 use Illuminate\Support\Collection;
+use League\Csv\Writer as CsvWriter;
+use Str;
 
 class ActivityRepository extends SearchableRepository implements ActivityRepositoryInterface
 {
@@ -26,21 +33,43 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
         return $this->activity->query()->with('subject');
     }
 
+    public function subjectQuery(string $subject_id): Builder
+    {
+        return $this->activity->query()->whereSubjectId($subject_id);
+    }
+
     public function all()
     {
         $summary = $this->summary();
-        return (new ActivityCollection(parent::all()))->additional(compact('summary'));
+        return $this->toCollection(parent::all())->additional(compact('summary'));
     }
 
     public function search(string $query = '')
     {
         $summary = $this->summary();
-        return (new ActivityCollection(parent::search($query)))->additional(compact('summary'));
+        return $this->toCollection(parent::search($query))->additional(compact('summary'));
     }
 
-    public function subjectQuery(string $subject_id): Builder
+    public function findSubject(string $subject_id): Model
     {
-        return $this->activity->query()->whereSubjectId($subject_id);
+        return $this->subjectQuery($subject_id)->firstOrFail()->subject;
+    }
+
+    public function subjectActivities(string $subject_id)
+    {
+        $summary = $this->summary($subject_id);
+        $data = parent::all($this->subjectScope($subject_id));
+        $subject_name = $data->getCollection()->first()->subject->item_name ?? null;
+
+        return $this->toCollection($data)->additional(compact('summary', 'subject_name'));
+    }
+
+    public function searchSubjectActivities(string $subject_id, string $query = '')
+    {
+        $summary = $this->summary($subject_id);
+        $data = parent::search($query, $this->subjectScope($subject_id));
+
+        return $this->toCollection($data)->additional(compact('summary'));
     }
 
     public function summary(?string $subject_id = null): Collection
@@ -51,11 +80,12 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
 
         $expectedSummaryTypes = ['created' => 0, 'updated' => 0, 'deleted' => 0];
 
-        $summary = $this->query()
+        $summary = $this->filterQuery($this->query())
             ->when(filled($subject_id), function ($query) use ($subject_id) {
                 $query->whereSubjectId($subject_id);
             })
             ->select(['description', \DB::raw('count(*) as count')])
+            ->whereIn('description', ['created', 'updated', 'deleted'])
             ->groupBy('description')
             ->pluck('count', 'description')
             ->union($expectedSummaryTypes);
@@ -77,10 +107,75 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
         return $summary;
     }
 
+    public function export(string $type)
+    {
+        if (!$method = $this->exportMethod($type)) {
+            return;
+        }
+
+        $summary = $this->summary();
+        $activitiesQuery = $this->filterQuery($this->query())->latest()->limit(5000);
+
+        abort_if($activitiesQuery->doesntExist(), 404, 'No activities found.');
+
+        $activities = $activitiesQuery->get();
+
+        $activityCollection = ActivityExportCollection::create($summary, $activities);
+
+        return $this->{$method}($activityCollection);
+    }
+
+    public function exportSubject(string $subject_id, string $type)
+    {
+        if (!$method = $this->exportMethod($type)) {
+            return;
+        }
+
+        $summary = $this->summary($subject_id);
+        $activitiesQuery = $this->filterQuery($this->subjectQuery($subject_id))->latest()->limit(5000);
+
+        abort_if($activitiesQuery->doesntExist(), 404, 'No activities found.');
+
+        $activities = $activitiesQuery->get();
+        $subject_name = $activities->first()->subject->item_name;
+
+        $activityCollection = ActivityExportCollection::create($summary, $activities)
+            ->prepend('subject_name', $subject_name);
+
+        return $this->{$method}($activityCollection);
+    }
+
+    public function meta(): array
+    {
+        $periods = collect(__('activity.periods'))->transform(function ($value) {
+            $label = now()->period($value)->label;
+            return compact('label', 'value');
+        });
+
+        $types = collect(__('activity.types'))->transform(function ($value) {
+            $label = ucfirst($value);
+            return compact('label', 'value');
+        });
+
+        return compact('periods', 'types');
+    }
+
+    protected function subjectScope(string $subject_id)
+    {
+        return function ($query) use ($subject_id) {
+            $query->whereSubjectId($subject_id);
+        };
+    }
+
+    protected function toCollection($data)
+    {
+        return new ActivityCollection($data);
+    }
+
     protected function summaryCacheKey(?string $subject_id = null): string
     {
         return filled($subject_id)
-            ? "$this->summaryCacheKey:{$subject_id}"
+            ? "{$this->summaryCacheKey}:{$subject_id}"
             : $this->summaryCacheKey;
     }
 
@@ -88,7 +183,11 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
     {
         return [
             \App\Http\Query\DefaultOrderBy::class,
-            \App\Http\Query\OrderByCreatedAt::class
+            \App\Http\Query\OrderByCreatedAt::class,
+            \App\Http\Query\Activity\Types::class,
+            \App\Http\Query\Activity\Period::class,
+            \App\Http\Query\Activity\CustomPeriod::class,
+            \App\Http\Query\Activity\CauserId::class
         ];
     }
 
@@ -114,5 +213,86 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
     protected function searchableScope(Builder $query)
     {
         return $query->with('subject');
+    }
+
+    /**
+     * Export the activities as CSV.
+     *
+     * @param Export $activityCollection
+     * @return string
+     */
+    protected function exportCsv(ActivityExportCollection $activityCollection): string
+    {
+        $filepath = $this->exportFilepath('csv');
+        storage_put($filepath, null);
+
+        $writer = CsvWriter::createFromPath(storage_real_path($filepath), 'w');
+
+        if (filled($activityCollection->subjectName)) {
+            $writer->insertOne([$activityCollection->subjectName]);
+            $writer->insertOne([]);
+        }
+
+        /**
+         * Summary
+         */
+        $writer->insertOne($activityCollection->summaryHeader);
+        $writer->insertOne($activityCollection->summaryData);
+
+        $writer->insertOne([]);
+
+        /**
+         * Logs
+         */
+        $writer->insertAll($activityCollection->collectionHeader);
+        $activityCollection->collection->each(function ($activity) use ($writer) {
+            $writer->insertAll($activity);
+        });
+
+        return storage_real_path($filepath);
+    }
+
+    /**
+     * Export the activities as PDF.
+     *
+     * @param ActivityCollection $activityCollection
+     * @return string
+     */
+    protected function exportPdf(ActivityExportCollection $activityCollection)
+    {
+        $filepath = $this->exportFilepath('pdf');
+
+        $this->pdfWrapper()->loadView('activities.pdf', compact('activityCollection'))->save(storage_path("app/{$filepath}"));
+
+        return storage_real_path($filepath);
+    }
+
+    /**
+     * Return PdfWrapper instance.
+     *
+     * @return \Barryvdh\Snappy\PdfWrapper
+     */
+    protected function pdfWrapper()
+    {
+        return app('snappy.pdf.wrapper');
+    }
+
+
+    private function exportFilepath(string $ext): string
+    {
+        storage_missing('activities') && storage_mkdir('activities');
+
+        return 'activities/' . now()->format('m-d-y_hm') . '_' . Str::random(40) . '.' . $ext;
+    }
+
+    private function exportMethod(string $type): string
+    {
+        $method = 'export' . ucfirst($type);
+
+        if (!in_array(strtolower($type), ['csv', 'pdf']) || !method_exists($this, $method)) {
+            return false;
+        }
+
+        return $method;
     }
 }

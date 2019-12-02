@@ -68,12 +68,27 @@ class UpdateCompanyRequest extends FormRequest
             'website' => 'nullable|string|min:4',
             'vendors' => 'array',
             'vendors.*' => 'required|uuid|exists:vendors,id',
-            'default_vendor_id' => 'nullable|uuid|exists:vendors,id'
+            'default_vendor_id' => 'nullable|uuid|exists:vendors,id',
+            'addresses_attach' => 'nullable|array',
+            'addresses_attach.*' => 'required|string|uuid|exists:addresses,id',
+            'addresses_detach' => 'nullable|array',
+            'addresses_detach.*' => 'required|string|uuid|exists:addresses,id'
         ];
     }
 
     protected function nullValues()
     {
         return ['phone', 'website'];
+    }
+
+    protected function passedValidation()
+    {
+        if (!$this->filled(['addresses_attach', 'addresses_detach'])) {
+            return;
+        }
+
+        $addresses_attach = array_diff($this->addresses_attach, $this->addresses_detach);
+
+        $this->merge(compact('addresses_attach'));
     }
 }

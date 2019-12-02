@@ -7,6 +7,6 @@ class OrderByMinimumLimit extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderBy("{$table}.minimum_limit", request($this->queryName()));
+        return $builder->orderBy("{$table}.minimum_limit", $this->value);
     }
 }

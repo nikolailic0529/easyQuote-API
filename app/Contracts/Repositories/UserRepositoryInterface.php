@@ -109,6 +109,13 @@ interface UserRepositoryInterface
     public function all();
 
     /**
+     * Retrieve the list of users without pagination.
+     *
+     * @return mixed
+     */
+    public function list();
+
+    /**
      * Search over Collaboration Users.
      *
      * @param string $query

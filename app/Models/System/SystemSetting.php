@@ -4,6 +4,7 @@ namespace App\Models\System;
 
 use App\Models\UuidModel;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Str;
 
 class SystemSetting extends UuidModel
 {
@@ -42,6 +43,8 @@ class SystemSetting extends UuidModel
     protected static $logOnlyDirty = true;
 
     protected static $submitEmptyLogs = false;
+
+    protected static $recordEvents = ['updated'];
 
     protected function getCastType($key)
     {
@@ -116,5 +119,12 @@ class SystemSetting extends UuidModel
     public function forgetCachedValue()
     {
         return cache()->forget($this->valueCacheKey);
+    }
+
+    public function getItemNameAttribute(): string
+    {
+        $key = Str::formatAttributeKey($this->key);
+
+        return "Setting ({$key})";
     }
 }

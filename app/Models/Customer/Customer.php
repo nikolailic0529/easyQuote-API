@@ -7,7 +7,8 @@ use App\Models\{
     Address
 };
 use App\Traits\{
-    HasAddresses,
+    BelongsToAddresses,
+    HasAddressTypes,
     HasContacts,
     Submittable,
     Quote\HasQuotes
@@ -16,7 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Customer extends UuidModel
 {
-    use HasAddresses, HasContacts, Submittable, HasQuotes, SoftDeletes;
+    use BelongsToAddresses, HasAddressTypes, HasContacts, Submittable, HasQuotes, SoftDeletes;
 
     protected $attributes = [
         'support_start' => null,
@@ -100,10 +101,5 @@ class Customer extends UuidModel
     public function scopeNotInUse($query)
     {
         return $query->drafted()->doesntHave('quotes');
-    }
-
-    public function addresses()
-    {
-        return $this->belongsToMany(Address::class, 'customer_address');
     }
 }

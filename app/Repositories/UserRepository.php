@@ -14,6 +14,7 @@ use App\Http\Requests\{
     StoreResetPasswordRequest,
     UpdateProfileRequest
 };
+use App\Http\Resources\UserListResource;
 use App\Models\{
     User,
     Role,
@@ -65,6 +66,19 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
     public function userQuery(): Builder
     {
         return $this->user->query();
+    }
+
+    public function list()
+    {
+        $users = $this->userQuery()
+            ->where([
+                ['first_name', '!=', ''],
+                ['last_name', '!=', ''],
+                ['email', '!=', ''],
+            ])
+            ->withTrashed()
+            ->get();
+        return UserListResource::collection($users);
     }
 
     public function find(string $id): User

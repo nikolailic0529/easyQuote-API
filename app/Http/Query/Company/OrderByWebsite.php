@@ -7,6 +7,6 @@ class OrderByWebsite extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderBy("{$table}.website", request($this->queryName()));
+        return $builder->orderBy("{$table}.website", $this->value);
     }
 }

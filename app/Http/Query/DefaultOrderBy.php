@@ -1,7 +1,6 @@
 <?php namespace App\Http\Query;
 
 use Closure;
-use Illuminate\Database\Eloquent\Builder;
 
 class DefaultOrderBy
 {

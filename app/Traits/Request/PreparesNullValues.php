@@ -11,6 +11,11 @@ trait PreparesNullValues
      */
     protected function prepareForValidation()
     {
+        $this->prepareNullValues();
+    }
+
+    protected function prepareNullValues()
+    {
         if (!method_exists($this, 'nullValues')) {
             return;
         }

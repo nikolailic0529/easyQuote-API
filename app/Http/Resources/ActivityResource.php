@@ -17,7 +17,7 @@ class ActivityResource extends JsonResource
         return [
             'id' => $this->id,
             'log_name' => $this->log_name,
-            'description' => ucfirst($this->description),
+            'description' => $this->description,
             'subject_id' => $this->subject_id,
             'subject_name' => $this->subject_name,
             'subject_type' => $this->subject_type_base,

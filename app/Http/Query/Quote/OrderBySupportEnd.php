@@ -7,6 +7,6 @@ class OrderBySupportEnd extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderByJoin('customer.support_end', request($this->queryName()));
+        return $builder->orderByJoin('customer.support_end', $this->value);
     }
 }

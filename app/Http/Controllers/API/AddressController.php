@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Models\Address;
 use App\Contracts\Repositories\AddressRepositoryInterface as AddressRepository;
-use App\Http\Requests\Address\StoreAddressRequest;
-use App\Http\Requests\Address\UpdateAddressRequest;
-use Illuminate\Http\Request;
+use App\Models\Address;
+use App\Http\Requests\Address\{
+    StoreAddressRequest,
+    UpdateAddressRequest
+};
 
 class AddressController extends Controller
 {

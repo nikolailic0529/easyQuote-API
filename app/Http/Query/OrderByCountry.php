@@ -7,6 +7,6 @@ class OrderByCountry extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderByJoin('country.name', request($this->queryName()));
+        return $builder->orderByJoin('country.name', $this->value);
     }
 }

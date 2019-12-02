@@ -7,6 +7,6 @@ class OrderByCompleteness extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderBy("{$table}.completeness", request($this->queryName()));
+        return $builder->orderBy("{$table}.completeness", $this->value);
     }
 }

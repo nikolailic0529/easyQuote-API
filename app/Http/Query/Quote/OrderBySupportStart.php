@@ -7,6 +7,6 @@ class OrderBySupportStart extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderByJoin('customer.support_start', request($this->queryName()));
+        return $builder->orderByJoin('customer.support_start', $this->value);
     }
 }

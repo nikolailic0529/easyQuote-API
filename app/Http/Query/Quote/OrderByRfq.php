@@ -7,6 +7,6 @@ class OrderByRfq extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderByJoin('customer.rfq', request($this->queryName()));
+        return $builder->orderByJoin('customer.rfq', $this->value);
     }
 }

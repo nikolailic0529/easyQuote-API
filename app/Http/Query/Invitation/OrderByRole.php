@@ -7,6 +7,6 @@ class OrderByRole extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderByJoin('role.name', request($this->queryName()));
+        return $builder->orderByJoin('role.name', $this->value);
     }
 }

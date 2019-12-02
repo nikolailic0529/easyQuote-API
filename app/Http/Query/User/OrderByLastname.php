@@ -7,6 +7,6 @@ class OrderByLastname extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderBy("{$table}.last_name", request($this->queryName()));
+        return $builder->orderBy("{$table}.last_name", $this->value);
     }
 }

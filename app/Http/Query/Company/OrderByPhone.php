@@ -7,6 +7,6 @@ class OrderByPhone extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderBy("{$table}.phone", request($this->queryName()));
+        return $builder->orderBy("{$table}.phone", $this->value);
     }
 }

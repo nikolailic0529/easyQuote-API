@@ -7,6 +7,6 @@ class OrderByValue extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderBy("{$table}.value", request($this->queryName()));
+        return $builder->orderBy("{$table}.value", $this->value);
     }
 }

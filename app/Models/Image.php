@@ -31,4 +31,9 @@ class Image extends UuidModel
 
         return $thumbnails->toArray();
     }
+
+    public function getOriginalImageAttribute()
+    {
+        return $this->attributes['original'];
+    }
 }

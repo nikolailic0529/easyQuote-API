@@ -7,6 +7,6 @@ class OrderByPostCode extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderBy("{$table}.post_code", request($this->queryName()));
+        return $builder->orderBy("{$table}.post_code", $this->value);
     }
 }

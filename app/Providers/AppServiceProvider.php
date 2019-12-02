@@ -59,6 +59,7 @@ use App\Models\{
     Collaboration\Invitation,
     System\SystemSetting
 };
+use App\Models\System\Period;
 use App\Observers\{
     CompanyObserver,
     VendorObserver,
@@ -114,6 +115,7 @@ use Elasticsearch\{
     Client as ElasticsearchClient,
     ClientBuilder as ElasticsearchBuilder
 };
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Spatie\Activitylog\ActivityLogger;
 use Schema, File, Str, Arr;
@@ -398,6 +400,12 @@ class AppServiceProvider extends ServiceProvider
             }));
         });
 
+        Collection::macro('ucfirst', function () {
+            return $this->map(function ($value) {
+                return ucfirst($value);
+            });
+        });
+
         Arr::macro('lower', function (array $array) {
             return array_map(function ($item) {
                 if (!is_string($item)) {
@@ -448,6 +456,10 @@ class AppServiceProvider extends ServiceProvider
 
         ActivityLogger::macro('withAttribute', function (string $attribute, $new, $old) {
             return $this->withProperties(['attributes' => [$attribute => $new], 'old' => [$attribute => $old]]);
+        });
+
+        Carbon::macro('period', function (string $period) {
+            return Period::create($period);
         });
     }
 

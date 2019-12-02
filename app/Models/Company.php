@@ -11,7 +11,9 @@ use App\Contracts\{
 };
 use App\Traits\{
     Activatable,
+    BelongsToAddresses,
     BelongsToUser,
+    BelongsToVendors,
     Image\HasImage,
     Image\HasLogo,
     Search\Searchable,
@@ -21,13 +23,14 @@ use App\Traits\{
 };
 use Spatie\Activitylog\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Arr;
 
 class Company extends UuidModel implements WithImage, WithLogo, ActivatableInterface, HasOrderedScope
 {
     use HasLogo,
         HasImage,
         BelongsToUser,
+        BelongsToVendors,
+        BelongsToAddresses,
         Activatable,
         Searchable,
         Systemable,
@@ -59,35 +62,6 @@ class Company extends UuidModel implements WithImage, WithLogo, ActivatableInter
         'image'
     ];
 
-    public function syncVendors($vendors)
-    {
-        if (!is_array($vendors)) {
-            return false;
-        }
-
-        $oldVendors = $this->vendors;
-
-        $changes = $this->vendors()->sync($vendors);
-
-        if (blank(Arr::flatten($changes))) {
-            return $changes;
-        }
-
-        $newVendors = $this->load('vendors')->vendors;
-
-        activity()
-            ->on($this)
-            ->withAttribute('vendors', $newVendors->toString('name'), $oldVendors->toString('name'))
-            ->log('updated');
-    }
-
-    public function scopeVendor($query, string $id)
-    {
-        return $query->whereHas('vendors', function ($query) use ($id) {
-            $query->where('vendors.id', $id);
-        });
-    }
-
     public function vendors()
     {
         return $this->belongsToMany(Vendor::class)->join('companies', 'companies.id', '=', 'company_vendor.company_id')
@@ -97,6 +71,13 @@ class Company extends UuidModel implements WithImage, WithLogo, ActivatableInter
     public function defaultVendor()
     {
         return $this->belongsTo(Vendor::class);
+    }
+
+    public function scopeVendor($query, string $id)
+    {
+        return $query->whereHas('vendors', function ($query) use ($id) {
+            $query->where('vendors.id', $id);
+        });
     }
 
     public function scopeOrdered($query)

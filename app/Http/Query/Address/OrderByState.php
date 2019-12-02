@@ -7,6 +7,6 @@ class OrderByState extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        return $builder->orderBy("{$table}.state", request($this->queryName()));
+        return $builder->orderBy("{$table}.state", $this->value);
     }
 }
