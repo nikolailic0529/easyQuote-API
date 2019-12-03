@@ -8,6 +8,7 @@ use App\Traits\{
     Search\Searchable
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Builder;
 use Arr;
 
 class Address extends UuidModel
@@ -29,9 +30,14 @@ class Address extends UuidModel
         'addressable_id', 'addressable_type', 'deleted_at'
     ];
 
-    public function scopeType($query, string $type)
+    public function scopeType(Builder $query, string $type): Builder
     {
         return $query->whereAddressType($type);
+    }
+
+    public function scopeCommonTypes(Builder $query): Builder
+    {
+        return $query->whereIn('address_type', __('address.types'));
     }
 
     public function toSearchArray()

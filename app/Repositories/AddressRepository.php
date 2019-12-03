@@ -24,7 +24,7 @@ class AddressRepository extends SearchableRepository implements AddressRepositor
 
     public function query(): Builder
     {
-        return $this->address->query()->with('country');
+        return $this->address->query()->commonTypes()->with('country');
     }
 
     public function find(string $id): Address
@@ -81,7 +81,7 @@ class AddressRepository extends SearchableRepository implements AddressRepositor
 
     protected function searchableScope(Builder $query)
     {
-        return $query->with('country');
+        return $query->commonTypes()->with('country');
     }
 
     protected function searchableModel(): Model

@@ -21,7 +21,12 @@ trait Systemable
         return (bool) $this->getAttribute('is_system');
     }
 
-    public function scopeSystem(Builder $query)
+    public function scopeNonSystem(Builder $query): Builder
+    {
+        return $query->where('is_system', false);
+    }
+
+    public function scopeSystem(Builder $query): Builder
     {
         return $query->where('is_system', true);
     }
