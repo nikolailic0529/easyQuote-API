@@ -2,6 +2,7 @@
 
 namespace App\Models\System;
 
+use App\Models\User;
 use App\Models\UuidModel;
 use App\Traits\Search\Searchable;
 use Illuminate\Support\{
@@ -108,6 +109,11 @@ class Activity extends UuidModel implements ActivityContract
         return $query->where('subject_id', $subject_id);
     }
 
+    public function scopeHasCauser(Builder $query): Builder
+    {
+        return $query->whereHasMorph('causer', User::class);
+    }
+
     public function toSearchArray()
     {
         $changed_properties = $this->readableChanges->collapse()->pluck('attribute')->unique()->toArray();
@@ -156,8 +162,12 @@ class Activity extends UuidModel implements ActivityContract
         return ucfirst($value);
     }
 
-    public function getCauserNameAttribute(): string
+    public function getCauserNameAttribute()
     {
+        if (!isset($this->causer)) {
+            return null;
+        }
+
         return "{$this->causer->email} ({$this->causer->full_name})";
     }
 

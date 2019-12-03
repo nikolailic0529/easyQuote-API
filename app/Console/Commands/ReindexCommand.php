@@ -10,6 +10,7 @@ use App\Models\{
     Role,
     Company,
     Vendor,
+    Contact,
     Quote\Quote,
     QuoteTemplate\QuoteTemplate,
     QuoteTemplate\TemplateField,
@@ -18,9 +19,9 @@ use App\Models\{
     Quote\Discount\PrePayDiscount,
     Quote\Discount\PromotionalDiscount,
     Quote\Discount\SND,
-    Collaboration\Invitation
+    Collaboration\Invitation,
+    System\Activity
 };
-use App\Models\System\Activity;
 use Str;
 
 class ReindexCommand extends Command
@@ -80,7 +81,8 @@ class ReindexCommand extends Command
                 Vendor::class,
                 Invitation::class,
                 Activity::class,
-                Address::class
+                Address::class,
+                Contact::class
             ]
         );
     }

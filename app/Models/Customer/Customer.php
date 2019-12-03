@@ -2,14 +2,12 @@
 
 namespace App\Models\Customer;
 
-use App\Models\{
-    UuidModel,
-    Address
-};
+use App\Models\UuidModel;
 use App\Traits\{
     BelongsToAddresses,
+    BelongsToContacts,
     HasAddressTypes,
-    HasContacts,
+    HasContactTypes,
     Submittable,
     Quote\HasQuotes
 };
@@ -17,7 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Customer extends UuidModel
 {
-    use BelongsToAddresses, HasAddressTypes, HasContacts, Submittable, HasQuotes, SoftDeletes;
+    use BelongsToAddresses, HasAddressTypes, BelongsToContacts, HasContactTypes, Submittable, HasQuotes, SoftDeletes;
 
     protected $attributes = [
         'support_start' => null,

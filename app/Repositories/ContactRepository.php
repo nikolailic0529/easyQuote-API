@@ -24,7 +24,7 @@ class ContactRepository extends SearchableRepository implements ContactRepositor
 
     public function query(): Builder
     {
-        return $this->contact->query();
+        return $this->contact->query()->withoutType();
     }
 
     public function find(string $id): Contact
@@ -34,12 +34,19 @@ class ContactRepository extends SearchableRepository implements ContactRepositor
 
     public function create(StoreContactRequest $request): Contact
     {
-        return $this->contact->create($request->validated());
+        $contact = $this->contact->create($request->validated());
+        $contact->createImage($request->picture, $this->imageProperties());
+
+        return $contact->load('image');
     }
 
-    public function update(UpdateContactRequest $request, string $id): bool
+    public function update(UpdateContactRequest $request, string $id): Contact
     {
-        return $this->find($id)->update($request->validated());
+        $contact = $this->find($id);
+        $contact->update($request->validated());
+        $contact->createImage($request->picture, $this->imageProperties());
+
+        return $contact;
     }
 
     public function delete(string $id): bool
@@ -62,12 +69,13 @@ class ContactRepository extends SearchableRepository implements ContactRepositor
         return [
             \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class,
-            \App\Http\Query\OrderByCountry::class,
-            \App\Http\Query\Address\OrderByAddressType::class,
-            \App\Http\Query\Address\OrderByCity::class,
-            \App\Http\Query\Address\OrderByPostCode::class,
-            \App\Http\Query\Address\OrderByState::class,
-            \App\Http\Query\Address\OrderByStreetAddress::class
+            \App\Http\Query\Contact\OrderByEmail::class,
+            \App\Http\Query\Contact\OrderByFirstName::class,
+            \App\Http\Query\Contact\OrderByLastName::class,
+            \App\Http\Query\Contact\OrderByIsVerified::class,
+            \App\Http\Query\Contact\OrderByJobTitle::class,
+            \App\Http\Query\Contact\OrderByMobile::class,
+            \App\Http\Query\Contact\OrderByPhone::class
         ];
     }
 
@@ -84,8 +92,18 @@ class ContactRepository extends SearchableRepository implements ContactRepositor
     protected function searchableFields(): array
     {
         return [
-            'phone',
+            'first_name^5',
+            'last_name^5',
+            'job_title^4',
+            'email^4',
+            'mobile^3',
+            'phone^3',
             'created_at^2'
         ];
+    }
+
+    protected function imageProperties(): array
+    {
+        return ['width' => 240, 'height' => 240];
     }
 }

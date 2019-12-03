@@ -30,7 +30,7 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
 
     public function query(): Builder
     {
-        return $this->activity->query()->with('subject');
+        return $this->activity->query()->with('subject')->hasCauser();
     }
 
     public function subjectQuery(string $subject_id): Builder
@@ -131,10 +131,8 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
         abort_if($activitiesQuery->doesntExist(), 404, 'No activities found.');
 
         $activities = $activitiesQuery->get();
-        $subject_name = $activities->first()->subject->item_name;
 
-        $activityCollection = ActivityExportCollection::create($summary, $activities)
-            ->prepend('subject_name', $subject_name);
+        $activityCollection = ActivityExportCollection::create($summary, $activities, true);
 
         return $this->{$method}($activityCollection);
     }
@@ -206,7 +204,7 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
 
     protected function searchableScope(Builder $query)
     {
-        return $query->with('subject');
+        return $query->with('subject')->hasCauser();
     }
 
     /**

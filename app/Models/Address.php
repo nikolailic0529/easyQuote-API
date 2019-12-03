@@ -33,4 +33,9 @@ class Address extends UuidModel
     {
         return $query->whereAddressType($type);
     }
+
+    public function toSearchArray()
+    {
+        return Arr::except($this->load('country')->toArray(), ['country_id']);
+    }
 }

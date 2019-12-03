@@ -10,6 +10,10 @@ class Types extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
+        if (blank($this->value)) {
+            return $builder;
+        }
+
         return $builder->whereIn("{$table}.description", Arr::wrap($this->value));
     }
 }

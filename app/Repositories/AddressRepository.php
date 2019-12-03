@@ -37,9 +37,12 @@ class AddressRepository extends SearchableRepository implements AddressRepositor
         return $this->address->create($request->validated());
     }
 
-    public function update(UpdateAddressRequest $request, string $id): bool
+    public function update(UpdateAddressRequest $request, string $id): Address
     {
-        return $this->find($id)->update($request->validated());
+        $address = $this->find($id);
+        $address->update($request->validated());
+
+        return $address;
     }
 
     public function delete(string $id): bool
@@ -74,6 +77,11 @@ class AddressRepository extends SearchableRepository implements AddressRepositor
     protected function filterableQuery()
     {
         return $this->query();
+    }
+
+    protected function searchableScope(Builder $query)
+    {
+        return $query->with('country');
     }
 
     protected function searchableModel(): Model

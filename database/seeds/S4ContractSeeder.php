@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\{
+    Address,
+    Contact,
     Customer\Customer,
     Data\Country
 };
@@ -24,9 +26,19 @@ class S4ContractSeeder extends Seeder
             unset($address['country_code']);
 
             return $address;
-        })->toArray();
-
+        })->keyBy('address_type');
         $contacts = head(json_decode(file_get_contents(__DIR__ . '/models/customers_contacts.json'), true))['contacts'];
+        $contacts = collect($contacts)->keyBy('contact_type');
+
+        $addresses = collect([
+            Address::type('Software')->firstOrCreate($addresses->get('Software'))->id,
+            Address::type('Equipment')->firstOrCreate($addresses->get('Equipment'))->id
+        ]);
+
+        $contacts = collect([
+            Contact::type('Software')->firstOrCreate($contacts->get('Software'))->id,
+            Contact::type('Hardware')->firstOrCreate($contacts->get('Hardware'))->id
+        ]);
 
         collect($customers)->each(function ($customer) use ($addresses, $contacts) {
             collect()->times(6)->each(function ($time) use ($customer, $addresses, $contacts) {
@@ -43,8 +55,8 @@ class S4ContractSeeder extends Seeder
                     'service_level' => $customer['service_level']
                 ]);
 
-                $customer->addresses()->createMany($addresses);
-                $customer->contacts()->createMany($contacts);
+                $customer->addresses()->sync($addresses);
+                $customer->contacts()->sync($contacts);
             });
         });
     }

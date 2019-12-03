@@ -86,7 +86,7 @@ class Period
         $name = Str::formatAttributeKey($name);
 
         return $from === $till
-            ? "{$name} {$from->format($dateFormat)}"
+            ? "{$name} ({$from->format($dateFormat)})"
             : "{$name} ({$from->format($dateFormat)} — {$till->format($dateFormat)})";
     }
 }

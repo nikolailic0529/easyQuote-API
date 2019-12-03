@@ -54,9 +54,9 @@ interface ContactRepositoryInterface
      *
      * @param UpdateContactRequest $request
      * @param string $id
-     * @return bool
+     * @return Contact
      */
-    public function update(UpdateContactRequest $request, string $id): bool;
+    public function update(UpdateContactRequest $request, string $id): Contact;
 
     /**
      * Delete the specified Contact.

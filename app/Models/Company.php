@@ -12,6 +12,7 @@ use App\Contracts\{
 use App\Traits\{
     Activatable,
     BelongsToAddresses,
+    BelongsToContacts,
     BelongsToUser,
     BelongsToVendors,
     Image\HasImage,
@@ -31,6 +32,7 @@ class Company extends UuidModel implements WithImage, WithLogo, ActivatableInter
         BelongsToUser,
         BelongsToVendors,
         BelongsToAddresses,
+        BelongsToContacts,
         Activatable,
         Searchable,
         Systemable,

@@ -9,6 +9,7 @@
 <body>
     @isset($activityCollection->subjectName)
         <h1>{{ $activityCollection->subjectName }}</h1>
+        <hr/>
     @endisset
     <h1>Summary</h1>
 

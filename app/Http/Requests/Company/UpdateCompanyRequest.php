@@ -72,7 +72,10 @@ class UpdateCompanyRequest extends FormRequest
             'addresses_attach' => 'nullable|array',
             'addresses_attach.*' => 'required|string|uuid|exists:addresses,id',
             'addresses_detach' => 'nullable|array',
-            'addresses_detach.*' => 'required|string|uuid|exists:addresses,id'
+            'addresses_detach.*' => 'required|string|uuid|exists:addresses,id',
+            'contacts_attach' => 'nullable|array',
+            'contacts_attach.*' => 'required|string|uuid|exists:contacts,id',
+            'contacts_detach.*' => 'required|string|uuid|exists:contacts,id',
         ];
     }
 
@@ -83,12 +86,14 @@ class UpdateCompanyRequest extends FormRequest
 
     protected function passedValidation()
     {
-        if (!$this->filled(['addresses_attach', 'addresses_detach'])) {
-            return;
+        if ($this->filled(['addresses_attach', 'addresses_detach'])) {
+            $addresses_attach = array_diff($this->addresses_attach, $this->addresses_detach);
+            $this->merge(compact('addresses_attach'));
         }
 
-        $addresses_attach = array_diff($this->addresses_attach, $this->addresses_detach);
-
-        $this->merge(compact('addresses_attach'));
+        if ($this->filled(['contacts_attach', 'contacts_detach'])) {
+            $contacts_attach = array_diff($this->contacts_attach, $this->contacts_detach);
+            $this->merge(compact('contacts_attach'));
+        }
     }
 }

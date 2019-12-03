@@ -8,6 +8,7 @@ use App\Models\{
     Role,
     Company,
     Vendor,
+    Contact,
     Quote\Quote,
     Quote\Margin\Margin,
     Quote\Discount\Discount,
@@ -21,6 +22,7 @@ use App\Policies\{
     ActivityPolicy,
     AddressPolicy,
     CompanyPolicy,
+    ContactPolicy,
     DiscountPolicy,
     InvitationPolicy,
     MarginPolicy,
@@ -55,7 +57,8 @@ class AuthServiceProvider extends ServiceProvider
         Invitation::class => InvitationPolicy::class,
         SystemSetting::class => SystemSettingPolicy::class,
         Activity::class => ActivityPolicy::class,
-        Address::class => AddressPolicy::class
+        Address::class => AddressPolicy::class,
+        Contact::class => ContactPolicy::class
     ];
 
     /**

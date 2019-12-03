@@ -54,9 +54,9 @@ interface AddressRepositoryInterface
      *
      * @param UpdateAddressRequest $request
      * @param string $id
-     * @return bool
+     * @return Address
      */
-    public function update(UpdateAddressRequest $request, string $id): bool;
+    public function update(UpdateAddressRequest $request, string $id): Address;
 
     /**
      * Delete the specified Address.

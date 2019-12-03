@@ -11,6 +11,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
+        activity()->disableLogging();
+
         $this->call(SystemSettingsSeeder::class);
         $this->command->info('Seeded the default system settings!');
 
@@ -70,5 +72,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call(CountryMarginsSeeder::class);
         $this->command->info('Seeded the country margins!');
+
+        activity()->enableLogging();
     }
 }

@@ -31,8 +31,7 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         HasFileFormat,
         Handleable,
         Draftable,
-        SoftDeletes,
-        LogsActivity;
+        SoftDeletes;
 
     protected $fillable = [
         'original_file_path',
@@ -43,8 +42,6 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         'quote_id',
         'imported_page'
     ];
-
-    protected static $recordEvents = ['created', 'deleted'];
 
     public function scopeOrdered($query)
     {

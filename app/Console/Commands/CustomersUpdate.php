@@ -53,15 +53,15 @@ class CustomersUpdate extends Command
         $contacts = head(json_decode(file_get_contents(database_path('seeds/models/customers_contacts.json')), true))['contacts'];
         $contacts = collect($contacts)->keyBy('contact_type');
 
-        $addresses = collect(
-            Address::type('Software')->firstOrCreate($addresses->get('Software')),
-            Address::type('Equipment')->firstOrCreate($addresses->get('Equipment'))
-        );
+        $addresses = collect([
+            Address::type('Software')->firstOrCreate($addresses->get('Software'))->id,
+            Address::type('Equipment')->firstOrCreate($addresses->get('Equipment'))->id
+        ]);
 
-        // $contacts = collect(
-        //     Contact::type('Software')->firstOrCreate($contacts->get('Software')),
-        //     Contact::type('Hardware')->firstOrCreate($contacts->get('Hardware'))
-        // );
+        $contacts = collect([
+            Contact::type('Software')->firstOrCreate($contacts->get('Software'))->id,
+            Contact::type('Hardware')->firstOrCreate($contacts->get('Hardware'))->id
+        ]);
 
         Customer::doesntHave('addresses')->get()->each(function ($customer) use ($addresses) {
             $customer->addresses()->sync($addresses);
@@ -69,7 +69,7 @@ class CustomersUpdate extends Command
         });
 
         Customer::doesntHave('contacts')->get()->each(function ($customer) use ($contacts) {
-            $customer->contacts()->createMany($contacts->toArray());
+            $customer->contacts()->sync($contacts);
             $this->output->write('.');
         });
     }

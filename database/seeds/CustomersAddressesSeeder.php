@@ -1,6 +1,10 @@
 <?php
 
-use App\Models\Customer\Customer;
+use App\Models\{
+    Address,
+    Customer\Customer,
+    Data\Country
+};
 use Illuminate\Database\Seeder;
 
 class CustomersAddressesSeeder extends Seeder
@@ -16,17 +20,26 @@ class CustomersAddressesSeeder extends Seeder
         Schema::disableForeignKeyConstraints();
 
         DB::table('addresses')->delete();
+        DB::table('addressables')->delete();
 
         Schema::enableForeignKeyConstraints();
 
-        $addresses = json_decode(file_get_contents(__DIR__ . '/models/customers_addresses.json'), true);
+        $addresses = head(json_decode(file_get_contents(__DIR__ . '/models/customers_addresses.json'), true))['addresses'];
+        $addresses = collect($addresses)->transform(function ($address) {
+            $country_id = Country::code(data_get($address, 'country_code'))->firstOrFail()->id;
+            data_set($address, 'country_id', $country_id);
+            unset($address['country_code']);
 
-        collect($addresses)->each(function ($address) {
-            Customer::all()->each(function ($customer) use ($address) {
-                collect($address['addresses'])->each(function ($address) use ($customer) {
-                    $customer->addresses()->create($address);
-                });
-            });
+            return $address;
+        })->keyBy('address_type');
+
+        $addresses = collect([
+            Address::type('Software')->firstOrCreate($addresses->get('Software'))->id,
+            Address::type('Equipment')->firstOrCreate($addresses->get('Equipment'))->id
+        ]);
+
+        Customer::all()->each(function ($customer) use ($addresses) {
+            $customer->addresses()->sync($addresses);
         });
     }
 }

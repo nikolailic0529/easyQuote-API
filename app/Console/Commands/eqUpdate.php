@@ -52,8 +52,7 @@ class eqUpdate extends Command
         /**
          * Seeding Fake S4 Contracts if available S4 Contract count is less then 29.
          */
-        Customer::notInUse()->count() < 29
-            && $this->call('db:seed', [
+        Customer::notInUse()->count() < 29 && $this->call('db:seed', [
                 '--class' => 'S4ContractSeeder',
                 '--force' => true
             ]);

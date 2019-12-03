@@ -21,13 +21,13 @@ class ActivityExportCollection
     public $collection;
 
     /**
-     * Additional data.
+     * Name of the specified subject.
      *
-     * @var array
+     * @var null|string
      */
-    public $prepends;
+    public $subjectName = null;
 
-    public function __construct(iterable $summary, iterable $collection)
+    public function __construct(iterable $summary, iterable $collection, bool $isSpecifiedSubject = false)
     {
         if (!collect($collection)->first() instanceof Activity) {
             throw new \Exception('The 2 argument must contain the Activities');
@@ -35,6 +35,10 @@ class ActivityExportCollection
 
         $this->summary = collect($summary);
         $this->collection = $this->prepareCollection($collection);
+
+        if ($isSpecifiedSubject) {
+            $this->subjectName = $collection->first()->subject->item_name ?? null;
+        }
     }
 
     public static function create(...$args)
@@ -61,11 +65,6 @@ class ActivityExportCollection
     public function getSummaryData(): array
     {
         return $this->summary->pluck('count')->toArray();
-    }
-
-    public function getSubjectName()
-    {
-        return data_get($this->prepends, 'subject_name');
     }
 
     public function getCollectionHeader(): array

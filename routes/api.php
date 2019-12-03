@@ -39,6 +39,10 @@ Route::group(['namespace' => 'API'], function () {
             Route::apiResource('addresses', 'AddressController');
             Route::put('addresses/activate/{address}', 'AddressController@activate');
             Route::put('addresses/deactivate/{address}', 'AddressController@deactivate');
+
+            Route::apiResource('contacts', 'ContactController');
+            Route::put('contacts/activate/{contact}', 'ContactController@activate');
+            Route::put('contacts/deactivate/{contact}', 'ContactController@deactivate');
         });
 
         Route::group(['middleware' => 'throttle:60,1', 'namespace' => 'System'], function () {

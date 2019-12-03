@@ -15,6 +15,7 @@ use App\Contracts\{
     Services\ParserServiceInterface,
     Services\WordParserInterface,
     Services\PdfParserInterface,
+    Services\QuoteServiceInterface,
     Repositories\TimezoneRepositoryInterface,
     Repositories\CountryRepositoryInterface,
     Repositories\UserRepositoryInterface,
@@ -43,7 +44,7 @@ use App\Contracts\{
     Repositories\Quote\QuoteDraftedRepositoryInterface,
     Repositories\Quote\QuoteSubmittedRepositoryInterface,
     Repositories\AddressRepositoryInterface,
-    Services\QuoteServiceInterface
+    Repositories\ContactRepositoryInterface
 };
 use App\Models\{
     Company,
@@ -57,9 +58,9 @@ use App\Models\{
     QuoteTemplate\QuoteTemplate,
     QuoteTemplate\TemplateField,
     Collaboration\Invitation,
-    System\SystemSetting
+    System\SystemSetting,
+    System\Period
 };
-use App\Models\System\Period;
 use App\Observers\{
     CompanyObserver,
     VendorObserver,
@@ -101,6 +102,7 @@ use App\Repositories\{
     Quote\QuoteSubmittedRepository,
     VendorRepository,
     CompanyRepository,
+    ContactRepository,
     InvitationRepository,
     RoleRepository
 };
@@ -155,7 +157,8 @@ class AppServiceProvider extends ServiceProvider
         QuoteSubmittedRepositoryInterface::class => QuoteSubmittedRepository::class,
         InvitationRepositoryInterface::class => InvitationRepository::class,
         ActivityRepositoryInterface::class => ActivityRepository::class,
-        AddressRepositoryInterface::class => AddressRepository::class
+        AddressRepositoryInterface::class => AddressRepository::class,
+        ContactRepositoryInterface::class => ContactRepository::class
     ];
 
     /**

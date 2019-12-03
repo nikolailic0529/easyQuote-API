@@ -18,16 +18,16 @@ abstract class SearchableRepository
     {
         $scope = filled(func_get_args()) && func_get_arg(0) instanceof Closure ? func_get_arg(0) : null;
 
-        $filterableQuery = $this->filterableQuery($scope);
+        $filterableQuery = $this->filterableQuery();
 
         if (!is_array($filterableQuery)) {
-            return $this->filterQuery($filterableQuery)->apiPaginate();
+            return $this->filterQuery($filterableQuery, $scope)->apiPaginate();
         }
 
-        $query = $this->filterQuery(array_shift($filterableQuery));
+        $query = $this->filterQuery(array_shift($filterableQuery), $scope);
 
-        collect($filterableQuery)->each(function ($union) use ($query) {
-            $query->union($this->filterQuery($union));
+        collect($filterableQuery)->each(function ($union) use ($query, $scope) {
+            $query->union($this->filterQuery($union, $scope));
         });
 
         return $query->apiPaginate();
@@ -57,13 +57,13 @@ abstract class SearchableRepository
                 $this->filterQuery($query, $scope);
             });
 
-            $builder = $activated->union($deactivated);
-        } else {
-            $builder = $this->buildQuery($model, $items, function ($query) use ($scope) {
-                $this->searchableScope($query);
-                $this->filterQuery($query, $scope);
-            });
+            return $activated->union($deactivated);
         }
+
+        $builder = $this->buildQuery($model, $items, function ($query) use ($scope) {
+            $this->searchableScope($query);
+            $this->filterQuery($query, $scope);
+        });
 
         return $builder;
     }
