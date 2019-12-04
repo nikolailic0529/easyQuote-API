@@ -135,7 +135,7 @@ class QuoteFile extends UuidModel implements HasOrderedScope
             $imported_page = $this->default_imported_page;
         }
 
-        $this->attributes['imported_page'] = $imported_page;
+        $this->attributes['imported_page'] = min($imported_page, $this->pages);
 
         return $this->save();
     }

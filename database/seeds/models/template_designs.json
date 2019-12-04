@@ -2525,7 +2525,7 @@
                                 "type": "label",
                                 "class": null,
                                 "label": "Label",
-                                "value": "Payment Schedule From",
+                                "value": "Payment Schedule From ",
                                 "is_field": true,
                                 "is_image": false,
                                 "droppable": false,

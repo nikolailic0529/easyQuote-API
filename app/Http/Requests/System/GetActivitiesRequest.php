@@ -7,16 +7,6 @@ use Illuminate\Validation\Rule;
 
 class GetActivitiesRequest extends FormRequest
 {
-    protected $types;
-
-    protected $periods;
-
-    public function __construct()
-    {
-        $this->types = __('activity.types');
-        $this->periods = __('activity.periods');
-    }
-
     /**
      * Get the validation rules that apply to the request.
      *
@@ -32,12 +22,21 @@ class GetActivitiesRequest extends FormRequest
             'types.*' => [
                 'required',
                 'string',
-                Rule::in($this->types)
+                Rule::in(config('activitylog.types'))
             ],
             'period' => [
                 'nullable',
                 'string',
-                Rule::in($this->periods)
+                Rule::in(config('activitylog.periods'))
+            ],
+            'subject_types' => [
+                'nullable',
+                'array'
+            ],
+            'subject_types.*' => [
+                'required',
+                'string',
+                Rule::in(array_keys(config('activitylog.subject_types')))
             ],
             'custom_period' => 'array',
             'custom_period.from' => [

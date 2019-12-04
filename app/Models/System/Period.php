@@ -46,7 +46,8 @@ class Period
     {
         switch ($period) {
             case 'today':
-                $from = $till = now();
+                $from = now()->startOfDay();
+                $till = now()->endOfDay();
                 break;
             case 'yesterday':
                 $from = now()->subDay();

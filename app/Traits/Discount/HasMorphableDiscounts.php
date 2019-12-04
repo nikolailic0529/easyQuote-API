@@ -48,14 +48,4 @@ trait HasMorphableDiscounts
     {
         return Arr::quote($this->discountsOrder());
     }
-
-    public function getApplicableDiscountsAttribute()
-    {
-        return (float) $this->applicable_discounts ?? 0;
-    }
-
-    public function getApplicableDiscountsFormattedAttribute()
-    {
-        return Str::prepend(Str::decimal($this->getAttribute('applicable_discounts')), $this->quoteTemplate->currency_symbol);
-    }
 }

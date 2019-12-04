@@ -9,7 +9,7 @@ class Period extends Query
 {
     public function applyQuery(Builder $builder, string $table)
     {
-        if (!in_array($this->value, __('activity.periods'))) {
+        if (!in_array($this->value, config('activitylog.periods'))) {
             return $builder;
         }
 

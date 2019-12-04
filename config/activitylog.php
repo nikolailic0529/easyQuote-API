@@ -49,4 +49,33 @@ return [
      * Laravel database.default will be used instead.
      */
     'database_connection' => env('ACTIVITY_LOGGER_DB_CONNECTION'),
+
+    'subject_types' => [
+        'quote' => \App\Models\Quote\Quote::class,
+        'discount' => [
+            \App\Models\Quote\Discount\MultiYearDiscount::class,
+            \App\Models\Quote\Discount\PrePayDiscount::class,
+            \App\Models\Quote\Discount\PromotionalDiscount::class,
+            \App\Models\Quote\Discount\SND::class
+        ],
+        'margin' => \App\Models\Quote\Margin\CountryMargin::class,
+        'vendor' => \App\Models\Vendor::class,
+        'company' => \App\Models\Company::class,
+        'template' => \App\Models\QuoteTemplate\QuoteTemplate::class,
+        'address' => \App\Models\Address::class,
+        'contact' => \App\Models\Contact::class,
+        'user' => \App\Models\User::class,
+        'role' => \App\Models\Role::class,
+        'setting' => \App\Models\System\SystemSetting::class
+    ],
+    'types' => ['created', 'updated', 'deleted'],
+    'periods' => [
+        'today',
+        'yesterday',
+        'this_week',
+        'last_week',
+        'this_month',
+        'last_month',
+        'this_year'
+    ]
 ];

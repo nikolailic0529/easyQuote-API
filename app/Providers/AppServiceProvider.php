@@ -140,7 +140,6 @@ class AppServiceProvider extends ServiceProvider
         DataSelectSeparatorRepositoryInterface::class => DataSelectSeparatorRepository::class,
         CustomerRepositoryInterface::class => CustomerRepository::class,
         SystemSettingRepositoryInterface::class => SystemSettingRepository::class,
-        OperationRepositoryInterface::class => OperationRepository::class,
         MarginRepositoryInterface::class => MarginRepository::class,
         QuoteServiceInterface::class => QuoteService::class,
         MultiYearDiscountRepositoryInterface::class => MultiYearDiscountRepository::class,

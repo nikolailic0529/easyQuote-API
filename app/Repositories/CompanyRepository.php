@@ -41,7 +41,7 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
 
     public function userQuery(): Builder
     {
-        return $this->company->query()->with('image', 'vendors');
+        return $this->company->query()->with('image', 'vendors', 'addresses', 'contacts');
     }
 
     public function find(string $id): Company

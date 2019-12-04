@@ -139,17 +139,22 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
 
     public function meta(): array
     {
-        $periods = collect(__('activity.periods'))->transform(function ($value) {
+        $periods = collect(config('activitylog.periods'))->transform(function ($value) {
             $label = now()->period($value)->label;
             return compact('label', 'value');
         });
 
-        $types = collect(__('activity.types'))->transform(function ($value) {
+        $types = collect(config('activitylog.types'))->transform(function ($value) {
             $label = ucfirst($value);
             return compact('label', 'value');
         });
 
-        return compact('periods', 'types');
+        $subject_types = collect(config('activitylog.subject_types'))->keys()->transform(function ($value) {
+            $label = ucfirst($value);
+            return compact('label', 'value');
+        });
+
+        return compact('periods', 'types', 'subject_types');
     }
 
     protected function subjectScope(string $subject_id)
@@ -179,15 +184,14 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
             \App\Http\Query\Activity\Types::class,
             \App\Http\Query\Activity\Period::class,
             \App\Http\Query\Activity\CustomPeriod::class,
-            \App\Http\Query\Activity\CauserId::class
+            \App\Http\Query\Activity\CauserId::class,
+            \App\Http\Query\Activity\SubjectTypes::class
         ];
     }
 
     protected function filterableQuery()
     {
-        return [
-            $this->query()
-        ];
+        return $this->query();
     }
 
     protected function searchableModel(): Model

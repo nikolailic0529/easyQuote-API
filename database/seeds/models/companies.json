@@ -23,7 +23,7 @@
         "vendors": [
             "HPE", "LEN", "IBM", "CIS"
         ],
-        "logo": "/database/seeds/models/images/tesedi.png"
+        "logo": "/database/seeds/models/images/epd.png"
     },
     {
         "name": "Tesedi Holding Gmbh",
@@ -36,6 +36,6 @@
         "vendors": [
             "HPE", "LEN", "IBM", "CIS"
         ],
-        "logo": "/database/seeds/models/images/epd.png"
+        "logo": "/database/seeds/models/images/tesedi.png"
     }
 ]

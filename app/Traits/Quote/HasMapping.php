@@ -293,7 +293,7 @@ trait HasMapping
 
         $query = DB::query()->fromSub($sub, 'rows_data');
 
-        return $query->sum('price');
+        return (float) $query->sum('price');
     }
 
     public function getFieldColumnAttribute()

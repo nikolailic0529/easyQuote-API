@@ -117,15 +117,12 @@ class QuoteService implements QuoteServiceInterface
         }
 
         if (is_numeric($discount)) {
-            $marginPercentageAfterDiscount = ($quote->margin_percentage_without_discounts - $discount) / 100;
-            $divider = 1 - $marginPercentageAfterDiscount;
-
-            if ((float) $divider === 0.0) {
+            if ($quote->bottomUpDivider === 0.0) {
                 $quote->list_price = 0.0;
                 return $quote;
             }
 
-            $buyPriceAfterDiscount = $quote->buy_price / $divider;
+            $buyPriceAfterDiscount = $quote->buy_price / $quote->bottomUpDivider;
             $quote->applicable_discounts += $quote->list_price - $buyPriceAfterDiscount;
 
             return $quote;
@@ -158,22 +155,19 @@ class QuoteService implements QuoteServiceInterface
 
     public function calculateSchedulePrices(Quote $quote): Quote
     {
-        if (!isset($quote->scheduleData->value) || !isset($quote->countryMargin)) {
+        if (!isset($quote->scheduleData->value)) {
             return $quote;
         }
 
-        $divider = (100 - $quote->countryMargin->value) / 100;
-
-        if ((float) $divider === 0.0) {
-            data_fill($quote->scheduleData->value, '*.price', 0.0);
+        if ((float) $quote->bottomUpDivider === 0.0) {
+            data_set($quote->scheduleData->value, '*.price', 0.0);
 
             return $quote;
         }
 
-        $quote->scheduleData->value = collect($quote->scheduleData->value)->map(function ($payment) use ($divider) {
+        $quote->scheduleData->value = collect($quote->scheduleData->value)->map(function ($payment) use ($quote) {
             $price = data_get($payment, 'price', 0.0);
-            data_set($payment, 'price', Str::price($price) / $divider);
-
+            data_set($payment, 'price', Str::price($price) / $quote->bottomUpDivider);
             return $payment;
         });
 

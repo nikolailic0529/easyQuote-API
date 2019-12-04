@@ -49,9 +49,7 @@ class Activity extends UuidModel implements ActivityContract
     public function subject(): MorphTo
     {
         if (config('activitylog.subject_returns_soft_deleted_models')) {
-            if (method_exists($this->morphTo(), 'withTrashed')) {
-                return $this->morphTo()->withTrashed();
-            }
+            return $this->morphTo()->withTrashed();
         }
 
         return $this->morphTo();
@@ -155,20 +153,14 @@ class Activity extends UuidModel implements ActivityContract
 
     public function getDescriptionAttribute($value)
     {
-        if (is_null($value)) {
-            return $value;
-        }
-
-        return ucfirst($value);
+        return isset($value) ? ucfirst($value) : null;
     }
 
     public function getCauserNameAttribute()
     {
-        if (!isset($this->causer)) {
-            return null;
-        }
-
-        return "{$this->causer->email} ({$this->causer->full_name})";
+        return isset($this->causer)
+            ? "{$this->causer->email} ({$this->causer->full_name})"
+            : null;
     }
 
     public function getSubjectTypeBaseAttribute(): string
