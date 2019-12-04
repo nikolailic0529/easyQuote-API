@@ -75,6 +75,7 @@ class UpdateCompanyRequest extends FormRequest
             'addresses_detach.*' => 'required|string|uuid|exists:addresses,id',
             'contacts_attach' => 'nullable|array',
             'contacts_attach.*' => 'required|string|uuid|exists:contacts,id',
+            'contacts_detach' => 'nullable|array',
             'contacts_detach.*' => 'required|string|uuid|exists:contacts,id',
         ];
     }
@@ -82,18 +83,5 @@ class UpdateCompanyRequest extends FormRequest
     protected function nullValues()
     {
         return ['phone', 'website'];
-    }
-
-    protected function passedValidation()
-    {
-        if ($this->filled(['addresses_attach', 'addresses_detach'])) {
-            $addresses_attach = array_diff($this->addresses_attach, $this->addresses_detach);
-            $this->merge(compact('addresses_attach'));
-        }
-
-        if ($this->filled(['contacts_attach', 'contacts_detach'])) {
-            $contacts_attach = array_diff($this->contacts_attach, $this->contacts_detach);
-            $this->merge(compact('contacts_attach'));
-        }
     }
 }

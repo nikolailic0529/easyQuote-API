@@ -38,7 +38,8 @@ return [
             ['id' => 'software_contact', 'label' => 'Software Contact'],
             ['id' => 'software_phone', 'label' => 'Software Phone'],
             ['id' => 'coverage_period_from', 'label' => 'Coverage Period From'],
-            ['id' => 'coverage_period_to', 'label' => 'Coverage Period To']
+            ['id' => 'coverage_period_to', 'label' => 'Coverage Period To'],
+            ['id' => 'additional_details', 'label' => 'Additional Details']
         ],
         'last_page' => [
             ['id' => 'additional_details', 'label' => 'Additional Details']

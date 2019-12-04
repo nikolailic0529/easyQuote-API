@@ -58,6 +58,7 @@ class QuoteResource extends JsonResource
                     'software_address' => $this->customer->softwareAddress->address_1,
                     'software_contact' => $this->customer->softwareContact->contact_name,
                     'software_phone' => $this->customer->softwareContact->phone,
+                    'additional_details' => $this->additional_details,
                     'coverage_period' => $this->customer->coverage_period,
                     'coverage_period_from' => $this->customer->support_start,
                     'coverage_period_to' => $this->customer->support_end,

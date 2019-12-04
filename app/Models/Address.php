@@ -27,7 +27,7 @@ class Address extends UuidModel
     ];
 
     protected $hidden = [
-        'addressable_id', 'addressable_type', 'deleted_at'
+        'addressable_id', 'addressable_type', 'deleted_at', 'pivot'
     ];
 
     public function scopeType(Builder $query, string $type): Builder

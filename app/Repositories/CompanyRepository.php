@@ -41,7 +41,7 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
 
     public function userQuery(): Builder
     {
-        return $this->company->query()->with('image', 'vendors', 'addresses', 'contacts');
+        return $this->company->query()->with('image', 'vendors', 'addresses.country', 'contacts');
     }
 
     public function find(string $id): Company
@@ -69,9 +69,9 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
         $company->createLogo($request->logo);
 
         $company->syncVendors($request->vendors);
-        $company->syncAddresses($request->addresses_attach, false);
+        $company->syncAddresses($request->addresses_attach);
         $company->detachAddresses($request->addresses_detach);
-        $company->syncContacts($request->contacts_attach, false);
+        $company->syncContacts($request->contacts_attach);
         $company->detachContacts($request->contacts_detach);
 
         $company->load('vendors', 'addresses', 'contacts')->appendLogo();
