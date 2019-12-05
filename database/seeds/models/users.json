@@ -1,9 +1,11 @@
 [
     {
-        "email": "chris.schiavone@mailinator.com"
+        "email": "chris.schiavone@mailinator.com",
+        "password": "password"
     },
     {
-        "email": "cloud@devengine.ru"
+        "email": "cloud@devengine.ru",
+        "password": "password"
     },
     {
         "email": "fakhar.anwar@supportwarehouse.com",
