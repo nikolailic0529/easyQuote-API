@@ -13,7 +13,7 @@ use App\Models\Quote\{
     Margin\CountryMargin
 };
 use Illuminate\Support\Collection;
-use Storage, Closure, Str, Cache;
+use Storage, Closure, Str;
 
 class QuoteService implements QuoteServiceInterface
 {
@@ -24,21 +24,21 @@ class QuoteService implements QuoteServiceInterface
         $this->quoteFile = $quoteFile;
     }
 
-    public function interact(Quote $quote, $interactable): Quote
+    public function interact(Quote $quote, $interactable): void
     {
         if ($interactable instanceof CountryMargin) {
-            return $this->interactWithCountryMargin($quote, $interactable);
+            $this->interactWithCountryMargin($quote, $interactable);
+            return;
         }
         if ($interactable instanceof Discount || is_numeric($interactable)) {
-            return $this->interactWithDiscount($quote, $interactable);
+            $this->interactWithDiscount($quote, $interactable);
+            return;
         }
         if (is_iterable($interactable)) {
             collect($interactable)->each(function ($entity) use ($quote) {
                 $this->interact($quote, $entity);
             });
         }
-
-        return $quote;
     }
 
     public function interactWithModels(Quote $quote): void
@@ -56,10 +56,10 @@ class QuoteService implements QuoteServiceInterface
         $this->interact($quote, $this->interactableDiscounts($quote));
     }
 
-    public function interactWithCountryMargin(Quote $quote, CountryMargin $countryMargin): Quote
+    public function interactWithCountryMargin(Quote $quote, CountryMargin $countryMargin): void
     {
         if (!isset($quote->computableRows)) {
-            return $quote;
+            return;
         }
 
         if ($countryMargin->isPercentage() && $countryMargin->isNoMargin()) {
@@ -76,14 +76,12 @@ class QuoteService implements QuoteServiceInterface
         }
 
         $quote->list_price = $list_price;
-
-        return $quote;
     }
 
-    public function interactWithMargin(Quote $quote): Quote
+    public function interactWithMargin(Quote $quote): void
     {
         if (!isset($quote->computableRows) || !isset($quote->countryMargin)) {
-            return $quote;
+            return;
         }
 
         $divider = (100 - ($quote->countryMargin->value - $quote->custom_discount)) / 100;
@@ -92,7 +90,7 @@ class QuoteService implements QuoteServiceInterface
             data_fill($quote->computableRows, '*.price', 0.0);
 
             $quote->list_price = 0.0;
-            return $quote;
+            return;
         }
 
         $quote->list_price = 0.0;
@@ -102,14 +100,12 @@ class QuoteService implements QuoteServiceInterface
             $quote->list_price += $row->price;
             return $row;
         });
-
-        return $quote;
     }
 
-    public function interactWithDiscount(Quote $quote, $discount): Quote
+    public function interactWithDiscount(Quote $quote, $discount): void
     {
         if (!isset($quote->computableRows) || $discount === 0.0) {
-            return $quote;
+            return;
         }
 
         if (!isset($quote->list_price) || (float) $quote->list_price === 0.0) {
@@ -119,13 +115,13 @@ class QuoteService implements QuoteServiceInterface
         if (is_numeric($discount)) {
             if ($quote->bottomUpDivider === 0.0) {
                 $quote->list_price = 0.0;
-                return $quote;
+                return;
             }
 
             $buyPriceAfterDiscount = $quote->buy_price / $quote->bottomUpDivider;
-            $quote->applicable_discounts += $quote->list_price - $buyPriceAfterDiscount;
+            $quote->applicable_custom_discount = $quote->list_price - $buyPriceAfterDiscount;
 
-            return $quote;
+            return;
         }
 
         $quote->computableRows->transform(function ($row) use ($discount, $quote) {
@@ -141,7 +137,7 @@ class QuoteService implements QuoteServiceInterface
         });
 
         if (!$discount instanceof Discount) {
-            return $quote;
+            return;
         }
 
         $listPriceAfterDiscount = $quote->list_price - $quote->applicable_discounts;
@@ -150,19 +146,19 @@ class QuoteService implements QuoteServiceInterface
             ? round((($listPriceAfterDiscount - $quote->buy_price) / $listPriceAfterDiscount) * 100, 2)
             : 0.0;
 
-        return $quote;
+        return;
     }
 
-    public function calculateSchedulePrices(Quote $quote): Quote
+    public function calculateSchedulePrices(Quote $quote): void
     {
         if (!isset($quote->scheduleData->value)) {
-            return $quote;
+            return;
         }
 
         if ((float) $quote->bottomUpDivider === 0.0) {
             data_set($quote->scheduleData->value, '*.price', 0.0);
 
-            return $quote;
+            return;
         }
 
         $quote->scheduleData->value = collect($quote->scheduleData->value)->map(function ($payment) use ($quote) {
@@ -171,7 +167,7 @@ class QuoteService implements QuoteServiceInterface
             return $payment;
         });
 
-        return $quote;
+        return;
     }
 
     public function assignComputableRows(Quote $quote): void

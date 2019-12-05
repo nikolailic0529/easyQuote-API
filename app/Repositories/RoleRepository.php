@@ -29,8 +29,8 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
 
     public function data(): Collection
     {
-        $privileges = __('role.privileges');
-        $modules = collect(__('role.modules'))->keys();
+        $privileges = config('role.privileges');
+        $modules = collect(config('role.modules'))->keys();
 
         return collect(compact('privileges', 'modules'));
     }

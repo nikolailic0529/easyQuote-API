@@ -214,7 +214,7 @@ class Role extends UuidModel implements RoleContract, ActivatableInterface
             return;
         }
 
-        $modules = array_flip(array_keys(__('role.modules')));
+        $modules = array_flip(array_keys(config('role.modules')));
 
         $value = collect($value)->sortBy(function ($value) use ($modules) {
             return data_get($modules, data_get($value, 'module'));
@@ -228,7 +228,7 @@ class Role extends UuidModel implements RoleContract, ActivatableInterface
         $privileges = isset($privileges) ? collect($privileges) : $this->privileges;
 
         $permissionsNames = $privileges->reduce(function ($carry, $privilege) {
-            $permissions = __('role.modules')[$privilege['module']][$privilege['privilege']];
+            $permissions = config('role.modules')[$privilege['module']][$privilege['privilege']];
             array_push($carry, ...$permissions);
             return $carry;
         }, []);

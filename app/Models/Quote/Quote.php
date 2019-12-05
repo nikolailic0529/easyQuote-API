@@ -68,6 +68,8 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
 
     public $applicable_discounts = 0.0;
 
+    public $applicable_custom_discount = 0.0;
+
     protected $perPage = 8;
 
     protected $fillable = [

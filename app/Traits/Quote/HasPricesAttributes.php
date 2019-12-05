@@ -22,7 +22,13 @@ trait HasPricesAttributes
 
     public function getFinalPriceAttribute(): float
     {
-        return (float) $this->list_price - (float) $this->applicable_discounts;
+        if ($this->bottomUpDivider === 0.0) {
+            return 0.0;
+        }
+
+        $buyPriceAfterBottomUp = $this->buy_price / $this->bottomUpDivider;
+
+        return (float) $buyPriceAfterBottomUp - (float) $this->applicable_discounts;
     }
 
     public function getFinalPriceFormattedAttribute()
@@ -32,7 +38,7 @@ trait HasPricesAttributes
 
     public function getApplicableDiscountsFormattedAttribute()
     {
-        return Str::prepend(Str::decimal((float) $this->applicable_discounts), $this->quoteTemplate->currency_symbol);
+        return Str::prepend(Str::decimal((float) $this->applicable_discounts + (float) $this->applicable_custom_discount), $this->quoteTemplate->currency_symbol);
     }
 
     public function getBottomUpDividerAttribute(): float

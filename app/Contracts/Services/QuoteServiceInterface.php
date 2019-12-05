@@ -18,7 +18,7 @@ interface QuoteServiceInterface
      * @param mixed $model
      * @return \App\Models\Quote\Quote
      */
-    public function interact(Quote $quote, $model): Quote;
+    public function interact(Quote $quote, $model): void;
 
     /**
      * Interact with all posible Quote Models
@@ -35,7 +35,7 @@ interface QuoteServiceInterface
      * @param \App\Models\Quote\Margin\CountryMargin $countryMargin
      * @return \App\Models\Quote\Quote
      */
-    public function interactWithCountryMargin(Quote $quote, CountryMargin $countryMargin): Quote;
+    public function interactWithCountryMargin(Quote $quote, CountryMargin $countryMargin): void;
 
     /**
      * Interact with User's Margin and Possible Country Margin
@@ -43,7 +43,7 @@ interface QuoteServiceInterface
      * @param Quote $quote
      * @return Quote
      */
-    public function interactWithMargin(Quote $quote): Quote;
+    public function interactWithMargin(Quote $quote): void;
 
     /**
      * Calculate Schedule Prices based on Margin Percentage
@@ -51,7 +51,7 @@ interface QuoteServiceInterface
      * @param Quote $quote
      * @return Quote
      */
-    public function calculateSchedulePrices(Quote $quote): Quote;
+    public function calculateSchedulePrices(Quote $quote): void;
 
     /**
      * Interact Quote model with Discount
@@ -60,7 +60,7 @@ interface QuoteServiceInterface
      * @param mixed $discount
      * @return \App\Models\Quote\Quote
      */
-    public function interactWithDiscount(Quote $quote, $discount): Quote;
+    public function interactWithDiscount(Quote $quote, $discount): void;
 
     /**
      * Modify Column in Quote Computable Rows

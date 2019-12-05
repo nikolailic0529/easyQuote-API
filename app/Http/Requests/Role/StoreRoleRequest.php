@@ -21,8 +21,8 @@ class StoreRoleRequest extends FormRequest
 
     public function __construct()
     {
-        $this->privileges = collect(__('role.privileges'))->toArray();
-        $this->modules = collect(__('role.modules'))->keys()->toArray();
+        $this->privileges = collect(config('role.privileges'))->toArray();
+        $this->modules = collect(config('role.modules'))->keys()->toArray();
     }
 
     /**

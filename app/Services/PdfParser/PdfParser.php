@@ -58,7 +58,7 @@ class PdfParser implements PdfParserInterface
 
     public function parse(array $array)
     {
-        $regexp = '/^(?<product_no>\d+\-\w{3}|[a-zA-Z]\w{3,4}?[a-zA-Z]{1,2})\s+(?<description>.+?\w)\s+(?<serial_no>[a-zA-Z]{2,3}[a-zA-Z\d]{7,8})\s+((?<date_from>(([0-2][0-9])|(3[0-1]))[\.\/]((0[0-9])|(1[0-2]))[\.\/]\d{4})\s+?)?((?<date_to>(([0-2][0-9])|(3[0-1]))[\.\/]((0[0-9])|(1[0-2]))[\.\/]\d{4})\s+?)?(?<qty>\d{1,3}(?=\s+?))?(\s+?((\p{Sc})?\s?(?<price>(\d{1,3},)?\d+([,\.]\d{1,2}))))([a-zA-Z].+?)?/m';
+        $regexp = '/^(?<product_no>\d+\-\w{3}|[a-zA-Z]\w{3,4}?[a-zA-Z]{1,2})\s+(?<description>.+?\w)\s+(?<serial_no>\d?[a-zA-Z]{1,3}[a-zA-Z\d]{7,8})\s+((?<date_from>(([0-2][0-9])|(3[0-1]))[\.\/]((0[0-9])|(1[0-2]))[\.\/]\d{4})\s+?)?((?<date_to>(([0-2][0-9])|(3[0-1]))[\.\/]((0[0-9])|(1[0-2]))[\.\/]\d{4})\s+?)?(?<qty>\d{1,3}(?=\s+?))?(\s+?((\p{Sc})?\s?(?<price>(\d{1,3},)?\d+([,\.]\d{1,2}))))([a-zA-Z].+?)?$/m';
 
         $pages = LazyCollection::make(function () use ($array) {
             foreach ($array as $page) {
@@ -74,7 +74,6 @@ class PdfParser implements PdfParserInterface
             $columnsAliases = $this->importableColumn->allNames();
 
             $matches = collect($matches)->only($columnsAliases)->toArray();
-
 
             $matches = $this->handleValues($matches);
 
@@ -248,7 +247,8 @@ class PdfParser implements PdfParserInterface
                 isset($periodFrom[$nextKey]) &&
                 !isset($periodTo[$key]) &&
                 !isset($periodTo[$nextKey]) &&
-                $productNo[$key] === $productNo[$nextKey])) {
+                $productNo[$key] === $productNo[$nextKey] &&
+                $periodFrom[$key] !== $periodFrom[$nextKey])) {
                 continue;
             }
 
