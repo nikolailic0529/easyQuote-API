@@ -8,6 +8,7 @@ trait HasPricesAttributes
     public function initializeHasPricesAttributes()
     {
         $this->fillable = array_merge($this->fillable, ['calculate_list_price', 'buy_price']);
+        $this->appends = array_merge($this->appends, ['list_price']);
     }
 
     public function getListPriceAttribute()

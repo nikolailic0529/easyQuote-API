@@ -122,7 +122,17 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     public function find(string $id)
     {
-        return $this->userQuery()->whereId($id)->withJoins()->firstOrFail()->appendJoins();
+        return $this->userQuery()->whereId($id)->with([
+            'quoteFiles' => function ($query) {
+                return $query->isNotHandledSchedule();
+            },
+            'quoteTemplate.templateFields.templateFieldType',
+            'countryMargin',
+            'discounts',
+            'customer',
+            'country',
+            'vendor'
+        ])->firstOrFail();
     }
 
     public function create(array $array)

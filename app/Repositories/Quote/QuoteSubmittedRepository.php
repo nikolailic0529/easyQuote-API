@@ -78,7 +78,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         $path = $this->findByRfq($rfq)->priceList->original_file_path;
         $storage_path = Storage::path($path);
 
-        (blank($path) || Storage::exists($storage_path)) && abort('404', __('quote_file.not_exists_exception'));
+        (blank($path) || Storage::missing($storage_path)) && abort('404', __('quote_file.not_exists_exception'));
 
         return $storage_path;
     }
@@ -88,7 +88,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         $path = $this->findByRfq($rfq)->paymentSchedule->original_file_path;
         $storage_path = Storage::path($path);
 
-        (blank($path) || Storage::exists($storage_path)) && abort('404', __('quote_file.not_exists_exception'));
+        (blank($path) || Storage::missing($storage_path)) && abort('404', __('quote_file.not_exists_exception'));
 
         return $storage_path;
     }
@@ -98,7 +98,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         $path = $this->findByRfq($rfq)->generatedPdf->original_file_path;
         $storage_path = Storage::path($path);
 
-        (blank($path) || Storage::exists($storage_path)) && abort('404', __('quote_file.not_exists_exception'));
+        (blank($path) || Storage::missing($storage_path)) && abort('404', __('quote_file.not_exists_exception'));
 
         return $storage_path;
     }

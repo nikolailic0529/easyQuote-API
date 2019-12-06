@@ -60,7 +60,11 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         $extension = File::extension($clientFileName);
         $original_file_name = "{$fileName}.{$extension}";
 
-        $quoteFile = request()->user()->quoteFiles()->make(
+        $user = app()->runningInConsole() && isset($attributes['user'])
+            ? $attributes['user']
+            : request()->user();
+
+        $quoteFile = $user->quoteFiles()->make(
             array_merge($attributes, compact('original_file_name'))
         );
 
@@ -96,7 +100,14 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         $file_type = 'Generated PDF';
 
         $quote->generatedPdf()->delete();
-        $quoteFile = $this->create(compact('quote_file', 'format', 'file_type', 'original_file_path', 'quote_id'));
+
+        $attributes = compact('quote_file', 'format', 'file_type', 'original_file_path', 'quote_id');
+
+        if (app()->runningInConsole()) {
+            $attributes = array_merge($attributes, ['user' => $quote->user]);
+        }
+
+        $quoteFile = $this->create($attributes);
 
         $quote->load('generatedPdf');
 

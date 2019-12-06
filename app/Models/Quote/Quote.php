@@ -2,14 +2,16 @@
 
 namespace App\Models\Quote;
 
-use App\Contracts\ActivatableInterface;
-use App\Contracts\HasOrderedScope;
+use App\Contracts\{
+    ActivatableInterface,
+    HasOrderedScope
+};
 use App\Models\{
     CompletableModel,
     QuoteFile\ImportedRow,
-    QuoteFile\QuoteFile
+    QuoteFile\QuoteFile,
+    QuoteFile\ScheduleData
 };
-use App\Models\QuoteFile\ScheduleData;
 use App\Traits\{
     Activatable,
     HasQuoteFiles,
@@ -34,7 +36,7 @@ use App\Traits\{
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Carbon\Carbon;
-use Setting, Arr;
+use Arr;
 
 class Quote extends CompletableModel implements HasOrderedScope, ActivatableInterface
 {
@@ -61,8 +63,6 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         LogsActivity;
 
     public $computableRows = null;
-
-    public $shouldRecalculateMargin = false;
 
     public $applicable_discounts = 0.0;
 
@@ -96,8 +96,10 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
     protected $appends = [
         'last_drafted_step',
         'closing_date',
-        'margin_percentage_without_country_margin',
-        'margin_percentage_without_discounts'
+        'hidden_fields',
+        'sort_fields',
+        'field_column',
+        'rows_data'
     ];
 
     protected $casts = [
@@ -149,12 +151,7 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
 
     public function scopeOrdered($query)
     {
-        return $query->orderBy('created_at', 'desc');
-    }
-
-    public function scopeWithJoins($query)
-    {
-        return $query->with($this->joins());
+        return $query->orderByDesc('created_at');
     }
 
     public function scopeRfq($query, string $rfq)
@@ -162,11 +159,6 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         return $query->whereHas('customer', function ($query) use ($rfq) {
             $query->whereRfq($rfq);
         });
-    }
-
-    public function loadJoins()
-    {
-        return $this->load($this->joins());
     }
 
     public function scheduleData()
@@ -194,31 +186,11 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         return $this->hasOne(QuoteFile::class)->generatedPdf()->withDefault(QuoteFile::make([]));
     }
 
-    public function appendJoins()
-    {
-        return $this->setAppends(
-            [
-                'last_drafted_step',
-                'margin_percentage_without_country_margin',
-                'margin_percentage_without_discounts',
-                'user_margin_percentage',
-                'list_price',
-                'has_group_description',
-                'hidden_fields',
-                'sort_fields',
-                'field_column',
-                'rows_data'
-            ]
-        );
-    }
-
     public function rowsData()
     {
-        $importedPage = $this->quoteFiles()->priceLists()->first()->imported_page ?? Setting::get('parser.default_page');
-
         return $this->hasManyThrough(ImportedRow::class, QuoteFile::class)
             ->where('quote_files.file_type', __('quote_file.types.price'))
-            ->where('imported_rows.page', '>=', $importedPage);
+            ->whereColumn('imported_rows.page', '>=', 'quote_files.imported_page');
     }
 
     public function getRowsDataAttribute()
@@ -267,20 +239,5 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         $customer_rfq = $this->customer->rfq ?? 'unknown RFQ';
 
         return "Quote ({$customer_rfq})";
-    }
-
-    private function joins()
-    {
-        return [
-            'quoteFiles' => function ($query) {
-                return $query->isNotHandledSchedule();
-            },
-            'quoteTemplate.templateFields.templateFieldType',
-            'countryMargin',
-            'discounts',
-            'customer',
-            'country',
-            'vendor'
-        ];
     }
 }
