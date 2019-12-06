@@ -64,14 +64,6 @@ interface QuoteRepositoryInterface
     public function find(string $id);
 
     /**
-     * Find Collaboration Quote with Calculated Total Price.
-     *
-     * @param string $id
-     * @return \App\Models\Quote\Quote
-     */
-    public function preparedQuote(string $id);
-
-    /**
      * Set/Create Margin for Quote.
      *
      * @param Quote $quote

@@ -12,7 +12,7 @@ trait HasPricesAttributes
 
     public function getListPriceAttribute()
     {
-        return Str::decimal($this->list_price);
+        return Str::decimal($this->getAttribute('totalPrice'));
     }
 
     public function getListPriceFormattedAttribute()
@@ -39,10 +39,5 @@ trait HasPricesAttributes
     public function getApplicableDiscountsFormattedAttribute()
     {
         return Str::prepend(Str::decimal((float) $this->applicable_discounts + (float) $this->applicable_custom_discount), $this->quoteTemplate->currency_symbol);
-    }
-
-    public function getBottomUpDividerAttribute(): float
-    {
-        return 1 - (($this->margin_percentage_without_discounts - $this->custom_discount) / 100);
     }
 }

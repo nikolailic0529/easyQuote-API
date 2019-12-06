@@ -125,15 +125,6 @@ class QuoteRepository implements QuoteRepositoryInterface
         return $this->userQuery()->whereId($id)->withJoins()->firstOrFail()->appendJoins();
     }
 
-    public function preparedQuote(string $id)
-    {
-        $quote = $this->find($id);
-
-        $quote->list_price = $quote->countTotalPrice();
-
-        return $quote;
-    }
-
     public function create(array $array)
     {
         return $this->quote->create($array);
@@ -622,11 +613,6 @@ class QuoteRepository implements QuoteRepositoryInterface
             ->on($quote)
             ->withAttribute('selected_rows', $newRowsIds->count(), $oldRowsIds->count())
             ->log('updated');
-
-        /**
-         * Recalculate User's Margin Percentage after select Rows.
-         */
-        $quote->calculateMarginPercentage();
 
         /**
          * Fresh Discounts Margin Percentage.

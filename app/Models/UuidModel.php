@@ -98,6 +98,13 @@ class UuidModel extends Model
         $model->fireModelEvent('generated', false);
     }
 
+    public function saveWithoutEvents(array $options = [])
+    {
+        return static::withoutEvents(function() use ($options) {
+            return $this->save($options);
+        });
+    }
+
     protected function formatDate($date)
     {
         if (!isset($date) || !$this->formatDates) {

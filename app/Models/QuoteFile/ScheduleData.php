@@ -44,4 +44,13 @@ class ScheduleData extends UuidModel
         return collect(json_decode($this->attributes['value'], true))
             ->sortKeysByKeys($keys);
     }
+
+    public function getTotalPriceAttribute(): float
+    {
+        if (!isset($this->attributes['value'])) {
+            return 0;
+        }
+
+        return collect(json_decode($this->original['value']))->sum('price');
+    }
 }

@@ -36,6 +36,6 @@ class QuoteObserver
      */
     public function saved(Quote $quote)
     {
-        $quote->shouldRecalculateMargin && $quote->calculateMarginPercentage();
+        //
     }
 }

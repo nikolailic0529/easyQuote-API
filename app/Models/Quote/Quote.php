@@ -64,8 +64,6 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
 
     public $shouldRecalculateMargin = false;
 
-    public $list_price = 0.0;
-
     public $applicable_discounts = 0.0;
 
     public $applicable_custom_discount = 0.0;
@@ -98,7 +96,6 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
     protected $appends = [
         'last_drafted_step',
         'closing_date',
-        'margin_percentage',
         'margin_percentage_without_country_margin',
         'margin_percentage_without_discounts'
     ];
@@ -202,16 +199,15 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         return $this->setAppends(
             [
                 'last_drafted_step',
-                'field_column',
-                'rows_data',
-                'margin_percentage',
                 'margin_percentage_without_country_margin',
                 'margin_percentage_without_discounts',
                 'user_margin_percentage',
                 'list_price',
                 'has_group_description',
                 'hidden_fields',
-                'sort_fields'
+                'sort_fields',
+                'field_column',
+                'rows_data'
             ]
         );
     }

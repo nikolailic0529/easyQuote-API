@@ -2,59 +2,36 @@
 
 namespace App\Traits\Margin;
 
-use Illuminate\Database\Eloquent\Model;
-
 trait HasMarginPercentageAttribute
 {
-    public static function bootHasMarginPercentageAttribute()
+    public function getMarginPercentageAttribute(): float
     {
-        static::updating(function (Model $model) {
-            if ($model->wasChanged('buy_price', 'calculate_list_price')) {
-                method_exists($model, 'promiseRecalculateMargin') && $model->promiseRecalculateMargin();
-            }
-        });
+        $totalPrice = $this->getAttribute('totalPrice');
+
+        if ($totalPrice === 0.0) {
+            return 0.0;
+        }
+
+        return (($totalPrice - $this->buy_price) / $totalPrice) * 100;
     }
 
-    public function getMarginPercentageAttribute()
+    public function getBottomUpDividerAttribute(): float
     {
-        return round($this->user_margin_percentage + $this->country_margin_value - $this->discounts_sum, 2);
+        return 1 - (($this->marginPercentage - $this->custom_discount) / 100);
     }
 
     public function getMarginPercentageWithoutCountryMarginAttribute()
     {
-        return round($this->user_margin_percentage - $this->discounts_sum, 2);
+        return round($this->marginPercentage - $this->discounts_sum, 2);
     }
 
     public function getMarginPercentageWithoutDiscountsAttribute()
     {
-        return round($this->user_margin_percentage + $this->country_margin_value, 2);
+        return round($this->marginPercentage + $this->country_margin_value, 2);
     }
 
     public function getUserMarginPercentageAttribute()
     {
-        return round((float) $this->attributes['margin_percentage'], 2);
-    }
-
-    public function calculateMarginPercentage()
-    {
-        $this->list_price = $this->countTotalPrice();
-
-        $margin_percentage = (float) $this->list_price !== 0.0
-            ? round((($this->list_price - $this->buy_price) / $this->list_price) * 100, 2)
-            : 0.0;
-
-        $this->promiseNotRecalculateMargin();
-
-        $this->forceFill(compact('margin_percentage'))->save();
-    }
-
-    public function promiseRecalculateMargin()
-    {
-        $this->shouldRecalculateMargin = true;
-    }
-
-    public function promiseNotRecalculateMargin()
-    {
-        $this->shouldRecalculateMargin = false;
+        return round($this->marginPercentage, 2);
     }
 }

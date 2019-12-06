@@ -69,13 +69,9 @@ class QuoteService implements QuoteServiceInterface
             });
         }
 
-        $list_price = $quote->countTotalPrice();
-
         if ($countryMargin->isFixed() && $countryMargin->isNoMargin()) {
-            $list_price = $countryMargin->calculate($list_price);
+             $quote->totalPrice = $countryMargin->calculate($quote->totalPrice);
         }
-
-        $quote->list_price = $list_price;
     }
 
     public function interactWithMargin(Quote $quote): void
@@ -89,15 +85,15 @@ class QuoteService implements QuoteServiceInterface
         if ((float) $divider === 0.0) {
             data_fill($quote->computableRows, '*.price', 0.0);
 
-            $quote->list_price = 0.0;
+            $quote->totalPrice = 0.0;
             return;
         }
 
-        $quote->list_price = 0.0;
+        $quote->totalPrice = 0.0;
 
         $quote->computableRows->transform(function ($row) use ($divider, $quote) {
             $row->price = round($row->price / $divider, 2);
-            $quote->list_price += $row->price;
+            $quote->totalPrice += $row->price;
             return $row;
         });
     }
@@ -108,18 +104,14 @@ class QuoteService implements QuoteServiceInterface
             return;
         }
 
-        if (!isset($quote->list_price) || (float) $quote->list_price === 0.0) {
-            $quote->list_price = $quote->countTotalPrice();
-        }
-
         if (is_numeric($discount)) {
             if ($quote->bottomUpDivider === 0.0) {
-                $quote->list_price = 0.0;
+                $quote->totalPrice = 0.0;
                 return;
             }
 
             $buyPriceAfterDiscount = $quote->buy_price / $quote->bottomUpDivider;
-            $quote->applicable_custom_discount = $quote->list_price - $buyPriceAfterDiscount;
+            $quote->applicable_custom_discount = $quote->totalPrice - $buyPriceAfterDiscount;
 
             return;
         }
@@ -129,7 +121,7 @@ class QuoteService implements QuoteServiceInterface
                 $row->computablePrice = $row->price;
             }
 
-            $value = $this->calculateDiscountValue($discount, (float) $row->computablePrice, (float) $quote->list_price);
+            $value = $this->calculateDiscountValue($discount, (float) $row->computablePrice, $quote->totalPrice);
             $quote->applicable_discounts += $value;
             $row->computablePrice -= $value;
 
@@ -140,7 +132,7 @@ class QuoteService implements QuoteServiceInterface
             return;
         }
 
-        $listPriceAfterDiscount = $quote->list_price - $quote->applicable_discounts;
+        $listPriceAfterDiscount = $quote->totalPrice - $quote->applicable_discounts;
 
         $discount->margin_percentage = (float) $listPriceAfterDiscount !== 0.0
             ? round((($listPriceAfterDiscount - $quote->buy_price) / $listPriceAfterDiscount) * 100, 2)
@@ -189,13 +181,6 @@ class QuoteService implements QuoteServiceInterface
          * Possible Interactions with Margins and Discounts
          */
         $this->interactWithModels($quote);
-
-        /**
-         * Calculate List Price if not calculated after interactions
-         */
-        if ((float) $quote->list_price === 0.0) {
-            $quote->list_price = $quote->countTotalPrice();
-        }
 
         /**
          * Calculate Schedule Total Prices based on Margin Percentage

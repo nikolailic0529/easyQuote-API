@@ -42,7 +42,7 @@ class QuoteController extends Controller
         $this->authorize('view', $quote);
 
         return response()->json(
-            $this->quote->preparedQuote($quote->id)
+            $this->quote->find($quote->id)
         );
     }
 

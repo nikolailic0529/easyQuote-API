@@ -11,6 +11,8 @@ use DB, Arr, Cache;
 
 trait HasMapping
 {
+    protected $totalPrice = false;
+
     public function fieldsColumns()
     {
         return $this->hasMany(FieldColumn::class)->with('templateField');
@@ -178,6 +180,7 @@ trait HasMapping
             ->whereNull('quote_files.deleted_at')
             ->where('quote_files.quote_id', $this->id)
             ->where('quote_files.file_type', __('quote_file.types.price'))
+            ->whereColumn('imported_rows.page', '>=', 'quote_files.imported_page')
             ->groupBy('imported_rows.id');
 
         return $query;
@@ -294,6 +297,20 @@ trait HasMapping
         $query = DB::query()->fromSub($sub, 'rows_data');
 
         return (float) $query->sum('price');
+    }
+
+    public function getTotalPriceAttribute(): float
+    {
+        if ($this->totalPrice) {
+            return $this->totalPrice;
+        }
+
+        return $this->totalPrice = $this->countTotalPrice();
+    }
+
+    public function setTotalPriceAttribute(float $value)
+    {
+        $this->totalPrice = $value;
     }
 
     public function getFieldColumnAttribute()
