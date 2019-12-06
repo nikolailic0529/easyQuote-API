@@ -11,10 +11,11 @@ use App\Traits\{
     Search\Searchable
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Invitation extends UuidModel
 {
-    use BelongsToUser, BelongsToRole, SoftDeletes, Searchable, CanGenerateToken, Expirable;
+    use BelongsToUser, BelongsToRole, SoftDeletes, Searchable, CanGenerateToken, Expirable, LogsActivity;
 
     protected $fillable = [
         'email', 'user_id', 'role_id', 'host'
@@ -31,6 +32,10 @@ class Invitation extends UuidModel
     protected $observables = [
         'resended', 'canceled'
     ];
+
+    protected static $logOnlyDirty = true;
+
+    protected static $submitEmptyLogs = false;
 
     protected static $recordEvents = ['created', 'deleted'];
 

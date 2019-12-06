@@ -51,6 +51,12 @@ class RolesUpdate extends Command
             collect($roles)->each(function ($attributes) {
                 $role = Role::whereName($attributes['name'])->firstOrFail();
 
+                $privileges = collect($attributes['privileges'])->transform(function ($privilege, $module) {
+                    return compact('module', 'privilege');
+                });
+
+                $role->fill(compact('privileges'))->save();
+
                 $permissions = collect($attributes['permissions'])->map(function ($name) {
                     $this->output->write('.');
                     return Permission::where('name', $name)->firstOrCreate(compact('name'));

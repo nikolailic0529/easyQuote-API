@@ -15,7 +15,18 @@
             "view_vendors", "create_vendors", "update_vendors", "delete_vendors",
             "view_discounts", "create_discounts", "update_discounts", "delete_discounts",
             "view_margins", "create_margins", "update_margins", "delete_margins"
-        ]
+        ],
+        "privileges": {
+            "Settings": "Read & Write",
+            "Audit": "Read Only",
+            "Users": "Read, Write and Delete",
+            "Quotes": "Read, Write and Delete",
+            "Templates": "Read, Write and Delete",
+            "Companies": "Read, Write and Delete",
+            "Vendors": "Read, Write and Delete",
+            "Margins": "Read, Write and Delete",
+            "Discounts": "Read, Write and Delete"
+        }
     },
     {
         "name": "Sales Manager",
@@ -27,6 +38,14 @@
             "view_vendors", "create_vendors", "update_vendors", "delete_vendors",
             "view_discounts", "create_discounts", "update_discounts", "delete_discounts",
             "view_margins", "create_margins", "update_margins", "delete_margins"
-        ]
+        ],
+        "privileges": {
+            "Quotes": "Read, Write and Delete",
+            "Templates": "Read, Write and Delete",
+            "Companies": "Read, Write and Delete",
+            "Vendors": "Read, Write and Delete",
+            "Margins": "Read, Write and Delete",
+            "Discounts": "Read, Write and Delete"
+        }
     }
 ]

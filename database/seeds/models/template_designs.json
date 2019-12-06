@@ -110,42 +110,6 @@
                 "decoration": "1"
             },
             {
-                "id": "2395118c-f076-438f-bb4f-61410b212c58",
-                "name": "Single Column",
-                "child": [
-                    {
-                        "id": "543128e3-6fd9-468d-a5bc-8fff75a32898",
-                        "class": "col-lg-12 border-right",
-                        "controls": [
-                            {
-                                "id": "additional_details",
-                                "css": null,
-                                "name": "additional_details",
-                                "show": false,
-                                "type": "tag",
-                                "class": "s4-form-control",
-                                "label": "Additional Details",
-                                "value": null,
-                                "is_field": true,
-                                "is_image": false,
-                                "droppable": false,
-                                "is_system": true,
-                                "is_required": false,
-                                "attached_child_id": "543128e3-6fd9-468d-a5bc-8fff75a32898",
-                                "attached_element_id": "2395118c-f076-438f-bb4f-61410b212c58"
-                            }
-                        ],
-                        "position": 1
-                    }
-                ],
-                "class": "single-column field-dragger",
-                "order": 1,
-                "controls": [],
-                "is_field": false,
-                "droppable": false,
-                "decoration": "1"
-            },
-            {
                 "id": "9d794895-65cf-4656-be58-1d9a2715bb04",
                 "name": "Single Column",
                 "child": [
@@ -2691,42 +2655,6 @@
                                 "is_required": false,
                                 "attached_child_id": "543128e3-6fd9-468d-a5bc-8fff75a32898",
                                 "attached_element_id": "fb35cfb7-fdde-4022-91d0-3524b3df4f32"
-                            }
-                        ],
-                        "position": 1
-                    }
-                ],
-                "class": "single-column field-dragger",
-                "order": 1,
-                "controls": [],
-                "is_field": false,
-                "droppable": false,
-                "decoration": "1"
-            },
-            {
-                "id": "2395118c-f076-438f-bb4f-61410b212c58",
-                "name": "Single Column",
-                "child": [
-                    {
-                        "id": "543128e3-6fd9-468d-a5bc-8fff75a32898",
-                        "class": "col-lg-12 border-right",
-                        "controls": [
-                            {
-                                "id": "additional_details",
-                                "css": null,
-                                "name": "additional_details",
-                                "show": false,
-                                "type": "tag",
-                                "class": "s4-form-control",
-                                "label": "Additional Details",
-                                "value": null,
-                                "is_field": true,
-                                "is_image": false,
-                                "droppable": false,
-                                "is_system": true,
-                                "is_required": false,
-                                "attached_child_id": "543128e3-6fd9-468d-a5bc-8fff75a32898",
-                                "attached_element_id": "2395118c-f076-438f-bb4f-61410b212c58"
                             }
                         ],
                         "position": 1

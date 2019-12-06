@@ -34,10 +34,10 @@ class RolesSeeder extends Seeder
         collect($roles)->each(function ($attributes) {
             $name = $attributes['name'];
             $is_system = true;
-            $privilege = collect(__('role.privileges'))->last();
-            $privileges = collect(__('role.modules'))->keys()->map(function ($module) use ($privilege) {
+
+            $privileges = collect($attributes['privileges'])->transform(function ($privilege, $module) {
                 return compact('module', 'privilege');
-            })->toArray();
+            });
 
             $role = Role::create(compact('name', 'privileges', 'is_system'));
 

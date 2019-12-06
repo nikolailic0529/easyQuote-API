@@ -207,17 +207,7 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
     {
         $this->load('customer', 'company', 'vendor');
 
-        return Arr::except(
-            $this->toArray(),
-            [
-                'margin_data',
-                'checkbox_status',
-                'calculate_list_price',
-                'vendor.logo',
-                'company.logo',
-                'discounts'
-            ]
-        );
+        return Arr::only($this->toArray(), ['customer', 'company', 'vendor', 'user']);
     }
 
     public function getCompletenessDictionary()

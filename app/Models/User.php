@@ -96,12 +96,14 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
     ];
 
     protected static $logAttributes = [
-        'first_name', 'middle_name', 'last_name', 'email', 'password', 'phone', 'role.name', 'timezone.text'
+        'first_name', 'middle_name', 'last_name', 'email', 'phone', 'role.name', 'timezone.text'
     ];
 
     protected static $logOnlyDirty = true;
 
     protected static $submitEmptyLogs = false;
+
+    protected static $recordEvents = ['created', 'updated', 'deleted'];
 
     public function getFullNameAttribute()
     {

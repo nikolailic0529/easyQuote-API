@@ -38,11 +38,9 @@ return [
             ['id' => 'software_contact', 'label' => 'Software Contact'],
             ['id' => 'software_phone', 'label' => 'Software Phone'],
             ['id' => 'coverage_period_from', 'label' => 'Coverage Period From'],
-            ['id' => 'coverage_period_to', 'label' => 'Coverage Period To'],
-            ['id' => 'additional_details', 'label' => 'Additional Details']
+            ['id' => 'coverage_period_to', 'label' => 'Coverage Period To']
         ],
         'last_page' => [
-            ['id' => 'additional_details', 'label' => 'Additional Details']
         ],
         'payment_schedule' => [
             ['id' => 'period', 'label' => 'Payment Schedule Period'],

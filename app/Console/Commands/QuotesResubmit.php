@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Contracts\Repositories\Quote\QuoteRepositoryInterface;
 use App\Models\Quote\Quote;
 use Illuminate\Console\Command;
+use Storage;
 
 class QuotesResubmit extends Command
 {
@@ -39,8 +40,24 @@ class QuotesResubmit extends Command
      */
     public function handle(QuoteRepositoryInterface $quoteRepository)
     {
+        $this->info("Resubmitting the Quotes...");
+
+        activity()->disableLogging();
+
         Quote::submitted()->cursor()->each(function ($quote) use ($quoteRepository) {
-            $quoteRepository->submit($quote);
+            if (filled($quote->generatedPdf->original_file_path) || Storage::exists($quote->generatedPdf->original_file_path)) {
+                $this->output->write('-');
+                return true;
+            }
+
+            rescue(function () use ($quoteRepository, $quote) {
+                $quoteRepository->submit($quote);
+                $this->output->write('.');
+            });
         });
+
+        activity()->enableLogging();
+
+        $this->info("\nThe Quotes were resubmitted!");
     }
 }

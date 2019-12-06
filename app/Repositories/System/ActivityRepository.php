@@ -30,7 +30,7 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
 
     public function query(): Builder
     {
-        return $this->activity->query()->with('subject')->hasCauser();
+        return $this->activity->query()->with('subject');
     }
 
     public function subjectQuery(string $subject_id): Builder
@@ -208,7 +208,7 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
 
     protected function searchableScope(Builder $query)
     {
-        return $query->with('subject')->hasCauser();
+        return $query->with('subject');
     }
 
     /**

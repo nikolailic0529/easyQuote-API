@@ -28,6 +28,9 @@
         </div>
 
         @include ('quotes.components.data.table', ['page_name' => 'data_pages', 'data_key' => 'rows'])
+        @isset ($data['data_pages']['additional_details'])
+            <div class="mt-2">{!! $data['last_page']['additional_details'] !!}</div>
+        @endisset
 
         <div class="page-break"></div>
 

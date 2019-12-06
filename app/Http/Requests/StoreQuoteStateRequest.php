@@ -148,7 +148,7 @@ class StoreQuoteStateRequest extends FormRequest
             'quote_data.pricing_document' => 'string|max:40|min:2',
             'quote_data.service_agreement_id' => 'string|max:40|min:2',
             'quote_data.system_handle' => 'string|max:40|min:2',
-            'quote_data.additional_details' => 'string|max:20000|min:2',
+            'quote_data.additional_details' => 'nullable|string|max:20000|min:2',
             'quote_data.checkbox_status' => 'array',
             'quote_data.closing_date' => 'date_format:Y-m-d',
             'quote_data.additional_notes' => 'string|max:20000|min:2',
