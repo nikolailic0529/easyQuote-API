@@ -111,7 +111,7 @@ class QuoteService implements QuoteServiceInterface
             }
 
             $buyPriceAfterDiscount = $quote->buy_price / $quote->bottomUpDivider;
-            $quote->applicable_custom_discount = $quote->totalPrice - $buyPriceAfterDiscount;
+            $quote->applicable_discounts += $quote->totalPrice - $buyPriceAfterDiscount;
 
             return;
         }
@@ -121,7 +121,7 @@ class QuoteService implements QuoteServiceInterface
                 $row->computablePrice = $row->price;
             }
 
-            $value = $this->calculateDiscountValue($discount, (float) $row->computablePrice, $quote->totalPrice);
+            $value = $this->calculateDiscountValue($discount, (float) $row->computablePrice, (float) $quote->totalPrice);
             $quote->applicable_discounts += $value;
             $row->computablePrice -= $value;
 
@@ -153,11 +153,22 @@ class QuoteService implements QuoteServiceInterface
             return;
         }
 
-        $quote->scheduleData->value = collect($quote->scheduleData->value)->map(function ($payment) use ($quote) {
+        $initialTotalPayments = $quote->scheduleData->value->sum('price');
+
+        if ((float) $initialTotalPayments === 0) {
+            return;
+        }
+
+        $reverseMultiplier = $quote->finalPrice / $initialTotalPayments;
+
+        $quote->scheduleData->value = collect($quote->scheduleData->value)->map(function ($payment) use ($reverseMultiplier) {
             $price = data_get($payment, 'price', 0.0);
-            data_set($payment, 'price', Str::price($price) / $quote->bottomUpDivider);
+            data_set($payment, 'price', Str::price($price) * $reverseMultiplier);
+
             return $payment;
         });
+
+        $quote->scheduleData->total_payments = Str::decimal($quote->scheduleData->value->sum('price'), 3);
 
         return;
     }
@@ -287,7 +298,7 @@ class QuoteService implements QuoteServiceInterface
         $quote->scheduleData->value = collect($quote->scheduleData->value)
             ->transform(function ($payment) use ($quote) {
                 $price = data_get($payment, 'price', 0.0);
-                data_set($payment, 'price', Str::prepend(Str::decimal($price), $quote->quoteTemplate->currency_symbol));
+                data_set($payment, 'price', Str::prepend(Str::decimal($price, 3), $quote->quoteTemplate->currency_symbol));
 
                 return $payment;
             });

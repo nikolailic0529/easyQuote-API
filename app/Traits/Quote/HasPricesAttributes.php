@@ -13,32 +13,26 @@ trait HasPricesAttributes
 
     public function getListPriceAttribute()
     {
-        return Str::decimal($this->getAttribute('totalPrice'));
+        return Str::decimal($this->getAttribute('totalPrice'), 3);
     }
 
     public function getListPriceFormattedAttribute()
     {
-        return Str::prepend(Str::decimal((float) $this->list_price), $this->quoteTemplate->currency_symbol, true);
+        return Str::prepend($this->getAttribute('listPrice'), $this->quoteTemplate->currency_symbol, true);
     }
 
     public function getFinalPriceAttribute(): float
     {
-        if ($this->bottomUpDivider === 0.0) {
-            return 0.0;
-        }
-
-        $buyPriceAfterBottomUp = $this->buy_price / $this->bottomUpDivider;
-
-        return (float) $buyPriceAfterBottomUp - (float) $this->applicable_discounts;
+        return (float) $this->totalPrice - (float) $this->applicable_discounts;
     }
 
     public function getFinalPriceFormattedAttribute()
     {
-        return Str::prepend(Str::decimal($this->getAttribute('final_price')), $this->quoteTemplate->currency_symbol, true);
+        return Str::prepend(Str::decimal($this->getAttribute('final_price'), 3), $this->quoteTemplate->currency_symbol, true);
     }
 
     public function getApplicableDiscountsFormattedAttribute()
     {
-        return Str::prepend(Str::decimal((float) $this->applicable_discounts + (float) $this->applicable_custom_discount), $this->quoteTemplate->currency_symbol);
+        return Str::prepend(Str::decimal((float) $this->applicable_discounts, 3), $this->quoteTemplate->currency_symbol);
     }
 }

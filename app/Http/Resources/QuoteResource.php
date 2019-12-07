@@ -77,7 +77,7 @@ class QuoteResource extends JsonResource
                         'support_end' => $this->customer->support_end,
                         'period' => $this->customer->coverage_period,
                         'rows_header' => $this->scheduleData->rowsHeaderToArray(),
-                        'total_payments' => $this->scheduleData->totalPrice,
+                        'total_payments' => $this->scheduleData->total_payments,
                         'data' => $this->scheduleData->value
                     ];
                 })

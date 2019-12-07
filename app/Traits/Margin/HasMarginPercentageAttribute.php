@@ -32,6 +32,15 @@ trait HasMarginPercentageAttribute
         return 1 - (($this->marginPercentage - $this->custom_discount) / 100);
     }
 
+    public function getReverseMultiplierAttribute(): float
+    {
+        if ($this->getAttribute('totalPrice') === 0.0) {
+            return 1;
+        }
+
+        return $this->getAttribute('finalPrice') / $this->getAttribute('totalPrice');
+    }
+
     public function getMarginPercentageWithoutCountryMarginAttribute()
     {
         return round($this->marginPercentage - $this->discounts_sum, 2);
