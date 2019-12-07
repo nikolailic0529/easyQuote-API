@@ -66,7 +66,8 @@ return [
         'contact' => \App\Models\Contact::class,
         'user' => \App\Models\User::class,
         'role' => \App\Models\Role::class,
-        'setting' => \App\Models\System\SystemSetting::class
+        'setting' => \App\Models\System\SystemSetting::class,
+        'invitation' => \App\Models\Collaboration\Invitation::class
     ],
     'types' => ['created', 'updated', 'deleted'],
     'periods' => [

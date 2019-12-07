@@ -35,7 +35,7 @@ class Invitation extends UuidModel
 
     protected static $logOnlyDirty = true;
 
-    protected static $submitEmptyLogs = false;
+    protected static $submitEmptyLogs = true;
 
     protected static $recordEvents = ['created', 'deleted'];
 
@@ -96,5 +96,10 @@ class Invitation extends UuidModel
         return $this->forceFill([
             'expires_at' => null
         ])->save();
+    }
+
+    public function getItemNameAttribute()
+    {
+        return "Invitation ({$this->email})";
     }
 }
