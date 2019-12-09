@@ -168,24 +168,23 @@ class QuoteService implements QuoteServiceInterface
             return $payment;
         });
 
-        $newTotalPayments = $quote->scheduleData->value->sum('price');
+        $newTotalPayments = $quote->scheduleData->value->sum(function ($payment) {
+            return round((float) data_get($payment, 'price', 0.0), 3);
+        });
 
         $roundedTotalPayments = round($newTotalPayments, 3);
         $roundedFinalPrice = round($quote->finalPrice, 3);
 
-        if ((float) abs($roundedFinalPrice - $roundedTotalPayments) === 0) {
+        if ((float) abs($roundedFinalPrice - $roundedTotalPayments) === 0.0) {
             return;
         }
 
         $diffWithFinalPrice = $roundedFinalPrice - $roundedTotalPayments;
-        $diffForPayment = $diffWithFinalPrice / $quote->scheduleData->value->count();
+        $firstPayment = $quote->scheduleData->value->first();
+        $firstPaymentPrice = data_get($firstPayment, 'price', 0.0);
+        data_set($firstPayment, 'price', $firstPaymentPrice + $diffWithFinalPrice);
 
-        $quote->scheduleData->value->transform(function ($payment) use ($diffForPayment) {
-            $price = data_get($payment, 'price', 0.0);
-            data_set($payment, 'price', $price + $diffForPayment);
-
-            return $payment;
-        });
+        $quote->scheduleData->value = $quote->scheduleData->value->replace([0 => $firstPayment]);
     }
 
     public function assignComputableRows(Quote $quote): void

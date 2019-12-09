@@ -51,7 +51,7 @@ class AuthService implements AuthServiceInterface
     {
         Auth::attempt($credentials) || abort(401, __('auth.failed'));
 
-        throw_if(auth()->user()->isAuthenticated(), AlreadyAuthenticatedException::class, auth()->user());
+        // throw_if(auth()->user()->isAuthenticated(), AlreadyAuthenticatedException::class, auth()->user());
     }
 
     public function storeAccessAttempt(array $payload)
