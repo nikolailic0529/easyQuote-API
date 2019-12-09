@@ -3,12 +3,6 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Laravel\Passport\{
-    Passport,
-    Client,
-    PersonalAccessClient
-};
-use Webpatser\Uuid\Uuid;
 use App\Http\Controllers\API\AuthController;
 use App\Contracts\{
     Services\AuthServiceInterface,
@@ -45,34 +39,6 @@ use App\Contracts\{
     Repositories\Quote\QuoteSubmittedRepositoryInterface,
     Repositories\AddressRepositoryInterface,
     Repositories\ContactRepositoryInterface
-};
-use App\Models\{
-    Company,
-    Vendor,
-    Quote\Quote,
-    Quote\Margin\CountryMargin,
-    Quote\Discount\MultiYearDiscount,
-    Quote\Discount\PrePayDiscount,
-    Quote\Discount\PromotionalDiscount,
-    Quote\Discount\SND,
-    QuoteTemplate\QuoteTemplate,
-    QuoteTemplate\TemplateField,
-    Collaboration\Invitation,
-    System\SystemSetting
-};
-use App\Observers\{
-    CompanyObserver,
-    VendorObserver,
-    QuoteObserver,
-    MarginObserver,
-    Discount\MultiYearDiscountObserver,
-    Discount\PrePayDiscountObserver,
-    Discount\PromotionalDiscountObserver,
-    Discount\SNDobserver,
-    QuoteTemplateObserver,
-    TemplateFieldObserver,
-    Collaboration\InvitationObserver,
-    SystemSettingObserver
 };
 use App\Repositories\{
     TimezoneRepository,
@@ -163,7 +129,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        Passport::ignoreMigrations();
+        $this->app->instance('path.storage', env('STORAGE_PATH', storage_path()));
 
         $this->app->when(AuthController::class)->needs(AuthServiceInterface::class)->give(AuthService::class);
 
@@ -180,53 +146,5 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         Schema::defaultStringLength(191);
-
-        $this->passportSettings();
-
-        $this->registerObservers();
-    }
-
-    protected function registerObservers()
-    {
-        Quote::observe(QuoteObserver::class);
-
-        CountryMargin::observe(MarginObserver::class);
-
-        MultiYearDiscount::observe(MultiYearDiscountObserver::class);
-
-        PrePayDiscount::observe(PrePayDiscountObserver::class);
-
-        PromotionalDiscount::observe(PromotionalDiscountObserver::class);
-
-        SND::observe(SNDobserver::class);
-
-        Vendor::observe(VendorObserver::class);
-
-        Company::observe(CompanyObserver::class);
-
-        QuoteTemplate::observe(QuoteTemplateObserver::class);
-
-        TemplateField::observe(TemplateFieldObserver::class);
-
-        Invitation::observe(InvitationObserver::class);
-
-        SystemSetting::observe(SystemSettingObserver::class);
-    }
-
-    protected function passportSettings()
-    {
-        Client::creating(function (Client $client) {
-            $client->incrementing = false;
-            $client->id = Uuid::generate()->string;
-        });
-
-        Client::retrieved(function (Client $client) {
-            $client->incrementing = false;
-        });
-
-        PersonalAccessClient::creating(function (PersonalAccessClient $client) {
-            $client->incrementing = false;
-            $client->id = Uuid::generate()->string;
-        });
     }
 }

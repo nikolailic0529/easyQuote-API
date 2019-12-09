@@ -8,7 +8,6 @@ use App\Contracts\{
 };
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Laravel\Passport\HasApiTokens;
 use App\Models\{
     Role,
     AuthenticableUser,
@@ -31,11 +30,13 @@ use App\Traits\{
     Collaboration\HasInvitations,
     Search\Searchable,
     Image\HasImage,
-    Image\HasPictureAttribute
+    Image\HasPictureAttribute,
+    Auth\HasApiTokens
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Traits\HasRoles;
 use Spatie\Activitylog\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\Builder;
 use Arr;
 
 class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInterface, WithImage
@@ -110,16 +111,21 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
         return "{$this->first_name} {$this->last_name}";
     }
 
-    public function scopeAdministrators($query)
+    public function scopeAdministrators(Builder $query): Builder
     {
         return $query->role('Administrator');
     }
 
-    public function scopeNonAdministrators($query)
+    public function scopeNonAdministrators(Builder $query): Builder
     {
         return $query->whereDoesntHave('roles', function ($query) {
             $query->whereName('Administrator');
         });
+    }
+
+    public function scopeEmail(Builder $query, string $email): Builder
+    {
+        return $query->whereEmail($email);
     }
 
     public function interact($model)

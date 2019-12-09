@@ -100,4 +100,11 @@ return [
         ],
     ],
 
+    /**
+     *
+     */
+    'tokens' => [
+        'expire' => 60,
+        'refresh_expire_in' => 50
+    ]
 ];

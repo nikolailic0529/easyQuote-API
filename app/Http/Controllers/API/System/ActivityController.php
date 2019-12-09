@@ -97,7 +97,6 @@ class ActivityController extends Controller
     public function meta()
     {
         $this->authorize('viewAny', Activity::class);
-        $this->authorize('viewAny', User::class);
 
         $meta = $this->activity->meta();
         $users = $this->user->list();

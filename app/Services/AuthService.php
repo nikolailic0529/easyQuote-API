@@ -6,6 +6,7 @@ use App\Contracts\{
     Services\AuthServiceInterface,
     Repositories\AccessAttemptRepositoryInterface
 };
+use App\Exceptions\AlreadyAuthenticatedException;
 use Laravel\Passport\PersonalAccessTokenResult;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -48,7 +49,9 @@ class AuthService implements AuthServiceInterface
 
     public function checkCredentials(array $credentials)
     {
-        return Auth::attempt($credentials) || abort(401, __('Unauthorized'));
+        Auth::attempt($credentials) || abort(401, __('auth.failed'));
+
+        throw_if(auth()->user()->isAuthenticated(), AlreadyAuthenticatedException::class, auth()->user());
     }
 
     public function storeAccessAttempt(array $payload)
@@ -60,11 +63,6 @@ class AuthService implements AuthServiceInterface
     {
         $tokenResult = request()->user()->createToken('Personal Access Token');
         $token = $tokenResult->token;
-
-        if (isset($attributes['remember_me']) && (bool) $attributes['remember_me']) {
-            $token->expires_at = Carbon::now()->addWeeks(1);
-        }
-
         $token->save();
 
         return $tokenResult;

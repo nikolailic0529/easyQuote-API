@@ -6,8 +6,8 @@ trait HasPictureAttribute
 {
     public function initializeHasPictureAttribute()
     {
-        $this->hidden = array_merge($this->hidden, ['image', 'image_id']);
-        $this->appends = array_merge($this->appends, ['picture']);
+        $this->hidden = array_merge($this->hidden ?? [], ['image', 'image_id']);
+        $this->appends = array_merge($this->appends ?? [], ['picture']);
     }
 
     public function getPictureAttribute()

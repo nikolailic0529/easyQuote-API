@@ -8,6 +8,7 @@ use App\Http\Requests\{
     UserSignInRequest,
     Collaboration\CompleteInvitationRequest,
     PasswordResetRequest,
+    RefreshTokenRequest,
     UpdateProfileRequest
 };
 use App\Contracts\{

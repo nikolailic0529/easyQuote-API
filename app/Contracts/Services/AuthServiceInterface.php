@@ -2,6 +2,7 @@
 
 namespace App\Contracts\Services;
 
+use App\Http\Requests\RefreshTokenRequest;
 use App\Http\Requests\UserSignInRequest;
 use Laravel\Passport\PersonalAccessTokenResult;
 

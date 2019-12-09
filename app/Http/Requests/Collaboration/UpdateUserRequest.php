@@ -29,9 +29,7 @@ class UpdateUserRequest extends FormRequest
             'email' => [
                 'string',
                 'email',
-                Rule::unique('users', 'email')->where(function ($query) {
-                    $query->where('id', '!=', request('user')->id);
-                })
+                Rule::unique('users')->ignore($this->user)->whereNull('deleted_at')
             ],
             'phone' => 'nullable|string|min:4',
             'timezone_id' => 'string|uuid|exists:timezones,id',
