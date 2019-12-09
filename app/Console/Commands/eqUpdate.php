@@ -49,6 +49,7 @@ class eqUpdate extends Command
         $this->call('eq:settings-sync');
         $this->call('eq:templates-update');
         $this->call('eq:quotes-resubmit');
+        $this->call('eq:create-client-credentials');
 
         /**
          * Seeding Fake S4 Contracts if available S4 Contract count is less then 29.

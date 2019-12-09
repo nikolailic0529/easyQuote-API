@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\{
     Model,
     Builder
 };
-use DB, Storage;
+use File, DB, Storage;
 
 class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubmittedRepositoryInterface
 {
@@ -75,10 +75,20 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     public function price(string $rfq)
     {
-        $path = $this->findByRfq($rfq)->priceList->original_file_path;
+        $priceList = $this->findByRfq($rfq)->priceList;
+
+        $path = $priceList->original_file_path;
         $storage_path = Storage::path($path);
 
         (blank($path) || Storage::missing($path)) && abort('404', __('quote_file.not_exists_exception'));
+
+        if ($priceList->isCsv()) {
+            $csvPath = File::dirname($path) . DIRECTORY_SEPARATOR . File::name($path) . '.csv';
+
+            Storage::missing($csvPath) && Storage::copy($path, $csvPath);
+
+            return Storage::path($csvPath);
+        }
 
         return $storage_path;
     }

@@ -12,13 +12,13 @@ trait HasApiTokens
     use PassportHasApiTokens;
 
     /**
-     * Latest NonExpired Token in Use.
+     * NonExpired Tokens in Use.
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasOne
      */
-    public function tokenInUse()
+    public function tokensInUse()
     {
-        return $this->hasOne(Passport::tokenModel())->latest()->whereRevoked(false);
+        return $this->tokens()->where('expires_at', '>', now())->whereRevoked(false);
     }
 
     /**
@@ -28,6 +28,6 @@ trait HasApiTokens
      */
     public function isAuthenticated(): bool
     {
-        return !is_null($this->tokenInUse);
+        return $this->tokensInUse()->exists();
     }
 }

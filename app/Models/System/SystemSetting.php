@@ -34,8 +34,6 @@ class SystemSetting extends UuidModel
         'label', 'field_title', 'field_type'
     ];
 
-    protected $dateTimeFormat = 'd/m/Y';
-
     protected static $logAttributes = [
         'value'
     ];
@@ -76,7 +74,7 @@ class SystemSetting extends UuidModel
         }
 
         if ($this->value instanceof \Carbon\Carbon) {
-            return $this->value->format($this->dateTimeFormat);
+            return $this->value->format(config('date.format_with_time'));
         }
 
         return $this->value;

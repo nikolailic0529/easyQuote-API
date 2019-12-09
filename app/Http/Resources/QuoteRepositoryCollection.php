@@ -15,7 +15,10 @@ class QuoteRepositoryCollection extends ResourceCollection
     public function toArray($request)
     {
         $data = QuoteRepositoryResource::collection($this->collection);
+        $resource = $this->resource->toArray();
 
-        return array_merge($this->resource->toArray(), compact('data'));
+        data_set($resource, 'data', $data);
+
+        return $resource;
     }
 }

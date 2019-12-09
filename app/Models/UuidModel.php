@@ -17,8 +17,6 @@ class UuidModel extends Model
 
     protected $formatDates = true;
 
-    protected $dateTimeFormat = 'd/m/Y';
-
     protected static function boot()
     {
         parent::boot();
@@ -111,6 +109,6 @@ class UuidModel extends Model
             return $date;
         }
 
-        return now()->createFromFormat('Y-m-d H:i:s', $date)->format($this->dateTimeFormat);
+        return now()->createFromFormat('Y-m-d H:i:s', $date)->format(config('date.format_with_time'));
     }
 }

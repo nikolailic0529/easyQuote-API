@@ -49,21 +49,19 @@ class Customer extends UuidModel
         'support_end' => 'datetime'
     ];
 
-    protected $dateTimeFormat = 'd/m/Y';
-
     public function getSupportStartAttribute()
     {
-        return now()->parse($this->attributes['support_start'])->format($this->dateTimeFormat);
+        return now()->parse($this->attributes['support_start'])->format(config('date.format'));
     }
 
     public function getSupportEndAttribute()
     {
-        return now()->parse($this->attributes['support_end'])->format($this->dateTimeFormat);
+        return now()->parse($this->attributes['support_end'])->format(config('date.format'));
     }
 
     public function getValidUntilAttribute()
     {
-        return now()->parse($this->attributes['valid_until'])->format($this->dateTimeFormat);
+        return now()->parse($this->attributes['valid_until'])->format(config('date.format'));
     }
 
     public function getCoveragePeriodAttribute()

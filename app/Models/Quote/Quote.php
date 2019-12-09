@@ -93,11 +93,7 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
 
     protected $appends = [
         'last_drafted_step',
-        'closing_date',
-        'hidden_fields',
-        'sort_fields',
-        'field_column',
-        'rows_data'
+        'closing_date'
     ];
 
     protected $casts = [

@@ -101,10 +101,19 @@ return [
     ],
 
     /**
-     *
+     *  Personal Access Tokens Configuration.
      */
     'tokens' => [
         'expire' => 60,
         'refresh_expire_in' => 50
+    ],
+
+    /**
+     * Client Credentials for S4 Service.
+     */
+    's4' => [
+        'client_name' => env('S4_CLIENT_NAME', null),
+        'client_id' => env('S4_CLIENT_ID', null),
+        'client_secret' => env('S4_CLIENT_SECRET', null)
     ]
 ];

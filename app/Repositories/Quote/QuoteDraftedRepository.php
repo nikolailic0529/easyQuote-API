@@ -37,7 +37,7 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
         return $this->quote
             ->currentUserWhen(request()->user()->cant('view_quotes'))
             ->drafted()
-            ->with('customer', 'company', 'user');
+            ->with('customer', 'company', 'user:id,email,first_name,middle_name,last_name');
     }
 
     public function find(string $id): Quote
@@ -105,6 +105,6 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
     protected function searchableScope(Builder $query)
     {
         return $query->currentUserWhen(request()->user()->cant('view_quotes'))
-            ->with('customer', 'company', 'user');
+            ->with('customer', 'company', 'user:id,email,first_name,middle_name,last_name');
     }
 }
