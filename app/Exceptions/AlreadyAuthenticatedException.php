@@ -33,7 +33,7 @@ class AlreadyAuthenticatedException extends Exception
      */
     public function render($request)
     {
-        $message = 'User Already Authenticated';
+        $message = 'User is already authenticated on another device';
 
         return response()->json(compact('message'));
     }

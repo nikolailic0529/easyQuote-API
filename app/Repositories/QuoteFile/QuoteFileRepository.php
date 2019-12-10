@@ -16,6 +16,7 @@ use App\Models\{
 };
 use Illuminate\Http\UploadedFile;
 use ErrorException;
+use Illuminate\Support\Facades\Schema;
 use Storage, Str, File, DB;
 
 class QuoteFileRepository implements QuoteFileRepositoryInterface
@@ -293,6 +294,8 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         $quoteFileCopy = $quoteFile->replicate();
         $quoteFileCopy->saveOrFail();
         $new_quote_file_id = $quoteFileCopy->id;
+
+        Schema::dropIfExists('new_imported_columns');
 
         /**
          * Generating new Ids for Imported Columns and Rows in the temporary table

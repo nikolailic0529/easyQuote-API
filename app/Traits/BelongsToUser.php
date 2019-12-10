@@ -13,6 +13,10 @@ trait BelongsToUser
     public static function bootBelongsToUser()
     {
         static::replicating(function (Model $model) {
+            if (app()->runningInConsole()) {
+                return;
+            }
+
             $model->user_id = request()->user()->id;
         });
     }

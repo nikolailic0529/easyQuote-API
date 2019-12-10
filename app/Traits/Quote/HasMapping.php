@@ -13,6 +13,8 @@ trait HasMapping
 {
     protected $totalPrice = false;
 
+    protected $systemHiddenFields = ['service_level_description'];
+
     public function fieldsColumns()
     {
         return $this->hasMany(FieldColumn::class)->with('templateField');
@@ -354,7 +356,15 @@ trait HasMapping
 
     public function hiddenFieldsToArray()
     {
-        return $this->fieldsColumns->where('is_preview_visible', false)->pluck('templateField.name')->toArray();
+        $hiddenFields = $this->fieldsColumns->where('is_preview_visible', false)->pluck('templateField.name')->toArray();
+
+        return $hiddenFields + $this->systemHiddenFields;
+    }
+
+    public function withSystemHiddenFields()
+    {
+        $this->systemHiddenFields = [];
+        return $this;
     }
 
     public function getHiddenFieldsAttribute()

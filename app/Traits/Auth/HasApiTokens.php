@@ -25,6 +25,6 @@ trait HasApiTokens
 
     public function revokeTokens()
     {
-        return $this->tokens()->update(['revoked' => true]);
+        return (bool) $this->tokens()->update(['revoked' => true]);
     }
 }

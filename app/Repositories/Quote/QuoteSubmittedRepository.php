@@ -6,9 +6,8 @@ use App\Contracts\Repositories\{
     Quote\QuoteSubmittedRepositoryInterface,
     QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
 };
-use App\Builder\Pagination\Paginator;
 use App\Contracts\Services\QuoteServiceInterface as QuoteService;
-use App\Http\Resources\QuoteRepositoryResource;
+use App\Http\Resources\QuoteRepositoryCollection;
 use App\Repositories\SearchableRepository;
 use App\Models\Quote\Quote;
 use Illuminate\Database\Eloquent\{
@@ -34,16 +33,12 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     public function all()
     {
-        $paginator = parent::all();
-
-        return $paginator->setCollection(QuoteRepositoryResource::collection($paginator->getCollection())->collection);
+        return new QuoteRepositoryCollection(parent::all());
     }
 
     public function search(string $query = '')
     {
-        $paginator = parent::search($query);
-
-        return $paginator->setCollection(QuoteRepositoryResource::collection($paginator->getCollection())->collection);
+        return new QuoteRepositoryCollection(parent::search($query));
     }
 
     public function userQuery(): Builder
@@ -56,7 +51,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     public function findByRfq(string $rfq): Quote
     {
-        return $this->quote->submitted()->orderBy('updated_at', 'desc')->rfq($rfq)->firstOrFail();
+        return $this->quote->submitted()->activated()->orderByDesc('submitted_at')->rfq($rfq)->firstOrFail();
     }
 
     public function find(string $id): Quote
@@ -134,6 +129,9 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
         return DB::transaction(function () use ($quote) {
             $replicatedQuote = $quote->replicate();
+
+            $quote->deactivate();
+
             $pass = $replicatedQuote->unSubmit();
 
             /**

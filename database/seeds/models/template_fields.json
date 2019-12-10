@@ -70,5 +70,14 @@
         "is_column": true,
         "type": "textbox",
         "order": 8
+    },
+    {
+        "header": "Service Level Description",
+        "name": "service_level_description",
+        "is_required": false,
+        "is_system": true,
+        "is_column": true,
+        "type": "textbox",
+        "order": 9
     }
 ]

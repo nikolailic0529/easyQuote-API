@@ -47,6 +47,7 @@ class eqUpdate extends Command
         $this->call('eq:vendors-update');
         $this->call('eq:roles-update');
         $this->call('eq:settings-sync');
+        $this->call('eq:templatefields-update');
         $this->call('eq:templates-update');
         $this->call('eq:quotes-resubmit');
         $this->call('eq:create-client-credentials');

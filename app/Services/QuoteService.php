@@ -169,11 +169,11 @@ class QuoteService implements QuoteServiceInterface
         });
 
         $newTotalPayments = $quote->scheduleData->value->sum(function ($payment) {
-            return round((float) data_get($payment, 'price', 0.0), 3);
+            return round((float) data_get($payment, 'price', 0.0), 2);
         });
 
-        $roundedTotalPayments = round($newTotalPayments, 3);
-        $roundedFinalPrice = round($quote->finalPrice, 3);
+        $roundedTotalPayments = round($newTotalPayments, 2);
+        $roundedFinalPrice = round($quote->finalPrice, 2);
 
         if ((float) abs($roundedFinalPrice - $roundedTotalPayments) === 0.0) {
             return;
@@ -219,7 +219,7 @@ class QuoteService implements QuoteServiceInterface
 
     public function prepareQuoteExport(Quote $quote): array
     {
-        $this->prepareQuoteReview($quote);
+        $this->prepareQuoteReview($quote->withSystemHiddenFields());
 
         $resource = (new QuoteResource($quote))->resolve();
         $data = json_decode(json_encode($resource['quote_data']), true);
@@ -241,6 +241,10 @@ class QuoteService implements QuoteServiceInterface
     public function modifyColumn(Quote $quote, string $column, Closure $callback): void
     {
         if (!isset($quote->computableRows)) {
+            return;
+        }
+
+        if (data_get($quote->computableRows->first(), $column) === null) {
             return;
         }
 
@@ -288,6 +292,13 @@ class QuoteService implements QuoteServiceInterface
 
         $quote->computableRows = $quote->computableRows->exceptEach($quote->hiddenFieldsToArray());
 
+        /**
+         * Preventing Empty Rows.
+         */
+        if (count($quote->computableRows->first()) === 0) {
+            $quote->computableRows = collect();
+        }
+
         if ($quote->has_group_description && $quote->use_groups) {
             $groups_meta = $quote->getGroupDescriptionWithMeta(null, $quote->calculate_list_price);
             $quote->computableRows = $quote->computableRows
@@ -312,7 +323,7 @@ class QuoteService implements QuoteServiceInterface
         $quote->scheduleData->value = collect($quote->scheduleData->value)
             ->transform(function ($payment) use ($quote) {
                 $price = data_get($payment, 'price', 0.0);
-                data_set($payment, 'price', Str::prepend(Str::decimal($price, 3), $quote->quoteTemplate->currency_symbol));
+                data_set($payment, 'price', Str::prepend(Str::decimal($price, 2), $quote->quoteTemplate->currency_symbol));
 
                 return $payment;
             });

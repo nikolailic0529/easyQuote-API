@@ -4,18 +4,6 @@ namespace App\Traits\Margin;
 
 trait HasMarginPercentageAttribute
 {
-    public function initializeHasMarginPercentageAttribute()
-    {
-        $this->appends = array_merge(
-            $this->appends,
-            [
-                'margin_percentage_without_country_margin',
-                'margin_percentage_without_discounts',
-                'user_margin_percentage'
-            ]
-        );
-    }
-
     public function getMarginPercentageAttribute(): float
     {
         $totalPrice = $this->getAttribute('totalPrice');
@@ -29,7 +17,7 @@ trait HasMarginPercentageAttribute
 
     public function getBottomUpDividerAttribute(): float
     {
-        return 1 - (($this->marginPercentage - $this->custom_discount) / 100);
+        return 1 - (($this->userMarginPercentage - $this->custom_discount) / 100);
     }
 
     public function getReverseMultiplierAttribute(): float

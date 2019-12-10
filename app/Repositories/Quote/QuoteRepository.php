@@ -136,7 +136,16 @@ class QuoteRepository implements QuoteRepositoryInterface
                 'vendor'
             ])
             ->firstOrFail()
-            ->append('list_price', 'hidden_fields', 'sort_fields', 'field_column', 'rows_data');
+            ->append(
+                'list_price',
+                'hidden_fields',
+                'sort_fields',
+                'field_column',
+                'rows_data',
+                'margin_percentage_without_country_margin',
+                'margin_percentage_without_discounts',
+                'user_margin_percentage'
+            );
 
         return $quote;
     }

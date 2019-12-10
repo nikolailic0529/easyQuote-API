@@ -50,7 +50,7 @@ class TemplateFieldsUpdate extends Command
             $templateFieldsData = json_decode(file_get_contents(database_path('seeds/models/template_fields.json')), true);
 
             $templateFields = collect($templateFieldsData)->map(function ($field) {
-                $template_field_type_id = TemplateFieldType::whereName($field['type'])->firstOrFail()->id;
+                $template_field_type_id = TemplateFieldType::whereName($field['type'])->value('id');
                 $field = array_merge($field, compact('template_field_type_id'));
 
                 $templateField = TemplateField::firstOrCreate(['name' => $field['name'], 'is_system' => true], $field);
