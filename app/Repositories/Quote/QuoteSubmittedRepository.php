@@ -130,51 +130,52 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     public function copy(string $id)
     {
-        $quote = $this->find($id)->load('company', 'vendor', 'country', 'discounts', 'customer');
+        $quote = $this->find($id);
 
-        $replicatedQuote = $quote->replicate();
+        return DB::transaction(function () use ($quote) {
+            $replicatedQuote = $quote->replicate();
+            $pass = $replicatedQuote->unSubmit();
 
-        $pass = $replicatedQuote->unSubmit();
+            /**
+             * Discounts Replication
+             */
+            $discounts = DB::table('quote_discount')
+                ->select(DB::raw("'{$replicatedQuote->id}' `quote_id`"), 'discount_id', 'duration')
+                ->where('quote_id', $quote->id);
+            DB::table('quote_discount')->insertUsing(['quote_id', 'discount_id', 'duration'], $discounts);
 
-        /**
-         * Discounts Replication
-         */
-        $discounts = DB::table('quote_discount')
-            ->select(DB::raw("'{$replicatedQuote->id}' `quote_id`"), 'discount_id', 'duration')
-            ->where('quote_id', $quote->id);
-        DB::table('quote_discount')->insertUsing(['quote_id', 'discount_id', 'duration'], $discounts);
+            /**
+             * Mapping Replication
+             */
+            $mapping = DB::table('quote_field_column')
+                ->select(DB::raw("'{$replicatedQuote->id}' as `quote_id`"), 'template_field_id', 'importable_column_id', 'is_default_enabled')
+                ->where('quote_id', $quote->id);
+            DB::table('quote_field_column')->insertUsing(
+                ['quote_id', 'template_field_id', 'importable_column_id', 'is_default_enabled'],
+                $mapping
+            );
 
-        /**
-         * Mapping Replication
-         */
-        $mapping = DB::table('quote_field_column')
-            ->select(DB::raw("'{$replicatedQuote->id}' as `quote_id`"), 'template_field_id', 'importable_column_id', 'is_default_enabled')
-            ->where('quote_id', $quote->id);
-        DB::table('quote_field_column')->insertUsing(
-            ['quote_id', 'template_field_id', 'importable_column_id', 'is_default_enabled'],
-            $mapping
-        );
+            $quoteFilesToSave = collect();
 
-        $quoteFilesToSave = collect();
-
-        $priceList = $quote->quoteFiles()->priceLists()->first();
-        if (isset($priceList)) {
-            $quoteFilesToSave->push($this->quoteFile->replicatePriceList($priceList));
-        }
-
-        $schedule = $quote->quoteFiles()->paymentSchedules()->with('scheduleData')->first();
-        if (isset($schedule)) {
-            $replicatedSchedule = $schedule->replicate();
-            unset($replicatedSchedule->scheduleData);
-            $replicatedSchedule->save();
-            if (isset($schedule->scheduleData)) {
-                $replicatedSchedule->scheduleData()->save($schedule->scheduleData->replicate());
+            $priceList = $quote->quoteFiles()->priceLists()->first();
+            if (isset($priceList)) {
+                $quoteFilesToSave->push($this->quoteFile->replicatePriceList($priceList));
             }
 
-            $quoteFilesToSave->push($replicatedSchedule);
-        }
+            $schedule = $quote->quoteFiles()->paymentSchedules()->with('scheduleData')->first();
+            if (isset($schedule)) {
+                $replicatedSchedule = $schedule->replicate();
+                unset($replicatedSchedule->scheduleData);
+                $replicatedSchedule->save();
+                if (isset($schedule->scheduleData)) {
+                    $replicatedSchedule->scheduleData()->save($schedule->scheduleData->replicate());
+                }
 
-        return $pass && $replicatedQuote->quoteFiles()->saveMany($quoteFilesToSave);
+                $quoteFilesToSave->push($replicatedSchedule);
+            }
+
+            return $pass && $replicatedQuote->quoteFiles()->saveMany($quoteFilesToSave);
+        });
     }
 
     protected function filterQueryThrough(): array

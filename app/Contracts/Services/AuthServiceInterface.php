@@ -34,12 +34,21 @@ interface AuthServiceInterface
     public function generateToken(array $attributes): PersonalAccessTokenResult;
 
     /**
-     * Authenticate User
+     * Authenticate User and generate the Personal Access Token.
+     * Mark User as Logged In.
      *
      * @param UserSignInRequest|array $request
      * @return mixed
      */
     public function authenticate($request);
+
+    /**
+     * Revoke the Personal Access Token of the Current Authenticated User.
+     * Mark User as Logged Out.
+     *
+     * @return void
+     */
+    public function logout();
 
     /**
      * Response when Successful Authentication

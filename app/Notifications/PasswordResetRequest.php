@@ -51,7 +51,8 @@ class PasswordResetRequest extends Notification
         return (new MailMessage)
                     ->line('You are receiving this email because easyQuote received a password reset request for you account.')
                     ->action('Reset Password', $this->passwordReset->url)
-                    ->line("If you don't know why you've got this message, ignore it.");
+                    ->line("If you don't know why you've got this message, ignore it.")
+                    ->line("This link will expire in 24 hours.");
     }
 
     /**

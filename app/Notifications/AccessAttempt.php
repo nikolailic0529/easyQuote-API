@@ -32,7 +32,8 @@ class AccessAttempt extends Notification
     {
         return (new MailMessage)
                     ->line('Someone recently was trying get login into your account.')
+                    ->line('You are already logged in and you can\'t login again.')
                     ->action(config('app.name'), url('/'))
-                    ->line('If you want to get access from another device, please logout from current logged in device!');
+                    ->line('If you think, you are not logged in ask an administrator to reset your account.');
     }
 }

@@ -21,7 +21,13 @@ class QuoteRepositoryResource extends JsonResource
             'created_at' => $this->created_at,
             'activated_at' => $this->activated_at,
             'completeness' => $this->completeness,
-            'customer' => $this->customer,
+            'customer' => [
+                'name' => $this->customer->name,
+                'rfq' => $this->customer->rfq,
+                'valid_until' => $this->customer->valid_until,
+                'support_start' => $this->customer->support_start,
+                'support_end' => $this->customer->support_end
+            ],
             'last_drafted_step' => $this->last_drafted_step
         ];
     }

@@ -31,6 +31,7 @@ use App\Traits\{
     Search\Searchable,
     Image\HasImage,
     Image\HasPictureAttribute,
+    Auth\Loginable,
     Auth\HasApiTokens
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -62,7 +63,8 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
         Searchable,
         SoftDeletes,
         HasImage,
-        LogsActivity;
+        LogsActivity,
+        Loginable;
 
     /**
      * The attributes that are mass assignable.

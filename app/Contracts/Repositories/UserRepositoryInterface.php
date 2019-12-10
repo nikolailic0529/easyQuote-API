@@ -171,6 +171,14 @@ interface UserRepositoryInterface
     public function resetPassword(StoreResetPasswordRequest $request, string $id): bool;
 
     /**
+     * Reset specified User (set already_logged_in to 0).
+     *
+     * @param string $id
+     * @return bool
+     */
+    public function resetAccount(string $id): bool;
+
+    /**
      * Perform Intitiated Password Reset.
      *
      * @param PasswordResetRequest $request

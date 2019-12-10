@@ -204,6 +204,11 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         }
     }
 
+    public function resetAccount(string $id): bool
+    {
+        return $this->find($id)->markAsLoggedOut();
+    }
+
     public function performResetPassword(AppPasswordResetRequest $request, string $token): bool
     {
         $passwordReset = $this->passwordReset->whereToken($token)->firstOrFail();

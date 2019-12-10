@@ -21,7 +21,7 @@ class RefreshPersonalAccessToken
 
         $token = auth()->user()->token();
 
-        if ($token->expires_at->diffInMinutes(now()) > config('auth.tokens.refresh_expire_in')) {
+        if ($token->expires_at->diffInMinutes(now()) < config('auth.tokens.refresh_expire_in')) {
             return $next($request);
         }
 

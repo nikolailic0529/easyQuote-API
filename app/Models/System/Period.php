@@ -50,16 +50,16 @@ class Period
                 $till = now()->endOfDay();
                 break;
             case 'yesterday':
-                $from = now()->subDay();
-                $till = now();
+                $from = now()->subDay()->startOfDay();
+                $till = now()->subDay()->endOfDay();
                 break;
             case 'this_week':
                 $from = now()->startOfWeek();
                 $till = now()->endOfWeek();
                 break;
             case 'last_week':
-                $from = now()->startOfWeek()->subWeek();
-                $till = now()->startOfWeek()->subDay();
+                $from = now()->startOfWeek()->subWeek()->startOfDay();
+                $till = now()->startOfWeek()->subDay()->endOfDay();
                 break;
             case 'this_month':
                 $from = now()->startOfMonth();
@@ -67,7 +67,7 @@ class Period
                 break;
             case 'last_month':
                 $from = now()->startOfMonth()->subMonth();
-                $till = now()->startOfMonth()->subDay();
+                $till = now()->startOfMonth()->subDay()->endOfDay();
                 break;
             case 'this_year':
                 $from = now()->startOfYear();

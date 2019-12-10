@@ -3,12 +3,13 @@
 namespace App\Models\System;
 
 use App\Models\UuidModel;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Str;
 
 class SystemSetting extends UuidModel
 {
-    use LogsActivity;
+    use LogsActivity, SoftDeletes;
 
     public $timestamps = false;
 

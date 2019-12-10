@@ -2,32 +2,29 @@
 
 namespace App\Traits\Auth;
 
-use Laravel\Passport\{
-    Passport,
-    HasApiTokens as PassportHasApiTokens
-};
+use Laravel\Passport\HasApiTokens as LaravelHasApiTokens;
 
 trait HasApiTokens
 {
-    use PassportHasApiTokens;
+    use LaravelHasApiTokens;
 
-    /**
-     * NonExpired Tokens in Use.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne
-     */
-    public function tokensInUse()
+    public function nonExpiredTokens()
     {
         return $this->tokens()->where('expires_at', '>', now())->whereRevoked(false);
     }
 
-    /**
-     * Determine that User is already logged in.
-     *
-     * @return bool
-     */
-    public function isAuthenticated(): bool
+    public function hasNonExpiredTokens()
     {
-        return $this->tokensInUse()->exists();
+        return $this->nonExpiredTokens()->exists();
+    }
+
+    public function doesntHaveNonExpiredTokens()
+    {
+        return !$this->hasNonExpiredTokens();
+    }
+
+    public function revokeTokens()
+    {
+        return $this->tokens()->update(['revoked' => true]);
     }
 }

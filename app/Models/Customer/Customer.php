@@ -43,25 +43,21 @@ class Customer extends UuidModel
         'updated_at', 'deleted_at'
     ];
 
-    protected $casts = [
-        'valid_until' => 'datetime',
-        'support_start' => 'datetime',
-        'support_end' => 'datetime'
-    ];
+    protected $dates = ['valid_until', 'support_start', 'support_end'];
 
-    public function getSupportStartAttribute()
+    public function getSupportStartAttribute($value)
     {
-        return now()->parse($this->attributes['support_start'])->format(config('date.format'));
+        return carbon_format($value, config('date.format'));
     }
 
-    public function getSupportEndAttribute()
+    public function getSupportEndAttribute($value)
     {
-        return now()->parse($this->attributes['support_end'])->format(config('date.format'));
+        return carbon_format($value, config('date.format'));
     }
 
-    public function getValidUntilAttribute()
+    public function getValidUntilAttribute($value)
     {
-        return now()->parse($this->attributes['valid_until'])->format(config('date.format'));
+        return carbon_format($value, config('date.format'));
     }
 
     public function getCoveragePeriodAttribute()

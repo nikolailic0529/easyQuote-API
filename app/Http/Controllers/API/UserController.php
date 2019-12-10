@@ -164,4 +164,13 @@ class UserController extends Controller
             $this->user->resetPassword($request, $user->id)
         );
     }
+
+    public function resetAccount(User $user)
+    {
+        $this->authorize('update', $user);
+
+        return response()->json(
+            $this->user->resetAccount($user->id)
+        );
+    }
 }

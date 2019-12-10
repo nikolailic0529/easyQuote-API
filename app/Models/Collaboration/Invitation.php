@@ -15,7 +15,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
 
 class Invitation extends UuidModel
 {
-    use BelongsToUser, BelongsToRole, SoftDeletes, Searchable, CanGenerateToken, Expirable, LogsActivity;
+    use BelongsToUser, BelongsToRole, SoftDeletes, Searchable, CanGenerateToken, Expirable, LogsActivity, SoftDeletes;
 
     protected $fillable = [
         'email', 'user_id', 'role_id', 'host'

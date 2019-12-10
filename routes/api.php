@@ -62,6 +62,7 @@ Route::group(['namespace' => 'API'], function () {
             Route::put('users/activate/{user}', 'UserController@activate');
             Route::put('users/deactivate/{user}', 'UserController@deactivate');
             Route::patch('users/reset-password/{user}', 'UserController@resetPassword');
+            Route::put('users/reset-account/{user}', 'UserController@resetAccount');
 
             Route::apiResource('invitations', 'InvitationController', ['only' => config('route.rd')]);
             Route::put('invitations/resend/{invitation}', 'InvitationController@resend');

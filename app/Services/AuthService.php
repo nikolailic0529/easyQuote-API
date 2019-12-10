@@ -51,7 +51,19 @@ class AuthService implements AuthServiceInterface
     {
         Auth::attempt($credentials) || abort(401, __('auth.failed'));
 
-        // throw_if(auth()->user()->isAuthenticated(), AlreadyAuthenticatedException::class, auth()->user());
+        $user = auth()->user();
+
+        /**
+         * If the User has expired tokens the System will mark the User as Logged Out.
+         */
+        $user->doesntHaveNonExpiredTokens() && $user->markAsLoggedOut();
+
+        /**
+         * Throw an exception if the User Already Logged In.
+         */
+        throw_if($user->isAlreadyLoggedIn(), AlreadyAuthenticatedException::class, $user);
+
+        $user->markAsLoggedIn();
     }
 
     public function storeAccessAttempt(array $payload)
@@ -66,5 +78,14 @@ class AuthService implements AuthServiceInterface
         $token->save();
 
         return $tokenResult;
+    }
+
+    public function logout()
+    {
+        /**
+         * When Logout the System is revoking all the existing User's Personal Access Tokens.
+         * Also the User will be marked as Logged Out.
+         */
+        return auth()->user()->revokeTokens() && auth()->user()->markAsLoggedOut();
     }
 }

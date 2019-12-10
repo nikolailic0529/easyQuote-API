@@ -21,7 +21,7 @@ class QuotesResubmit extends Command
      *
      * @var string
      */
-    protected $description = 'Resubmit yerly submitted quotes';
+    protected $description = 'Resubmit early submitted quotes';
 
     /**
      * Create a new command instance.

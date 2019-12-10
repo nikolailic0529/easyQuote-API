@@ -97,7 +97,7 @@ class AuthController extends Controller
     public function logout()
     {
         return response()->json(
-            request()->user()->token()->revoke()
+            $this->auth->logout()
         );
     }
 
