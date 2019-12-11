@@ -297,7 +297,11 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         $this->headersMapping = [];
         $mapping = collect([]);
         $this->headersMapping = $headingRow->mapWithKeys(function ($header) use ($aliasesMapping, $mapping) {
-            $column = $aliasesMapping->search(function ($aliases) use ($header) {
+            $column = $aliasesMapping->search(function ($aliases, $importable_column_id) use ($header, $mapping) {
+                if ($mapping->contains($importable_column_id)) {
+                    return false;
+                }
+
                 $matchingHeader = preg_quote($header, '~');
                 $match = preg_grep("~^{$matchingHeader}.*?~i", $aliases);
                 if (empty($match)) {

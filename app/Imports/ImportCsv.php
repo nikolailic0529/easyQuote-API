@@ -227,7 +227,11 @@ class ImportCsv
         $mapping = collect([]);
 
         $this->headersMapping = collect($this->header)->map(function ($header) use ($aliasesMapping, $mapping) {
-            $importable_column_id = $aliasesMapping->search(function ($aliases) use ($header) {
+            $importable_column_id = $aliasesMapping->search(function ($aliases, $importable_column_id) use ($header, $mapping) {
+                if ($mapping->contains($importable_column_id)) {
+                    return false;
+                }
+
                 $matchingHeader = preg_quote($header, '~');
                 $match = preg_grep("~^{$matchingHeader}.*?~i", $aliases);
                 if (empty($match)) {
