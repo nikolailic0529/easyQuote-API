@@ -296,7 +296,7 @@ class QuoteService implements QuoteServiceInterface
         /**
          * Preventing Empty Rows.
          */
-        if (count($quote->computableRows->first()) === 0) {
+        if (count($quote->computableRows->first() ?? []) === 0) {
             $quote->computableRows = $quote->renderableRows = collect();
         }
 

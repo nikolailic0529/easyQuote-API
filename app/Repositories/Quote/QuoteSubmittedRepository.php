@@ -221,6 +221,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     protected function searchableScope(Builder $query)
     {
         return $query->currentUserWhen(request()->user()->cant('view_quotes'))
+            ->submitted()
             ->with('customer', 'company', 'user:id,email,first_name,middle_name,last_name');
     }
 }

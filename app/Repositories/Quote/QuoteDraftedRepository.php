@@ -105,6 +105,7 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
     protected function searchableScope(Builder $query)
     {
         return $query->currentUserWhen(request()->user()->cant('view_quotes'))
+            ->drafted()
             ->with('customer', 'company', 'user:id,email,first_name,middle_name,last_name');
     }
 }

@@ -50,6 +50,7 @@ class eqUpdate extends Command
         $this->call('eq:templatefields-update');
         $this->call('eq:templates-update');
         $this->call('eq:quotes-resubmit');
+        $this->call('eq:create-personal-access-client');
         $this->call('eq:create-client-credentials');
 
         /**

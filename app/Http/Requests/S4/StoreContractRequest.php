@@ -38,6 +38,13 @@ class StoreContractRequest extends FormRequest
         ];
     }
 
+    public function messages()
+    {
+        return [
+            'rfq_number.unique' => 'A Quote already exists for the provided RFQ.'
+        ];
+    }
+
     public function validated()
     {
         $validated = collect(parent::validated());
