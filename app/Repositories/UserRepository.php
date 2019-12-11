@@ -14,7 +14,10 @@ use App\Http\Requests\{
     StoreResetPasswordRequest,
     UpdateProfileRequest
 };
-use App\Http\Resources\UserListResource;
+use App\Http\Resources\{
+    UserListResource,
+    UserRepositoryCollection
+};
 use App\Models\{
     User,
     Role,
@@ -65,7 +68,17 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
 
     public function userQuery(): Builder
     {
-        return $this->user->query();
+        return $this->user->query()->with('roles', 'image');
+    }
+
+    public function all()
+    {
+        return $this->toCollection(parent::all());
+    }
+
+    public function search(string $query = '')
+    {
+        return $this->toCollection(parent::search($query));
     }
 
     public function list()
@@ -78,12 +91,18 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
             ])
             ->withTrashed()
             ->get();
+
         return UserListResource::collection($users);
+    }
+
+    public function toCollection($resource)
+    {
+        return new UserRepositoryCollection($resource);
     }
 
     public function find(string $id): User
     {
-        return $this->userQuery()->whereId($id)->firstOrFail();
+        return $this->userQuery()->whereId($id)->firstOrFail()->withAppends();
     }
 
     public function data(): SupportCollection
@@ -160,9 +179,8 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         }
 
         $user->update($attributes);
-        $user->makeVisible('privileges');
 
-        return $user;
+        return $user->withAppends();
     }
 
     public function delete(string $id): bool

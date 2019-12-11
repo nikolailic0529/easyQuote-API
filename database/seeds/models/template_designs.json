@@ -1130,7 +1130,7 @@
             },
             {
                 "id": "e1b21561-9910-4375-b324-bbee46c8bbf4",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "2521a5c6-6eda-4420-876d-b821841f892e",
@@ -1158,7 +1158,7 @@
                     },
                     {
                         "id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                        "class": "col-lg-6",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "quotation_number",
@@ -1178,24 +1178,18 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "1+3"
             },
             {
                 "id": "344e5c52-2caf-4376-a4b3-915ca7a12965",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "2521a5c6-6eda-4420-876d-b821841f892e",
@@ -1224,7 +1218,7 @@
                     },
                     {
                         "id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                        "class": "col-lg-6",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "valid_until",
@@ -1244,24 +1238,18 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "1+3"
             },
             {
                 "id": "a931eb6b-51e1-45d5-816e-dcdd64ec843b",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "2521a5c6-6eda-4420-876d-b821841f892e",
@@ -1289,7 +1277,7 @@
                     },
                     {
                         "id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                        "class": "col-lg-6",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "support_start",
@@ -1308,24 +1296,18 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "1+3"
             },
             {
                 "id": "7a98ee0b-e097-4370-938a-dc7d3e1f4f73",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "2521a5c6-6eda-4420-876d-b821841f892e",
@@ -1353,7 +1335,7 @@
                     },
                     {
                         "id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                        "class": "col-lg-6",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "support_end",
@@ -1372,24 +1354,18 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "1+3"
             },
             {
                 "id": "bb9ea3cc-95eb-4be1-b78d-7565b68c78cf",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "2521a5c6-6eda-4420-876d-b821841f892e",
@@ -1417,7 +1393,7 @@
                     },
                     {
                         "id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                        "class": "col-lg-6",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "list_price",
@@ -1436,12 +1412,6 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
                 "class": "three-column field-dragger",
@@ -1449,11 +1419,11 @@
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "1+3"
             },
             {
                 "id": "a7623070-c87b-428f-a894-87ccfcb909c2",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "2521a5c6-6eda-4420-876d-b821841f892e",
@@ -1481,7 +1451,7 @@
                     },
                     {
                         "id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                        "class": "col-lg-6",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "applicable_discounts",
@@ -1500,24 +1470,18 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "1+3"
             },
             {
                 "id": "b6747784-7b91-4ca8-93fc-1ec0e7399f98",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "2521a5c6-6eda-4420-876d-b821841f892e",
@@ -1545,7 +1509,7 @@
                     },
                     {
                         "id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                        "class": "col-lg-6",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "final_price",
@@ -1580,24 +1544,18 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "1+3"
             },
             {
                 "id": "6d38b26d-e1f4-4db2-bc87-4d6f4350f4ce",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "2521a5c6-6eda-4420-876d-b821841f892e",
@@ -1625,7 +1583,7 @@
                     },
                     {
                         "id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                        "class": "col-lg-6",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "payment_terms",
@@ -1644,24 +1602,18 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "1+3"
             },
             {
                 "id": "c174ce4d-8e57-430a-961f-b1c1933d4127",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "2521a5c6-6eda-4420-876d-b821841f892e",
@@ -1689,7 +1641,7 @@
                     },
                     {
                         "id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                        "class": "col-lg-6",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "invoicing_terms",
@@ -1708,20 +1660,14 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "1+3"
             },
             {
                 "id": "b1bf7d16-b033-4e0d-a646-d267e46f0886",
@@ -3688,7 +3634,7 @@
             },
             {
                 "id": "e1b21561-9910-4375-b324-bbee46c8bbf4",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "2521a5c6-6eda-4420-876d-b821841f892e",
@@ -3716,7 +3662,7 @@
                     },
                     {
                         "id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                        "class": "col-lg-6",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "quotation_number",
@@ -3736,24 +3682,18 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "1+3"
             },
             {
                 "id": "344e5c52-2caf-4376-a4b3-915ca7a12965",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "2521a5c6-6eda-4420-876d-b821841f892e",
@@ -3782,7 +3722,7 @@
                     },
                     {
                         "id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                        "class": "col-lg-6",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "valid_until",
@@ -3802,24 +3742,18 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "1+3"
             },
             {
                 "id": "a931eb6b-51e1-45d5-816e-dcdd64ec843b",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "2521a5c6-6eda-4420-876d-b821841f892e",
@@ -3847,7 +3781,7 @@
                     },
                     {
                         "id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                        "class": "col-lg-6",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "support_start",
@@ -3866,24 +3800,18 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "1+3"
             },
             {
                 "id": "7a98ee0b-e097-4370-938a-dc7d3e1f4f73",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "2521a5c6-6eda-4420-876d-b821841f892e",
@@ -3911,7 +3839,7 @@
                     },
                     {
                         "id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                        "class": "col-lg-6",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "support_end",
@@ -3930,24 +3858,18 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "1+3"
             },
             {
                 "id": "bb9ea3cc-95eb-4be1-b78d-7565b68c78cf",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "2521a5c6-6eda-4420-876d-b821841f892e",
@@ -3975,7 +3897,7 @@
                     },
                     {
                         "id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                        "class": "col-lg-6",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "list_price",
@@ -3994,24 +3916,18 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "1+3"
             },
             {
                 "id": "a7623070-c87b-428f-a894-87ccfcb909c2",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "2521a5c6-6eda-4420-876d-b821841f892e",
@@ -4039,7 +3955,7 @@
                     },
                     {
                         "id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                        "class": "col-lg-6",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "applicable_discounts",
@@ -4058,24 +3974,18 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "1+3"
             },
             {
                 "id": "b6747784-7b91-4ca8-93fc-1ec0e7399f98",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "2521a5c6-6eda-4420-876d-b821841f892e",
@@ -4103,7 +4013,7 @@
                     },
                     {
                         "id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                        "class": "col-lg-6",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "final_price",
@@ -4138,24 +4048,18 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "1+3"
             },
             {
                 "id": "6d38b26d-e1f4-4db2-bc87-4d6f4350f4ce",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "2521a5c6-6eda-4420-876d-b821841f892e",
@@ -4183,7 +4087,7 @@
                     },
                     {
                         "id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                        "class": "col-lg-6",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "payment_terms",
@@ -4202,24 +4106,18 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "1+3"
             },
             {
                 "id": "c174ce4d-8e57-430a-961f-b1c1933d4127",
-                "name": "Three Column",
+                "name": "Two Column",
                 "child": [
                     {
                         "id": "2521a5c6-6eda-4420-876d-b821841f892e",
@@ -4247,7 +4145,7 @@
                     },
                     {
                         "id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                        "class": "col-lg-6",
+                        "class": "col-lg-8",
                         "controls": [
                             {
                                 "id": "invoicing_terms",
@@ -4266,20 +4164,14 @@
                             }
                         ],
                         "position": 2
-                    },
-                    {
-                        "id": "aefea0d8-c143-403f-ad55-207ae5432481",
-                        "class": "col-lg-2",
-                        "controls": [],
-                        "position": 3
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,
                 "droppable": false,
-                "decoration": "2+1"
+                "decoration": "1+3"
             },
             {
                 "id": "b1bf7d16-b033-4e0d-a646-d267e46f0886",

@@ -62,8 +62,8 @@ class QuoteResource extends JsonResource
                     'coverage_period' => $this->customer->coverage_period,
                     'coverage_period_from' => $this->customer->support_start,
                     'coverage_period_to' => $this->customer->support_end,
-                    'rows_header' => $this->rowsHeaderToArray(),
-                    'rows' => $this->computableRows
+                    'rows_header' => $this->when($this->withSystemHiddenFields, $this->rowsHeaderToArray(), $this->rowsHeaderToArray($this->systemHiddenFields)),
+                    'rows' => $this->when($this->withSystemHiddenFields, $this->computableRows, $this->renderableRows)
                 ],
                 'last_page' => [
                     'additional_details' => $this->additional_details

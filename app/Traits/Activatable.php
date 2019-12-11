@@ -8,6 +8,8 @@ trait Activatable
 {
     public function initializeActivatable()
     {
+        $this->observables = array_merge($this->observables, ['activating', 'deactivating']);
+
         static::creating(function (Model $model) {
             $model->setAttribute('activated_at', now()->toDateTimeString());
         });
@@ -19,6 +21,8 @@ trait Activatable
 
     public function deactivate()
     {
+        $this->fireModelEvent('deactivating');
+
         return $this->forceFill([
             'activated_at' => null
         ])->save();
@@ -26,6 +30,8 @@ trait Activatable
 
     public function activate()
     {
+        $this->fireModelEvent('activating');
+
         return $this->forceFill([
             'activated_at' => now()->toDateTimeString()
         ])->save();
@@ -48,5 +54,10 @@ trait Activatable
     public function scopeActivatedFirst($query)
     {
         return $query->orderBy("{$this->getTable()}.activated_at", 'desc');
+    }
+
+    public function getActivatedAtAttribute($value)
+    {
+        return carbon_format($value, config('date.format_with_time'));
     }
 }

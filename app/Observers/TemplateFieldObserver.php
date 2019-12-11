@@ -18,9 +18,7 @@ class TemplateFieldObserver
             return;
         }
 
-        if ($this->exists($templateField)) {
-            throw new \ErrorException(__('template_field.exists_exception'));
-        }
+        abort_if($this->exists($templateField), 409, __('template_field.exists_exception'));
     }
 
     /**
@@ -35,9 +33,7 @@ class TemplateFieldObserver
             return;
         }
 
-        if ($templateField->isSystem()) {
-            throw new \ErrorException(__('template_field.system_updating_exception'));
-        }
+        abort_if($templateField->isSystem(), 409, __('template_field.system_updating_exception'));
     }
 
     /**
@@ -52,13 +48,8 @@ class TemplateFieldObserver
             return;
         }
 
-        if ($templateField->isSystem()) {
-            throw new \ErrorException(__('template_field.system_deleting_exception'));
-        }
-
-        if ($templateField->isAttached()) {
-            throw new \ErrorException(__('template_field.attached_deleting_exception'));
-        }
+        abort_if($templateField->isSystem(), 409, __('template_field.system_updating_exception'));
+        abort_if($templateField->isAttached(), 409, __('template_field.attached_deleting_exception'));
     }
 
     private function exists(TemplateField $templateField)

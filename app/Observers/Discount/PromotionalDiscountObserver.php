@@ -18,9 +18,7 @@ class PromotionalDiscountObserver
             return;
         }
 
-        if ($this->exists($promotionalDiscount)) {
-            throw new \ErrorException(__('discount.exists_exception'));
-        }
+        abort_if($this->exists($promotionalDiscount), 409, __('discount.exists_exception'));
     }
 
     private function exists(PromotionalDiscount $promotionalDiscount)

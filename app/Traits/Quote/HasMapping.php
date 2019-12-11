@@ -11,9 +11,35 @@ use DB, Arr, Cache;
 
 trait HasMapping
 {
-    protected $totalPrice = false;
+    protected $computableRows;
+
+    protected $renderableRows;
+
+    protected $totalPrice;
 
     protected $systemHiddenFields = ['service_level_description'];
+
+    protected $withSystemHiddenFields = false;
+
+    public function getComputableRowsAttribute()
+    {
+        return $this->computableRows;
+    }
+
+    public function setComputableRowsAttribute($value)
+    {
+        $this->computableRows = $value;
+    }
+
+    public function getRenderableRowsAttribute()
+    {
+        return $this->renderableRows;
+    }
+
+    public function setRenderableRowsAttribute($value)
+    {
+        $this->renderableRows = $value;
+    }
 
     public function fieldsColumns()
     {
@@ -303,7 +329,7 @@ trait HasMapping
 
     public function getTotalPriceAttribute(): float
     {
-        if ($this->totalPrice) {
+        if (isset($this->totalPrice)) {
             return $this->totalPrice;
         }
 
@@ -356,20 +382,28 @@ trait HasMapping
 
     public function hiddenFieldsToArray()
     {
-        $hiddenFields = $this->fieldsColumns->where('is_preview_visible', false)->pluck('templateField.name')->toArray();
-
-        return $hiddenFields + $this->systemHiddenFields;
-    }
-
-    public function withSystemHiddenFields()
-    {
-        $this->systemHiddenFields = [];
-        return $this;
+        return $this->fieldsColumns->where('is_preview_visible', false)->pluck('templateField.name')->toArray();
     }
 
     public function getHiddenFieldsAttribute()
     {
         return $this->hiddenFieldsToArray();
+    }
+
+    public function getSystemHiddenFieldsAttribute()
+    {
+        return $this->systemHiddenFields;
+    }
+
+    public function withSystemHiddenFields()
+    {
+        $this->withSystemHiddenFields = true;
+        return $this;
+    }
+
+    public function getWithSystemHiddenFieldsAttribute()
+    {
+        return $this->withSystemHiddenFields;
     }
 
     public function getSortFieldsAttribute()

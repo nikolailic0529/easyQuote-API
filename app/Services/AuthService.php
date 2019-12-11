@@ -63,7 +63,7 @@ class AuthService implements AuthServiceInterface
          */
         throw_if($user->isAlreadyLoggedIn(), AlreadyAuthenticatedException::class, $user);
 
-        $user->markAsLoggedIn();
+        $user->markAsLoggedIn() && $user->freshActivity();
     }
 
     public function storeAccessAttempt(array $payload)

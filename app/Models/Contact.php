@@ -62,4 +62,9 @@ class Contact extends UuidModel implements WithImage
             ? "{$this->contact_type} Contact ({$this->contact_name})"
             : "Contact ({$this->email})";
     }
+
+    public function withAppends()
+    {
+        return $this->append('picture');
+    }
 }

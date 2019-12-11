@@ -18,20 +18,7 @@ class CompanyObserver
             return;
         }
 
-        if ($this->exists($company)) {
-            throw new \ErrorException(__('company.exists_exception'));
-        }
-    }
-
-    /**
-     * Handle the Company "updating" event.
-     *
-     * @param Company $company
-     * @return void
-     */
-    public function updating(Company $company)
-    {
-        //
+        abort_if($this->exists($company), 409, __('company.exists_exception'));
     }
 
     /**
@@ -46,9 +33,7 @@ class CompanyObserver
             return;
         }
 
-        if ($company->inUse()) {
-            throw new \ErrorException(__('company.in_use_deleting_exception'));
-        }
+        abort_if($company->inUse(), 409, __('company.in_use_deleting_exception'));
     }
 
     private function exists(Company $company)

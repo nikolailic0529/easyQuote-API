@@ -18,9 +18,7 @@ class MultiYearDiscountObserver
             return;
         }
 
-        if ($this->exists($multiYearDiscount)) {
-            throw new \ErrorException(__('discount.exists_exception'));
-        }
+        abort_if($this->exists($multiYearDiscount), 409, __('discount.exists_exception'));
     }
 
     private function exists(MultiYearDiscount $multiYearDiscount)

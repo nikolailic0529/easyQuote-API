@@ -219,10 +219,10 @@ class QuoteService implements QuoteServiceInterface
 
     public function prepareQuoteExport(Quote $quote): array
     {
-        $this->prepareQuoteReview($quote->withSystemHiddenFields());
+        $this->prepareQuoteReview($quote);
 
         $resource = (new QuoteResource($quote))->resolve();
-        $data = json_decode(json_encode($resource['quote_data']), true);
+        $data = to_array_recursive(data_get($resource, 'quote_data', []));
 
         $design = $quote->quoteTemplate->form_values_data;
 
@@ -290,13 +290,14 @@ class QuoteService implements QuoteServiceInterface
 
         $quote->computableRows->sortKeysByKeys($keys);
 
-        $quote->computableRows = $quote->computableRows->exceptEach($quote->hiddenFieldsToArray());
+        $quote->computableRows = $quote->computableRows->exceptEach($quote->hiddenFields);
+        $quote->renderableRows = $quote->computableRows->exceptEach($quote->systemHiddenFields);
 
         /**
          * Preventing Empty Rows.
          */
         if (count($quote->computableRows->first()) === 0) {
-            $quote->computableRows = collect();
+            $quote->computableRows = $quote->renderableRows = collect();
         }
 
         if ($quote->has_group_description && $quote->use_groups) {
@@ -305,6 +306,7 @@ class QuoteService implements QuoteServiceInterface
                 ->rowsToGroups('group_name', $groups_meta, true, $quote->quoteTemplate->currency_symbol)
                 ->exceptEach('group_name')
                 ->sortByFields($quote->sort_group_description);
+            $quote->renderableRows = $quote->computableRows->each->exceptEach($quote->systemHiddensFields);
 
             return;
         }

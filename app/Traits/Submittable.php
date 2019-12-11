@@ -4,8 +4,15 @@ namespace App\Traits;
 
 trait Submittable
 {
+    public function initializeSubmittable()
+    {
+        $this->observables = array_merge($this->observables, ['submitting', 'unsubmitting']);
+    }
+
     public function submit(?array $submitted_data = null)
     {
+        $this->fireModelEvent('submitting');
+
         $fill = ['submitted_at' => now()->toDateTimeString()];
 
         if (filled($submitted_data)) {
@@ -17,6 +24,8 @@ trait Submittable
 
     public function unSubmit()
     {
+        $this->fireModelEvent('unsubmitting');
+
         return $this->forceFill([
             'submitted_data' => null,
             'submitted_at' => null
@@ -36,5 +45,10 @@ trait Submittable
     public function isSubmitted()
     {
         return !is_null($this->submitted_at);
+    }
+
+    public function getSubmittedAtAttribute($value)
+    {
+        return carbon_format($value, config('date.format_with_time'));
     }
 }

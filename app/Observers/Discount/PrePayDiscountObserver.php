@@ -18,9 +18,7 @@ class PrePayDiscountObserver
             return;
         }
 
-        if ($this->exists($prePayDiscount)) {
-            throw new \ErrorException(__('discount.exists_exception'));
-        }
+        abort_if($this->exists($prePayDiscount), 409, __('discount.exists_exception'));
     }
 
     private function exists(PrePayDiscount $prePayDiscount)

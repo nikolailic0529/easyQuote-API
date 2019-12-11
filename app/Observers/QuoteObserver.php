@@ -7,14 +7,29 @@ use App\Models\Quote\Quote;
 class QuoteObserver
 {
     /**
-     * Handle the Quote "created" event.
+     * Handle the Quote "activating" event.
      *
      * @param Quote $quote
      * @return void
      */
-    public function created(Quote $quote)
+    public function activating(Quote $quote)
     {
-        //
+        if (!$quote->isSubmitted()) {
+            return;
+        }
+
+        abort_if($this->sameRfqSubmittedQuoteExists($quote), 409, __('quote.exists_same_rfq_submitted_quote'));
+    }
+
+    /**
+     * Handle the Quote "submitting" event.
+     *
+     * @param Quote $quote
+     * @return void
+     */
+    public function submitting(Quote $quote)
+    {
+        abort_if($this->sameRfqSubmittedQuoteExists($quote), 409, __('quote.exists_same_rfq_submitted_quote'));
     }
 
     /**
@@ -28,14 +43,12 @@ class QuoteObserver
         return $quote->countryMargin()->dissociate();
     }
 
-    /**
-     * Handle the Quote "saved" event.
-     *
-     * @param Quote $quote
-     * @return void
-     */
-    public function saved(Quote $quote)
+    protected function sameRfqSubmittedQuoteExists(Quote $quote)
     {
-        //
+        return $quote->query()
+            ->submitted()
+            ->where('id', '!=', $quote->id)
+            ->rfq($quote->customer->rfq)
+            ->exists();
     }
 }

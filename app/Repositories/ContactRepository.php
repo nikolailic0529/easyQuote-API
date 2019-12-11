@@ -29,7 +29,7 @@ class ContactRepository extends SearchableRepository implements ContactRepositor
 
     public function find(string $id): Contact
     {
-        return $this->query()->whereId($id)->firstOrFail();
+        return $this->query()->with('image')->whereId($id)->firstOrFail()->withAppends();
     }
 
     public function create(StoreContactRequest $request): Contact
@@ -37,7 +37,7 @@ class ContactRepository extends SearchableRepository implements ContactRepositor
         $contact = $this->contact->create($request->validated());
         $contact->createImage($request->picture, $this->imageProperties());
 
-        return $contact->load('image');
+        return $contact->load('image')->withAppends();
     }
 
     public function update(UpdateContactRequest $request, string $id): Contact
@@ -46,7 +46,7 @@ class ContactRepository extends SearchableRepository implements ContactRepositor
         $contact->update($request->validated());
         $contact->createImage($request->picture, $this->imageProperties());
 
-        return $contact;
+        return $contact->load('image');
     }
 
     public function delete(string $id): bool

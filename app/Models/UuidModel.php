@@ -69,14 +69,19 @@ class UuidModel extends Model
         return $newEloquentBuilder;
     }
 
-    public function getCreatedAtAttribute($date)
+    public function getCreatedAtAttribute($value)
     {
-        return $this->formatDate($date);
+        return carbon_format($value, config('date.format_with_time'));
     }
 
-    public function getUpdatedAtAttribute($date)
+    public function getUpdatedAtAttribute($value)
     {
-        return $this->formatDate($date);
+        return carbon_format($value, config('date.format_with_time'));
+    }
+
+    public function getDeletedAtAttribute($value)
+    {
+        return carbon_format($value, config('date.format_with_time'));
     }
 
     /**
@@ -101,14 +106,5 @@ class UuidModel extends Model
         return static::withoutEvents(function() use ($options) {
             return $this->save($options);
         });
-    }
-
-    protected function formatDate($date)
-    {
-        if (!isset($date) || !$this->formatDates) {
-            return $date;
-        }
-
-        return now()->createFromFormat('Y-m-d H:i:s', $date)->format(config('date.format_with_time'));
     }
 }

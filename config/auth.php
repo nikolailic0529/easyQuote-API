@@ -101,11 +101,13 @@ return [
     ],
 
     /**
-     *  Personal Access Tokens Configuration.
+     * Personal Access Tokens Configuration.
      */
     'tokens' => [
-        'expire' => 60,
-        'refresh_expire_in' => 50
+        /**
+         * Token Expiration in minutes.
+         */
+        'expire' => 60 * 24
     ],
 
     /**

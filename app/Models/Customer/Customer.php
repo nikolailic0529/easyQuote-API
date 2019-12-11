@@ -47,17 +47,17 @@ class Customer extends UuidModel
 
     public function getSupportStartAttribute($value)
     {
-        return carbon_format($value, config('date.format'));
+        return carbon_format($value, config('date.format_with_time'));
     }
 
     public function getSupportEndAttribute($value)
     {
-        return carbon_format($value, config('date.format'));
+        return carbon_format($value, config('date.format_with_time'));
     }
 
     public function getValidUntilAttribute($value)
     {
-        return carbon_format($value, config('date.format'));
+        return carbon_format($value, config('date.format_with_time'));
     }
 
     public function getCoveragePeriodAttribute()

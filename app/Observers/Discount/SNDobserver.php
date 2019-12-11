@@ -18,9 +18,7 @@ class SNDobserver
             return;
         }
 
-        if ($this->exists($snd)) {
-            throw new \ErrorException(__('discount.exists_exception'));
-        }
+        abort_if($this->exists($snd), 409, __('discount.exists_exception'));
     }
 
     private function exists(SND $snd)

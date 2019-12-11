@@ -62,8 +62,6 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         HasSubmittedDataAttribute,
         LogsActivity;
 
-    public $computableRows = null;
-
     public $applicable_discounts = 0.0;
 
     protected $perPage = 8;

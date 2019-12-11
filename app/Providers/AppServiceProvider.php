@@ -119,7 +119,8 @@ class AppServiceProvider extends ServiceProvider
         InvitationRepositoryInterface::class => InvitationRepository::class,
         ActivityRepositoryInterface::class => ActivityRepository::class,
         AddressRepositoryInterface::class => AddressRepository::class,
-        ContactRepositoryInterface::class => ContactRepository::class
+        ContactRepositoryInterface::class => ContactRepository::class,
+        AuthServiceInterface::class => AuthService::class
     ];
 
     /**
@@ -131,10 +132,12 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->instance('path.storage', env('STORAGE_PATH', storage_path()));
 
-        $this->app->when(AuthController::class)->needs(AuthServiceInterface::class)->give(AuthService::class);
-
         $this->app->bind(ElasticsearchClient::class, function () {
             return ElasticsearchBuilder::create()->setHosts(app('config')->get('services.search.hosts'))->build();
+        });
+
+        $this->app->bind('auth.service', function ($app) {
+            return $app->make(AuthServiceInterface::class);
         });
     }
 

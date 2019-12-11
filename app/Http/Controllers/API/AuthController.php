@@ -109,7 +109,7 @@ class AuthController extends Controller
     public function user()
     {
         return response()->json(
-            request()->user()->makeVisible('privileges')
+            request()->user()->withAppends()
         );
     }
 

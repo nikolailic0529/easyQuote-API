@@ -18,9 +18,7 @@ class MarginObserver
             return;
         }
 
-        if ($this->exists($countryMargin)) {
-            throw new \ErrorException(__('margin.exists_exception'));
-        }
+        abort_if($this->exists($countryMargin), 409, __('margin.exists_exception'));
     }
 
     private function exists(CountryMargin $countryMargin)

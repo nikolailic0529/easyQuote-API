@@ -18,9 +18,7 @@ class VendorObserver
             return;
         }
 
-        if ($this->exists($vendor)) {
-            throw new \ErrorException(__('vendor.exists_exception'));
-        }
+        abort_if($this->exists($vendor), 409, __('vendor.exists_exception'));
     }
 
     /**
@@ -48,9 +46,7 @@ class VendorObserver
             return;
         }
 
-        if ($vendor->inUse()) {
-            throw new \ErrorException(__('vendor.in_use_deleting_exception'));
-        }
+        abort_if($vendor->inUse(), 409, __('vendor.in_use_deleting_exception'));
     }
 
     private function exists(Vendor $vendor)

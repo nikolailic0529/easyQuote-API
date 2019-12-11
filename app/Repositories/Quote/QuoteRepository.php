@@ -423,7 +423,7 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function submit(Quote $quote): void
     {
         $this->quoteService->export($quote);
-        $submitted_data = (new QuoteResource($quote))->resolve();
+        $submitted_data = (new QuoteResource($quote->withSystemHiddenFields()))->resolve();
         $quote->submit($submitted_data);
         $quote->customer->submit();
     }

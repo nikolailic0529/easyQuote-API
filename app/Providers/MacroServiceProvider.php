@@ -111,11 +111,9 @@ class MacroServiceProvider extends ServiceProvider
 
             is_iterable(head($keys)) && $keys = head($keys);
 
-            foreach ($this->items as &$item) {
-                $item = collect($item)->except($keys);
-            }
-
-            return $this;
+            return $this->map(function ($item) use ($keys) {
+                return collect($item)->except($keys);
+            });
         });
 
         File::macro('abspath', function (string $value) {

@@ -32,7 +32,8 @@ use App\Traits\{
     Image\HasImage,
     Image\HasPictureAttribute,
     Auth\Loginable,
-    Auth\HasApiTokens
+    Auth\HasApiTokens,
+    User\PerformsActivity
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Traits\HasRoles;
@@ -64,7 +65,8 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
         SoftDeletes,
         HasImage,
         LogsActivity,
-        Loginable;
+        Loginable,
+        PerformsActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -81,7 +83,7 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
      * @var array
      */
     protected $hidden = [
-        'password', 'remember_token', 'roles', 'updated_at', 'deleted_at', 'privileges', 'image'
+        'password', 'remember_token', 'roles', 'updated_at', 'deleted_at', 'image'
     ];
 
     /**
@@ -92,10 +94,6 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
     protected $casts = [
         'email_verified_at' => 'datetime',
         'must_change_password' => 'boolean'
-    ];
-
-    protected $appends = [
-        'role_id', 'role_name', 'picture', 'privileges'
     ];
 
     protected static $logAttributes = [
@@ -180,5 +178,10 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
     public function getItemNameAttribute()
     {
         return $this->email;
+    }
+
+    public function withAppends()
+    {
+        return $this->append('role_id', 'role_name', 'picture', 'privileges');
     }
 }
