@@ -7,6 +7,7 @@ use App\Http\Requests\Company\{
     StoreCompanyRequest,
     UpdateCompanyRequest
 };
+use App\Http\Resources\CompanyRepositoryCollection;
 use App\Models\Company;
 use Illuminate\Database\Eloquent\{
     Model,
@@ -39,6 +40,16 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
         return $data;
     }
 
+    public function all()
+    {
+        return $this->toCollection(parent::all());
+    }
+
+    public function search(string $query = '')
+    {
+        return $this->toCollection(parent::search($query));
+    }
+
     public function userQuery(): Builder
     {
         return $this->company->query()->with('image', 'vendors', 'addresses.country', 'contacts');
@@ -46,7 +57,7 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
 
     public function find(string $id): Company
     {
-        return $this->userQuery()->whereId($id)->firstOrFail()->makeVisible(['logo'])->setAppends(['logo']);
+        return $this->userQuery()->whereId($id)->firstOrFail()->withAppends();
     }
 
     public function create(StoreCompanyRequest $request): Company
@@ -97,6 +108,11 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
     public function country(string $id): Collection
     {
         return $this->userQuery()->country($id)->activated()->get();
+    }
+
+    protected function toCollection($resource)
+    {
+        return new CompanyRepositoryCollection($resource);
     }
 
     protected function filterQueryThrough(): array

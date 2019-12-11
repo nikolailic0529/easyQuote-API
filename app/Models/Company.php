@@ -60,7 +60,6 @@ class Company extends UuidModel implements WithImage, WithLogo, ActivatableInter
         'drafted_at',
         'deleted_at',
         'is_system',
-        'logo',
         'image'
     ];
 
@@ -95,5 +94,10 @@ class Company extends UuidModel implements WithImage, WithLogo, ActivatableInter
     public function getItemNameAttribute()
     {
         return $this->name;
+    }
+
+    public function withAppends()
+    {
+        return $this->append('logo');
     }
 }

@@ -24,7 +24,7 @@ class StoreContractRequest extends FormRequest
             'support_end_date' => 'required|date_format:m/d/Y',
             'payment_terms' => 'required|string|min:2|max:2500',
             'invoicing_terms' => 'required|string|min:2|max:2500',
-            'addresses' => 'required|array',
+            'addresses' => 'array',
             'addresses.*' => 'required|array',
             'addresses.*.address_type' => 'required|string|in:Equipment,Software',
             'addresses.*.address_1' => 'required|string|min:2',
