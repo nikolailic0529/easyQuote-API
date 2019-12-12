@@ -64,6 +64,13 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
 
     public $applicable_discounts = 0.0;
 
+    /**
+     * Determine how to display the Quote data.
+     *
+     * @var boolean
+     */
+    protected $isReview = false;
+
     protected $perPage = 8;
 
     protected $fillable = [
@@ -221,5 +228,22 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         $customer_rfq = $this->customer->rfq ?? 'unknown RFQ';
 
         return "Quote ({$customer_rfq})";
+    }
+
+    public function getIsReviewAttribute()
+    {
+        return $this->isReview;
+    }
+
+    public function enableReview()
+    {
+        $this->isReview = true;
+        return $this;
+    }
+
+    public function disableReview()
+    {
+        $this->isReview = false;
+        return $this;
     }
 }

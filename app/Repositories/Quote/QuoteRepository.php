@@ -401,7 +401,7 @@ class QuoteRepository implements QuoteRepositoryInterface
 
         $this->quoteService->prepareQuoteReview($quote);
 
-        return data_get((new QuoteResource($quote))->resolve(), 'quote_data');
+        return data_get((new QuoteResource($quote->enableReview()))->resolve(), 'quote_data');
     }
 
     public function rows(string $id, string $query = ''): Collection
@@ -423,7 +423,7 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function submit(Quote $quote): void
     {
         $this->quoteService->export($quote);
-        $submitted_data = (new QuoteResource($quote->withSystemHiddenFields()))->resolve();
+        $submitted_data = (new QuoteResource($quote->disableReview()))->resolve();
         $quote->submit($submitted_data);
         $quote->customer->submit();
     }

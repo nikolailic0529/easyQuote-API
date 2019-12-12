@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\{
     Model,
     Builder
 };
-use File, DB, Storage;
+use Arr, File, DB, Storage;
 
 class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubmittedRepositoryInterface
 {
@@ -59,13 +59,15 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         return $this->userQuery()->whereId($id)->firstOrFail();
     }
 
-    public function rfq(string $rfq): array
+    public function rfq(string $rfq): iterable
     {
         $quote = $this->findByRfq($rfq);
 
         blank($quote->submitted_data) && abort('404', __('quote.no_found_rfq_exception'));
 
-        return $quote->submitted_data;
+        $submitted_data = Arr::sortRecursive($quote->submitted_data);
+
+        return $submitted_data;
     }
 
     public function price(string $rfq)

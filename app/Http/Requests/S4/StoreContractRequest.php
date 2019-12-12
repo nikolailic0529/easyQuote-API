@@ -18,7 +18,8 @@ class StoreContractRequest extends FormRequest
         return [
             'customer_name' => 'required|string|min:2',
             'rfq_number' => 'required|string|min:2|regex:/^[[:alnum:]]+$/i|max:20|unique:customers,rfq',
-            'service_level' => 'required|string|min:2',
+            'service_levels' => 'nullable|array',
+            'service_levels.*.service_level' => 'required|string|min:2',
             'quotation_valid_until' => 'required|date_format:m/d/Y',
             'support_start_date' => 'required|date_format:m/d/Y',
             'support_end_date' => 'required|date_format:m/d/Y',

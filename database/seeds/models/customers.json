@@ -6,7 +6,7 @@
         "support_end": "19-05-2020",
         "payment_terms": "30 days after invoice date",
         "invoicing_terms": "Upfront",
-        "service_level": "HPE Foundation Care 24x7 wDMR SVC"
+        "service_level": ["HPE Foundation Care 24x7 wDMR SVC"]
     },
     {
         "name": "Noveltis",
@@ -15,6 +15,6 @@
         "support_end": "19-05-2020",
         "payment_terms": "30 days after invoice date",
         "invoicing_terms": "Upfront",
-        "service_level": "HPE Foundation Care 24x7 wDMR SVC"
+        "service_level": ["HPE Foundation Care 24x7 wDMR SVC"]
     }
 ]

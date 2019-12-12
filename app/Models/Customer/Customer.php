@@ -36,11 +36,15 @@ class Customer extends UuidModel
         'quotation_valid_until',
         'payment_terms',
         'invoicing_terms',
-        'service_level'
+        'service_levels'
     ];
 
     protected $hidden = [
         'updated_at', 'deleted_at'
+    ];
+
+    protected $casts = [
+        'service_levels' => 'collection'
     ];
 
     protected $dates = ['valid_until', 'support_start', 'support_end'];
@@ -60,9 +64,29 @@ class Customer extends UuidModel
         return carbon_format($value, config('date.format_with_time'));
     }
 
+    public function getSupportStartDateAttribute()
+    {
+        return carbon_format($this->attributes['support_start'], config('date.format'));
+    }
+
+    public function getSupportEndDateAttribute()
+    {
+        return carbon_format($this->attributes['support_end'], config('date.format'));
+    }
+
+    public function getValidUntilDateAttribute()
+    {
+        return carbon_format($this->attributes['valid_until'], config('date.format'));
+    }
+
     public function getCoveragePeriodAttribute()
     {
-        return "{$this->support_start} to {$this->support_end}";
+        return "{$this->support_start_date} to {$this->support_end_date}";
+    }
+
+    public function getServiceLevelsFormattedAttribute()
+    {
+        return collect($this->service_levels)->toString('service_level');
     }
 
     public function setCustomerNameAttribute($value)

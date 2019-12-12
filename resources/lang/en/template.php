@@ -15,7 +15,7 @@ return [
             // From
             ['id' => 'company_name', 'label' => 'Internal Company Name'],
             // Quotation Service Level
-            ['id' => 'service_level', 'label' => 'Service Level'],
+            ['id' => 'service_levels', 'label' => 'Service Level (s)'],
             // Quotation Summary
             ['id' => 'quotation_number', 'label' => 'RFQ Number'],
             ['id' => 'valid_until', 'label' => 'Quotation Closing Date'],
@@ -38,7 +38,9 @@ return [
             ['id' => 'software_contact', 'label' => 'Software Contact'],
             ['id' => 'software_phone', 'label' => 'Software Phone'],
             ['id' => 'coverage_period_from', 'label' => 'Coverage Period From'],
-            ['id' => 'coverage_period_to', 'label' => 'Coverage Period To']
+            ['id' => 'coverage_period_to', 'label' => 'Coverage Period To'],
+            // Quotation Service Level
+            ['id' => 'service_levels', 'label' => 'Service Level (s)'],
         ],
         'last_page' => [
         ],

@@ -17,9 +17,12 @@ trait HasMapping
 
     protected $totalPrice;
 
+    /**
+     * Template Fields which will be displayed only for S4 Service.
+     *
+     * @var array
+     */
     protected $systemHiddenFields = ['service_level_description'];
-
-    protected $withSystemHiddenFields = false;
 
     public function getComputableRowsAttribute()
     {
@@ -393,17 +396,6 @@ trait HasMapping
     public function getSystemHiddenFieldsAttribute()
     {
         return $this->systemHiddenFields;
-    }
-
-    public function withSystemHiddenFields()
-    {
-        $this->withSystemHiddenFields = true;
-        return $this;
-    }
-
-    public function getWithSystemHiddenFieldsAttribute()
-    {
-        return $this->withSystemHiddenFields;
     }
 
     public function getSortFieldsAttribute()

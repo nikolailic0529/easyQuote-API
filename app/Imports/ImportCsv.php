@@ -226,19 +226,26 @@ class ImportCsv
         $this->headersMapping = [];
         $mapping = collect([]);
 
-        $this->headersMapping = collect($this->header)->map(function ($header) use ($aliasesMapping, $mapping) {
-            $importable_column_id = $aliasesMapping->search(function ($aliases, $importable_column_id) use ($header, $mapping) {
-                if ($mapping->contains($importable_column_id)) {
-                    return false;
-                }
+        $this->headersMapping = collect($this->header)->map(function ($header, $key) use ($aliasesMapping, $mapping) {
+            $column = false;
+            $column_num = $key + 1;
 
-                $matchingHeader = preg_quote($header, '~');
-                $match = preg_grep("~^{$matchingHeader}.*?~i", $aliases);
-                if (empty($match)) {
-                    return false;
-                }
-                return true;
-            });
+            if (filled($header)) {
+                $importable_column_id = $aliasesMapping->search(function ($aliases, $importable_column_id) use ($header, $mapping) {
+                    if ($mapping->contains($importable_column_id)) {
+                        return false;
+                    }
+
+                    $matchingHeader = preg_quote($header, '~');
+                    $match = preg_grep("~^{$matchingHeader}.*?~i", $aliases);
+                    if (empty($match)) {
+                        return false;
+                    }
+                    return true;
+                });
+            }
+
+            blank($header) && $header = "Unknown Header {$column_num}";
 
             if (!$importable_column_id) {
                 $alias = $header;

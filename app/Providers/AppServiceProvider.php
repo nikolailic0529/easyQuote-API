@@ -136,6 +136,14 @@ class AppServiceProvider extends ServiceProvider
             return ElasticsearchBuilder::create()->setHosts(app('config')->get('services.search.hosts'))->build();
         });
 
+        $this->app->bind('quote.service', function ($app) {
+            return $app->make(QuoteServiceInterface::class);
+        });
+
+        $this->app->bind('quote.repository', function ($app) {
+            return $app->make(QuoteRepositoryInterface::class);
+        });
+
         $this->app->bind('auth.service', function ($app) {
             return $app->make(AuthServiceInterface::class);
         });

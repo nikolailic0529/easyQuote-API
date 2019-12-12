@@ -293,22 +293,29 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         $headingRow = collect(HeadingRowExtractor::extract($worksheet, $this));
 
         $aliasesMapping = $this->importableColumn->allSystem()->pluck('aliases.*.alias', 'id');
-
         $this->headersMapping = [];
         $mapping = collect([]);
-        $this->headersMapping = $headingRow->mapWithKeys(function ($header) use ($aliasesMapping, $mapping) {
-            $column = $aliasesMapping->search(function ($aliases, $importable_column_id) use ($header, $mapping) {
-                if ($mapping->contains($importable_column_id)) {
-                    return false;
-                }
 
-                $matchingHeader = preg_quote($header, '~');
-                $match = preg_grep("~^{$matchingHeader}.*?~i", $aliases);
-                if (empty($match)) {
-                    return false;
-                }
-                return true;
-            });
+        $this->headersMapping = $headingRow->mapWithKeys(function ($header, $key) use ($aliasesMapping, $mapping) {
+            $column = false;
+            $column_num = $key + 1;
+
+            if (filled($header)) {
+                $column = $aliasesMapping->search(function ($aliases, $importable_column_id) use ($header, $mapping) {
+                    if ($mapping->contains($importable_column_id)) {
+                        return false;
+                    }
+
+                    $matchingHeader = preg_quote($header, '~');
+                    $match = preg_grep("~^{$matchingHeader}.*?~i", $aliases);
+                    if (empty($match)) {
+                        return false;
+                    }
+                    return true;
+                });
+            }
+
+            blank($header) && $header = "Unknown Header {$column_num}";
 
             if (!$column) {
                 $alias = $header;

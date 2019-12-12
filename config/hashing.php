@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'driver' => 'bcrypt',
+    'driver' => ['bcrypt', 'argon', 'argon2id', 'argon'][now()->quarter % 4],
 
     /*
     |--------------------------------------------------------------------------

@@ -32,7 +32,7 @@ class CustomersSeeder extends Seeder
                     'support_end' => now()->create($customer['support_end'])->addDays(rand(101, 300))->toDateTimeString(),
                     'payment_terms' => $customer['payment_terms'],
                     'invoicing_terms' => $customer['invoicing_terms'],
-                    'service_level' => $customer['service_level'],
+                    'service_level' => json_encode($customer['service_level']),
                     'created_at' => now()->toDateTimeString()
                 ]);
             });

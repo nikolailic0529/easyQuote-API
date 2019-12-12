@@ -50,9 +50,9 @@ interface QuoteSubmittedRepositoryInterface
      * Find Submitted Quote Data by RFQ number.
      *
      * @param string $rfq
-     * @return array
+     * @return iterable
      */
-    public function rfq(string $rfq): array;
+    public function rfq(string $rfq): iterable;
 
     /**
      * Submitted Price List by RFQ number.
