@@ -3,13 +3,20 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Models\AccessAttempt as Attempt;
 
 class AccessAttempt extends Notification
 {
     use Queueable;
+
+    protected $attempt;
+
+    public function __construct(Attempt $attempt)
+    {
+        $this->attempt = $attempt;
+    }
 
     /**
      * Get the notification's delivery channels.
@@ -28,12 +35,12 @@ class AccessAttempt extends Notification
      * @param  mixed  $notifiable
      * @return \Illuminate\Notifications\Messages\MailMessage
      */
-    public function toMail($notifiable)
+    public function toMail($user)
     {
         return (new MailMessage)
-                    ->line('Someone recently was trying get login into your account.')
-                    ->line('You are already logged in and you can\'t login again.')
-                    ->action(config('app.name'), url('/'))
-                    ->line('If you think, you are not logged in ask an administrator to reset your account.');
+                ->greeting("Hi {$user->fullname}")
+                ->line("Some one tried to login to your account from ip address: {$this->attempt->ip_address}.")
+                ->line("System has prevented this attempt. If it wasn't you then it's highly recommended to change your password.")
+                ->line('If it was you, then please logout from your existing session and then try logging in again.');
     }
 }
