@@ -41,7 +41,7 @@ class S4ContractSeeder extends Seeder
         ]);
 
         collect($customers)->each(function ($customer) use ($addresses, $contacts) {
-            collect()->times(6)->each(function ($time) use ($customer, $addresses, $contacts) {
+            collect()->times(100)->each(function ($time) use ($customer, $addresses, $contacts) {
                 $rfq = "CQ00" . mb_strtoupper(uniqid());
 
                 $customer = Customer::create([
@@ -52,7 +52,7 @@ class S4ContractSeeder extends Seeder
                     'support_end' => now()->create($customer['support_end'])->addDays(rand(101, 300))->toDateTimeString(),
                     'payment_terms' => $customer['payment_terms'],
                     'invoicing_terms' => $customer['invoicing_terms'],
-                    'service_level' => json_encode($customer['service_level'])
+                    'service_levels' => json_encode($customer['service_level'])
                 ]);
 
                 $customer->addresses()->sync($addresses);
