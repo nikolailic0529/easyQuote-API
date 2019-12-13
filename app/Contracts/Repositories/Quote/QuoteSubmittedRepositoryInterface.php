@@ -3,6 +3,7 @@
 namespace App\Contracts\Repositories\Quote;
 
 use App\Models\Quote\Quote;
+use App\Http\Resources\QuoteRepositoryCollection;
 use App\Builder\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -109,4 +110,12 @@ interface QuoteSubmittedRepositoryInterface
      * @return void
      */
     public function copy(string $id);
+
+    /**
+     * Map Resource to UserRepositoryCollection.
+     *
+     * @param mixed $resource
+     * @return \App\Http\Resources\QuoteRepositoryCollection
+     */
+    public function toCollection($resource): QuoteRepositoryCollection;
 }

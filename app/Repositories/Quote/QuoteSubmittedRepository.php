@@ -6,7 +6,6 @@ use App\Contracts\Repositories\{
     Quote\QuoteSubmittedRepositoryInterface,
     QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
 };
-use App\Contracts\Services\QuoteServiceInterface as QuoteService;
 use App\Http\Resources\QuoteRepositoryCollection;
 use App\Repositories\SearchableRepository;
 use App\Models\Quote\Quote;
@@ -20,25 +19,27 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 {
     protected $quote;
 
+    protected $table;
+
     protected $quoteFile;
 
     protected $quoteService;
 
-    public function __construct(Quote $quote, QuoteFileRepository $quoteFile, QuoteService $quoteService)
+    public function __construct(Quote $quote, QuoteFileRepository $quoteFile)
     {
         $this->quote = $quote;
+        $this->table = $quote->getTable();
         $this->quoteFile = $quoteFile;
-        $this->quoteService = $quoteService;
     }
 
     public function all()
     {
-        return new QuoteRepositoryCollection(parent::all());
+        return $this->toCollection(parent::all());
     }
 
     public function search(string $query = '')
     {
-        return new QuoteRepositoryCollection(parent::search($query));
+        return $this->toCollection(parent::search($query));
     }
 
     public function userQuery(): Builder
@@ -46,7 +47,12 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         return $this->quote
             ->currentUserWhen(request()->user()->cant('view_quotes'))
             ->submitted()
-            ->with('customer', 'company', 'user:id,email,first_name,middle_name,last_name');
+            ->with('customer:id,name,rfq,valid_until,support_start,support_end', 'company:id,name', 'user:id,email,first_name,middle_name,last_name');
+    }
+
+    public function toCollection($resource): QuoteRepositoryCollection
+    {
+        return new QuoteRepositoryCollection($resource);
     }
 
     public function findByRfq(string $rfq): Quote
@@ -224,6 +230,6 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     {
         return $query->currentUserWhen(request()->user()->cant('view_quotes'))
             ->submitted()
-            ->with('customer', 'company', 'user:id,email,first_name,middle_name,last_name');
+            ->with('customer:id,name,rfq,valid_until,support_start,support_end', 'company:id,name', 'user:id,email,first_name,middle_name,last_name');
     }
 }

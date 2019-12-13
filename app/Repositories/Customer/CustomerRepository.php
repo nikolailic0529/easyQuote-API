@@ -5,7 +5,7 @@ namespace App\Repositories\Customer;
 use App\Contracts\Repositories\Customer\CustomerRepositoryInterface;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Models\Customer\Customer;
-use Carbon\Carbon, Arr;
+use Illuminate\Database\Eloquent\Builder;
 
 class CustomerRepository implements CustomerRepositoryInterface
 {
@@ -13,14 +13,33 @@ class CustomerRepository implements CustomerRepositoryInterface
 
     protected $dateable = ['quotation_valid_until', 'support_start_date', 'support_end_date'];
 
+    protected $draftedCacheKey = 'customers-drafted';
+
     public function __construct(Customer $customer)
     {
         $this->customer = $customer;
     }
 
+    public function query(): Builder
+    {
+        return $this->customer->query()->latest();
+    }
+
     public function all()
     {
-        return $this->customer->doesntHave('quotes')->drafted()->get();
+        return $this->query()->limit(1000)->get();
+    }
+
+    public function drafted()
+    {
+        return cache()->sear($this->draftedCacheKey, function () {
+            return $this->customer->doesntHave('quotes')->drafted()->limit(1000)->get();
+        });
+    }
+
+    public function forgetDraftedCache(): bool
+    {
+        return cache()->forget($this->draftedCacheKey);
     }
 
     public function find(string $id)
@@ -38,18 +57,9 @@ class CustomerRepository implements CustomerRepositoryInterface
             return null;
         }
 
-        if (Arr::has($attributes, $this->dateable)) {
-            $dates = collect(Arr::only($attributes, $this->dateable))
-                ->transform(function ($date) {
-                    return Carbon::createFromFormat('m/d/Y', $date);
-                })->toArray();
-
-            $attributes = array_merge($attributes, $dates);
-        }
-
         $customer = $this->customer->create($attributes);
         $customer->addresses()->createMany($attributes['addresses']);
 
-        return $customer->load('addresses');
+        return $customer->load('addresses', 'country')->append('support_start_date', 'support_end_date', 'valid_until_date');
     }
 }

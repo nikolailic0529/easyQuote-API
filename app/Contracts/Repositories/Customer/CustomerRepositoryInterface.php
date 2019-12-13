@@ -12,6 +12,20 @@ interface CustomerRepositoryInterface
     public function all();
 
     /**
+     * Retrieve NonInUse Customers.
+     *
+     * @return void
+     */
+    public function drafted();
+
+    /**
+     * Forget Cached Drafted Customers.
+     *
+     * @return bool
+     */
+    public function forgetDraftedCache(): bool;
+
+    /**
      * Find Customer by id.
      *
      * @param string $id

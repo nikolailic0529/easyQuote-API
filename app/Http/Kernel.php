@@ -41,7 +41,8 @@ class Kernel extends HttpKernel
         'api' => [
             'throttle:600,1',
             'bindings',
-            \App\Http\Middleware\PerformUserActivity::class
+            \App\Http\Middleware\PerformUserActivity::class,
+            \App\Http\Middleware\EnforceChangePassword::class
         ],
     ];
 
@@ -61,7 +62,7 @@ class Kernel extends HttpKernel
         'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
-        'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+        'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class
     ];
 
     /**

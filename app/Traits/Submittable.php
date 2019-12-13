@@ -6,7 +6,7 @@ trait Submittable
 {
     public function initializeSubmittable()
     {
-        $this->observables = array_merge($this->observables, ['submitting', 'unsubmitting']);
+        $this->observables = array_merge($this->observables, ['submitting', 'unsubmitting', 'submitted']);
     }
 
     public function submit(?array $submitted_data = null)
@@ -19,7 +19,11 @@ trait Submittable
             $fill = array_merge($fill, compact('submitted_data'));
         }
 
-        return $this->forceFill($fill)->save();
+        $pass = $this->forceFill($fill)->save();
+
+        $this->fireModelEvent('submitted', false);
+
+        return $pass;
     }
 
     public function unSubmit()

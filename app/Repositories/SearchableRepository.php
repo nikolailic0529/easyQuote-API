@@ -27,7 +27,7 @@ abstract class SearchableRepository
         $query = $this->filterQuery(array_shift($filterableQuery), $scope);
 
         collect($filterableQuery)->each(function ($union) use ($query, $scope) {
-            $query->union($this->filterQuery($union, $scope));
+            $query->unionAll($this->filterQuery($union, $scope));
         });
 
         return $query->apiPaginate();
@@ -46,7 +46,7 @@ abstract class SearchableRepository
 
         $items = $this->searchOnElasticsearch($model, $this->searchableFields(), $query);
 
-        if ($model instanceof ActivatableInterface) {
+        if ($model instanceof ActivatableInterface && $model instanceof Model) {
             $activated = $this->buildQuery($model, $items, function ($query) use ($scope) {
                 $this->searchableScope($query)->activated();
                 $this->filterQuery($query, $scope);
@@ -57,7 +57,7 @@ abstract class SearchableRepository
                 $this->filterQuery($query, $scope);
             });
 
-            return $activated->union($deactivated);
+            return $activated->unionAll($deactivated);
         }
 
         $builder = $this->buildQuery($model, $items, function ($query) use ($scope) {

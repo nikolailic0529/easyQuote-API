@@ -17,19 +17,22 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
 {
     protected $quote;
 
+    protected $table;
+
     public function __construct(Quote $quote)
     {
         $this->quote = $quote;
+        $this->table = $quote->getTable();
     }
 
     public function all()
     {
-        return new QuoteRepositoryCollection(parent::all());
+        return $this->toCollection(parent::all());
     }
 
     public function search(string $query = '')
     {
-        return new QuoteRepositoryCollection(parent::search($query));
+        return $this->toCollection(parent::search($query));
     }
 
     public function userQuery(): Builder
@@ -37,7 +40,12 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
         return $this->quote
             ->currentUserWhen(request()->user()->cant('view_quotes'))
             ->drafted()
-            ->with('customer', 'company', 'user:id,email,first_name,middle_name,last_name');
+            ->with('customer:id,name,rfq,valid_until,support_start,support_end', 'company:id,name', 'user:id,email,first_name,middle_name,last_name');
+    }
+
+    public function toCollection($resource): QuoteRepositoryCollection
+    {
+        return new QuoteRepositoryCollection($resource);
     }
 
     public function find(string $id): Quote
@@ -78,8 +86,8 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
     protected function filterableQuery()
     {
         return [
-            $this->userQuery()->with('customer', 'company')->activated(),
-            $this->userQuery()->with('customer', 'company')->deactivated()
+            $this->userQuery()->activated(),
+            $this->userQuery()->deactivated()
         ];
     }
 

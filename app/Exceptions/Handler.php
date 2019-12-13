@@ -2,10 +2,13 @@
 
 namespace App\Exceptions;
 
+use App\Contracts\Repositories\UserRepositoryInterface;
 use Exception;
 use App\Mail\FailureReportMail;
+use App\Models\User;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Support\Facades\Mail;
+use Arr;
 
 class Handler extends ExceptionHandler
 {
@@ -20,6 +23,12 @@ class Handler extends ExceptionHandler
         \Illuminate\Auth\Access\AuthorizationException::class,
         \Illuminate\Database\Eloquent\ModelNotFoundException::class,
         \Illuminate\Validation\ValidationException::class
+    ];
+
+    protected $dontReportMail = [
+        \App\Exceptions\AlreadyAuthenticatedException::class,
+        \App\Exceptions\MustChangePasswordException::class,
+        \App\Exceptions\LoggedOutDueInactivityException::class
     ];
 
     /**
@@ -40,9 +49,13 @@ class Handler extends ExceptionHandler
      */
     public function report(Exception $exception)
     {
-        Mail::send(new FailureReportMail($exception));
-
         parent::report($exception);
+
+        if ($this->shouldntReportMail($exception)) {
+            return;
+        }
+
+        Mail::send(new FailureReportMail($exception, app('user.repository')->failureReportRecepients()));
     }
 
     /**
@@ -55,5 +68,20 @@ class Handler extends ExceptionHandler
     public function render($request, Exception $exception)
     {
         return parent::render($request, $exception);
+    }
+
+    /**
+     * Determine if the exception is in the "do not report mail" list.
+     *
+     * @param  \Exception  $e
+     * @return bool
+     */
+    protected function shouldntReportMail(Exception $e)
+    {
+        $dontReport = array_merge($this->dontReportMail, $this->dontReport, $this->internalDontReport);
+
+        return ! is_null(Arr::first($dontReport, function ($type) use ($e) {
+            return $e instanceof $type;
+        }));
     }
 }

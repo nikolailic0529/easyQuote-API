@@ -47,6 +47,7 @@ class QuoteObserver
     {
         return $quote->query()
             ->submitted()
+            ->activated()
             ->where('id', '!=', $quote->id)
             ->rfq($quote->customer->rfq)
             ->exists();

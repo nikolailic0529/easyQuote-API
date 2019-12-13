@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Contracts\{
     Services\AuthServiceInterface,
-    Repositories\AccessAttemptRepositoryInterface
+    Repositories\AccessAttemptRepositoryInterface as AccessAttemptRepository
 };
 use App\Exceptions\AlreadyAuthenticatedException;
 use Laravel\Passport\PersonalAccessTokenResult;
@@ -14,11 +14,13 @@ use Auth, Arr;
 
 class AuthService implements AuthServiceInterface
 {
-    protected $accessAttempt;
+    protected $attemptRepository;
 
-    public function __construct(AccessAttemptRepositoryInterface $accessAttempt)
+    protected $currentAttempt;
+
+    public function __construct(AccessAttemptRepository $attemptRepository)
     {
-        $this->accessAttempt = $accessAttempt;
+        $this->attemptRepository = $attemptRepository;
     }
 
     public function authenticate($request)
@@ -27,13 +29,13 @@ class AuthService implements AuthServiceInterface
             $request = $request->validated();
         }
 
-        $attempt = $this->storeAccessAttempt($request);
+        $this->currentAttempt = $this->storeAccessAttempt($request);
 
         $this->checkCredentials(Arr::only($request, ['email', 'password']));
 
         $token = $this->generateToken($request);
 
-        $attempt->markAsSuccessful($token);
+        $this->currentAttempt->markAsSuccessful($token);
 
         return $this->response($token);
     }
@@ -61,14 +63,14 @@ class AuthService implements AuthServiceInterface
         /**
          * Throw an exception if the User Already Logged In.
          */
-        throw_if($user->isAlreadyLoggedIn(), AlreadyAuthenticatedException::class, $user);
+        throw_if($user->isAlreadyLoggedIn(), AlreadyAuthenticatedException::class, $user, $this->currentAttempt);
 
         $user->markAsLoggedIn() && $user->freshActivity();
     }
 
     public function storeAccessAttempt(array $payload)
     {
-        return $this->accessAttempt->create($payload);
+        return $this->attemptRepository->create($payload);
     }
 
     public function generateToken(array $attributes): PersonalAccessTokenResult

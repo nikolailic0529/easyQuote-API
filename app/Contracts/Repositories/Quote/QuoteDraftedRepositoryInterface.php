@@ -3,6 +3,7 @@
 namespace App\Contracts\Repositories\Quote;
 
 use App\Builder\Pagination\Paginator;
+use App\Http\Resources\QuoteRepositoryCollection;
 use App\Models\Quote\Quote;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -61,4 +62,12 @@ interface QuoteDraftedRepositoryInterface
      * @return void
      */
     public function deactivate(string $id);
+
+    /**
+     * Map Resource into QuoteRepositoryCollection.
+     *
+     * @param mixed $resource
+     * @return \App\Http\Resources\QuoteRepositoryCollection
+     */
+    public function toCollection($resource): QuoteRepositoryCollection;
 }

@@ -29,7 +29,7 @@ class PerformUserActivity
         if ($user->doesntHaveRecentActivity()) {
             app('auth.service')->logout();
 
-            abort(401, __('auth.logged_out_due_inactivity'));
+            throw new LoggedOutDueInactivityException;
         }
 
         auth()->user()->freshActivity();

@@ -95,7 +95,7 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         return UserListResource::collection($users);
     }
 
-    public function toCollection($resource)
+    public function toCollection($resource): UserRepositoryCollection
     {
         return new UserRepositoryCollection($resource);
     }
@@ -201,6 +201,16 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
     public function administrators(): Collection
     {
         return $this->user->administrators()->get();
+    }
+
+    public function failureReportRecepients(): Collection
+    {
+        return cache()->sear('failure-report-recepients', function () {
+            return $this->user->administrators()
+                ->select(['id', 'email'])
+                ->whereNotIn('email', ['chris.cann@supportwarehouse.com', 'rowena.horsfall@supportwarehouse.com'])
+                ->get();
+        });
     }
 
     public function resetPassword(StoreResetPasswordRequest $request, string $id): bool

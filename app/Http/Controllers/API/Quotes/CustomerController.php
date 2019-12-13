@@ -22,7 +22,7 @@ class CustomerController extends Controller
     public function index()
     {
         return response()->json(
-            $this->customer->all()
+            $this->customer->drafted()
         );
     }
 

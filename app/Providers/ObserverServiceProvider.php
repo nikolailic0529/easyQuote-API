@@ -17,6 +17,7 @@ use App\Models\{
     Collaboration\Invitation,
     System\SystemSetting
 };
+use App\Models\Customer\Customer;
 use App\Observers\{
     CompanyObserver,
     VendorObserver,
@@ -29,6 +30,7 @@ use App\Observers\{
     QuoteTemplateObserver,
     TemplateFieldObserver,
     Collaboration\InvitationObserver,
+    CustomerObserver,
     SystemSettingObserver
 };
 
@@ -74,5 +76,7 @@ class ObserverServiceProvider extends ServiceProvider
         Invitation::observe(InvitationObserver::class);
 
         SystemSetting::observe(SystemSettingObserver::class);
+
+        Customer::observe(CustomerObserver::class);
     }
 }

@@ -12,7 +12,7 @@ Route::group(['namespace' => 'API'], function () {
         Route::group(['middleware' => 'auth:api'], function () {
             Route::get('logout', 'AuthController@logout');
             Route::get('user', 'AuthController@user');
-            Route::post('user', 'AuthController@updateOwnProfile');
+            Route::post('user', 'AuthController@updateOwnProfile')->name('profile.update');
         });
     });
 

@@ -6,6 +6,7 @@ use App\Models\UuidModel;
 use App\Traits\{
     BelongsToAddresses,
     BelongsToContacts,
+    BelongsToCountry,
     HasAddressTypes,
     HasContactTypes,
     Submittable,
@@ -15,7 +16,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Customer extends UuidModel
 {
-    use BelongsToAddresses, HasAddressTypes, BelongsToContacts, HasContactTypes, Submittable, HasQuotes, SoftDeletes;
+    use BelongsToAddresses,
+        HasAddressTypes,
+        BelongsToContacts,
+        BelongsToCountry,
+        HasContactTypes,
+        Submittable,
+        HasQuotes,
+        SoftDeletes;
 
     protected $attributes = [
         'support_start' => null,
@@ -66,17 +74,29 @@ class Customer extends UuidModel
 
     public function getSupportStartDateAttribute()
     {
-        return carbon_format($this->attributes['support_start'], config('date.format'));
+        return carbon_format($this->attributes['support_start'], $this->dynamicDateFormat);
     }
 
     public function getSupportEndDateAttribute()
     {
-        return carbon_format($this->attributes['support_end'], config('date.format'));
+        return carbon_format($this->attributes['support_end'], $this->dynamicDateFormat);
     }
 
     public function getValidUntilDateAttribute()
     {
-        return carbon_format($this->attributes['valid_until'], config('date.format'));
+        return carbon_format($this->attributes['valid_until'], $this->dynamicDateFormat);
+    }
+
+    public function getDynamicDateFormatAttribute()
+    {
+        return isset(array_flip(['US', 'CA'])[$this->country_code])
+            ? config('date.format')
+            : config('date.format_eu');
+    }
+
+    public function getCountryCodeAttribute()
+    {
+        return $this->country->code;
     }
 
     public function getCoveragePeriodAttribute()

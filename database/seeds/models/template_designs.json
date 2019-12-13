@@ -742,14 +742,14 @@
                 "child": [
                     {
                         "id": "7142a607-6e91-4d36-8c73-6432feddd182",
-                        "class": "col-lg-12",
+                        "class": "col-lg-12 mt-2",
                         "controls": [
                             {
                                 "id": "91df5263-00d6-40c5-b327-00765c4fc8b2",
                                 "src": null,
                                 "name": "l-1",
                                 "type": "label",
-                                "class": "blue",
+                                "class": "bold",
                                 "label": "Label",
                                 "value": "Service Level (s):",
                                 "is_field": true,
@@ -3233,7 +3233,7 @@
                                 "src": null,
                                 "name": "l-1",
                                 "type": "label",
-                                "class": "blue",
+                                "class": "bold",
                                 "label": "Label",
                                 "value": "Service Level (s):",
                                 "is_field": true,

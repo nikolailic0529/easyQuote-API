@@ -306,7 +306,12 @@ class QuoteService implements QuoteServiceInterface
                 ->rowsToGroups('group_name', $groups_meta, true, $quote->quoteTemplate->currency_symbol)
                 ->exceptEach('group_name')
                 ->sortByFields($quote->sort_group_description);
-            $quote->renderableRows = $quote->computableRows->each->exceptEach($quote->systemHiddensFields);
+            $quote->renderableRows = $quote->computableRows->map(function ($group) use ($quote) {
+                $rows = $group->get('rows')->exceptEach($quote->systemHiddenFields);
+                data_set($group, 'rows', $rows);
+                data_set($group, 'headers_count', $group->get('headers_count') - count($quote->systemHiddenFields));
+                return $group;
+            });
 
             return;
         }

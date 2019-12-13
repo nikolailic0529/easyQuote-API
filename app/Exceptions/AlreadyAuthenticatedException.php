@@ -2,6 +2,7 @@
 
 namespace App\Exceptions;
 
+use App\Models\AccessAttempt as AppAccessAttempt;
 use App\Notifications\AccessAttempt;
 use App\Models\User;
 use Exception;
@@ -10,9 +11,12 @@ class AlreadyAuthenticatedException extends Exception
 {
     protected $user;
 
-    public function __construct(User $user)
+    protected $accessAttempt;
+
+    public function __construct(User $user, AppAccessAttempt $accessAttempt)
     {
         $this->user = $user;
+        $this->accessAttempt = $accessAttempt;
     }
 
     /**
@@ -22,7 +26,7 @@ class AlreadyAuthenticatedException extends Exception
      */
     public function report()
     {
-        $this->user->notify(new AccessAttempt);
+        $this->user->notify(new AccessAttempt($this->accessAttempt));
     }
 
     /**
@@ -33,6 +37,6 @@ class AlreadyAuthenticatedException extends Exception
      */
     public function render($request)
     {
-        return response()->json(['message' => __('auth.already_authenticated')]);
+        return response()->json(['message' => AU_00, 'code' => 'AU_00']);
     }
 }

@@ -10,6 +10,7 @@ use App\Http\Requests\Collaboration\{
 use App\Http\Requests\PasswordResetRequest;
 use App\Http\Requests\StoreResetPasswordRequest;
 use App\Http\Requests\UpdateProfileRequest;
+use App\Http\Resources\UserRepositoryCollection;
 use App\Models\{
     User,
     Collaboration\Invitation
@@ -162,6 +163,13 @@ interface UserRepositoryInterface
     public function administrators(): IlluminateCollection;
 
     /**
+     * Retrieve Failure Report Recepients.
+     *
+     * @return IlluminateCollection
+     */
+    public function failureReportRecepients(): IlluminateCollection;
+
+    /**
      * Reset Password for specified User.
      *
      * @param StoreResetPasswordRequest $request
@@ -194,4 +202,12 @@ interface UserRepositoryInterface
      * @return bool
      */
     public function verifyPasswordReset(string $token): bool;
+
+    /**
+     * Map Resource into UserRepositoryCollection.
+     *
+     * @param mixed $resource
+     * @return \App\Http\Resources\UserRepositoryCollection
+     */
+    public function toCollection($resource): UserRepositoryCollection;
 }

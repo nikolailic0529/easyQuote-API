@@ -151,6 +151,18 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind('passport.client.repository', function ($app) {
             return $app->make(\Laravel\Passport\ClientRepository::class);
         });
+
+        $this->app->bind('country.repository', function ($app) {
+            return $app->make(CountryRepositoryInterface::class);
+        });
+
+        $this->app->bind('user.repository', function ($app) {
+            return $app->make(UserRepositoryInterface::class);
+        });
+
+        $this->app->bind('customer.repository', function ($app) {
+            return $app->make(CustomerRepositoryInterface::class);
+        });
     }
 
     /**

@@ -14,7 +14,5 @@ return [
     */
 
     'failed' => 'These credentials do not match our records.',
-    'throttle' => 'Too many login attempts. Please try again in :seconds seconds.',
-    'already_authenticated' => 'User is already authenticated on another device',
-    'logged_out_due_inactivity' => 'You have been logged out due inactivity'
+    'throttle' => 'Too many login attempts. Please try again in :seconds seconds.'
 ];
