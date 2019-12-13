@@ -3,13 +3,14 @@
 namespace App\Mail;
 
 use Exception;
-use App\Contracts\Repositories\UserRepositoryInterface as UserRepository;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
+use App\Models\User;
 
 class FailureReportMail extends Mailable
 {
-    use SerializesModels;
+    // use SerializesModels;
 
     /**
      * Exception instance.
@@ -19,21 +20,21 @@ class FailureReportMail extends Mailable
     protected $exception;
 
     /**
-     * UserRepository
+     * Failure Report recepients.
      *
-     * @var \App\Repositories\UserRepository
+     * @var \Illuminate\Database\Eloquent\Collection
      */
-    protected $user;
+    protected $recepients;
 
     /**
      * Create a new message instance.
      *
      * @return void
      */
-    public function __construct(Exception $exception)
+    public function __construct(Exception $exception, Collection $recepients)
     {
         $this->exception = $exception;
-        $this->user = app(UserRepository::class);
+        $this->recepients = $recepients;
     }
 
     /**
@@ -43,12 +44,10 @@ class FailureReportMail extends Mailable
      */
     public function build()
     {
-        $administrators = $this->user->administrators()
-            ->whereNotIn('email', ['chris.cann@supportwarehouse.com', 'rowena.horsfall@supportwarehouse.com']);
         $message = $this->exception->getMessage();
         $trace = $this->exception->getTraceAsString();
 
-        return $this->to($administrators)
+        return $this->to($this->recepients)
             ->subject(__('mail.subjects.failure'))
             ->markdown('emails.failure')
             ->with(compact('message', 'trace'));
