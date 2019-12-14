@@ -21,10 +21,14 @@ use Illuminate\Foundation\Testing\{
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use \File;
+use Tests\Unit\Traits\{
+    FakeQuote,
+    FakeUser
+};
 
 abstract class ParsingTest extends TestCase
 {
-    use DatabaseTransactions, WithFaker;
+    use DatabaseTransactions, WithFaker, FakeUser, FakeQuote;
 
     protected $parser;
 
@@ -97,29 +101,6 @@ abstract class ParsingTest extends TestCase
             $this->parser->routeParser($quoteFile);
             $this->performFileAssertions($quoteFile);
         });
-    }
-
-    protected function fakeUser()
-    {
-        return User::create(
-            [
-                'email' => $this->faker->email,
-                'password' => $this->faker->password,
-                'country_id' => DB::table('countries')->value('id'),
-                'timezone_id' => DB::table('timezones')->value('id')
-            ]
-        );
-    }
-
-    protected function fakeQuote(User $user)
-    {
-        return $user->quotes()->create(
-            [
-                'company_id' => DB::table('companies')->value('id'),
-                'vendor_id' => DB::table('vendors')->value('id'),
-                'quote_template_id' => DB::table('quote_templates')->whereIsSystem(true)->value('id')
-            ]
-        );
     }
 
     protected function filesList(string $country)

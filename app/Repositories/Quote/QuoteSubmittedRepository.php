@@ -6,12 +6,14 @@ use App\Contracts\Repositories\{
     Quote\QuoteSubmittedRepositoryInterface,
     QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
 };
+use App\Exceptions\QuoteNotFoundByRfqException;
 use App\Http\Resources\QuoteRepositoryCollection;
 use App\Repositories\SearchableRepository;
 use App\Models\Quote\Quote;
 use Illuminate\Database\Eloquent\{
     Model,
-    Builder
+    Builder,
+    ModelNotFoundException
 };
 use Arr, File, DB, Storage;
 
@@ -57,7 +59,11 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     public function findByRfq(string $rfq): Quote
     {
-        return $this->quote->submitted()->activated()->orderByDesc('submitted_at')->rfq($rfq)->firstOrFail();
+        $quote = $this->quote->submitted()->activated()->orderByDesc('submitted_at')->rfq($rfq)->first();
+
+        throw_if(is_null($quote), QuoteNotFoundByRfqException::class);
+
+        return $quote;
     }
 
     public function find(string $id): Quote

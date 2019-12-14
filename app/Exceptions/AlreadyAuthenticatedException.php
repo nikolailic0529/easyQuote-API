@@ -37,6 +37,6 @@ class AlreadyAuthenticatedException extends Exception
      */
     public function render($request)
     {
-        return response()->json(['message' => AU_00, 'code' => 'AU_00']);
+        return response()->json(['message' => config('constants.AU_00'), 'code' => 'AU_00']);
     }
 }

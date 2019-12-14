@@ -94,8 +94,7 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
      * @var array
      */
     protected $casts = [
-        'email_verified_at' => 'datetime',
-        'must_change_password' => 'boolean'
+        'email_verified_at' => 'datetime'
     ];
 
     protected static $logAttributes = [
@@ -184,6 +183,6 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
 
     public function withAppends()
     {
-        return $this->append('role_id', 'role_name', 'picture', 'privileges');
+        return $this->append('role_id', 'role_name', 'picture', 'privileges', 'must_change_password');
     }
 }

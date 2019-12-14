@@ -14,6 +14,6 @@ class MustChangePasswordException extends Exception
      */
     public function render($request)
     {
-        return response()->json(['message' => MCP_00, 'code' => 'MCP_00']);
+        return response()->json(['message' => config('constants.MCP_00'), 'code' => 'MCP_00'], 422);
     }
 }

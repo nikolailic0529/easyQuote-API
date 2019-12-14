@@ -4,7 +4,7 @@ namespace App\Exceptions;
 
 use Exception;
 
-class LoggedOutDueInactivityException extends Exception
+class QuoteNotFoundByRfqException extends Exception
 {
     /**
      * Render the exception as an HTTP response.
@@ -14,6 +14,6 @@ class LoggedOutDueInactivityException extends Exception
      */
     public function render($request)
     {
-        return response()->json(['message' => config('constants.LO_00'), 'code' => 'LO_00'], 401);
+        return response()->json(['message' => config('constants.EQ_NF_01'), 'code' => 'EQ_NF_01'], 404);
     }
 }
