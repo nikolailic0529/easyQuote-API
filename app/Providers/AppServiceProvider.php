@@ -136,31 +136,31 @@ class AppServiceProvider extends ServiceProvider
             return ElasticsearchBuilder::create()->setHosts(app('config')->get('services.search.hosts'))->build();
         });
 
-        $this->app->bind('quote.service', function ($app) {
+        $this->app->singleton('quote.service', function ($app) {
             return $app->make(QuoteServiceInterface::class);
         });
 
-        $this->app->bind('quote.repository', function ($app) {
+        $this->app->singleton('quote.repository', function ($app) {
             return $app->make(QuoteRepositoryInterface::class);
         });
 
-        $this->app->bind('auth.service', function ($app) {
+        $this->app->singleton('auth.service', function ($app) {
             return $app->make(AuthServiceInterface::class);
         });
 
-        $this->app->bind('passport.client.repository', function ($app) {
+        $this->app->singleton('passport.client.repository', function ($app) {
             return $app->make(\Laravel\Passport\ClientRepository::class);
         });
 
-        $this->app->bind('country.repository', function ($app) {
+        $this->app->singleton('country.repository', function ($app) {
             return $app->make(CountryRepositoryInterface::class);
         });
 
-        $this->app->bind('user.repository', function ($app) {
+        $this->app->singleton('user.repository', function ($app) {
             return $app->make(UserRepositoryInterface::class);
         });
 
-        $this->app->bind('customer.repository', function ($app) {
+        $this->app->singleton('customer.repository', function ($app) {
             return $app->make(CustomerRepositoryInterface::class);
         });
     }

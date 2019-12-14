@@ -117,5 +117,9 @@ return [
         'client_name' => env('S4_CLIENT_NAME', null),
         'client_id' => env('S4_CLIENT_ID', null),
         'client_secret' => env('S4_CLIENT_SECRET', null)
+    ],
+
+    'must_change_password' => [
+        'allowed_routes' => ['users.create', 'account.update', 'account.show', 'account.logout', 'signin']
     ]
 ];

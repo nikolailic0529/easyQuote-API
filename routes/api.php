@@ -10,9 +10,9 @@ Route::group(['namespace' => 'API'], function () {
         Route::post('reset-password/{reset}', 'AuthController@resetPassword');
 
         Route::group(['middleware' => 'auth:api'], function () {
-            Route::get('logout', 'AuthController@logout');
-            Route::get('user', 'AuthController@user');
-            Route::post('user', 'AuthController@updateOwnProfile')->name('profile.update');
+            Route::get('logout', 'AuthController@logout')->name('account.logout');
+            Route::get('user', 'AuthController@user')->name('account.show');
+            Route::post('user', 'AuthController@updateOwnProfile')->name('account.update');
         });
     });
 
