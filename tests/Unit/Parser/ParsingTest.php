@@ -2,45 +2,25 @@
 
 namespace Tests\Unit\Parser;
 
-use App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface;
-use App\Contracts\Services\{
-    ParserServiceInterface,
-    PdfParserInterface,
-    WordParserInterface
-};
 use App\Models\{
-    User,
     QuoteFile\QuoteFile
 };
 use Tests\TestCase;
-use Symfony\Component\Finder\SplFileInfo;
 use Illuminate\Foundation\Testing\{
     WithFaker,
     DatabaseTransactions
 };
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use \File;
 use Tests\Unit\Traits\{
-    FakeQuote,
-    FakeUser
+    WithFakeQuote,
+    WithFakeQuoteFile,
+    WithFakeUser
 };
 
 abstract class ParsingTest extends TestCase
 {
-    use DatabaseTransactions, WithFaker, FakeUser, FakeQuote;
-
-    protected $parser;
-
-    protected $wordParser;
-
-    protected $pdfParser;
-
-    protected $quoteFileRepository;
-
-    protected $user;
-
-    protected $quote;
+    use DatabaseTransactions, WithFaker, WithFakeUser, WithFakeQuote, WithFakeQuoteFile;
 
     protected $mapping;
 
@@ -48,13 +28,6 @@ abstract class ParsingTest extends TestCase
     {
         parent::setUp();
 
-        $this->parser = app(ParserServiceInterface::class);
-        $this->wordParser = app(WordParserInterface::class);
-        $this->pdfParser = app(PdfParserInterface::class);
-        $this->quoteFileRepository = app(QuoteFileRepositoryInterface::class);
-
-        $this->user = $this->fakeUser();
-        $this->quote = $this->fakeQuote($this->user);
         $this->mapping = $this->mapping();
     }
 
@@ -82,7 +55,7 @@ abstract class ParsingTest extends TestCase
         $this->quote->quoteFiles()->saveMany($quoteFiles);
 
         $quoteFiles->each(function ($quoteFile) {
-            $this->preHanlde($quoteFile);
+            $this->preHandle($quoteFile);
         });
 
         return $quoteFiles;
@@ -108,36 +81,6 @@ abstract class ParsingTest extends TestCase
         $filesPath = "{$this->filesDirPath()}/{$country}";
 
         return File::files($filesPath);
-    }
-
-    protected function determineFileFormat(SplFileInfo $file)
-    {
-        $extensions = collect($file->getExtension());
-
-        if ($extensions->first() === 'txt') {
-            $extensions->push('csv');
-        }
-
-        return DB::table('quote_file_formats')->whereIn('extension', $extensions->toArray())->value('id');
-    }
-
-    protected function preHanlde(QuoteFile $quoteFile)
-    {
-        switch ($quoteFile->format->extension) {
-            case 'pdf':
-                $text = $this->pdfParser->getText($quoteFile->original_file_path, false);
-                $this->quoteFileRepository->createRawData($quoteFile, $text);
-                break;
-            case 'docx':
-            case 'doc':
-                $text = $this->wordParser->getText($quoteFile->original_file_path, false);
-                $this->quoteFileRepository->createRawData($quoteFile, $text);
-                break;
-        }
-
-        if ($quoteFile->isCsv()) {
-            $quoteFile->fullPath = true;
-        }
     }
 
     protected function getMappingAttribute(string $attribute, string $filename)
