@@ -94,7 +94,7 @@ class MultiYearDiscountRepository extends DiscountRepository implements MultiYea
         ];
     }
 
-    protected function searchableScope(Builder $query)
+    protected function searchableScope($query)
     {
         return $query->with('country', 'vendor');
     }

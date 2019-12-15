@@ -6,6 +6,7 @@ use App\Models\Quote\Quote;
 use App\Http\Resources\QuoteRepositoryCollection;
 use App\Builder\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as DatabaseBuilder;
 
 interface QuoteSubmittedRepositoryInterface
 {
@@ -31,6 +32,13 @@ interface QuoteSubmittedRepositoryInterface
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function userQuery(): Builder;
+
+    /**
+     * Get NonEloquent Query Builder.
+     *
+     * @return \Illuminate\Database\Query\Builder
+     */
+    public function dbQuery(): DatabaseBuilder;
 
     /**
      * Find Submitted Quote.

@@ -3,7 +3,6 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use App\Http\Controllers\API\AuthController;
 use App\Contracts\{
     Services\AuthServiceInterface,
     Services\ParserServiceInterface,
@@ -136,33 +135,21 @@ class AppServiceProvider extends ServiceProvider
             return ElasticsearchBuilder::create()->setHosts(app('config')->get('services.search.hosts'))->build();
         });
 
-        $this->app->singleton('quote.service', function ($app) {
-            return $app->make(QuoteServiceInterface::class);
-        });
+        $this->app->alias(QuoteServiceInterface::class, 'quote.service');
 
-        $this->app->singleton('quote.repository', function ($app) {
-            return $app->make(QuoteRepositoryInterface::class);
-        });
+        $this->app->alias(QuoteRepositoryInterface::class, 'quote.repository');
 
-        $this->app->singleton('auth.service', function ($app) {
-            return $app->make(AuthServiceInterface::class);
-        });
+        $this->app->alias(QuoteFileRepositoryInterface::class, 'quotefile.repository');
 
-        $this->app->singleton('passport.client.repository', function ($app) {
-            return $app->make(\Laravel\Passport\ClientRepository::class);
-        });
+        $this->app->alias(AuthServiceInterface::class, 'auth.service');
 
-        $this->app->singleton('country.repository', function ($app) {
-            return $app->make(CountryRepositoryInterface::class);
-        });
+        $this->app->alias(\Laravel\Passport\ClientRepository::class, 'passport.client.repository');
 
-        $this->app->singleton('user.repository', function ($app) {
-            return $app->make(UserRepositoryInterface::class);
-        });
+        $this->app->alias(CountryRepositoryInterface::class, 'country.repository');
 
-        $this->app->singleton('customer.repository', function ($app) {
-            return $app->make(CustomerRepositoryInterface::class);
-        });
+        $this->app->alias(UserRepositoryInterface::class, 'user.repository');
+
+        $this->app->alias(CustomerRepositoryInterface::class, 'customer.repository');
     }
 
     /**

@@ -5,7 +5,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class OrderByValue extends Query
 {
-    public function applyQuery(Builder $builder, string $table)
+    public function applyQuery($builder, string $table)
     {
         return $builder->orderBy("{$table}.value", $this->value);
     }

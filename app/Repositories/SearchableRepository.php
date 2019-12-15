@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\{
     Builder,
     Model
 };
+use Illuminate\Database\Query\Builder as DatabaseBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Pipeline\Pipeline;
 use Closure, Arr;
@@ -40,11 +41,12 @@ abstract class SearchableRepository
         return $this->searchBuilder($query, $scope)->apiPaginate();
     }
 
-    public function searchBuilder(string $query = '', ?Closure $scope = null): Builder
+    public function searchBuilder(string $search = '', ?Closure $scope = null)
     {
         $model = $this->searchableModel();
+        $query = $this->searchableQuery();
 
-        $items = $this->searchOnElasticsearch($model, $this->searchableFields(), $query);
+        $items = $this->searchOnElasticsearch($model, $this->searchableFields(), $search);
 
         if ($model instanceof ActivatableInterface && $model instanceof Model) {
             $activated = $this->buildQuery($model, $items, function ($query) use ($scope) {
@@ -60,7 +62,7 @@ abstract class SearchableRepository
             return $activated->unionAll($deactivated);
         }
 
-        $builder = $this->buildQuery($model, $items, function ($query) use ($scope) {
+        $builder = $this->buildQuery($query, $items, function ($query) use ($scope) {
             $this->searchableScope($query);
             $this->filterQuery($query, $scope);
         });
@@ -73,17 +75,18 @@ abstract class SearchableRepository
         return app(Elasticsearch::class);
     }
 
-    protected function buildQuery(Model $model, array $items, Closure $scope = null): Builder
+    protected function buildQuery(Model $model, array $items, Closure $scope = null)
     {
         $ids = Arr::pluck($items['hits']['hits'], '_id');
 
-        $query = $model->query();
+        $query = $this->searchableQuery();
+        $table = $model->getTable();
 
         if (is_callable($scope)) {
             call_user_func($scope, $query);
         }
 
-        return $query->whereIn("{$model->getTable()}.id", $ids);
+        return $query->whereIn("{$table}.id", $ids);
     }
 
     protected function searchOnElasticsearch(Model $model, array $fields = [], string $query = '')
@@ -106,8 +109,12 @@ abstract class SearchableRepository
         return $items;
     }
 
-    protected function filterQuery(Builder $query, ?Closure $scope = null)
+    protected function filterQuery($query, ?Closure $scope = null)
     {
+        if (!$query instanceof Builder && !$query instanceof DatabaseBuilder) {
+            throw new \Exception('Argument passed to filterQuery method must be an instance of Illuminate\Database\Query\Builder or Illuminate\Database\Eloquent\Builder');
+        }
+
         return app(Pipeline::class)
             ->send($query)
             ->through($this->filterQueryThrough())
@@ -120,12 +127,22 @@ abstract class SearchableRepository
     /**
      * Searchable Scope which will be applied for Query Builder.
      *
-     * @param Builder
-     * @return Builder
+     * @param mixed
+     * @return mixed
      */
-    protected function searchableScope(Builder $query)
+    protected function searchableScope($query)
     {
         return $query;
+    }
+
+    /**
+     * Searchable Query Builder Instance.
+     *
+     * @return mixed
+     */
+    protected function searchableQuery()
+    {
+        return $this->searchableModel()->query();
     }
 
     /**

@@ -4,12 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Webpatser\Uuid\Uuid;
-use App\Builder\ApiBuilder;
+use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
 use Fico7489\Laravel\EloquentJoin\Traits\ExtendRelationsTrait;
 
 class UuidModel extends Model
 {
-    use ExtendRelationsTrait;
+    use EloquentJoin, ExtendRelationsTrait;
 
     public $incrementing = false;
 
@@ -44,29 +44,6 @@ class UuidModel extends Model
         $this->visible = array_unique(array_merge($this->hidden, $attributes));
 
         return $this;
-    }
-
-    public function newEloquentBuilder($query)
-    {
-        $newEloquentBuilder = new ApiBuilder($query);
-
-        if (isset($this->useTableAlias)) {
-            $newEloquentBuilder->setUseTableAlias($this->useTableAlias);
-        }
-
-        if (isset($this->appendRelationsCount)) {
-            $newEloquentBuilder->setAppendRelationsCount($this->appendRelationsCount);
-        }
-
-        if (isset($this->leftJoin)) {
-            $newEloquentBuilder->setLeftJoin($this->leftJoin);
-        }
-
-        if (isset($this->aggregateMethod)) {
-            $newEloquentBuilder->setAggregateMethod($this->aggregateMethod);
-        }
-
-        return $newEloquentBuilder;
     }
 
     public function getCreatedAtAttribute($value)

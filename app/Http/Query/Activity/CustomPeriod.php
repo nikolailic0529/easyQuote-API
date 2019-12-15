@@ -8,7 +8,7 @@ use Arr;
 
 class CustomPeriod extends Query
 {
-    public function applyQuery(Builder $builder, string $table)
+    public function applyQuery($builder, string $table)
     {
         if (!is_array($this->value) || !Arr::has($this->value, ['from', 'till'])) {
             return $builder;

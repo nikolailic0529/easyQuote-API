@@ -6,18 +6,23 @@ use App\Models\UuidModel;
 
 abstract class CompletableModel extends UuidModel
 {
-    public function getLastDraftedStepAttribute()
+    public static function transformDraftedStep($completeness)
     {
-        $dictionary = $this->getCompletenessDictionary();
-        $stage = collect($dictionary)->search($this->getAttribute('completeness'), true);
+        $dictionary = static::getCompletenessDictionary();
+        $stage = collect($dictionary)->search($completeness, true);
 
         return $stage;
+    }
+
+    public function getLastDraftedStepAttribute()
+    {
+        static::transformDraftedStep($this->completeness);
     }
 
     public function setLastDraftedStepAttribute(string $value)
     {
         $dictionary = $this->getCompletenessDictionary();
-        $completeness = collect($dictionary)->get($value) ?? $this->attributes['completeness'];
+        $completeness = collect($dictionary)->get($value) ?? $this->completeness;
 
         $this->setAttribute('completeness', $completeness);
     }
@@ -27,5 +32,5 @@ abstract class CompletableModel extends UuidModel
      *
      * @return array
      */
-    abstract public function getCompletenessDictionary();
+    abstract public static function getCompletenessDictionary();
 }

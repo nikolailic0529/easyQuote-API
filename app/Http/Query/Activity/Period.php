@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class Period extends Query
 {
-    public function applyQuery(Builder $builder, string $table)
+    public function applyQuery($builder, string $table)
     {
         if (!in_array($this->value, config('activitylog.periods'))) {
             return $builder;

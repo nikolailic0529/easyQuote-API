@@ -103,7 +103,7 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
         ];
     }
 
-    protected function searchableScope(Builder $query)
+    protected function searchableScope($query)
     {
         return $query;
     }

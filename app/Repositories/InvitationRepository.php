@@ -74,7 +74,7 @@ class InvitationRepository extends SearchableRepository implements InvitationRep
         ];
     }
 
-    protected function searchableScope(Builder $query)
+    protected function searchableScope($query)
     {
         return $query;
     }

@@ -25,7 +25,6 @@ class PerformUserActivity
         /**
          * If the User hasn't recent activity his token will be revoked and User will be logged out.
          */
-
         if ($user->doesntHaveRecentActivity()) {
             app('auth.service')->logout();
 

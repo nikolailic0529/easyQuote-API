@@ -4,6 +4,8 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Validation\ValidationException;
 
 class UpdateProfileRequest extends FormRequest
 {
@@ -51,6 +53,7 @@ class UpdateProfileRequest extends FormRequest
                 }),
                 'string',
                 'min:8',
+                'different:current_password',
                 'confirmed'
             ]
         ];
@@ -60,7 +63,8 @@ class UpdateProfileRequest extends FormRequest
     {
         return [
             'password.regex' => 'The Password should contain uppercase and lowercase characters, digits, non-alphanumeric characters.',
-            'current_password.password' => 'You have entered not valid password.'
+            'current_password.password' => 'You have entered not valid password.',
+            'password.different' => 'A new password must be different.'
         ];
     }
 }

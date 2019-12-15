@@ -71,8 +71,6 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
      */
     protected $isReview = false;
 
-    protected $perPage = 8;
-
     protected $fillable = [
         'type',
         'customer_id',
@@ -209,7 +207,7 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         return Arr::only($this->toArray(), ['customer', 'company', 'vendor', 'user']);
     }
 
-    public function getCompletenessDictionary()
+    public static function getCompletenessDictionary()
     {
         return __('quote.stages');
     }
@@ -245,5 +243,21 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
     {
         $this->isReview = false;
         return $this;
+    }
+
+    public function withAppends()
+    {
+        isset($this->quoteTemplate) && $this->quoteTemplate->makeVisible(['form_data', 'form_values_data']);
+
+        return $this->append(
+            'list_price',
+            'hidden_fields',
+            'sort_fields',
+            'field_column',
+            'rows_data',
+            'margin_percentage_without_country_margin',
+            'margin_percentage_without_discounts',
+            'user_margin_percentage'
+        );
     }
 }

@@ -5,7 +5,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class OrderByExpiresAt extends Query
 {
-    public function applyQuery(Builder $builder, string $table)
+    public function applyQuery($builder, string $table)
     {
         return $builder->orderBy("{$table}.expires_at", $this->value);
     }

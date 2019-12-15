@@ -290,7 +290,7 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         ];
     }
 
-    protected function searchableScope(Builder $query)
+    protected function searchableScope($query)
     {
         return $query;
     }

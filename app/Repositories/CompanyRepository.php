@@ -149,7 +149,7 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
         ];
     }
 
-    protected function searchableScope(Builder $query)
+    protected function searchableScope($query)
     {
         return $query->with('image', 'vendors');
     }

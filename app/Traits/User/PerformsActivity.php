@@ -12,6 +12,7 @@ trait PerformsActivity
 
     public function initializePerformsActivity()
     {
+        $this->fillable = array_merge($this->fillable, ['last_activity_at']);
         $this->dates = array_merge($this->dates, ['last_activity_at', 'logged_in_at']);
 
         self::$activityExpiresIn = config('activity.expires_in', 60);

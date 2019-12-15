@@ -41,7 +41,7 @@ class QuoteTemplate extends UuidModel implements ActivatableInterface
     ];
 
     protected $hidden = [
-        'created_at', 'updated_at', 'drafted_at', 'deleted_at', 'user_id', 'pivot'
+        'created_at', 'updated_at', 'drafted_at', 'deleted_at', 'user_id', 'pivot', 'form_data', 'form_values_data'
     ];
 
     protected $casts = [

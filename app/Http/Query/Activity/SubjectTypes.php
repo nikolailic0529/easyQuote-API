@@ -8,7 +8,7 @@ use Arr;
 
 class SubjectTypes extends Query
 {
-    public function applyQuery(Builder $builder, string $table)
+    public function applyQuery($builder, string $table)
     {
         if (blank($this->value)) {
             return $builder;

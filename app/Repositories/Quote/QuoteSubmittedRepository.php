@@ -12,9 +12,9 @@ use App\Repositories\SearchableRepository;
 use App\Models\Quote\Quote;
 use Illuminate\Database\Eloquent\{
     Model,
-    Builder,
-    ModelNotFoundException
+    Builder
 };
+use Illuminate\Database\Query\Builder as DatabaseBuilder;
 use Arr, File, DB, Storage;
 
 class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubmittedRepositoryInterface
@@ -52,6 +52,33 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
             ->with('customer:id,name,rfq,valid_until,support_start,support_end', 'company:id,name', 'user:id,email,first_name,middle_name,last_name');
     }
 
+    public function dbQuery(): DatabaseBuilder
+    {
+        return $this->quote->query()->toBase()
+            ->whereNotNull("{$this->table}.submitted_at")
+            ->leftJoin('customers as customer', 'customer.id', '=', "{$this->table}.customer_id")
+            ->leftJoin('companies as company', 'company.id', '=', "{$this->table}.company_id")
+            ->leftJoin('users as user', 'user.id', '=', "{$this->table}.user_id")
+            ->select([
+                "{$this->table}.id",
+                "{$this->table}.customer_id",
+                "{$this->table}.company_id",
+                "{$this->table}.user_id",
+                "{$this->table}.completeness",
+                "{$this->table}.created_at",
+                "{$this->table}.activated_at",
+                "customer.name as customer_name",
+                "customer.rfq as customer_rfq",
+                "customer.valid_until as customer_valid_until",
+                "customer.support_start as customer_support_start",
+                "customer.support_end as customer_support_end",
+                "company.name as company_name",
+                "user.first_name as user_first_name",
+                "user.last_name as user_last_name"
+            ])
+            ->groupBy("{$this->table}.id");
+    }
+
     public function toCollection($resource): QuoteRepositoryCollection
     {
         return new QuoteRepositoryCollection($resource);
@@ -61,7 +88,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     {
         $quote = $this->quote->submitted()->activated()->orderByDesc('submitted_at')->rfq($rfq)->first();
 
-        throw_if(is_null($quote), QuoteNotFoundByRfqException::class);
+        throw_if(is_null($quote) || blank($quote->submitted_data), QuoteNotFoundByRfqException::class);
 
         return $quote;
     }
@@ -74,8 +101,6 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     public function rfq(string $rfq): iterable
     {
         $quote = $this->findByRfq($rfq);
-
-        blank($quote->submitted_data) && abort('404', __('quote.no_found_rfq_exception'));
 
         $submitted_data = Arr::sortRecursive($quote->submitted_data);
 
@@ -208,14 +233,19 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     protected function filterableQuery()
     {
         return [
-            $this->userQuery()->activated(),
-            $this->userQuery()->deactivated()
+            $this->dbQuery()->whereNotNull("{$this->table}.activated_at")->limit(999999),
+            $this->dbQuery()->whereNull("{$this->table}.activated_at")->limit(999999)
         ];
     }
 
     protected function searchableModel(): Model
     {
         return $this->quote;
+    }
+
+    protected function searchableQuery()
+    {
+        return $this->dbQuery();
     }
 
     protected function searchableFields(): array
@@ -232,7 +262,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         ];
     }
 
-    protected function searchableScope(Builder $query)
+    protected function searchableScope($query)
     {
         return $query->currentUserWhen(request()->user()->cant('view_quotes'))
             ->submitted()

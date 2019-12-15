@@ -5,7 +5,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class OrderByRole extends Query
 {
-    public function applyQuery(Builder $builder, string $table)
+    public function applyQuery($builder, string $table)
     {
         $model = get_class($builder->getModel());
         $model_has_roles = uniqid();

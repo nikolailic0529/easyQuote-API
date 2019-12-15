@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources;
 
-use App\Builder\Pagination\Paginator;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 
 class ActivityCollection extends ResourceCollection
@@ -17,7 +17,7 @@ class ActivityCollection extends ResourceCollection
     {
         $data = ActivityResource::collection($this->collection);
 
-        if ($this->resource instanceof Paginator) {
+        if ($this->resource instanceof LengthAwarePaginator) {
             $merge = compact('data');
 
             if (isset($this->additional)) {

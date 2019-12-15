@@ -49,10 +49,12 @@ abstract class Query
         return !in_array(request($this->queryName()), ['asc', 'desc']);
     }
 
-    protected function modelTable(Builder $builder)
+    protected function modelTable($builder)
     {
-        return $builder->getModel()->getTable();
+        return $builder instanceof Builder
+            ? $builder->getModel()->getTable()
+            : $builder->from;
     }
 
-    protected abstract function applyQuery(Builder $builder, string $table);
+    protected abstract function applyQuery($builder, string $table);
 }

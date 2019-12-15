@@ -60,6 +60,6 @@ class CustomerRepository implements CustomerRepositoryInterface
         $customer = $this->customer->create($attributes);
         $customer->addresses()->createMany($attributes['addresses']);
 
-        return $customer->load('addresses', 'country')->append('support_start_date', 'support_end_date', 'valid_until_date');
+        return $customer->load('addresses', 'country')->withAppends();
     }
 }

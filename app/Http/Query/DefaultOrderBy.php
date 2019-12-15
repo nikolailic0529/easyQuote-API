@@ -1,6 +1,7 @@
 <?php namespace App\Http\Query;
 
 use Closure;
+use Illuminate\Database\Eloquent\Builder;
 
 class DefaultOrderBy
 {
@@ -8,7 +9,11 @@ class DefaultOrderBy
     {
         $builder = $next($request);
 
-        if (filled($builder->getQuery()->orders)) {
+        $orders = $builder instanceof Builder
+            ? $builder->getQuery()->orders
+            : $builder->orders;
+
+        if (filled($orders)) {
             return $builder;
         }
 

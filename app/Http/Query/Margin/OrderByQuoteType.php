@@ -5,7 +5,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class OrderByQuoteType extends Query
 {
-    public function applyQuery(Builder $builder, string $table)
+    public function applyQuery($builder, string $table)
     {
         return $builder->orderBy('quote_type', $this->value);
     }

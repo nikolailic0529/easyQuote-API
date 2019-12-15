@@ -234,12 +234,12 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         return $quoteFile->scheduleData;
     }
 
-    public function find(String $id)
+    public function find(string $id)
     {
         return $this->quoteFile->query()->whereId($id)->firstOrFail();
     }
 
-    public function exists(String $id)
+    public function exists(string $id)
     {
         return $this->quoteFile->whereId($id)->exists();
     }

@@ -6,6 +6,7 @@ use App\Builder\Pagination\Paginator;
 use App\Http\Resources\QuoteRepositoryCollection;
 use App\Models\Quote\Quote;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as DatabaseBuilder;
 
 interface QuoteDraftedRepositoryInterface
 {
@@ -31,6 +32,13 @@ interface QuoteDraftedRepositoryInterface
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function userQuery(): Builder;
+
+    /**
+     * Get NonEloquent Query Builder.
+     *
+     * @return \Illuminate\Database\Query\Builder
+     */
+    public function dbQuery(): DatabaseBuilder;
 
     /**
      * Find Drafted Quote.

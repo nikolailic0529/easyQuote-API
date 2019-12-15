@@ -87,6 +87,11 @@ class Customer extends UuidModel
         return carbon_format($this->attributes['valid_until'], $this->dynamicDateFormat);
     }
 
+    public function getQuotationValidUntilAttribute()
+    {
+        return $this->valid_until_date;
+    }
+
     public function getDynamicDateFormatAttribute()
     {
         return isset(array_flip(['US', 'CA'])[$this->country_code])
@@ -107,6 +112,16 @@ class Customer extends UuidModel
     public function getServiceLevelsFormattedAttribute()
     {
         return collect($this->service_levels)->toString('service_level');
+    }
+
+    public function getCustomerNameAttribute()
+    {
+        return $this->name;
+    }
+
+    public function getRfqNumberAttribute()
+    {
+        return $this->rfq;
     }
 
     public function setCustomerNameAttribute($value)
@@ -137,5 +152,11 @@ class Customer extends UuidModel
     public function scopeNotInUse($query)
     {
         return $query->drafted()->doesntHave('quotes');
+    }
+
+    public function withAppends()
+    {
+        return $this->makeHidden(['name', 'support_start', 'support_end', 'valid_until', 'rfq'])
+            ->append('customer_name', 'rfq_number', 'support_start_date', 'support_end_date', 'quotation_valid_until');
     }
 }

@@ -5,7 +5,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class OrderByMinimumLimit extends Query
 {
-    public function applyQuery(Builder $builder, string $table)
+    public function applyQuery($builder, string $table)
     {
         return $builder->orderBy("{$table}.minimum_limit", $this->value);
     }

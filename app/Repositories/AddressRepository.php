@@ -79,7 +79,7 @@ class AddressRepository extends SearchableRepository implements AddressRepositor
         return $this->query();
     }
 
-    protected function searchableScope(Builder $query)
+    protected function searchableScope($query)
     {
         return $query->commonTypes()->with('country');
     }

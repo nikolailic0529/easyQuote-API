@@ -93,7 +93,7 @@ class SNDrepository extends DiscountRepository implements SNDrepositoryInterface
         ];
     }
 
-    protected function searchableScope(Builder $query)
+    protected function searchableScope($query)
     {
         return $query->with('country', 'vendor');
     }

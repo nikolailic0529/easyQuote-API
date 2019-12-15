@@ -116,7 +116,7 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
         ];
     }
 
-    protected function searchableScope(Builder $query)
+    protected function searchableScope($query)
     {
         return $query->with('image', 'countries');
     }

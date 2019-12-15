@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class CauserId extends Query
 {
-    public function applyQuery(Builder $builder, string $table)
+    public function applyQuery($builder, string $table)
     {
         return $builder->where("{$table}.causer_id", $this->value);
     }

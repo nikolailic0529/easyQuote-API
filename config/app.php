@@ -173,6 +173,7 @@ return [
          */
         App\Providers\HelperServiceProvider::class,
         App\Providers\AppServiceProvider::class,
+        App\Providers\QueryBuilderServiceProvider::class,
         App\Providers\MacroServiceProvider::class,
         App\Providers\ObserverServiceProvider::class,
         App\Providers\AuthServiceProvider::class,

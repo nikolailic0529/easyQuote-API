@@ -41,12 +41,14 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
     public function all()
     {
         $summary = $this->summary();
+
         return $this->toCollection(parent::all())->additional(compact('summary'));
     }
 
     public function search(string $query = '')
     {
         $summary = $this->summary();
+
         return $this->toCollection(parent::search($query))->additional(compact('summary'));
     }
 
@@ -206,7 +208,7 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
         ];
     }
 
-    protected function searchableScope(Builder $query)
+    protected function searchableScope($query)
     {
         return $query->with('subject');
     }

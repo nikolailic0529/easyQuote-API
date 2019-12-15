@@ -5,7 +5,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class OrderByName extends Query
 {
-    public function applyQuery(Builder $builder, string $table)
+    public function applyQuery($builder, string $table)
     {
         return $builder->orderByRaw("concat(`{$table}`.`first_name`, `{$table}`.`middle_name`, `{$table}`.`last_name`) {$this->value}");
     }

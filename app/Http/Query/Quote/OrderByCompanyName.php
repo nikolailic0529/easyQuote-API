@@ -5,8 +5,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class OrderByCompanyName extends Query
 {
-    public function applyQuery(Builder $builder, string $table)
+    public function applyQuery($builder, string $table)
     {
-        return $builder->orderByJoin('company.name', $this->value);
+        return $builder->orderBy('company_name', $this->value);
     }
 }

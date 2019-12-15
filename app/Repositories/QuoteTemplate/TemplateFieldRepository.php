@@ -105,7 +105,7 @@ class TemplateFieldRepository extends SearchableRepository implements TemplateFi
         ];
     }
 
-    protected function searchableScope(Builder $query)
+    protected function searchableScope($query)
     {
         return $query->with('userQuoteTemplates:id,name', 'templateFieldType');
     }

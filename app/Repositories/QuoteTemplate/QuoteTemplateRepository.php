@@ -19,11 +19,12 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
 {
     protected $quoteTemplate;
 
-    protected $selectable = ['id', 'name', 'company_id', 'vendor_id', 'is_system', 'activated_at'];
+    protected $table;
 
     public function __construct(QuoteTemplate $quoteTemplate)
     {
         $this->quoteTemplate = $quoteTemplate;
+        $this->table = $quoteTemplate->getTable();
     }
 
     public function userQuery(): Builder
@@ -94,7 +95,7 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
         $quoteTemplate->update($request->validated());
         $quoteTemplate->syncCountries($request->countries);
 
-        return $quoteTemplate->load('company', 'vendor', 'countries', 'templateFields', 'currency');
+        return $quoteTemplate->load('company', 'vendor', 'countries', 'templateFields', 'currency')->makeVisible(['form_data', 'form_values_data']);
     }
 
     public function delete(string $id): bool
@@ -136,8 +137,8 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
     protected function filterableQuery()
     {
         return [
-            $this->userQuery()->select($this->selectable)->activated(),
-            $this->userQuery()->select($this->selectable)->deactivated()
+            $this->userQuery()->activated(),
+            $this->userQuery()->deactivated()
         ];
     }
 
@@ -153,8 +154,8 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
         ];
     }
 
-    protected function searchableScope(Builder $query)
+    protected function searchableScope($query)
     {
-        return $query->with('company:id,name', 'vendor:id,name', 'countries:id,name')->select($this->selectable);
+        return $query->with('company:id,name', 'vendor:id,name', 'countries:id,name');
     }
 }

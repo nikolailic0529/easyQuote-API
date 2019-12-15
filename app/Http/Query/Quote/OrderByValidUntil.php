@@ -5,8 +5,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class OrderByValidUntil extends Query
 {
-    public function applyQuery(Builder $builder, string $table)
+    public function applyQuery($builder, string $table)
     {
-        return $builder->orderByJoin('customer.valid_until', $this->value);
+        return $builder->orderBy('customer_valid_until', $this->value);
     }
 }

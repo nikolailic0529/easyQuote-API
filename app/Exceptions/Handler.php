@@ -2,13 +2,11 @@
 
 namespace App\Exceptions;
 
-use App\Contracts\Repositories\UserRepositoryInterface;
-use Exception;
 use App\Mail\FailureReportMail;
-use App\Models\User;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Support\Facades\Mail;
-use Arr;
+use Illuminate\Validation\ValidationException;
+use Exception, Arr;
 
 class Handler extends ExceptionHandler
 {
@@ -83,5 +81,20 @@ class Handler extends ExceptionHandler
         return ! is_null(Arr::first($dontReport, function ($type) use ($e) {
             return $e instanceof $type;
         }));
+    }
+
+    /**
+     * Convert a validation exception into a JSON response.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Validation\ValidationException  $exception
+     * @return \Illuminate\Http\JsonResponse
+     */
+    protected function invalidJson($request, ValidationException $exception)
+    {
+        return response()->json([
+            'message' => head(head($exception->errors())),
+            'errors' => $exception->errors(),
+        ], $exception->status);
     }
 }

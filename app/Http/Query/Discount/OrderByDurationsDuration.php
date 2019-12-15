@@ -5,7 +5,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class OrderByDurationsDuration extends Query
 {
-    public function applyQuery(Builder $builder, string $table)
+    public function applyQuery($builder, string $table)
     {
         return $builder->orderByRaw("json_unquote(json_extract(`durations`, '$**.\"duration\"')) {$this->value}");
     }
