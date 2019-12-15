@@ -3,12 +3,13 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Traits\Request\PreparesNullValues;
 use Illuminate\Validation\Rule;
-use Illuminate\Contracts\Validation\Validator;
-use Illuminate\Validation\ValidationException;
 
 class UpdateProfileRequest extends FormRequest
 {
+    use PreparesNullValues;
+
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -66,5 +67,10 @@ class UpdateProfileRequest extends FormRequest
             'current_password.password' => 'You have entered not valid password.',
             'password.different' => 'A new password must be different.'
         ];
+    }
+
+    protected function nullValues()
+    {
+        return ['phone'];
     }
 }

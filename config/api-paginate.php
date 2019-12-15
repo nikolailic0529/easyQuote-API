@@ -28,4 +28,9 @@ return [
      * The name of the macro that is added to the Eloquent query builder.
      */
     'method_name' => 'jsonPaginate',
+
+    /**
+     * Count rows cache ttl in minutes.
+     */
+    'count_cache_ttl' => 60
 ];

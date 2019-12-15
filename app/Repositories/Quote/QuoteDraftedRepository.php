@@ -44,11 +44,13 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
 
     public function dbQuery(): DatabaseBuilder
     {
-        return $this->quote->query()->toBase()
+        return $this->quote->query()
+            ->currentUserWhen(request()->user()->cant('view_quotes'))
+            ->toBase()
             ->whereNull("{$this->table}.submitted_at")
-            ->leftJoin('customers as customer', 'customer.id', '=', "{$this->table}.customer_id")
+            ->join('users as user', 'user.id', '=', "{$this->table}.user_id")
+            ->join('customers as customer', 'customer.id', '=', "{$this->table}.customer_id")
             ->leftJoin('companies as company', 'company.id', '=', "{$this->table}.company_id")
-            ->leftJoin('users as user', 'user.id', '=', "{$this->table}.user_id")
             ->select([
                 "{$this->table}.id",
                 "{$this->table}.customer_id",

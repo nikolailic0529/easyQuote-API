@@ -54,11 +54,13 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     public function dbQuery(): DatabaseBuilder
     {
-        return $this->quote->query()->toBase()
+        return $this->quote->query()
+            ->currentUserWhen(request()->user()->cant('view_quotes'))
+            ->toBase()
             ->whereNotNull("{$this->table}.submitted_at")
-            ->leftJoin('customers as customer', 'customer.id', '=', "{$this->table}.customer_id")
+            ->join('users as user', 'user.id', '=', "{$this->table}.user_id")
+            ->join('customers as customer', 'customer.id', '=', "{$this->table}.customer_id")
             ->leftJoin('companies as company', 'company.id', '=', "{$this->table}.company_id")
-            ->leftJoin('users as user', 'user.id', '=', "{$this->table}.user_id")
             ->select([
                 "{$this->table}.id",
                 "{$this->table}.customer_id",
@@ -264,8 +266,6 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     protected function searchableScope($query)
     {
-        return $query->currentUserWhen(request()->user()->cant('view_quotes'))
-            ->submitted()
-            ->with('customer:id,name,rfq,valid_until,support_start,support_end', 'company:id,name', 'user:id,email,first_name,middle_name,last_name');
+        return $query;
     }
 }

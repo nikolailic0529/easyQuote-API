@@ -17,6 +17,8 @@ class QueryBuilderServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        DatabaseBuilder::macro('runCachedPaginationCountQuery', $this->runCachedPaginationCountQuery());
+
         DatabaseBuilder::macro('apiGetCountForPagination', $this->apiGetCountForPagination());
 
         Builder::macro('apiPaginate', $this->apiPaginateMacro());
@@ -60,7 +62,7 @@ class QueryBuilderServiceProvider extends ServiceProvider
     protected function apiGetCountForPagination()
     {
         return function ($columns = ['*']) {
-            $results = $this->runPaginationCountQuery($columns);
+            $results = $this->runCachedPaginationCountQuery($columns);
 
             if (!isset($results[0])) {
                 return 0;
@@ -69,6 +71,21 @@ class QueryBuilderServiceProvider extends ServiceProvider
             }
 
             return (int) array_change_key_case((array) $results[0])['aggregate'];
+        };
+    }
+
+    protected function runCachedPaginationCountQuery()
+    {
+        return function ($columns = ['*']) {
+            $without = $this->unions ? ['orders', 'limit', 'offset'] : ['columns', 'orders', 'limit', 'offset'];
+
+            $query = $this->cloneWithout($without)
+                ->cloneWithoutBindings($this->unions ? ['order'] : ['select', 'order'])
+                ->setAggregate('count', $this->withoutSelectAliases($columns));
+
+            return cache()->tags($query->from)->remember((clone $query)->toSql(), config('api-paginate.count_cache_ttl'), function () use ($query) {
+                return $query->get()->all();
+            });
         };
     }
 }
