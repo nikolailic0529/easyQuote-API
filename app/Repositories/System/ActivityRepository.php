@@ -76,21 +76,22 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
 
     public function summary(?string $subject_id = null): Collection
     {
-        $expectedSummaryTypes = ['created' => 0, 'updated' => 0, 'deleted' => 0];
+        $types = config('activitylog.types');
+        $expectedTypes = array_combine($types, array_fill(0, count($types), 0));
 
         $summary = $this->filterQuery($this->query())
             ->when(filled($subject_id), function ($query) use ($subject_id) {
                 $query->whereSubjectId($subject_id);
             })
             ->select(['description', \DB::raw('count(*) as count')])
-            ->whereIn('description', ['created', 'updated', 'deleted'])
+            ->whereIn('description', $types)
             ->groupBy('description')
             ->pluck('count', 'description')
-            ->union($expectedSummaryTypes);
+            ->union($expectedTypes);
 
         $summary = $summary
-            ->sortBy(function ($count, $type) use ($expectedSummaryTypes) {
-                return array_search($type, array_keys($expectedSummaryTypes));
+            ->sortBy(function ($count, $type) use ($types) {
+                return array_search($type, $types);
             })
             ->transform(function ($count, $type) {
                 $type = ucfirst($type);
@@ -112,7 +113,7 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
         $summary = $this->summary();
         $activitiesQuery = $this->filterQuery($this->query())->latest()->limit(5000);
 
-        abort_if($activitiesQuery->doesntExist(), 404, 'No activities found.');
+        error_abort_if($activitiesQuery->doesntExist(), 'ANF_01', 404);
 
         $activities = $activitiesQuery->get();
 
@@ -130,7 +131,7 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
         $summary = $this->summary($subject_id);
         $activitiesQuery = $this->filterQuery($this->subjectQuery($subject_id))->latest()->limit(5000);
 
-        abort_if($activitiesQuery->doesntExist(), 404, 'No activities found.');
+        error_abort_if($activitiesQuery->doesntExist(), 'ANF_01', 404);
 
         $activities = $activitiesQuery->get();
 

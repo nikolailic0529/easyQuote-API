@@ -66,7 +66,12 @@ class AuthService implements AuthServiceInterface
          */
         throw_if($user->isAlreadyLoggedIn(), AlreadyAuthenticatedException::class, $user, $this->currentAttempt);
 
+        /**
+         * Once user logged in we are freshing the last activity timestamp and writing the related activity.
+         */
         $user->markAsLoggedIn() && $user->freshActivity();
+
+        activity()->on($user)->by($user)->log('authenticated');
     }
 
     public function storeAccessAttempt(array $payload)

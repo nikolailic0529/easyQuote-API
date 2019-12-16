@@ -25,7 +25,7 @@ trait PerformsActivity
          * Perform Activity only if the last User's activity expires earlier than the specified time in minutes.
          */
         if ($this->lastActivityExpiresIn()->minutes > self::$refreshActivityExpiresIn) {
-            return;
+            return false;
         }
 
         return $this->forceFill(['last_activity_at' => now()])->update();

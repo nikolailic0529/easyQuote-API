@@ -69,7 +69,7 @@ return [
         'setting' => \App\Models\System\SystemSetting::class,
         'invitation' => \App\Models\Collaboration\Invitation::class
     ],
-    'types' => ['created', 'updated', 'deleted'],
+    'types' => ['created', 'updated', 'deleted', 'authenticated'],
     'periods' => [
         'today',
         'yesterday',

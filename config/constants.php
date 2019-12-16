@@ -15,6 +15,11 @@ return [
     'USD_01' => 'You could not delete yourself.',
 
     /**
+     * Activity.
+     */
+    'ANF_01' => 'No activities found.',
+
+    /**
      * Invitation.
      */
     'IE_01' => 'Your invitation link is expired, please contact your line-manager to resend the invitation.',
