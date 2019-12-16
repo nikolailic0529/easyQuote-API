@@ -334,7 +334,7 @@ class ParserService implements ParserServiceInterface
         $sheetCount = $import->getSheetCount();
 
         if ($sheetCount === 0) {
-            throw new \ErrorException(QFNR_01);
+            throw new \ErrorException(config('constants.QFNR_01'));
         }
 
         return $import->getSheetCount();
