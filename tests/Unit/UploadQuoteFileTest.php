@@ -76,7 +76,7 @@ class UploadQuoteFileTest extends TestCase
     protected function uploadFile(TestingFile $file, ?string $type = null)
     {
         return $this->postJson(
-            'api/quotes/file',
+            url('/api/quotes/file'),
             ['quote_file' => $file, 'file_type' => $type ?? __('quote_file.types.price')],
             ['Authorization' => "Bearer {$this->accessToken}"]
         );

@@ -105,7 +105,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
             },
             AfterImport::class => function ($event) {
                 if ($this->rowsCount < 1) {
-                    $this->quoteFile->setException(config('constants.QFNR_01'));
+                    $this->quoteFile->setException(config('constants.QFNRF_01'));
                     $this->quoteFile->markAsUnHandled();
                 }
             }

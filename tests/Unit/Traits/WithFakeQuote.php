@@ -61,8 +61,6 @@ trait WithFakeQuote
                 'vendor_id' => DB::table('vendors')->value('id'),
                 'quote_template_id' => DB::table('quote_templates')->whereIsSystem(true)->value('id'),
                 'customer_id' => $customer_id,
-                'company_id' => DB::table('companies')->value('id'),
-                'vendor_id' => DB::table('companies')->value('id'),
                 'country_id' => $country_id,
                 'type' => ['New', 'Renewal'][rand(0, 1)],
                 'completeness' => 100

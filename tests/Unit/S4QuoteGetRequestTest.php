@@ -111,7 +111,7 @@ class S4QuoteGetRequestTest extends TestCase
 
     protected function requestQuoteByRfq(Quote $quote): TestResponse
     {
-        return $this->getJson("api/s4/quotes/{$quote->customer->rfq}");
+        return $this->getJson(url("/api/s4/quotes/{$quote->customer->rfq}"));
     }
 
     protected function importQuoteFile(): void
