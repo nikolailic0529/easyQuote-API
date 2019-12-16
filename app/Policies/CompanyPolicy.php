@@ -76,7 +76,7 @@ class CompanyPolicy
     public function delete(User $user, Company $company)
     {
         if ($company->isSystem()) {
-            return $this->deny(config('constants.CPSD_01'));
+            return $this->deny(CPSD_01);
         }
 
         if ($user->can('delete_companies')) {

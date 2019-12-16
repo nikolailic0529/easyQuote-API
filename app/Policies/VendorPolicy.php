@@ -62,7 +62,7 @@ class VendorPolicy
     public function update(User $user, Vendor $vendor)
     {
         if ($vendor->isSystem()) {
-            return $this->deny(config('constants.VSU_01'));
+            return $this->deny(VSU_01);
         }
 
         if ($user->can('update_vendors')) {
@@ -80,7 +80,7 @@ class VendorPolicy
     public function delete(User $user, Vendor $vendor)
     {
         if ($vendor->isSystem()) {
-            return $this->deny(config('constants.VSD_01'));
+            return $this->deny(VSD_01);
         }
 
         if ($user->can('delete_vendors')) {

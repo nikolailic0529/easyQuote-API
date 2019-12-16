@@ -70,9 +70,9 @@ class Handler extends ExceptionHandler
             return;
         }
 
-        $failure = Failure::helpFor($exception);
+        // $failure = Failure::helpFor($exception);
 
-        Mail::send(new FailureReportMail($failure, app('user.repository')->failureReportRecepients()));
+        // Mail::send(new FailureReportMail($failure, app('user.repository')->failureReportRecepients()));
     }
 
     /**

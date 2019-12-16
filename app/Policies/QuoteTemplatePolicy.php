@@ -62,7 +62,7 @@ class QuoteTemplatePolicy
     public function update(User $user, QuoteTemplate $quoteTemplate)
     {
         if ($quoteTemplate->isSystem()) {
-            return $this->deny(config('constants.QTSU_01'));
+            return $this->deny(QTSU_01);
         }
 
         if ($user->can('update_templates')) {
@@ -80,7 +80,7 @@ class QuoteTemplatePolicy
     public function delete(User $user, QuoteTemplate $quoteTemplate)
     {
         if ($quoteTemplate->isSystem()) {
-            return $this->deny(config('constants.QTSD_01'));
+            return $this->deny(QTSD_01);
         }
 
         if ($user->can('delete_templates')) {
