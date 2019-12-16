@@ -13,7 +13,6 @@ use App\Models\{
     Quote\Discount\PromotionalDiscount,
     Quote\Discount\SND,
     QuoteTemplate\QuoteTemplate,
-    QuoteTemplate\TemplateField,
     Collaboration\Invitation,
     System\SystemSetting
 };
@@ -28,7 +27,6 @@ use App\Observers\{
     Discount\PromotionalDiscountObserver,
     Discount\SNDobserver,
     QuoteTemplateObserver,
-    TemplateFieldObserver,
     Collaboration\InvitationObserver,
     CustomerObserver,
     SystemSettingObserver
@@ -70,8 +68,6 @@ class ObserverServiceProvider extends ServiceProvider
         Company::observe(CompanyObserver::class);
 
         QuoteTemplate::observe(QuoteTemplateObserver::class);
-
-        TemplateField::observe(TemplateFieldObserver::class);
 
         Invitation::observe(InvitationObserver::class);
 

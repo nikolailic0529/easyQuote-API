@@ -103,6 +103,14 @@ interface UserRepositoryInterface
     public function find(string $id): User;
 
     /**
+     * Find User by specified Email.
+     *
+     * @param string $email
+     * @return \App\Models\User|null
+     */
+    public function findByEmail(string $email);
+
+    /**
      * Get all Collaboration Users.
      *
      * @return mixed

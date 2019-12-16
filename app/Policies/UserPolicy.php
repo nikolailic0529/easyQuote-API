@@ -77,7 +77,7 @@ class UserPolicy
         }
 
         if ($user->id === $collaborator->id) {
-            return $this->deny(__('user.self_deleting_exception'));
+            return $this->deny(config('constants.USD_01'));
         }
 
         return true;

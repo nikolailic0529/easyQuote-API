@@ -30,6 +30,6 @@ class QuoteTemplateObserver
             return;
         }
 
-        abort_if($quoteTemplate->isAttached(), 409, __('template.attached_deleting_exception'));
+        error_abort_if($quoteTemplate->isAttached(), 'QTAD_01', 409);
     }
 }

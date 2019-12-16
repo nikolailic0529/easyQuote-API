@@ -9,16 +9,16 @@ class MultiYearDiscountObserver
     /**
      * Handle the MultiYearDiscount "saving" event.
      *
-     * @param MultiYearDiscount $multiYearDiscount
+     * @param MultiYearDiscount $discount
      * @return void
      */
-    public function saving(MultiYearDiscount $multiYearDiscount)
+    public function saving(MultiYearDiscount $discount)
     {
         if (app()->runningInConsole()) {
             return;
         }
 
-        abort_if($this->exists($multiYearDiscount), 409, __('discount.exists_exception'));
+        error_abort_if($this->exists($discount), 'DE_01', 409);
     }
 
     private function exists(MultiYearDiscount $multiYearDiscount)

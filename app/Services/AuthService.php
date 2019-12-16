@@ -7,6 +7,7 @@ use App\Contracts\{
     Repositories\AccessAttemptRepositoryInterface as AccessAttemptRepository
 };
 use App\Exceptions\AlreadyAuthenticatedException;
+use App\Models\User;
 use Laravel\Passport\PersonalAccessTokenResult;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -82,12 +83,14 @@ class AuthService implements AuthServiceInterface
         return $tokenResult;
     }
 
-    public function logout()
+    public function logout(?User $user = null)
     {
+        $user = $user instanceof User ? $user : auth()->user();
+
         /**
          * When Logout the System is revoking all the existing User's Personal Access Tokens.
          * Also the User will be marked as Logged Out.
          */
-        return auth()->user()->revokeTokens() && auth()->user()->markAsLoggedOut();
+        return $user->revokeTokens() && $user->markAsLoggedOut();
     }
 }

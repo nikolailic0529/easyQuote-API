@@ -71,8 +71,8 @@ class ImportExcelScheduleSheet implements OnEachRow, WithEvents, WithChunkReadin
         return [
             AfterSheet::class => function ($event) {
                 if (!$this->hasMatched(['from', 'to', 'price'])) {
-                    $this->quoteFile->setException(__('parser.not_schedule_exception'));
-                    throw new \ErrorException(__('parser.not_schedule_exception'));
+                    $this->quoteFile->setException(config('constants.QFNS_01'));
+                    throw new \ErrorException(config('constants.QFNS_01'));
                 }
 
                 $this->createScheduleData();

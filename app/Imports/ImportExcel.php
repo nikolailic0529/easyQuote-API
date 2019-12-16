@@ -105,7 +105,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
             },
             AfterImport::class => function ($event) {
                 if ($this->rowsCount < 1) {
-                    $this->quoteFile->setException(__('parser.no_rows_exception'));
+                    $this->quoteFile->setException(config('constants.QFNR_01'));
                     $this->quoteFile->markAsUnHandled();
                 }
             }
@@ -241,9 +241,9 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
     {
         if ($this->quoteFile->isCsv()) {
             if (Str::length($header) > 100) {
-                $this->quoteFile->setException(__('parser.separator_exception'));
+                $this->quoteFile->setException(config('constants.QFWS_01'));
                 $this->quoteFile->markAsUnHandled();
-                throw new \ErrorException(__('parser.separator_exception'));
+                throw new \ErrorException(config('constants.QFWS_01'));
             }
         }
 

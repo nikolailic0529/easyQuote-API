@@ -120,7 +120,7 @@ class PdfParser implements PdfParserInterface
         });
 
         if ($matches['account']->isEmpty() || $matches['payment']->isEmpty() || ($matches['payment_dates']->isEmpty() && $matches['payment_dates_options']->isEmpty())) {
-            throw new \ErrorException(__('parser.not_schedule_exception'));
+            throw new \ErrorException(config('constants.QFNS_01'));
         }
 
         $account = str_replace(' ', '', data_get($matches, 'account.0'));

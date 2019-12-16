@@ -14,6 +14,6 @@ class QuoteNotFoundByRfqException extends Exception
      */
     public function render($request)
     {
-        return response()->json(['message' => config('constants.EQ_NF_01'), 'code' => 'EQ_NF_01'], 404);
+        return error_response('EQ_NF_01', 404);
     }
 }

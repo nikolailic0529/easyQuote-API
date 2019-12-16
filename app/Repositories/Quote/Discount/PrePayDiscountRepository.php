@@ -33,7 +33,7 @@ class PrePayDiscountRepository extends DiscountRepository implements PrePayDisco
         try {
             return $this->userQuery()->whereId($id)->firstOrFail();
         } catch (ModelNotFoundException $exception) {
-            abort(404, __('discount.404'));
+            error_abort('DNF_01', 404);
         }
     }
 

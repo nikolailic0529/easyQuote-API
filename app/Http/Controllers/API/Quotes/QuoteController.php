@@ -100,9 +100,7 @@ class QuoteController extends Controller
     {
         $templates = $this->quote->getTemplates($request);
 
-        if ($templates->isEmpty()) {
-            abort(404, __('template.404'));
-        }
+        error_abort_if($templates->isEmpty(), 'QTNF_01', 404);
 
         return response()->json($templates);
     }

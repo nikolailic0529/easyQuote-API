@@ -56,9 +56,7 @@ class WordParser implements WordParserInterface
 
         $rows = $this->load($filePath, $storage)->getTables()->getRows($columns);
 
-        if (empty($rows)) {
-            throw new \ErrorException(__('parser.word.no_columns_exception'));
-        }
+        error_abort_if(empty($rows), 'QFNC_01', 422);
 
         $page = 1;
         $content = null;

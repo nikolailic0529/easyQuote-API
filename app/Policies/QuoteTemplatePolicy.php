@@ -6,10 +6,7 @@ use App\Models\{
     User,
     QuoteTemplate\QuoteTemplate
 };
-use Illuminate\Auth\Access\{
-    HandlesAuthorization,
-    Response
-};
+use Illuminate\Auth\Access\HandlesAuthorization;
 
 class QuoteTemplatePolicy
 {
@@ -65,7 +62,7 @@ class QuoteTemplatePolicy
     public function update(User $user, QuoteTemplate $quoteTemplate)
     {
         if ($quoteTemplate->isSystem()) {
-            return Response::deny(__('template.system_updating_exception'));
+            return $this->deny(config('constants.QTSU_01'));
         }
 
         if ($user->can('update_templates')) {
@@ -83,7 +80,7 @@ class QuoteTemplatePolicy
     public function delete(User $user, QuoteTemplate $quoteTemplate)
     {
         if ($quoteTemplate->isSystem()) {
-            return Response::deny(__('template.system_deleting_exception'));
+            return $this->deny(config('constants.QTSD_01'));
         }
 
         if ($user->can('delete_templates')) {

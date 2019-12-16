@@ -187,9 +187,9 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         }
 
         if (count($importedRows) < 1) {
-            $quoteFile->setException(__('parser.no_rows_exception'));
+            $quoteFile->setException(config('constants.QFNR_01'));
             $quoteFile->markAsUnHandled();
-            throw new ErrorException(__('parser.no_rows_exception'));
+            throw new ErrorException(config('constants.QFNR_01'));
         }
 
         $quoteFile->rowsData()->saveMany($importedRows);
@@ -215,7 +215,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
         $importedRow->columnsDataToCreate = collect($row)->map(function ($value, $columnName) use ($quoteFile, $user, $importedRow, $formatHeader) {
             $importable_column_id = $this->systemImportableColumns->firstWhere('name', $columnName)->id ?? null;
-            $header = Str::header($columnName, __('parser.unknown_column_header'), $formatHeader);
+            $header = Str::header($columnName, config('constants.QFUH_01'), $formatHeader);
 
             $columnDataItem = ImportedColumn::make(compact('value', 'header', 'importable_column_id'));
             return $columnDataItem;

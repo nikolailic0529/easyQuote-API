@@ -9,16 +9,16 @@ class SNDobserver
     /**
      * Handle the SND "saving" event.
      *
-     * @param SND $snd
+     * @param SND $discount
      * @return void
      */
-    public function saving(SND $snd)
+    public function saving(SND $discount)
     {
         if (app()->runningInConsole()) {
             return;
         }
 
-        abort_if($this->exists($snd), 409, __('discount.exists_exception'));
+        error_abort_if($this->exists($discount), 'DE_01', 409);
     }
 
     private function exists(SND $snd)

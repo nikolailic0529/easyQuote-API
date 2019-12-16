@@ -18,7 +18,7 @@ class QuoteObserver
             return;
         }
 
-        abort_if($this->sameRfqSubmittedQuoteExists($quote), 409, __('quote.exists_same_rfq_submitted_quote'));
+        error_abort_if($this->sameRfqSubmittedQuoteExists($quote), 'QSE_01', 409);
     }
 
     /**
@@ -29,7 +29,7 @@ class QuoteObserver
      */
     public function submitting(Quote $quote)
     {
-        abort_if($this->sameRfqSubmittedQuoteExists($quote), 409, __('quote.exists_same_rfq_submitted_quote'));
+        error_abort_if($this->sameRfqSubmittedQuoteExists($quote), 'QSE_01', 409);
     }
 
     /**

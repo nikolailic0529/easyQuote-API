@@ -9,16 +9,16 @@ class PromotionalDiscountObserver
     /**
      * Handle the PromotionalDiscount "saving" event.
      *
-     * @param PromotionalDiscount $promotionalDiscount
+     * @param PromotionalDiscount $discount
      * @return void
      */
-    public function saving(PromotionalDiscount $promotionalDiscount)
+    public function saving(PromotionalDiscount $discount)
     {
         if (app()->runningInConsole()) {
             return;
         }
 
-        abort_if($this->exists($promotionalDiscount), 409, __('discount.exists_exception'));
+        error_abort_if($this->exists($discount), 'DE_01', 409);
     }
 
     private function exists(PromotionalDiscount $promotionalDiscount)

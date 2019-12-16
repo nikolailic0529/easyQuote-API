@@ -19,6 +19,7 @@ class UserRepositoryResource extends JsonResource
             'email' => $this->email,
             'first_name' => $this->first_name,
             'middle_name' => $this->middle_name,
+            'last_name' => $this->last_name,
             'role_name' => $this->role_name,
             'activated_at' => $this->activated_at
         ];

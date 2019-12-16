@@ -56,7 +56,7 @@ class RolePolicy
     public function update(User $user, Role $role)
     {
         if ($role->isSystem()) {
-            return $this->deny(__('role.system_updating_exception'));
+            return $this->deny(config('constants.RSU_01'));
         }
 
         return $user->can('update_roles');
@@ -72,7 +72,7 @@ class RolePolicy
     public function delete(User $user, Role $role)
     {
         if ($role->isSystem()) {
-            return $this->deny(__('role.system_deleting_exception'));
+            return $this->deny(config('constants.RSD_01'));
         }
 
         return $user->can('delete_roles');

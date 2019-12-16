@@ -9,16 +9,16 @@ class PrePayDiscountObserver
     /**
      * Handle the PrePayDiscount "saving" event.
      *
-     * @param PrePayDiscount $prePayDiscount
+     * @param PrePayDiscount $discount
      * @return void
      */
-    public function saving(PrePayDiscount $prePayDiscount)
+    public function saving(PrePayDiscount $discount)
     {
         if (app()->runningInConsole()) {
             return;
         }
 
-        abort_if($this->exists($prePayDiscount), 409, __('discount.exists_exception'));
+        error_abort_if($this->exists($discount), 'DE_01', 409);
     }
 
     private function exists(PrePayDiscount $prePayDiscount)

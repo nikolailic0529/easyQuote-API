@@ -18,18 +18,7 @@ class VendorObserver
             return;
         }
 
-        abort_if($this->exists($vendor), 409, __('vendor.exists_exception'));
-    }
-
-    /**
-     * Handle the Vendor "updating" event.
-     *
-     * @param Vendor $vendor
-     * @return void
-     */
-    public function updating(Vendor $vendor)
-    {
-        //
+        error_abort_if($this->exists($vendor), 'VUD_01', 409);
     }
 
     /**
@@ -40,13 +29,13 @@ class VendorObserver
      */
     public function deleting(Vendor $vendor)
     {
-        cache()->tags('vendors')->flush();
-
         if (app()->runningInConsole()) {
             return;
         }
 
-        abort_if($vendor->inUse(), 409, __('vendor.in_use_deleting_exception'));
+        cache()->tags('vendors')->flush();
+
+        error_abort_if($this->exists($vendor), 'VUD_01', 409);
     }
 
     private function exists(Vendor $vendor)

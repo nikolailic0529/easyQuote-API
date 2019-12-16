@@ -395,7 +395,7 @@ trait HasMapping
 
     public function getSystemHiddenFieldsAttribute()
     {
-        return $this->systemHiddenFields;
+        return $this->templateFields->whereIn('name', $this->systemHiddenFields)->pluck('name')->toArray();
     }
 
     public function getSortFieldsAttribute()

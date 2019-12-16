@@ -45,6 +45,7 @@ return [
 
         'local' => [
             'driver' => 'local',
+            'path' => env('STORAGE_PATH', storage_path()),
             'root' => env('STORAGE_PATH_ROOT', storage_path('app')),
         ],
 

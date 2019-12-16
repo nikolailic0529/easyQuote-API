@@ -2,7 +2,7 @@
 
 namespace App\Contracts\Services;
 
-use App\Http\Requests\RefreshTokenRequest;
+use App\Models\User;
 use App\Http\Requests\UserSignInRequest;
 use Laravel\Passport\PersonalAccessTokenResult;
 
@@ -46,9 +46,10 @@ interface AuthServiceInterface
      * Revoke the Personal Access Token of the Current Authenticated User.
      * Mark User as Logged Out.
      *
+     * @param \App\Models\User $user
      * @return void
      */
-    public function logout();
+    public function logout(?User $user = null);
 
     /**
      * Response when Successful Authentication

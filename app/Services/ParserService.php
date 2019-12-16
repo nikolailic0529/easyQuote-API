@@ -102,9 +102,7 @@ class ParserService implements ParserServiceInterface
     {
         $quote = $this->quote->find($request->quote_id);
 
-        if (!$quote->quoteTemplate()->exists()) {
-            throw new \ErrorException(__('parser.quote_has_not_template_exception'));
-        };
+        error_abort_if(!$quote->quoteTemplate()->exists(), 'QNT_01', 422);
 
         $quoteFile = $this->quoteFile->find($request->quote_file_id);
 
@@ -201,12 +199,11 @@ class ParserService implements ParserServiceInterface
                 case 'docx':
                     return $this->handleWord($quoteFile);
                     break;
+                default:
+                    error_abort('QFTNS_01', 422);
+                    break;
             }
         });
-
-        return response()->json([
-            'message' => __('parser.no_handleable_file')
-        ], 415);
     }
 
     public function handlePdf(QuoteFile $quoteFile)
@@ -337,7 +334,7 @@ class ParserService implements ParserServiceInterface
         $sheetCount = $import->getSheetCount();
 
         if ($sheetCount === 0) {
-            throw new \ErrorException(__('parser.excel.unreadable_file_exception'));
+            throw new \ErrorException(config('constants.QFNR_01'));
         }
 
         return $import->getSheetCount();

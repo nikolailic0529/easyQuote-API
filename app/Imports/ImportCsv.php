@@ -173,8 +173,8 @@ class ImportCsv
     private function checkHeader()
     {
         if (mb_strlen($this->header[0]) > 100) {
-            $this->quoteFile->setException(__('parser.separator_exception'));
-            throw new \ErrorException(__('parser.separator_exception'));
+            $this->quoteFile->setException(config('constants.QFWS_01'));
+            throw new \ErrorException(config('constants.QFWS_01'));
         }
     }
 

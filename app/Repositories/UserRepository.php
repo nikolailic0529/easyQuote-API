@@ -105,6 +105,11 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         return $this->userQuery()->whereId($id)->firstOrFail()->withAppends();
     }
 
+    public function findByEmail(string $email)
+    {
+        return $this->user->query()->where('email', 'like', "%{$email}%")->first();
+    }
+
     public function data(): SupportCollection
     {
         $roles = $this->role->get(['id', 'name']);
@@ -137,7 +142,7 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
 
     public function createCollaborator(array $attributes, Invitation $invitation): User
     {
-        $invitation->isExpired && abort(406, __('invitation.expired_exception'));
+        error_abort_if($invitation->isExpired, 'IE_01', 406);
 
         $user = $this->create(array_merge($attributes, $invitation->only('email')));
         $user->interact($invitation);
@@ -154,7 +159,7 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
     {
         $invitation = $this->invitation->whereInvitationToken($token)->firstOrFail()->makeHiddenExcept(['email', 'role_name']);
 
-        $invitation->isExpired && abort(406, __('invitation.expired_exception'));
+        error_abort_if($invitation->isExpired, 'IE_01', 406);
 
         return $invitation;
     }
@@ -241,7 +246,7 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
     {
         $passwordReset = $this->passwordReset->whereToken($token)->firstOrFail();
 
-        $passwordReset->isExpired && abort(406, __('password_reset.expired_exception'));
+        error_abort_if($passwordReset->isExpired, 'PRE_01', 406);
 
         $password = Hash::make($request->password);
 

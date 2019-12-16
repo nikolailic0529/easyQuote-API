@@ -6,10 +6,7 @@ use App\Models\{
     User,
     Vendor
 };
-use Illuminate\Auth\Access\{
-    HandlesAuthorization,
-    Response
-};
+use Illuminate\Auth\Access\HandlesAuthorization;
 
 class VendorPolicy
 {
@@ -65,7 +62,7 @@ class VendorPolicy
     public function update(User $user, Vendor $vendor)
     {
         if ($vendor->isSystem()) {
-            return Response::deny(__('vendor.system_updating_exception'));
+            return $this->deny(config('constants.VSU_01'));
         }
 
         if ($user->can('update_vendors')) {
@@ -83,7 +80,7 @@ class VendorPolicy
     public function delete(User $user, Vendor $vendor)
     {
         if ($vendor->isSystem()) {
-            return Response::deny(__('vendor.system_deleting_exception'));
+            return $this->deny(config('constants.VSD_01'));
         }
 
         if ($user->can('delete_vendors')) {

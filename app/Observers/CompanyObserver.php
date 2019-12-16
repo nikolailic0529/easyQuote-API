@@ -18,7 +18,7 @@ class CompanyObserver
             return;
         }
 
-        abort_if($this->exists($company), 409, __('company.exists_exception'));
+        error_abort_if($this->exists($company), 'CPE_01', 409);
     }
 
     /**
@@ -33,7 +33,7 @@ class CompanyObserver
             return;
         }
 
-        abort_if($company->inUse(), 409, __('company.in_use_deleting_exception'));
+        error_abort_if($company->inUse(), 'CPUD_01', 409);
     }
 
     private function exists(Company $company)

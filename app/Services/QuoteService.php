@@ -258,15 +258,16 @@ class QuoteService implements QuoteServiceInterface
     {
         $export = $this->prepareQuoteExport($quote);
 
-        if (blank($export['design'])) {
+        if (blank($export['design']) || blank($export['data'])) {
             return;
         };
 
         $hash = md5($quote->customer->rfq . time());
         $filename = "{$quote->customer->rfq}_{$hash}.pdf";
+
         $original_file_path = "{$quote->user->quoteFilesDirectory}/$filename";
         $path = Storage::path($original_file_path);
-        $this->pdfWrapper()->loadView('quotes.pdf', $export)->save(storage_path("app/{$original_file_path}"));
+        $pass = $this->pdfWrapper()->loadView('quotes.pdf', $export)->save(storage_path("app/{$original_file_path}"));
 
         $this->quoteFile->createPdf($quote, compact('original_file_path', 'filename'));
     }
