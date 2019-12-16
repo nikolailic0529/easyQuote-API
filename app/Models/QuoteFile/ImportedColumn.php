@@ -52,7 +52,7 @@ class ImportedColumn extends UuidModel
         $user = request()->user();
 
         if (!isset($this->header) || mb_strlen(trim($this->header)) === 0) {
-            $alias = $header = config('constants.QFUH_01');
+            $alias = $header = QFUH_01;
             $name = Str::columnName($header);
             $importableColumn = $user->importableColumns()->where('name', $name)->firstOrCreate(compact('header', 'name'));
             $importableColumn->aliases()->create(compact('alias'));

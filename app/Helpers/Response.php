@@ -3,7 +3,7 @@
 if (!function_exists('error_response')) {
     function error_response(string $constant, int $status) {
         return response()->json([
-            'message' => config("constants.{$constant}"),
+            'message' => constant($constant),
             'code' => $constant
         ], $status);
     }

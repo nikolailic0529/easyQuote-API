@@ -77,7 +77,7 @@ class UserPolicy
         }
 
         if ($user->id === $collaborator->id) {
-            return $this->deny(config('constants.USD_01'));
+            return $this->deny(USD_01);
         }
 
         return true;
