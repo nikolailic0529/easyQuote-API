@@ -43,7 +43,7 @@ return [
      * Quote File.
      */
     'QFTNS_01' => 'This file type is not supported.',
-    'QFNR_01' => 'No rows found in the provided Quote File.',
+    'QFNRF_01' => 'No rows found in the provided Quote File.',
     'QFNS_01' => 'No data found in the provided Payment Schedule File, try to choose another page.',
     'QFWS_01' => 'It seems you\'ve chosen wrong Data Select Separator',
     'QFUH_01' => 'Unknown Header',

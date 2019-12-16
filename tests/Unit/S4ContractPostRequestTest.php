@@ -80,7 +80,7 @@ class S4ContractPostRequestTest extends TestCase
 
     protected function postContract(array $data)
     {
-        return $this->postJson('api/s4/quotes', $data);
+        return $this->postJson(url('/api/s4/quotes'), $data);
     }
 
     protected function assertCustomerExistsInDataBase(array $contract): void

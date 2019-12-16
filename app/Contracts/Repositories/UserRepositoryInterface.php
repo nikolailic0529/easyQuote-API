@@ -111,6 +111,13 @@ interface UserRepositoryInterface
     public function findByEmail(string $email);
 
     /**
+     * Retrieve a random user.
+     *
+     * @return \App\Models\User
+     */
+    public function random(): User;
+
+    /**
      * Get all Collaboration Users.
      *
      * @return mixed

@@ -110,6 +110,11 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         return $this->user->query()->where('email', 'like', "%{$email}%")->first();
     }
 
+    public function random(): User
+    {
+        return $this->user->query()->inRandomOrder()->firstOrFail();
+    }
+
     public function data(): SupportCollection
     {
         $roles = $this->role->get(['id', 'name']);
