@@ -6,7 +6,7 @@ use App\Mail\FailureReportMail;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
-use Exception, Arr;
+use Exception, Failure, Arr;
 
 class Handler extends ExceptionHandler
 {
@@ -49,11 +49,7 @@ class Handler extends ExceptionHandler
     {
         parent::report($exception);
 
-        if ($this->shouldntReportMail($exception)) {
-            return;
-        }
-
-        Mail::send(new FailureReportMail($exception, app('user.repository')->failureReportRecepients()));
+        $this->failureReport($exception);
     }
 
     /**
@@ -68,6 +64,17 @@ class Handler extends ExceptionHandler
         return parent::render($request, $exception);
     }
 
+    public function failureReport(Exception $exception)
+    {
+        if ($this->shouldntReportMail($exception)) {
+            return;
+        }
+
+        $failure = Failure::helpFor($exception);
+
+        Mail::send(new FailureReportMail($failure, app('user.repository')->failureReportRecepients()));
+    }
+
     /**
      * Determine if the exception is in the "do not report mail" list.
      *
@@ -78,7 +85,7 @@ class Handler extends ExceptionHandler
     {
         $dontReport = array_merge($this->dontReportMail, $this->dontReport, $this->internalDontReport);
 
-        return ! is_null(Arr::first($dontReport, function ($type) use ($e) {
+        return !is_null(Arr::first($dontReport, function ($type) use ($e) {
             return $e instanceof $type;
         }));
     }

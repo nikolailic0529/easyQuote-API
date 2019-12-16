@@ -37,7 +37,8 @@ use App\Contracts\{
     Repositories\Quote\QuoteDraftedRepositoryInterface,
     Repositories\Quote\QuoteSubmittedRepositoryInterface,
     Repositories\AddressRepositoryInterface,
-    Repositories\ContactRepositoryInterface
+    Repositories\ContactRepositoryInterface,
+    Repositories\System\FailureRepositoryInterface
 };
 use App\Repositories\{
     TimezoneRepository,
@@ -57,6 +58,7 @@ use App\Repositories\{
     QuoteTemplate\TemplateFieldRepository,
     Customer\CustomerRepository,
     System\SystemSettingRepository,
+    System\Failure\FailureRepository,
     System\ActivityRepository,
     Quote\Discount\MultiYearDiscountRepository,
     Quote\Discount\PromotionalDiscountRepository,
@@ -101,6 +103,7 @@ class AppServiceProvider extends ServiceProvider
         DataSelectSeparatorRepositoryInterface::class => DataSelectSeparatorRepository::class,
         CustomerRepositoryInterface::class => CustomerRepository::class,
         SystemSettingRepositoryInterface::class => SystemSettingRepository::class,
+        FailureRepositoryInterface::class => FailureRepository::class,
         MarginRepositoryInterface::class => MarginRepository::class,
         QuoteServiceInterface::class => QuoteService::class,
         MultiYearDiscountRepositoryInterface::class => MultiYearDiscountRepository::class,
@@ -129,7 +132,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->instance('path.storage', env('STORAGE_PATH', storage_path()));
+        $this->app->instance('path.storage', config('filesystems.disks.local.path'));
 
         $this->app->bind(ElasticsearchClient::class, function () {
             return ElasticsearchBuilder::create()->setHosts(app('config')->get('services.search.hosts'))->build();

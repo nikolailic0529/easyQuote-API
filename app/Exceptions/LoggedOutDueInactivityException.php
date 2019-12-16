@@ -14,6 +14,6 @@ class LoggedOutDueInactivityException extends Exception
      */
     public function render($request)
     {
-        return response()->json(['message' => config('constants.LO_00'), 'code' => 'LO_00'], 401);
+        return error_response('LO_00', 401);
     }
 }

@@ -238,6 +238,7 @@ return [
         'Countries' => Webpatser\Countries\CountriesFacade::class,
         'Excel' => Maatwebsite\Excel\Facades\Excel::class,
         'Setting' => App\Facades\Setting::class,
+        'Failure' => App\Facades\Failure::class,
         'ImageIntervention' => Intervention\Image\Facades\Image::class
     ],
 

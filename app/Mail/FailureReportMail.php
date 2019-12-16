@@ -2,22 +2,18 @@
 
 namespace App\Mail;
 
-use Exception;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Mail\Mailable;
-use Illuminate\Queue\SerializesModels;
-use App\Models\User;
+use App\Repositories\System\Failure\FailureHelp;
+use Illuminate\Database\Eloquent\Collection;
 
 class FailureReportMail extends Mailable
 {
-    // use SerializesModels;
-
     /**
-     * Exception instance.
+     * FailureHelp instance.
      *
-     * @var \Exception
+     * @var \App\Repositories\System\Failure\FailureHelp
      */
-    protected $exception;
+    protected $failure;
 
     /**
      * Failure Report recepients.
@@ -31,9 +27,9 @@ class FailureReportMail extends Mailable
      *
      * @return void
      */
-    public function __construct(Exception $exception, Collection $recepients)
+    public function __construct(FailureHelp $failure, Collection $recepients)
     {
-        $this->exception = $exception;
+        $this->failure = $failure;
         $this->recepients = $recepients;
     }
 
@@ -44,12 +40,9 @@ class FailureReportMail extends Mailable
      */
     public function build()
     {
-        $message = $this->exception->getMessage();
-        $trace = $this->exception->getTraceAsString();
-
         return $this->to($this->recepients)
             ->subject(__('mail.subjects.failure'))
             ->markdown('emails.failure')
-            ->with(compact('message', 'trace'));
+            ->with(['failure' => $this->failure]);
     }
 }
