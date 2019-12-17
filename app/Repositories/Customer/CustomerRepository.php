@@ -33,7 +33,7 @@ class CustomerRepository implements CustomerRepositoryInterface
     public function drafted()
     {
         return cache()->sear($this->draftedCacheKey, function () {
-            return $this->customer->doesntHave('quotes')->drafted()->limit(1000)->get();
+            return $this->customer->drafted()->limit(1000)->get();
         });
     }
 
@@ -45,6 +45,11 @@ class CustomerRepository implements CustomerRepositoryInterface
     public function find(string $id)
     {
         return $this->customer->whereId($id)->firstOrFail();
+    }
+
+    public function random(): Customer
+    {
+        return $this->customer->query()->inRandomOrder()->firstOrFail();
     }
 
     public function create($attributes)
