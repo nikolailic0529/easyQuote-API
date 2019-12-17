@@ -1,7 +1,10 @@
-<?php namespace App\Http\Requests\Role;
+<?php
+
+namespace App\Http\Requests\Role;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Str;
 
 class StoreRoleRequest extends FormRequest
 {
@@ -13,6 +16,13 @@ class StoreRoleRequest extends FormRequest
     protected $privileges;
 
     /**
+     * Privileges Mapping with specified Modules.
+     *
+     * @var \Illuminate\Support\Collection
+     */
+    protected $privilegesMapping;
+
+    /**
      * Available Modules
      *
      * @var array
@@ -22,7 +32,8 @@ class StoreRoleRequest extends FormRequest
     public function __construct()
     {
         $this->privileges = collect(config('role.privileges'))->toArray();
-        $this->modules = collect(config('role.modules'))->keys()->toArray();
+        $this->privilegesMapping = collect(config('role.modules'))->eachKeys();
+        $this->modules = $this->privilegesMapping->keys()->toArray();
     }
 
     /**
@@ -43,7 +54,13 @@ class StoreRoleRequest extends FormRequest
     public function rules()
     {
         return [
-            'name' => 'required|string|min:2|max:60',
+            'name' => [
+                'required',
+                'string',
+                'min:2',
+                'max:60',
+                Rule::unique('roles')->whereNull('deleted_at')
+            ],
             'privileges' => 'required|array',
             'privileges.*.module' => [
                 'required',
@@ -53,7 +70,17 @@ class StoreRoleRequest extends FormRequest
             'privileges.*.privilege' => [
                 'required',
                 'string',
-                Rule::in($this->privileges)
+                function ($attribute, $value, $fail) {
+                    $moduleAttrubute = Str::before($attribute, '.privilege') . '.module';
+                    $module = $this->input($moduleAttrubute);
+
+                    $modulePrivileges = $this->privilegesMapping->get($module, []);
+                    $message = "The privilege for `{$module}` module must be " . collect($modulePrivileges)->implodeWithWrap(' or ', '`');
+
+                    if (!isset(array_flip($modulePrivileges)[$value])) {
+                        $fail($message);
+                    }
+                }
             ]
         ];
     }

@@ -2,6 +2,8 @@
 
 namespace App\Contracts\Repositories\Customer;
 
+use App\Models\Customer\Customer;
+
 interface CustomerRepositoryInterface
 {
     /**
@@ -32,6 +34,13 @@ interface CustomerRepositoryInterface
      * @return \App\Models\Customer\Customer
      */
     public function find(string $id);
+
+    /**
+     * Retrieve random Customer.
+     *
+     * @return \App\Models\Customer\Customer
+     */
+    public function random(): Customer;
 
     /**
      * Create a new Customer.
