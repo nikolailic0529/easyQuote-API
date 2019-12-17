@@ -193,6 +193,10 @@ class MacroServiceProvider extends ServiceProvider
             })->implode($glue);
         });
 
+        Collection::macro('implodeWithWrap', function (string $glue, string $wrap) {
+            return $wrap . $this->implode($wrap . $glue . $wrap) . $wrap;
+        });
+
         Collection::macro('udiff', function ($items, bool $both = true) {
             return new static(array_udiff($this->items, $this->getArrayableItems($items), function ($first, $second) use ($both) {
                 if ($both) {
@@ -207,6 +211,16 @@ class MacroServiceProvider extends ServiceProvider
             return $this->map(function ($value) {
                 return ucfirst($value);
             });
+        });
+
+        Collection::macro('eachKeys', function () {
+            return $this->map(function ($value) {
+                return array_keys($value);
+            });
+        });
+
+        Collection::macro('value', function (string $key, $default = null) {
+            return data_get($this->first(), $key, $default);
         });
 
         Arr::macro('lower', function (array $array) {

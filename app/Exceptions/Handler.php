@@ -20,7 +20,8 @@ class Handler extends ExceptionHandler
         \Illuminate\Auth\AuthenticationException::class,
         \Illuminate\Auth\Access\AuthorizationException::class,
         \Illuminate\Database\Eloquent\ModelNotFoundException::class,
-        \Illuminate\Validation\ValidationException::class
+        \Illuminate\Validation\ValidationException::class,
+        \League\OAuth2\Server\Exception\OAuthServerException::class
     ];
 
     protected $dontReportMail = [
@@ -70,9 +71,9 @@ class Handler extends ExceptionHandler
             return;
         }
 
-        // $failure = Failure::helpFor($exception);
+        $failure = Failure::helpFor($exception);
 
-        // Mail::send(new FailureReportMail($failure, app('user.repository')->failureReportRecepients()));
+        Mail::send(new FailureReportMail($failure, app('user.repository')->failureReportRecepients()));
     }
 
     /**
@@ -99,9 +100,35 @@ class Handler extends ExceptionHandler
      */
     protected function invalidJson($request, ValidationException $exception)
     {
+        if ($request->is('api/s4/*')) {
+            return $this->invalidJsonForS4($request, $exception);
+        }
+
         return response()->json([
             'message' => head(head($exception->errors())),
             'errors' => $exception->errors(),
+        ], $exception->status);
+    }
+
+
+    /**
+     * Convert a validation exception into a JSON response for S4 service.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Validation\ValidationException  $exception
+     * @return \Illuminate\Http\JsonResponse
+     */
+    protected function invalidJsonForS4($request, ValidationException $exception)
+    {
+        return response()->json([
+            'ErrorUrl' => $request->fullUrl(),
+            'ErrorCode' => 'INVDP_01',
+            'Error' => [
+                'headers' => [],
+                'original' => $exception->errors(),
+                'exception' => null
+            ],
+            'ErrorDetails' => INVDP_01
         ], $exception->status);
     }
 }

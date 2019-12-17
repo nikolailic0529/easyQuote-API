@@ -86,3 +86,5 @@ define('RSD_01', 'You could not delete the system defined Role.');
  * Misc.
  */
 define('ARG_REQ_AR_01', 'The argument passed to the 1 argument of the method must be an array or instance of \Illuminate\Http\Request');
+define('UA_01', 'Unauthenticated Request.');
+define('INVDP_01', 'Invalid Data Provided.');

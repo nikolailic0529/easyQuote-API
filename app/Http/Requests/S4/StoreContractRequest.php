@@ -48,6 +48,7 @@ class StoreContractRequest extends FormRequest
     protected function prepareForValidation()
     {
         $rfq_number = strtoupper($this->rfq_number);
+
         $this->merge(compact('rfq_number'));
     }
 

@@ -5,7 +5,7 @@ if (!function_exists('error_response')) {
     {
         return response()->json([
             'message' => constant($constant),
-            'code' => $constant
+            'error_code' => $constant
         ], $status);
     }
 }

@@ -7,12 +7,9 @@ use App\Models\{
     Vendor,
     QuoteTemplate\QuoteTemplate
 };
-use Illuminate\Support\{
-    Collection,
-    Str,
-    Facades\DB
-};
+use Illuminate\Support\Collection;
 use Webpatser\Uuid\Uuid;
+use Arr, Str, DB;
 
 use Illuminate\Console\Command;
 
@@ -61,6 +58,8 @@ class SeedBulkQuotes extends Command
             });
         });
 
+        app('customer.repository')->forgetDraftedCache();
+
         $bar->finish();
 
         $this->line(PHP_EOL . '<comment>Total Quotes seeded:</comment> ' . $count);
@@ -72,8 +71,8 @@ class SeedBulkQuotes extends Command
             return app('country.repository')->findIdByCode($code);
         });
 
-        $users = User::pluck('id');
-        $companies = Company::pluck('id');
+        $users = User::get();
+        $companies = Company::get();
         $vendors = Vendor::pluck('id');
         $templates = QuoteTemplate::system()->pluck('id');
 
@@ -82,10 +81,10 @@ class SeedBulkQuotes extends Command
 
     protected function performInsert(Collection $data)
     {
-        $customer_id = Uuid::generate(4)->string;
         $country_id = $data->get('countries')->random();
+        $customer_id = Uuid::generate(4)->string;
 
-        DB::table('customers')->insert([
+        $customer = [
             'id' => $customer_id,
             'support_start' => now(),
             'support_end' => now()->addYears(2),
@@ -97,22 +96,34 @@ class SeedBulkQuotes extends Command
             'rfq' => Str::upper(Str::random(20)),
             'created_at' => now(),
             'updated_at' => now()
-        ]);
+        ];
+
+        DB::table('customers')->insert($customer);
 
         $quote_id = Uuid::generate(4)->string;
+        $user = $data->get('users')->random();
+        $company = $data->get('companies')->random();
+        $cached_relations = [
+            'user' => $user->only('first_name', 'last_name'),
+            'company' => $company->only('name'),
+            'customer' => Arr::only($customer, ['name', 'rfq', 'support_start', 'support_end', 'valid_until'])
+        ];
+
         DB::table('quotes')->insert([
             'id' => $quote_id,
             'customer_id' => $customer_id,
-            'user_id' => $data->get('users')->random(),
+            'user_id' => $user->id,
             'quote_template_id' => $data->get('templates')->random(),
-            'company_id' => $data->get('companies')->random(),
+            'company_id' => $company->id,
             'vendor_id' => $data->get('vendors')->random(),
             'country_id' => $country_id,
             'type' => ['New', 'Renewal'][rand(0, 1)],
             'completeness' => 100,
             'created_at' => now(),
             'updated_at' => now(),
-            'submitted_at' => (bool) rand(0, 1) ? now() : null
+            'submitted_at' => (bool) rand(0, 1) ? now() : null,
+            'activated_at' => (bool) rand(0, 1) ? now() : null,
+            'cached_relations' => json_encode($cached_relations)
         ]);
     }
 }

@@ -21,6 +21,7 @@ use App\Traits\{
     BelongsToVendor,
     BelongsToCountry,
     BelongsToMargin,
+    CachesRelations,
     Draftable,
     Submittable,
     Search\Searchable,
@@ -61,6 +62,7 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         HasGroupDescriptionAttribute,
         HasSubmittedDataAttribute,
         LogsActivity;
+        // CachesRelations;
 
     public $applicable_discounts = 0.0;
 
@@ -135,6 +137,8 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
     protected static $logOnlyDirty = true;
 
     protected static $submitEmptyLogs = false;
+
+    protected static $cacheRelations = ['user', 'customer', 'company'];
 
     public function scopeNewType($query)
     {
