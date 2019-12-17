@@ -35,6 +35,7 @@ use Illuminate\Database\Eloquent\{
 };
 use Illuminate\Support\Collection as SupportCollection;
 use Arr, Hash;
+use Illuminate\Http\Request;
 
 class UserRepository extends SearchableRepository implements UserRepositoryInterface
 {
@@ -155,9 +156,19 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         return $user;
     }
 
-    public function invite(InviteUserRequest $request): bool
+    public function invite($attributes): Invitation
     {
-        return (bool) $request->user()->invitations()->create($request->validated());
+        if ($attributes instanceof Request) {
+            $attributes = $attributes->validated();
+        }
+
+        abort_if(!is_array($attributes), 422, ARG_REQ_AR_01);
+
+        if (!Arr::has($attributes, ['user_id'])) {
+            $attributes = array_merge($attributes, ['user_id' => auth()->user()->id]);
+        }
+
+        return $this->invitation->create($attributes);
     }
 
     public function invitation(string $token): Invitation

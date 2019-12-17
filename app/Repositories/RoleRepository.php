@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\{
     Model,
     Builder
 };
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
 class RoleRepository extends SearchableRepository implements RoleRepositoryInterface
@@ -45,9 +46,20 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
         return $this->userQuery()->whereId($id)->firstOrFail();
     }
 
-    public function create(StoreRoleRequest $request): Role
+    public function findByName(string $name): Role
     {
-        return $this->role->create($request->validated())->syncPrivileges();
+        return $this->role->whereName($name)->firstOrFail();
+    }
+
+    public function create($attributes): Role
+    {
+        if ($attributes instanceof Request) {
+            $attributes = $attributes->validated();
+        }
+
+        abort_if(!is_array($attributes), 422, ARG_REQ_AR_01);
+
+        return $this->role->create($attributes)->syncPrivileges();
     }
 
     public function update(UpdateRoleRequest $request, string $id): Role

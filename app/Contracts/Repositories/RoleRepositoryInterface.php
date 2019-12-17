@@ -52,12 +52,20 @@ interface RoleRepositoryInterface
     public function find(string $id): Role;
 
     /**
-     * Create Collaboration Role.
+     * Find Role by specified name.
      *
-     * @param \App\Http\Requests\Role\StoreRoleRequest $request
+     * @param string $name
      * @return Role
      */
-    public function create(StoreRoleRequest $request): Role;
+    public function findByName(string $name): Role;
+
+    /**
+     * Create Collaboration Role.
+     *
+     * @param \App\Http\Requests\Role\StoreRoleRequest|array $attributes
+     * @return Role
+     */
+    public function create($attributes): Role;
 
     /**
      * Update Collaboration Role.

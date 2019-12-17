@@ -21,4 +21,9 @@ class TimezoneRepository implements TimezoneRepositoryInterface
             return $this->timezone->ordered()->get(['id', 'text', 'value']);
         });
     }
+
+    public function random(): Timezone
+    {
+        return $this->timezone->query()->inRandomOrder()->first();
+    }
 }

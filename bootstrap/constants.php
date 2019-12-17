@@ -81,3 +81,8 @@ define('MNF_01', 'No Margin Defined for your selection, please contact administr
  */
 define('RSU_01', 'You could not update the system defined Role.');
 define('RSD_01', 'You could not delete the system defined Role.');
+
+/**
+ * Misc.
+ */
+define('ARG_REQ_AR_01', 'The argument passed to the 1 argument of the method must be an array or instance of \Illuminate\Http\Request');

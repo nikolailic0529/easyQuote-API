@@ -138,6 +138,8 @@ class AppServiceProvider extends ServiceProvider
             return ElasticsearchBuilder::create()->setHosts(app('config')->get('services.search.hosts'))->build();
         });
 
+        $this->app->alias(ElasticsearchClient::class, 'elasticsearch.client');
+
         $this->app->alias(QuoteServiceInterface::class, 'quote.service');
 
         $this->app->alias(QuoteRepositoryInterface::class, 'quote.repository');
@@ -150,7 +152,11 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->alias(CountryRepositoryInterface::class, 'country.repository');
 
+        $this->app->alias(TimezoneRepositoryInterface::class, 'timezone.repository');
+
         $this->app->alias(UserRepositoryInterface::class, 'user.repository');
+
+        $this->app->alias(RoleRepositoryInterface::class, 'role.repository');
 
         $this->app->alias(CustomerRepositoryInterface::class, 'customer.repository');
     }

@@ -39,10 +39,10 @@ interface UserRepositoryInterface
     /**
      * Invite a new User for Collaboration with specified Role.
      *
-     * @param \App\Http\Requests\Collaboration\InviteUserRequest $request
-     * @return bool
+     * @param \App\Http\Requests\Collaboration\InviteUserRequest|array $attributes
+     * @return Invitation
      */
-    public function invite(InviteUserRequest $request): bool;
+    public function invite($attributes): Invitation;
 
     /**
      * Find specified Invitation by Unique Token.
