@@ -18,9 +18,9 @@ class StoreContractRequest extends FormRequest
             'rfq_number' => 'required|string|min:2|regex:/^[[:alnum:]]+$/i|max:20|unique:customers,rfq',
             'service_levels' => 'nullable|array',
             'service_levels.*.service_level' => 'required|string|min:2',
-            'quotation_valid_until' => 'required|date',
-            'support_start_date' => 'string|required',
-            'support_end_date' => 'string|required',
+            'quotation_valid_until' => 'required|string',
+            'support_start_date' => 'required|string',
+            'support_end_date' => 'required|string',
             'payment_terms' => 'required|string|min:2|max:2500',
             'invoicing_terms' => 'required|string|min:2|max:2500',
             'country' => 'required|string|size:2|exists:countries,iso_3166_2',
@@ -47,7 +47,7 @@ class StoreContractRequest extends FormRequest
 
     protected function prepareForValidation()
     {
-        report_logger(['message' => S4_CS_02], $this->toArray());
+        report_logger(['message' => S4_CS_02], [$this->toArray()]);
 
         $rfq_number = strtoupper($this->rfq_number);
 
