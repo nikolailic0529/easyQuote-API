@@ -26,7 +26,7 @@ Route::group(['namespace' => 'API'], function () {
         Route::get('countries', 'CountriesController'); // exclusive high throttle rate
     });
 
-    Route::group(['prefix' => 's4', 'as' => 's4.', 'middleware' => ['throttle:240,1', 'auth']], function () {
+    Route::group(['prefix' => 's4', 'as' => 's4.', 'middleware' => ['throttle:240,1', 'auth:api']], function () {
         Route::get('quotes/{rfq}', 'S4QuoteController@show')->name('quote');
         Route::post('quotes', 'S4QuoteController@store')->name('store');
         Route::get('quotes/{rfq}/price', 'S4QuoteController@price')->name('price');
