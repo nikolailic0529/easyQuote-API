@@ -7,6 +7,6 @@ class OrderByValidUntil extends Query
 {
     public function applyQuery($builder, string $table)
     {
-        return $builder->orderBy('customer_valid_until', $this->value);
+        return $builder->orderByCachedRelation('customer.valid_until', $this->value);
     }
 }

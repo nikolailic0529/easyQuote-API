@@ -21,7 +21,6 @@ use App\Traits\{
     BelongsToVendor,
     BelongsToCountry,
     BelongsToMargin,
-    CachesRelations,
     Draftable,
     Submittable,
     Search\Searchable,
@@ -32,7 +31,8 @@ use App\Traits\{
     Quote\HasCustomDiscountAttribute,
     Quote\HasGroupDescriptionAttribute,
     Quote\HasSubmittedDataAttribute,
-    QuoteTemplate\BelongsToQuoteTemplate
+    QuoteTemplate\BelongsToQuoteTemplate,
+    CachesRelations\CachesRelations
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -61,8 +61,8 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         HasCustomDiscountAttribute,
         HasGroupDescriptionAttribute,
         HasSubmittedDataAttribute,
-        LogsActivity;
-        // CachesRelations;
+        LogsActivity,
+        CachesRelations;
 
     public $applicable_discounts = 0.0;
 

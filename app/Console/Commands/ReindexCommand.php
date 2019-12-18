@@ -94,16 +94,21 @@ class ReindexCommand extends Command
 
             $this->info("Indexing all {$plural}...");
 
-            foreach ($model::cursor() as $entry) {
-                $this->elasticsearch->index([
-                    'index' => $entry->getSearchIndex(),
-                    'id' => $entry->getKey(),
-                    'body' => $entry->toSearchArray(),
-                ]);
+            $bar = $this->output->createProgressBar($model::count());
 
-                $this->output->write('.');
-            }
+            $model::chunk(500, function ($chunk) use ($bar) {
+                foreach ($chunk as $entry) {
+                    $this->elasticsearch->index([
+                        'index' => $entry->getSearchIndex(),
+                        'id' => $entry->getKey(),
+                        'body' => $entry->toSearchArray(),
+                    ]);
 
+                    $bar->advance();
+                }
+            });
+
+            $bar->finish();
             $this->info("\nDone!");
         }
     }

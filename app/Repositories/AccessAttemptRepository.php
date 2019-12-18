@@ -3,7 +3,10 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\AccessAttemptRepositoryInterface;
-use App\Models\AccessAttempt;
+use App\Models\{
+    AccessAttempt,
+    User
+};
 
 class AccessAttemptRepository implements AccessAttemptRepositoryInterface
 {

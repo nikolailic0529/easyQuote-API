@@ -64,12 +64,12 @@ class AuthService implements AuthServiceInterface
         /**
          * Throw an exception if the User Already Logged In.
          */
-        throw_if($user->isAlreadyLoggedIn(), AlreadyAuthenticatedException::class, $user, $this->currentAttempt);
+        $this->checkAlreadyAuthenticatedCase($user);
 
         /**
          * Once user logged in we are freshing the last activity timestamp and writing the related activity.
          */
-        $user->markAsLoggedIn() && $user->freshActivity();
+        $user->markAsLoggedIn($this->currentAttempt->ip) && $user->freshActivity();
 
         activity()->on($user)->by($user)->log('authenticated');
     }
@@ -97,5 +97,14 @@ class AuthService implements AuthServiceInterface
          * Also the User will be marked as Logged Out.
          */
         return $user->revokeTokens() && $user->markAsLoggedOut();
+    }
+
+    protected function checkAlreadyAuthenticatedCase(User $user)
+    {
+        if (!$user->isAlreadyLoggedIn() || $user->ipMatches($this->currentAttempt->ip)) {
+            return;
+        }
+
+        throw new AlreadyAuthenticatedException($user, $this->currentAttempt);
     }
 }

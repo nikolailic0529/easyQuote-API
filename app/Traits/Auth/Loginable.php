@@ -9,9 +9,15 @@ trait Loginable
         $this->casts = array_merge($this->casts, ['already_logged_in' => 'boolean']);
     }
 
-    public function markAsLoggedIn()
+    public function markAsLoggedIn(?string $ip = null)
     {
-        return $this->forceFill(['already_logged_in' => true])->save();
+        $attributes = ['already_logged_in' => true];
+
+        if (isset($ip)) {
+            $attributes['ip_address'] = $ip;
+        }
+
+        return $this->forceFill($attributes)->save();
     }
 
     public function markAsLoggedOut()
@@ -22,5 +28,15 @@ trait Loginable
     public function isAlreadyLoggedIn()
     {
         return (bool) $this->already_logged_in;
+    }
+
+    public function ipMatches(string $ip)
+    {
+        return $this->ip_address === $ip;
+    }
+
+    public function ipDoesntMatch(string $ip)
+    {
+        return !$this->ipMatches($ip);
     }
 }

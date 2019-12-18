@@ -16,7 +16,7 @@ abstract class CompletableModel extends UuidModel
 
     public function getLastDraftedStepAttribute()
     {
-        static::transformDraftedStep($this->completeness);
+        return static::transformDraftedStep($this->completeness);
     }
 
     public function setLastDraftedStepAttribute(string $value)

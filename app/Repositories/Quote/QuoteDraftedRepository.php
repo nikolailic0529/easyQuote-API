@@ -38,8 +38,7 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
     {
         return $this->quote
             ->currentUserWhen(request()->user()->cant('view_quotes'))
-            ->drafted()
-            ->with('customer:id,name,rfq,valid_until,support_start,support_end', 'company:id,name', 'user:id,email,first_name,middle_name,last_name');
+            ->drafted();
     }
 
     public function dbQuery(): DatabaseBuilder
@@ -114,8 +113,8 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
     protected function filterableQuery()
     {
         return [
-            $this->dbQuery()->activated(),
-            $this->dbQuery()->deactivated()
+            $this->userQuery()->activated(),
+            $this->userQuery()->deactivated()
         ];
     }
 
@@ -126,7 +125,7 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
 
     protected function searchableQuery()
     {
-        return $this->dbQuery();
+        return $this->userQuery();
     }
 
     protected function searchableFields(): array

@@ -48,8 +48,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     {
         return $this->quote
             ->currentUserWhen(request()->user()->cant('view_quotes'))
-            ->submitted()
-            ->with('customer:id,name,rfq,valid_until,support_start,support_end', 'company:id,name', 'user:id,email,first_name,middle_name,last_name');
+            ->submitted();
     }
 
     public function dbQuery(): DatabaseBuilder
@@ -235,8 +234,8 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     protected function filterableQuery()
     {
         return [
-            $this->dbQuery()->whereNotNull("{$this->table}.activated_at")->limit(999999),
-            $this->dbQuery()->whereNull("{$this->table}.activated_at")->limit(999999)
+            $this->userQuery()->activated(),
+            $this->userQuery()->deactivated()
         ];
     }
 
@@ -247,7 +246,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     protected function searchableQuery()
     {
-        return $this->dbQuery();
+        return $this->userQuery();
     }
 
     protected function searchableFields(): array

@@ -20,7 +20,7 @@ class SeedBulkQuotes extends Command
      *
      * @var string
      */
-    protected $signature = 'eq:seed-bulk-quotes';
+    protected $signature = 'eq:seed-bulk-quotes {count=100000}';
 
     /**
      * The console command description.
@@ -46,7 +46,7 @@ class SeedBulkQuotes extends Command
      */
     public function handle()
     {
-        $count = 100000;
+        $count = $this->argument('count');
 
         $bar = $this->output->createProgressBar($count);
         $data = $this->prepareData();

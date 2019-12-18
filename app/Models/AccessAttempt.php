@@ -3,19 +3,21 @@
 namespace App\Models;
 
 use App\Models\UuidModel;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Laravel\Passport\PersonalAccessTokenResult;
 
 class AccessAttempt extends UuidModel
 {
     protected $fillable = [
-        'email'
+        'email', 'ip_address', 'local_ip'
     ];
 
     protected static function boot()
     {
         parent::boot();
 
-        static::creating(function ($model) {
+        static::creating(function (Model $model) {
             $model->setDetails();
         });
     }
@@ -31,8 +33,32 @@ class AccessAttempt extends UuidModel
     public function setDetails()
     {
         $this->forceFill([
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
+            'user_agent' => request()->userAgent()
         ]);
+    }
+
+    public function getIpAttribute()
+    {
+        return $this->ip_address;
+    }
+
+    public function setLocalIpAttribute(string $value)
+    {
+        $this->attributes['ip_address'] = $value;
+    }
+
+    public function scopeSuccessful(Builder $query): Builder
+    {
+        return $query->where('is_success', true);
+    }
+
+    public function scopeEmail(Builder $query, string $email): Builder
+    {
+        return $query->whereEmail($email);
+    }
+
+    public function scopeIp(Builder $query, string $ipAddress): Builder
+    {
+        return $query->whereIpAddress($ipAddress);
     }
 }

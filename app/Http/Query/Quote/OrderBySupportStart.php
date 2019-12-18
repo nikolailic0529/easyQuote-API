@@ -7,6 +7,6 @@ class OrderBySupportStart extends Query
 {
     public function applyQuery($builder, string $table)
     {
-        return $builder->orderBy('customer_support_start', $this->value);
+        return $builder->orderByCachedRelation('customer.support_start', $this->value);
     }
 }

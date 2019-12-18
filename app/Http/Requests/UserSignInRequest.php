@@ -14,7 +14,8 @@ class UserSignInRequest extends FormRequest
         return [
             'email' => 'required|string|email',
             'password' => 'required|string',
-            'remember_me' => 'boolean'
+            'remember_me' => 'boolean',
+            'local_ip' => 'required|string|ip'
         ];
     }
 }
