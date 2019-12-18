@@ -24,11 +24,7 @@ class Handler extends ExceptionHandler
         \League\OAuth2\Server\Exception\OAuthServerException::class
     ];
 
-    protected $dontReportMail = [
-        \App\Exceptions\AlreadyAuthenticatedException::class,
-        \App\Exceptions\MustChangePasswordException::class,
-        \App\Exceptions\LoggedOutDueInactivityException::class
-    ];
+    protected $dontReportMail = [];
 
     /**
      * A list of the inputs that are never flashed for validation exceptions.

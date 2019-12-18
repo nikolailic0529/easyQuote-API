@@ -32,7 +32,7 @@ class AuthTest extends TestCase
      */
     public function testAuthExistingUser()
     {
-        $attributes = ['email' => $this->faker->email, 'password' => 'password'];
+        $attributes = ['email' => $this->faker->email, 'password' => 'password', 'local_ip' => $this->faker->ipv4];
         app('user.repository')->create($attributes);
 
         $response = $this->postJson(url('/api/auth/signin'), $attributes);
@@ -48,7 +48,7 @@ class AuthTest extends TestCase
      */
     public function testFailingAuthExistingUser()
     {
-        $attributes = ['email' => $this->faker->email, 'password' => 'password'];
+        $attributes = ['email' => $this->faker->email, 'password' => 'password', 'local_ip' => $this->faker->ipv4];
         app('user.repository')->create($attributes);
 
         data_set($attributes, 'password', Str::random(20));

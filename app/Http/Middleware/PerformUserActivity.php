@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Exceptions\LoggedOutDueInactivityException;
 use Closure;
 
 class PerformUserActivity
@@ -28,7 +27,7 @@ class PerformUserActivity
         if ($user->doesntHaveRecentActivity()) {
             app('auth.service')->logout();
 
-            throw new LoggedOutDueInactivityException;
+            error_response('LO_00', 401);
         }
 
         auth()->user()->freshActivity();

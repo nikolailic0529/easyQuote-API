@@ -6,7 +6,6 @@ use App\Contracts\Repositories\{
     Quote\QuoteSubmittedRepositoryInterface,
     QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
 };
-use App\Exceptions\QuoteNotFoundByRfqException;
 use App\Http\Resources\QuoteRepositoryCollection;
 use App\Repositories\SearchableRepository;
 use App\Models\Quote\Quote;
@@ -89,7 +88,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     {
         $quote = $this->quote->submitted()->activated()->orderByDesc('submitted_at')->rfq($rfq)->first();
 
-        throw_if(is_null($quote) || blank($quote->submitted_data), QuoteNotFoundByRfqException::class);
+        error_abort_if(is_null($quote) || blank($quote->submitted_data), 'EQ_NF_01', 404);
 
         return $quote;
     }

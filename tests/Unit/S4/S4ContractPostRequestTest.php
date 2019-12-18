@@ -4,12 +4,12 @@ namespace Tests\Unit\S4;
 
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Foundation\Testing\WithFaker;
+use Tests\Unit\Traits\WithFakeUser;
 use Str, DB;
 
 class S4ContractPostRequestTest extends TestCase
 {
-    use DatabaseTransactions, WithFaker;
+    use DatabaseTransactions, WithFakeUser;
 
     /**
      * Test Storing S4 Contract with properly data.
@@ -79,7 +79,7 @@ class S4ContractPostRequestTest extends TestCase
 
     protected function postContract(array $data)
     {
-        return $this->postJson(url('/api/s4/quotes'), $data);
+        return $this->postJson(url('/api/s4/quotes'), $data, $this->authorizationHeader);
     }
 
     protected function assertCustomerExistsInDataBase(array $contract): void
@@ -97,10 +97,9 @@ class S4ContractPostRequestTest extends TestCase
             'service_levels' => collect()->times(10)->map(function () {
                 return ['service_level' => $this->faker->sentence];
             }),
-            'quotation_valid_until' => $this->faker->date,
+            'quotation_valid_until' => $this->faker->date('m/d/Y'),
             'support_start_date' => $this->faker->date,
             'support_end_date' => $this->faker->date,
-            'payment_terms' => $this->faker->sentence,
             'invoicing_terms' => $this->faker->sentence,
             'country' => $this->faker->countryCode,
             'addresses' => collect()->times(3)->map(function () {

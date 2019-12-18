@@ -6,8 +6,8 @@ use App\Contracts\{
     Services\AuthServiceInterface,
     Repositories\AccessAttemptRepositoryInterface as AccessAttemptRepository
 };
-use App\Exceptions\AlreadyAuthenticatedException;
 use App\Models\User;
+use App\Notifications\AccessAttempt;
 use Laravel\Passport\PersonalAccessTokenResult;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -105,6 +105,8 @@ class AuthService implements AuthServiceInterface
             return;
         }
 
-        throw new AlreadyAuthenticatedException($user, $this->currentAttempt);
+        $user->notify(new AccessAttempt($this->currentAttempt));
+
+        error_abort('AU_00', 422);
     }
 }

@@ -14,27 +14,28 @@ class ReportLogger implements ReportLoggerInterface
     {
         $arguments = collect(func_get_args());
 
-        $response = $arguments->mapWithKeys(function ($value, $key) {
-            return [$key => $value];
-        });
+        $first = $arguments->shift();
+        $second = $arguments->shift();
 
-        $response->shift();
-
-        $this->logCase($arguments->first(), $response->toArray());
+        $this->logCase($first, $second);
     }
 
     protected function logCase(array $argument, array $response): void
     {
         $key = $this->findLogKey($argument);
+
+        if ($key === false) {
+            return;
+        }
+
         $method = isset(array_flip(static::$infoKeys)[$key]) ? 'info' : 'error';
 
         $message = preg_replace_callback('/\B\:([\w\.]+)\b/', function ($key) use ($response) {
-            return data_get(head($response), $key[1]);
+            return data_get($response, $key[1]) ?? $key[1];
         }, $argument[$key]);
 
-        $response = json_encode($response, JSON_PRETTY_PRINT);
-
-        logger()->{$method}(['message' => $message, 'response' => $response]);
+        logger()->{$method}($message);
+        logger()->{$method}($response);
     }
 
     protected function findLogKey(array $argument)

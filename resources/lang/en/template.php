@@ -19,7 +19,6 @@ return [
             ['id' => 'list_price', 'label' => 'Total List Price'],
             ['id' => 'applicable_discounts', 'label' => 'Total Discounts'],
             ['id' => 'final_price', 'label' => 'Final Price'],
-            ['id' => 'payment_terms', 'label' => 'Payment Terms'],
             ['id' => 'invoicing_terms', 'label' => 'Invoicing Terms']
         ],
         'data_pages' => [

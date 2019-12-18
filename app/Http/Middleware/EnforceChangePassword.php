@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Exceptions\MustChangePasswordException;
 use Closure;
 use Illuminate\Http\Request;
 
@@ -21,7 +20,7 @@ class EnforceChangePassword
             return $next($request);
         }
 
-        throw_if(auth()->user()->mustChangePassword(), MustChangePasswordException::class);
+        error_abort_if(auth()->user()->mustChangePassword(), 'MCP_00', 422);
 
         return $next($request);
     }

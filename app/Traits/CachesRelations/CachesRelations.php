@@ -87,7 +87,9 @@ trait CachesRelations
         });
 
         $newlyCachedRelations = $dirtyRelations->mapWithKeys(function ($relation) {
-            return [$relation => $this->{$relation}->toArray()];
+            $method = method_exists($this->{$relation}, 'toCacheableArray') ? 'toCacheableArray' : 'toArray';
+
+            return [$relation => $this->{$relation}->{$method}()];
         });
 
         return $previousCachedRelations->merge($newlyCachedRelations);

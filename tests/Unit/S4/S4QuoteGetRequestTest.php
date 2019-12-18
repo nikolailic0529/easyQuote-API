@@ -105,7 +105,7 @@ class S4QuoteGetRequestTest extends TestCase
     {
         $response->assertJson([
             'message' => 'Quote not found for the provided RFQ #',
-            'code' => 'EQ_NF_01'
+            'error_code' => 'EQ_NF_01'
         ]);
     }
 
