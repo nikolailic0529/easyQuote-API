@@ -83,8 +83,15 @@ define('RSU_01', 'You could not update the system defined Role.');
 define('RSD_01', 'You could not delete the system defined Role.');
 
 /**
+ * S4.
+ */
+define('S4_CS_01', 'S4 contract with RFQ :customer.rfq was successfully stored.');
+define('S4_CS_02', 'Request for S4 contract storing.');
+
+/**
  * Misc.
  */
 define('ARG_REQ_AR_01', 'The argument passed to the 1 argument of the method must be an array or instance of \Illuminate\Http\Request');
 define('UA_01', 'Unauthenticated Request.');
 define('INVDP_01', 'Invalid Data Provided.');
+define('UNE_01', 'Unknown Error.');

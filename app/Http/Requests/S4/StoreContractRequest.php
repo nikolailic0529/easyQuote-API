@@ -47,6 +47,8 @@ class StoreContractRequest extends FormRequest
 
     protected function prepareForValidation()
     {
+        report_logger(['message' => S4_CS_02], $this->toArray());
+
         $rfq_number = strtoupper($this->rfq_number);
 
         $this->merge(compact('rfq_number'));

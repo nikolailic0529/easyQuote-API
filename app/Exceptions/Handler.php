@@ -74,6 +74,8 @@ class Handler extends ExceptionHandler
         $failure = Failure::helpFor($exception);
 
         Mail::send(new FailureReportMail($failure, app('user.repository')->failureReportRecepients()));
+
+        report_logger(['ErrorCode' => 'UNE_01'], ['ErrorDetails' => $failure->message]);
     }
 
     /**

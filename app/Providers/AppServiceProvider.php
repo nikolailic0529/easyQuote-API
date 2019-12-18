@@ -9,6 +9,7 @@ use App\Contracts\{
     Services\WordParserInterface,
     Services\PdfParserInterface,
     Services\QuoteServiceInterface,
+    Services\ReportLoggerInterface,
     Repositories\TimezoneRepositoryInterface,
     Repositories\CountryRepositoryInterface,
     Repositories\UserRepositoryInterface,
@@ -77,7 +78,8 @@ use App\Services\{
     ParserService,
     WordParser,
     QuoteService,
-    PdfParser\PdfParser
+    PdfParser\PdfParser,
+    ReportLogger
 };
 use Elasticsearch\{
     Client as ElasticsearchClient,
@@ -122,7 +124,8 @@ class AppServiceProvider extends ServiceProvider
         ActivityRepositoryInterface::class => ActivityRepository::class,
         AddressRepositoryInterface::class => AddressRepository::class,
         ContactRepositoryInterface::class => ContactRepository::class,
-        AuthServiceInterface::class => AuthService::class
+        AuthServiceInterface::class => AuthService::class,
+        ReportLoggerInterface::class => ReportLogger::class
     ];
 
     /**
@@ -159,6 +162,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->alias(RoleRepositoryInterface::class, 'role.repository');
 
         $this->app->alias(CustomerRepositoryInterface::class, 'customer.repository');
+
+        $this->app->alias(ReportLoggerInterface::class, 'report.logger');
     }
 
     /**
