@@ -21,7 +21,6 @@ class StoreContractRequest extends FormRequest
             'quotation_valid_until' => 'required|string|date_format:m/d/Y',
             'support_start_date' => 'required|string|date_format:Y-m-d',
             'support_end_date' => 'required|string|date_format:Y-m-d',
-            'payment_terms' => 'required|string|min:2|max:2500',
             'invoicing_terms' => 'required|string|min:2|max:2500',
             'country' => 'required|string|size:2|exists:countries,iso_3166_2',
             'addresses' => 'array',
@@ -47,7 +46,7 @@ class StoreContractRequest extends FormRequest
 
     protected function prepareForValidation()
     {
-        report_logger(['message' => S4_CS_02], [$this->toArray()]);
+        report_logger(['message' => S4_CS_02], $this->toArray());
 
         $rfq_number = strtoupper($this->rfq_number);
 
