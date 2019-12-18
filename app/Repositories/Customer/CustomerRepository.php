@@ -12,8 +12,6 @@ class CustomerRepository implements CustomerRepositoryInterface
 {
     protected $customer;
 
-    protected $dateable = ['quotation_valid_until', 'support_start_date', 'support_end_date'];
-
     protected $draftedCacheKey = 'customers-drafted';
 
     public function __construct(Customer $customer)
@@ -62,17 +60,6 @@ class CustomerRepository implements CustomerRepositoryInterface
         if (!is_array($attributes)) {
             return null;
         }
-
-        $dates = collect(Arr::only($attributes, $this->dateable))
-            ->transform(function ($date) {
-                try {
-                    return now()->createFromFormat('Y-m-d', $date);
-                } catch (\Exception $e) {
-                    return now();
-                }
-            })->toArray();
-
-        $attributes = array_merge($attributes, $dates);
 
         $customer = $this->customer->create($attributes);
         $customer->addresses()->createMany($attributes['addresses']);

@@ -18,9 +18,9 @@ class StoreContractRequest extends FormRequest
             'rfq_number' => 'required|string|min:2|regex:/^[[:alnum:]]+$/i|max:20|unique:customers,rfq',
             'service_levels' => 'nullable|array',
             'service_levels.*.service_level' => 'required|string|min:2',
-            'quotation_valid_until' => 'required|string',
-            'support_start_date' => 'required|string',
-            'support_end_date' => 'required|string',
+            'quotation_valid_until' => 'required|string|date_format:m/d/Y',
+            'support_start_date' => 'required|string|date_format:Y-m-d',
+            'support_end_date' => 'required|string|date_format:Y-m-d',
             'payment_terms' => 'required|string|min:2|max:2500',
             'invoicing_terms' => 'required|string|min:2|max:2500',
             'country' => 'required|string|size:2|exists:countries,iso_3166_2',
@@ -66,7 +66,16 @@ class StoreContractRequest extends FormRequest
             return $address;
         });
 
-        $validated = $validated->merge(compact('country_id', 'addresses'));
+        $support_dates = collect($this->only(['support_start_date', 'support_end_date']))
+            ->transform(function ($date) {
+                return now()->createFromFormat('Y-m-d', $date);
+            })->toArray();
+
+        $valid_until = now()->createFromFormat('m/d/Y', $this->quotation_valid_until);
+
+        $dates = array_merge($support_dates, compact('valid_until'));
+
+        $validated = $validated->merge(compact('country_id', 'addresses'))->merge($dates);
 
         return $validated->toArray();
     }
