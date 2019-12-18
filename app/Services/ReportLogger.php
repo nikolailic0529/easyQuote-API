@@ -32,7 +32,9 @@ class ReportLogger implements ReportLoggerInterface
             return data_get(head($response), $key[1]);
         }, $argument[$key]);
 
-        logger()->{$method}($message, $response);
+        $response = json_encode($response, JSON_PRETTY_PRINT);
+
+        logger()->{$method}(['message' => $message, 'response' => $response]);
     }
 
     protected function findLogKey(array $argument)

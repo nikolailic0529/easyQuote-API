@@ -102,6 +102,8 @@ class Handler extends ExceptionHandler
      */
     protected function invalidJson($request, ValidationException $exception)
     {
+        report_logger(['ErrorCode' => 'INVDP_01'], $exception->errors());
+
         if ($request->is('api/s4/*')) {
             return $this->invalidJsonForS4($request, $exception);
         }
