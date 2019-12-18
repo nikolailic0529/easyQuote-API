@@ -12,7 +12,7 @@ class CustomerRepository implements CustomerRepositoryInterface
 {
     protected $customer;
 
-    protected $dateable = ['support_start_date', 'support_end_date'];
+    protected $dateable = ['quotation_valid_until', 'support_start_date', 'support_end_date'];
 
     protected $draftedCacheKey = 'customers-drafted';
 
@@ -65,7 +65,11 @@ class CustomerRepository implements CustomerRepositoryInterface
 
         $dates = collect(Arr::only($attributes, $this->dateable))
             ->transform(function ($date) {
-                return now()->createFromFormat('m/d/Y', $date)->toDateTimeString();
+                try {
+                    return now()->createFromFormat('Y-m-d', $date);
+                } catch (\Exception $e) {
+                    return now();
+                }
             })->toArray();
 
         $attributes = array_merge($attributes, $dates);
