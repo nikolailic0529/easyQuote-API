@@ -85,7 +85,7 @@ define('RSD_01', 'You could not delete the system defined Role.');
 /**
  * S4.
  */
-define('S4_CS_01', 'S4 contract with RFQ :rfq was successfully stored.');
+define('S4_CS_01', 'S4 contract with RFQ :customer.rfq was successfully stored.');
 define('S4_CS_02', 'Request for S4 contract storing.');
 
 /**

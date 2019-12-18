@@ -64,10 +64,8 @@ class CustomerRepository implements CustomerRepositoryInterface
         $customer = $this->customer->create($attributes);
         $customer->addresses()->createMany($attributes['addresses']);
 
-        $customer->load('country', 'addresses');
+        report_logger(['message' => S4_CS_01], ['customer' => $customer->toArray()]);
 
-        report_logger(['message' => S4_CS_01], $customer->toArray());
-
-        return $customer->withAppends();
+        return $customer->load('addresses', 'country')->withAppends();
     }
 }

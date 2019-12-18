@@ -160,14 +160,16 @@ class Customer extends UuidModel
             ->append('customer_name', 'rfq_number', 'support_start_date', 'support_end_date', 'quotation_valid_until');
     }
 
-    public function toCacheableArray()
+    public function toArray()
     {
         return [
+            'id' => $this->id,
             'name' => $this->name,
             'rfq' => $this->rfq,
             'valid_until' => $this->valid_until,
             'support_start' => $this->support_start,
-            'support_end' => $this->support_end
+            'support_end' => $this->support_end,
+            'created_at' => $this->created_at
         ];
     }
 }
