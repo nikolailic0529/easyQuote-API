@@ -74,7 +74,8 @@ use App\Repositories\{
     RoleRepository
 };
 use App\Services\{
-    AuthService,
+    Auth\AuthService,
+    Auth\AuthenticatedCase,
     ParserService,
     WordParser,
     QuoteService,
@@ -140,6 +141,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ElasticsearchClient::class, function () {
             return ElasticsearchBuilder::create()->setHosts(app('config')->get('services.search.hosts'))->build();
         });
+
+        $this->app->alias(AuthenticatedCase::class, 'auth.case');
 
         $this->app->alias(ElasticsearchClient::class, 'elasticsearch.client');
 

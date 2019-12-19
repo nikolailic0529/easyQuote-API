@@ -6,6 +6,8 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class PasswordResetRequest extends FormRequest
 {
+    protected $appends = [];
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -21,5 +23,17 @@ class PasswordResetRequest extends FormRequest
                 'confirmed'
             ]
         ];
+    }
+
+    public function append(array $data): void
+    {
+        $this->appends = array_merge($this->appends, $data);
+    }
+
+    public function validated()
+    {
+        $validated = parent::validated();
+
+        return $validated + $this->appends;
     }
 }

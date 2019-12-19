@@ -6,12 +6,14 @@
 define('MCP_00', 'Your password has been expired, please visit your profile page to change it.');
 define('LO_00', 'You have been logged out due inactivity.');
 define('AU_00', 'User is already authenticated on another device.');
+define('AU_01', 'You are already authenticated in another account.');
 
 /**
  * User.
  */
 define('PRE_01', 'Your Password Reset link is expired, please contact your line-manager to resend the link.');
 define('USD_01', 'You could not delete yourself.');
+define('AEU_01', 'You could not update an Administrator\'s email.');
 
 /**
  * Activity.

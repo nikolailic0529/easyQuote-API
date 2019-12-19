@@ -116,6 +116,16 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         return $this->user->query()->inRandomOrder()->firstOrFail();
     }
 
+    public function authenticatedIpExists(string $excludedId, string $ip): bool
+    {
+        return $this->user->query()->whereKeyNot($excludedId)->loggedIn()->ip($ip)->exists();
+    }
+
+    public function authenticatedIpDoesntExist(string $excludedId, string $ip): bool
+    {
+        return !$this->authenticatedIpExists($excludedId, $ip);
+    }
+
     public function data(): SupportCollection
     {
         $roles = $this->role->get(['id', 'name']);
@@ -267,6 +277,8 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         $password = Hash::make($request->password);
 
         $passwordReset->user->notify(new PasswordResetSuccess);
+
+        $passwordReset->user->markAsLoggedOut();
 
         return $passwordReset->user->update(compact('password')) && $passwordReset->delete();
     }

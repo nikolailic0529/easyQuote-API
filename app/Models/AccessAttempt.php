@@ -6,6 +6,7 @@ use App\Models\UuidModel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Laravel\Passport\PersonalAccessTokenResult;
+use Str;
 
 class AccessAttempt extends UuidModel
 {
@@ -35,6 +36,11 @@ class AccessAttempt extends UuidModel
         $this->forceFill([
             'user_agent' => request()->userAgent()
         ]);
+    }
+
+    public function getIpAddressAttribute($value): string
+    {
+        return $value ?? Str::random(20);
     }
 
     public function getIpAttribute()

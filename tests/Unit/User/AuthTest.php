@@ -42,7 +42,7 @@ class AuthTest extends TestCase
     }
 
     /**
-     * Test Failing Authentication of the existing user.
+     * Test Failed Authentication of the existing user.
      *
      * @return void
      */
@@ -56,6 +56,25 @@ class AuthTest extends TestCase
         $response = $this->postJson(url('/api/auth/signin'), $attributes);
 
         $response->assertUnauthorized();
+    }
+
+    /**
+     * Test Authentication of the existing user without sending ip address.
+     *
+     * @return void
+     */
+    public function testAuthUserWithoutLocalIp()
+    {
+        $attributes = ['email' => $this->faker->email, 'password' => 'password'];
+        app('user.repository')->create($attributes);
+
+        data_set($attributes, 'password', Str::random(20));
+
+        $response = $this->postJson(url('/api/auth/signin'), $attributes);
+
+        $response->assertStatus(422);
+
+        $response->assertJsonValidationErrors('local_ip');
     }
 
     /**
@@ -75,7 +94,8 @@ class AuthTest extends TestCase
             'password' => $password,
             'password_confirmation' => $password,
             'country_id' => \DB::table('countries')->value('id'),
-            'timezone_id' => \DB::table('timezones')->value('id')
+            'timezone_id' => \DB::table('timezones')->value('id'),
+            'local_ip' => $this->faker->ipv4
         ];
 
         $response = $this->postJson(url('/api/auth/signup'), $user);

@@ -64,13 +64,15 @@ class UpdateProfileRequest extends FormRequest
     {
         return [
             'password.regex' => 'The Password should contain uppercase and lowercase characters, digits, non-alphanumeric characters.',
-            'current_password.password' => 'You have entered not valid password.',
-            'password.different' => 'A new password must be different.'
+            'current_password.password' => 'You have entered invalid current password.',
+            'password.different' => 'A new password must be different.',
+            'first_name.min' => 'The first name/last name must be of at least :min characters.',
+            'last_name.min' => 'The first name/last name must be of at least :min characters.'
         ];
     }
 
     protected function nullValues()
     {
-        return ['phone'];
+        return ['phone', 'middle_name'];
     }
 }

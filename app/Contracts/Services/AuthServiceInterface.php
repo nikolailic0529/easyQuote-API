@@ -17,6 +17,13 @@ interface AuthServiceInterface
     public function checkCredentials(array $credentials);
 
     /**
+     * Disable ip checking.
+     *
+     * @return AuthServiceInterface
+     */
+    public function disableCheckIp(): AuthServiceInterface;
+
+    /**
      * Store Access Attempt
      * If successfull will set relevant flag
      *

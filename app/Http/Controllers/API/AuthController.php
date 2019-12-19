@@ -134,10 +134,8 @@ class AuthController extends Controller
      */
     public function resetPassword(PasswordResetRequest $request, PasswordReset $reset)
     {
-        $this->user->performResetPassword($request, $reset->token);
-
         return response()->json(
-            $this->auth->authenticate(array_merge($request->merge(['email' => $reset->user->email])->all()))
+            $this->user->performResetPassword($request, $reset->token)
         );
     }
 

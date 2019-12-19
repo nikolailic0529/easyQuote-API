@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use App\Http\Requests\Collaboration\UpdateUserRequest;
 
 class UserPolicy
 {
@@ -54,13 +55,30 @@ class UserPolicy
      *
      * @param  \App\Models\User  $user
      * @param  \App\Models\User  $collaborator
+     * @param  \App\Http\Requests\Collaboration\UpdateUserRequest $request
      * @return mixed
      */
-    public function update(User $user, User $collaborator)
+    public function update(User $user, User $collaborator, UpdateUserRequest $request)
     {
-        if ($user->can('update_users')) {
+        if ($user->cant('update_users')) {
+            return false;
+        }
+
+        /**
+         * When Updatable Collaborator doesn't have Administrator role we allow the action.
+         */
+        if (!$collaborator->hasRole('Administrator')) {
             return true;
         }
+
+        /**
+         * When Updatable Collaborator has Administrator role and User is trying to update his email we deny the action.
+         */
+        if ($request->has('email') && $request->email !== $collaborator->email) {
+            return $this->deny(AEU_01);
+        }
+
+        return true;
     }
 
     /**

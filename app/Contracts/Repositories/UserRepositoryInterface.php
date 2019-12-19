@@ -118,6 +118,24 @@ interface UserRepositoryInterface
     public function random(): User;
 
     /**
+     * Determine that user with the same ip is authenticated.
+     *
+     * @param string $excludedId
+     * @param string $ip
+     * @return bool
+     */
+    public function authenticatedIpExists(string $excludedId, string $ip): bool;
+
+    /**
+     * Determine that user with the same ip is not authenticated.
+     *
+     * @param string $excludedId
+     * @param string $ip
+     * @return boolean
+     */
+    public function authenticatedIpDoesntExist(string $excludedId, string $ip): bool;
+
+    /**
      * Get all Collaboration Users.
      *
      * @return mixed

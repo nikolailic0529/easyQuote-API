@@ -24,7 +24,8 @@ class UserSignUpRequest extends FormRequest
             ],
             'password' => 'required|string|min:6|confirmed',
             'phone' => 'nullable|string|min:4',
-            'timezone_id' => 'required|string|size:36|exists:timezones,id'
+            'timezone_id' => 'required|string|size:36|exists:timezones,id',
+            'local_ip' => 'required|string|ip'
         ];
     }
 }
