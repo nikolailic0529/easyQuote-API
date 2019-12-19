@@ -27,7 +27,7 @@ use App\Imports\{
     ImportExcelSchedule,
     CountPages
 };
-use Excel, Storage, File, Setting, Cache, DB;
+use Excel, Storage, File, Setting, DB;
 
 class ParserService implements ParserServiceInterface
 {

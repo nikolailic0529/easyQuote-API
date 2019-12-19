@@ -19,8 +19,6 @@ use App\Traits\{
 };
 use App\Contracts\HasOrderedScope;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\Traits\LogsActivity;
-use Cache;
 
 class QuoteFile extends UuidModel implements HasOrderedScope
 {
@@ -157,14 +155,14 @@ class QuoteFile extends UuidModel implements HasOrderedScope
 
     public function getRowsCountAttribute()
     {
-        return (int) Cache::get("rows-count:{$this->id}", function () {
+        return (int) cache()->sear("rows-count:{$this->id}", function () {
             return $this->rowsData()->count();
         });
     }
 
     public function setRowsCount(int $count)
     {
-        return Cache::forever("rows-count:{$this->id}", $count);
+        return cache()->forever("rows-count:{$this->id}", $count);
     }
 
     public function getRowsProcessedCountAttribute()
@@ -191,28 +189,24 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         ];
     }
 
-    public function setException(string $message)
+    public function setException(string $code): bool
     {
-        return Cache::put("quote_file_exception:{$this->id}", $message);
+        return cache()->forever("quote_file_exception:{$this->id}", $code);
     }
 
     public function getExceptionAttribute()
     {
-        return Cache::get("quote_file_exception:{$this->id}", false);
+        return cache("quote_file_exception:{$this->id}", false);
     }
 
     public function clearException()
     {
-        return Cache::forget("quote_file_exception:{$this->id}");
+        return cache()->forget("quote_file_exception:{$this->id}");
     }
 
     public function throwExceptionIfExists()
     {
-        $exception = $this->getAttribute('exception');
-
-        if ($exception) {
-            throw new \ErrorException($exception);
-        }
+        error_abort_if($this->exception, $this->exception, 422);
     }
 
     public function getProcessingPercentageAttribute()

@@ -62,6 +62,8 @@ class eqUpdate extends Command
             ]);
 
         $this->call('eq:search-reindex');
+        $this->call('eq:cache-relations');
+        $this->call('optimize:clear');
         $this->call('optimize');
     }
 }

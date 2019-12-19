@@ -20,6 +20,8 @@ if (!function_exists('error_abort')) {
 if (!function_exists('error_abort_if')) {
     function error_abort_if($boolean, string $constant, int $status)
     {
-        abort_if($boolean, error_response($constant, $status));
+        if ($boolean) {
+            error_abort($constant, $status);
+        }
     }
 }

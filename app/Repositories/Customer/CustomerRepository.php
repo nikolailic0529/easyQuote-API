@@ -6,7 +6,7 @@ use App\Contracts\Repositories\Customer\CustomerRepositoryInterface;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Models\Customer\Customer;
 use Illuminate\Database\Eloquent\Builder;
-use Arr;
+use App\Http\Resources\CustomerRepositoryResource;
 
 class CustomerRepository implements CustomerRepositoryInterface
 {
@@ -32,7 +32,8 @@ class CustomerRepository implements CustomerRepositoryInterface
     public function drafted()
     {
         return cache()->sear($this->draftedCacheKey, function () {
-            return $this->customer->drafted()->limit(1000)->get();
+            $customers = $this->customer->drafted()->limit(1000)->get();
+            return CustomerRepositoryResource::collection($customers);
         });
     }
 

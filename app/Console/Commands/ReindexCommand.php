@@ -92,7 +92,7 @@ class ReindexCommand extends Command
         foreach ($models as $model) {
             $plural = Str::plural(class_basename($model));
 
-            $this->info("Indexing all {$plural}...");
+            $this->comment("Indexing all {$plural}...");
 
             $bar = $this->output->createProgressBar($model::count());
 

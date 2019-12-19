@@ -40,6 +40,8 @@ class CacheRelations extends Command
     {
         activity()->disableLogging();
 
+        $this->comment('Caching relations...');
+
         $bar = $this->output->createProgressBar(Quote::count());
 
         Quote::withCacheableRelations()->chunk(500, function ($chunk) use ($bar) {
@@ -50,6 +52,8 @@ class CacheRelations extends Command
         });
 
         $bar->finish();
+
+        $this->info("\nDone!");
 
         activity()->enableLogging();
     }

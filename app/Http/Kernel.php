@@ -42,7 +42,7 @@ class Kernel extends HttpKernel
             'throttle:600,1',
             'bindings',
             \App\Http\Middleware\PerformUserActivity::class,
-            \App\Http\Middleware\EnforceChangePassword::class
+            \App\Http\Middleware\EnforceChangePassword::class,
         ],
     ];
 
@@ -56,6 +56,7 @@ class Kernel extends HttpKernel
     protected $routeMiddleware = [
         'auth' => \App\Http\Middleware\Authenticate::class,
         'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
+        'client' => \Laravel\Passport\Http\Middleware\CheckClientCredentials::class,
         'bindings' => \Illuminate\Routing\Middleware\SubstituteBindings::class,
         'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
         'can' => \Illuminate\Auth\Middleware\Authorize::class,

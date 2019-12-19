@@ -35,17 +35,7 @@ trait CachesRelations
 
     public function cacheRelations(): void
     {
-        $cachedRelations = collect([]);
-
-        foreach (static::$cacheRelations as $relation) {
-            if (!isset($this->{$relation})) {
-                continue;
-            }
-
-            $cachedRelations->put($relation, $this->{$relation}->toArray());
-        }
-
-        $this->fillCachedRelations($cachedRelations, true);
+        $this->fillCachedRelations($this->getRelationsCache(), true);
     }
 
     public function clearCachedRelations(): void
@@ -86,11 +76,7 @@ trait CachesRelations
                 && $this->getOriginal($relation . '_id') !== $this->getAttribute($relation . '_id');
         });
 
-        $newlyCachedRelations = $dirtyRelations->mapWithKeys(function ($relation) {
-            $method = method_exists($this->{$relation}, 'toCacheableArray') ? 'toCacheableArray' : 'toArray';
-
-            return [$relation => $this->{$relation}->{$method}()];
-        });
+        $newlyCachedRelations = $this->getRelationsCache($dirtyRelations);
 
         return $previousCachedRelations->merge($newlyCachedRelations);
     }
@@ -103,6 +89,19 @@ trait CachesRelations
             ]);
 
             $save && $this->save();
+        });
+    }
+
+    protected function getRelationsCache(): Collection
+    {
+        $cacheRelations = func_num_args() > 1
+            ? collect(func_get_arg(0))
+            : collect(static::$cacheRelations);
+
+        return $cacheRelations->mapWithKeys(function ($relation) {
+            $method = method_exists($this->{$relation}, 'toCacheableArray') ? 'toCacheableArray' : 'toArray';
+
+            return [$relation => $this->{$relation}->{$method}()];
         });
     }
 }

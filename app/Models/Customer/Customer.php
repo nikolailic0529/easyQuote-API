@@ -165,9 +165,9 @@ class Customer extends UuidModel
         return [
             'name' => $this->name,
             'rfq' => $this->rfq,
-            'valid_until' => $this->valid_until,
-            'support_start' => $this->support_start,
-            'support_end' => $this->support_end
+            'valid_until' => $this->valid_until_date,
+            'support_start' => $this->support_start_date,
+            'support_end' => $this->support_end_date
         ];
     }
 }
