@@ -79,8 +79,10 @@ class CompanyPolicy
             return $this->deny(CPSD_01);
         }
 
-        if ($user->can('delete_companies')) {
-            return true;
+        if ($company->inUse()) {
+            return $this->deny(CPUD_01);
         }
+
+        return $user->can('delete_companies');
     }
 }

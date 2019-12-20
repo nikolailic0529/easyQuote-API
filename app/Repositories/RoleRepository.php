@@ -13,7 +13,8 @@ use App\Http\Requests\Role\{
 };
 use Illuminate\Database\Eloquent\{
     Model,
-    Builder
+    Builder,
+    Collection as IlluminateCollection
 };
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -34,6 +35,11 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
         $modules = collect(config('role.modules'))->keys();
 
         return collect(compact('privileges', 'modules'));
+    }
+
+    public function allActivated(array $columns = ['*']): IlluminateCollection
+    {
+        return $this->userQuery()->activated()->get($columns);
     }
 
     public function userQuery(): Builder

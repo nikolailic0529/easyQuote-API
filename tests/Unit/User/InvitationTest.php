@@ -33,7 +33,7 @@ class InvitationTest extends TestCase
     {
         $response = $this->getJson(
             url('api/invitations'),
-            ['Authorization' => "Bearer {$this->accessToken}"]
+            $this->authorizationHeader
         );
 
         $this->assertListing($response);
@@ -51,7 +51,7 @@ class InvitationTest extends TestCase
         $response = $this->postJson(
             url('api/users'),
             $attributes,
-            ['Authorization' => "Bearer {$this->accessToken}"]
+            $this->authorizationHeader
         );
 
         $response->assertOk()
@@ -62,7 +62,7 @@ class InvitationTest extends TestCase
         /**
          * Checking that Invitation was added in the listing.
          */
-        $response = $this->getJson(url('api/invitations'));
+        $response = $this->getJson(url('api/invitations'), $this->authorizationHeader);
 
         $response->assertJsonFragment(
             Arr::only($attributes, ['email', 'role_id']) + ['is_expired' => false]
@@ -104,9 +104,12 @@ class InvitationTest extends TestCase
 
         $response->assertOk()
             ->assertJsonStructure([
-                'access_token',
-                'token_type',
-                'expires_at'
+                'id',
+                'first_name',
+                'last_name',
+                'email',
+                'created_at',
+                'activated_at'
             ]);
     }
 
@@ -122,7 +125,7 @@ class InvitationTest extends TestCase
         $response = $this->putJson(
             url("api/invitations/cancel/{$invitation->invitation_token}"),
             [],
-            ['Authorization' => "Bearer {$this->accessToken}"]
+            $this->authorizationHeader
         );
 
         $response->assertOk()
@@ -134,10 +137,10 @@ class InvitationTest extends TestCase
 
         $response = $this->getJson(url("/api/auth/signup/{$invitation->invitation_token}"));
 
-        $response->assertStatus(406)
+        $response->assertNotFound()
             ->assertExactJson([
                 'message' => IE_01,
-                'code' => 'IE_01'
+                'error_code' => 'IE_01'
             ]);
     }
 
@@ -153,7 +156,7 @@ class InvitationTest extends TestCase
         $response = $this->deleteJson(
             url("api/invitations/{$invitation->invitation_token}"),
             [],
-            ['Authorization' => "Bearer {$this->accessToken}"]
+            $this->authorizationHeader
         );
 
         $response->assertOk()

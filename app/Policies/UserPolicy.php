@@ -51,14 +51,14 @@ class UserPolicy
     }
 
     /**
-     * Determine whether the user can update the collaborator.
+     * Determine whether the user can update profile the collaborator.
      *
      * @param  \App\Models\User  $user
      * @param  \App\Models\User  $collaborator
      * @param  \App\Http\Requests\Collaboration\UpdateUserRequest $request
      * @return mixed
      */
-    public function update(User $user, User $collaborator, UpdateUserRequest $request)
+    public function updateProfile(User $user, User $collaborator, UpdateUserRequest $request)
     {
         if ($user->cant('update_users')) {
             return false;
@@ -79,6 +79,19 @@ class UserPolicy
         }
 
         return true;
+    }
+
+    /**
+     * Determine whether the user can update the collaborator.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\User  $collaborator
+     * @param  \App\Http\Requests\Collaboration\UpdateUserRequest $request
+     * @return mixed
+     */
+    public function update(User $user, User $collaborator)
+    {
+        return $user->can('update_users');
     }
 
     /**

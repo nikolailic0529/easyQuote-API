@@ -5,8 +5,10 @@ namespace App\Exceptions;
 use App\Mail\FailureReportMail;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
-use Exception, Failure, Arr;
+use App\Facades\Failure;
+use Exception;
 
 class Handler extends ExceptionHandler
 {

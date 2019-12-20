@@ -211,7 +211,17 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
                 $quoteFilesToSave->push($replicatedSchedule);
             }
 
-            return $pass && $replicatedQuote->quoteFiles()->saveMany($quoteFilesToSave);
+            $copied = $pass && $replicatedQuote->quoteFiles()->saveMany($quoteFilesToSave);
+
+            if ($copied) {
+                activity()
+                    ->on($replicatedQuote)
+                    ->withProperties(['old' => Quote::logChanges($quote), 'attributes' => Quote::logChanges($replicatedQuote)])
+                    ->by(request()->user())
+                    ->log('copied');
+            }
+
+            return $copied;
         });
     }
 

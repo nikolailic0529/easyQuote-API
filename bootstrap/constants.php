@@ -97,3 +97,4 @@ define('ARG_REQ_AR_01', 'The argument passed to the 1 argument of the method mus
 define('UA_01', 'Unauthenticated Request.');
 define('INVDP_01', 'Invalid Data Provided.');
 define('UNE_01', 'Unknown Error.');
+define('UIDS_01', 'When creating a new entry user_id must be specified.');

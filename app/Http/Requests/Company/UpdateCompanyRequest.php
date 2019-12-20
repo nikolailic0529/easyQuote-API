@@ -4,6 +4,7 @@ namespace App\Http\Requests\Company;
 
 use App\Traits\Request\PreparesNullValues;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateCompanyRequest extends FormRequest
 {
@@ -47,8 +48,20 @@ class UpdateCompanyRequest extends FormRequest
     public function rules()
     {
         return [
-            'name' => 'string|max:60|min:2',
-            'vat' => 'string|max:60|min:2',
+            'name' => [
+                'required',
+                'string',
+                'max:60',
+                'min:2',
+                Rule::unique('companies')->whereNull('deleted_at')->ignore($this->company)
+            ],
+            'vat' => [
+                'required',
+                'string',
+                'max:60',
+                'min:2',
+                Rule::unique('companies')->whereNull('deleted_at')->ignore($this->company)
+            ],
             'type' => [
                 'string',
                 'in:' . $this->types
@@ -77,6 +90,14 @@ class UpdateCompanyRequest extends FormRequest
             'contacts_attach.*' => 'required|string|uuid|exists:contacts,id',
             'contacts_detach' => 'nullable|array',
             'contacts_detach.*' => 'required|string|uuid|exists:contacts,id',
+        ];
+    }
+
+    public function messages()
+    {
+        return [
+            'name.exists' => CPE_01,
+            'vat.exists' => CPE_01
         ];
     }
 

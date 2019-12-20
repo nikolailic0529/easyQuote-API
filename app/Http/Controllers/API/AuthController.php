@@ -50,13 +50,13 @@ class AuthController extends Controller
     /**
      * Show specified Invitation
      *
-     * @param Invitation $invitation
+     * @param string $invitation
      * @return \Illuminate\Http\Response
      */
-    public function showInvitation(Invitation $invitation)
+    public function showInvitation(string $invitation)
     {
         return response()->json(
-            $this->user->invitation($invitation->invitation_token)
+            $this->user->invitation($invitation)
         );
     }
 
@@ -69,10 +69,8 @@ class AuthController extends Controller
      */
     public function signupCollaborator(CompleteInvitationRequest $request, Invitation $invitation)
     {
-        $this->user->createCollaborator($request->validated(), $invitation);
-
         return response()->json(
-            $this->auth->authenticate($request->merge($invitation->only('email'))->all())
+            $this->user->createCollaborator($request->validated(), $invitation)
         );
     }
 

@@ -12,8 +12,6 @@ use Illuminate\Support\{
 };
 use Spatie\Activitylog\ActivityLogger;
 use App\Models\System\Period;
-use Illuminate\Database\Query\Builder;
-use Illuminate\Support\Facades\Validator;
 
 class MacroServiceProvider extends ServiceProvider
 {

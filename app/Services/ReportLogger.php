@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\Services\ReportLoggerInterface;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 class ReportLogger implements ReportLoggerInterface
 {
@@ -16,6 +17,10 @@ class ReportLogger implements ReportLoggerInterface
 
         $first = $arguments->shift();
         $second = $arguments->shift();
+
+        if ($second instanceof JsonResource) {
+            $second = $second->resolve();
+        }
 
         $this->logCase($first, $second);
     }

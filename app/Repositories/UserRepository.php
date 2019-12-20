@@ -3,9 +3,7 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\{
-    UserRepositoryInterface,
-    CountryRepositoryInterface as CountryRepository,
-    TimezoneRepositoryInterface as TimezoneRepository
+    UserRepositoryInterface
 };
 use App\Http\Requests\{
     Collaboration\InviteUserRequest,
@@ -33,7 +31,6 @@ use Illuminate\Database\Eloquent\{
     Builder,
     Collection
 };
-use Illuminate\Support\Collection as SupportCollection;
 use Arr, Hash;
 use Illuminate\Http\Request;
 
@@ -55,16 +52,12 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         User $user,
         Role $role,
         Invitation $invitation,
-        PasswordReset $passwordReset,
-        CountryRepository $country,
-        TimezoneRepository $timezone
+        PasswordReset $passwordReset
     ) {
         $this->user = $user;
         $this->role = $role;
         $this->invitation = $invitation;
         $this->passwordReset = $passwordReset;
-        $this->country = $country;
-        $this->timezone = $timezone;
     }
 
     public function userQuery(): Builder
@@ -126,15 +119,6 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         return !$this->authenticatedIpExists($excludedId, $ip);
     }
 
-    public function data(): SupportCollection
-    {
-        $roles = $this->role->get(['id', 'name']);
-        $countries = $this->country->all();
-        $timezones = $this->timezone->all();
-
-        return collect(compact('roles', 'countries', 'timezones'));
-    }
-
     public function make(array $array): User
     {
         return $this->user->make($array);
@@ -183,9 +167,11 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
 
     public function invitation(string $token): Invitation
     {
-        $invitation = $this->invitation->whereInvitationToken($token)->firstOrFail()->makeHiddenExcept(['email', 'role_name']);
+        $invitation = $this->invitation->whereInvitationToken($token)->first();
 
-        error_abort_if($invitation->isExpired, 'IE_01', 406);
+        error_abort_if(is_null($invitation) || $invitation->isExpired, 'IE_01', 404);
+
+        $invitation->makeHiddenExcept(['email', 'role_name']);
 
         return $invitation;
     }

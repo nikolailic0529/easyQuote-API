@@ -115,12 +115,28 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
 
     public function copy(string $id): bool
     {
+        activity()->disableLogging();
+
         $replicatableTemplate = $this->find($id);
         $template = $replicatableTemplate->replicate(['user', 'countries', 'templateFields']);
         $countries = $replicatableTemplate->countries->pluck('id')->toArray();
         $templateFields = $replicatableTemplate->templateFields->pluck('id')->toArray();
 
-        return $template->save() && $template->syncCountries($countries) && $template->syncTemplateFields($templateFields);
+        $copied = $template->save();
+
+        $copied && $template->syncCountries($countries) && $template->syncTemplateFields($templateFields);
+
+        activity()->enableLogging();
+
+        if ($copied) {
+            activity()
+                ->on($template)
+                ->withProperties(['old' => QuoteTemplate::logChanges($replicatableTemplate), 'attributes' => QuoteTemplate::logChanges($template)])
+                ->by(request()->user())
+                ->log('copied');
+        }
+
+        return (bool) $copied;
     }
 
     protected function filterQueryThrough(): array

@@ -4,11 +4,11 @@ namespace App\Models\Quote\Margin;
 
 use App\Traits\{
     BelongsToCountry,
-    Search\Searchable
+    Search\Searchable,
+    Activity\LogsActivity
 };
 use App\Models\Quote\Quote;
 use Illuminate\Database\Eloquent\Builder;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Arr;
 
 class CountryMargin extends Margin

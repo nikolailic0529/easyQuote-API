@@ -72,7 +72,6 @@ class UserTest extends TestCase
         $attributes = [
             'first_name' => $this->faker->firstName,
             'last_name' => $this->faker->lastName,
-            'email' => $this->faker->safeEmail,
             'country_id' => $this->user->country_id,
             'timezone_id' => $this->user->timezone_id,
             'role_id' => $this->user->role_id
@@ -89,6 +88,18 @@ class UserTest extends TestCase
         $this->user->refresh();
         $currentAttributes = $this->user->only(array_keys($attributes));
         $this->assertEquals(0, $attributes <=> $currentAttributes);
+    }
+
+    /**
+     * Test Updating email of User with Administrator role. It's not allowed.
+     *
+     * @return void
+     */
+    public function testAdministratorEmailUpdating()
+    {
+        $response = $this->patchJson(url("api/users/{$this->user->id}"), ['email' => $this->faker->safeEmail], $this->authorizationHeader);
+
+        $response->assertForbidden();
     }
 
     /**

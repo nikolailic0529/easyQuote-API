@@ -15,4 +15,9 @@ trait BelongsToCountry
     {
         return $this->belongsTo(Country::class)->withDefault();
     }
+
+    public function getCountryCodeAttribute()
+    {
+        return $this->country->code;
+    }
 }

@@ -4,7 +4,6 @@ namespace App\Repositories;
 
 use App\Contracts\Repositories\TimezoneRepositoryInterface;
 use App\Models\Data\Timezone;
-use Cache;
 
 class TimezoneRepository implements TimezoneRepositoryInterface
 {
@@ -17,7 +16,7 @@ class TimezoneRepository implements TimezoneRepositoryInterface
 
     public function all()
     {
-        return Cache::rememberForever('all-timezones', function () {
+        return cache()->sear('all-timezones', function () {
             return $this->timezone->ordered()->get(['id', 'text', 'value']);
         });
     }

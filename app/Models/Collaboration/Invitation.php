@@ -8,10 +8,10 @@ use App\Traits\{
     BelongsToRole,
     CanGenerateToken,
     Expirable,
-    Search\Searchable
+    Search\Searchable,
+    Activity\LogsActivity
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 class Invitation extends UuidModel
 {

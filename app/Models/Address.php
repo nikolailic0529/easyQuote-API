@@ -23,6 +23,8 @@ class Address extends UuidModel
         'state',
         'state_code',
         'post_code',
+        'contact_name',
+        'contact_number',
         'country_id'
     ];
 

@@ -22,13 +22,6 @@ use Illuminate\Support\Collection;
 interface UserRepositoryInterface
 {
     /**
-     * Data for new User Invitation.
-     *
-     * @return Collection
-     */
-    public function data(): Collection;
-
-    /**
      * Make a new User.
      *
      * @param array $array

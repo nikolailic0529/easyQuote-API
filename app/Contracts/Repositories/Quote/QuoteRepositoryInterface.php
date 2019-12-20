@@ -26,13 +26,6 @@ interface QuoteRepositoryInterface
     public function storeState(StoreQuoteStateRequest $request);
 
     /**
-     * Return linked data Company->Vendor->Country->Language and Data Select Separators
-     *
-     * @return \Illuminate\Database\Eloquent\Collection
-     */
-    public function step1();
-
-    /**
      * Get Quote Templates by Company, Vendor, Country
      *
      * @param GetQuoteTemplatesRequest $request

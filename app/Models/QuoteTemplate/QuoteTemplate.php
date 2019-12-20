@@ -14,10 +14,10 @@ use App\Traits \ {
     Systemable,
     Search\Searchable,
     HasQuotes,
-    Image\HasImages
+    Image\HasImages,
+    Activity\LogsActivity
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 class QuoteTemplate extends UuidModel implements ActivatableInterface
 {

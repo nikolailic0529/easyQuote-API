@@ -62,7 +62,7 @@ abstract class SearchableRepository
             return $activated->unionAll($deactivated);
         }
 
-        $builder = $this->buildQuery($query, $items, function ($query) use ($scope) {
+        $builder = $this->buildQuery($model, $items, function ($query) use ($scope) {
             $this->searchableScope($query);
             $this->filterQuery($query, $scope);
         });

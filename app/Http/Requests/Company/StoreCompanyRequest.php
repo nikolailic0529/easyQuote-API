@@ -4,6 +4,7 @@ namespace App\Http\Requests\Company;
 
 use App\Traits\Request\PreparesNullValues;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreCompanyRequest extends FormRequest
 {
@@ -47,8 +48,20 @@ class StoreCompanyRequest extends FormRequest
     public function rules()
     {
         return [
-            'name' => 'required|string|max:60|min:2',
-            'vat' => 'required|string|max:60|min:2',
+            'name' => [
+                'required',
+                'string',
+                'max:60',
+                'min:2',
+                Rule::unique('companies')->whereNull('deleted_at')
+            ],
+            'vat' => [
+                'required',
+                'string',
+                'max:60',
+                'min:2',
+                Rule::unique('companies')->whereNull('deleted_at')
+            ],
             'type' => [
                 'required',
                 'string',
@@ -70,6 +83,14 @@ class StoreCompanyRequest extends FormRequest
             'vendors' => 'array',
             'vendors.*' => 'required|uuid|exists:vendors,id',
             'default_vendor_id' => 'nullable|uuid|exists:vendors,id'
+        ];
+    }
+
+    public function messages()
+    {
+        return [
+            'name.exists' => CPE_01,
+            'vat.exists' => CPE_01
         ];
     }
 

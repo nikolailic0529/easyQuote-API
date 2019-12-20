@@ -4,7 +4,6 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use App\Models\{
-    Company,
     Vendor,
     Quote\Quote,
     Quote\Margin\CountryMargin,
@@ -18,7 +17,6 @@ use App\Models\{
 };
 use App\Models\Customer\Customer;
 use App\Observers\{
-    CompanyObserver,
     VendorObserver,
     QuoteObserver,
     MarginObserver,
@@ -64,8 +62,6 @@ class ObserverServiceProvider extends ServiceProvider
         SND::observe(SNDobserver::class);
 
         Vendor::observe(VendorObserver::class);
-
-        Company::observe(CompanyObserver::class);
 
         QuoteTemplate::observe(QuoteTemplateObserver::class);
 

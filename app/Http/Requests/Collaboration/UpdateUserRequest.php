@@ -33,7 +33,11 @@ class UpdateUserRequest extends FormRequest
             ],
             'phone' => 'nullable|string|min:4',
             'timezone_id' => 'string|uuid|exists:timezones,id',
-            'role_id' => 'string|uuid|exists:roles,id'
+            'role_id' => [
+                'string',
+                'uuid',
+                Rule::exists('roles', 'id')->whereNotNull('activated_at')
+            ]
         ];
     }
 }

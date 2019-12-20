@@ -31,11 +31,12 @@ use App\Traits\{
     Quote\HasCustomDiscountAttribute,
     Quote\HasGroupDescriptionAttribute,
     Quote\HasSubmittedDataAttribute,
+    Quote\HasAdditionalHtmlAttributes,
     QuoteTemplate\BelongsToQuoteTemplate,
-    CachesRelations\CachesRelations
+    CachesRelations\CachesRelations,
+    Activity\LogsActivity
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Carbon\Carbon;
 use Arr;
 
@@ -62,7 +63,8 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         HasGroupDescriptionAttribute,
         HasSubmittedDataAttribute,
         LogsActivity,
-        CachesRelations;
+        CachesRelations,
+        HasAdditionalHtmlAttributes;
 
     public $applicable_discounts = 0.0;
 
@@ -85,10 +87,8 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         'pricing_document',
         'service_agreement_id',
         'system_handle',
-        'additional_details',
         'checkbox_status',
-        'closing_date',
-        'additional_notes'
+        'closing_date'
     ];
 
     protected $attributes = [
@@ -124,9 +124,7 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         'pricing_document',
         'service_agreement_id',
         'system_handle',
-        'additional_details',
         'closing_date',
-        'additional_notes',
         'calculate_list_price',
         'custom_discount',
         'use_groups',

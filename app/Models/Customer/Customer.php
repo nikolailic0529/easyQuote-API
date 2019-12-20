@@ -99,11 +99,6 @@ class Customer extends UuidModel
             : config('date.format_eu');
     }
 
-    public function getCountryCodeAttribute()
-    {
-        return $this->country->code;
-    }
-
     public function getCoveragePeriodAttribute()
     {
         return "{$this->support_start_date} to {$this->support_end_date}";

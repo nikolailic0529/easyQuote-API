@@ -20,9 +20,9 @@ use App\Traits\{
     Search\Searchable,
     Systemable,
     Quote\HasQuotes,
-    QuoteTemplate\HasQuoteTemplates
+    QuoteTemplate\HasQuoteTemplates,
+    Activity\LogsActivity
 };
-use Spatie\Activitylog\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Company extends UuidModel implements WithImage, WithLogo, ActivatableInterface, HasOrderedScope

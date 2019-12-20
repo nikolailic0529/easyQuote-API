@@ -38,6 +38,13 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
         return $this->userQuery()->whereId($id)->firstOrFail()->appendLogo();
     }
 
+    public function random(int $limit = 1)
+    {
+        $method = $limit > 1 ? 'get' : 'first';
+
+        return $this->vendor->query()->inRandomOrder()->limit($limit)->{$method}();
+    }
+
     public function create(StoreVendorRequest $request): Vendor
     {
         $user = request()->user();

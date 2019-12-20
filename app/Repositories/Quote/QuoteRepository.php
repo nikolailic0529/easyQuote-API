@@ -6,12 +6,10 @@ use App\Contracts\Repositories\{
     Quote\QuoteRepositoryInterface,
     Quote\Margin\MarginRepositoryInterface as MarginRepository,
     QuoteTemplate\QuoteTemplateRepositoryInterface as QuoteTemplateRepository,
-    QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository,
-    QuoteFile\DataSelectSeparatorRepositoryInterface as DataSelectSeparatorRepository
+    QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
 };
 use App\Contracts\Services\QuoteServiceInterface as QuoteService;
 use App\Models\{
-    Company,
     Quote\Quote,
     Quote\Discount as QuoteDiscount,
     QuoteFile\QuoteFile,
@@ -31,7 +29,7 @@ use App\Http\Resources\QuoteResource;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Builder;
 use Webpatser\Uuid\Uuid;
-use DB, Arr, Str, Setting;
+use DB, Arr, Str;
 
 class QuoteRepository implements QuoteRepositoryInterface
 {
@@ -53,10 +51,6 @@ class QuoteRepository implements QuoteRepositoryInterface
 
     protected $importableColumn;
 
-    protected $company;
-
-    protected $dataSelectSeparator;
-
     protected $morphDiscount;
 
     public function __construct(
@@ -69,8 +63,6 @@ class QuoteRepository implements QuoteRepositoryInterface
         QuoteDiscount $quoteDiscount,
         TemplateField $templateField,
         ImportableColumn $importableColumn,
-        Company $company,
-        DataSelectSeparatorRepository $dataSelectSeparator,
         QuoteDiscount $morphDiscount
     ) {
         $this->quote = $quote;
@@ -81,8 +73,6 @@ class QuoteRepository implements QuoteRepositoryInterface
         $this->quoteTemplate = $quoteTemplate;
         $this->templateField = $templateField;
         $this->importableColumn = $importableColumn;
-        $this->company = $company;
-        $this->dataSelectSeparator = $dataSelectSeparator;
         $this->quoteService = $quoteService;
         $this->morphDiscount = $morphDiscount;
     }
@@ -149,17 +139,6 @@ class QuoteRepository implements QuoteRepositoryInterface
     public function make(array $array)
     {
         return $this->quote->make($array);
-    }
-
-    public function step1()
-    {
-        $companies = $this->company->with('vendors.countries')->ordered()->get();
-
-        $data_select_separators = $this->dataSelectSeparator->all();
-
-        $supported_file_types = Setting::get('supported_file_types_ui');
-
-        return compact('supported_file_types', 'data_select_separators', 'companies');
     }
 
     public function getTemplates(GetQuoteTemplatesRequest $request)

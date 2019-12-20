@@ -2,8 +2,10 @@
 
 namespace App\Models\Quote\Discount;
 
-use App\Traits\Discount\HasDurationsAttribute;
-use Spatie\Activitylog\Traits\LogsActivity;
+use App\Traits\{
+    Discount\HasDurationsAttribute,
+    Activity\LogsActivity
+};
 
 class MultiYearDiscount extends Discount
 {

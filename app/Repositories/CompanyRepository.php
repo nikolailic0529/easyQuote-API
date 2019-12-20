@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\{
     Collection
 };
 use Illuminate\Support\Collection as SupportCollection;
+use Arr;
+use Closure;
 
 class CompanyRepository extends SearchableRepository implements CompanyRepositoryInterface
 {
@@ -45,6 +47,11 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
         return $this->toCollection(parent::all());
     }
 
+    public function allWithVendorsAndCountries(): Collection
+    {
+        return $this->company->query()->with('vendors.countries')->activated()->ordered()->get();
+    }
+
     public function search(string $query = '')
     {
         return $this->toCollection(parent::search($query));
@@ -60,13 +67,33 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
         return $this->userQuery()->whereId($id)->firstOrFail()->withAppends();
     }
 
-    public function create(StoreCompanyRequest $request): Company
+    public function random(int $limit = 1, ?Closure $scope = null)
     {
-        $user = request()->user();
+        $method = $limit > 1 ? 'get' : 'first';
 
-        $company = $user->companies()->create($request->validated());
-        $company->createLogo($request->logo);
-        $company->syncVendors($request->vendors);
+        $query = $this->company->query()->inRandomOrder()->limit($limit);
+
+        if ($scope instanceof Closure) {
+            $scope($query);
+        }
+
+        return $query->{$method}();
+    }
+
+    public function create($request): Company
+    {
+        if ($request instanceof \Illuminate\Http\Request) {
+            $request = $request->validated();
+        }
+
+        if (!Arr::has($request, ['user_id'])) {
+            abort_if(is_null(request()->user()), 422, UIDS_01);
+            data_set($request, 'user_id', request()->user()->id);
+        }
+
+        $company = $this->company->create($request);
+        $company->createLogo(data_get($request, 'logo'));
+        $company->syncVendors(data_get($request, 'vendors'));
         $company->load('vendors')->appendLogo();
 
         return $company;

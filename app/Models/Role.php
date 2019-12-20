@@ -11,7 +11,8 @@ use App\Traits\{
     Activatable,
     BelongsToUser,
     Search\Searchable,
-    Systemable
+    Systemable,
+    Activity\LogsActivity
 };
 use Spatie\Permission\{
     Guard,
@@ -27,7 +28,6 @@ use Illuminate\Database\Eloquent\{
     Relations\MorphToMany,
     Relations\BelongsToMany
 };
-use Spatie\Activitylog\Traits\LogsActivity;
 use Arr;
 
 class Role extends UuidModel implements RoleContract, ActivatableInterface

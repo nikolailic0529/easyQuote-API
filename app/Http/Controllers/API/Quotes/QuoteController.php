@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\{
     Quote\QuoteRepositoryInterface as QuoteRepository,
     QuoteTemplate\TemplateFieldRepositoryInterface as TemplateFieldRepository,
-    Quote\Margin\MarginRepositoryInterface as MarginRepository
+    Quote\Margin\MarginRepositoryInterface as MarginRepository,
+    CompanyRepositoryInterface as CompanyRepository,
+    QuoteFile\DataSelectSeparatorRepositoryInterface as DataSelectRepository
 };
 use App\Http\Requests\{
     StoreQuoteStateRequest,
@@ -18,6 +20,7 @@ use App\Http\Requests\{
 };
 use App\Http\Requests\Quote\TryDiscountsRequest;
 use App\Models\Quote\Quote;
+use Setting;
 
 class QuoteController extends Controller
 {
@@ -27,14 +30,22 @@ class QuoteController extends Controller
 
     protected $margin;
 
+    protected $company;
+
+    protected $dataSelect;
+
     public function __construct(
         QuoteRepository $quote,
         TemplateFieldRepository $templateField,
-        MarginRepository $margin
+        MarginRepository $margin,
+        CompanyRepository $company,
+        DataSelectRepository $dataSelect
     ) {
         $this->quote = $quote;
         $this->templateField = $templateField;
         $this->margin = $margin;
+        $this->company = $company;
+        $this->dataSelect = $dataSelect;
     }
 
     public function quote(Quote $quote)
@@ -62,7 +73,11 @@ class QuoteController extends Controller
     public function step1()
     {
         return response()->json(
-            $this->quote->step1()
+            [
+                'companies' => $this->company->allWithVendorsAndCountries(),
+                'data_select_separators' => $this->dataSelect->all(),
+                'supported_file_types' => Setting::get('supported_file_types_ui')
+            ]
         );
     }
 

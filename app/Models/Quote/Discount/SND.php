@@ -2,8 +2,10 @@
 
 namespace App\Models\Quote\Discount;
 
-use App\Traits\Discount\HasValueAttribute;
-use Spatie\Activitylog\Traits\LogsActivity;
+use App\Traits\{
+    Discount\HasValueAttribute,
+    Activity\LogsActivity
+};
 
 class SND extends Discount
 {

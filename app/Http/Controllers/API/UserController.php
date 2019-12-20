@@ -2,7 +2,12 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Contracts\Repositories\UserRepositoryInterface as UserRepository;
+use App\Contracts\Repositories\{
+    UserRepositoryInterface as UserRepository,
+    RoleRepositoryInterface as RoleRepository,
+    CountryRepositoryInterface as CountryRepository,
+    TimezoneRepositoryInterface as TimezoneRepository
+};
 use App\Models\User;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Collaboration\{
@@ -15,9 +20,12 @@ class UserController extends Controller
 {
     protected $user;
 
-    public function __construct(UserRepository $user)
+    public function __construct(UserRepository $user, RoleRepository $role, CountryRepository $country, TimezoneRepository $timezone)
     {
         $this->user = $user;
+        $this->role = $role;
+        $this->country = $country;
+        $this->timezone = $timezone;
     }
 
     /**
@@ -52,8 +60,12 @@ class UserController extends Controller
      */
     public function create()
     {
+        $roles = $this->role->allActivated(['id', 'name']);
+        $countries = $this->country->all();
+        $timezones = $this->timezone->all();
+
         return response()->json(
-            $this->user->data()
+            compact('roles', 'countries', 'timezones')
         );
     }
 
@@ -97,7 +109,7 @@ class UserController extends Controller
      */
     public function update(UpdateUserRequest $request, User $user)
     {
-        $this->authorize('update', [$user, $request]);
+        $this->authorize('updateProfile', [$user, $request]);
 
         return response()->json(
             $this->user->update($request, $user->id)

@@ -160,6 +160,10 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->alias(TimezoneRepositoryInterface::class, 'timezone.repository');
 
+        $this->app->alias(CompanyRepositoryInterface::class, 'company.repository');
+
+        $this->app->alias(VendorRepositoryInterface::class, 'vendor.repository');
+
         $this->app->alias(UserRepositoryInterface::class, 'user.repository');
 
         $this->app->alias(RoleRepositoryInterface::class, 'role.repository');

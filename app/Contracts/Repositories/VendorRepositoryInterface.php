@@ -2,7 +2,6 @@
 
 namespace App\Contracts\Repositories;
 
-use App\Builder\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
 use App\Http\Requests\Vendor\{
     StoreVendorRequest,
@@ -23,7 +22,7 @@ interface VendorRepositoryInterface
     /**
      * Get All Vendors without pagination
      *
-     * @return Collection
+     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function allFlatten(): Collection;
 
@@ -38,7 +37,7 @@ interface VendorRepositoryInterface
     /**
      * Vendors query.
      *
-     * @return Builder
+     * @return \Illuminate\Database\Eloquent\Builder
      */
     public function userQuery(): Builder;
 
@@ -46,15 +45,23 @@ interface VendorRepositoryInterface
      * Find Vendor.
      *
      * @param string $id
-     * @return Vendor
+     * @return \App\Models\Vendor
      */
     public function find(string $id): Vendor;
+
+    /**
+     * Retrieve random existing Vendor.
+     *
+     * @param int $limit
+     * @return \App\Models\Vendor|\Illuminate\Database\Eloquent\Collection|null
+     */
+    public function random(int $limit = 1);
 
     /**
      * Create Vendor.
      *
      * @param StoreVendorRequest $request
-     * @return Vendor
+     * @return \App\Models\Vendor
      */
     public function create(StoreVendorRequest $request): Vendor;
 
@@ -63,7 +70,7 @@ interface VendorRepositoryInterface
      *
      * @param UpdateVendorRequest $request
      * @param string $id
-     * @return Vendor
+     * @return \App\Models\Vendor
      */
     public function update(UpdateVendorRequest $request, string $id): Vendor;
 
@@ -95,7 +102,7 @@ interface VendorRepositoryInterface
      * Find Vendors by Country.
      *
      * @param string $id
-     * @return Collection
+     * @return \Illuminate\Database\Eloquent\Collection
      */
     public function country(string $id): Collection;
 }

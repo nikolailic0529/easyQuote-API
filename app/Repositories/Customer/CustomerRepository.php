@@ -7,6 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use App\Models\Customer\Customer;
 use Illuminate\Database\Eloquent\Builder;
 use App\Http\Resources\CustomerRepositoryResource;
+use App\Http\Resources\CustomerResponseResource;
 
 class CustomerRepository implements CustomerRepositoryInterface
 {
@@ -67,8 +68,10 @@ class CustomerRepository implements CustomerRepositoryInterface
 
         $customer->load('country', 'addresses');
 
-        report_logger(['message' => S4_CS_01], $customer->toArray());
+        $customerResponse = CustomerResponseResource::make($customer);
 
-        return $customer->withAppends();
+        report_logger(['message' => S4_CS_01], $customerResponse);
+
+        return $customerResponse;
     }
 }

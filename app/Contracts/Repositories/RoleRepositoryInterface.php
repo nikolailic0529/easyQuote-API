@@ -3,12 +3,9 @@
 namespace App\Contracts\Repositories;
 
 use App\Models\Role;
-use App\Http\Requests\Role\{
-    StoreRoleRequest,
-    UpdateRoleRequest
-};
-use App\Builder\Pagination\Paginator;
+use App\Http\Requests\Role\UpdateRoleRequest;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as IlluminateCollection;
 use Illuminate\Support\Collection;
 
 interface RoleRepositoryInterface
@@ -27,6 +24,14 @@ interface RoleRepositoryInterface
      * @return mixed
      */
     public function all();
+
+    /**
+     * Retieve all activated roles.
+     *
+     * @param array $columns
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function allActivated(array $columns = ['*']): IlluminateCollection;
 
     /**
      * Search over Collaboration Roles.

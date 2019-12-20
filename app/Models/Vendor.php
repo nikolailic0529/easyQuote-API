@@ -16,10 +16,10 @@ use App\Traits\{
     Search\Searchable,
     Systemable,
     Quote\HasQuotes,
-    QuoteTemplate\HasQuoteTemplates
+    QuoteTemplate\HasQuoteTemplates,
+    Activity\LogsActivity
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Spatie\Activitylog\Traits\LogsActivity;
 
 class Vendor extends UuidModel implements WithImage, WithLogo, ActivatableInterface
 {

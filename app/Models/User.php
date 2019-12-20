@@ -34,11 +34,11 @@ use App\Traits\{
     Auth\Loginable,
     Auth\HasApiTokens,
     User\EnforceableChangePassword,
-    User\PerformsActivity
+    User\PerformsActivity,
+    Activity\LogsActivity
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Traits\HasRoles;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Builder;
 use Arr;
 
