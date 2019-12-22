@@ -2,7 +2,6 @@
 
 namespace App\Contracts\Repositories\Quote\Margin;
 
-use App\Builder\Pagination\Paginator;
 use App\Http\Requests\Margin\{
     StoreCountryMarginRequest,
     UpdateCountryMarginRequest
@@ -13,6 +12,7 @@ use App\Models\Quote\{
 };
 use Illuminate\Database\Eloquent\Builder;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Closure;
 
 interface MarginRepositoryInterface
 {
@@ -33,26 +33,26 @@ interface MarginRepositoryInterface
     /**
      * Create Country Margin.
      *
-     * @param StoreCountryMarginRequest $request
-     * @return CountryMargin
+     * @param \App\Http\Requests\Margin\StoreCountryMarginRequest|array $request
+     * @return \App\Models\Quote\Margin\CountryMargin
      */
-    public function create(StoreCountryMarginRequest $request): CountryMargin;
+    public function create($request): CountryMargin;
 
     /**
      * Find Acceptable Country Margin or Create new.
      *
-     * @param Quote $quote
+     * @param \App\Models\Quote\Quote $quote
      * @param array $attributes
-     * @return CountryMargin
+     * @return \App\Models\Quote\Margin\CountryMargin
      */
     public function firstOrCreate(Quote $quote, array $attributes): CountryMargin;
 
     /**
      * Update Country Margin.
      *
-     * @param UpdateCountryMarginRequest $request
+     * @param \App\Http\Requests\Margin\UpdateCountryMarginRequest $request
      * @param string $id
-     * @return CountryMargin
+     * @return \App\Models\Quote\Margin\CountryMargin
      */
     public function update(UpdateCountryMarginRequest $request, string $id): CountryMargin;
 
@@ -60,9 +60,18 @@ interface MarginRepositoryInterface
      * Get Country Margin by id.
      *
      * @param string $id
-     * @return CountryMargin|NotFoundHttpException
+     * @return \App\Models\Quote\Margin\CountryMargin|NotFoundHttpException
      */
     public function find(string $id);
+
+    /**
+     * Retrieve random existing Margin.
+     *
+     * @param int $limit
+     * @param Closure $scope
+     * @return \App\Models\Quote\Margin\CountryMargin|\Illuminate\Database\Eloquent\Collection|null
+     */
+    public function random(int $limit = 1, ?Closure $scope = null);
 
     /**
      * Delete specified Country Margin.

@@ -160,14 +160,24 @@ class ImportCsv
         })->implode(';');
 
         $this->pdo->exec($colsQuery);
+
+        $this->afterImport();
     }
 
-    public function beforeImport()
+    protected function beforeImport(): void
     {
         $this->checkHeader();
         $this->loadIntoTempTable();
         $this->mapHeaders();
         $this->setHeadersCount();
+    }
+
+    protected function afterImport(): void
+    {
+        if($this->quoteFile->rowsCount === 0) {
+            $this->quoteFile->setException('QFNRF_01');
+            $this->quoteFile->throwExceptionIfExists();
+        }
     }
 
     private function checkHeader()

@@ -60,12 +60,12 @@ class UserController extends Controller
      */
     public function create()
     {
-        $roles = $this->role->allActivated(['id', 'name']);
-        $countries = $this->country->all();
-        $timezones = $this->timezone->all();
-
         return response()->json(
-            compact('roles', 'countries', 'timezones')
+            [
+                'roles' => $this->role->allActivated(['id', 'name']),
+                'countries' => $this->country->all(),
+                'timezones' => $this->timezone->all()
+            ]
         );
     }
 

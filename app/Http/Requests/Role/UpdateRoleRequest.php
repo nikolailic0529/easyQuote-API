@@ -47,7 +47,7 @@ class UpdateRoleRequest extends FormRequest
                 'string',
                 'min:2',
                 'max:60',
-                Rule::unique('roles')->whereNull('deleted_at')
+                Rule::unique('roles')->whereNull('deleted_at')->ignore($this->role)
             ],
             'privileges' => 'required|array',
             'privileges.*.module' => [

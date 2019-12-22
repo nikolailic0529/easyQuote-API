@@ -59,9 +59,7 @@ class CustomerRepository implements CustomerRepositoryInterface
             $attributes = $attributes->validated();
         }
 
-        if (!is_array($attributes)) {
-            return null;
-        }
+        abort_if(!is_array($attributes), 422, ARG_REQ_AR_01);
 
         $customer = $this->customer->create($attributes);
         $customer->addresses()->createMany($attributes['addresses']);

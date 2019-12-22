@@ -8,6 +8,7 @@ use App\Contracts\{
     Services\ParserServiceInterface,
     Services\WordParserInterface,
     Services\PdfParserInterface,
+    Services\CsvParserInterface,
     Services\QuoteServiceInterface,
     Services\ReportLoggerInterface,
     Repositories\TimezoneRepositoryInterface,
@@ -76,6 +77,7 @@ use App\Repositories\{
 use App\Services\{
     Auth\AuthService,
     Auth\AuthenticatedCase,
+    CsvParser,
     ParserService,
     WordParser,
     QuoteService,
@@ -118,6 +120,7 @@ class AppServiceProvider extends ServiceProvider
         ParserServiceInterface::class => ParserService::class,
         WordParserInterface::class => WordParser::class,
         PdfParserInterface::class => PdfParser::class,
+        CsvParserInterface::class => CsvParser::class,
         RoleRepositoryInterface::class => RoleRepository::class,
         QuoteDraftedRepositoryInterface::class => QuoteDraftedRepository::class,
         QuoteSubmittedRepositoryInterface::class => QuoteSubmittedRepository::class,
@@ -169,6 +172,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->alias(RoleRepositoryInterface::class, 'role.repository');
 
         $this->app->alias(CustomerRepositoryInterface::class, 'customer.repository');
+
+        $this->app->alias(MarginRepositoryInterface::class, 'margin.repository');
 
         $this->app->alias(ReportLoggerInterface::class, 'report.logger');
     }

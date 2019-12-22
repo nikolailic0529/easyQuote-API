@@ -6,6 +6,7 @@ use App\Contracts\{
     Services\ParserServiceInterface,
     Services\WordParserInterface as WordParser,
     Services\PdfParserInterface as PdfParser,
+    Services\CsvParserInterface as CsvParser,
     Repositories\Quote\QuoteRepositoryInterface as QuoteRepository,
     Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository,
     Repositories\QuoteFile\ImportableColumnRepositoryInterface as ImportableColumn,
@@ -45,6 +46,8 @@ class ParserService implements ParserServiceInterface
 
     protected $wordParser;
 
+    protected $csvParser;
+
     protected $defaultPage;
 
     protected $defaultSeparator;
@@ -56,7 +59,8 @@ class ParserService implements ParserServiceInterface
         FileFormatRepository $fileFormat,
         DataSelectSeparatorRepository $dataSelectSeparator,
         PdfParser $pdfParser,
-        WordParser $wordParser
+        WordParser $wordParser,
+        CsvParser $csvParser
     ) {
         $this->quote = $quote;
         $this->quoteFile = $quoteFile;
@@ -65,6 +69,7 @@ class ParserService implements ParserServiceInterface
         $this->dataSelectSeparator = $dataSelectSeparator;
         $this->pdfParser = $pdfParser;
         $this->wordParser = $wordParser;
+        $this->csvParser = $csvParser;
         $this->defaultPage = Setting::get('parser.default_page');
         $this->defaultSeparator = Setting::get('parser.default_separator');
     }
@@ -81,21 +86,24 @@ class ParserService implements ParserServiceInterface
 
         $pages = $this->countPages($original_file_path);
 
-        $mergeData = compact('format', 'pages', 'original_file_path');
+        $attributes = compact('format', 'pages', 'original_file_path');
 
         switch ($format->extension) {
             case 'pdf':
                 $rawData = $this->pdfParser->getText($original_file_path);
-                $mergeData = array_merge($mergeData, compact('rawData'));
+                $attributes = array_merge($attributes, compact('rawData'));
                 break;
             case 'docx':
             case 'doc':
                 $rawData = $this->wordParser->getText($original_file_path);
-                $mergeData = array_merge($mergeData, compact('rawData'));
+                $attributes = array_merge($attributes, compact('rawData'));
+                break;
+            case 'csv':
+                $attributes = array_merge($attributes, $this->guessDelimiter($original_file_path));
                 break;
         }
 
-        return array_merge($request->validated(), $mergeData);
+        return array_merge($request->validated(), $attributes);
     }
 
     public function handle(HandleQuoteFileRequest $request)
@@ -353,5 +361,14 @@ class ParserService implements ParserServiceInterface
         $format = $this->fileFormat->whereInExtension($extensions->toArray());
 
         return $format;
+    }
+
+    protected function guessDelimiter(string $filepath): array
+    {
+        $delimiter = $this->csvParser->guessDelimiter(Storage::path($filepath));
+
+        $data_select_separator_id = $this->dataSelectSeparator->findByName($delimiter)->id;
+
+        return compact('data_select_separator_id');
     }
 }

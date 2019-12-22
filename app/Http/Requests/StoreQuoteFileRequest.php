@@ -37,6 +37,7 @@ class StoreQuoteFileRequest extends FormRequest
                 'required',
                 'file',
                 "mimes:{$this->supported_file_types}",
+                'min:1',
                 "max:{$this->file_upload_size_kb}",
             ],
             'file_type' => 'required|string|in:Distributor Price List,Payment Schedule'

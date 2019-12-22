@@ -1,6 +1,7 @@
 <?php namespace App\Http\Requests\Discount;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 abstract class StoreDiscountRequest extends FormRequest
 {
@@ -14,6 +15,13 @@ abstract class StoreDiscountRequest extends FormRequest
         return array_merge($this->commonRules(), $this->additionalRules());
     }
 
+    public function messages()
+    {
+        return [
+            'vendor_id.exists' => 'The chosen vendor should belong to the chosen country.'
+        ];
+    }
+
     protected function commonRules()
     {
         return [
@@ -24,13 +32,15 @@ abstract class StoreDiscountRequest extends FormRequest
             ],
             'country_id' => [
                 'required',
+                'string',
                 'uuid',
                 'exists:countries,id'
             ],
             'vendor_id' => [
                 'required',
+                'string',
                 'uuid',
-                'exists:vendors,id'
+                Rule::exists('country_vendor')->where('country_id', $this->country_id)
             ]
         ];
     }

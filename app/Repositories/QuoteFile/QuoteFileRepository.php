@@ -17,7 +17,7 @@ use App\Models\{
 use Illuminate\Http\UploadedFile;
 use ErrorException;
 use Illuminate\Support\Facades\Schema;
-use Storage, Str, File, DB;
+use Storage, Str, File, DB, Arr;
 
 class QuoteFileRepository implements QuoteFileRepositoryInterface
 {
@@ -69,12 +69,6 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
             array_merge($attributes, compact('original_file_name'))
         );
 
-        if (isset($attributes['data_select_separator_id']) && isset($attributes['format']) && $attributes['format']->extension === 'csv') {
-            $separator = $this->dataSelectSeparator->whereId($attributes['data_select_separator_id'])->first();
-
-            $quoteFile->dataSelectSeparator()->associate($separator);
-        }
-
         if (isset($attributes['format'])) {
             $quoteFile->format()->associate($attributes['format']);
         }
@@ -85,7 +79,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
             $this->createRawData($quoteFile, $attributes['rawData']);
         }
 
-        return $quoteFile->makeHidden('user');
+        return $quoteFile->load('dataSelectSeparator')->makeHidden('user');
     }
 
     public function createPdf(Quote $quote, array $attributes)

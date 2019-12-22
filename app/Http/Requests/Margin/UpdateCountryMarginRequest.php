@@ -1,6 +1,7 @@
 <?php namespace App\Http\Requests\Margin;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateCountryMarginRequest extends FormRequest
 {
@@ -38,7 +39,7 @@ class UpdateCountryMarginRequest extends FormRequest
             ],
             'vendor_id' => [
                 'uuid',
-                'exists:vendors,id'
+                Rule::exists('country_vendor')->where('country_id', $this->country_id)
             ],
             'country_id' => [
                 'uuid',
@@ -56,6 +57,13 @@ class UpdateCountryMarginRequest extends FormRequest
                 'numeric',
                 $this->ifEquals('is_fixed', false, 'max:100')
             ]
+        ];
+    }
+
+    public function messages()
+    {
+        return [
+            'vendor_id.exists' => 'The chosen vendor should belong to the chosen country.'
         ];
     }
 

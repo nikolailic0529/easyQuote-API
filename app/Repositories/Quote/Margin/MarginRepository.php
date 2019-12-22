@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\{
     Builder,
     ModelNotFoundException
 };
+use Arr, Closure;
 
 class MarginRepository extends SearchableRepository implements MarginRepositoryInterface
 {
@@ -39,9 +40,33 @@ class MarginRepository extends SearchableRepository implements MarginRepositoryI
         return compact('quote_types', 'margin_types', 'margin_methods');
     }
 
-    public function create(StoreCountryMarginRequest $request): CountryMargin
+    public function create($request): CountryMargin
     {
-        return $request->user()->countryMargins()->create($request->validated());
+        if ($request instanceof \Illuminate\Http\Request) {
+            $request = $request->validated();
+        }
+
+        abort_if(!is_array($request), 422, ARG_REQ_AR_01);
+
+        if (!Arr::has($request, ['user_id'])) {
+            abort_if(is_null(request()->user()), 422, UIDS_01);
+            data_set($request, 'user_id', request()->user()->id);
+        }
+
+        return $this->countryMargin->create($request);
+    }
+
+    public function random(int $limit = 1, ?Closure $scope = null)
+    {
+        $method = $limit > 1 ? 'get' : 'first';
+
+        $query = $this->countryMargin->query()->inRandomOrder()->limit($limit);
+
+        if ($scope instanceof Closure) {
+            $scope($query);
+        }
+
+        return $query->{$method}();
     }
 
     public function firstOrCreate(Quote $quote, array $attributes): CountryMargin
@@ -80,7 +105,7 @@ class MarginRepository extends SearchableRepository implements MarginRepositoryI
 
     public function delete(string $id)
     {
-        return $this->getCountryMargin($id)->delete();
+        return $this->find($id)->delete();
     }
 
     public function activate(string $id)

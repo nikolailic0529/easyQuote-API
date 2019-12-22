@@ -37,6 +37,7 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         'file_type',
         'pages',
         'quote_file_format_id',
+        'data_select_separator_id',
         'quote_id',
         'imported_page'
     ];

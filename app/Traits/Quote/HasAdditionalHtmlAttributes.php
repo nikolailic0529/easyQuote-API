@@ -15,12 +15,12 @@ trait HasAdditionalHtmlAttributes
 
     public function getAdditionalNotesTextAttribute()
     {
-        return $this->stripHtml($this->attributes['additional_notes'] ?? null);
+        return $this->stripHtml($this->additional_notes);
     }
 
     public function getAdditionalDetailsTextAttribute()
     {
-        return $this->stripHtml($this->attributes['additional_details'] ?? null);
+        return $this->stripHtml($this->additional_details);
     }
 
     protected function stripHtml(?string $value)
@@ -29,8 +29,13 @@ trait HasAdditionalHtmlAttributes
             return $value;
         }
 
-        $value = preg_replace(['/<p(.*?)>((.*?)+)\<\/p>/', '/(<br.*>)+/'], ['${2}' . PHP_EOL, PHP_EOL], strip_tags($value, '<br><p>'));
-        $value = trim(preg_replace('/(\n|\r\n)+/', PHP_EOL, $value));
+        $value = preg_replace('/<p(.*?)>((.*?)+)\<\/p>/', '${2}<br/>', strip_tags($value, '<br><p>'));
+
+        /**
+         * Prevent repeated line-breaks.
+         */
+        $value = preg_replace('/(<br.*?>)+/', '<br/>', $value);
+        $value = trim(preg_replace('/^(?:<br\s*\/?>\s*)+/', '', $value));
 
         return $value;
     }
