@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\{
     Builder,
     ModelNotFoundException
 };
+use Arr;
 
 class PromotionalDiscountRepository extends DiscountRepository implements PromotionalDiscountRepositoryInterface
 {
@@ -33,13 +34,24 @@ class PromotionalDiscountRepository extends DiscountRepository implements Promot
         try {
             return $this->userQuery()->whereId($id)->firstOrFail();
         } catch (ModelNotFoundException $exception) {
-            error_abort('DNF_01', 404);
+            error_abort(DNF_01, 'DNF_01',  404);
         }
     }
 
-    public function create(StorePromotionalDiscountRequest $request): PromotionalDiscount
+    public function create($request): PromotionalDiscount
     {
-        return $request->user()->promotionalDiscounts()->create($request->validated());
+        if ($request instanceof \Illuminate\Http\Request) {
+            $request = $request->validated();
+        }
+
+        abort_if(!is_array($request), 422, ARG_REQ_AR_01);
+
+        if (!Arr::has($request, ['user_id'])) {
+            abort_if(is_null(request()->user()), 422, UIDS_01);
+            data_set($request, 'user_id', request()->user()->id);
+        }
+
+        return $this->promotionalDiscount->create($request);
     }
 
     public function update(UpdatePromotionalDiscountRequest $request, string $id): PromotionalDiscount

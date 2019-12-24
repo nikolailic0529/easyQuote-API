@@ -41,7 +41,7 @@ class QueryBuilderServiceProvider extends ServiceProvider
             $defaultSize = $defaultSize ?? config('api-paginate.default_size');
             $numberParameter = config('api-paginate.number_parameter');
             $sizeParameter = config('api-paginate.size_parameter');
-            $size = (int) request()->input($sizeParameter, $defaultSize);
+            $size = max((int) request()->input($sizeParameter, $defaultSize), 1);
             $size = $size > $maxResults ? $maxResults : $size;
 
             $page = Paginator::resolveCurrentPage($numberParameter);

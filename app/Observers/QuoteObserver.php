@@ -18,7 +18,7 @@ class QuoteObserver
             return;
         }
 
-        error_abort_if($this->sameRfqSubmittedQuoteExists($quote), 'QSE_01', 409);
+        error_abort_if($this->sameRfqSubmittedQuoteExists($quote), QSE_01, 'QSE_01', 409);
     }
 
     /**
@@ -29,7 +29,7 @@ class QuoteObserver
      */
     public function submitting(Quote $quote)
     {
-        error_abort_if($this->sameRfqSubmittedQuoteExists($quote), 'QSE_01', 409);
+        error_abort_if($this->sameRfqSubmittedQuoteExists($quote), QSE_01, 'QSE_01', 409);
     }
 
     /**

@@ -27,7 +27,7 @@ class PerformUserActivity
         if ($user->doesntHaveRecentActivity()) {
             app('auth.service')->logout();
 
-            error_abort('LO_00', 401);
+            error_abort(LO_00, 'LO_00',  401);
         }
 
         auth()->user()->freshActivity();

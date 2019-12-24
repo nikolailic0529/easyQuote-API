@@ -56,7 +56,7 @@ class WordParser implements WordParserInterface
 
         $rows = $this->load($filePath, $storage)->getTables()->getRows($columns);
 
-        error_abort_if(empty($rows), 'QFNC_01', 422);
+        error_abort_if(empty($rows), QFNC_01, 'QFNC_01', 422);
 
         $page = 1;
         $content = null;

@@ -67,13 +67,7 @@ class StoreQuoteStateRequest extends FormRequest
             ],
             'quote_data.customer_id' => [
                 'uuid',
-                'exists:customers,id',
-                Rule::unique('quotes', 'customer_id')->where(function ($query) {
-                    $query->whereNotNull('submitted_at')
-                        ->whereNull('deleted_at');
-
-                    $this->filled('quote_id') && $query->where('id', '!=', $this->quote_id);
-                })
+                'exists:customers,id'
             ],
             'quote_data.company_id' => [
                 'required_with:quote_data.vendor_id,quote_data.country_id,quote_data.language_id',

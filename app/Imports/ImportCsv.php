@@ -175,7 +175,7 @@ class ImportCsv
     protected function afterImport(): void
     {
         if($this->quoteFile->rowsCount === 0) {
-            $this->quoteFile->setException('QFNRF_01');
+            $this->quoteFile->setException(QFNRF_01, 'QFNRF_01');
             $this->quoteFile->throwExceptionIfExists();
         }
     }
@@ -183,7 +183,7 @@ class ImportCsv
     private function checkHeader()
     {
         if (mb_strlen($this->header[0]) > 100) {
-            $this->quoteFile->setException('QFWS_01');
+            $this->quoteFile->setException(QFWS_01, 'QFWS_01');
             $this->quoteFile->throwExceptionIfExists();
         }
     }

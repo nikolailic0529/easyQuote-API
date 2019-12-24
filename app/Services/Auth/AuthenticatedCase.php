@@ -43,9 +43,9 @@ class AuthenticatedCase
         $this->user->notify(new AttemptMail($this->attempt));
     }
 
-    public function abort(string $code): void
+    public function abort(string $message, string $code): void
     {
-        error_abort($code, 422);
+        error_abort($message, $code, 422);
     }
 
     public static function initiate(User $user, AccessAttempt $attempt): AuthenticatedCase

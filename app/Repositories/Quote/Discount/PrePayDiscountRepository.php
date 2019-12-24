@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\{
     Builder,
     ModelNotFoundException
 };
+use Arr;
 
 class PrePayDiscountRepository extends DiscountRepository implements PrePayDiscountRepositoryInterface
 {
@@ -33,15 +34,24 @@ class PrePayDiscountRepository extends DiscountRepository implements PrePayDisco
         try {
             return $this->userQuery()->whereId($id)->firstOrFail();
         } catch (ModelNotFoundException $exception) {
-            error_abort('DNF_01', 404);
+            error_abort(DNF_01, 'DNF_01',  404);
         }
     }
 
-    public function create(StorePrePayDiscountRequest $request): PrePayDiscount
+    public function create($request): PrePayDiscount
     {
-        $user = request()->user();
+        if ($request instanceof \Illuminate\Http\Request) {
+            $request = $request->validated();
+        }
 
-        return $user->prePayDiscounts()->create($request->validated());
+        abort_if(!is_array($request), 422, ARG_REQ_AR_01);
+
+        if (!Arr::has($request, ['user_id'])) {
+            abort_if(is_null(request()->user()), 422, UIDS_01);
+            data_set($request, 'user_id', request()->user()->id);
+        }
+
+        return $this->prePayDiscount->create($request);
     }
 
     public function update(UpdatePrePayDiscountRequest $request, string $id): PrePayDiscount

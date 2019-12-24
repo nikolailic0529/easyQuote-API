@@ -30,7 +30,7 @@ class CsvDelimiterDetectTest extends TestCase
     }
 
     /**
-     * Test properly determine colon delimiter.
+     * Test valid detection colon delimiter.
      *
      * @return void
      */
@@ -40,7 +40,7 @@ class CsvDelimiterDetectTest extends TestCase
     }
 
     /**
-     * Test properly determine comma delimiter.
+     * Test valid detection comma delimiter.
      *
      * @return void
      */
@@ -50,7 +50,7 @@ class CsvDelimiterDetectTest extends TestCase
     }
 
     /**
-     * Test properly determine tab delimiter.
+     * Test valid detection tab delimiter.
      *
      * @return void
      */
@@ -60,7 +60,7 @@ class CsvDelimiterDetectTest extends TestCase
     }
 
     /**
-     * Test properly determine semicolon delimiter.
+     * Test valid detection semicolon delimiter.
      *
      * @return void
      */
@@ -84,7 +84,6 @@ class CsvDelimiterDetectTest extends TestCase
 
         collect($files)->each(function ($file) use ($delimiter) {
             $determinedDelimiter = $this->csv->guessDelimiter($file->getPathname());
-
             $this->assertEquals($delimiter, $determinedDelimiter);
         });
     }

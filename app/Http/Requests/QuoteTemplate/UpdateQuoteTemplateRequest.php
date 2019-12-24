@@ -29,7 +29,8 @@ class UpdateQuoteTemplateRequest extends FormRequest
             'countries' => 'array',
             'countries.*' => 'string|uuid|exists:countries,id',
             'form_data' => 'array',
-            'form_values_data' => 'required_with:form_data|array'
+            'form_values_data' => 'required_with:form_data|array',
+            'complete_design' => 'boolean'
         ];
     }
 }

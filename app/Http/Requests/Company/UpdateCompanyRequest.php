@@ -49,14 +49,12 @@ class UpdateCompanyRequest extends FormRequest
     {
         return [
             'name' => [
-                'required',
                 'string',
                 'max:60',
                 'min:2',
                 Rule::unique('companies')->whereNull('deleted_at')->ignore($this->company)
             ],
             'vat' => [
-                'required',
                 'string',
                 'max:60',
                 'min:2',
@@ -77,7 +75,7 @@ class UpdateCompanyRequest extends FormRequest
                 'in:' . $this->categories
             ],
             'email' => 'email',
-            'phone' => 'nullable|string|min:4',
+            'phone' => 'nullable|string|min:4|phone',
             'website' => 'nullable|string|min:4',
             'vendors' => 'array',
             'vendors.*' => 'required|uuid|exists:vendors,id',

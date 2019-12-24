@@ -19,6 +19,6 @@ class AlreadyLoggedIn
 
         $case->notifyUser();
 
-        $case->abort('AU_00');
+        $case->abort(AU_00, 'AU_00');
     }
 }

@@ -18,7 +18,7 @@ class MarginObserver
             return;
         }
 
-        error_abort_if($this->exists($countryMargin), 'ME_01', 409);
+        error_abort_if($this->exists($countryMargin), ME_01, 'ME_01', 409);
     }
 
     private function exists(CountryMargin $countryMargin)

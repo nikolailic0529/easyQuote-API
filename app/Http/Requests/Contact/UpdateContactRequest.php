@@ -24,9 +24,9 @@ class UpdateContactRequest extends FormRequest
     public function rules()
     {
         return [
-            'first_name' => 'required|string|min:2',
-            'last_name' => 'required|string|min:2',
-            'phone' => 'nullable|string|min:4',
+            'first_name' => 'required|string|min:2|alpha',
+            'last_name' => 'required|string|min:2|alpha',
+            'phone' => 'nullable|string|min:4|phone',
             'mobile' => 'nullable|string|min:4',
             'email' => 'required|string|email',
             'job_title' => 'nullable|string|min:2',

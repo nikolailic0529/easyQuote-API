@@ -2,13 +2,13 @@
 
 namespace App\Contracts\Repositories\QuoteTemplate;
 
-use App\Builder\Pagination\Paginator;
 use App\Http\Requests\QuoteTemplate\{
     StoreQuoteTemplateRequest,
     UpdateQuoteTemplateRequest
 };
 use App\Models\QuoteTemplate\QuoteTemplate;
 use Illuminate\Support\Collection;
+use \Closure;
 
 interface QuoteTemplateRepositoryInterface
 {
@@ -31,9 +31,18 @@ interface QuoteTemplateRepositoryInterface
      * Get Quote Template by id.
      *
      * @param string $id
-     * @return QuoteTemplate
+     * @return \App\Models\QuoteTemplate\QuoteTemplate
      */
     public function find(string $id): QuoteTemplate;
+
+    /**
+     * Retrieve random existing Company.
+     *
+     * @param int $limit
+     * @param Closure $scope
+     * @return \App\Models\QuoteTemplate\QuoteTemplate|\Illuminate\Database\Eloquent\Collection|null
+     */
+    public function random(int $limit = 1, ?Closure $scope = null);
 
     /**
      * Get Quote Templates by Company, Vendor, Country.
@@ -56,17 +65,17 @@ interface QuoteTemplateRepositoryInterface
     /**
      * Create Quote Template.
      *
-     * @param StoreQuoteTemplateRequest $request
-     * @return QuoteTemplate
+     * @param \App\Http\Requests\QuoteTemplate\StoreQuoteTemplateRequest|array $request
+     * @return \App\Models\QuoteTemplate\QuoteTemplate
      */
-    public function create(StoreQuoteTemplateRequest $request): QuoteTemplate;
+    public function create($request): QuoteTemplate;
 
     /**
      * Update specified Quote Template.
      *
-     * @param UpdateQuoteTemplateRequest $request
+     * @param \App\Http\Requests\QuoteTemplate\UpdateQuoteTemplateRequest $request
      * @param string $id
-     * @return QuoteTemplate
+     * @return \App\Models\QuoteTemplate\QuoteTemplate
      */
     public function update(UpdateQuoteTemplateRequest $request, string $id): QuoteTemplate;
 
@@ -95,10 +104,11 @@ interface QuoteTemplateRepositoryInterface
     public function deactivate(string $id): bool;
 
     /**
-     * Copy specified Quote Template.
+     * Copy a specified Quote Template.
+     * Return a newly copied Template id. ["id" => copied_template_id]
      *
      * @param string $id
-     * @return bool
+     * @return array
      */
-    public function copy(string $id): bool;
+    public function copy(string $id): array;
 }

@@ -67,12 +67,12 @@ class Invitation extends UuidModel
 
     public function getUserEmailAttribute()
     {
-        return $this->user->email;
+        return $this->user->email ?? null;
     }
 
     public function getRoleNameAttribute()
     {
-        return $this->role->name;
+        return $this->role->name ?? null;
     }
 
     public function getRouteKeyName()

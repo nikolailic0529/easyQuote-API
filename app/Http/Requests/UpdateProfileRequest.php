@@ -28,15 +28,15 @@ class UpdateProfileRequest extends FormRequest
     public function rules()
     {
         return [
-            'first_name' => 'string|min:2',
-            'middle_name' => 'nullable|string',
-            'last_name' => 'string|min:2',
+            'first_name' => 'string|min:2|alpha',
+            'middle_name' => 'nullable|string|alpha',
+            'last_name' => 'string|min:2|alpha',
             'email' => [
                 'string',
                 'email',
                 Rule::unique('users')->ignore($this->user())->whereNull('deleted_at')
             ],
-            'phone' => 'nullable|string|min:4',
+            'phone' => 'nullable|string|min:4|phone',
             'timezone_id' => 'string|uuid|exists:timezones,id',
             'picture' => 'image|max:2048',
             'delete_picture' => 'nullable|boolean',
@@ -56,7 +56,8 @@ class UpdateProfileRequest extends FormRequest
                 'min:8',
                 'different:current_password',
                 'confirmed'
-            ]
+            ],
+            'default_route' => 'nullable|string|max:200'
         ];
     }
 

@@ -2,7 +2,6 @@
 
 namespace App\Contracts\Repositories\Quote\Discount;
 
-use App\Builder\Pagination\Paginator;
 use App\Http\Requests\Discount\{
     StoreSNDrequest,
     UpdateSNDrequest
@@ -13,14 +12,14 @@ use Illuminate\Database\Eloquent\Builder;
 interface SNDrepositoryInterface
 {
     /**
-     * Get all User's SNDs.
+     * Get all SNDs.
      *
      * @return mixed
      */
     public function all();
 
     /**
-     * Search over User's SNDs.
+     * Search over SNDs.
      *
      * @param string $query
      * @return mixed
@@ -28,39 +27,39 @@ interface SNDrepositoryInterface
     public function search(string $query = '');
 
     /**
-     * User's SNDs query.
+     * SNDs query.
      *
      * @return Builder
      */
     public function userQuery(): Builder;
 
     /**
-     * Find User's SND.
+     * Find a specified SND.
      *
      * @param string $id
-     * @return SND
+     * @return \App\Models\Quote\Discount\SND
      */
     public function find(string $id): SND;
 
     /**
-     * Create User's SND.
+     * Create SND.
      *
-     * @param StoreSNDrequest $request
-     * @return SND
+     * @param \App\Http\Requests\Discount\StoreSNDrequest|array $request
+     * @return \App\Models\Quote\Discount\SND
      */
-    public function create(StoreSNDrequest $request): SND;
+    public function create($request): SND;
 
     /**
-     * Update User's SND.
+     * Update a specified SND.
      *
-     * @param UpdateSNDrequest $request
+     * @param \App\Http\Requests\Discount\UpdateSNDrequest $request
      * @param string $id
-     * @return SND
+     * @return \App\Models\Quote\Discount\SND
      */
     public function update(UpdateSNDrequest $request, string $id): SND;
 
     /**
-     * Delete User's SND.
+     * Delete a specified SND.
      *
      * @param string $id
      * @return boolean
@@ -68,7 +67,7 @@ interface SNDrepositoryInterface
     public function delete(string $id): bool;
 
     /**
-     * Activate User's SND.
+     * Activate a specified SND.
      *
      * @param string $id
      * @return boolean
@@ -76,7 +75,7 @@ interface SNDrepositoryInterface
     public function activate(string $id): bool;
 
     /**
-     * Deactivate User's SND.
+     * Deactivate a specified SND.
      *
      * @param string $id
      * @return boolean

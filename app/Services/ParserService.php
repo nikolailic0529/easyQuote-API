@@ -110,7 +110,7 @@ class ParserService implements ParserServiceInterface
     {
         $quote = $this->quote->find($request->quote_id);
 
-        error_abort_if(!$quote->quoteTemplate()->exists(), 'QNT_01', 422);
+        error_abort_if(!$quote->quoteTemplate()->exists(), QNT_01, 'QNT_01', 422);
 
         $quoteFile = $this->quoteFile->find($request->quote_file_id);
 
@@ -208,7 +208,7 @@ class ParserService implements ParserServiceInterface
                     return $this->handleWord($quoteFile);
                     break;
                 default:
-                    error_abort('QFTNS_01', 422);
+                    error_abort(QFTNS_01, 'QFTNS_01',  422);
                     break;
             }
         });

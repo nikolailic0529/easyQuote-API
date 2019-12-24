@@ -287,9 +287,10 @@ class QuoteRepository implements QuoteRepositoryInterface
     {
         $quote = $this->find($id);
 
-        $discounts = $this->morphDiscount->whereHasMorph('discountable', $quote->discountsOrder(), function ($query) use ($quote) {
-            $query->quoteAcceptable($quote);
-        })->get()->pluck('discountable');
+        $discounts = $this->morphDiscount
+            ->whereHasMorph('discountable', $quote->discountsOrder(), function ($query) use ($quote) {
+                $query->quoteAcceptable($quote)->activated();
+            })->get()->pluck('discountable');
 
         $expectingDiscounts = ['multi_year' => [], 'pre_pay' => [], 'promotions' => [], 'snd' => []];
 

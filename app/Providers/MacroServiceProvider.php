@@ -11,6 +11,7 @@ use Illuminate\Support\{
     Carbon
 };
 use Spatie\Activitylog\ActivityLogger;
+use Illuminate\Support\Facades\Validator;
 use App\Models\System\Period;
 
 class MacroServiceProvider extends ServiceProvider
@@ -276,5 +277,9 @@ class MacroServiceProvider extends ServiceProvider
         Carbon::macro('period', function (string $period) {
             return Period::create($period);
         });
+
+        Validator::extend('phone', function ($attribute, $value, $parameters) {
+            return preg_match('/\+?[\d]+/', $value);
+        }, 'Phone must contain only digits.');
     }
 }

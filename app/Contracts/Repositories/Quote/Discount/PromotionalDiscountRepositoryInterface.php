@@ -2,7 +2,6 @@
 
 namespace App\Contracts\Repositories\Quote\Discount;
 
-use App\Builder\Pagination\Paginator;
 use App\Http\Requests\Discount\{
     StorePromotionalDiscountRequest,
     UpdatePromotionalDiscountRequest
@@ -13,14 +12,14 @@ use Illuminate\Database\Eloquent\Builder;
 interface PromotionalDiscountRepositoryInterface
 {
     /**
-     * Get all User's Promotional Discounts.
+     * Get all Promotional Discounts.
      *
      * @return mixed
      */
     public function all();
 
     /**
-     * Search over User's Promotional Discounts.
+     * Search over Promotional Discounts.
      *
      * @param string $query
      * @return mixed
@@ -28,39 +27,39 @@ interface PromotionalDiscountRepositoryInterface
     public function search(string $query = '');
 
     /**
-     * User's Promotional Discounts query.
+     * Promotional Discounts query.
      *
      * @return Builder
      */
     public function userQuery(): Builder;
 
     /**
-     * Find User's Promotional Discount.
+     * Find a specified Promotional Discount.
      *
      * @param string $id
-     * @return PromotionalDiscount
+     * @return \App\Models\Quote\Discount\PromotionalDiscount
      */
     public function find(string $id): PromotionalDiscount;
 
     /**
-     * Create User's Promotional Discount.
+     * Create Promotional Discount.
      *
-     * @param StorePromotionalDiscountRequest $request
-     * @return PromotionalDiscount
+     * @param \App\Http\Requests\Discount\StorePromotionalDiscountRequest|array $request
+     * @return \App\Models\Quote\Discount\PromotionalDiscount
      */
-    public function create(StorePromotionalDiscountRequest $request): PromotionalDiscount;
+    public function create($request): PromotionalDiscount;
 
     /**
-     * Update User's Promotional Discount.
+     * Update a specified Promotional Discount.
      *
-     * @param UpdatePromotionalDiscountRequest $request
+     * @param \App\Http\Requests\Discount\UpdatePromotionalDiscountRequest $request
      * @param string $id
-     * @return PromotionalDiscount
+     * @return \App\Models\Quote\Discount\PromotionalDiscount
      */
     public function update(UpdatePromotionalDiscountRequest $request, string $id): PromotionalDiscount;
 
     /**
-     * Delete User's Promotional Discount.
+     * Delete a specified Promotional Discount.
      *
      * @param string $id
      * @return boolean
@@ -68,7 +67,7 @@ interface PromotionalDiscountRepositoryInterface
     public function delete(string $id): bool;
 
     /**
-     * Activate User's Promotional Discount.
+     * Activate a specified Promotional Discount.
      *
      * @param string $id
      * @return boolean
@@ -76,7 +75,7 @@ interface PromotionalDiscountRepositoryInterface
     public function activate(string $id): bool;
 
     /**
-     * Deactivate User's Promotional Discount.
+     * Deactivate a specified Promotional Discount.
      *
      * @param string $id
      * @return boolean

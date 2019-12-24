@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\{
     Builder
 };
 use Illuminate\Support\Collection as SupportCollection;
+use Arr, \Closure;
 
 class QuoteTemplateRepository extends SearchableRepository implements QuoteTemplateRepositoryInterface
 {
@@ -63,6 +64,19 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
             });
     }
 
+    public function random(int $limit = 1, ?Closure $scope = null)
+    {
+        $method = $limit > 1 ? 'get' : 'first';
+
+        $query = $this->quoteTemplate->query()->inRandomOrder()->limit($limit);
+
+        if ($scope instanceof Closure) {
+            $scope($query);
+        }
+
+        return $query->{$method}();
+    }
+
     public function designer(string $id): SupportCollection
     {
         $template = $this->find($id)->load('company', 'vendor.image');
@@ -81,19 +95,48 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
         return $designer;
     }
 
-    public function create(StoreQuoteTemplateRequest $request): QuoteTemplate
+    public function create($request): QuoteTemplate
     {
-        $quoteTemplate = request()->user()->quoteTemplates()->create($request->validated());
-        $quoteTemplate->syncCountries($request->countries);
+        if ($request instanceof \Illuminate\Http\Request) {
+            $request = $request->validated();
+        }
 
-        return $quoteTemplate->load('company', 'vendor', 'countries', 'templateFields', 'currency');
+        abort_if(!is_array($request), 422, ARG_REQ_AR_01);
+
+        if (!Arr::has($request, ['user_id'])) {
+            abort_if(is_null(request()->user()), 422, UIDS_01);
+            data_set($request, 'user_id', request()->user()->id);
+        }
+
+        $quoteTemplate = $this->quoteTemplate->create($request);
+        $quoteTemplate->syncCountries(data_get($request, 'countries'));
+
+        return $quoteTemplate->load('company', 'vendor', 'countries', 'templateFields', 'currency')
+            ->makeVisible(['form_data', 'form_values_data']);
     }
 
     public function update(UpdateQuoteTemplateRequest $request, string $id): QuoteTemplate
     {
+        $attributes = $request->validated();
+
         $quoteTemplate = $this->find($id);
-        $quoteTemplate->update($request->validated());
-        $quoteTemplate->syncCountries($request->countries);
+        $quoteTemplate->update($attributes);
+        $quoteTemplate->syncCountries(data_get($attributes, 'countries'));
+
+        /**
+         * Determine that passed $attributes have only design related values (form_data & form_values_data).
+         * Then if the passed $attributes have complete_design we'll perform record log with updated description.
+         */
+        $designKeys = ['form_data', 'form_values_data', 'complete_design'];
+
+        if (
+            Arr::has($attributes, $designKeys)
+            && blank(array_diff_key($attributes, array_flip($designKeys)))
+        ) {
+            activity()
+                ->on($quoteTemplate)
+                ->log('updated');
+        }
 
         return $quoteTemplate->load('company', 'vendor', 'countries', 'templateFields', 'currency')->makeVisible(['form_data', 'form_values_data']);
     }
@@ -113,7 +156,7 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
         return $this->find($id)->deactivate();
     }
 
-    public function copy(string $id): bool
+    public function copy(string $id): array
     {
         activity()->disableLogging();
 
@@ -136,7 +179,7 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
                 ->log('copied');
         }
 
-        return (bool) $copied;
+        return ['id' => $replicatableTemplate->id];
     }
 
     protected function filterQueryThrough(): array

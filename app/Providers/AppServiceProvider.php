@@ -132,6 +132,27 @@ class AppServiceProvider extends ServiceProvider
         ReportLoggerInterface::class => ReportLogger::class
     ];
 
+    public $aliases = [
+        AuthenticatedCase::class => 'auth.case',
+        ElasticsearchClient::class => 'elasticsearch.client',
+        QuoteServiceInterface::class => 'quote.service',
+        QuoteRepositoryInterface::class => 'quote.repository',
+        QuoteFileRepositoryInterface::class => 'quotefile.repository',
+        AuthServiceInterface::class => 'auth.service',
+        \Laravel\Passport\ClientRepository::class => 'passport.client.repository',
+        CountryRepositoryInterface::class => 'country.repository',
+        TimezoneRepositoryInterface::class => 'timezone.repository',
+        CompanyRepositoryInterface::class => 'company.repository',
+        VendorRepositoryInterface::class => 'vendor.repository',
+        UserRepositoryInterface::class => 'user.repository',
+        RoleRepositoryInterface::class => 'role.repository',
+        CustomerRepositoryInterface::class => 'customer.repository',
+        MarginRepositoryInterface::class => 'margin.repository',
+        QuoteTemplateRepositoryInterface::class => 'template.repository',
+        CurrencyRepositoryInterface::class => 'currency.repository',
+        ReportLoggerInterface::class => 'report.logger'
+    ];
+
     /**
      * Register any application services.
      *
@@ -145,37 +166,11 @@ class AppServiceProvider extends ServiceProvider
             return ElasticsearchBuilder::create()->setHosts(app('config')->get('services.search.hosts'))->build();
         });
 
-        $this->app->alias(AuthenticatedCase::class, 'auth.case');
-
-        $this->app->alias(ElasticsearchClient::class, 'elasticsearch.client');
-
-        $this->app->alias(QuoteServiceInterface::class, 'quote.service');
-
-        $this->app->alias(QuoteRepositoryInterface::class, 'quote.repository');
-
-        $this->app->alias(QuoteFileRepositoryInterface::class, 'quotefile.repository');
-
-        $this->app->alias(AuthServiceInterface::class, 'auth.service');
-
-        $this->app->alias(\Laravel\Passport\ClientRepository::class, 'passport.client.repository');
-
-        $this->app->alias(CountryRepositoryInterface::class, 'country.repository');
-
-        $this->app->alias(TimezoneRepositoryInterface::class, 'timezone.repository');
-
-        $this->app->alias(CompanyRepositoryInterface::class, 'company.repository');
-
-        $this->app->alias(VendorRepositoryInterface::class, 'vendor.repository');
-
-        $this->app->alias(UserRepositoryInterface::class, 'user.repository');
-
-        $this->app->alias(RoleRepositoryInterface::class, 'role.repository');
-
-        $this->app->alias(CustomerRepositoryInterface::class, 'customer.repository');
-
-        $this->app->alias(MarginRepositoryInterface::class, 'margin.repository');
-
-        $this->app->alias(ReportLoggerInterface::class, 'report.logger');
+        if (property_exists($this, 'aliases')) {
+            foreach ($this->aliases as $key => $value) {
+                $this->app->alias($key, $value);
+            }
+        }
     }
 
     /**

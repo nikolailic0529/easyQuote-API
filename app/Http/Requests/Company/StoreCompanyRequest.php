@@ -78,7 +78,7 @@ class StoreCompanyRequest extends FormRequest
                 'in:' . $this->categories
             ],
             'email' => 'required|email',
-            'phone' => 'nullable|string|min:4',
+            'phone' => 'nullable|string|min:4|phone',
             'website' => 'nullable|string|min:4',
             'vendors' => 'array',
             'vendors.*' => 'required|uuid|exists:vendors,id',

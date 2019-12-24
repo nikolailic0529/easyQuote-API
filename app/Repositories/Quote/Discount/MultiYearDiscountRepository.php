@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\{
     Builder,
     ModelNotFoundException
 };
+use Arr;
 
 class MultiYearDiscountRepository extends DiscountRepository implements MultiYearDiscountRepositoryInterface
 {
@@ -33,13 +34,24 @@ class MultiYearDiscountRepository extends DiscountRepository implements MultiYea
         try {
             return $this->userQuery()->whereId($id)->firstOrFail();
         } catch (ModelNotFoundException $exception) {
-            error_abort('DNF_01', 404);
+            error_abort(DNF_01, 'DNF_01',  404);
         }
     }
 
-    public function create(StoreMultiYearDiscountRequest $request): MultiYearDiscount
+    public function create($request): MultiYearDiscount
     {
-        return $request->user()->multiYearDiscounts()->create($request->validated());
+        if ($request instanceof \Illuminate\Http\Request) {
+            $request = $request->validated();
+        }
+
+        abort_if(!is_array($request), 422, ARG_REQ_AR_01);
+
+        if (!Arr::has($request, ['user_id'])) {
+            abort_if(is_null(request()->user()), 422, UIDS_01);
+            data_set($request, 'user_id', request()->user()->id);
+        }
+
+        return $this->multiYearDiscount->create($request);
     }
 
     public function update(UpdateMultiYearDiscountRequest $request, string $id): MultiYearDiscount

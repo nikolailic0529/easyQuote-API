@@ -2,7 +2,6 @@
 
 namespace App\Contracts\Repositories\Quote\Discount;
 
-use App\Builder\Pagination\Paginator;
 use App\Http\Requests\Discount\{
     StoreMultiYearDiscountRequest,
     UpdateMultiYearDiscountRequest
@@ -13,14 +12,14 @@ use Illuminate\Database\Eloquent\Builder;
 interface MultiYearDiscountRepositoryInterface
 {
     /**
-     * Get all User's MultiYear Discounts.
+     * Get all MultiYear Discounts.
      *
      * @return mixed
      */
     public function all();
 
     /**
-     * Search over User's MultiYear Discounts.
+     * Search over MultiYear Discounts.
      *
      * @param string $query
      * @return mixed
@@ -28,39 +27,39 @@ interface MultiYearDiscountRepositoryInterface
     public function search(string $query = '');
 
     /**
-     * User's MultiYear Discounts query.
+     * MultiYear Discounts query.
      *
      * @return Builder
      */
     public function userQuery(): Builder;
 
     /**
-     * Find User's MultiYear Discount.
+     * Find a specified MultiYear Discount.
      *
      * @param string $id
-     * @return MultiYearDiscount
+     * @return \App\Models\Quote\Discount\MultiYearDiscount
      */
     public function find(string $id): MultiYearDiscount;
 
     /**
-     * Create User's MultiYear Discount.
+     * Create MultiYear Discount.
      *
-     * @param StoreMultiYearDiscountRequest $request
-     * @return MultiYearDiscount
+     * @param \App\Http\Requests\Discount\StoreMultiYearDiscountRequest|array $request
+     * @return \App\Models\Quote\Discount\MultiYearDiscount
      */
-    public function create(StoreMultiYearDiscountRequest $request): MultiYearDiscount;
+    public function create($request): MultiYearDiscount;
 
     /**
-     * Update User's MultiYear Discount.
+     * Update a specified MultiYear Discount.
      *
-     * @param UpdateMultiYearDiscountRequest $request
+     * @param \App\Http\Requests\Discount\UpdateMultiYearDiscountRequest $request
      * @param string $id
-     * @return MultiYearDiscount
+     * @return \App\Models\Quote\Discount\MultiYearDiscount
      */
     public function update(UpdateMultiYearDiscountRequest $request, string $id): MultiYearDiscount;
 
     /**
-     * Delete User's MultiYear Discount.
+     * Delete a specified MultiYear Discount.
      *
      * @param string $id
      * @return boolean
@@ -68,7 +67,7 @@ interface MultiYearDiscountRepositoryInterface
     public function delete(string $id): bool;
 
     /**
-     * Activate User's MultiYear Discount.
+     * Activate a specified MultiYear Discount.
      *
      * @param string $id
      * @return boolean
@@ -76,7 +75,7 @@ interface MultiYearDiscountRepositoryInterface
     public function activate(string $id): bool;
 
     /**
-     * Deactivate User's MultiYear Discount.
+     * Deactivate a specified MultiYear Discount.
      *
      * @param string $id
      * @return boolean

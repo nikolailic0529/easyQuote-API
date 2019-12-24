@@ -49,7 +49,12 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
 
     public function allWithVendorsAndCountries(): Collection
     {
-        return $this->company->query()->with('vendors.countries')->activated()->ordered()->get();
+        return $this->company->query()->with([
+            'vendors' => function ($query) {
+                $query->activated();
+            },
+            'vendors.countries'
+        ])->activated()->ordered()->get();
     }
 
     public function search(string $query = '')

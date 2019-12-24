@@ -99,7 +99,7 @@ class MarginRepository extends SearchableRepository implements MarginRepositoryI
         try {
             return $this->userQuery()->whereId($id)->firstOrFail();
         } catch (ModelNotFoundException $exception) {
-            error_abort('MNF_01', 404);
+            error_abort(MNF_01, 'MNF_01',  404);
         }
     }
 

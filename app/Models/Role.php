@@ -41,7 +41,9 @@ class Role extends UuidModel implements RoleContract, ActivatableInterface
         Systemable,
         LogsActivity;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'name', 'guard_name', 'privileges', 'is_system'
+    ];
 
     protected $hidden = [
         'permissions', 'user', 'deleted_at'

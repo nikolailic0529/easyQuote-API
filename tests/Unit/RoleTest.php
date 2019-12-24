@@ -6,7 +6,7 @@ use Tests\TestCase;
 use Tests\Unit\Traits\AssertsListing;
 use Tests\Unit\Traits\WithFakeUser;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Str;
+use Str, Arr;
 
 class RoleTest extends TestCase
 {
@@ -51,7 +51,7 @@ class RoleTest extends TestCase
     }
 
     /**
-     * Test Role creating with wrong attributes.
+     * Test Role creating with invalid attributes.
      *
      * @return void
      */
@@ -84,16 +84,8 @@ class RoleTest extends TestCase
         $response->assertOk()
             ->assertJsonStructure([
                 'id', 'name', 'privileges', 'user_id', 'is_system', 'created_at', 'activated_at'
-            ]);
-
-        $role->refresh();
-
-        $currentRoleAttributes = [
-            'name' => $role->name,
-            'privileges' => $role->privileges->toArray()
-        ];
-
-        $this->assertEquals(0, $currentRoleAttributes <=> $newAttributes);
+            ])
+            ->assertJsonFragment(Arr::only($newAttributes, ['name', 'privileges']));
     }
 
     /**
@@ -185,8 +177,10 @@ class RoleTest extends TestCase
             return compact('module', 'privilege');
         })->toArray();
 
-        $name = Str::random(40);
-
-        return compact('name', 'privileges');
+        return [
+            'name' => Str::random(40),
+            'privileges' => $privileges,
+            'user_id' => $this->user->id
+        ];
     }
 }

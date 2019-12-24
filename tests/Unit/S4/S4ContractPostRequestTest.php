@@ -12,7 +12,7 @@ class S4ContractPostRequestTest extends TestCase
     use DatabaseTransactions, WithFakeUser;
 
     /**
-     * Test Storing S4 Contract with properly data.
+     * Test Storing S4 Contract with valid attributes.
      *
      * @return void
      */

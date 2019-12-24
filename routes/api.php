@@ -11,7 +11,7 @@ Route::group(['namespace' => 'API'], function () {
 
         Route::group(['middleware' => 'auth:api'], function () {
             Route::get('logout', 'AuthController@logout')->name('account.logout');
-            Route::get('user', 'AuthController@user')->name('account.show');
+            Route::match(['get', 'put'], 'user', 'AuthController@user')->name('account.show');
             Route::post('user', 'AuthController@updateOwnProfile')->name('account.update');
         });
     });

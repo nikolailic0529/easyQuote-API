@@ -2,8 +2,8 @@
 
 namespace Tests\Unit;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\{
     WithFakeUser,
     AssertsListing
@@ -26,7 +26,7 @@ class MarginTest extends TestCase
     }
 
     /**
-     * Test Margin creating with properly attributes.
+     * Test Margin creating with valid attributes.
      *
      * @return void
      */
@@ -86,7 +86,7 @@ class MarginTest extends TestCase
     }
 
     /**
-     * Test Margin Updating
+     * Test Margin Updating.
      *
      * @return void
      */

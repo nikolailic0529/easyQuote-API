@@ -4,11 +4,12 @@ namespace Tests\Unit;
 
 use Tests\TestCase;
 use Tests\Unit\Traits\WithFakeUser;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Arr;
 
 class CustomerTest extends TestCase
 {
-    use WithFakeUser;
+    use DatabaseTransactions, WithFakeUser;
 
     protected $customerRepository;
 
@@ -39,6 +40,11 @@ class CustomerTest extends TestCase
         $this->assertTrue($responseItemHasFields);
     }
 
+    /**
+     * Test retrieving a specified Customer.
+     *
+     * @return void
+     */
     public function testSpecifiedCustomerDisplaying()
     {
         $customer = $this->customerRepository->random();

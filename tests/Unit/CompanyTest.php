@@ -28,7 +28,7 @@ class CompanyTest extends TestCase
     }
 
     /**
-     * Test Company creating with properly data.
+     * Test Company creating with valid attributes.
      *
      * @return void
      */
@@ -168,7 +168,7 @@ class CompanyTest extends TestCase
     public function testSystemCompanyDeleting()
     {
         $systemCompany = app('company.repository')->random(1, function (Builder $query) {
-            $query->activated();
+            $query->system();
         });
 
         $response = $this->deleteJson(url("api/companies/{$systemCompany->id}"), [], $this->authorizationHeader);

@@ -142,7 +142,7 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
 
     public function createCollaborator(array $attributes, Invitation $invitation): User
     {
-        error_abort_if($invitation->isExpired, 'IE_01', 406);
+        error_abort_if($invitation->isExpired, IE_01, 'IE_01', 406);
 
         $user = $this->create(array_merge($attributes, $invitation->only('email')));
         $user->interact($invitation);
@@ -169,7 +169,7 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
     {
         $invitation = $this->invitation->whereInvitationToken($token)->first();
 
-        error_abort_if(is_null($invitation) || $invitation->isExpired, 'IE_01', 404);
+        error_abort_if(is_null($invitation) || $invitation->isExpired, IE_01, 'IE_01', 404);
 
         $invitation->makeHiddenExcept(['email', 'role_name']);
 
@@ -258,7 +258,7 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
     {
         $passwordReset = $this->passwordReset->whereToken($token)->firstOrFail();
 
-        error_abort_if($passwordReset->isExpired, 'PRE_01', 406);
+        error_abort_if($passwordReset->isExpired, PRE_01, 'PRE_01', 406);
 
         $password = Hash::make($request->password);
 

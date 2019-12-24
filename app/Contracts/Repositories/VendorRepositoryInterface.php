@@ -60,15 +60,15 @@ interface VendorRepositoryInterface
     /**
      * Create Vendor.
      *
-     * @param StoreVendorRequest $request
+     * @param \App\Http\Requests\Vendor\StoreVendorRequest|array $request
      * @return \App\Models\Vendor
      */
-    public function create(StoreVendorRequest $request): Vendor;
+    public function create($request): Vendor;
 
     /**
      * Update Vendor.
      *
-     * @param UpdateVendorRequest $request
+     * @param \App\Http\Requests\Vendor\UpdateVendorRequest $request
      * @param string $id
      * @return \App\Models\Vendor
      */

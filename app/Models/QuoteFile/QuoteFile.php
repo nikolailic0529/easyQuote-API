@@ -190,9 +190,9 @@ class QuoteFile extends UuidModel implements HasOrderedScope
         ];
     }
 
-    public function setException(string $code): bool
+    public function setException(string $message, string $code): bool
     {
-        return cache()->forever("quote_file_exception:{$this->id}", $code);
+        return cache()->forever("quote_file_exception:{$this->id}", compact('message', 'code'));
     }
 
     public function getExceptionAttribute()
@@ -207,7 +207,7 @@ class QuoteFile extends UuidModel implements HasOrderedScope
 
     public function throwExceptionIfExists()
     {
-        error_abort_if($this->exception, $this->exception, 422);
+        error_abort_if($this->exception, $this->exception['message'], $this->exception['code'], 422);
     }
 
     public function getProcessingPercentageAttribute()

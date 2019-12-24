@@ -2,7 +2,6 @@
 
 namespace App\Contracts\Repositories\Quote\Discount;
 
-use App\Builder\Pagination\Paginator;
 use App\Http\Requests\Discount\{
     StorePrePayDiscountRequest,
     UpdatePrePayDiscountRequest
@@ -13,14 +12,14 @@ use Illuminate\Database\Eloquent\Builder;
 interface PrePayDiscountRepositoryInterface
 {
     /**
-     * Get all User's PrePay Discounts.
+     * Get all PrePay Discounts.
      *
      * @return mixed
      */
     public function all();
 
     /**
-     * Search over User's PrePay Discounts.
+     * Search over PrePay Discounts.
      *
      * @param string $query
      * @return mixed
@@ -28,39 +27,39 @@ interface PrePayDiscountRepositoryInterface
     public function search(string $query = '');
 
     /**
-     * User's PrePay Discounts query.
+     * PrePay Discounts Query.
      *
      * @return Builder
      */
     public function userQuery(): Builder;
 
     /**
-     * Find User's PrePay Discount.
+     * Find a specified PrePay Discount.
      *
      * @param string $id
-     * @return PrePayDiscount
+     * @return \App\Models\Quote\Discount\PrePayDiscount
      */
     public function find(string $id): PrePayDiscount;
 
     /**
-     * Create User's PrePay Discount.
+     * Create PrePay Discount.
      *
-     * @param UpdatePrePayDiscountRequest $request
-     * @return PrePayDiscount
+     * @param \App\Http\Requests\Discount\StorePrePayDiscountRequest|array $request
+     * @return \App\Models\Quote\Discount\PrePayDiscount
      */
-    public function create(StorePrePayDiscountRequest $request): PrePayDiscount;
+    public function create($request): PrePayDiscount;
 
     /**
-     * Update User's PrePay Discount.
+     * Update a specified PrePay Discount.
      *
-     * @param UpdatePrePayDiscountRequest $request
+     * @param \App\Http\Requests\Discount\UpdatePrePayDiscountRequest $request
      * @param string $id
-     * @return PrePayDiscount
+     * @return \App\Models\Quote\Discount\PrePayDiscount
      */
     public function update(UpdatePrePayDiscountRequest $request, string $id): PrePayDiscount;
 
     /**
-     * Delete User's PrePay Discount.
+     * Delete a specified PrePay Discount.
      *
      * @param string $id
      * @return boolean
@@ -68,7 +67,7 @@ interface PrePayDiscountRepositoryInterface
     public function delete(string $id): bool;
 
     /**
-     * Activate User's PrePay Discount.
+     * Activate a specified PrePay Discount.
      *
      * @param string $id
      * @return boolean
@@ -76,7 +75,7 @@ interface PrePayDiscountRepositoryInterface
     public function activate(string $id): bool;
 
     /**
-     * Deactivate User's PrePay Discount.
+     * Deactivate a specified PrePay Discount.
      *
      * @param string $id
      * @return boolean

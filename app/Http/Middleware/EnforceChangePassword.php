@@ -20,7 +20,7 @@ class EnforceChangePassword
             return $next($request);
         }
 
-        error_abort_if(auth()->user()->mustChangePassword(), 'MCP_00', 422);
+        error_abort_if(auth()->user()->mustChangePassword(), MCP_00, 'MCP_00', 422);
 
         return $next($request);
     }

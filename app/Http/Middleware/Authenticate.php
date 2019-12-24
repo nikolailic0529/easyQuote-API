@@ -30,6 +30,6 @@ class Authenticate extends Middleware
      */
     protected function unauthenticated($request, array $guards)
     {
-        error_abort('UA_01', 401);
+        error_abort(UA_01, 'UA_01',  401);
     }
 }

@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\{
     Builder,
     Collection
 };
+use Arr;
 
 class VendorRepository extends SearchableRepository implements VendorRepositoryInterface
 {
@@ -45,13 +46,22 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
         return $this->vendor->query()->inRandomOrder()->limit($limit)->{$method}();
     }
 
-    public function create(StoreVendorRequest $request): Vendor
+    public function create($request): Vendor
     {
-        $user = request()->user();
+        if ($request instanceof \Illuminate\Http\Request) {
+            $request = $request->validated();
+        }
 
-        $vendor = $user->vendors()->create($request->validated());
-        $vendor->createLogo($request->logo);
-        $vendor->syncCountries($request->countries);
+        abort_if(!is_array($request), 422, ARG_REQ_AR_01);
+
+        if (!Arr::has($request, ['user_id'])) {
+            abort_if(is_null(request()->user()), 422, UIDS_01);
+            data_set($request, 'user_id', request()->user()->id);
+        }
+
+        $vendor = $this->vendor->create($request);
+        $vendor->createLogo(data_get($request, 'logo'));
+        $vendor->syncCountries(data_get($request, 'countries'));
         $vendor->load('countries');
         $vendor->appendLogo();
 

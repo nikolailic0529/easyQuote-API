@@ -113,7 +113,7 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
         $summary = $this->summary();
         $activitiesQuery = $this->filterQuery($this->query())->latest()->limit(5000);
 
-        error_abort_if($activitiesQuery->doesntExist(), 'ANF_01', 404);
+        error_abort_if($activitiesQuery->doesntExist(), ANF_01, 'ANF_01', 404);
 
         $activities = $activitiesQuery->get();
 
@@ -131,7 +131,7 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
         $summary = $this->summary($subject_id);
         $activitiesQuery = $this->filterQuery($this->subjectQuery($subject_id))->latest()->limit(5000);
 
-        error_abort_if($activitiesQuery->doesntExist(), 'ANF_01', 404);
+        error_abort_if($activitiesQuery->doesntExist(), ANF_01, 'ANF_01', 404);
 
         $activities = $activitiesQuery->get();
 

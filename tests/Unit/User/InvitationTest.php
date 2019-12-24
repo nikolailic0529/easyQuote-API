@@ -40,7 +40,7 @@ class InvitationTest extends TestCase
     }
 
     /**
-     * Invitation creating test.
+     * Invitation creating test with valid attributes.
      *
      * @return void
      */
@@ -114,7 +114,7 @@ class InvitationTest extends TestCase
     }
 
     /**
-     * Test Invitation Canceling and no availability when trying to use a given invitation.
+     * Test Invitation Canceling and ensure that Invitation is not available from outbound.
      *
      * @return void
      */
@@ -145,7 +145,7 @@ class InvitationTest extends TestCase
     }
 
     /**
-     * Test Invitation Deleting and no availability when trying to use a given invitation.
+     * Test Invitation Deleting and ensure that Invitation is not available from outbound.
      *
      * @return void
      */

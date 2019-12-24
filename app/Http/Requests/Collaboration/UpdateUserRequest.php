@@ -23,15 +23,15 @@ class UpdateUserRequest extends FormRequest
     public function rules()
     {
         return [
-            'first_name' => 'string',
-            'middle_name' => 'nullable|string',
-            'last_name' => 'string',
+            'first_name' => 'string|alpha',
+            'middle_name' => 'nullable|string|alpha',
+            'last_name' => 'string|alpha',
             'email' => [
                 'string',
                 'email',
                 Rule::unique('users')->ignore($this->user)->whereNull('deleted_at')
             ],
-            'phone' => 'nullable|string|min:4',
+            'phone' => 'nullable|string|min:4|phone',
             'timezone_id' => 'string|uuid|exists:timezones,id',
             'role_id' => [
                 'string',

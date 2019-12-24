@@ -6,10 +6,7 @@ use App\Models\{
     QuoteFile\QuoteFile
 };
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\{
-    WithFaker,
-    DatabaseTransactions
-};
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Collection;
 use \File;
 use Tests\Unit\Traits\{
@@ -20,7 +17,7 @@ use Tests\Unit\Traits\{
 
 abstract class ParsingTest extends TestCase
 {
-    use DatabaseTransactions, WithFaker, WithFakeUser, WithFakeQuote, WithFakeQuoteFile;
+    use DatabaseTransactions, WithFakeUser, WithFakeQuote, WithFakeQuoteFile;
 
     protected $mapping;
 

@@ -59,7 +59,7 @@ class AuthTest extends TestCase
     }
 
     /**
-     * Test Authentication of the existing user without sending ip address.
+     * Test Authentication of the existing user without passing ip address.
      *
      * @return void
      */

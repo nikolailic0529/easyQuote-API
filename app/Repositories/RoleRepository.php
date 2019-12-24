@@ -16,8 +16,8 @@ use Illuminate\Database\Eloquent\{
     Builder,
     Collection as IlluminateCollection
 };
-use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Arr;
 
 class RoleRepository extends SearchableRepository implements RoleRepositoryInterface
 {
@@ -59,11 +59,16 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
 
     public function create($attributes): Role
     {
-        if ($attributes instanceof Request) {
+        if ($attributes instanceof \Illuminate\Http\Request) {
             $attributes = $attributes->validated();
         }
 
         abort_if(!is_array($attributes), 422, ARG_REQ_AR_01);
+
+        if (!Arr::has($attributes, ['user_id'])) {
+            abort_if(is_null(request()->user()), 422, UIDS_01);
+            data_set($attributes, 'user_id', request()->user()->id);
+        }
 
         return $this->role->create($attributes)->syncPrivileges();
     }

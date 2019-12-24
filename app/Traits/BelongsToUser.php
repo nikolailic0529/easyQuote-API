@@ -10,8 +10,10 @@ use Illuminate\Database\Eloquent\{
 
 trait BelongsToUser
 {
-    public static function bootBelongsToUser()
+    public function initializeBelongsToUser()
     {
+        $this->fillable = array_merge($this->fillable, ['user_id']);
+
         static::replicating(function (Model $model) {
             if (app()->runningInConsole()) {
                 return;

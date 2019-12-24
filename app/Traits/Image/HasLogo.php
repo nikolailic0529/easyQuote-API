@@ -35,7 +35,8 @@ trait HasLogo
             $image->resize($size['width'], $size['height'], function ($constraint) {
                 $constraint->aspectRatio();
                 $constraint->upsize();
-            });
+            })
+            ->resizeCanvas($size['width'], $size['height'], 'center');
 
             $key++;
             $imageKey = "x{$key}";
@@ -58,11 +59,7 @@ trait HasLogo
 
     public function getLogoAttribute()
     {
-        if (!isset($this->image)) {
-            return null;
-        }
-
-        return $this->image->thumbnails;
+        return $this->image->thumbnails ?? null;
     }
 
     public function thumbnailProperties(): array

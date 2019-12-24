@@ -88,7 +88,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     {
         $quote = $this->quote->submitted()->activated()->orderByDesc('submitted_at')->rfq($rfq)->first();
 
-        error_abort_if(is_null($quote) || blank($quote->submitted_data), 'EQ_NF_01', 404);
+        error_abort_if(is_null($quote) || blank($quote->submitted_data), EQ_NF_01, 'EQ_NF_01', 404);
 
         return $quote;
     }

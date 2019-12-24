@@ -18,7 +18,7 @@ class MultiYearDiscountObserver
             return;
         }
 
-        error_abort_if($this->exists($discount), 'DE_01', 409);
+        error_abort_if($this->exists($discount), DE_01, 'DE_01', 409);
     }
 
     private function exists(MultiYearDiscount $multiYearDiscount)

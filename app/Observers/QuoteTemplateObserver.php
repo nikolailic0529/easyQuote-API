@@ -30,6 +30,6 @@ class QuoteTemplateObserver
             return;
         }
 
-        error_abort_if($quoteTemplate->isAttached(), 'QTAD_01', 409);
+        error_abort_if($quoteTemplate->isAttached(), QTAD_01, 'QTAD_01', 409);
     }
 }
