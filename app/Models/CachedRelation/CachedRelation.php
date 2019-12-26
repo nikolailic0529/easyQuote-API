@@ -9,4 +9,6 @@ class CachedRelation extends Model
     public $timestamps = false;
 
     protected $guarded = [];
+
+    protected $keyType = 'string';
 }

@@ -102,7 +102,7 @@ class MultiYearDiscountRepository extends DiscountRepository implements MultiYea
     protected function searchableFields(): array
     {
         return [
-            'name^5', 'durations.*^4', 'created_at^3', 'country.name', 'vendor.name'
+            'name^5', 'duration^4', 'value^4', 'created_at^3', 'country.name', 'vendor.name'
         ];
     }
 

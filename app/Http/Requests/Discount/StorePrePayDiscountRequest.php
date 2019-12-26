@@ -1,4 +1,6 @@
-<?php namespace App\Http\Requests\Discount;
+<?php
+
+namespace App\Http\Requests\Discount;
 
 class StorePrePayDiscountRequest extends StoreDiscountRequest
 {

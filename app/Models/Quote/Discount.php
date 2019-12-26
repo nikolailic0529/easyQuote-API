@@ -54,8 +54,8 @@ class Discount extends UuidModel
         $discount = $this->discountable;
 
         if ($discount instanceof MultiYearDiscount || $discount instanceof PrePayDiscount) {
-            $durations = collect($discount->durations);
-            $percentage = (float) ($durations->where('duration', $this->duration)->first()['value'] ?? $durations->first()['value']);
+            $durations = collect()->wrap($discount->durations);
+            $percentage = (float) data_get($durations, 'duration.value');
 
             return $percentage;
         }

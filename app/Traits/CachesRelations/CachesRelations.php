@@ -4,7 +4,7 @@ namespace App\Traits\CachesRelations;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\CachedRelation\{
-    CachedRelations,
+    CachedRelationWrapper,
     CachedRelation
 };
 use Illuminate\Support\Collection;
@@ -15,19 +15,17 @@ trait CachesRelations
 
     protected static $cacheRelationsEvents = ['creating', 'updating'];
 
-    protected function initializeCachesRelations()
+    protected static function bootCachesRelations()
     {
-        if (!isset(static::$cacheRelations)) {
+        $relationsToCache = static::getRelationsToCache(new static);
+
+        if ($relationsToCache->isEmpty()) {
             return;
         }
 
-        $this->hidden = array_merge($this->hidden, ['cached_relations']);
-
-        $dirtyRelations = collect(static::$cacheRelations);
-
         foreach (static::$cacheRelationsEvents as $event) {
-            static::$event(function (Model $model) use ($dirtyRelations) {
-                $cachedRelations = $model->interceptRelations($dirtyRelations);
+            static::$event(function (Model $model) use ($relationsToCache) {
+                $cachedRelations = $model->interceptRelations($relationsToCache);
                 $model->fillCachedRelations($cachedRelations);
             });
         }
@@ -52,19 +50,29 @@ trait CachesRelations
         return collect($cached_relations);
     }
 
-    public function getCachedRelationsAttribute($value): CachedRelations
+    public function getCachedRelationsAttribute($value): CachedRelationWrapper
     {
         $relations = json_decode($value, true);
 
         if (!is_array($relations)) {
-            return new CachedRelations([]);
+            return new CachedRelationWrapper([]);
         }
 
-        $relations = array_map(function ($relation) {
-            return new CachedRelation($relation);
-        }, $relations);
+        return new CachedRelationWrapper($relations);
+    }
 
-        return new CachedRelations($relations);
+    /**
+     * Filter set relations as we are caching only belongsTo type relations.
+     *
+     * @param \Illuminate\Database\Eloquent\Model $model
+     * @return \Illuminate\Support\Collection
+     */
+    protected static function getRelationsToCache(Model $model): Collection
+    {
+        return collect(static::$cacheRelations)->filter(function ($relation) use ($model) {
+            return method_exists($model, $relation)
+                && $model->{$relation}() instanceof \Illuminate\Database\Eloquent\Relations\BelongsTo;
+        });
     }
 
     protected function interceptRelations(Collection $dirtyRelations): Collection

@@ -5,6 +5,8 @@ use Str;
 
 trait HasPricesAttributes
 {
+    protected $applicableDiscounts = 0;
+
     public function initializeHasPricesAttributes()
     {
         $this->fillable = array_merge($this->fillable, ['calculate_list_price', 'buy_price']);
@@ -33,5 +35,15 @@ trait HasPricesAttributes
     public function getApplicableDiscountsFormattedAttribute()
     {
         return Str::prepend(Str::decimal((float) $this->applicable_discounts, 2), $this->quoteTemplate->currency_symbol);
+    }
+
+    public function getApplicableDiscountsAttribute(): float
+    {
+        return $this->applicableDiscounts;
+    }
+
+    public function setApplicableDiscountsAttribute($value): void
+    {
+        $this->applicableDiscounts = (float) $value;
     }
 }

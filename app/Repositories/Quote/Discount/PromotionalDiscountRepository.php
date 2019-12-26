@@ -96,7 +96,7 @@ class PromotionalDiscountRepository extends DiscountRepository implements Promot
 
     protected function searchableModel(): Model
     {
-        return $this->prePayDiscount;
+        return $this->promotionalDiscount;
     }
 
     protected function searchableFields(): array

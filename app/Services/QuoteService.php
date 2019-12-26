@@ -51,7 +51,7 @@ class QuoteService implements QuoteServiceInterface
         /**
          * Possible interaction with Discounts.
          */
-        $quote->applicable_discounts = 0;
+        $quote->applicableDiscounts = 0;
 
         $this->interact($quote, $this->interactableDiscounts($quote));
     }
@@ -111,7 +111,7 @@ class QuoteService implements QuoteServiceInterface
             }
 
             $buyPriceAfterDiscount = $quote->buy_price / $quote->bottomUpDivider;
-            $quote->applicable_discounts += $quote->totalPrice - $buyPriceAfterDiscount;
+            $quote->applicableDiscounts += $quote->totalPrice - $buyPriceAfterDiscount;
 
             return;
         }
@@ -122,7 +122,7 @@ class QuoteService implements QuoteServiceInterface
             }
 
             $value = $this->calculateDiscountValue($discount, (float) $row->computablePrice, (float) $quote->totalPrice);
-            $quote->applicable_discounts += $value;
+            $quote->applicableDiscounts += $value;
             $row->computablePrice -= $value;
 
             return $row;
@@ -132,7 +132,7 @@ class QuoteService implements QuoteServiceInterface
             return;
         }
 
-        $listPriceAfterDiscount = $quote->totalPrice - $quote->applicable_discounts;
+        $listPriceAfterDiscount = $quote->totalPrice - $quote->applicableDiscounts;
 
         $discount->margin_percentage = (float) $listPriceAfterDiscount !== 0.0
             ? round((($listPriceAfterDiscount - $quote->buy_price) / $listPriceAfterDiscount) * 100, 2)

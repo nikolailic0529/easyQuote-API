@@ -2,7 +2,7 @@
 
 namespace App\Traits\Discount;
 
-use DB;
+use DB, Arr;
 
 trait HasDurationsAttribute
 {
@@ -52,5 +52,19 @@ trait HasDurationsAttribute
     public function getValueAttribute()
     {
         return data_get($this->durations->first(), 'value');
+    }
+
+    public function toSearchArray()
+    {
+        $attributes = parent::toSearchArray();
+        Arr::forget($attributes, ['durations']);
+
+        $duration = collect(data_get($this->durations, 'duration', []));
+
+        $duration->transform(function ($value) {
+            return strval($value);
+        });
+
+        return array_merge($attributes, $duration->toArray());
     }
 }

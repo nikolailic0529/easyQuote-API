@@ -66,8 +66,6 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
         CachesRelations,
         HasAdditionalHtmlAttributes;
 
-    public $applicable_discounts = 0.0;
-
     /**
      * Determine how to display the Quote data.
      *
@@ -109,7 +107,7 @@ class Quote extends CompletableModel implements HasOrderedScope, ActivatableInte
     ];
 
     protected $hidden = [
-        'deleted_at'
+        'deleted_at', 'cached_relations'
     ];
 
     protected static $logAttributes = [
