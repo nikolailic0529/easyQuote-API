@@ -33,6 +33,7 @@
     <hr/>
 
     <h1>Logs</h1>
+    <div class="alert alert-info">Logs are limited to {{ $activityCollection->limit }} latest entries.</div>
     <table class="table table table-striped table-bordered">
         <thead>
             <tr>

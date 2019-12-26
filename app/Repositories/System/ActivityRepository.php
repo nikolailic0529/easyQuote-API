@@ -21,6 +21,8 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
 {
     protected $activity;
 
+    protected static $exportLimit = ['csv' => 5000, 'pdf' => 1000];
+
     protected $summaryCacheKey = 'activities-summary';
 
     public function __construct(Activity $activity)
@@ -111,13 +113,14 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
         }
 
         $summary = $this->summary();
-        $activitiesQuery = $this->filterQuery($this->query())->latest()->limit(5000);
+        $limit = $this->exportLimitForType($type);
+        $activitiesQuery = $this->filterQuery($this->query())->latest()->limit($limit);
 
         error_abort_if($activitiesQuery->doesntExist(), ANF_01, 'ANF_01', 404);
 
         $activities = $activitiesQuery->get();
 
-        $activityCollection = ActivityExportCollection::create($summary, $activities);
+        $activityCollection = ActivityExportCollection::create($summary, $activities, $limit);
 
         return $this->{$method}($activityCollection);
     }
@@ -129,13 +132,14 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
         }
 
         $summary = $this->summary($subject_id);
-        $activitiesQuery = $this->filterQuery($this->subjectQuery($subject_id))->latest()->limit(5000);
+        $limit = $this->exportLimitForType($type);
+        $activitiesQuery = $this->filterQuery($this->subjectQuery($subject_id))->latest()->limit($limit);
 
         error_abort_if($activitiesQuery->doesntExist(), ANF_01, 'ANF_01', 404);
 
         $activities = $activitiesQuery->get();
 
-        $activityCollection = ActivityExportCollection::create($summary, $activities, true);
+        $activityCollection = ActivityExportCollection::create($summary, $activities, $limit, true);
 
         return $this->{$method}($activityCollection);
     }
@@ -158,6 +162,11 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
         });
 
         return compact('periods', 'types', 'subject_types');
+    }
+
+    protected function exportLimitForType(string $type): int
+    {
+        return data_get(static::$exportLimit, $type, 0);
     }
 
     protected function subjectScope(string $subject_id)

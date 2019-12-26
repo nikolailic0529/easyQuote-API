@@ -24,6 +24,17 @@ class VendorTest extends TestCase
         $response = $this->getJson(url('api/vendors'), $this->authorizationHeader);
 
         $this->assertListing($response);
+
+        $query = http_build_query([
+            'search' => Str::random(10),
+            'order_by_created_at' => 'asc',
+            'order_by_name' => 'asc',
+            'order_by_short_code' => 'asc'
+        ]);
+
+        $response = $this->getJson(url('api/vendors?' . $query));
+
+        $response->assertOk();
     }
 
     /**
@@ -122,7 +133,7 @@ class VendorTest extends TestCase
     {
         return [
             'name' => $this->faker->company,
-            'short_code' => Str::random(6),
+            'short_code' => strtoupper(Str::random(6)),
             'countries' => app('country.repository')->all()->take(4)->pluck('id')->toArray(),
             'user_id' => $this->user->id
         ];

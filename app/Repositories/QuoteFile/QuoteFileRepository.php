@@ -181,9 +181,9 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         }
 
         if (count($importedRows) < 1) {
-            $quoteFile->setException(QFNRF_01);
+            $quoteFile->setException(QFNRF_01, 'QFNRF_01');
             $quoteFile->markAsUnHandled();
-            throw new ErrorException(QFNRF_01);
+            $quoteFile->throwExceptionIfExists();
         }
 
         $quoteFile->rowsData()->saveMany($importedRows);

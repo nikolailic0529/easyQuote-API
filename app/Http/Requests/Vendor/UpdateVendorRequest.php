@@ -45,4 +45,13 @@ class UpdateVendorRequest extends FormRequest
             ]
         ];
     }
+
+    public function validated()
+    {
+        $validated = parent::validated();
+
+        $short_code = strtoupper(data_get($validated, 'short_code'));
+
+        return array_merge($validated, compact('short_code'));
+    }
 }

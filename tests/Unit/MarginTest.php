@@ -8,6 +8,7 @@ use Tests\Unit\Traits\{
     WithFakeUser,
     AssertsListing
 };
+use Str;
 
 class MarginTest extends TestCase
 {
@@ -23,6 +24,17 @@ class MarginTest extends TestCase
         $response = $this->getJson(url('api/margins'), $this->authorizationHeader);
 
         $this->assertListing($response);
+
+        $query = http_build_query([
+            'search' => Str::random(10),
+            'order_by_created_at' => 'asc',
+            'order_by_value' => 'asc',
+            'order_by_country' => 'asc'
+        ]);
+
+        $response = $this->getJson(url('api/margins?' . $query));
+
+        $response->assertOk();
     }
 
     /**

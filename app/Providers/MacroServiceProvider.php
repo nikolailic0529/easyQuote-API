@@ -130,7 +130,7 @@ class MacroServiceProvider extends ServiceProvider
         Collection::macro('rowsToGroups', function (string $groupable, ?Collection $meta = null, bool $recalculate = false, ?string $currency = null) {
             $groups = $this->groupBy($groupable)->transform(function ($rows, $key) use ($groupable, $meta, $currency) {
                 $meta = isset($meta)
-                    ? $meta->firstWhere('name', '===', $key) ?? []
+                    ? $meta->firstWhere('name', '==', $key) ?? []
                     : [];
                 $rows = collect($rows)
                     ->transform(function ($row) use ($currency) {

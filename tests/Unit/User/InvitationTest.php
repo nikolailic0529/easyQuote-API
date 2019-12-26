@@ -6,7 +6,7 @@ use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\WithFakeUser;
 use Tests\Unit\Traits\AssertsListing;
-use Arr;
+use Arr, Str;
 
 class InvitationTest extends TestCase
 {
@@ -37,6 +37,12 @@ class InvitationTest extends TestCase
         );
 
         $this->assertListing($response);
+
+        $query = http_build_query(['search' => Str::random(10), 'order_by_created_at' => 'asc', 'order_by_name' => 'desc']);
+
+        $response = $this->getJson(url('api/invitations?' . $query));
+
+        $response->assertOk();
     }
 
     /**

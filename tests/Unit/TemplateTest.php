@@ -26,6 +26,18 @@ class TemplateTest extends TestCase
         $response = $this->getJson(url('api/templates'), $this->authorizationHeader);
 
         $this->assertListing($response);
+
+        $query = http_build_query([
+            'search' => Str::random(10),
+            'order_by_created_at' => 'asc',
+            'order_by_name' => 'asc',
+            'order_by_company_name' => 'asc',
+            'order_by_vendor_name' => 'asc',
+        ]);
+
+        $response = $this->getJson(url('api/templates?' . $query));
+
+        $response->assertOk();
     }
 
     /**

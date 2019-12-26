@@ -31,6 +31,16 @@ class RoleTest extends TestCase
         $response = $this->getJson(url('api/roles'), $this->authorizationHeader);
 
         $this->assertListing($response);
+
+        $query = http_build_query([
+            'search' => Str::random(10),
+            'order_by_created_at' => 'asc',
+            'order_by_name' => 'asc'
+        ]);
+
+        $response = $this->getJson(url('api/roles?' . $query));
+
+        $response->assertOk();
     }
 
     /**

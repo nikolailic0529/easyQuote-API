@@ -77,7 +77,7 @@ abstract class SearchableRepository
 
     protected function buildQuery(Model $model, array $items, Closure $scope = null)
     {
-        $ids = Arr::pluck($items['hits']['hits'], '_id');
+        $ids = data_get($items, 'hits.hits.*._id', []);
 
         $query = $this->searchableQuery();
         $table = $model->getTable();
@@ -101,10 +101,14 @@ abstract class SearchableRepository
             ]
         ];
 
-        $items = $this->elasticsearch()->search([
-            'index' => $model->getSearchIndex(),
-            'body' => $body
-        ]);
+        try {
+            $items = $this->elasticsearch()->search([
+                'index' => $model->getSearchIndex(),
+                'body' => $body
+            ]);
+        } catch (\Exception $e) {
+            $items = [];
+        }
 
         return $items;
     }

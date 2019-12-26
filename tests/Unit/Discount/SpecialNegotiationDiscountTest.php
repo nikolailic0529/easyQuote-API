@@ -3,9 +3,28 @@
 namespace Tests\Unit\Discount;
 
 use App\Contracts\Repositories\Quote\Discount\SNDrepositoryInterface;
+use Str;
 
 class SpecialNegotiationDiscountTest extends DiscountTest
 {
+    public function testDiscountListing()
+    {
+        parent::{__FUNCTION__}();
+
+        $query = http_build_query([
+            'search' => Str::random(10),
+            'order_by_created_at' => 'asc',
+            'order_by_country' => 'asc',
+            'order_by_vendor' => 'asc',
+            'order_by_name' => 'asc',
+            'order_by_value' => 'asc'
+        ]);
+
+        $response = $this->getJson(url("api/discounts/{$this->discountResource()}?" . $query), $this->authorizationHeader);
+
+        $response->assertOk();
+    }
+
     protected function discountResource(): string
     {
         return 'snd';

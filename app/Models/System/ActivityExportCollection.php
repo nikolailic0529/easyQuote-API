@@ -21,13 +21,20 @@ class ActivityExportCollection
     public $collection;
 
     /**
+     * Exportable Collection limit.
+     *
+     * @var int
+     */
+    public $limit;
+
+    /**
      * Name of the specified subject.
      *
      * @var null|string
      */
     public $subjectName = null;
 
-    public function __construct(iterable $summary, iterable $collection, bool $isSpecifiedSubject = false)
+    public function __construct(iterable $summary, iterable $collection, int $limit, bool $isSpecifiedSubject = false)
     {
         if (!collect($collection)->first() instanceof Activity) {
             throw new \Exception('The 2 argument must contain the Activities');
@@ -35,6 +42,7 @@ class ActivityExportCollection
 
         $this->summary = collect($summary);
         $this->collection = $this->prepareCollection($collection);
+        $this->limit = $limit;
 
         if ($isSpecifiedSubject) {
             $this->subjectName = $collection->first()->subject->item_name ?? null;

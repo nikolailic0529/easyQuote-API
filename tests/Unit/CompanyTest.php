@@ -25,6 +25,21 @@ class CompanyTest extends TestCase
         $response = $this->getJson(url('api/companies'), $this->authorizationHeader);
 
         $this->assertListing($response);
+
+        $query = http_build_query([
+            'search' => Str::random(10),
+            'order_by_created_at' => 'asc',
+            'order_by_name' => 'asc',
+            'order_by_vat' => 'asc',
+            'order_by_phone' => 'asc',
+            'order_by_website' => 'asc',
+            'order_by_type' => 'asc',
+            'order_by_category' => 'asc',
+        ]);
+
+        $response = $this->getJson(url('api/companies?' . $query));
+
+        $response->assertOk();
     }
 
     /**

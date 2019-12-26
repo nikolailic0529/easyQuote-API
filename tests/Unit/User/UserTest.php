@@ -8,6 +8,7 @@ use Tests\Unit\Traits\{
     WithFakeUser,
     AssertsListing
 };
+use Str;
 
 class UserTest extends TestCase
 {
@@ -32,6 +33,19 @@ class UserTest extends TestCase
         $response = $this->getJson(url('api/users'), $this->authorizationHeader);
 
         $this->assertListing($response);
+
+        $query = http_build_query([
+            'search' => Str::random(10),
+            'order_by_created_at' => 'asc',
+            'order_by_name' => 'asc',
+            'order_by_role' => 'asc',
+            'order_by_firstname' => 'asc',
+            'order_by_lastname' => 'asc'
+        ]);
+
+        $response = $this->getJson(url('api/users?' . $query));
+
+        $response->assertOk();
     }
 
     /**
