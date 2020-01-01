@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\UuidModel;
+use App\Models\BaseModel;
 use Illuminate\Auth\{
     Authenticatable,
     MustVerifyEmail,
@@ -15,7 +15,7 @@ use Illuminate\Contracts\Auth\{
     CanResetPassword as CanResetPasswordContract
 };
 
-class AuthenticableUser extends UuidModel implements
+class AuthenticableUser extends BaseModel implements
     AuthenticatableContract,
     AuthorizableContract,
     CanResetPasswordContract

@@ -7,7 +7,7 @@ use App\Contracts\{
     HasOrderedScope
 };
 use App\Models\{
-    UuidModel,
+    BaseModel,
     QuoteFile\ImportableColumn,
     Quote\FieldColumn
 };
@@ -21,7 +21,7 @@ use App\Traits\{
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Str;
 
-class TemplateField extends UuidModel implements HasOrderedScope, ActivatableInterface
+class TemplateField extends BaseModel implements HasOrderedScope, ActivatableInterface
 {
     use BelongsToUser,
         BelongsToTemplateFieldType,

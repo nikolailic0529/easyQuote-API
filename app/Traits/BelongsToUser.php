@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\{
     Builder,
     Model
 };
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 trait BelongsToUser
 {
@@ -23,17 +24,17 @@ trait BelongsToUser
         });
     }
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function scopeCurrentUser(Builder $query)
+    public function scopeCurrentUser(Builder $query): Builder
     {
         return $query->where("{$this->getTable()}.user_id", request()->user()->id);
     }
 
-    public function scopeCurrentUserWhen(Builder $query, $when)
+    public function scopeCurrentUserWhen(Builder $query, $when): Builder
     {
         return $query->when($when, function ($query) {
             $query->currentUser();

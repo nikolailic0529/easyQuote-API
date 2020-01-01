@@ -2,7 +2,7 @@
 
 namespace App\Models\Customer;
 
-use App\Models\UuidModel;
+use App\Models\BaseModel;
 use App\Traits\{
     BelongsToAddresses,
     BelongsToContacts,
@@ -14,7 +14,7 @@ use App\Traits\{
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Customer extends UuidModel
+class Customer extends BaseModel
 {
     use BelongsToAddresses,
         HasAddressTypes,

@@ -2,9 +2,9 @@
 
 namespace App\Models\QuoteFile;
 
-use App\Models\UuidModel;
+use App\Models\BaseModel;
 
-class QuoteFileFormat extends UuidModel
+class QuoteFileFormat extends BaseModel
 {
     //
 }

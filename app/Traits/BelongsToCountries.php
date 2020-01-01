@@ -3,19 +3,21 @@
 namespace App\Traits;
 
 use App\Models\Data\Country;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Arr;
+use Illuminate\Database\Eloquent\Builder;
 
 trait BelongsToCountries
 {
-    public function countries()
+    public function countries(): BelongsToMany
     {
         return $this->belongsToMany(Country::class)->orderBy('name');
     }
 
-    public function syncCountries($countries)
+    public function syncCountries(?array $countries): void
     {
-        if (!is_array($countries)) {
-            return false;
+        if (blank($countries)) {
+            return;
         }
 
         $oldCountries = $this->countries;
@@ -23,7 +25,7 @@ trait BelongsToCountries
         $changes = $this->countries()->sync($countries);
 
         if (blank(Arr::flatten($changes))) {
-            return $changes;
+            return;
         }
 
         $newCountries = $this->load('countries')->countries;
@@ -34,7 +36,7 @@ trait BelongsToCountries
             ->log('updated');
     }
 
-    public function scopeCountry($query, string $id)
+    public function scopeCountry(Builder $query, string $id): Builder
     {
         return $query->whereHas('countries', function ($query) use ($id) {
             $query->where('countries.id', $id);

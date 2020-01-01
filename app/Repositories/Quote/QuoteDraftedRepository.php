@@ -3,8 +3,8 @@
 namespace App\Repositories\Quote;
 
 use App\Contracts\Repositories\Quote\QuoteDraftedRepositoryInterface;
+use App\Http\Resources\QuoteRepository\QuoteDraftedRepositoryCollection;
 use App\Repositories\SearchableRepository;
-use App\Http\Resources\QuoteRepositoryCollection;
 use App\Models\Quote\Quote;
 use Illuminate\Database\Eloquent\{
     Model,
@@ -38,6 +38,7 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
     {
         return $this->quote
             ->currentUserWhen(request()->user()->cant('view_quotes'))
+            ->with('versions:id,quotes.user_id,version_number,updated_at')
             ->drafted();
     }
 
@@ -70,9 +71,9 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
             ->groupBy("{$this->table}.id");
     }
 
-    public function toCollection($resource): QuoteRepositoryCollection
+    public function toCollection($resource): QuoteDraftedRepositoryCollection
     {
-        return new QuoteRepositoryCollection($resource);
+        return QuoteDraftedRepositoryCollection::make($resource);
     }
 
     public function find(string $id): Quote

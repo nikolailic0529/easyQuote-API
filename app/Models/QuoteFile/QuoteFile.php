@@ -3,7 +3,7 @@
 namespace App\Models\QuoteFile;
 
 use App\Models\{
-    UuidModel,
+    BaseModel,
     QuoteFile\ImportedRawData,
     QuoteFile\ImportedRow,
     QuoteFile\DataSelectSeparator
@@ -19,8 +19,9 @@ use App\Traits\{
 };
 use App\Contracts\HasOrderedScope;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Arr;
 
-class QuoteFile extends UuidModel implements HasOrderedScope
+class QuoteFile extends BaseModel implements HasOrderedScope
 {
     use Automappable,
         HasScheduleData,
@@ -207,7 +208,9 @@ class QuoteFile extends UuidModel implements HasOrderedScope
 
     public function throwExceptionIfExists()
     {
-        error_abort_if($this->exception, $this->exception['message'], $this->exception['code'], 422);
+        if ($this->exception && Arr::has($this->exception, ['message', 'code'])) {
+            error_abort($this->exception['message'], $this->exception['code'], 422);
+        }
     }
 
     public function getProcessingPercentageAttribute()

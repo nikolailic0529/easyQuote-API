@@ -6,14 +6,14 @@ use Carbon\Carbon;
 
 trait Draftable
 {
-    public function markAsDrafted()
+    public function markAsDrafted(): bool
     {
         return $this->forceFill([
             'drafted_at' => Carbon::now()->toDateTimeString(),
         ])->save();
     }
 
-    public function markAsNotDrafted()
+    public function markAsNotDrafted(): bool
     {
         return $this->forceFill([
             'drafted_at' => null,

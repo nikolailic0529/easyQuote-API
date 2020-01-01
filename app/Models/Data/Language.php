@@ -2,10 +2,10 @@
 
 namespace App\Models\Data;
 
-use App\Models\UuidModel;
+use App\Models\BaseModel;
 use App\Contracts\HasOrderedScope;
 
-class Language extends UuidModel implements HasOrderedScope
+class Language extends BaseModel implements HasOrderedScope
 {
     protected $hidden = [
         'pivot', 'native_name', 'code'

@@ -3,10 +3,11 @@
 namespace App\Traits;
 
 use App\Models\QuoteTemplate\QuoteTemplate;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 trait BelongsToQuoteTemplates
 {
-    public function quoteTemplates()
+    public function quoteTemplates(): BelongsToMany
     {
         return $this->belongsToMany(QuoteTemplate::class);
     }

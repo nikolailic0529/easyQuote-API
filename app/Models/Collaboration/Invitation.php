@@ -2,7 +2,7 @@
 
 namespace App\Models\Collaboration;
 
-use App\Models\UuidModel;
+use App\Models\BaseModel;
 use App\Traits\{
     BelongsToUser,
     BelongsToRole,
@@ -13,7 +13,7 @@ use App\Traits\{
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Invitation extends UuidModel
+class Invitation extends BaseModel
 {
     use BelongsToUser, BelongsToRole, SoftDeletes, Searchable, CanGenerateToken, Expirable, LogsActivity, SoftDeletes;
 

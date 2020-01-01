@@ -2,10 +2,10 @@
 
 namespace App\Models\Data;
 
-use App\Models\UuidModel;
+use App\Models\BaseModel;
 use App\Contracts\HasOrderedScope;
 
-class Timezone extends UuidModel implements HasOrderedScope
+class Timezone extends BaseModel implements HasOrderedScope
 {
     public $timestamps = false;
 

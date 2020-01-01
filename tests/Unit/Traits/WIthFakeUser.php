@@ -2,11 +2,9 @@
 
 namespace Tests\Unit\Traits;
 
-use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Facades\DB;
-use Hash;
 
 trait WithFakeUser
 {
@@ -47,12 +45,12 @@ trait WithFakeUser
 
     protected function createUser(): User
     {
-        $user = User::create(
+        $user = app('user.repository')->create(
             [
                 'email' => $this->faker->email,
                 'first_name' => $this->faker->firstName,
                 'last_name' => $this->faker->lastName,
-                'password' => Hash::make($this->faker->password),
+                'password' => $this->faker->password,
                 'country_id' => DB::table('countries')->value('id'),
                 'timezone_id' => DB::table('timezones')->value('id'),
                 'password_changed_at' => now(),
@@ -60,15 +58,15 @@ trait WithFakeUser
             ]
         );
 
-        $user->syncRoles(Role::administrator());
+        $user->syncRoles('Administrator');
 
         return $user;
     }
 
-    protected function createAccessToken(): string
+    protected function createAccessToken(?User $user = null): string
     {
-        auth()->login($this->user);
+        $user ??= $this->user;
 
-        return $this->user->createToken('Personal Access Token')->accessToken;
+        return $user->createToken('Personal Access Token')->accessToken;
     }
 }

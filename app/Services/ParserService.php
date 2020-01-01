@@ -134,7 +134,7 @@ class ParserService implements ParserServiceInterface
         /**
          * Detach existing relations
          */
-        $quote->detachColumnsFields();
+        $quote->usingVersion->detachColumnsFields();
 
         $templateFields = $quote->quoteTemplate->templateFields;
 
@@ -155,10 +155,10 @@ class ParserService implements ParserServiceInterface
                 return true;
             }
 
-            $quote->attachColumnToField($templateField, $column->importableColumn, $defaultAttributes);
+            $quote->usingVersion->attachColumnToField($templateField, $column->importableColumn, $defaultAttributes);
         });
 
-        $quote->forgetCachedMappingReview();
+        $quote->usingVersion->forgetCachedMappingReview();
 
         return $quoteFile->markAsAutomapped();
     }
@@ -174,7 +174,7 @@ class ParserService implements ParserServiceInterface
         };
 
         $quoteFile->clearException();
-        $quoteFile->quote()->associate($quote)->save();
+        $quoteFile->quote()->associate($quote->usingVersion)->save();
         $this->routeParser($quoteFile);
         $this->quoteFile->deleteExcept($quoteFile);
 
@@ -182,8 +182,8 @@ class ParserService implements ParserServiceInterface
          * Clear Cache Mapping Review Data After Handling
          */
         if ($quoteFile->isPrice()) {
-            $quote->forgetCachedMappingReview();
-            $quote->resetGroupDescription();
+            $quote->usingVersion->forgetCachedMappingReview();
+            $quote->usingVersion->resetGroupDescription();
         }
 
         return true;

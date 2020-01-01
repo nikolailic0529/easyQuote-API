@@ -2,6 +2,8 @@
 
 namespace App\Traits;
 
+use Illuminate\Database\Eloquent\Builder;
+
 trait Expirable
 {
     public function initializeExpirable()
@@ -11,21 +13,21 @@ trait Expirable
         $this->dates = array_merge($this->dates, ['expires_at']);
     }
 
-    public function scopeExpired($query)
+    public function scopeExpired(Builder $query): Builder
     {
         return $query->whereNull('expires_at')
             ->orWhere('expires_at', '<', now()->toDateTimeString())
             ->limit(999999999);
     }
 
-    public function scopeNonExpired($query)
+    public function scopeNonExpired(Builder $query): Builder
     {
         return $query->whereNotNull('expires_at')
             ->where('expires_at', '>', now()->toDateTimeString())
             ->limit(999999999);
     }
 
-    public function getIsExpiredAttribute()
+    public function getIsExpiredAttribute(): bool
     {
         return is_null($this->expires_at) || $this->expires_at->lt(now());
     }

@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\UuidModel;
+use App\Models\BaseModel;
 use Spatie\Permission\{
     Guard,
     PermissionRegistrar,
@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\{
 };
 use Illuminate\Support\Collection;
 
-class Permission extends UuidModel implements PermissionContract
+class Permission extends BaseModel implements PermissionContract
 {
     use HasRoles;
     use RefreshesPermissionCache;

@@ -3,15 +3,13 @@
 namespace Tests\Unit\User;
 
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\{
-    WithFaker,
-    DatabaseTransactions
-};
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\Unit\Traits\WithFakeUser;
 use Str, Arr;
 
 class AuthTest extends TestCase
 {
-    use DatabaseTransactions, WithFaker;
+    use DatabaseTransactions, WithFakeUser;
 
     /**
      * Predefined Users.
@@ -88,6 +86,28 @@ class AuthTest extends TestCase
 
         $response->assertOk()
             ->assertJsonStructure(['access_token', 'token_type', 'expires_at']);
+    }
+
+    /**
+     * Test User logout due inactivity.
+     *
+     * @return void
+     */
+    public function testLogoutDueInactivity()
+    {
+        $this->user->setLastActivityAt(now()->subHour());
+
+        $response = $this->getJson(url('api/auth/user'), $this->authorizationHeader);
+
+        $this->assertFalse(
+            $this->user->tokens()->where('revoked', false)->exists()
+        );
+
+        $response->assertUnauthorized()
+            ->assertExactJson([
+                'message' => LO_00,
+                'error_code' => 'LO_00'
+            ]);
     }
 
     protected function makeGenericUserAttributes(): array

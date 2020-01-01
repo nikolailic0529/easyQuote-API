@@ -35,4 +35,13 @@ class TryDiscountsRequest extends FormRequest
             ]
         ];
     }
+
+    public function validated()
+    {
+        $validated = parent::{__FUNCTION__}();
+
+        error_abort_if(blank($validated), MLFQ_01, 'MLFQ_01', 422);
+
+        return $validated;
+    }
 }

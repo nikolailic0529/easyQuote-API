@@ -2,6 +2,7 @@
 
 namespace App\Traits;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 trait Activatable
@@ -19,7 +20,7 @@ trait Activatable
         }
     }
 
-    public function deactivate()
+    public function deactivate(): bool
     {
         $this->fireModelEvent('deactivating');
 
@@ -28,7 +29,7 @@ trait Activatable
         ])->save();
     }
 
-    public function activate()
+    public function activate(): bool
     {
         $this->fireModelEvent('activating');
 
@@ -37,21 +38,21 @@ trait Activatable
         ])->save();
     }
 
-    public function scopeActivated($query)
+    public function scopeActivated(Builder $query): Builder
     {
         return $query->where(function ($query) {
             $query->whereNotNull("{$this->getTable()}.activated_at");
         })->limit(999999999);
     }
 
-    public function scopeDeactivated($query)
+    public function scopeDeactivated(Builder $query): Builder
     {
         return $query->where(function ($query) {
             $query->whereNull("{$this->getTable()}.activated_at");
         })->limit(999999999);
     }
 
-    public function scopeActivatedFirst($query)
+    public function scopeActivatedFirst(Builder $query): Builder
     {
         return $query->orderBy("{$this->getTable()}.activated_at", 'desc');
     }

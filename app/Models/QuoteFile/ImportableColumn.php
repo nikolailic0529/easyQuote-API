@@ -3,7 +3,7 @@
 namespace App\Models\QuoteFile;
 
 use App\Models\{
-    UuidModel,
+    BaseModel,
     QuoteFile\ImportableColumnAlias
 };
 use App\Contracts\HasOrderedScope;
@@ -14,7 +14,7 @@ use App\Traits\{
     BelongsToUser
 };
 
-class ImportableColumn extends UuidModel implements HasOrderedScope
+class ImportableColumn extends BaseModel implements HasOrderedScope
 {
     use BelongsToUser, HasColumnsData, HasSystemScope;
 

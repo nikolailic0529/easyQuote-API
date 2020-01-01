@@ -3,10 +3,11 @@
 namespace App\Traits;
 
 use App\Models\QuoteFile\ImportableColumn;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 trait HasImportableColumns
 {
-    public function importableColumns()
+    public function importableColumns(): HasMany
     {
         return $this->hasMany(ImportableColumn::class);
     }

@@ -127,7 +127,7 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
     public function create(array $attributes): User
     {
         $password = Hash::make($attributes['password']);
-        $attributes = array_merge($attributes, compact('password'));
+        data_set($attributes, 'password', $password);
 
         return $this->user->create($attributes);
     }
@@ -150,19 +150,17 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         return $user;
     }
 
-    public function invite($attributes): Invitation
+    public function invite($request): Invitation
     {
-        if ($attributes instanceof Request) {
-            $attributes = $attributes->validated();
+        if ($request instanceof \Illuminate\Http\Request) {
+            $user = $request->user();
+            $request = $request->validated();
+            data_set($request, 'user_id', $user->id);
         }
 
-        abort_if(!is_array($attributes), 422, ARG_REQ_AR_01);
+        throw_unless(is_array($request), new \InvalidArgumentException(INV_ARG_RA_01));
 
-        if (!Arr::has($attributes, ['user_id'])) {
-            $attributes = array_merge($attributes, ['user_id' => auth()->user()->id]);
-        }
-
-        return $this->invitation->create($attributes);
+        return $this->invitation->create($request);
     }
 
     public function invitation(string $token): Invitation

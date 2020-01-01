@@ -196,11 +196,31 @@ class TemplateTest extends TestCase
         $this->assertNull($template->activated_at);
     }
 
+    /**
+     * Test designer data for a specified Template.
+     *
+     * @return void
+     */
+    public function testTemplateDesigner()
+    {
+        $template = app('template.repository')->random();
+
+        $response = $this->getJson(url("api/templates/designer/{$template->id}"), $this->authorizationHeader);
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'first_page',
+                'data_pages',
+                'last_page',
+                'payment_schedule'
+            ]);
+    }
+
     protected function makeGenericTemplateAttributes(): array
     {
         return [
             'name' => Str::random(20),
-            'countries' => app('country.repository')->all()->random(4)->pluck('id'),
+            'countries' => app('country.repository')->all()->random(4)->pluck('id')->toArray(),
             'company_id' => app('company.repository')->random()->id,
             'vendor_id' => app('vendor.repository')->random()->id,
             'currency_id' => app('currency.repository')->all()->random()->id,

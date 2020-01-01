@@ -3,16 +3,17 @@
 namespace App\Traits;
 
 use App\Models\Address;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Collection;
 
 trait BelongsToAddresses
 {
-    public function addresses()
+    public function addresses(): MorphToMany
     {
         return $this->morphToMany(Address::class, 'addressable');
     }
 
-    public function syncAddresses(?array $addresses, bool $detach = true)
+    public function syncAddresses(?array $addresses, bool $detach = true): void
     {
         if (blank($addresses)) {
             return;
@@ -25,7 +26,7 @@ trait BelongsToAddresses
         $this->logChangedAddresses($changes, $oldAddresses);
     }
 
-    public function detachAddresses(?array $addresses)
+    public function detachAddresses(?array $addresses): void
     {
         if (blank($addresses)) {
             return;
@@ -38,7 +39,7 @@ trait BelongsToAddresses
         $this->logChangedAddresses($changes, $oldAddresses);
     }
 
-    protected function logChangedAddresses($changes, Collection $old)
+    protected function logChangedAddresses($changes, Collection $old): void
     {
         if (!$changes || (is_array($changes) && blank(array_flatten($changes)))) {
             return;

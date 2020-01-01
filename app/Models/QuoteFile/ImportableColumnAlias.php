@@ -2,12 +2,12 @@
 
 namespace App\Models\QuoteFile;
 
-use App\Models\UuidModel;
+use App\Models\BaseModel;
 use App\Traits\{
     BelongsToImportableColumn
 };
 
-class ImportableColumnAlias extends UuidModel
+class ImportableColumnAlias extends BaseModel
 {
     use BelongsToImportableColumn;
 

@@ -9,6 +9,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use App\Facades\Failure;
 use Exception;
+use Illuminate\Auth\AuthenticationException;
 
 class Handler extends ExceptionHandler
 {
@@ -132,5 +133,17 @@ class Handler extends ExceptionHandler
             ],
             'ErrorDetails' => INVDP_01
         ], $exception->status);
+    }
+
+    /**
+     * Convert an authentication exception into a response.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Auth\AuthenticationException  $exception
+     * @return \Symfony\Component\HttpFoundation\Response
+     */
+    protected function unauthenticated($request, AuthenticationException $exception)
+    {
+        return response()->json(['message' => $exception->getMessage()], 401);
     }
 }

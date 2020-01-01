@@ -8,10 +8,10 @@ use App\Models\Quote\Discount\{
     PromotionalDiscount,
     SND
 };
-use App\Models\UuidModel;
+use App\Models\BaseModel;
 use Str;
 
-class Discount extends UuidModel
+class Discount extends BaseModel
 {
     protected $hidden = [
         'pivot', 'discountable_type', 'discountable_id'
@@ -48,9 +48,8 @@ class Discount extends UuidModel
         return isset($value) ? number_format($value, 2) : null;
     }
 
-    public function getValue($total)
+    public function getValue(float $total = 0)
     {
-        $total = (float) $total;
         $discount = $this->discountable;
 
         if ($discount instanceof MultiYearDiscount || $discount instanceof PrePayDiscount) {

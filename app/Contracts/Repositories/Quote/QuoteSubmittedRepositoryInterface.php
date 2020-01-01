@@ -2,9 +2,11 @@
 
 namespace App\Contracts\Repositories\Quote;
 
-use App\Models\Quote\Quote;
-use App\Http\Resources\QuoteRepositoryCollection;
-use App\Builder\Pagination\Paginator;
+use App\Models\Quote\{
+    BaseQuote,
+    Quote
+};
+use App\Http\Resources\QuoteRepository\QuoteSubmittedRepositoryCollection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as DatabaseBuilder;
 
@@ -43,7 +45,7 @@ interface QuoteSubmittedRepositoryInterface
     /**
      * Find Submitted Quote.
      *
-     * @return \App\Models\Quote
+     * @return \App\Models\Quote\Quote
      */
     public function find(string $id): Quote;
 
@@ -51,9 +53,9 @@ interface QuoteSubmittedRepositoryInterface
      * Find Submitted Quote by RFQ number.
      *
      * @param string $rfq
-     * @return array
+     * @return \App\Models\BaseQuote
      */
-    public function findByRfq(string $rfq): Quote;
+    public function findByRfq(string $rfq): BaseQuote;
 
     /**
      * Find Submitted Quote Data by RFQ number.
@@ -112,6 +114,14 @@ interface QuoteSubmittedRepositoryInterface
     public function deactivate(string $id);
 
     /**
+     * UnSubmit a specified Quote.
+     *
+     * @param string $id
+     * @return bool
+     */
+    public function unSubmit(string $id): bool;
+
+    /**
      * Copy Submitted Quote with Relations
      *
      * @param string $id
@@ -123,7 +133,7 @@ interface QuoteSubmittedRepositoryInterface
      * Map Resource to UserRepositoryCollection.
      *
      * @param mixed $resource
-     * @return \App\Http\Resources\QuoteRepositoryCollection
+     * @return \App\Http\Resources\QuoteRepository\QuoteSubmittedRepositoryCollection
      */
-    public function toCollection($resource): QuoteRepositoryCollection;
+    public function toCollection($resource): QuoteSubmittedRepositoryCollection;
 }

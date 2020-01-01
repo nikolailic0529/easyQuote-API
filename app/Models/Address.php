@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
 use Arr;
 
-class Address extends UuidModel
+class Address extends BaseModel
 {
     use SoftDeletes, Activatable, BelongsToCountry, Searchable;
 

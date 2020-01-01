@@ -2,12 +2,12 @@
 
 namespace App\Models\System;
 
-use App\Models\UuidModel;
+use App\Models\BaseModel;
 use App\Traits\Activity\LogsActivity;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Str;
 
-class SystemSetting extends UuidModel
+class SystemSetting extends BaseModel
 {
     use LogsActivity, SoftDeletes;
 

@@ -3,7 +3,7 @@
 namespace App\Models\System;
 
 use App\Models\User;
-use App\Models\UuidModel;
+use App\Models\BaseModel;
 use App\Traits\Search\Searchable;
 use Illuminate\Support\{
     Arr,
@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\{
 use Spatie\Activitylog\Contracts\Activity as ActivityContract;
 use Str;
 
-class Activity extends UuidModel implements ActivityContract
+class Activity extends BaseModel implements ActivityContract
 {
     use Searchable;
 
@@ -153,7 +153,9 @@ class Activity extends UuidModel implements ActivityContract
 
     public function getDescriptionAttribute($value)
     {
-        return isset($value) ? ucfirst($value) : null;
+        return isset($value)
+            ? Str::spaced(Str::studly($value))
+            : null;
     }
 
     public function getCauserNameAttribute()

@@ -3,10 +3,11 @@
 namespace App\Traits;
 
 use App\Models\Quote\Margin\CountryMargin;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 trait BelongsToMargin
 {
-    public function countryMargin()
+    public function countryMargin(): BelongsTo
     {
         return $this->belongsTo(CountryMargin::class);
     }
@@ -16,7 +17,7 @@ trait BelongsToMargin
         return $this->countryMargin->value ?? 0;
     }
 
-    public function deleteCountryMargin()
+    public function deleteCountryMargin(): bool
     {
         $freshModel = $this->fresh();
         $freshModel->countryMargin()->dissociate();

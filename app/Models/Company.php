@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\UuidModel;
+use App\Models\BaseModel;
 use App\Contracts\{
     WithImage,
     ActivatableInterface,
@@ -25,7 +25,7 @@ use App\Traits\{
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Company extends UuidModel implements WithImage, WithLogo, ActivatableInterface, HasOrderedScope
+class Company extends BaseModel implements WithImage, WithLogo, ActivatableInterface, HasOrderedScope
 {
     use HasLogo,
         HasImage,

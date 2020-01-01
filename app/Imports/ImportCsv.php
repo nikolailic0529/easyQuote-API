@@ -208,7 +208,6 @@ class ImportCsv
 
         $this->pdo->exec("
             create temporary table `{$this->dataTable}` ({$columns});
-
             load data local infile '{$path}'
             into table `{$this->dataTable}`
             fields terminated by '{$this->delimiter}'

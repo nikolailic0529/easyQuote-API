@@ -2,11 +2,11 @@
 
 namespace App\Models\Data;
 
-use App\Models\UuidModel;
+use App\Models\BaseModel;
 use App\Contracts\HasOrderedScope;
 use Setting;
 
-class Currency extends UuidModel implements HasOrderedScope
+class Currency extends BaseModel implements HasOrderedScope
 {
     protected $appends = [
         'label'

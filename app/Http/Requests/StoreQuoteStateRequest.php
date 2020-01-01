@@ -1,18 +1,24 @@
-<?php namespace App\Http\Requests;
+<?php
+
+namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use App\Models \ {
+use App\Models\{
     Quote\Quote,
     Company,
     Vendor,
     Data\Country,
     Data\Language
 };
+use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Support\Collection;
 use Str;
 
 class StoreQuoteStateRequest extends FormRequest
 {
+    use HandlesAuthorization;
+
     protected $quote;
 
     protected $company;
@@ -34,6 +40,7 @@ class StoreQuoteStateRequest extends FormRequest
         Country $country,
         Language $language
     ) {
+        $this->quote = $quote;
         $this->company = $company;
         $this->vendor = $vendor;
         $this->country = $country;
@@ -50,6 +57,14 @@ class StoreQuoteStateRequest extends FormRequest
      */
     public function authorize()
     {
+        if (
+            $this->quote()->exists &&
+            $this->has('quote_data.customer_id') &&
+            $this->input('quote_data.customer_id') !== $this->quote()->customer_id
+        ) {
+            abort(403, $this->deny(QUC_01));
+        }
+
         return true;
     }
 
@@ -63,7 +78,7 @@ class StoreQuoteStateRequest extends FormRequest
         return [
             'quote_id' => [
                 'uuid',
-                'exists:quotes,id'
+                Rule::exists('quotes', 'id')->where('is_version', false)
             ],
             'quote_data.customer_id' => [
                 'uuid',
@@ -132,8 +147,7 @@ class StoreQuoteStateRequest extends FormRequest
                         return;
                     }
 
-                    $quote = Quote::whereId($this->quote_id)->firstOrFail();
-                    if ($quote->has_not_group_description) {
+                    if ($this->quote()->has_not_group_description) {
                         $fail('For using the Grouped Rows assign at least one group.');
                     }
                 }
@@ -222,7 +236,7 @@ class StoreQuoteStateRequest extends FormRequest
 
     public function ifEquals($anotherAttribute, $value, $rule)
     {
-        if($this->input($anotherAttribute) == $value) {
+        if ($this->input($anotherAttribute) == $value) {
             return $rule;
         }
     }
@@ -241,7 +255,7 @@ class StoreQuoteStateRequest extends FormRequest
                     return $query->whereId($childId);
                 })->exists();
 
-            if(!$exists) {
+            if (!$exists) {
                 $parentName = Str::title($parentName);
                 $childName = Str::title($childName);
 
@@ -258,19 +272,21 @@ class StoreQuoteStateRequest extends FormRequest
         ];
     }
 
-    public function validatedData()
+    public function validatedData(): Collection
     {
         return collect($this->validated());
     }
 
-    public function validatedQuoteData()
+    public function validatedQuoteData(): array
     {
-        return $this->validatedData()->get('quote_data');
+        return $this->validatedData()->get('quote_data') ?? [];
     }
 
     public function quote()
     {
-        return $this->has('quote_id') ? Quote::whereId($this->quote_id)->first() : $this->user()->quotes()->make();
+        return $this->has('quote_id')
+            ? $this->quote->whereId($this->quote_id)->firstOrFail()
+            : $this->user()->quotes()->make();
     }
 
     protected function getKey(String $model)

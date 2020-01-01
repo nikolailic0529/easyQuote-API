@@ -19,15 +19,6 @@ abstract class ParsingTest extends TestCase
 {
     use DatabaseTransactions, WithFakeUser, WithFakeQuote, WithFakeQuoteFile;
 
-    protected $mapping;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->mapping = $this->mapping();
-    }
-
     public function message(QuoteFile $quoteFile)
     {
         $exception = filled($quoteFile->exception) ? "with Exception: {$quoteFile->exception}" : "without Exception";
@@ -82,7 +73,7 @@ abstract class ParsingTest extends TestCase
 
     protected function getMappingAttribute(string $attribute, string $filename)
     {
-        return data_get($this->mapping->collapse()->firstWhere('filename', '===', $filename), $attribute);
+        return data_get($this->mapping()->collapse()->firstWhere('filename', '===', $filename), $attribute);
     }
 
     /**

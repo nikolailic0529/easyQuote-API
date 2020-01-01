@@ -3,12 +3,12 @@
 namespace App\Models\Data;
 
 use App\Models\{
-    UuidModel
+    BaseModel
 };
 use App\Contracts\HasOrderedScope;
 use Illuminate\Database\Eloquent\Builder;
 
-class Country extends UuidModel implements HasOrderedScope
+class Country extends BaseModel implements HasOrderedScope
 {
     protected $hidden = [
         'pivot', 'iso_3166_3', 'full_name', 'country_code', 'capital', 'citizenship', 'calling_code'

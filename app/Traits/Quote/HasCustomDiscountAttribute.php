@@ -10,13 +10,13 @@ trait HasCustomDiscountAttribute
         $this->casts = array_merge($this->casts, ['custom_discount' => 'float']);
     }
 
-    public function setCustomDiscountAttribute($value)
+    public function setCustomDiscountAttribute($value): void
     {
         $this->attributes['custom_discount'] = (float) $value;
         $this->discounts()->detach();
     }
 
-    public function resetCustomDiscount()
+    public function resetCustomDiscount(): bool
     {
         return $this->fresh()->forceFill([
             'custom_discount' => 0

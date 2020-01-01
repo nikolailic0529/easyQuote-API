@@ -6,9 +6,10 @@ use App\Contracts\Repositories\{
     Quote\QuoteSubmittedRepositoryInterface,
     QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
 };
-use App\Http\Resources\QuoteRepositoryCollection;
+use App\Http\Resources\QuoteRepository\QuoteSubmittedRepositoryCollection;
 use App\Repositories\SearchableRepository;
 use App\Models\Quote\Quote;
+use App\Models\Quote\BaseQuote;
 use Illuminate\Database\Eloquent\{
     Model,
     Builder
@@ -79,18 +80,18 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
             ->groupBy("{$this->table}.id");
     }
 
-    public function toCollection($resource): QuoteRepositoryCollection
+    public function toCollection($resource): QuoteSubmittedRepositoryCollection
     {
-        return new QuoteRepositoryCollection($resource);
+        return QuoteSubmittedRepositoryCollection::make($resource);
     }
 
-    public function findByRfq(string $rfq): Quote
+    public function findByRfq(string $rfq): BaseQuote
     {
         $quote = $this->quote->submitted()->activated()->orderByDesc('submitted_at')->rfq($rfq)->first();
 
-        error_abort_if(is_null($quote) || blank($quote->submitted_data), EQ_NF_01, 'EQ_NF_01', 404);
+        error_abort_if(is_null($quote) || blank($quote->usingVersion->submitted_data), EQ_NF_01, 'EQ_NF_01', 404);
 
-        return $quote;
+        return $quote->usingVersion;
     }
 
     public function find(string $id): Quote
@@ -160,6 +161,11 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     public function deactivate(string $id)
     {
         return $this->find($id)->deactivate();
+    }
+
+    public function unSubmit(string $id): bool
+    {
+        return $this->find($id)->unSubmit();
     }
 
     public function copy(string $id)

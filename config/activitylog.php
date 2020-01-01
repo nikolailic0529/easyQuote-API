@@ -51,7 +51,10 @@ return [
     'database_connection' => env('ACTIVITY_LOGGER_DB_CONNECTION'),
 
     'subject_types' => [
-        'quote' => \App\Models\Quote\Quote::class,
+        'quote' => [
+            \App\Models\Quote\Quote::class,
+            \App\Models\Quote\QuoteVersion::class
+        ],
         'discount' => [
             \App\Models\Quote\Discount\MultiYearDiscount::class,
             \App\Models\Quote\Discount\PrePayDiscount::class,
@@ -69,7 +72,7 @@ return [
         'setting' => \App\Models\System\SystemSetting::class,
         'invitation' => \App\Models\Collaboration\Invitation::class
     ],
-    'types' => ['created', 'updated', 'deleted', 'copied', 'authenticated'],
+    'types' => ['created', 'updated', 'deleted', 'copied', 'authenticated', 'created_version'],
     'periods' => [
         'today',
         'yesterday',

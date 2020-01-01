@@ -7,8 +7,8 @@ use App\Contracts\{
     HasOrderedScope
 };
 use App\Models\{
-    UuidModel,
-    Quote\Quote
+    BaseModel,
+    Quote\BaseQuote as Quote
 };
 use App\Traits\{
     BelongsToUser,
@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\{
 };
 use Str;
 
-abstract class Margin extends UuidModel implements HasOrderedScope, ActivatableInterface
+abstract class Margin extends BaseModel implements HasOrderedScope, ActivatableInterface
 {
     use BelongsToUser, BelongsToVendor, SoftDeletes, Activatable;
 

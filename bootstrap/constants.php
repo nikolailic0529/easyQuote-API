@@ -31,6 +31,9 @@ define('IE_01', 'Your invitation link is expired, please contact your line-manag
 define('EQ_NF_01', 'Quote not found for the provided RFQ #');
 define('QSE_01', 'An activated submitted Quote with the same RFQ number already exists.');
 define('QNT_01', 'Please set a Template for the Quote before Importing.');
+define('QNF_01', 'Quote not found.');
+define('QSU_01', 'You could not update a submitted Quote.');
+define('QUC_01', 'You could not change a Customer for a given Quote.');
 
 /**
  * Quote Template.
@@ -93,8 +96,9 @@ define('S4_CS_02', 'Request for S4 contract storing.');
 /**
  * Misc.
  */
-define('ARG_REQ_AR_01', 'The argument passed to the 1 argument of the method must be an array or instance of \Illuminate\Http\Request');
+define('INV_ARG_RA_01', 'The 1 passed argument must be an array or an instance of \Illuminate\Http\Request');
+define('INV_ARG_QPK_01', 'The 1 passed argument must be a primary key or an instance of \App\Models\Quote\Quote');
 define('UA_01', 'Unauthenticated Request.');
 define('INVDP_01', 'Invalid Data Provided.');
 define('UNE_01', 'Unknown Error.');
-define('UIDS_01', 'When creating a new entry user_id must be specified.');
+define('MLFQ_01', 'Malformed request.');

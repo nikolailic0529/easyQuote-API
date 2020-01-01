@@ -3,7 +3,7 @@
 namespace App\Contracts\Services;
 
 use App\Models\Quote\{
-    Quote,
+    BaseQuote as Quote,
     Margin\CountryMargin
 };
 use Closure;
@@ -61,16 +61,6 @@ interface QuoteServiceInterface
      * @return \App\Models\Quote\Quote
      */
     public function interactWithDiscount(Quote $quote, $discount): void;
-
-    /**
-     * Modify Column in Quote Computable Rows
-     *
-     * @param Quote $quote
-     * @param string $column
-     * @param Closure $callback
-     * @return void
-     */
-    public function modifyColumn(Quote $quote, string $column, Closure $callback): void;
 
     /**
      * Assign Computable Rows for next operations.

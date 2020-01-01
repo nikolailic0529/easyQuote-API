@@ -8,7 +8,7 @@ use App\Traits\{
     CanGenerateToken
 };
 
-class PasswordReset extends UuidModel
+class PasswordReset extends BaseModel
 {
     use CanGenerateToken, Expirable, BelongsToUser;
 

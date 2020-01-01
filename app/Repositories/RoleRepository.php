@@ -57,20 +57,17 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
         return $this->role->whereName($name)->firstOrFail();
     }
 
-    public function create($attributes): Role
+    public function create($request): Role
     {
-        if ($attributes instanceof \Illuminate\Http\Request) {
-            $attributes = $attributes->validated();
+        if ($request instanceof \Illuminate\Http\Request) {
+            $user = $request->user();
+            $request = $request->validated();
+            data_set($request, 'user_id', $user->id);
         }
 
-        abort_if(!is_array($attributes), 422, ARG_REQ_AR_01);
+        throw_unless(is_array($request), new \InvalidArgumentException(INV_ARG_RA_01));
 
-        if (!Arr::has($attributes, ['user_id'])) {
-            abort_if(is_null(request()->user()), 422, UIDS_01);
-            data_set($attributes, 'user_id', request()->user()->id);
-        }
-
-        return $this->role->create($attributes)->syncPrivileges();
+        return $this->role->create($request)->syncPrivileges();
     }
 
     public function update(UpdateRoleRequest $request, string $id): Role

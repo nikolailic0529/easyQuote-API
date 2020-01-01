@@ -3,7 +3,7 @@
 namespace App\Contracts\Repositories\QuoteFile;
 
 use App\Models\{
-    Quote\Quote,
+    Quote\BaseQuote as Quote,
     QuoteFile\QuoteFile
 };
 
@@ -131,4 +131,12 @@ interface QuoteFileRepositoryInterface
      * @return void
      */
     public function deletePriceListsExcept(QuoteFile $quoteFile);
+
+    /**
+     * Full replicates a provided QuoteFile and its all Imported Data.
+     *
+     * @param QuoteFile $quoteFile
+     * @return QuoteFile
+     */
+    public function replicatePriceList(QuoteFile $quoteFile): QuoteFile;
 }

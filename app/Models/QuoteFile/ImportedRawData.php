@@ -2,7 +2,7 @@
 
 namespace App\Models\QuoteFile;
 
-use App\Models\UuidModel;
+use App\Models\BaseModel;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\{
     Draftable,
@@ -10,7 +10,7 @@ use App\Traits\{
     BelongsToUser
 };
 
-class ImportedRawData extends UuidModel
+class ImportedRawData extends BaseModel
 {
     use BelongsToUser, BelongsToQuoteFile, Draftable, SoftDeletes;
 

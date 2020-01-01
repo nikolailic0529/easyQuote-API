@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use App\Models\Data\Currency;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 trait BelongsToCurrency
 {
@@ -11,7 +12,7 @@ trait BelongsToCurrency
         $this->fillable = array_merge($this->fillable, ['currency_id']);
     }
 
-    public function currency()
+    public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);
     }

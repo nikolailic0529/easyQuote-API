@@ -18,7 +18,9 @@ use App\Http\Requests\{
     Quote\StoreGroupDescriptionRequest,
     Quote\UpdateGroupDescriptionRequest
 };
+use App\Http\Requests\Quote\SetVersionRequest;
 use App\Http\Requests\Quote\TryDiscountsRequest;
+use App\Http\Resources\QuoteVersionResource;
 use App\Models\Quote\Quote;
 use Setting;
 
@@ -53,20 +55,31 @@ class QuoteController extends Controller
         $this->authorize('view', $quote);
 
         return response()->json(
-            $this->quote->find($quote->id)
+            QuoteVersionResource::make(
+                $this->quote->find($quote)
+            )
         );
     }
 
     public function storeState(StoreQuoteStateRequest $request)
     {
         if ($request->has('quote_id')) {
-            $this->authorize('update', $this->quote->find($request->quote_id));
+            $this->authorize('state', $request->quote());
         } else {
             $this->authorize('create', Quote::class);
         }
 
         return response()->json(
             $this->quote->storeState($request)
+        );
+    }
+
+    public function setVersion(SetVersionRequest $request, Quote $quote)
+    {
+        $this->authorize('update', $quote);
+
+        return response()->json(
+            $this->quote->setVersion($request->version_id, $quote)
         );
     }
 

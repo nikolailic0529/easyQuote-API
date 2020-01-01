@@ -2,6 +2,8 @@
 
 namespace App\Traits;
 
+use Illuminate\Database\Eloquent\Builder;
+
 trait Submittable
 {
     public function initializeSubmittable()
@@ -9,14 +11,14 @@ trait Submittable
         $this->observables = array_merge($this->observables, ['submitting', 'unsubmitting', 'submitted']);
     }
 
-    public function submit(?array $submitted_data = null)
+    public function submit(?array $submitted_data = null): bool
     {
         $this->fireModelEvent('submitting');
 
         $fill = ['submitted_at' => now()->toDateTimeString()];
 
         if (filled($submitted_data)) {
-            $fill = array_merge($fill, compact('submitted_data'));
+            data_fill($fill, 'submitted_data', $submitted_data);
         }
 
         $pass = $this->forceFill($fill)->save();
@@ -26,7 +28,7 @@ trait Submittable
         return $pass;
     }
 
-    public function unSubmit()
+    public function unSubmit(): bool
     {
         $this->fireModelEvent('unsubmitting');
 
@@ -36,17 +38,17 @@ trait Submittable
         ])->save();
     }
 
-    public function scopeDrafted($query)
+    public function scopeDrafted(Builder $query): Builder
     {
         return $query->whereNull($this->getTable() . '.submitted_at');
     }
 
-    public function scopeSubmitted($query)
+    public function scopeSubmitted(Builder $query): Builder
     {
         return $query->whereNotNull($this->getTable() . '.submitted_at');
     }
 
-    public function isSubmitted()
+    public function isSubmitted(): bool
     {
         return !is_null($this->submitted_at);
     }

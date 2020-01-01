@@ -4,6 +4,7 @@ namespace App\Traits;
 
 use App\Models\QuoteTemplate\TemplateField;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 trait BelongsToTemplateFields
 {
@@ -15,17 +16,17 @@ trait BelongsToTemplateFields
         });
     }
 
-    public function templateFields()
+    public function templateFields(): BelongsToMany
     {
         return $this->belongsToMany(TemplateField::class)->ordered();
     }
 
-    public function syncTemplateFields($templateFields)
+    public function syncTemplateFields(?array $templateFields): void
     {
-        if (!is_array($templateFields)) {
-            return false;
+        if (blank($templateFields)) {
+            return;
         }
 
-        return $this->templateFields()->sync($templateFields);
+        $this->templateFields()->sync($templateFields);
     }
 }

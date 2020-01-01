@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use App\Models\Data\Country;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 trait BelongsToCountry
 {
@@ -11,7 +12,7 @@ trait BelongsToCountry
         $this->fillable = array_merge($this->fillable, ['country_id']);
     }
 
-    public function country()
+    public function country(): BelongsTo
     {
         return $this->belongsTo(Country::class)->withDefault();
     }

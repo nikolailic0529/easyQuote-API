@@ -2,6 +2,7 @@
 
 namespace App\Traits\User;
 
+use Carbon\Carbon;
 use Carbon\CarbonInterval;
 
 trait PerformsActivity
@@ -19,7 +20,7 @@ trait PerformsActivity
         self::$refreshActivityExpiresIn = config('activity.refresh_expires_in', 50);
     }
 
-    public function freshActivity()
+    public function freshActivity(): bool
     {
         /**
          * Perform Activity only if the last User's activity expires earlier than the specified time in minutes.
@@ -31,12 +32,17 @@ trait PerformsActivity
         return $this->forceFill(['last_activity_at' => now()])->update();
     }
 
-    public function freshLoggedIn()
+    public function setLastActivityAt(Carbon $time): bool
+    {
+        return $this->forceFill(['last_activity_at' => $time])->update();
+    }
+
+    public function freshLoggedIn(): bool
     {
         return $this->forceFill(['logged_in_at' => now()])->update();
     }
 
-    public function activityExpiresAt()
+    public function activityExpiresAt(): Carbon
     {
         return now()->subMinutes(self::$activityExpiresIn);
     }
@@ -48,12 +54,12 @@ trait PerformsActivity
             : CarbonInterval::create(0);
     }
 
-    public function hasRecentActivity()
+    public function hasRecentActivity(): bool
     {
         return !is_null($this->last_activity_at) && $this->last_activity_at->gte($this->activityExpiresAt());
     }
 
-    public function doesntHaveRecentActivity()
+    public function doesntHaveRecentActivity(): bool
     {
         return !$this->hasRecentActivity();
     }

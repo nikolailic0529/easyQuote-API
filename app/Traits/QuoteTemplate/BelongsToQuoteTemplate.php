@@ -3,11 +3,12 @@
 namespace App\Traits\QuoteTemplate;
 
 use App\Models\QuoteTemplate\QuoteTemplate;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 trait BelongsToQuoteTemplate
 {
-    public function quoteTemplate()
+    public function quoteTemplate(): BelongsTo
     {
-        return $this->belongsTo(QuoteTemplate::class)->withDefault(QuoteTemplate::make([]));
+        return $this->belongsTo(QuoteTemplate::class)->withDefault(QuoteTemplate::make());
     }
 }

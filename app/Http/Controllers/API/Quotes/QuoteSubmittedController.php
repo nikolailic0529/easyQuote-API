@@ -94,4 +94,19 @@ class QuoteSubmittedController extends Controller
             $this->quote->copy($submitted->id)
         );
     }
+
+    /**
+     * Back a specified Quote to drafted.
+     *
+     * @param Quote $submitted
+     * @return \Illuminate\Http\Response
+     */
+    public function unSubmit(Quote $submitted)
+    {
+        $this->authorize('update', $submitted);
+
+        return response()->json(
+            $this->quote->unSubmit($submitted->id)
+        );
+    }
 }

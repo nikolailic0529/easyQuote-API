@@ -2,7 +2,7 @@
 
 namespace App\Models\QuoteFile;
 
-use App\Models\UuidModel;
+use App\Models\BaseModel;
 use App\Traits\{
     BelongsToUser,
     BelongsToQuoteFile,
@@ -13,7 +13,7 @@ use App\Traits\{
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class ImportedRow extends UuidModel
+class ImportedRow extends BaseModel
 {
     use Proccessable, HasColumnsData, BelongsToUser, BelongsToQuoteFile, Draftable, Selectable, SoftDeletes;
 

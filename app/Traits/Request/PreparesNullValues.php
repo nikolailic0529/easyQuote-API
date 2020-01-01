@@ -9,12 +9,12 @@ trait PreparesNullValues
      *
      * @return void
      */
-    protected function prepareForValidation()
+    protected function prepareForValidation(): void
     {
         $this->prepareNullValues();
     }
 
-    protected function prepareNullValues()
+    protected function prepareNullValues(): void
     {
         if (!method_exists($this, 'nullValues')) {
             return;

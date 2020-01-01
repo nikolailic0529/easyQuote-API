@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
-use App\Models\UuidModel;
+use App\Models\BaseModel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Laravel\Passport\PersonalAccessTokenResult;
 use Str;
 
-class AccessAttempt extends UuidModel
+class AccessAttempt extends BaseModel
 {
     protected $fillable = [
         'email', 'ip_address', 'local_ip'

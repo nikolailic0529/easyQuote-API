@@ -4,8 +4,8 @@ namespace App\Models\Quote\Discount;
 
 use App\Contracts\ActivatableInterface;
 use App\Models\{
-    UuidModel,
-    Quote\Quote,
+    BaseModel,
+    Quote\BaseQuote,
     Quote\Discount as QuoteDiscount
 };
 use App\Traits\{
@@ -18,7 +18,7 @@ use App\Traits\{
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Arr;
 
-abstract class Discount extends UuidModel implements ActivatableInterface
+abstract class Discount extends BaseModel implements ActivatableInterface
 {
     use Activatable, Searchable, BelongsToCountry, BelongsToVendor, BelongsToUser, SoftDeletes;
 
@@ -59,7 +59,7 @@ abstract class Discount extends UuidModel implements ActivatableInterface
         return $this->morphOne(QuoteDiscount::class, 'discountable');
     }
 
-    public function scopeQuoteAcceptable($query, Quote $quote)
+    public function scopeQuoteAcceptable($query, BaseQuote $quote)
     {
         return $query->whereHas('country', function ($query) use ($quote) {
             $query->whereId($quote->country_id);

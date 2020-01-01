@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\{
 };
 use Arr;
 
-class Contact extends UuidModel implements WithImage
+class Contact extends BaseModel implements WithImage
 {
     use SoftDeletes, HasImage, HasPictureAttribute, Searchable, Activatable;
 

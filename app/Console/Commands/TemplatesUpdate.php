@@ -72,7 +72,7 @@ class TemplatesUpdate extends Command
                         $name = "{$company->acronym}-{$vendor->short_code}-{$templateData['new_name']}";
                         $countries = Country::whereIn('iso_3166_2', $templateData['countries'])->pluck('id')->toArray();
 
-                        $designData = array_merge($vendor->getLogoDimensionsAttribute(true), $company->getLogoDimensionsAttribute(true));
+                        $designData = array_merge($vendor->logoSelectionWithKeys, $company->logoSelectionWithKeys);
                         $parsedDesign = $this->parseDesign($design, $designData);
 
                         $template = QuoteTemplate::updateOrCreate(

@@ -2,13 +2,13 @@
 
 namespace App\Models\QuoteFile;
 
-use App\Models\UuidModel;
+use App\Models\BaseModel;
 use App\Traits\{
     BelongsToUser,
     BelongsToQuoteFile
 };
 
-class ScheduleData extends UuidModel
+class ScheduleData extends BaseModel
 {
     use BelongsToUser, BelongsToQuoteFile;
 

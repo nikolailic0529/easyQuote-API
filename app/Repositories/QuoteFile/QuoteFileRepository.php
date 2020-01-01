@@ -8,7 +8,7 @@ use App\Contracts\Repositories\QuoteFile\{
     FileFormatRepositoryInterface as FileFormatRepository
 };
 use App\Models\{
-    Quote\Quote,
+    Quote\BaseQuote as Quote,
     QuoteFile\QuoteFile,
     QuoteFile\ImportedColumn,
     QuoteFile\DataSelectSeparator,
@@ -277,12 +277,8 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         return $this->deletePriceListsExcept($quoteFile);
     }
 
-    public function replicatePriceList(QuoteFile $quoteFile)
+    public function replicatePriceList(QuoteFile $quoteFile): QuoteFile
     {
-        if ($quoteFile->isSchedule()) {
-            return $quoteFile;
-        }
-
         $quote_file_id = $quoteFile->id;
         $user_id = $quoteFile->user_id;
         $quoteFileCopy = $quoteFile->replicate();

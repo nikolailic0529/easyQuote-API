@@ -21,7 +21,7 @@ use App\Traits\{
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Vendor extends UuidModel implements WithImage, WithLogo, ActivatableInterface
+class Vendor extends BaseModel implements WithImage, WithLogo, ActivatableInterface
 {
     use HasLogo,
         HasImage,

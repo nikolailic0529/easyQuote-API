@@ -7,7 +7,7 @@ use App\Traits\{
     Search\Searchable,
     Activity\LogsActivity
 };
-use App\Models\Quote\Quote;
+use App\Models\Quote\BaseQuote as Quote;
 use Illuminate\Database\Eloquent\Builder;
 use Arr;
 

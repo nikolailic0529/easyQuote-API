@@ -5,7 +5,7 @@ namespace App\Contracts\Services;
 interface PdfParserInterface
 {
     /**
-     * Extract and return raw text from PDF file collected by pages
+     * Extract and return raw text from PDF file collected by pages.
      *
      * @param string $path
      * @param bool $storage
@@ -14,7 +14,7 @@ interface PdfParserInterface
     public function getText(string $path, bool $storage = true);
 
     /**
-     * Parse PDF text by columns
+     * Parse PDF text by columns.
      *
      * @param array $array
      * @return array
@@ -22,7 +22,15 @@ interface PdfParserInterface
     public function parse(array $array);
 
     /**
-     * Count pages in PDF file
+     * Parse PDF schedule raw text.
+     *
+     * @param array $array
+     * @return void
+     */
+    public function parseSchedule(array $array);
+
+    /**
+     * Count pages in PDF file.
      *
      * @param string $path
      * @param bool $storage

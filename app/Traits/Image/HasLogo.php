@@ -113,4 +113,14 @@ trait HasLogo
             return $withKeys ? [$id => $src] : $entity;
         })->toArray();
     }
+
+    public function getLogoSelectionAttribute()
+    {
+        return $this->getLogoDimensionsAttribute(true, true);
+    }
+
+    public function getLogoSelectionWithKeysAttribute()
+    {
+        return $this->getLogoDimensionsAttribute(true);
+    }
 }

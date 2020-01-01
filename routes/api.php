@@ -141,6 +141,7 @@ Route::group(['namespace' => 'API'], function () {
                 Route::post('/try-discounts/{quote}', 'QuoteController@tryDiscounts');
                 Route::get('/review/{quote}', 'QuoteController@review');
                 Route::post('state', 'QuoteController@storeState');
+                Route::patch('version/{quote}', 'QuoteController@setVersion');
 
                 /**
                  * User's Drafted Quotes
@@ -156,6 +157,7 @@ Route::group(['namespace' => 'API'], function () {
                 Route::patch('submitted/{submitted}', 'QuoteSubmittedController@activate');
                 Route::put('submitted/{submitted}', 'QuoteSubmittedController@deactivate');
                 Route::put('submitted/copy/{submitted}', 'QuoteSubmittedController@copy');
+                Route::put('submitted/unsubmit/{submitted}', 'QuoteSubmittedController@unsubmit');
 
                 Route::apiResource('file', 'QuoteFilesController', ['only' => config('route.cr')]);
 

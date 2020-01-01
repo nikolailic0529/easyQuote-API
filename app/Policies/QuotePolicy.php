@@ -53,6 +53,28 @@ class QuotePolicy
     }
 
     /**
+     * Determine whether the user can update the quote state.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Quote\Quote  $quote
+     * @return mixed
+     */
+    public function state(User $user, Quote $quote)
+    {
+        if ($quote->isSubmitted()) {
+            return $this->deny(QSU_01);
+        }
+
+        if ($user->can('update_quotes')) {
+            return true;
+        }
+
+        if ($user->can('update_own_quotes')) {
+            return $user->id === $quote->user_id;
+        }
+    }
+
+    /**
      * Determine whether the user can update the quote.
      *
      * @param  \App\Models\User  $user

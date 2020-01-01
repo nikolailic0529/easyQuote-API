@@ -16,7 +16,7 @@ trait Systemable
         });
     }
 
-    public function isSystem()
+    public function isSystem(): bool
     {
         return (bool) $this->getAttribute('is_system');
     }

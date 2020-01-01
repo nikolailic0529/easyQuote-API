@@ -11,12 +11,12 @@ trait HasGroupDescriptionAttribute
         $this->appends = array_merge($this->appends, ['has_group_description']);
     }
 
-    public function getHasGroupDescriptionAttribute()
+    public function getHasGroupDescriptionAttribute(): bool
     {
         return filled($this->group_description);
     }
 
-    public function getHasNotGroupDescriptionAttribute()
+    public function getHasNotGroupDescriptionAttribute(): bool
     {
         return !$this->has_group_description;
     }
@@ -28,7 +28,7 @@ trait HasGroupDescriptionAttribute
         });
     }
 
-    public function resetGroupDescription()
+    public function resetGroupDescription(): bool
     {
         return $this->forceFill([
             'group_description' => null,
@@ -36,7 +36,7 @@ trait HasGroupDescriptionAttribute
         ])->save();
     }
 
-    public function setUseGroupsAttribute($value)
+    public function setUseGroupsAttribute($value): void
     {
         $value = (bool) $value;
 

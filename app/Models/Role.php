@@ -4,7 +4,7 @@ namespace App\Models;
 
 use App\Contracts\ActivatableInterface;
 use App\Models\{
-    UuidModel,
+    BaseModel,
     Permission
 };
 use App\Traits\{
@@ -30,7 +30,7 @@ use Illuminate\Database\Eloquent\{
 };
 use Arr;
 
-class Role extends UuidModel implements RoleContract, ActivatableInterface
+class Role extends BaseModel implements RoleContract, ActivatableInterface
 {
     use HasPermissions,
         RefreshesPermissionCache,

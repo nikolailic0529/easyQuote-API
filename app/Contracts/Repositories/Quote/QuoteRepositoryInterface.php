@@ -2,7 +2,9 @@
 
 namespace App\Contracts\Repositories\Quote;
 
-use App\Models\Quote\Quote;
+use App\Models\Quote\{
+    Quote, BaseQuote
+};
 use App\Http\Requests\{
     StoreQuoteStateRequest,
     GetQuoteTemplatesRequest,
@@ -24,6 +26,14 @@ interface QuoteRepositoryInterface
      * @return \App\Models\Quote\Quote
      */
     public function storeState(StoreQuoteStateRequest $request);
+
+    /**
+     * Create a new Quote.
+     *
+     * @param array $attributes
+     * @return Quote
+     */
+    public function create(array $attributes): Quote;
 
     /**
      * Get Quote Templates by Company, Vendor, Country
@@ -49,39 +59,29 @@ interface QuoteRepositoryInterface
     public function userQuery(): Builder;
 
     /**
-     * Find Collaboration Quote.
+     * Find a specified Quote.
      *
-     * @param Quote $quote
+     * @param \App\Models\Quote\Quote|string $quote
      * @return \App\Models\Quote\Quote
      */
-    public function find(string $id);
+    public function find($quote);
 
     /**
-     * Set/Create Margin for Quote.
+     * Retrieve an using version for a specified Quote.
      *
-     * @param Quote $quote
-     * @param array|null $attributes
-     * @return \App\Models\Quote\Margin\CountryMargin
+     * @param \App\Models\Quote\Quote|string $quote
+     * @return \App\Models\Quote\Quote
      */
-    public function setMargin(Quote $quote, ?array $attributes);
+    public function findVersion($quote): BaseQuote;
 
     /**
-     * Set Discounts for Quote.
+     * Set a specified Version for a specified Quote.
      *
-     * @param Quote $quote
-     * @param array|null $attributes
-     * @param boolean|null $detach
-     * @return Quote
+     * @param string $version_id
+     * @param \App\Models\Quote|string $quote
+     * @return boolean
      */
-    public function setDiscounts(Quote $quote, $attributes, $detach);
-
-    /**
-     * Fresh Attributes already attached Discounts.
-     *
-     * @param Quote $quote
-     * @return void
-     */
-    public function freshDiscounts(Quote $quote): void;
+    public function setVersion(string $version_id, $quote): bool;
 
     /**
      * Get acceptable Discounts for the specified Quote.
@@ -173,15 +173,6 @@ interface QuoteRepositoryInterface
     public function deleteGroupDescription(string $id, string $quote_id): bool;
 
     /**
-     * Draft or Submit specified Quote.
-     *
-     * @param Collection $state
-     * @param Quote $quote
-     * @return void
-     */
-    public function draftOrSubmit(Collection $state, Quote $quote): void;
-
-    /**
      * Store Submittable Data for S4 and Submit Quote.
      *
      * @param Quote $quote
@@ -196,22 +187,4 @@ interface QuoteRepositoryInterface
      * @return void
      */
     public function draft(Quote $quote): void;
-
-    /**
-     * Hide specified Fields in Quote Review screen and generated PDF.
-     *
-     * @param Collection $state
-     * @param Quote $quote
-     * @return void
-     */
-    public function hideFields(Collection $state, Quote $quote): void;
-
-    /**
-     * Set Imported Rows Sorting by Fields (ascending/descending).
-     *
-     * @param Collection $state
-     * @param Quote $quote
-     * @return void
-     */
-    public function sortFields(Collection $state, Quote $quote): void;
 }

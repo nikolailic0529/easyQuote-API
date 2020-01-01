@@ -7,6 +7,7 @@ use App\Models\{
     QuoteFile\ImportableColumn,
     QuoteTemplate\TemplateField
 };
+use Illuminate\Support\Collection;
 use DB, Arr, Cache;
 
 trait HasMapping
@@ -144,12 +145,12 @@ trait HasMapping
                         $query->selectRaw(
                             "max(
                                 if(
-                                    `imported_columns`.`name` = ?,
+                                    `imported_columns`.`importable_column_id` = ?,
                                     ExtractDecimal(`imported_columns`.`value`),
                                     null
                                 )
                             ) as {$mapping->templateField->name}",
-                            [$mapping->templateField->name]
+                            [$mapping->importable_column_id]
                         );
                         break;
                     case 'date_from':
@@ -158,7 +159,7 @@ trait HasMapping
                         $query->selectRaw(
                             "max(
                                 if(
-                                    `imported_columns`.`name` = ?,
+                                    `imported_columns`.`importable_column_id` = ?,
                                     date_format(
                                         coalesce(
                                             if(length(trim(`imported_columns`.`value`)) = 0, `customers`.`{$default}`, null),
@@ -176,12 +177,12 @@ trait HasMapping
                                     null
                                 )
                             ) as {$mapping->templateField->name}",
-                            [$mapping->templateField->name]
+                            [$mapping->importable_column_id]
                         );
                         break;
                     default:
                         $query->selectRaw(
-                            "max(if(`imported_columns`.`name` = ?,
+                            "max(if(`imported_columns`.`importable_column_id` = ?,
                                 coalesce(
                                     if(length(trim(`imported_columns`.`value`)) = 0, null, `imported_columns`.`value`),
                                     'N/A'
@@ -189,24 +190,17 @@ trait HasMapping
                                 null
                                 )
                             ) as {$mapping->templateField->name}",
-                            [$mapping->templateField->name]
+                            [$mapping->importable_column_id]
                         );
                         break;
                 }
             }
         });
 
-        $importedColumns = DB::table('imported_columns')
-            ->select('imported_row_id', 'value', 'template_fields.name')
-            ->join('quote_field_column', function ($join) {
-                $join->where('quote_field_column.quote_id', $this->id)
-                    ->on('quote_field_column.importable_column_id', '=', 'imported_columns.importable_column_id');
-            })
-            ->join('template_fields', 'template_fields.id', '=', 'quote_field_column.template_field_id');
-
         $query
-            ->joinSub($importedColumns, 'imported_columns', function ($join) {
-                $join->on('imported_columns.imported_row_id', '=', 'imported_rows.id');
+            ->join('imported_columns', function ($join) {
+                $join->on('imported_columns.imported_row_id', '=', 'imported_rows.id')
+                    ->whereIn('importable_column_id', $this->fieldsColumns->pluck('importable_column_id')->toArray());
             })
             ->whereNull('quote_files.deleted_at')
             ->where('quote_files.quote_id', $this->id)

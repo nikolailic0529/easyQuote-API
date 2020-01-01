@@ -64,15 +64,6 @@ class InvitationTest extends TestCase
             ->assertJsonStructure([
                 'id', 'email', 'host', 'role_id', 'user_id', 'invitation_token', 'expires_at', 'created_at', 'role_name', 'url'
             ]);
-
-        /**
-         * Checking that Invitation was added in the listing.
-         */
-        $response = $this->getJson(url('api/invitations'), $this->authorizationHeader);
-
-        $response->assertJsonFragment(
-            Arr::only($attributes, ['email', 'role_id']) + ['is_expired' => false]
-        );
     }
 
     /**
@@ -181,6 +172,11 @@ class InvitationTest extends TestCase
     {
         $role = $this->roleRepository->findByName('Administrator');
 
-        return ['email' => $this->faker->safeEmail, 'role_id' => $role->id, 'host' => config('app.url')];
+        return [
+            'email' => $this->faker->safeEmail,
+            'role_id' => $role->id,
+            'user_id' => $this->user->id,
+            'host' => config('app.url')
+        ];
     }
 }

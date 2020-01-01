@@ -7,7 +7,7 @@ use App\Http\Requests\Margin\{
     UpdateCountryMarginRequest
 };
 use App\Models\Quote\{
-    Quote,
+    BaseQuote as Quote,
     Margin\CountryMargin
 };
 use Illuminate\Database\Eloquent\Builder;

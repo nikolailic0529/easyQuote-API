@@ -8,7 +8,7 @@ use App\Contracts\{
 };
 use App\Http\Resources\QuoteResource;
 use App\Models\Quote\{
-    Quote,
+    BaseQuote as Quote,
     Discount,
     Margin\CountryMargin
 };
@@ -231,27 +231,11 @@ class QuoteService implements QuoteServiceInterface
             unset($design['payment_page']);
         }
 
-        $company_logos = $quote->quoteTemplate->company->getLogoDimensionsAttribute(true, true) ?? [];
-        $vendor_logos = $quote->quoteTemplate->vendor->getLogoDimensionsAttribute(true, true) ?? [];
+        $company_logos = $quote->quoteTemplate->company->logoSelection ?? [];
+        $vendor_logos = $quote->quoteTemplate->vendor->logoSelection ?? [];
         $images = array_merge($company_logos, $vendor_logos);
 
         return compact('data', 'design', 'images');
-    }
-
-    public function modifyColumn(Quote $quote, string $column, Closure $callback): void
-    {
-        if (!isset($quote->computableRows)) {
-            return;
-        }
-
-        if (data_get($quote->computableRows->first(), $column) === null) {
-            return;
-        }
-
-        $quote->computableRows->transform(function ($row) use ($column, $callback) {
-            $row[$column] = $callback($row);
-            return $row;
-        });
     }
 
     public function export(Quote $quote)
@@ -307,6 +291,7 @@ class QuoteService implements QuoteServiceInterface
                 ->rowsToGroups('group_name', $groups_meta, true, $quote->quoteTemplate->currency_symbol)
                 ->exceptEach('group_name')
                 ->sortByFields($quote->sort_group_description);
+
             $quote->renderableRows = $quote->computableRows->map(function ($group) use ($quote) {
                 $rows = $group->get('rows')->exceptEach($quote->systemHiddenFields);
                 data_set($group, 'rows', $rows);
@@ -317,8 +302,10 @@ class QuoteService implements QuoteServiceInterface
             return;
         }
 
-        $this->modifyColumn($quote, 'price', function ($row) use ($quote) {
-            return Str::prepend(Str::decimal($row['price']), $quote->quoteTemplate->currency_symbol, true);
+        $quote->renderableRows->transform(function ($row) use ($quote) {
+            $price = data_get($row, 'price');
+            data_set($row, 'price', Str::prepend(Str::decimal($price), $quote->quoteTemplate->currency_symbol, true));
+            return $row;
         });
     }
 

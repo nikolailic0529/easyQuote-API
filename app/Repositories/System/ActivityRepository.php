@@ -152,7 +152,7 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
         });
 
         $types = collect(config('activitylog.types'))->transform(function ($value) {
-            $label = ucfirst($value);
+            $label = __('activitylog.types.'.$value);
             return compact('label', 'value');
         });
 

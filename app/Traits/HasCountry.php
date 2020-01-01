@@ -2,10 +2,13 @@
 
 namespace App\Traits;
 
+use App\Models\Data\Country;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+
 trait HasCountry
 {
-    public function country()
+    public function country(): HasOne
     {
-        return $this->hasOne(App\Country::class);
+        return $this->hasOne(Country::class);
     }
 }

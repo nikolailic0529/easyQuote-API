@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-class Image extends UuidModel
+class Image extends BaseModel
 {
     protected $fillable = [
         'original', 'thumbnails'

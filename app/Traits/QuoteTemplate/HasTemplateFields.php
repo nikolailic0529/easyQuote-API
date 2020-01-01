@@ -3,10 +3,11 @@
 namespace App\Traits\QuoteTemplate;
 
 use App\Models\QuoteTemplate\TemplateField;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 trait HasTemplateFields
 {
-    public function templateFields()
+    public function templateFields(): HasMany
     {
         return $this->hasMany(TemplateField::class);
     }

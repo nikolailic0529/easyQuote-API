@@ -4,7 +4,7 @@ namespace App\Traits;
 
 trait HasQuoteFilesDirectory
 {
-    public function getQuoteFilesDirectoryAttribute()
+    public function getQuoteFilesDirectoryAttribute(): string
     {
         return "quotes/{$this->{$this->getKeyName()}}";
     }

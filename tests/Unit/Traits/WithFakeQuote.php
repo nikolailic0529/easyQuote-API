@@ -38,6 +38,13 @@ trait WithFakeQuote
 
     protected function createQuote(User $user): Quote
     {
+        return app('quote.repository')->create(
+            $this->makeGenericQuoteAttributes($user)
+        );
+    }
+
+    protected function makeGenericQuoteAttributes(?User $user = null): array
+    {
         $customer_id = Uuid::generate(4)->string;
         $country_id = DB::table('countries')->value('id');
 
@@ -55,16 +62,15 @@ trait WithFakeQuote
             'updated_at' => now()
         ]);
 
-        return $user->quotes()->create(
-            [
-                'company_id' => DB::table('companies')->value('id'),
-                'vendor_id' => DB::table('vendors')->value('id'),
-                'quote_template_id' => DB::table('quote_templates')->whereIsSystem(true)->value('id'),
-                'customer_id' => $customer_id,
-                'country_id' => $country_id,
-                'type' => ['New', 'Renewal'][rand(0, 1)],
-                'completeness' => 100
-            ]
-        );
+        return [
+            'company_id' => DB::table('companies')->value('id'),
+            'vendor_id' => DB::table('vendors')->value('id'),
+            'quote_template_id' => DB::table('quote_templates')->whereIsSystem(true)->value('id'),
+            'customer_id' => $customer_id,
+            'country_id' => $country_id,
+            'type' => ['New', 'Renewal'][rand(0, 1)],
+            'completeness' => 100,
+            'user_id' => $user->id ?? null
+        ];
     }
 }

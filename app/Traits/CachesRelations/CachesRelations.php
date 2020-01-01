@@ -52,11 +52,7 @@ trait CachesRelations
 
     public function getCachedRelationsAttribute($value): CachedRelationWrapper
     {
-        $relations = json_decode($value, true);
-
-        if (!is_array($relations)) {
-            return new CachedRelationWrapper([]);
-        }
+        $relations = json_decode($value, true) ?? [];
 
         return new CachedRelationWrapper($relations);
     }
@@ -104,7 +100,7 @@ trait CachesRelations
     {
         $cacheRelations = func_num_args() > 1
             ? collect(func_get_arg(0))
-            : collect(static::$cacheRelations);
+            : collect(static::$cacheRelations ?? []);
 
         return $cacheRelations->mapWithKeys(function ($relation) {
             $method = method_exists($this->{$relation}, 'toCacheableArray') ? 'toCacheableArray' : 'toArray';

@@ -3,7 +3,7 @@
 namespace App\Models\QuoteFile;
 
 use App\Models\{
-    UuidModel,
+    BaseModel,
     QuoteFile\ImportableColumn
 };
 use App\Traits\{
@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 use Str;
 
-class ImportedColumn extends UuidModel
+class ImportedColumn extends BaseModel
 {
     use BelongsToImportableColumn, BelongsToImportedRow, Draftable, SoftDeletes, HasSystemScope;
 
