@@ -49,7 +49,7 @@ class QuoteVersion extends BaseQuote
             'name'  => $this->versionName,
             'is_using' => $this->isUsing,
             'is_original' => $this->isOriginal,
-            'updated_at' => $this->updated_at,
+            'drafted_at' => $this->drafted_at
         ];
     }
 

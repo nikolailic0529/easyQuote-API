@@ -79,7 +79,17 @@ class UpdateCompanyRequest extends FormRequest
             'website' => 'nullable|string|min:4',
             'vendors' => 'array',
             'vendors.*' => 'required|uuid|exists:vendors,id',
-            'default_vendor_id' => 'nullable|uuid|exists:vendors,id',
+            'default_vendor_id' => [
+                'nullable',
+                'uuid',
+                Rule::in($this->vendors ?? $this->company->vendors->pluck('id')->toArray())
+            ],
+            'default_country_id' => [
+                'nullable',
+                'string',
+                'uuid',
+                Rule::exists('country_vendor', 'country_id')->where('vendor_id', $this->default_vendor_id ?? $this->company->default_vendor_id)
+            ],
             'addresses_attach' => 'nullable|array',
             'addresses_attach.*' => 'required|string|uuid|exists:addresses,id',
             'addresses_detach' => 'nullable|array',

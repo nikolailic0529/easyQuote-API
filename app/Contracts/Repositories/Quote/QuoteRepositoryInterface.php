@@ -3,7 +3,7 @@
 namespace App\Contracts\Repositories\Quote;
 
 use App\Models\Quote\{
-    Quote, BaseQuote
+    Quote, QuoteVersion, BaseQuote
 };
 use App\Http\Requests\{
     StoreQuoteStateRequest,
@@ -187,4 +187,12 @@ interface QuoteRepositoryInterface
      * @return void
      */
     public function draft(Quote $quote): void;
+
+    /**
+     * Create a new Quote Version if an authenticated user is not the initial Quote creator.
+     *
+     * @param Quote $quote
+     * @return QuoteVersion
+     */
+    public function createNewVersionIfNonCreator(Quote $quote): QuoteVersion;
 }

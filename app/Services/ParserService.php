@@ -174,7 +174,11 @@ class ParserService implements ParserServiceInterface
         };
 
         $quoteFile->clearException();
-        $quoteFile->quote()->associate($quote->usingVersion)->save();
+
+        $quoteFile->quote()->associate(
+            $this->quote->createNewVersionIfNonCreator($quote)
+        )->save();
+
         $this->routeParser($quoteFile);
         $this->quoteFile->deleteExcept($quoteFile);
 

@@ -21,6 +21,8 @@ trait HasVersions
 
     protected $versionsSelection;
 
+    protected $wasCreatedNewVersion = false;
+
     public function usingVersion(): HasOneThrough
     {
         return $this->hasOneThrough(QuoteVersion::class, QuoteVersionPivot::class, 'quote_id', 'id', 'id', 'version_id')
@@ -40,6 +42,17 @@ trait HasVersions
     {
         $this->versions()->update(['is_using' => false]);
         $this->versions()->attach($version, ['is_using' => true]);
+        $this->wasCreatedNewVersion = true;
+    }
+
+    public function getWasCreatedNewVersionAttribute(): bool
+    {
+        return $this->wasCreatedNewVersion;
+    }
+
+    public function getWasNotCreatedNewVersionAttribute(): bool
+    {
+        return !$this->wasCreatedNewVersion;
     }
 
     public function scopeNotVersion(Builder $query): Builder
@@ -76,7 +89,9 @@ trait HasVersions
 
         return $this->versionsSelection = (clone $this->versions)
             ->push($this->getAttribute('original_version'))
-            ->map->toSelectionArray();
+            ->map->toSelectionArray()
+            ->sortBy('name')
+            ->values();
     }
 
     public function setVersionsSelectionAttribute(Collection $value)

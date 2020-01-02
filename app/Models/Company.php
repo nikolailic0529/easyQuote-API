@@ -9,6 +9,7 @@ use App\Contracts\{
     HasOrderedScope,
     WithLogo
 };
+use App\Models\Data\Country;
 use App\Traits\{
     Activatable,
     BelongsToAddresses,
@@ -42,11 +43,11 @@ class Company extends BaseModel implements WithImage, WithLogo, ActivatableInter
         SoftDeletes;
 
     protected $fillable = [
-        'name', 'category', 'vat', 'type', 'email', 'website', 'phone', 'default_vendor_id'
+        'name', 'category', 'vat', 'type', 'email', 'website', 'phone', 'default_vendor_id', 'default_country_id'
     ];
 
     protected static $logAttributes = [
-        'name', 'category', 'vat', 'type', 'email', 'category', 'website', 'phone', 'defaultVendor.name'
+        'name', 'category', 'vat', 'type', 'email', 'category', 'website', 'phone', 'defaultVendor.name', 'defaultCountry.name'
     ];
 
     protected static $logOnlyDirty = true;
@@ -72,6 +73,24 @@ class Company extends BaseModel implements WithImage, WithLogo, ActivatableInter
     public function defaultVendor()
     {
         return $this->belongsTo(Vendor::class);
+    }
+
+    public function defaultCountry()
+    {
+        return $this->belongsTo(Country::class);
+    }
+
+    public function sortVendorsCountries(): self
+    {
+        $vendors = $this->vendors->map(function ($vendor) {
+            $countries = $vendor->countries->sortByDesc(function ($country) {
+                return $this->default_country_id === $country->id;
+            })->values();
+
+            return $vendor->setRelation('countries', $countries);
+        });
+
+        return $this->setRelation('vendors', $vendors);
     }
 
     public function scopeVendor($query, string $id)

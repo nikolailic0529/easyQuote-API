@@ -85,23 +85,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
     {
         return DB::transaction(function () use ($request) {
             $quote = $request->quote();
-            $version = $quote->usingVersion;
-
-            /**
-             * Create replicated version from using version in the following case:
-             *
-             * 1) Editor id !== $quote->user_id
-             * 2) Using version doesn't belong to the current editor.
-             *
-             * If an editing version (which is using version) belongs to editor, the system shouldn't create a new version and continue modify current version.
-             *
-             */
-
-            if ($quote->exists && $version->user_id !== $request->user()->id) {
-                $replicatedVersion = $this->replicateVersion($quote, $version);
-
-                $quote->attachNewVersion($replicatedVersion);
-            }
+            $version = $this->createNewVersionIfNonCreator($quote);
 
             $state = $request->validatedData();
             $quoteData = $request->validatedQuoteData();
@@ -109,7 +93,12 @@ class QuoteStateRepository implements QuoteRepositoryInterface
             $version->fill($quoteData);
 
             $this->draftOrSubmit($state, $quote);
-            $this->storeQuoteFilesState($state, $version);
+
+            /**
+             * We are attaching passed Files to Quote only when a new version has not been created.
+             */
+            $quote->wasNotCreatedNewVersion && $this->storeQuoteFilesState($state, $version);
+
             $this->detachScheduleIfRequested($state, $version);
             $this->attachColumnsToFields($state, $version);
             $this->hideFields($state, $version);
@@ -328,7 +317,8 @@ class QuoteStateRepository implements QuoteRepositoryInterface
 
         activity()
             ->on($quote)
-            ->withAttribute('using_version',
+            ->withAttribute(
+                'using_version',
                 $newVersion->versionName,
                 $oldVersion->versionName
             )
@@ -500,6 +490,28 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         return $saved;
     }
 
+    public function createNewVersionIfNonCreator(Quote $quote): QuoteVersion
+    {
+        /**
+         * Create replicated version from using version in the following case:
+         *
+         * 1) Editor id !== $quote->user_id
+         * 2) Using version doesn't belong to the current editor.
+         *
+         * If an editing version (which is using version) belongs to editor, the system shouldn't create a new version and continue modify current version.
+         *
+         */
+
+        if ($quote->exists && $quote->usingVersion->user_id !== request()->user()->id) {
+            $replicatedVersion = $this->replicateVersion($quote, $quote->usingVersion);
+
+            $quote->attachNewVersion($replicatedVersion);
+            $quote->load('usingVersion');
+        }
+
+        return $quote->usingVersion;
+    }
+
     protected function hideFields(Collection $state, BaseQuote $quote): void
     {
         if (is_null($hidden = data_get($state, 'quote_data.hidden_fields'))) {
@@ -558,8 +570,8 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         return DB::transaction(function () use ($parent, $version, $user) {
             $replicatedVersion = $version->replicate(['laravel_through_key']);
 
-            $countUserVersions = $parent->versions()->whereHas('user', function ($query) use ($version) {
-                $query->whereId($version->user_id);
+            $countUserVersions = $parent->versions()->whereHas('user', function ($query) use ($replicatedVersion) {
+                $query->whereId($replicatedVersion->user_id);
             })->count();
 
             /**
@@ -577,7 +589,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
                 $replicatedVersion->user()->associate($user);
             }
 
-            $pass = $replicatedVersion->save();
+            $pass = $replicatedVersion->saveOrFail();
 
             /**
              * Discounts Replication
@@ -632,17 +644,17 @@ class QuoteStateRepository implements QuoteRepositoryInterface
 
     protected function setMargin(Collection $state, BaseQuote $quote): void
     {
-        if (blank($state->get('margin')) || blank($quote->country_id) || blank($quote->vendor_id)) {
-            return;
-        }
-
-        if (data_get($state, 'margin.delete', false) === true) {
+        if ((bool) data_get($state, 'margin.delete', false) === true) {
             $quote->deleteCountryMargin();
 
             /**
              * Fresh Discounts Margin Percentage.
              */
             $this->freshDiscounts($quote);
+            return;
+        }
+
+        if (blank($state->get('margin')) || blank($quote->country_id) || blank($quote->vendor_id)) {
             return;
         }
 

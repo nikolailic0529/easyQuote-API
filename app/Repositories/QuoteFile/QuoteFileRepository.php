@@ -297,7 +297,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
                 from `imported_columns`
                 group by imported_row_id) as temp_imported_columns
                 on temp_imported_columns.temp_imported_row_id = `imported_columns`.imported_row_id
-            join (select id as row_id, quote_file_id, page, is_selected, processed_at from imported_rows) as imported_rows
+            join (select id as row_id, quote_file_id, page, is_selected, processed_at, group_name from imported_rows) as imported_rows
                 on imported_rows.row_id = `imported_columns`.imported_row_id
                 where imported_rows.quote_file_id = :quote_file_id',
             compact('quote_file_id')
@@ -307,8 +307,8 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
          * Inserting Imported Rows with new Ids
          */
         DB::insert(
-            'insert into `imported_rows` (id, user_id, quote_file_id, page, is_selected, processed_at)
-            select new_imported_row_id, :user_id, :new_quote_file_id, page, is_selected, processed_at from new_imported_columns group by new_imported_row_id',
+            'insert into `imported_rows` (id, user_id, quote_file_id, page, is_selected, processed_at, group_name)
+            select new_imported_row_id, :user_id, :new_quote_file_id, page, is_selected, processed_at, group_name from new_imported_columns group by new_imported_row_id',
             compact('user_id', 'new_quote_file_id')
         );
 

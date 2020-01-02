@@ -194,6 +194,61 @@ class CompanyTest extends TestCase
             ]);
     }
 
+    /**
+     * Test Default Company Vendor assigning
+     *
+     * @return void
+     */
+    public function testDefaultCompanyVendor()
+    {
+        $company = app('company.repository')->create($this->makeGenericCompanyAttributes());
+
+        $vendor = $company->vendors->random();
+
+        $response = $this->patchJson(url("api/companies/{$company->id}"), ['default_vendor_id' => $vendor->id], $this->authorizationHeader);
+
+        $response->assertOk();
+
+        $this->assertEquals($vendor->id, head($response->json('vendors'))['id']);
+
+        /**
+         * Test assigned Default Vendor in the data for Quote Importer screen.
+         */
+        $response = $this->getJson(url('api/quotes/step/1'), $this->authorizationHeader);
+
+        $firstCompanyVendor = head(collect($response->json('companies'))->firstWhere('id', $company->id)['vendors']);
+
+        $this->assertEquals($vendor->id, $firstCompanyVendor['id']);
+    }
+
+    public function testDefaultCompanyCountry()
+    {
+        $attributes = $this->makeGenericCompanyAttributes();
+
+        $attributes['default_vendor_id'] = Arr::random($attributes['vendors']);
+
+        $company = app('company.repository')->create($attributes);
+
+        $country = $company->defaultVendor->countries->random();
+
+        $response = $this->patchJson(url("api/companies/{$company->id}"), ['default_country_id' => $country->id], $this->authorizationHeader);
+
+        $response->assertOk();
+
+        $this->assertEquals($country->id, head(head($response->json('vendors'))['countries'])['id']);
+
+        /**
+         * Test assigned Default Country in the data for Quote Importer screen.
+         */
+        $response = $this->getJson(url('api/quotes/step/1'), $this->authorizationHeader);
+
+        $responseCompany = collect($response->json('companies'))->firstWhere('id', $company->id);
+
+        $firstCompanyVendorCountry = head(head($responseCompany['vendors'])['countries']);
+
+        $this->assertEquals($country->id, $firstCompanyVendorCountry['id']);
+    }
+
     protected function makeGenericCompanyAttributes()
     {
         return [
@@ -203,7 +258,8 @@ class CompanyTest extends TestCase
             'email' => $this->faker->companyEmail,
             'phone' => $this->faker->phoneNumber,
             'website' => $this->faker->url,
-            'vendors' => app('vendor.repository')->random(2)->pluck('id')->toArray()
+            'vendors' => app('vendor.repository')->random(2)->pluck('id')->toArray(),
+            'user_id' => $this->user->id
         ];
     }
 }

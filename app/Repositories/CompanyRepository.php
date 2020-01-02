@@ -49,12 +49,17 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
 
     public function allWithVendorsAndCountries(): Collection
     {
-        return $this->company->query()->with([
+        $companies = $this->company->query()->with([
             'vendors' => function ($query) {
                 $query->activated();
             },
             'vendors.countries'
-        ])->activated()->ordered()->get();
+        ])
+            ->activated()->ordered()->get();
+
+        $companies->map->sortVendorsCountries();
+
+        return $companies;
     }
 
     public function search(string $query = '')
@@ -64,12 +69,14 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
 
     public function userQuery(): Builder
     {
-        return $this->company->query()->with('image', 'vendors', 'addresses.country', 'contacts');
+        return $this->company->query()->with('image');
     }
 
     public function find(string $id): Company
     {
-        return $this->userQuery()->whereId($id)->firstOrFail()->withAppends();
+        return $this->userQuery()->whereId($id)
+            ->with('vendors', 'addresses.country', 'contacts', 'vendors.countries', 'addresses.country', 'contacts')
+            ->firstOrFail()->withAppends();
     }
 
     public function random(int $limit = 1, ?Closure $scope = null)
@@ -98,7 +105,7 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
         $company = $this->company->create($request);
         $company->createLogo(data_get($request, 'logo'));
         $company->syncVendors(data_get($request, 'vendors'));
-        $company->load('vendors')->appendLogo();
+        $company->load('vendors.countries')->appendLogo()->sortVendorsCountries();
 
         return $company;
     }
@@ -116,7 +123,7 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
         $company->syncContacts($request->contacts_attach);
         $company->detachContacts($request->contacts_detach);
 
-        $company->load('vendors', 'addresses', 'contacts')->appendLogo();
+        $company->load('vendors.countries', 'addresses', 'contacts')->appendLogo()->sortVendorsCountries();
 
         return $company;
     }
