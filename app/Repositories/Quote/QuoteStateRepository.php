@@ -566,11 +566,11 @@ class QuoteStateRepository implements QuoteRepositoryInterface
              * We are incrementing a new version on 2 point if parent author equals a new version author as we are not record original version to the pivot table.
              * Incrementing number equals 1 if there is a new version from non-author.
              */
-            $versionIncrement = $replicatedVersion->user_id === $version->user_id ? 2 : 1;
+            $countUserVersions += $parent->user_id === $replicatedVersion->user_id ? 1 : 0;
 
             $replicatedVersion->forceFill([
                 'is_version' => true,
-                'version_number' => $countUserVersions + $versionIncrement
+                'version_number' => $countUserVersions + 1
             ]);
 
             if (isset($user)) {
