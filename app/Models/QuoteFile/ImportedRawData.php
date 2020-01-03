@@ -12,7 +12,7 @@ use App\Traits\{
 
 class ImportedRawData extends BaseModel
 {
-    use BelongsToUser, BelongsToQuoteFile, Draftable, SoftDeletes;
+    use BelongsToUser, BelongsToQuoteFile, SoftDeletes;
 
     protected $fillable = [
         'page', 'file_path'

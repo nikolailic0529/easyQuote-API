@@ -94,6 +94,12 @@ trait HasVersions
             ->values();
     }
 
+    public function getUsingVersionFromSelectionAttribute(): QuoteVersion
+    {
+        return $this->versions->firstWhere('is_using', true)
+            ?? $this->getAttribute('originalVersion');
+    }
+
     public function setVersionsSelectionAttribute(Collection $value)
     {
         $this->versionsSelection = $value;

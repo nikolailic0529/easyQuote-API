@@ -2,10 +2,13 @@
 
 namespace App\Imports;
 
+use App\Imports\Concerns\{
+    MapsHeaders,
+    LimitsHeaders
+};
 use App\Models\QuoteFile\QuoteFile;
 use League\Csv\Reader;
-use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface as ImportableColumnRepository;
-use Str, DB, Storage;
+use DB, Storage;
 
 class ImportCsv
 {
@@ -43,20 +46,6 @@ class ImportCsv
      * @var integer
      */
     protected $headerOffset;
-
-    /**
-     * Header Mapping header → importable_column_id
-     *
-     * @var array
-     */
-    protected $headersMapping;
-
-    /**
-     * Headers count
-     *
-     * @var integer
-     */
-    protected $headersCount;
 
     /**
      * Header
@@ -107,6 +96,8 @@ class ImportCsv
      */
     protected $importableFilePath;
 
+    use MapsHeaders, LimitsHeaders;
+
     public function __construct(QuoteFile $quoteFile, $filePath = null, int $headerOffset = 0)
     {
         $this->quoteFile = $quoteFile;
@@ -116,8 +107,6 @@ class ImportCsv
         }
 
         $this->headerOffset = $headerOffset;
-
-        $this->importableColumn = app(ImportableColumnRepository::class);
 
         $this->setImportableFilePath($quoteFile, $filePath);
 
@@ -134,7 +123,7 @@ class ImportCsv
         $this->pdo = DB::connection()->getPdo();
     }
 
-    public function import()
+    public function import(): void
     {
         $this->beforeImport();
 
@@ -149,9 +138,7 @@ class ImportCsv
         ");
 
         // Inserting Columns by Each Header
-        $colsQuery = collect($this->headersMapping)->map(function ($column) {
-            ['header' => $header, 'importable_column_id' => $importable_column_id] = $column;
-
+        $colsQuery = $this->headersMapping->map(function ($importable_column_id, $header) {
             return "
                 insert into `imported_columns` (id, imported_row_id, importable_column_id, value, header)
                 select uuid() id, imported_row_id, '{$importable_column_id}', `{$header}` value, '{$header}'
@@ -169,26 +156,22 @@ class ImportCsv
         $this->checkHeader();
         $this->loadIntoTempTable();
         $this->mapHeaders();
-        $this->setHeadersCount();
     }
 
     protected function afterImport(): void
     {
-        if($this->quoteFile->rowsCount === 0) {
+        if ($this->quoteFile->rowsCount === 0) {
             $this->quoteFile->setException(QFNRF_01, 'QFNRF_01');
             $this->quoteFile->throwExceptionIfExists();
         }
     }
 
-    private function checkHeader()
+    protected function checkHeader(): void
     {
-        if (mb_strlen($this->header[0]) > 100) {
-            $this->quoteFile->setException(QFWS_01, 'QFWS_01');
-            $this->quoteFile->throwExceptionIfExists();
-        }
+        $this->limitHeader($this->quoteFile, $this->header[0]);
     }
 
-    private function filterHeader(array $header)
+    protected function filterHeader(array $header): array
     {
         return collect($header)->map(function ($name, $key) {
             if (mb_strlen(trim($name)) === 0) {
@@ -198,7 +181,7 @@ class ImportCsv
         })->toArray();
     }
 
-    private function loadIntoTempTable()
+    protected function loadIntoTempTable(): void
     {
         $columns = collect($this->header)->map(function ($column) {
             return "`{$column}` text";
@@ -224,57 +207,7 @@ class ImportCsv
         ");
     }
 
-    private function setHeadersCount()
-    {
-        $this->headersCount = count($this->header);
-    }
-
-    private function mapHeaders()
-    {
-        $aliasesMapping = $this->importableColumn->allSystem()->pluck('aliases.*.alias', 'id');
-        $this->headersMapping = [];
-        $mapping = collect([]);
-
-        $this->headersMapping = collect($this->header)->map(function ($header, $key) use ($aliasesMapping, $mapping) {
-            $column = false;
-            $column_num = $key + 1;
-
-            if (filled($header)) {
-                $importable_column_id = $aliasesMapping->search(function ($aliases, $importable_column_id) use ($header, $mapping) {
-                    if ($mapping->contains($importable_column_id)) {
-                        return false;
-                    }
-
-                    $matchingHeader = preg_quote($header, '~');
-                    $match = preg_grep("~^{$matchingHeader}.*?~i", $aliases);
-                    if (empty($match)) {
-                        return false;
-                    }
-                    return true;
-                });
-            }
-
-            blank($header) && $header = "Unknown Header {$column_num}";
-
-            if (!$importable_column_id) {
-                $alias = $header;
-                $name = Str::columnName($header);
-
-                $importableColumn = $this->quoteFile->user->importableColumns()
-                    ->where('name', $name)
-                    ->whereNotIn('id', $mapping->toArray())
-                    ->firstOrCreate(compact('header', 'name'));
-                $importableColumn->aliases()->where('alias', $name)->firstOrCreate(compact('alias'));
-                $importable_column_id = $importableColumn->id;
-            }
-
-            $mapping->push($importable_column_id);
-
-            return compact('header', 'importable_column_id');
-        })->toArray();
-    }
-
-    private function setImportableFilePath(QuoteFile $quoteFile, $filePath)
+    protected function setImportableFilePath(QuoteFile $quoteFile, $filePath): void
     {
         $path = isset($filePath) ? $filePath : $quoteFile->original_file_path;
 

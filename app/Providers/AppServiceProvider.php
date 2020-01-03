@@ -150,6 +150,7 @@ class AppServiceProvider extends ServiceProvider
         MarginRepositoryInterface::class => 'margin.repository',
         QuoteTemplateRepositoryInterface::class => 'template.repository',
         CurrencyRepositoryInterface::class => 'currency.repository',
+        ImportableColumnRepositoryInterface::class => 'importablecolumn.repository',
         ReportLoggerInterface::class => 'report.logger'
     ];
 

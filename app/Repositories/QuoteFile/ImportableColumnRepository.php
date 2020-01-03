@@ -4,6 +4,7 @@ namespace App\Repositories\QuoteFile;
 
 use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface;
 use App\Models\QuoteFile\ImportableColumn;
+use Closure;
 
 class ImportableColumnRepository implements ImportableColumnRepositoryInterface
 {
@@ -24,14 +25,6 @@ class ImportableColumnRepository implements ImportableColumnRepositoryInterface
         return $this->importableColumn->ordered()->system()->with('aliases')->get();
     }
 
-    public function allColumnsRegs()
-    {
-        $importableColumns = $this->importableColumn->system()->ordered()
-            ->select('regexp')->get()->each->makeVisible('regexp')->toArray();
-
-        return collect($importableColumns)->flatten();
-    }
-
     public function allNames()
     {
         $names = $this->importableColumn->system()->select('name')->get()->toArray();
@@ -42,5 +35,16 @@ class ImportableColumnRepository implements ImportableColumnRepositoryInterface
     public function findByName(string $name): ImportableColumn
     {
         return $this->importableColumn->system()->whereName($name)->firstOrFail();
+    }
+
+    public function firstOrCreate(array $attributes, array $values = [], ?Closure $scope = null): ImportableColumn
+    {
+        $query = $this->importableColumn->query();
+
+        if ($scope instanceof Closure) {
+            call_user_func($scope, $query);
+        }
+
+        return $query->firstOrCreate($attributes, $values);
     }
 }

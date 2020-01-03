@@ -39,6 +39,7 @@ class QuoteDraftedRepositoryResource extends JsonResource
             'completeness' => $this->completeness,
             'created_at' => $this->created_at,
             'activated_at' => $this->activated_at,
+            'updated_at' => $this->usingVersionFromSelection->updated_at
         ];
     }
 }

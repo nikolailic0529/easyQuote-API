@@ -38,7 +38,7 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
     {
         return $this->quote
             ->currentUserWhen(request()->user()->cant('view_quotes'))
-            ->with('versions:id,quotes.user_id,version_number,updated_at')
+            ->with('versions:id,quotes.user_id,version_number,created_at,updated_at')
             ->drafted();
     }
 

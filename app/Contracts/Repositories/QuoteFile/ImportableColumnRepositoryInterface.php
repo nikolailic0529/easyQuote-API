@@ -3,16 +3,10 @@
 namespace App\Contracts\Repositories\QuoteFile;
 
 use App\Models\QuoteFile\ImportableColumn;
+use Closure;
 
 interface ImportableColumnRepositoryInterface
 {
-    /**
-     * Get all columns regexps ordered by order field
-     *
-     * @return \Illuminate\Support\Collection
-     */
-    public function allColumnsRegs();
-
     /**
      * Get all Importable Columns with aliases
      *
@@ -41,4 +35,14 @@ interface ImportableColumnRepositoryInterface
      * @return ImportableColumn
      */
     public function findByName(string $name): ImportableColumn;
+
+    /**
+     * Retrieve the first Importable Column matching the attributes or create it.
+     *
+     * @param array $attributes
+     * @param array $values
+     * @param Closure $scope
+     * @return ImportableColumn
+     */
+    public function firstOrCreate(array $attributes, array $values = [], ?Closure $scope = null): ImportableColumn;
 }
