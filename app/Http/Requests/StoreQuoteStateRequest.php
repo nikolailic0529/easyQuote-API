@@ -268,7 +268,8 @@ class StoreQuoteStateRequest extends FormRequest
     {
         return [
             'margin.value.max' => 'Margin Percentage can not be greater :max%',
-            'quote_data.service_agreement_id.string' => 'Service Agreement ID must not be empty.'
+            'quote_data.service_agreement_id.string' => 'Service Agreement ID must not be empty.',
+            'margin.value.numeric' => 'Margin Value must be a number.'
         ];
     }
 

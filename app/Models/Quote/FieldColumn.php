@@ -32,11 +32,12 @@ class FieldColumn extends Pivot
 
     protected $casts = [
         'is_default_enabled' => 'boolean',
+        'is_preview_visible' => 'boolean',
         'default_value' => 'string'
     ];
 
-    public function defaultAttributesToArray(): array
+    public static function defaultAttributesToArray(): array
     {
-        return array_diff_key($this->getAttributes(), array_flip(['importable_column_id']));
+        return array_diff_key((static::make())->getAttributes(), array_flip(['importable_column_id']));
     }
 }

@@ -14,8 +14,7 @@ class Currency extends BaseModel implements HasOrderedScope
 
     public function scopeOrdered($query)
     {
-        $base_currency = Setting::get('base_currency');
-        return $query->orderByRaw("field(`currencies`.`code`, ?, null) desc", [$base_currency]);
+        return $query->orderByRaw("field(`currencies`.`code`, ?, null) desc", [Setting::get('base_currency')]);
     }
 
     public function getLabelAttribute()

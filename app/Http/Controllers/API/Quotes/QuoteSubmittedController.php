@@ -91,7 +91,7 @@ class QuoteSubmittedController extends Controller
         $this->authorize('copy', $submitted);
 
         return response()->json(
-            $this->quote->copy($submitted->id)
+            $this->quote->copy($submitted)
         );
     }
 

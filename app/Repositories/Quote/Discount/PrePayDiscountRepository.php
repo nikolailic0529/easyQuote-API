@@ -4,16 +4,12 @@ namespace App\Repositories\Quote\Discount;
 
 use App\Contracts\Repositories\Quote\Discount\PrePayDiscountRepositoryInterface;
 use App\Models\Quote\Discount\PrePayDiscount;
-use App\Http\Requests\Discount\{
-    StorePrePayDiscountRequest,
-    UpdatePrePayDiscountRequest
-};
+use App\Http\Requests\Discount\UpdatePrePayDiscountRequest;
 use Illuminate\Database\Eloquent\{
     Model,
     Builder,
     ModelNotFoundException
 };
-use Arr;
 
 class PrePayDiscountRepository extends DiscountRepository implements PrePayDiscountRepositoryInterface
 {

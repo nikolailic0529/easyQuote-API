@@ -6,7 +6,6 @@ use App\Contracts\Repositories\{
     UserRepositoryInterface
 };
 use App\Http\Requests\{
-    Collaboration\InviteUserRequest,
     Collaboration\UpdateUserRequest,
     PasswordResetRequest as AppPasswordResetRequest,
     StoreResetPasswordRequest,
@@ -32,7 +31,6 @@ use Illuminate\Database\Eloquent\{
     Collection
 };
 use Arr, Hash;
-use Illuminate\Http\Request;
 
 class UserRepository extends SearchableRepository implements UserRepositoryInterface
 {

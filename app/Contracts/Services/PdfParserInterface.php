@@ -25,7 +25,7 @@ interface PdfParserInterface
      * Parse PDF schedule raw text.
      *
      * @param array $array
-     * @return void
+     * @return array
      */
     public function parseSchedule(array $array);
 

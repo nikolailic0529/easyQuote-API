@@ -25,7 +25,7 @@ class ReportLogger implements ReportLoggerInterface
         $this->logCase($first, $second);
     }
 
-    protected function logCase(array $argument, array $response): void
+    protected function logCase(array $argument, ?array $response = null): void
     {
         $key = $this->findLogKey($argument);
 
@@ -34,13 +34,19 @@ class ReportLogger implements ReportLoggerInterface
         }
 
         $method = isset(array_flip(static::$infoKeys)[$key]) ? 'info' : 'error';
+        $message = $argument[$key];
 
-        $message = preg_replace_callback('/\B\:([\w\.]+)\b/', function ($key) use ($response) {
-            return data_get($response, $key[1]) ?? $key[1];
-        }, $argument[$key]);
+        if (isset($response)) {
+            $message = preg_replace_callback('/\B\:([\w\.]+)\b/', function ($key) use ($response) {
+                return data_get($response, $key[1]) ?? $key[1];
+            }, $message);
+        }
 
         logger()->{$method}($message);
-        logger()->{$method}($response);
+
+        if (isset($response)) {
+            logger()->{$method}($response);
+        }
     }
 
     protected function findLogKey(array $argument)

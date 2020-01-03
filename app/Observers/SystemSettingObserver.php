@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\System\SystemSetting;
+use Setting;
 
 class SystemSettingObserver
 {
@@ -14,6 +15,6 @@ class SystemSettingObserver
      */
     public function saved(SystemSetting $systemSetting)
     {
-        $systemSetting->forgetCachedValue();
+        $systemSetting->cacheValue();
     }
 }

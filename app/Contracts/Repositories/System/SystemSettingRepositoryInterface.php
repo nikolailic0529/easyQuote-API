@@ -25,12 +25,21 @@ interface SystemSettingRepositoryInterface
     public function findMany(array $ids): IlluminateCollection;
 
     /**
+     * Find a specified System Setting by key.
+     *
+     * @param string $key
+     * @return SystemSetting
+     */
+    public function findByKey(string $key): SystemSetting;
+
+    /**
      * Get System Setting value by provided key.
      *
      * @param string $key
+     * @param bool $mutate
      * @return string
      */
-    public function get(string $key);
+    public function get(string $key, bool $mutate = true);
 
     /**
      * Update a value for specified System Setting.

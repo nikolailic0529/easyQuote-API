@@ -3,17 +3,13 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\VendorRepositoryInterface;
-use App\Http\Requests\Vendor\{
-    StoreVendorRequest,
-    UpdateVendorRequest
-};
+use App\Http\Requests\Vendor\UpdateVendorRequest;
 use App\Models\Vendor;
 use Illuminate\Database\Eloquent\{
     Model,
     Builder,
     Collection
 };
-use Arr;
 
 class VendorRepository extends SearchableRepository implements VendorRepositoryInterface
 {

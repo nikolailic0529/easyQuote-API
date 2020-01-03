@@ -2,7 +2,6 @@
 
 namespace App\Repositories;
 
-use App\Builder\Pagination\Paginator;
 use App\Contracts\ActivatableInterface;
 use Illuminate\Database\Eloquent\{
     Builder,
@@ -11,7 +10,7 @@ use Illuminate\Database\Eloquent\{
 use Illuminate\Database\Query\Builder as DatabaseBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Pipeline\Pipeline;
-use Closure, Arr;
+use Closure;
 
 abstract class SearchableRepository
 {

@@ -4,10 +4,7 @@ namespace App\Repositories\Quote\Margin;
 
 use App\Contracts\Repositories\Quote\Margin\MarginRepositoryInterface;
 use App\Repositories\SearchableRepository;
-use App\Http\Requests\Margin\{
-    StoreCountryMarginRequest,
-    UpdateCountryMarginRequest
-};
+use App\Http\Requests\Margin\UpdateCountryMarginRequest;
 use App\Models\Quote\Margin\CountryMargin;
 use App\Models\Quote\BaseQuote as Quote;
 use Illuminate\Database\Eloquent\{
@@ -15,7 +12,7 @@ use Illuminate\Database\Eloquent\{
     Builder,
     ModelNotFoundException
 };
-use Arr, Closure;
+use Closure;
 
 class MarginRepository extends SearchableRepository implements MarginRepositoryInterface
 {

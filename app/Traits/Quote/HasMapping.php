@@ -68,8 +68,8 @@ trait HasMapping
     public function attachColumnToField(TemplateField $templateField, $importableColumn, array $attributes = [])
     {
         $template_field_id = $templateField->id;
-        $importable_column_id = $importableColumn->id ?? null;
-        $attributes = array_intersect_key($attributes, (new FieldColumn)->getAttributes());
+        $importable_column_id = optional($importableColumn)->id;
+        $attributes = array_intersect_key($attributes, FieldColumn::defaultAttributesToArray());
         $attributes = array_merge($attributes, compact('importable_column_id'));
 
         if ($this->templateFields()->whereId($template_field_id)->exists()) {

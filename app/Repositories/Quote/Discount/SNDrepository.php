@@ -4,16 +4,12 @@ namespace App\Repositories\Quote\Discount;
 
 use App\Contracts\Repositories\Quote\Discount\SNDrepositoryInterface;
 use App\Models\Quote\Discount\SND;
-use App\Http\Requests\Discount\{
-    StoreSNDrequest,
-    UpdateSNDrequest
-};
+use App\Http\Requests\Discount\UpdateSNDrequest;
 use Illuminate\Database\Eloquent\{
     Model,
     Builder,
     ModelNotFoundException
 };
-use Arr;
 
 class SNDrepository extends DiscountRepository implements SNDrepositoryInterface
 {

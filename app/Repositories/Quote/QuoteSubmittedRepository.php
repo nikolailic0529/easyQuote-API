@@ -168,12 +168,19 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         return $this->find($id)->unSubmit();
     }
 
-    public function copy(string $id)
+    public function copy($quote)
     {
-        $quote = $this->find($id);
+        if (is_string($quote)) {
+            $quote = $this->find($quote);
+        }
+
+        if (!$quote instanceof Quote) {
+            throw new \InvalidArgumentException(INV_ARG_QPK_01);
+        }
 
         return DB::transaction(function () use ($quote) {
-            $replicatedQuote = $quote->replicate();
+            $replicatedQuote = $quote->usingVersion->replicate(['laravel_through_key']);
+            $replicatedQuote->is_version = false;
 
             $quote->deactivate();
 
@@ -222,7 +229,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
             if ($copied) {
                 activity()
                     ->on($replicatedQuote)
-                    ->withProperties(['old' => Quote::logChanges($quote), 'attributes' => Quote::logChanges($replicatedQuote)])
+                    ->withProperties(['old' => Quote::logChanges($quote->usingVersion), 'attributes' => Quote::logChanges($replicatedQuote)])
                     ->by(request()->user())
                     ->log('copied');
             }

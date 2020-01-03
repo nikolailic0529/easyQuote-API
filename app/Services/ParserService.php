@@ -29,6 +29,7 @@ use App\Imports\{
     CountPages
 };
 use Excel, Storage, File, Setting, DB;
+use Illuminate\Pipeline\Pipeline;
 
 class ParserService implements ParserServiceInterface
 {
@@ -114,11 +115,7 @@ class ParserService implements ParserServiceInterface
 
         $quoteFile = $this->quoteFile->find($request->quote_file_id);
 
-        $quoteFile->setImportedPage($request->page);
-
-        $separator = $request->data_select_separator_id;
-
-        $this->handleOrRetrieve($quote, $quoteFile, $separator);
+        $this->handleOrRetrieve($quote, $quoteFile);
 
         $quoteFile->throwExceptionIfExists();
 
@@ -131,137 +128,118 @@ class ParserService implements ParserServiceInterface
 
     public function mapColumnsToFields(Quote $quote, QuoteFile $quoteFile)
     {
-        /**
-         * Detach existing relations
-         */
-        $quote->usingVersion->detachColumnsFields();
-
         $templateFields = $quote->quoteTemplate->templateFields;
+        $templateFieldsNames = $templateFields->pluck('name')->toArray();
 
-        $rowData = $quoteFile->rowsData()->with(['columnsData' => function ($query) {
-            return $query->whereHas('importableColumn');
-        }])->processed()->first();
+        $row = $quoteFile->rowsData()->with([
+            'columnsData' => function ($query) use ($templateFieldsNames) {
+                return $query->whereHas('importableColumn', function ($query) use ($templateFieldsNames) {
+                    $query->whereIn('name', $templateFieldsNames);
+                });
+            },
+            'columnsData.importableColumn'
+        ])->processed()->first();
 
-        if (blank($rowData)) {
-            return;
+        $columns = optional($row)->columnsData;
+
+        if (blank($columns)) {
+            $quote->usingVersion->detachColumnsFields();
         }
 
-        $defaultAttributes = app(FieldColumn::class)->defaultAttributesToArray();
+        $defaultAttributes = FieldColumn::defaultAttributesToArray();
 
-        $rowData->columnsData->each(function ($column) use ($quote, $templateFields, $defaultAttributes) {
-            $templateField = $templateFields->where('name', $column->importableColumn->name)->first();
+        $mapping = $templateFields->pluck('id', 'name')
+            ->mergeRecursive($columns->pluck('importableColumn.id', 'importableColumn.name'))
+            ->filter(function ($mapping) {
+                return is_array($mapping) && count($mapping) === 2;
+            })
+            ->mapWithKeys(function ($mapping) use ($defaultAttributes) {
+                $importable_column_id = $mapping[1];
+                return [$mapping[0] => compact('importable_column_id') + $defaultAttributes];
+            });
 
-            if (!isset($templateField)) {
-                return true;
-            }
-
-            $quote->usingVersion->attachColumnToField($templateField, $column->importableColumn, $defaultAttributes);
-        });
+        $quote->usingVersion->templateFields()->sync($mapping->toArray());
 
         $quote->usingVersion->forgetCachedMappingReview();
 
         return $quoteFile->markAsAutomapped();
     }
 
-    public function handleOrRetrieve(Quote $quote, QuoteFile $quoteFile, $separator)
-    {
-        if (($quoteFile->isHandled() && $quoteFile->isPrice()) || ($quoteFile->isHandled() && $quoteFile->isSchedule() && !$quoteFile->isNewPage(request()->page))) {
-            return false;
-        }
-
-        if (($quoteFile->isHandled() && $quoteFile->isPrice()) && !($quoteFile->isCsv() && $quoteFile->isNewSeparator($separator))) {
-            return false;
-        };
-
-        $quoteFile->clearException();
-
-        $quoteFile->quote()->associate(
-            $this->quote->createNewVersionIfNonCreator($quote)
-        )->save();
-
-        $this->routeParser($quoteFile);
-        $this->quoteFile->deleteExcept($quoteFile);
-
-        /**
-         * Clear Cache Mapping Review Data After Handling
-         */
-        if ($quoteFile->isPrice()) {
-            $quote->usingVersion->forgetCachedMappingReview();
-            $quote->usingVersion->resetGroupDescription();
-        }
-
-        return true;
-    }
-
     public function routeParser(QuoteFile $quoteFile)
     {
-        DB::transaction(function () use ($quoteFile) {
-            switch ($quoteFile->format->extension) {
-                case 'pdf':
-                    return $this->handlePdf($quoteFile);
-                    break;
-                case 'csv':
-                    return $this->handleCsv($quoteFile);
-                    break;
-                case 'xlsx':
-                case 'xls':
-                    return $this->handleExcel($quoteFile);
-                    break;
-                case 'doc':
-                case 'docx':
-                    return $this->handleWord($quoteFile);
-                    break;
-                default:
-                    error_abort(QFTNS_01, 'QFTNS_01',  422);
-                    break;
-            }
-        });
+        switch ($quoteFile->format->extension) {
+            case 'pdf':
+                return $this->handlePdf($quoteFile);
+                break;
+            case 'csv':
+                return $this->handleCsv($quoteFile);
+                break;
+            case 'xlsx':
+            case 'xls':
+                return $this->handleExcel($quoteFile);
+                break;
+            case 'doc':
+            case 'docx':
+                return $this->handleWord($quoteFile);
+                break;
+            default:
+                error_abort(QFTNS_01, 'QFTNS_01',  422);
+                break;
+        }
     }
 
     public function handlePdf(QuoteFile $quoteFile)
     {
-        $rawData = $this->quoteFile->getRawData($quoteFile)->toArray();
+        DB::transaction(function () use ($quoteFile) {
+            $rawData = $this->quoteFile->getRawData($quoteFile)->toArray();
 
-        if ($quoteFile->isSchedule()) {
-            $pageData = collect($rawData)->firstWhere('page', $quoteFile->imported_page);
+            if ($quoteFile->isSchedule()) {
+                $pageData = collect($rawData)->firstWhere('page', $quoteFile->imported_page);
 
-            $parsedData = $this->pdfParser->parseSchedule($pageData);
+                $parsedData = $this->pdfParser->parseSchedule($pageData);
 
-            $this->quoteFile->createScheduleData(
+                $this->quoteFile->createScheduleData(
+                    $quoteFile,
+                    $parsedData
+                );
+
+                $quoteFile->markAsHandled();
+                return;
+            }
+
+            $parsedData = $this->pdfParser->parse($rawData);
+
+            $this->quoteFile->createRowsData(
                 $quoteFile,
                 $parsedData
             );
 
-            return $quoteFile->markAsHandled();
-        }
-
-        $parsedData = $this->pdfParser->parse($rawData);
-
-        $this->quoteFile->createRowsData(
-            $quoteFile,
-            $parsedData
-        );
-
-        return $quoteFile->markAsHandled();
+            $quoteFile->markAsHandled();
+            return;
+        });
     }
 
     public function handleExcel(QuoteFile $quoteFile)
     {
-        if ($quoteFile->isSchedule()) {
-            return $this->importExcelSchedule($quoteFile);
-        }
+        DB::transaction(function () use ($quoteFile) {
+            if ($quoteFile->isSchedule()) {
+                $this->importExcelSchedule($quoteFile);
+                return;
+            }
 
-        return $this->importExcel($quoteFile);
+            $this->importExcel($quoteFile);
+        });
     }
 
     public function handleCsv(QuoteFile $quoteFile)
     {
         if (request()->has('data_select_separator_id')) {
-            $dataSelectSeparator = $this->dataSelectSeparator->find(request()->data_select_separator_id);
-            $quoteFile->dataSelectSeparator()->associate($dataSelectSeparator)->save();
+            $quoteFile->dataSelectSeparator()->associate(request()->data_select_separator_id)->save();
         }
 
-        $this->importCsv($quoteFile);
+        DB::transaction(function () use ($quoteFile) {
+            $this->importCsv($quoteFile);
+        });
     }
 
     public function handleWord(QuoteFile $quoteFile)
@@ -269,7 +247,9 @@ class ParserService implements ParserServiceInterface
         $separator = $this->dataSelectSeparator->findByName($this->defaultSeparator);
         $quoteFile->dataSelectSeparator()->associate($separator)->save();
 
-        $this->importWord($quoteFile);
+        DB::transaction(function () use ($quoteFile) {
+            $this->importWord($quoteFile);
+        });
     }
 
     public function importExcel(QuoteFile $quoteFile)
@@ -346,7 +326,7 @@ class ParserService implements ParserServiceInterface
         $sheetCount = $import->getSheetCount();
 
         if ($sheetCount === 0) {
-            throw new \ErrorException(QFNR_01);
+            error_abort(QFNR_01, 'QFNR_01', 422);
         }
 
         return $import->getSheetCount();
@@ -365,6 +345,43 @@ class ParserService implements ParserServiceInterface
         $format = $this->fileFormat->whereInExtension($extensions->toArray());
 
         return $format;
+    }
+
+    protected function handleOrRetrieve(Quote $quote, QuoteFile $quoteFile): bool
+    {
+        app(Pipeline::class)
+            ->send($quoteFile)
+            ->through(
+                \App\Services\HandledCases\HasException::class,
+                \App\Services\HandledCases\HasNotBeenProcessed::class,
+                \App\Services\HandledCases\RequestedNewPageForSchedule::class,
+                \App\Services\HandledCases\RequestedNewSeparatorForCsv::class
+            )
+            ->thenReturn();
+
+        if ($quoteFile->shouldNotBeHandled) {
+            return false;
+        }
+
+        $version = $this->quote->createNewVersionIfNonCreator($quote);
+
+        $quoteFile->setImportedPage(request()->page);
+        $quoteFile->clearException();
+
+        $quoteFile->quote()->associate($version)->save();
+
+        $this->routeParser($quoteFile);
+        $this->quoteFile->deleteExcept($quoteFile);
+
+        /**
+         * Clear Cache Mapping Review Data After Processing.
+         */
+        if ($quoteFile->isPrice()) {
+            $version->forgetCachedMappingReview();
+            $version->resetGroupDescription();
+        }
+
+        return true;
     }
 
     protected function guessDelimiter(string $filepath): array

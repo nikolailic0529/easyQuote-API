@@ -18,7 +18,7 @@ class SystemSetting extends BaseModel
     ];
 
     protected $hidden = [
-        'label_format', 'type', 'key'
+        'label_format', 'type', 'key', 'deleted_at'
     ];
 
     protected $casts = [
@@ -101,7 +101,7 @@ class SystemSetting extends BaseModel
         return __("setting.titles.{$this->attributes['key']}");
     }
 
-    public function getFieldTypeAttribute()
+    public function getFieldTypeAttribute(): string
     {
         if ($this->is_read_only) {
             return 'label';
@@ -110,14 +110,19 @@ class SystemSetting extends BaseModel
         return is_array($this->possible_values) ? 'dropdown' : 'textbox';
     }
 
-    public function getValueCacheKeyAttribute()
+    public function getValueCacheKeyAttribute(): string
     {
         return "setting-value:{$this->key}";
     }
 
-    public function forgetCachedValue()
+    public function forgetCachedValue(): bool
     {
         return cache()->forget($this->valueCacheKey);
+    }
+
+    public function cacheValue(): bool
+    {
+        return cache()->forever($this->valueCacheKey, $this->value);
     }
 
     public function getItemNameAttribute(): string

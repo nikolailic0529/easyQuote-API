@@ -6,8 +6,10 @@ use App\Contracts\Repositories\Customer\CustomerRepositoryInterface;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Models\Customer\Customer;
 use Illuminate\Database\Eloquent\Builder;
-use App\Http\Resources\CustomerRepositoryResource;
-use App\Http\Resources\CustomerResponseResource;
+use App\Http\Resources\{
+    CustomerRepositoryResource,
+    CustomerResponseResource
+};
 
 class CustomerRepository implements CustomerRepositoryInterface
 {

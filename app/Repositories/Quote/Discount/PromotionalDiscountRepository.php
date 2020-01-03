@@ -4,16 +4,12 @@ namespace App\Repositories\Quote\Discount;
 
 use App\Contracts\Repositories\Quote\Discount\PromotionalDiscountRepositoryInterface;
 use App\Models\Quote\Discount\PromotionalDiscount;
-use App\Http\Requests\Discount\{
-    StorePromotionalDiscountRequest,
-    UpdatePromotionalDiscountRequest
-};
+use App\Http\Requests\Discount\UpdatePromotionalDiscountRequest;
 use Illuminate\Database\Eloquent\{
     Model,
     Builder,
     ModelNotFoundException
 };
-use Arr;
 
 class PromotionalDiscountRepository extends DiscountRepository implements PromotionalDiscountRepositoryInterface
 {

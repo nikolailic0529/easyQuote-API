@@ -6,7 +6,7 @@ use App\Contracts\Repositories\System\SystemSettingRepositoryInterface;
 use App\Models\System\SystemSetting;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
-use Str, Arr;
+use Str, Arr, DB;
 
 class SystemSettingRepository implements SystemSettingRepositoryInterface
 {
@@ -22,20 +22,25 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
         return $this->systemSetting->whereId($id)->firstOrFail();
     }
 
+    public function findByKey(string $key): SystemSetting
+    {
+        return $this->systemSetting->where('key', $key)->firstOrFail();
+    }
+
     public function findMany(array $ids): Collection
     {
         return $this->systemSetting->whereIn('id', $ids)->get();
     }
 
-    public function get(string $key)
+    public function get(string $key, bool $mutate = true)
     {
+        if ($mutate && $this->hasGetMutator($key)) {
+            return $this->mutateSetting($key);
+        }
+
         return cache()->sear("setting-value:{$key}", function () use ($key) {
             $setting = $this->systemSetting->where('key', $key)->firstOrNew([]);
             $value = $setting->value;
-
-            if ($this->hasGetMutator($key)) {
-                return $this->mutateSetting($key, $value);
-            }
 
             return $value;
         });
@@ -68,11 +73,13 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
 
         $attributes = collect($attributes);
 
-        $updated = $systemSettings->reduce(function ($carry, $systemSetting) use ($attributes) {
-            $systemSetting->value = data_get($attributes->firstWhere('id', '===', $systemSetting->id), 'value');
-            $carry->push($systemSetting->save());
-            return $carry;
-        }, collect());
+        $updated = DB::transaction(function () use ($systemSettings, $attributes) {
+            return $systemSettings->reduce(function ($carry, $systemSetting) use ($attributes) {
+                $systemSetting->value = data_get($attributes->firstWhere('id', '===', $systemSetting->id), 'value');
+                $carry->push($systemSetting->save());
+                return $carry;
+            }, collect());
+        });
 
         return $systemSettings->count() === $updated->filter()->count();
     }
@@ -84,8 +91,10 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
             ->get();
     }
 
-    public function getSupportedFileTypesSetting($value)
+    protected function getSupportedFileTypesSetting()
     {
+        $value = $this->get('supported_file_types', false);
+
         if (!in_array('CSV', $value)) {
             return $value;
         }
@@ -94,23 +103,23 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
         return $value;
     }
 
-    public function getSupportedFileTypesUiSetting()
+    protected function getSupportedFileTypesUiSetting()
     {
-        return collect($this->get('supported_file_types'))
+        return collect($this->get('supported_file_types', false))
             ->transform(function ($type) {
                 $type = strtolower($type);
                 return __("setting.supported_file_types.{$type}");
             })->collapse();
     }
 
-    public function getSupportedFileTypesRequestSetting()
+    protected function getSupportedFileTypesRequestSetting()
     {
-        return implode(',', Arr::lower($this->get('supported_file_types')));
+        return implode(',', Arr::lower($this->get('supported_file_types', false)));
     }
 
-    public function getFileUploadSizeKbSetting()
+    protected function getFileUploadSizeKbSetting()
     {
-        return $this->get('file_upload_size') * 1000;
+        return $this->get('file_upload_size', false) * 1000;
     }
 
     /**
@@ -131,8 +140,8 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
      * @param  mixed  $value
      * @return mixed
      */
-    protected function mutateSetting($key, $value)
+    protected function mutateSetting($key)
     {
-        return $this->{'get'.Str::studly($key).'Setting'}($value);
+        return $this->{'get'.Str::studly($key).'Setting'}();
     }
 }

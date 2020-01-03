@@ -15,11 +15,11 @@ use App\Traits\{
     Draftable,
     Handleable,
     HasScheduleData,
-    Import\Automappable
+    Import\Automappable,
+    Misc\GeneratesException
 };
 use App\Contracts\HasOrderedScope;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Arr;
 
 class QuoteFile extends BaseModel implements HasOrderedScope
 {
@@ -30,6 +30,7 @@ class QuoteFile extends BaseModel implements HasOrderedScope
         HasFileFormat,
         Handleable,
         Draftable,
+        GeneratesException,
         SoftDeletes;
 
     protected $fillable = [
@@ -45,7 +46,7 @@ class QuoteFile extends BaseModel implements HasOrderedScope
 
     public function scopeOrdered($query)
     {
-        return $query->orderBy('created_at', 'desc');
+        return $query->orderByDesc('created_at');
     }
 
     public function rowsData()
@@ -81,26 +82,6 @@ class QuoteFile extends BaseModel implements HasOrderedScope
     public function scopeGeneratedPdf($query)
     {
         return $query->where('file_type', 'Generated PDF');
-    }
-
-    public function isExcel()
-    {
-        return $this->isFormat(['xls', 'xlsx']);
-    }
-
-    public function isWord()
-    {
-        return $this->isFormat(['doc', 'docx']);
-    }
-
-    public function isPdf()
-    {
-        return $this->isFormat('pdf');
-    }
-
-    public function isCsv()
-    {
-        return $this->isFormat('csv');
     }
 
     public function isNewSeparator($id)
@@ -155,106 +136,17 @@ class QuoteFile extends BaseModel implements HasOrderedScope
             ?? $this->default_imported_page;
     }
 
-    public function getRowsCountAttribute()
-    {
-        return (int) cache()->sear("rows-count:{$this->id}", function () {
-            return $this->rowsData()->count();
-        });
-    }
-
-    public function setRowsCount(int $count)
-    {
-        return cache()->forever("rows-count:{$this->id}", $count);
-    }
-
-    public function getRowsProcessedCountAttribute()
-    {
-        return $this->rowsData()->processed()->count();
-    }
-
-    public function getProcessingStatusAttribute()
-    {
-        if ($this->isSchedule()) {
-            return 'completed';
-        }
-
-        $percentage = $this->getAttribute('processing_percentage');
-
-        return $percentage >= 100 ? 'completed' : 'processing';
-    }
-
-    public function getProcessingStateAttribute()
-    {
-        return [
-            'status' => $this->processing_status,
-            'processed' => $this->processing_percentage
-        ];
-    }
-
-    public function setException(string $message, string $code): bool
-    {
-        return cache()->forever("quote_file_exception:{$this->id}", compact('message', 'code'));
-    }
-
-    public function getExceptionAttribute()
-    {
-        return cache("quote_file_exception:{$this->id}", false);
-    }
-
-    public function clearException()
-    {
-        return cache()->forget("quote_file_exception:{$this->id}");
-    }
-
-    public function throwExceptionIfExists()
-    {
-        if ($this->exception && Arr::has($this->exception, ['message', 'code'])) {
-            error_abort($this->exception['message'], $this->exception['code'], 422);
-        }
-    }
-
-    public function getProcessingPercentageAttribute()
-    {
-        if ($this->isSchedule()) {
-            return 100;
-        }
-
-        $rowsCount = $this->getAttribute('rows_count') ?: 1;
-        $processedRowsCount = $this->getAttribute('rows_processed_count');
-
-        if ($processedRowsCount > $rowsCount) {
-            $rowsCount = $processedRowsCount;
-        }
-
-        return floor($processedRowsCount / $rowsCount * 100);
-    }
-
     public function isNewPage($page)
     {
         if (!isset($page)) {
             return false;
         }
 
-        return $this->attributes['imported_page'] !== ((int) $page);
+        return $this->imported_page !== (int) $page;
     }
 
     public function getItemNameAttribute()
     {
         return "Quote File ({$this->original_file_name})";
-    }
-
-    private function isFormat($ext)
-    {
-        if (!$this->propertyExists('format')) {
-            return false;
-        }
-
-        $extension = $this->format->extension;
-
-        if (gettype($ext) === 'array') {
-            return in_array($extension, $ext);
-        }
-
-        return $extension === $ext;
     }
 }

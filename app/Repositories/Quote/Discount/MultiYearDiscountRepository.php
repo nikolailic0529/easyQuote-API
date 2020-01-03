@@ -4,16 +4,12 @@ namespace App\Repositories\Quote\Discount;
 
 use App\Contracts\Repositories\Quote\Discount\MultiYearDiscountRepositoryInterface;
 use App\Models\Quote\Discount\MultiYearDiscount;
-use App\Http\Requests\Discount\{
-    StoreMultiYearDiscountRequest,
-    UpdateMultiYearDiscountRequest
-};
+use App\Http\Requests\Discount\UpdateMultiYearDiscountRequest;
 use Illuminate\Database\Eloquent\{
     Model,
     Builder,
     ModelNotFoundException
 };
-use Arr;
 
 class MultiYearDiscountRepository extends DiscountRepository implements MultiYearDiscountRepositoryInterface
 {

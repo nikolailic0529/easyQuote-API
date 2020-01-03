@@ -107,6 +107,9 @@ class QuoteStateRepository implements QuoteRepositoryInterface
             $this->setMargin($state, $version);
             $this->setDiscounts($state, $version);
 
+            /**
+             * We are always returning original Quote Id regardless of the versions.
+             */
             return ['id' => $version->parent_id];
         });
     }
