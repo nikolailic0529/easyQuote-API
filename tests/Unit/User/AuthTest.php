@@ -12,18 +12,6 @@ class AuthTest extends TestCase
     use DatabaseTransactions, WithFakeUser;
 
     /**
-     * Predefined Users.
-     *
-     * @var \Illuminate\Support\Collection
-     */
-    protected $users;
-
-    public function setUp(): void
-    {
-        parent::setUp();
-    }
-
-    /**
      * Test Authentication of the existing user.
      *
      * @return void

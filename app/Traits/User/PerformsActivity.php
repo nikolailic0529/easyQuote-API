@@ -29,17 +29,17 @@ trait PerformsActivity
             return false;
         }
 
-        return $this->forceFill(['last_activity_at' => now()])->update();
+        return $this->forceFill(['last_activity_at' => now()])->save();
     }
 
     public function setLastActivityAt(Carbon $time): bool
     {
-        return $this->forceFill(['last_activity_at' => $time])->update();
+        return $this->forceFill(['last_activity_at' => $time])->save();
     }
 
     public function freshLoggedIn(): bool
     {
-        return $this->forceFill(['logged_in_at' => now()])->update();
+        return $this->forceFill(['logged_in_at' => now()])->save();
     }
 
     public function activityExpiresAt(): Carbon
