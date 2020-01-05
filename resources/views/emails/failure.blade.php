@@ -1,7 +1,10 @@
 @component('mail::message')
 # System failure report
 
-The system went down with message: `{{ $failure->message }}`.
+The system went down with message:
+```
+{!! $failure->message !!}
+```
 
 **Possible reasons:**
 @forelse ($failure->reasons as $key => $reason)
@@ -19,9 +22,15 @@ The system went down with message: `{{ $failure->message }}`.
 
 **Trace:**
 ```
-{{ $failure->trace }}
+{!! $failure->trace !!}
 ```
 
 Thanks,<br>
 {{ config('app.name') }}
 @endcomponent
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/styles/github.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.10/highlight.min.js"></script>
+<script>
+    hljs.initHighlightingOnLoad();
+</script>

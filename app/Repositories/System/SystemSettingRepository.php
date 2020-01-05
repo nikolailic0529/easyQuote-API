@@ -114,7 +114,7 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
 
     protected function getSupportedFileTypesRequestSetting()
     {
-        return implode(',', Arr::lower($this->get('supported_file_types', false)));
+        return implode(',', Arr::lower($this->get('supported_file_types', true)));
     }
 
     protected function getFileUploadSizeKbSetting()

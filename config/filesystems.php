@@ -65,6 +65,11 @@ return [
             'url' => env('AWS_URL'),
         ],
 
+        'snapshots' => [
+            'driver' => 'local',
+            'root' => env('STORAGE_PATH_SNAPSHOTS', storage_path('app/snapshots'))
+        ]
+
     ],
 
 ];
