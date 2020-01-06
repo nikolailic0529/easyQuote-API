@@ -90,6 +90,12 @@ class UpdateCompanyRequest extends FormRequest
                 'uuid',
                 Rule::exists('country_vendor', 'country_id')->where('vendor_id', $this->default_vendor_id ?? $this->company->default_vendor_id)
             ],
+            'default_template_id' => [
+                'nullable',
+                'string',
+                'uuid',
+                Rule::exists('country_quote_template', 'quote_template_id')->where('country_id', $this->default_country_id ?? $this->company->default_country_id)
+            ],
             'addresses_attach' => 'nullable|array',
             'addresses_attach.*' => 'required|string|uuid|exists:addresses,id',
             'addresses_detach' => 'nullable|array',

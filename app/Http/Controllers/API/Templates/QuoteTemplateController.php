@@ -21,7 +21,7 @@ class QuoteTemplateController extends Controller
     }
 
     /**
-     * Display a listing of the User's Quote Templates.
+     * Display a listing of the Quote Templates.
      *
      * @return \Illuminate\Http\Response
      */
@@ -31,6 +31,21 @@ class QuoteTemplateController extends Controller
             request()->filled('search')
                 ? $this->quoteTemplate->search(request('search'))
                 : $this->quoteTemplate->all()
+        );
+    }
+
+    /**
+     * Display a listing of the Quote Templates by specified Country.
+     *
+     * @param  string $country
+     * @return \Illuminate\Http\Response
+     */
+    public function country(string $country)
+    {
+        $this->authorize('viewAny', QuoteTemplate::class);
+
+        return response()->json(
+            $this->quoteTemplate->country($country)
         );
     }
 
@@ -114,21 +129,6 @@ class QuoteTemplateController extends Controller
 
         return response()->json(
             $this->quoteTemplate->deactivate($template->id)
-        );
-    }
-
-    /**
-     * Find the specified Quote Templates by Country.
-     *
-     * @param string $id
-     * @return \Illuminate\Http\Response
-     */
-    public function country(string $id)
-    {
-        $this->authorize('viewAny', QuoteTemplate::class);
-
-        return response()->json(
-            $this->quoteTemplate->country($id)
         );
     }
 

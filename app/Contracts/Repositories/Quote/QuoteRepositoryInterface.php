@@ -36,14 +36,6 @@ interface QuoteRepositoryInterface
     public function create(array $attributes): Quote;
 
     /**
-     * Get Quote Templates by Company, Vendor, Country
-     *
-     * @param GetQuoteTemplatesRequest $request
-     * @return \Illuminate\Database\Eloquent\Collection
-     */
-    public function getTemplates(GetQuoteTemplatesRequest $request);
-
-    /**
      * Get Rows Data by Attached Columns.
      *
      * @param MappingReviewRequest $request

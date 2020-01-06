@@ -29,7 +29,30 @@ class QuoteObserver
      */
     public function submitting(Quote $quote)
     {
-        error_abort_if($this->sameRfqSubmittedQuoteExists($quote), QSE_01, 'QSE_01', 409);
+        if ($this->sameRfqSubmittedQuoteExists($quote)) {
+            slack_client()
+                ->title('Quote Submission')
+                ->status([QSF_01, 'Quote RFQ' => $quote->rfqNumber, 'Reason' => QSE_01, 'Caused By' => optional(request()->user())->fullname])
+                ->image(assetExternal('img/qsf.gif'))
+                ->send();
+
+            error_abort(QSE_01, 'QSE_01', 409);
+        }
+    }
+
+    /**
+     * Handle the Quote "submitted" event.
+     *
+     * @param Quote $quote
+     * @return void
+     */
+    public function submitted(Quote $quote)
+    {
+        slack_client()
+            ->title('Quote Submission')
+            ->status([QSS_01, 'Quote RFQ' => $quote->rfqNumber, 'Caused By' => optional(request()->user())->fullname])
+            ->image(assetExternal('img/qss.gif'))
+            ->send();
     }
 
     /**

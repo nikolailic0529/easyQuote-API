@@ -5,9 +5,9 @@ namespace App\Http\Controllers\API\Quotes;
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\{
     Quote\QuoteRepositoryInterface as QuoteRepository,
-    QuoteTemplate\TemplateFieldRepositoryInterface as TemplateFieldRepository,
     Quote\Margin\MarginRepositoryInterface as MarginRepository,
     CompanyRepositoryInterface as CompanyRepository,
+    QuoteTemplate\QuoteTemplateRepositoryInterface as QuoteTemplateRepository,
     QuoteFile\DataSelectSeparatorRepositoryInterface as DataSelectRepository
 };
 use App\Http\Requests\{
@@ -28,7 +28,7 @@ class QuoteController extends Controller
 {
     protected $quote;
 
-    protected $templateField;
+    protected $template;
 
     protected $margin;
 
@@ -38,13 +38,13 @@ class QuoteController extends Controller
 
     public function __construct(
         QuoteRepository $quote,
-        TemplateFieldRepository $templateField,
+        QuoteTemplateRepository $template,
         MarginRepository $margin,
         CompanyRepository $company,
         DataSelectRepository $dataSelect
     ) {
         $this->quote = $quote;
-        $this->templateField = $templateField;
+        $this->template = $template;
         $this->margin = $margin;
         $this->company = $company;
         $this->dataSelect = $dataSelect;
@@ -126,11 +126,9 @@ class QuoteController extends Controller
 
     public function templates(GetQuoteTemplatesRequest $request)
     {
-        $templates = $this->quote->getTemplates($request);
-
-        error_abort_if($templates->isEmpty(), QTNF_01, 'QTNF_01', 404);
-
-        return response()->json($templates);
+        return response()->json(
+            $this->template->findByCompanyVendorCountry($request)
+        );
     }
 
     public function step3()

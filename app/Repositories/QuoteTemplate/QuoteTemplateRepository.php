@@ -3,12 +3,14 @@
 namespace App\Repositories\QuoteTemplate;
 
 use App\Contracts\Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface;
+use App\Http\Requests\GetQuoteTemplatesRequest;
 use App\Repositories\SearchableRepository;
 use App\Models\QuoteTemplate\QuoteTemplate;
 use App\Http\Requests\QuoteTemplate\UpdateQuoteTemplateRequest;
 use Illuminate\Database\Eloquent\{
     Model,
-    Builder
+    Builder,
+    Collection
 };
 use Illuminate\Support\Collection as SupportCollection;
 use Arr, \Closure;
@@ -46,19 +48,30 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
         return $quoteTemplate;
     }
 
-    public function findByCompanyVendorCountry(string $companyId, string $vendorId, string $countryId)
+    public function findByCompanyVendorCountry(GetQuoteTemplatesRequest $request): Collection
     {
         return $this->userQuery()
-            ->where('quote_templates.company_id', $companyId)
-            ->where('quote_templates.vendor_id', $vendorId)
-            ->join('country_quote_template', function ($join) use ($countryId) {
+            ->where('quote_templates.company_id', $request->company_id)
+            ->where('quote_templates.vendor_id', $request->vendor_id)
+            ->join('country_quote_template', function ($join) use ($request) {
                 $join->on('quote_templates.id', '=', 'country_quote_template.quote_template_id')
-                    ->where('country_id', $countryId);
+                    ->where('country_id', $request->country_id);
             })
-            ->get(['id', 'name'])
+            ->joinWhere('companies', 'companies.id', '=', $request->company_id)
+            ->orderByRaw('field(`quote_templates`.`id`, `companies`.`default_template_id`, null)', 'desc')
+            ->get(['quote_templates.id', 'quote_templates.name'])
             ->each(function ($template) {
                 $template->makeHiddenExcept(['id', 'name']);
             });
+    }
+
+    public function country(string $countryId): Collection
+    {
+        return $this->quoteTemplate->query()
+            ->whereHas('countries', function ($query) use ($countryId) {
+                $query->whereId($countryId);
+            })
+            ->get();
     }
 
     public function random(int $limit = 1, ?Closure $scope = null)

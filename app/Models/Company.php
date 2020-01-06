@@ -10,6 +10,7 @@ use App\Contracts\{
     WithLogo
 };
 use App\Models\Data\Country;
+use App\Models\QuoteTemplate\QuoteTemplate;
 use App\Traits\{
     Activatable,
     BelongsToAddresses,
@@ -43,11 +44,11 @@ class Company extends BaseModel implements WithImage, WithLogo, ActivatableInter
         SoftDeletes;
 
     protected $fillable = [
-        'name', 'category', 'vat', 'type', 'email', 'website', 'phone', 'default_vendor_id', 'default_country_id'
+        'name', 'category', 'vat', 'type', 'email', 'website', 'phone', 'default_vendor_id', 'default_country_id', 'default_template_id'
     ];
 
     protected static $logAttributes = [
-        'name', 'category', 'vat', 'type', 'email', 'category', 'website', 'phone', 'defaultVendor.name', 'defaultCountry.name'
+        'name', 'category', 'vat', 'type', 'email', 'category', 'website', 'phone', 'defaultVendor.name', 'defaultCountry.name', 'defaultTemplate.name'
     ];
 
     protected static $logOnlyDirty = true;
@@ -78,6 +79,11 @@ class Company extends BaseModel implements WithImage, WithLogo, ActivatableInter
     public function defaultCountry()
     {
         return $this->belongsTo(Country::class);
+    }
+
+    public function defaultTemplate()
+    {
+        return $this->belongsTo(QuoteTemplate::class, 'default_template_id');
     }
 
     public function sortVendorsCountries(): self

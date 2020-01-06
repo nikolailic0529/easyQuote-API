@@ -1,5 +1,6 @@
 <?php namespace App\Http\Requests;
 
+use App\Models\Company;
 use Illuminate\Foundation\Http\FormRequest;
 
 class GetQuoteTemplatesRequest extends FormRequest
@@ -26,5 +27,10 @@ class GetQuoteTemplatesRequest extends FormRequest
             'vendor_id' => 'required|exists:vendors,id',
             'country_id' => 'required|exists:countries,id'
         ];
+    }
+
+    public function company(): Company
+    {
+        return app('company.repository')->find($this->company_id);
     }
 }

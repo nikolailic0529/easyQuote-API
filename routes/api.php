@@ -77,6 +77,7 @@ Route::group(['namespace' => 'API'], function () {
 
         Route::group(['namespace' => 'Templates', 'middleware' => 'throttle:240,1'], function () {
             Route::get('templates/designer/{template}', 'QuoteTemplateController@designer');
+            Route::get('templates/country/{country}', 'QuoteTemplateController@country');
             Route::apiResource('templates', 'QuoteTemplateController');
             Route::put('templates/activate/{template}', 'QuoteTemplateController@activate');
             Route::put('templates/deactivate/{template}', 'QuoteTemplateController@deactivate');

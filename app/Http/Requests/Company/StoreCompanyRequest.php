@@ -93,6 +93,12 @@ class StoreCompanyRequest extends FormRequest
                 'string',
                 'uuid',
                 Rule::exists('country_vendor', 'country_id')->where('vendor_id', $this->default_vendor_id)
+            ],
+            'default_template_id' => [
+                'nullable',
+                'string',
+                'uuid',
+                Rule::exists('country_quote_template', 'quote_template_id')->where('country_id', $this->default_country_id)
             ]
         ];
     }

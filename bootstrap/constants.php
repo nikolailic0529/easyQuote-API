@@ -34,6 +34,8 @@ define('QNT_01', 'Please set a Template for the Quote before Importing.');
 define('QNF_01', 'Quote not found.');
 define('QSU_01', 'You could not update a submitted Quote.');
 define('QUC_01', 'You could not change a Customer for a given Quote.');
+define('QSS_01', 'Quote has been successfully submitted.');
+define('QSF_01', 'Quote submission was failed.');
 
 /**
  * Quote Template.
@@ -92,6 +94,8 @@ define('RSD_01', 'You could not delete the system defined Role.');
  */
 define('S4_CS_01', 'S4 contract with RFQ :rfq was successfully stored.');
 define('S4_CS_02', 'Request for S4 contract storing.');
+define('S4_CSS_01', 'S4 data has been successfully received.');
+define('S4_CSF_01', 'Failed to receive S4 data.');
 
 /**
  * Misc.
@@ -102,3 +106,11 @@ define('UA_01', 'Unauthenticated Request.');
 define('INVDP_01', 'Invalid Data Provided.');
 define('UNE_01', 'Unknown Error.');
 define('MLFQ_01', 'Malformed request.');
+
+/**
+ * Slack.
+ */
+define('SLACK_SERVICE_URL', 'https://hooks.slack.com/services/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');
+define('SNE_01', 'Slack Service did not confirm sending the notification.');
+define('SNE_02', 'Failed to send Slack Notification due exception.');
+define('SNS_01', 'Slack Notification has been successfully sent.');

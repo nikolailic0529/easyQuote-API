@@ -20,4 +20,9 @@ trait BelongsToCustomer
             $query->whereRfq($rfq);
         });
     }
+
+    public function getRfqNumberAttribute()
+    {
+        return optional($this->customer)->rfq;
+    }
 }

@@ -11,6 +11,7 @@ use App\Contracts\{
     Services\CsvParserInterface,
     Services\QuoteServiceInterface,
     Services\ReportLoggerInterface,
+    Services\SlackInterface,
     Repositories\TimezoneRepositoryInterface,
     Repositories\CountryRepositoryInterface,
     Repositories\UserRepositoryInterface,
@@ -82,7 +83,8 @@ use App\Services\{
     WordParser,
     QuoteService,
     PdfParser\PdfParser,
-    ReportLogger
+    ReportLogger,
+    SlackClient
 };
 use Elasticsearch\{
     Client as ElasticsearchClient,
@@ -132,6 +134,10 @@ class AppServiceProvider extends ServiceProvider
         ReportLoggerInterface::class => ReportLogger::class
     ];
 
+    public $bindings = [
+        SlackInterface::class => SlackClient::class
+    ];
+
     public $aliases = [
         AuthenticatedCase::class => 'auth.case',
         ElasticsearchClient::class => 'elasticsearch.client',
@@ -151,7 +157,8 @@ class AppServiceProvider extends ServiceProvider
         QuoteTemplateRepositoryInterface::class => 'template.repository',
         CurrencyRepositoryInterface::class => 'currency.repository',
         ImportableColumnRepositoryInterface::class => 'importablecolumn.repository',
-        ReportLoggerInterface::class => 'report.logger'
+        ReportLoggerInterface::class => 'report.logger',
+        SlackInterface::class => 'slack.client'
     ];
 
     /**

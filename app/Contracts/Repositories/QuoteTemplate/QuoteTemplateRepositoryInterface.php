@@ -2,11 +2,13 @@
 
 namespace App\Contracts\Repositories\QuoteTemplate;
 
+use App\Http\Requests\GetQuoteTemplatesRequest;
 use App\Http\Requests\QuoteTemplate\{
     StoreQuoteTemplateRequest,
     UpdateQuoteTemplateRequest
 };
 use App\Models\QuoteTemplate\QuoteTemplate;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use \Closure;
 
@@ -28,6 +30,14 @@ interface QuoteTemplateRepositoryInterface
     public function search(string $query = '');
 
     /**
+     * Retrieve a listing of the existing Quote Templates by specified Country.
+     *
+     * @param string $countryId
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function country(string $countryId): EloquentCollection;
+
+    /**
      * Get Quote Template by id.
      *
      * @param string $id
@@ -47,12 +57,10 @@ interface QuoteTemplateRepositoryInterface
     /**
      * Get Quote Templates by Company, Vendor, Country.
      *
-     * @param string $companyId
-     * @param string $vendorId
-     * @param string $countryId
+     * @param \App\Http\Requests\GetQuoteTemplatesRequest $request
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function findByCompanyVendorCountry(string $companyId, string $vendorId, string $countryId);
+    public function findByCompanyVendorCountry(GetQuoteTemplatesRequest $request): EloquentCollection;
 
     /**
      * Template Tags and other Data for Template Designer

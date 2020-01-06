@@ -162,15 +162,6 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         return $this->quote->make($array);
     }
 
-    public function getTemplates(GetQuoteTemplatesRequest $request)
-    {
-        return $this->quoteTemplate->findByCompanyVendorCountry(
-            $request->company_id,
-            $request->vendor_id,
-            $request->country_id
-        );
-    }
-
     public function step2(MappingReviewRequest $request)
     {
         $quote = $this->findVersion($request->quote_id);

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\S4;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator;
 
 class StoreContractRequest extends FormRequest
 {
@@ -51,6 +52,26 @@ class StoreContractRequest extends FormRequest
         $rfq_number = strtoupper($this->rfq_number);
 
         $this->merge(compact('rfq_number'));
+    }
+
+    protected function failedValidation(Validator $validator)
+    {
+        slack_client()
+            ->title('Receiving RFQ / Data from S4')
+            ->status([S4_CSF_01, 'Proposed RFQ' => $this->rfq_number, 'Reason' => optional($validator->errors())->first()])
+            ->image(assetExternal('img/s4rdf.gif'))
+            ->send();
+
+        parent::{__FUNCTION__}($validator);
+    }
+
+    protected function passedValidation()
+    {
+        slack_client()
+            ->title('Receiving RFQ / Data from S4')
+            ->status([S4_CSS_01, 'Proposed RFQ' => $this->rfq_number])
+            ->image(assetExternal('img/s4rds.gif'))
+            ->send();
     }
 
     public function validated()
