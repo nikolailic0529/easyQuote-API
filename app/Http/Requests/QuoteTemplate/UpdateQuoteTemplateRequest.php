@@ -1,9 +1,18 @@
 <?php namespace App\Http\Requests\QuoteTemplate;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateQuoteTemplateRequest extends FormRequest
 {
+    /** @var array */
+    protected $headersKeys;
+
+    public function __construct()
+    {
+        $this->headersKeys = array_keys(__('template.data_headers'));
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -30,6 +39,16 @@ class UpdateQuoteTemplateRequest extends FormRequest
             'countries.*' => 'string|uuid|exists:countries,id',
             'form_data' => 'array',
             'form_values_data' => 'required_with:form_data|array',
+            'data_headers' => 'nullable|array',
+            'data_headers.*.key' => [
+                'required',
+                'string',
+                Rule::in($this->headersKeys)
+            ],
+            'data_headers.*.value' => [
+                'required',
+                'string'
+            ],
             'complete_design' => 'boolean'
         ];
     }

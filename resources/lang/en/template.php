@@ -42,5 +42,14 @@ return [
             ['id' => 'period', 'label' => 'Payment Schedule Period'],
             ['id' => 'data', 'label' => 'Payment Schedule Data']
         ]
+    ],
+    'data_headers' => [
+        'product_no' => 'Product No',
+        'description' => 'Description',
+        'serial_no' => 'Serial Number',
+        'date_from' => 'From Date',
+        'date_to' => 'To Date',
+        'qty' => 'Quantity',
+        'price' => 'Price'
     ]
 ];

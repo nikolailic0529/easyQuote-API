@@ -49,4 +49,15 @@ class CustomerObserver
     {
         app('customer.repository')->forgetDraftedCache();
     }
+
+    /**
+     * Handle the customer "unsubmitted" event.
+     *
+     * @param Customer $customer
+     * @return void
+     */
+    public function unsubmitted(Customer $customer)
+    {
+        app('customer.repository')->forgetDraftedCache();
+    }
 }

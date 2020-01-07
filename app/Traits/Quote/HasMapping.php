@@ -374,7 +374,12 @@ trait HasMapping
 
         $except = array_unique(array_merge($except, $this->hiddenFieldsToArray()));
 
-        return $this->templateFields->whereNotIn('name', $except)->sortBy('order')->pluck('header', 'name')->toArray();
+        return $this->templateFields->whereNotIn('name', $except)
+            ->sortBy('order')->pluck('header', 'name')
+            ->map(function ($header, $name) {
+                return $this->quoteTemplate->dataHeader($name);
+            })
+            ->toArray();
     }
 
     public function hiddenFieldsToArray()

@@ -3,12 +3,13 @@
 namespace App\Traits;
 
 use Illuminate\Database\Eloquent\Builder;
+use Arr;
 
 trait Submittable
 {
     public function initializeSubmittable()
     {
-        $this->observables = array_merge($this->observables, ['submitting', 'unsubmitting', 'submitted']);
+        $this->observables = array_merge($this->observables, ['submitting', 'unsubmitting', 'submitted', 'unsubmitted']);
     }
 
     public function submit(?array $submitted_data = null): bool
@@ -32,10 +33,17 @@ trait Submittable
     {
         $this->fireModelEvent('unsubmitting');
 
-        return $this->forceFill([
-            'submitted_data' => null,
-            'submitted_at' => null
-        ])->save();
+        $attributes = ['submitted_at' => null];
+
+        if (Arr::has($this->getAttributes(), 'submitted_data')) {
+            data_set($attributes, 'submitted_data', null);
+        }
+
+        $pass = $this->forceFill($attributes)->save();
+
+        $this->fireModelEvent('unsubmitted');
+
+        return $pass;
     }
 
     public function scopeDrafted(Builder $query): Builder

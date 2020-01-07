@@ -283,11 +283,12 @@ class QuoteStateRepository implements QuoteRepositoryInterface
 
         if ($quote->is($quote->usingVersion)) {
             $quote->submit($submitted_data);
+            optional($quote->customer)->submit();
             return;
         }
 
         $quote->usingVersion->submit($submitted_data);
-        $quote->usingVersion->customer->submit();
+        optional($quote->usingVersion->customer)->submit();
         $quote->exists && $quote->submit($submitted_data);
     }
 

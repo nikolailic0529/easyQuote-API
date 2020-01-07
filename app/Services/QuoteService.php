@@ -221,7 +221,7 @@ class QuoteService implements QuoteServiceInterface
     {
         $this->prepareQuoteReview($quote);
 
-        $resource = (new QuoteResource($quote->enableReview()))->resolve();
+        $resource = QuoteResource::make($quote->enableReview())->resolve();
         $data = to_array_recursive(data_get($resource, 'quote_data', []));
 
         $design = $quote->quoteTemplate->form_values_data;

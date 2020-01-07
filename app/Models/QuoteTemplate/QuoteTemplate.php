@@ -15,7 +15,8 @@ use App\Traits \ {
     Search\Searchable,
     HasQuotes,
     Image\HasImages,
-    Activity\LogsActivity
+    Activity\LogsActivity,
+    QuoteTemplate\HasDataHeaders
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -29,6 +30,7 @@ class QuoteTemplate extends BaseModel implements ActivatableInterface
         BelongsToCurrency,
         HasQuotes,
         HasImages,
+        HasDataHeaders,
         Draftable,
         Activatable,
         Systemable,
