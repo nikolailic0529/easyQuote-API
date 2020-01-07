@@ -21,7 +21,7 @@ class SlackClient implements SlackInterface
 
     public function send(?array $attributes = null)
     {
-        if(app()->runningUnitTests()) {
+        if($this->disabled()) {
             return false;
         }
 
@@ -50,22 +50,70 @@ class SlackClient implements SlackInterface
         }
     }
 
-    public function title($title): self
+    public function title($title): SlackInterface
     {
         $this->attributes[__FUNCTION__] = $title;
         return $this;
     }
 
-    public function status($status): self
+    public function status($status): SlackInterface
     {
         $this->attributes[__FUNCTION__] = $status;
         return $this;
     }
 
-    public function image(string $image): self
+    public function image(string $image): SlackInterface
     {
         $this->attributes[__FUNCTION__] = $image;
         return $this;
+    }
+
+    public function url(string $url): SlackInterface
+    {
+        $this->attributes[__FUNCTION__] = $url;
+        return $this;
+    }
+
+    public function getTitle()
+    {
+        $title = optional($this->attributes)['title'];
+
+        if (is_array($title)) {
+            $title = implode(' ', $title);
+        }
+
+        return $title;
+    }
+
+    public function getStatus()
+    {
+        $status = optional($this->attributes)['status'];
+
+        if (is_array($status)) {
+            $status = collect($status)->map(function ($value, $key) {
+                $value = is_string($key) ? "{$key}: {$value}" : $value;
+                $value .= !Str::endsWith($value, '.') ? '.' : '';
+                return $value;
+            })->implode(PHP_EOL);
+        }
+
+        return $status;
+    }
+
+    public function getUrl()
+    {
+        $url = optional($this->attributes)['url'];
+
+        if (!isset($url)) {
+            $url = config('app.url');
+        }
+
+        return $url;
+    }
+
+    public function getImage()
+    {
+        return optional($this->attributes)['image'];
     }
 
     protected function request(array $payload): ResponseInterface
@@ -81,43 +129,6 @@ class SlackClient implements SlackInterface
     protected function error()
     {
         report_logger(['ErrorCode' => 'SNE_01'], ['ErrorDetails' => SNE_01, 'payload' => $this->toArray()]);
-    }
-
-    protected function getTitle()
-    {
-        $title = optional($this->attributes)['title'];
-
-        if (is_array($title)) {
-            $title = implode(' ', $title);
-        }
-
-        return $title;
-    }
-
-    protected function getStatus()
-    {
-        $status = optional($this->attributes)['status'];
-
-        if (is_array($status)) {
-            $status = collect($status)->map(function ($value, $key) {
-                $value = is_string($key) ? "{$key}: {$value}" : $value;
-                $value .= !Str::endsWith($value, '.') ? '.' : '';
-                return $value;
-            })->implode(' ');
-        }
-
-        return $status;
-    }
-
-    protected function getUrl()
-    {
-        $url = optional($this->attributes)['url'];
-
-        if (!isset($url)) {
-            $url = config('app.url');
-        }
-
-        return $url;
     }
 
     protected function toArray()
@@ -144,8 +155,8 @@ class SlackClient implements SlackInterface
         if (isset($this->attributes['image'])) {
             data_set($body, 'accessory', [
                 'type' => 'image',
-                'image_url' => optional($this->attributes)['image'],
-                'alt_text' => $this->getStatus()
+                'image_url' => $this->getImage(),
+                'alt_text' => $this->getTitle()
             ]);
         }
 
@@ -162,5 +173,18 @@ class SlackClient implements SlackInterface
     protected function setPayload(SlackMessage $message): void
     {
         $this->payload = $message->toArray();
+    }
+
+    protected function disabled(): bool
+    {
+        if (app()->runningUnitTests()) {
+            return true;
+        }
+
+        if (config('services.slack.enabled') === false) {
+            return true;
+        }
+
+        return false;
     }
 }

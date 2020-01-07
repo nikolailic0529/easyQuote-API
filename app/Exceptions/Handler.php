@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use App\Facades\Failure;
-use Exception;
 use Illuminate\Auth\AuthenticationException;
+use Exception;
 
 class Handler extends ExceptionHandler
 {
@@ -72,7 +72,7 @@ class Handler extends ExceptionHandler
 
         $failure = Failure::helpFor($exception);
 
-        Mail::send(new FailureReportMail($failure, app('user.repository')->failureReportRecepients()));
+        Mail::send(new FailureReportMail($failure, setting('failure_report_recipients')));
 
         report_logger(['ErrorCode' => 'UNE_01'], ['ErrorDetails' => $failure->message]);
     }
@@ -108,7 +108,7 @@ class Handler extends ExceptionHandler
         }
 
         return response()->json([
-            'message' => head(head($exception->errors())),
+            'message' => optional($exception->validator->errors())->first(),
             'errors' => $exception->errors(),
         ], $exception->status);
     }

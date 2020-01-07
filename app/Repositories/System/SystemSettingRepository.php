@@ -59,6 +59,11 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
         return $this->find($id)->update($attributes);
     }
 
+    public function updateOrCreate(array $attributes, array $values = [])
+    {
+        return $this->systemSetting->updateOrCreate($attributes, $values);
+    }
+
     public function updateMany($attributes): bool
     {
         if ($attributes instanceof Request) {
@@ -71,24 +76,32 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
 
         $systemSettings = $this->findMany(data_get($attributes, '*.id'));
 
-        $attributes = collect($attributes);
+        $attributes = collect($attributes)->keyBy('id');
 
         $updated = DB::transaction(function () use ($systemSettings, $attributes) {
             return $systemSettings->reduce(function ($carry, $systemSetting) use ($attributes) {
-                $systemSetting->value = data_get($attributes->firstWhere('id', '===', $systemSetting->id), 'value');
+                $systemSetting->value = data_get($attributes->get($systemSetting->id), 'value');
                 $carry->push($systemSetting->save());
                 return $carry;
             }, collect());
-        });
+        }, 3);
 
         return $systemSettings->count() === $updated->filter()->count();
     }
 
     public function all(): Collection
     {
-        return $this->systemSetting->whereNotIn('key', ['parser.default_separator', 'parser.default_page'])
+        return $this->systemSetting
+            ->whereNotIn('key', ['parser.default_separator', 'parser.default_page'])
             ->orderBy('is_read_only')
             ->get();
+    }
+
+    protected function getFailureReportRecipientsSetting()
+    {
+        $value = $this->get('failure_report_recipients', false);
+
+        return app('user.repository')->findMany($value);
     }
 
     protected function getSupportedFileTypesSetting()

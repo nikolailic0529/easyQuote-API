@@ -22,6 +22,9 @@ class EventServiceProvider extends ServiceProvider
         ],
         MessageSent::class => [
             LogSentMessage::class
+        ],
+        \App\Events\RfqReceived::class => [
+            \App\Listeners\RfqReceivedListener::class
         ]
     ];
 

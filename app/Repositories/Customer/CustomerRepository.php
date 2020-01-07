@@ -3,6 +3,7 @@
 namespace App\Repositories\Customer;
 
 use App\Contracts\Repositories\Customer\CustomerRepositoryInterface;
+use App\Events\RfqReceived;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Models\Customer\Customer;
 use Illuminate\Database\Eloquent\Builder;
@@ -70,7 +71,7 @@ class CustomerRepository implements CustomerRepositoryInterface
 
         $customerResponse = CustomerResponseResource::make($customer);
 
-        report_logger(['message' => S4_CS_01], $customerResponse);
+        event(new RfqReceived($customerResponse));
 
         return $customerResponse;
     }

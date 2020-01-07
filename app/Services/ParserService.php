@@ -216,7 +216,7 @@ class ParserService implements ParserServiceInterface
 
             $quoteFile->markAsHandled();
             return;
-        });
+        }, 3);
     }
 
     public function handleExcel(QuoteFile $quoteFile)
@@ -228,7 +228,7 @@ class ParserService implements ParserServiceInterface
             }
 
             $this->importExcel($quoteFile);
-        });
+        }, 3);
     }
 
     public function handleCsv(QuoteFile $quoteFile)
@@ -239,7 +239,7 @@ class ParserService implements ParserServiceInterface
 
         DB::transaction(function () use ($quoteFile) {
             $this->importCsv($quoteFile);
-        });
+        }, 3);
     }
 
     public function handleWord(QuoteFile $quoteFile)
@@ -249,7 +249,7 @@ class ParserService implements ParserServiceInterface
 
         DB::transaction(function () use ($quoteFile) {
             $this->importWord($quoteFile);
-        });
+        }, 3);
     }
 
     public function importExcel(QuoteFile $quoteFile)
@@ -354,6 +354,7 @@ class ParserService implements ParserServiceInterface
             ->through(
                 \App\Services\HandledCases\HasException::class,
                 \App\Services\HandledCases\HasNotBeenProcessed::class,
+                \App\Services\HandledCases\RequestedNewPageForPrice::class,
                 \App\Services\HandledCases\RequestedNewPageForSchedule::class,
                 \App\Services\HandledCases\RequestedNewSeparatorForCsv::class
             )

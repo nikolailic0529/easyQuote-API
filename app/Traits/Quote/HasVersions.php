@@ -105,6 +105,11 @@ trait HasVersions
         $this->versionsSelection = $value;
     }
 
+    public function getParentIdAttribute()
+    {
+        return $this->id;
+    }
+
     /**
      * Make new instance of the given model.
      *

@@ -42,17 +42,19 @@ class SystemSettingsSync extends Command
 
         activity()->disableLogging();
 
-        \DB::transaction(function () {
-            $settings = json_decode(file_get_contents(database_path('seeds/models/system_settings.json')), true);
+        $settings = json_decode(file_get_contents(database_path('seeds/models/system_settings.json')), true);
 
+        \DB::transaction(function () use ($settings) {
             collect($settings)->each(function ($setting) {
-                DB::table('system_settings')->updateOrInsert(
+                $possibleValues = optional($setting)['possible_values'];
+
+                setting()->updateOrCreate(
                     ['key' => $setting['key']],
                     [
                         'key' => $setting['key'],
-                        'value' => is_array($setting['value']) ? json_encode($setting['value'], true) : $setting['value'],
+                        'value' => $setting['value'],
                         'type' => $setting['type'] ?? 'string',
-                        'possible_values' => isset($setting['possible_values']) ? json_encode($setting['possible_values'], true) : null,
+                        'possible_values' => $possibleValues,
                         'is_read_only' => $setting['is_read_only'] ?? false,
                         'label_format' => $setting['label_format'] ?? null
                     ]

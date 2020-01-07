@@ -104,6 +104,14 @@ interface UserRepositoryInterface
     public function findByEmail(string $email);
 
     /**
+     * Retrieve many users by specified ids.
+     *
+     * @param array $ids
+     * @return IlluminateCollection
+     */
+    public function findMany(array $ids): IlluminateCollection;
+
+    /**
      * Retrieve a random user.
      *
      * @return \App\Models\User
@@ -136,11 +144,19 @@ interface UserRepositoryInterface
     public function all();
 
     /**
-     * Retrieve the list of users without pagination.
+     * Retrieve a list of the existing users.
      *
+     * @param array $columns
      * @return mixed
      */
-    public function list();
+    public function list(array $columns = ['*']);
+
+    /**
+     * Retrieve a list of existing users with trashed.
+     *
+     * @return void
+     */
+    public function listWithTrashed();
 
     /**
      * Search over Collaboration Users.
@@ -187,13 +203,6 @@ interface UserRepositoryInterface
      * @return IlluminateCollection
      */
     public function administrators(): IlluminateCollection;
-
-    /**
-     * Retrieve Failure Report Recepients.
-     *
-     * @return IlluminateCollection
-     */
-    public function failureReportRecepients(): IlluminateCollection;
 
     /**
      * Reset Password for specified User.

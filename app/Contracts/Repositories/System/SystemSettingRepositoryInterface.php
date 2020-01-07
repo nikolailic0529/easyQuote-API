@@ -51,6 +51,15 @@ interface SystemSettingRepositoryInterface
     public function update($attributes, string $id): bool;
 
     /**
+     * Create or update a record matching the attributes, and fill it with values.
+     *
+     * @param  array  $attributes
+     * @param  array  $values
+     * @return \App\Models\System\SystemSetting|static
+     */
+    public function updateOrCreate(array $attributes, array $values = []);
+
+    /**
      * Update values for multiple System Settings.
      *
      * @param \Illumintate\Http\Request|array $attributes

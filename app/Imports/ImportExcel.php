@@ -128,14 +128,14 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
     public function onRow(Row $row)
     {
         if ($row->getIndex() < $this->startRow) {
-            return null;
+            return;
         }
 
         $row = $row->toCollection(null, true);
         $importableRow = $this->fetchRow($row);
 
         if (!$this->checkColumnsData($importableRow['imported_columns'])) {
-            return null;
+            return;
         };
 
         $this->makeRow($importableRow);

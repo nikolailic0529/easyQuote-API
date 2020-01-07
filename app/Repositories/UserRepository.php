@@ -73,7 +73,7 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         return $this->toCollection(parent::search($query));
     }
 
-    public function list()
+    public function listWithTrashed()
     {
         $users = $this->userQuery()
             ->where([
@@ -85,6 +85,11 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
             ->get();
 
         return UserListResource::collection($users);
+    }
+
+    public function list(array $columns = ['*'])
+    {
+        return $this->user->newQueryWithoutRelationships()->get($columns);
     }
 
     public function toCollection($resource): UserRepositoryCollection
@@ -100,6 +105,11 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
     public function findByEmail(string $email)
     {
         return $this->user->query()->where('email', 'like', "%{$email}%")->first();
+    }
+
+    public function findMany(array $ids): Collection
+    {
+        return $this->user->query()->whereIn('id', $ids)->get();
     }
 
     public function random(): User
@@ -214,16 +224,6 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
     public function administrators(): Collection
     {
         return $this->user->administrators()->get();
-    }
-
-    public function failureReportRecepients(): Collection
-    {
-        return cache()->sear('failure-report-recepients', function () {
-            return $this->user->administrators()
-                ->select(['id', 'email'])
-                ->whereNotIn('email', ['chris.cann@supportwarehouse.com', 'rowena.horsfall@supportwarehouse.com'])
-                ->get();
-        });
     }
 
     public function resetPassword(StoreResetPasswordRequest $request, string $id): bool

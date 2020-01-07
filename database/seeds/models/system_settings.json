@@ -104,6 +104,13 @@
         ]
     },
     {
+        "key": "failure_report_recipients",
+        "value": [],
+        "possible_values": "\\App\\Models\\User:email as label,id as value",
+        "type": "array",
+        "is_read_only": false
+    },
+    {
         "key": "exchange_rates_update",
         "value": "2019-11-17 09:28:19",
         "type": "datetime",

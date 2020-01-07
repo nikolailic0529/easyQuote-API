@@ -57,4 +57,11 @@ class QuoteVersion extends BaseQuote
     {
         $this->is_using_original = $value;
     }
+
+    public function getItemNameAttribute()
+    {
+        $customer_rfq = $this->customer->rfq ?? 'unknown RFQ';
+
+        return "Quote Version ({$customer_rfq} / $this->versionName)";
+    }
 }

@@ -99,7 +99,7 @@ class ActivityController extends Controller
         $this->authorize('viewAny', Activity::class);
 
         $meta = $this->activity->meta();
-        $users = $this->user->list();
+        $users = $this->user->listWithTrashed();
 
         return response()->json(
             $meta + compact('users')

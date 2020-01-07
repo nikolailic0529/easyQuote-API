@@ -72,6 +72,8 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
         Reviewable,
         Completable;
 
+    protected $connection = 'mysql';
+
     protected $fillable = [
         'type',
         'customer_id',

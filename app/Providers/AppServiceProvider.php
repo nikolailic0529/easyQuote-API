@@ -158,7 +158,8 @@ class AppServiceProvider extends ServiceProvider
         CurrencyRepositoryInterface::class => 'currency.repository',
         ImportableColumnRepositoryInterface::class => 'importablecolumn.repository',
         ReportLoggerInterface::class => 'report.logger',
-        SlackInterface::class => 'slack.client'
+        SlackInterface::class => 'slack.client',
+        SystemSettingRepositoryInterface::class => 'setting.repository'
     ];
 
     /**

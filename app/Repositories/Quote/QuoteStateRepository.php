@@ -87,6 +87,14 @@ class QuoteStateRepository implements QuoteRepositoryInterface
             $quote = $request->quote();
             $version = $this->createNewVersionIfNonCreator($quote);
 
+            /**
+             * We are swapping $version instance to Quote instance if the Version is Parent.
+             * It needs to perform actions with it as with Quote instance.
+             */
+            if ($quote->is($version)) {
+                $version = $quote;
+            }
+
             $state = $request->validatedData();
             $quoteData = $request->validatedQuoteData();
 
@@ -111,7 +119,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
              * We are always returning original Quote Id regardless of the versions.
              */
             return ['id' => $version->parent_id];
-        });
+        }, 3);
     }
 
     public function userQuery(): Builder
@@ -273,16 +281,26 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         $this->quoteService->export($quote->usingVersion);
         $submitted_data = QuoteResource::make($quote->usingVersion->disableReview())->resolve();
 
+        if ($quote->is($quote->usingVersion)) {
+            $quote->submit($submitted_data);
+            return;
+        }
+
         $quote->usingVersion->submit($submitted_data);
         $quote->usingVersion->customer->submit();
-
         $quote->exists && $quote->submit($submitted_data);
     }
 
     public function draft(Quote $quote): void
     {
-        $quote->usingVersion->submitted_data = null;
-        $quote->usingVersion->markAsDrafted();
+        if ($quote->isNot($quote->usingVersion)) {
+            $quote->usingVersion->submitted_data = null;
+            $quote->usingVersion->markAsDrafted();
+            return;
+        }
+
+        $quote->submitted_data = null;
+        $quote->markAsDrafted();
     }
 
     public function setVersion(string $version_id, $quote): bool
@@ -743,10 +761,12 @@ class QuoteStateRepository implements QuoteRepositoryInterface
 
         $oldRowsIds = $quote->rowsData()->selected()->pluck('imported_rows.id');
 
-        $quote->rowsData()->update(['is_selected' => false]);
+        DB::transaction(function () use ($quote, $updatableScope, $selectedRowsIds) {
+            $quote->rowsData()->update(['is_selected' => false]);
 
-        $quote->rowsData()->{$updatableScope}('imported_rows.id', $selectedRowsIds)
-            ->update(['is_selected' => true]);
+            $quote->rowsData()->{$updatableScope}('imported_rows.id', $selectedRowsIds)
+                ->update(['is_selected' => true]);
+        }, 3);
 
         $newRowsIds = $quote->rowsData()->selected()->pluck('imported_rows.id');
 

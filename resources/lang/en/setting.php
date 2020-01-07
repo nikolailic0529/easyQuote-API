@@ -7,7 +7,8 @@ return [
         'price_calculation_duration' => 'Price Calculation Duration',
         'notification_time' => 'Notification Time',
         'exchange_rates_update' => 'Exchange Rates Update',
-        'supported_file_types' => 'Supported File Types'
+        'supported_file_types' => 'Supported File Types',
+        'failure_report_recipients' => 'Failure Report Recipients'
     ],
     'supported_file_types' => [
         'pdf' => [

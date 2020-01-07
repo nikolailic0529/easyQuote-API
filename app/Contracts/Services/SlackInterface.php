@@ -35,4 +35,40 @@ interface SlackInterface
      * @return self
      */
     public function image(string $image): self;
+
+    /**
+     * Set the url attribute.
+     *
+     * @param string $url
+     * @return self
+     */
+    public function url(string $url): self;
+
+    /**
+     * Get the title attribute.
+     *
+     * @return mixed
+     */
+    public function getTitle();
+
+    /**
+     * Get the status attribute.
+     *
+     * @return mixed
+     */
+    public function getStatus();
+
+    /**
+     * Get the url attribute.
+     *
+     * @return mixed
+     */
+    public function getUrl();
+
+    /**
+     * Get the image attribute.
+     *
+     * @return mixed
+     */
+    public function getImage();
 }

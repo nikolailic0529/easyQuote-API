@@ -4,8 +4,9 @@ namespace App\Models\System;
 
 use App\Models\BaseModel;
 use App\Traits\Activity\LogsActivity;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Str;
+use Str, Arr;
 
 class SystemSetting extends BaseModel
 {
@@ -14,7 +15,7 @@ class SystemSetting extends BaseModel
     public $timestamps = false;
 
     protected $fillable = [
-        'value', 'type'
+        'possible_values', 'value', 'type', 'key'
     ];
 
     protected $hidden = [
@@ -35,8 +36,10 @@ class SystemSetting extends BaseModel
         'label', 'field_title', 'field_type'
     ];
 
+    public static $cachedValues = [];
+
     protected static $logAttributes = [
-        'value'
+        'value:logValue'
     ];
 
     protected static $logOnlyDirty = true;
@@ -54,13 +57,42 @@ class SystemSetting extends BaseModel
         return parent::getCastType($key);
     }
 
-    public function setTypeAttribute($value)
+    public function setTypeAttribute($value): void
     {
-        if (in_array($value, $this->types)) {
-            return $this->attributes['type'] = $value;
+        if (isset(array_flip($this->types)[$value])) {
+            $this->attributes['type'] = $value;
+            return;
         }
 
-        return $this->attributes['type'] = head($this->types);
+        $this->attributes['type'] = head($this->types);
+    }
+
+    public function setPossibleValuesAttribute($value): void
+    {
+        $this->attributes['possible_values'] = isset($value) ? json_encode($value) : null;
+    }
+
+    public function setValueAttribute($value): void
+    {
+        $this->attributes['value'] = is_array($value) ? json_encode($value) : $value;
+    }
+
+    public function getPossibleValuesAttribute($value)
+    {
+        $value = json_decode($value, true);
+
+        if (is_string($value)) {
+            if (isset(static::$cachedValues[$value])) {
+                return static::$cachedValues[$value];
+            }
+
+            $model = app(Str::before($value, ':'));
+            $columns = Str::contains($value, ':') ? explode(',', Str::after($value, ':')) : ['*'];
+
+            return static::$cachedValues[$value] = $model->get($columns);
+        }
+
+        return $value;
     }
 
     public function getFlattenPossibleValuesAttribute()
@@ -107,7 +139,7 @@ class SystemSetting extends BaseModel
             return 'label';
         }
 
-        return is_array($this->possible_values) ? 'dropdown' : 'textbox';
+        return is_iterable($this->possible_values) ? 'dropdown' : 'textbox';
     }
 
     public function getValueCacheKeyAttribute(): string
@@ -130,5 +162,14 @@ class SystemSetting extends BaseModel
         $key = Str::formatAttributeKey($this->key);
 
         return "Setting ({$key})";
+    }
+
+    public function getLogValueAttribute()
+    {
+        if ($this->possible_values instanceof Collection) {
+            return $this->possible_values->whereIn('value', $this->value)->toString('label');
+        }
+
+        return $this->value;
     }
 }
