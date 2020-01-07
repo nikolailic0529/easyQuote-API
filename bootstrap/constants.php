@@ -114,3 +114,7 @@ define('SLACK_SERVICE_URL', 'https://hooks.slack.com/services/TA1J02H44/BS9NX794
 define('SNE_01', 'Slack Service did not confirm sending the notification.');
 define('SNE_02', 'Failed to send Slack Notification due exception.');
 define('SNS_01', 'Slack Notification has been successfully sent.');
+define('SN_IMG_QSS', 'img/slack/qss.gif');
+define('SN_IMG_QSF', 'img/slack/qsf.gif');
+define('SN_IMG_S4RDS', 'img/slack/s4rds.gif');
+define('SN_IMG_S4RDF', 'img/slack/s4rdf.gif');

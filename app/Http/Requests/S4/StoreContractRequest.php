@@ -59,7 +59,7 @@ class StoreContractRequest extends FormRequest
         slack_client()
             ->title('Receiving RFQ / Data from S4')
             ->status([S4_CSF_01, 'Proposed RFQ' => $this->rfq_number, 'Reason' => optional($validator->errors())->first()])
-            ->image('https://media2.giphy.com/media/W03QpTeKPTqwvG2uD1/giphy.gif')
+            ->image(assetExternal(SN_IMG_S4RDF))
             ->send();
 
         parent::{__FUNCTION__}($validator);

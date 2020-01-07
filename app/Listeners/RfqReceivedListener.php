@@ -20,7 +20,7 @@ class RfqReceivedListener
             ->title('Receiving RFQ / Data from S4')
             ->url(ui_route('customers.listing'))
             ->status([S4_CSS_01, 'Proposed RFQ' => $event->customer['rfq_number']])
-            ->image('https://media.giphy.com/media/zd9wcDX4H4z4I/giphy.gif')
+            ->image(assetExternal(SN_IMG_S4RDS))
             ->send();
     }
 }

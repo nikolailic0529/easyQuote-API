@@ -34,7 +34,7 @@ class QuoteObserver
                 ->title('Quote Submission')
                 ->url(ui_route('quotes.drafted.review', ['quote_id' => $quote->id]))
                 ->status([QSF_01, 'Quote RFQ' => $quote->rfqNumber, 'Reason' => QSE_01, 'Caused By' => optional(request()->user())->fullname])
-                ->image('https://media1.tenor.com/images/2818749911c12b7f854d45e250c0b6d1/tenor.gif')
+                ->image(assetExternal(SN_IMG_QSF))
                 ->send();
 
             error_abort(QSE_01, 'QSE_01', 409);
@@ -53,7 +53,7 @@ class QuoteObserver
             ->title('Quote Submission')
             ->url(ui_route('quotes.submitted.review', ['quote_id' => $quote->id]))
             ->status([QSS_01, 'Quote RFQ' => $quote->rfqNumber, 'Caused By' => optional(request()->user())->fullname])
-            ->image('https://media.giphy.com/media/S9iMXx6Lqrr5mJoMxC/giphy.gif')
+            ->image(assetExternal(SN_IMG_QSS))
             ->send();
     }
 
