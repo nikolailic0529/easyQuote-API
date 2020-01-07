@@ -139,6 +139,10 @@ class SystemSetting extends BaseModel
             return 'label';
         }
 
+        if ($this->possible_values instanceof Collection) {
+            return 'multiselect';
+        }
+
         return is_iterable($this->possible_values) ? 'dropdown' : 'textbox';
     }
 

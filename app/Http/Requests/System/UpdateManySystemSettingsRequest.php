@@ -84,4 +84,11 @@ class UpdateManySystemSettingsRequest extends FormRequest
             data_get($this->toArray(), '*.id')
         );
     }
+
+    public function messages()
+    {
+        return [
+            '*.value.required' => 'Values for the Settings must be present.'
+        ];
+    }
 }

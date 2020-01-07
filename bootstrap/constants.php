@@ -59,7 +59,7 @@ define('QFNC_01', 'The given file hasn\'t required columns');
 /**
  * Discount.
  */
-define('DE_01', 'The same Discount already exists.');
+define('DE_01', 'Discount for the given Country and Vendor with the same value already exists.');
 define('DNF_01', 'No Discount Defined for your selection, please contact administrator.');
 
 /**
