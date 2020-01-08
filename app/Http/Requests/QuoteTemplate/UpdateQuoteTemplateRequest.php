@@ -2,17 +2,10 @@
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Models\QuoteTemplate\QuoteTemplate;
 
 class UpdateQuoteTemplateRequest extends FormRequest
 {
-    /** @var array */
-    protected $headersKeys;
-
-    public function __construct()
-    {
-        $this->headersKeys = array_keys(__('template.data_headers'));
-    }
-
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -43,11 +36,12 @@ class UpdateQuoteTemplateRequest extends FormRequest
             'data_headers.*.key' => [
                 'required',
                 'string',
-                Rule::in($this->headersKeys)
+                Rule::in(QuoteTemplate::dataHeaderKeys())
             ],
             'data_headers.*.value' => [
                 'required',
-                'string'
+                'string',
+                'min:1'
             ],
             'complete_design' => 'boolean'
         ];

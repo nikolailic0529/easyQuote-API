@@ -44,12 +44,40 @@ return [
         ]
     ],
     'data_headers' => [
-        'product_no' => 'Product No',
-        'description' => 'Description',
-        'serial_no' => 'Serial Number',
-        'date_from' => 'From Date',
-        'date_to' => 'To Date',
-        'qty' => 'Quantity',
-        'price' => 'Price'
+        [
+            'key' => 'product_no',
+            'value' => 'Product No',
+            'label' => 'Product No'
+        ],
+        [
+            'key' => 'description',
+            'value' => 'Description',
+            'label' => 'Description'
+        ],
+        [
+            'key' => 'serial_no',
+            'value' => 'Serial Number',
+            'label' => 'Serial Number'
+        ],
+        [
+            'key' => 'date_from',
+            'value' => 'From Date',
+            'label' => 'From Date'
+        ],
+        [
+            'key' => 'date_to',
+            'value' => 'To Date',
+            'label' => 'To Date'
+        ],
+        [
+            'key' => 'qty',
+            'value' => 'Quantity',
+            'label' => 'Quantity'
+        ],
+        [
+            'key' => 'price',
+            'value' => 'Price',
+            'label' => 'Price'
+        ]
     ]
 ];

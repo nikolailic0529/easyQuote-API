@@ -3,6 +3,7 @@
 namespace App\Traits\QuoteTemplate;
 
 use Illuminate\Support\Collection;
+use Arr;
 
 trait HasDataHeaders
 {
@@ -14,18 +15,16 @@ trait HasDataHeaders
 
     public function getDataHeadersAttribute($value): Collection
     {
-        $headers = collect(json_decode($value, true));
-        $keys = $headers->pluck('key')->flip();
+        $headers = collect(json_decode($value, true))->keyBy('key');
 
-        $defaultHeaders = static::defaultDataHeaders()
-            ->reject(function ($value, $key) use ($keys) {
-                return $keys->has($key);
+        return static::defaultDataHeaders()
+            ->keyBy('key')
+            ->map(function ($header, $key) use ($headers) {
+                $value = data_get($headers, "{$key}.value", $header['value']);
+                data_set($header, 'value', $value);
+                return $header;
             })
-            ->map(function ($value, $key) {
-                return compact('key', 'value');
-            });
-
-        return $headers->merge($defaultHeaders)->values();
+            ->values();
     }
 
     public function setDataHeadersAttribute($value)
@@ -43,5 +42,15 @@ trait HasDataHeaders
     public static function defaultDataHeaders(): Collection
     {
         return collect(__('template.data_headers'));
+    }
+
+    public static function defaultDataHeader(?string $key): string
+    {
+        return __('template.data_headers.' . $key);
+    }
+
+    public static function dataHeaderKeys(): array
+    {
+        return Arr::pluck(__('template.data_headers'), 'key');
     }
 }
