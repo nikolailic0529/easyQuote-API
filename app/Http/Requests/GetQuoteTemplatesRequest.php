@@ -24,13 +24,8 @@ class GetQuoteTemplatesRequest extends FormRequest
     {
         return [
             'company_id' => 'required|exists:companies,id',
-            'vendor_id' => 'required|exists:vendors,id',
-            'country_id' => 'required|exists:countries,id'
+            'vendor_id' => 'nullable|exists:vendors,id',
+            'country_id' => 'nullable|exists:countries,id'
         ];
-    }
-
-    public function company(): Company
-    {
-        return app('company.repository')->find($this->company_id);
     }
 }

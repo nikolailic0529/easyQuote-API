@@ -2,10 +2,14 @@
 
 namespace App\Contracts\Repositories\Quote;
 
-use App\Http\Resources\QuoteRepository\QuoteDraftedRepositoryCollection;
+use App\Http\Resources\QuoteRepository\DraftedCollection;
 use App\Models\Quote\Quote;
+use Carbon\Carbon;
+use Carbon\CarbonInterval;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Query\Builder as DatabaseBuilder;
+use Closure;
 
 interface QuoteDraftedRepositoryInterface
 {
@@ -31,6 +35,16 @@ interface QuoteDraftedRepositoryInterface
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function userQuery(): Builder;
+
+    /**
+     * Retrieve the Drafted Quotes which are expiring based on the customer's valid until date.
+     *
+     * @param \Carbon\CarbonInterval $interval
+     * @param \App\Models\User|string|null $user
+     * @param \Closure|null $scope
+     * @return Collection
+     */
+    public function getExpiring(CarbonInterval $interval, $user = null, ?Closure $scope = null): Collection;
 
     /**
      * Get NonEloquent Query Builder.
@@ -74,7 +88,7 @@ interface QuoteDraftedRepositoryInterface
      * Map Resource into QuoteRepositoryCollection.
      *
      * @param mixed $resource
-     * @return \App\Http\Resources\QuoteRepository\QuoteDraftedRepositoryCollection
+     * @return \App\Http\Resources\QuoteRepository\DraftedCollection
      */
-    public function toCollection($resource): QuoteDraftedRepositoryCollection;
+    public function toCollection($resource): DraftedCollection;
 }

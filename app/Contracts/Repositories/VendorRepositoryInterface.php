@@ -50,6 +50,14 @@ interface VendorRepositoryInterface
     public function find(string $id): Vendor;
 
     /**
+     * Retrieve a vendor by specified short code.
+     *
+     * @param string|array $code
+     * @return \App\Models\Vendor|null
+     */
+    public function findByCode($code);
+
+    /**
      * Retrieve random existing Vendor.
      *
      * @param int $limit

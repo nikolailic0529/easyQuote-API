@@ -77,6 +77,11 @@ class SystemSetting extends BaseModel
         $this->attributes['value'] = is_array($value) ? json_encode($value) : $value;
     }
 
+    public function getValueAttribute($value)
+    {
+        return $this->castAttribute('value', $value);
+    }
+
     public function getPossibleValuesAttribute($value)
     {
         $value = json_decode($value, true);
@@ -175,5 +180,10 @@ class SystemSetting extends BaseModel
         }
 
         return $this->value;
+    }
+
+    public function isKey(string $key): bool
+    {
+        return $this->getAttributeFromArray('key') === $key;
     }
 }

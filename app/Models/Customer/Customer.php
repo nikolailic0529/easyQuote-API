@@ -72,6 +72,12 @@ class Customer extends BaseModel
         return carbon_format($value, config('date.format_with_time'));
     }
 
+    public function getValidUntilAsDateAttribute()
+    {
+        $value = $this->getAttributeFromArray('valid_until');
+        return $value ? $this->asDate($value) : null;
+    }
+
     public function getSupportStartDateAttribute()
     {
         return carbon_format($this->attributes['support_start'], $this->dynamicDateFormat);

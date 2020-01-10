@@ -163,7 +163,7 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
 
     public function scheduleData()
     {
-        return $this->hasOneThrough(ScheduleData::class, QuoteFile::class)->withDefault(ScheduleData::make([]));
+        return $this->hasOneThrough(ScheduleData::class, QuoteFile::class)->withDefault();
     }
 
     public function selectedRowsData()
@@ -173,17 +173,17 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
 
     public function priceList()
     {
-        return $this->hasOne(QuoteFile::class)->priceLists()->withDefault(QuoteFile::make([]));
+        return $this->hasOne(QuoteFile::class)->priceLists()->withDefault();
     }
 
     public function paymentSchedule()
     {
-        return $this->hasOne(QuoteFile::class)->paymentSchedules()->withDefault(QuoteFile::make([]));
+        return $this->hasOne(QuoteFile::class)->paymentSchedules()->withDefault();
     }
 
     public function generatedPdf()
     {
-        return $this->hasOne(QuoteFile::class)->generatedPdf()->withDefault(QuoteFile::make([]));
+        return $this->hasOne(QuoteFile::class)->generatedPdf()->withDefault();
     }
 
     public function rowsData()
@@ -205,9 +205,12 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
 
     public function toSearchArray()
     {
-        $this->load('customer', 'company', 'vendor');
-
-        return Arr::only($this->toArray(), ['customer', 'company', 'vendor', 'user']);
+        return [
+            'customer' => Arr::except($this->customer->toArray(), 'service_levels'),
+            'company' => $this->company->toArray(),
+            'vendor' => $this->vendor->toArray(),
+            'user' => $this->user->toArray()
+        ];
     }
 
     public static function getCompletenessDictionary()

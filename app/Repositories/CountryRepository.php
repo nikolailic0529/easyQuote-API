@@ -21,7 +21,7 @@ class CountryRepository implements CountryRepositoryInterface
         });
     }
 
-    public function findIdByCode(string $code): string
+    public function findIdByCode(string $code)
     {
         return cache()->sear("country-id-iso:{$code}", function () use ($code) {
             return $this->country->where('iso_3166_2', $code)->value('id');

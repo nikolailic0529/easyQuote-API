@@ -31,6 +31,8 @@ use Illuminate\Database\Eloquent\{
     Collection
 };
 use Arr, Hash;
+use Closure;
+use Illuminate\Support\LazyCollection;
 
 class UserRepository extends SearchableRepository implements UserRepositoryInterface
 {
@@ -92,6 +94,17 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         return $this->user->newQueryWithoutRelationships()->get($columns);
     }
 
+    public function cursor(?Closure $scope = null): LazyCollection
+    {
+        $query = $this->user->query();
+
+        if ($scope instanceof Closure) {
+            call_user_func($scope, $query);
+        }
+
+        return $query->cursor();
+    }
+
     public function toCollection($resource): UserRepositoryCollection
     {
         return new UserRepositoryCollection($resource);
@@ -102,9 +115,19 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         return $this->userQuery()->whereId($id)->firstOrFail()->withAppends();
     }
 
-    public function findByEmail(string $email)
+    public function findByEmail($email)
     {
-        return $this->user->query()->where('email', 'like', "%{$email}%")->first();
+        $query = $this->user->query();
+
+        if (is_string($email)) {
+            return $query->where('email', 'like', "%{$email}%")->first();
+        }
+
+        if (is_array($email)) {
+            return $query->whereIn('email', $email)->get();
+        }
+
+        throw new \InvalidArgumentException(INV_ARG_SA_01);
     }
 
     public function findMany(array $ids): Collection

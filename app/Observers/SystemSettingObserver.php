@@ -3,7 +3,6 @@
 namespace App\Observers;
 
 use App\Models\System\SystemSetting;
-use Setting;
 
 class SystemSettingObserver
 {

@@ -2,31 +2,16 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\Concerns\TransformsCollection;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 
 class ActivityCollection extends ResourceCollection
 {
-    /**
-     * Transform the resource collection into an array.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array
-     */
-    public function toArray($request)
+    use TransformsCollection;
+
+    protected function resource(): string
     {
-        $data = ActivityResource::collection($this->collection);
-
-        if ($this->resource instanceof LengthAwarePaginator) {
-            $merge = compact('data');
-
-            if (isset($this->additional)) {
-                $merge = array_merge($this->additional, $merge);
-            }
-
-            return array_merge($this->resource->toArray(), $merge);
-        }
-
-        return $data;
+        return ActivityResource::class;
     }
 }

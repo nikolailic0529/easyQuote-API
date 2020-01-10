@@ -32,7 +32,7 @@ class QuoteObserver
         if ($this->sameRfqSubmittedQuoteExists($quote)) {
             slack_client()
                 ->title('Quote Submission')
-                ->url(ui_route('quotes.drafted.review', ['quote_id' => $quote->id]))
+                ->url(ui_route('quotes.drafted.review', compact('quote')))
                 ->status([QSF_01, 'Quote RFQ' => $quote->rfqNumber, 'Reason' => QSE_01, 'Caused By' => optional(request()->user())->fullname])
                 ->image(assetExternal(SN_IMG_QSF))
                 ->send();
@@ -49,23 +49,43 @@ class QuoteObserver
      */
     public function submitted(Quote $quote)
     {
+        $rfq_number = $quote->rfq_number;
+        $url = ui_route('quotes.submitted.review', ['quote_id' => $quote->id]);
+
         slack_client()
             ->title('Quote Submission')
-            ->url(ui_route('quotes.submitted.review', ['quote_id' => $quote->id]))
-            ->status([QSS_01, 'Quote RFQ' => $quote->rfqNumber, 'Caused By' => optional(request()->user())->fullname])
+            ->url($url)
+            ->status([QSS_01, 'Quote RFQ' => $rfq_number, 'Caused By' => optional(request()->user())->fullname])
             ->image(assetExternal(SN_IMG_QSS))
             ->send();
+
+        notification()
+            ->for($quote->user)
+            ->message(__(QSS_02, compact('rfq_number')))
+            ->withSubject($quote)
+            ->url($url)
+            ->priority(1)
+            ->store();
     }
 
     /**
-     * Handle the Quote "deleting" event.
+     * Handle the Quote "unsubmitted" event.
      *
-     * @param  \App\Models\Quote\Quote  $quote
+     * @param Quote $quote
      * @return void
      */
-    public function deleting(Quote $quote)
+    public function unsubmitted(Quote $quote)
     {
-        return $quote->countryMargin()->dissociate();
+        $url = ui_route('quotes.drafted.review', compact('quote'));
+        $rfq_number = $quote->rfq_number;
+
+        notification()
+            ->for($quote->user)
+            ->message(__(QDS_01, compact('rfq_number')))
+            ->withSubject($quote)
+            ->url($url)
+            ->priority(1)
+            ->store();
     }
 
     protected function sameRfqSubmittedQuoteExists(Quote $quote)

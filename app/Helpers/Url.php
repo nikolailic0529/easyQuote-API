@@ -18,7 +18,13 @@ if (!function_exists('ui_route')) {
 
         if (isset($parameters)) {
             $route = preg_replace_callback('/\{(\w+)\}/', function ($match) use ($parameters) {
-                return data_get($parameters, $match[1]);
+                $value = data_get($parameters, $match[1]);
+
+                if ($value instanceof \Illuminate\Database\Eloquent\Model) {
+                    $value = $value->getRouteKey();
+                }
+
+                return is_string($value) ? $value : null;
             }, $route);
         }
 

@@ -6,7 +6,6 @@ use App\Contracts\{
     ActivatableInterface,
     WithImage
 };
-use Illuminate\Notifications\Notifiable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\{
     Role,
@@ -35,7 +34,8 @@ use App\Traits\{
     Auth\HasApiTokens,
     User\EnforceableChangePassword,
     User\PerformsActivity,
-    Activity\LogsActivity
+    Activity\LogsActivity,
+    Notifiable
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Traits\HasRoles;
@@ -181,8 +181,9 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
         return $this->email;
     }
 
-    public function withAppends()
+    public function withAppends(...$attributes)
     {
-        return $this->append('role_id', 'role_name', 'picture', 'privileges', 'must_change_password');
+        $appends = ['role_id', 'role_name', 'picture', 'privileges', 'must_change_password'];
+        return $this->append(array_merge($appends, $attributes));
     }
 }

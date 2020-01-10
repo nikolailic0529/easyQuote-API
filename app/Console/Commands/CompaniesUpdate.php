@@ -2,9 +2,10 @@
 
 namespace App\Console\Commands;
 
-use App\Models\{
-    Company,
-    Vendor
+use App\Contracts\Repositories\{
+    CountryRepositoryInterface as Country,
+    VendorRepositoryInterface as Vendor,
+    CompanyRepositoryInterface as Company
 };
 use Illuminate\Console\Command;
 use Arr;
@@ -25,14 +26,27 @@ class CompaniesUpdate extends Command
      */
     protected $description = 'Update Companies Vendors';
 
+    /** @var \App\Contracts\Repositories\CompanyRepositoryInterface */
+    protected $company;
+
+    /** @var \App\Contracts\Repositories\VendorRepositoryInterface */
+    protected $vendor;
+
+    /** @var \App\Contracts\Repositories\CountryRepositoryInterface */
+    protected $country;
+
     /**
      * Create a new command instance.
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(Company $company, Vendor $vendor, Country $country)
     {
         parent::__construct();
+
+        $this->company = $company;
+        $this->vendor = $vendor;
+        $this->country = $country;
     }
 
     /**
@@ -50,14 +64,23 @@ class CompaniesUpdate extends Command
             $companies = json_decode(file_get_contents(database_path('seeds/models/companies.json')), true);
 
             collect($companies)->each(function ($companyData) {
-                $company = Company::whereVat($companyData['vat'])->first();
-                $default_vendor_id = Vendor::whereShortCode($companyData['default_vendor'])->firstOrFail()->id;
+                $company = $this->company->findByVat($companyData['vat']);
+
+                if (is_null($company)) {
+                    $this->output('E');
+                    return true;
+                }
+
+                $default_vendor_id = optional($this->vendor->findByCode($companyData['default_vendor']))->id;
+                $default_country_id = app('country.repository')->findIdByCode($companyData['default_country']);
 
                 $company->update(
-                    array_merge(Arr::only($companyData, ['type', 'email', 'phone', 'website']), compact('default_vendor_id'))
+                    array_merge(Arr::only($companyData, ['type', 'email', 'phone', 'website']), compact('default_vendor_id', 'default_country_id'))
                 );
-                $vendors = Vendor::whereIn('short_code', $companyData['vendors'])->get();
+
+                $vendors = $this->vendor->findByCode($companyData['vendors']);
                 $company->vendors()->sync($vendors);
+
                 $company->createLogo($companyData['logo'], true);
 
                 $this->output->write('.');

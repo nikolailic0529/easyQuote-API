@@ -15,9 +15,11 @@ use App\Models\{
     User,
     Collaboration\Invitation
 };
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as IlluminateCollection;
 use Illuminate\Support\Collection;
+use Illuminate\Support\LazyCollection;
 
 interface UserRepositoryInterface
 {
@@ -98,10 +100,10 @@ interface UserRepositoryInterface
     /**
      * Find User by specified Email.
      *
-     * @param string $email
-     * @return \App\Models\User|null
+     * @param string|array $email
+     * @return \App\Models\User|\Illuminate\Database\Eloquent\Collection|null
      */
-    public function findByEmail(string $email);
+    public function findByEmail($email);
 
     /**
      * Retrieve many users by specified ids.
@@ -157,6 +159,14 @@ interface UserRepositoryInterface
      * @return void
      */
     public function listWithTrashed();
+
+    /**
+     * Iterate throw the existing users using a cursor.
+     *
+     * @param \Closure $scope
+     * @return \Illuminate\Support\LazyCollection
+     */
+    public function cursor(?Closure $scope = null): LazyCollection;
 
     /**
      * Search over Collaboration Users.

@@ -3,19 +3,26 @@
 namespace App\Repositories\Quote;
 
 use App\Contracts\Repositories\Quote\QuoteDraftedRepositoryInterface;
-use App\Http\Resources\QuoteRepository\QuoteDraftedRepositoryCollection;
+use App\Http\Resources\QuoteRepository\DraftedCollection;
 use App\Repositories\SearchableRepository;
 use App\Models\Quote\Quote;
+use App\Models\User;
+use Carbon\Carbon;
+use Carbon\CarbonInterval;
+use Closure;
 use Illuminate\Database\Eloquent\{
     Model,
-    Builder
+    Builder,
+    Collection
 };
 use Illuminate\Database\Query\Builder as DatabaseBuilder;
 
 class QuoteDraftedRepository extends SearchableRepository implements QuoteDraftedRepositoryInterface
 {
+    /** @var \App\Models\Quote\Quote */
     protected $quote;
 
+    /** @var string */
     protected $table;
 
     public function __construct(Quote $quote)
@@ -71,9 +78,36 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
             ->groupBy("{$this->table}.id");
     }
 
-    public function toCollection($resource): QuoteDraftedRepositoryCollection
+    public function toCollection($resource): DraftedCollection
     {
-        return QuoteDraftedRepositoryCollection::make($resource);
+        return DraftedCollection::make($resource);
+    }
+
+    public function getExpiring(CarbonInterval $interval, $user = null, ?Closure $scope = null): Collection
+    {
+        if ($user instanceof User) {
+            $user = $user->id;
+        }
+
+        throw_unless(is_null($user) || is_string($user), new \InvalidArgumentException(INV_ARG_UPK_01));
+
+        $query = $this->quote->query()
+            ->drafted()
+            ->when(filled($user), function ($query) use ($user) {
+                $query->where('quotes.user_id', $user);
+            })
+            ->whereHas('customer', function ($query) use ($interval) {
+                $query->whereNotNull('customers.valid_until')
+                    ->whereDate('customers.valid_until', '>', now())
+                    ->whereRaw("datediff(`customers`.`valid_until`, now()) <= ?", [$interval->d]);
+            })
+            ->with('customer');
+
+        if ($scope instanceof Closure) {
+            call_user_func($scope, $query);
+        }
+
+        return $query->get();
     }
 
     public function find(string $id): Quote

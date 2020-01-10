@@ -41,7 +41,8 @@ use App\Contracts\{
     Repositories\Quote\QuoteSubmittedRepositoryInterface,
     Repositories\AddressRepositoryInterface,
     Repositories\ContactRepositoryInterface,
-    Repositories\System\FailureRepositoryInterface
+    Repositories\System\FailureRepositoryInterface,
+    Repositories\System\NotificationRepositoryInterface
 };
 use App\Repositories\{
     TimezoneRepository,
@@ -63,6 +64,7 @@ use App\Repositories\{
     System\SystemSettingRepository,
     System\Failure\FailureRepository,
     System\ActivityRepository,
+    System\NotificationRepository,
     Quote\Discount\MultiYearDiscountRepository,
     Quote\Discount\PromotionalDiscountRepository,
     Quote\Discount\PrePayDiscountRepository,
@@ -131,7 +133,8 @@ class AppServiceProvider extends ServiceProvider
         AddressRepositoryInterface::class => AddressRepository::class,
         ContactRepositoryInterface::class => ContactRepository::class,
         AuthServiceInterface::class => AuthService::class,
-        ReportLoggerInterface::class => ReportLogger::class
+        ReportLoggerInterface::class => ReportLogger::class,
+        NotificationRepositoryInterface::class => NotificationRepository::class
     ];
 
     public $bindings = [
@@ -143,6 +146,7 @@ class AppServiceProvider extends ServiceProvider
         ElasticsearchClient::class => 'elasticsearch.client',
         QuoteServiceInterface::class => 'quote.service',
         QuoteRepositoryInterface::class => 'quote.repository',
+        QuoteDraftedRepository::class => 'quote.drafted.repository',
         QuoteFileRepositoryInterface::class => 'quotefile.repository',
         AuthServiceInterface::class => 'auth.service',
         \Laravel\Passport\ClientRepository::class => 'passport.client.repository',
@@ -159,7 +163,8 @@ class AppServiceProvider extends ServiceProvider
         ImportableColumnRepositoryInterface::class => 'importablecolumn.repository',
         ReportLoggerInterface::class => 'report.logger',
         SlackInterface::class => 'slack.client',
-        SystemSettingRepositoryInterface::class => 'setting.repository'
+        SystemSettingRepositoryInterface::class => 'setting.repository',
+        NotificationRepositoryInterface::class => 'notification.repository'
     ];
 
     /**

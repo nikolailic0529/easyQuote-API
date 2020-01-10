@@ -97,6 +97,13 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
             ->get();
     }
 
+    protected function getNotificationTimeSetting()
+    {
+        $value = $this->get('notification_time', false);
+
+        return \Carbon\CarbonInterval::create(0, 0, $value);
+    }
+
     protected function getFailureReportRecipientsSetting()
     {
         $value = $this->get('failure_report_recipients', false);

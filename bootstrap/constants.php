@@ -14,6 +14,7 @@ define('AU_01', 'You are already authenticated in another account.');
 define('PRE_01', 'Your Password Reset link is expired, please contact your line-manager to resend the link.');
 define('USD_01', 'You could not delete yourself.');
 define('AEU_01', 'You could not update an Administrator\'s email.');
+define('UN_01', 'user-notifications');
 
 /**
  * Activity.
@@ -35,7 +36,11 @@ define('QNF_01', 'Quote not found.');
 define('QSU_01', 'You could not update a submitted Quote.');
 define('QUC_01', 'You could not change a Customer for a given Quote.');
 define('QSS_01', 'Quote has been successfully submitted.');
+define('QSS_02', 'Quote with RFQ :rfq_number has been successfully submitted.');
+define('QDS_01', 'Quote with RFQ :rfq_number has been successfully moved to drafted.');
 define('QSF_01', 'Quote submission was failed.');
+define('QE_01', 'Quote with RFQ :rfq_number expires at :expires_at.');
+define('QE_02', 'expiring-quotes');
 
 /**
  * Quote Template.
@@ -100,12 +105,17 @@ define('S4_CSF_01', 'Failed to receive S4 data.');
 /**
  * Misc.
  */
+define('THROTTLE_RATE_01', 'throttle:240,1');
 define('INV_ARG_RA_01', 'The 1 passed argument must be an array or an instance of \Illuminate\Http\Request');
 define('INV_ARG_QPK_01', 'The 1 passed argument must be a primary key or an instance of \App\Models\Quote\Quote');
+define('INV_ARG_NPK_01', 'The 1 passed argument must be a primary key or an instance of \App\Models\System\Notification');
+define('INV_ARG_UPK_01', 'The 2 passed argument must be a primary key or an instance of \App\Models\User');
+define('INV_ARG_SA_01', 'The 1 passed argument must be a string or an array.');
 define('UA_01', 'Unauthenticated Request.');
 define('INVDP_01', 'Invalid Data Provided.');
 define('UNE_01', 'Unknown Error.');
 define('MLFQ_01', 'Malformed request.');
+define('FFTC_01', 'Failed when flushing Eloquent tagged cache.');
 
 /**
  * Slack.

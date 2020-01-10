@@ -35,6 +35,21 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
         return $this->userQuery()->whereId($id)->firstOrFail()->appendLogo();
     }
 
+    public function findByCode($code)
+    {
+        $query = $this->vendor->query();
+
+        if (is_string($code)) {
+            return $query->whereShortCode($code)->first();
+        }
+
+        if (is_array($code)) {
+            return $query->whereIn('short_code', $code)->get();
+        }
+
+        throw new \InvalidArgumentException(INV_ARG_SA_01);
+    }
+
     public function random(int $limit = 1)
     {
         $method = $limit > 1 ? 'get' : 'first';

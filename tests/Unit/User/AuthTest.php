@@ -98,6 +98,21 @@ class AuthTest extends TestCase
             ]);
     }
 
+    /**
+     * Test retrieving Authenticated User.
+     *
+     * @return void
+     */
+    public function testCurrentUserRetrieving()
+    {
+        $response = $this->getJson(url('api/auth/user'), $this->authorizationHeader);
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'id', 'email', 'first_name', 'middle_name', 'last_name', 'default_route', 'already_logged_in', 'role_id', 'role_name', 'privileges'
+            ]);
+    }
+
     protected function makeGenericUserAttributes(): array
     {
         $password = $this->faker->password;

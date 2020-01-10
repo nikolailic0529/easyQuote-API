@@ -60,6 +60,14 @@ interface CompanyRepositoryInterface
     public function find(string $id): Company;
 
     /**
+     * Retrieve a company by specified vat.
+     *
+     * @param string $vat
+     * @return \App\Models\Company|null
+     */
+    public function findByVat(string $vat);
+
+    /**
      * Retrieve random existing Company.
      *
      * @param int $limit

@@ -3,7 +3,8 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use DB;
+use App\Contracts\Repositories\UserRepositoryInterface as User;
+use Arr;
 
 class SystemSettingsSync extends Command
 {
@@ -21,14 +22,19 @@ class SystemSettingsSync extends Command
      */
     protected $description = 'Synchronize the System Settings';
 
+    /** @var \App\Contracts\Repositories\UserRepositoryInterface */
+    protected $user;
+
     /**
      * Create a new command instance.
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(User $user)
     {
         parent::__construct();
+
+        $this->user = $user;
     }
 
     /**
@@ -47,6 +53,10 @@ class SystemSettingsSync extends Command
         \DB::transaction(function () use ($settings) {
             collect($settings)->each(function ($setting) {
                 $possibleValues = optional($setting)['possible_values'];
+
+                if ($setting['key'] === 'failure_report_recipients') {
+                    $setting['value'] = $this->user->findByEmail($setting['value'])->pluck('id')->toArray();
+                }
 
                 setting()->updateOrCreate(
                     ['key' => $setting['key']],

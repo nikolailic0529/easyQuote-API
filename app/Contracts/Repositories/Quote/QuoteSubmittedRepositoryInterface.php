@@ -6,7 +6,7 @@ use App\Models\Quote\{
     BaseQuote,
     Quote
 };
-use App\Http\Resources\QuoteRepository\QuoteSubmittedRepositoryCollection;
+use App\Http\Resources\QuoteRepository\SubmittedCollection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as DatabaseBuilder;
 
@@ -133,7 +133,7 @@ interface QuoteSubmittedRepositoryInterface
      * Map Resource to UserRepositoryCollection.
      *
      * @param mixed $resource
-     * @return \App\Http\Resources\QuoteRepository\QuoteSubmittedRepositoryCollection
+     * @return \App\Http\Resources\QuoteRepository\SubmittedCollection
      */
-    public function toCollection($resource): QuoteSubmittedRepositoryCollection;
+    public function toCollection($resource): SubmittedCollection;
 }

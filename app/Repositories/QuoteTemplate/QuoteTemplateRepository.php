@@ -58,7 +58,7 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
                     ->where('country_id', $request->country_id);
             })
             ->joinWhere('companies', 'companies.id', '=', $request->company_id)
-            ->orderByRaw('field(`quote_templates`.`id`, `companies`.`default_template_id`, null)', 'desc')
+            ->orderByRaw('field(`quote_templates`.`id`, `companies`.`default_template_id`, null) desc')
             ->get(['quote_templates.id', 'quote_templates.name'])
             ->each(function ($template) {
                 $template->makeHiddenExcept(['id', 'name']);

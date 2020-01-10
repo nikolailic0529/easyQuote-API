@@ -25,6 +25,9 @@ class EventServiceProvider extends ServiceProvider
         ],
         \App\Events\RfqReceived::class => [
             \App\Listeners\RfqReceivedListener::class
+        ],
+        'eloquent.deleted: *' => [
+            \App\Listeners\EloquentDeletedListener::class
         ]
     ];
 

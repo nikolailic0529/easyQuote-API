@@ -10,3 +10,10 @@ if (!function_exists('slack_client')) {
         return app('slack.client');
     }
 }
+
+if (!function_exists('notification')) {
+    function notification(array $attributes = [])
+    {
+        return app('notification.repository')->make($attributes);
+    }
+}

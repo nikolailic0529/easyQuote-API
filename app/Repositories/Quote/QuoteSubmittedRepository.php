@@ -6,7 +6,7 @@ use App\Contracts\Repositories\{
     Quote\QuoteSubmittedRepositoryInterface,
     QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
 };
-use App\Http\Resources\QuoteRepository\QuoteSubmittedRepositoryCollection;
+use App\Http\Resources\QuoteRepository\SubmittedCollection;
 use App\Repositories\SearchableRepository;
 use App\Models\Quote\Quote;
 use App\Models\Quote\BaseQuote;
@@ -80,9 +80,9 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
             ->groupBy("{$this->table}.id");
     }
 
-    public function toCollection($resource): QuoteSubmittedRepositoryCollection
+    public function toCollection($resource): SubmittedCollection
     {
-        return QuoteSubmittedRepositoryCollection::make($resource);
+        return SubmittedCollection::make($resource);
     }
 
     public function findByRfq(string $rfq): BaseQuote

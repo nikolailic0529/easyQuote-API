@@ -18,6 +18,7 @@ use App\Models\{
     System\SystemSetting,
     System\Activity
 };
+use App\Models\System\Notification;
 use App\Policies\{
     ActivityPolicy,
     AddressPolicy,
@@ -26,6 +27,7 @@ use App\Policies\{
     DiscountPolicy,
     InvitationPolicy,
     MarginPolicy,
+    NotificationPolicy,
     QuoteFilePolicy,
     QuotePolicy,
     QuoteTemplatePolicy,
@@ -63,7 +65,8 @@ class AuthServiceProvider extends ServiceProvider
         SystemSetting::class => SystemSettingPolicy::class,
         Activity::class => ActivityPolicy::class,
         Address::class => AddressPolicy::class,
-        Contact::class => ContactPolicy::class
+        Contact::class => ContactPolicy::class,
+        Notification::class => NotificationPolicy::class
     ];
 
     public function register()

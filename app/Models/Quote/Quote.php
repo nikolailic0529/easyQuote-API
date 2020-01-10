@@ -3,11 +3,14 @@
 namespace App\Models\Quote;
 
 use App\Scopes\NonVersionScope;
-use App\Traits\Quote\HasVersions;
+use App\Traits\{
+    NotifiableSubject,
+    Quote\HasVersions
+};
 
 class Quote extends BaseQuote
 {
-    use HasVersions;
+    use HasVersions, NotifiableSubject;
 
     protected static function boot()
     {

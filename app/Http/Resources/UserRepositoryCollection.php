@@ -2,23 +2,15 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\Concerns\TransformsCollection;
 use Illuminate\Http\Resources\Json\ResourceCollection;
 
 class UserRepositoryCollection extends ResourceCollection
 {
-    /**
-     * Transform the resource collection into an array.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return array
-     */
-    public function toArray($request)
+    use TransformsCollection;
+
+    protected function resource(): string
     {
-        $data = UserRepositoryResource::collection($this->collection);
-        $resource = $this->resource->toArray();
-
-        data_set($resource, 'data', $data);
-
-        return $resource;
+        return UserRepositoryResource::class;
     }
 }

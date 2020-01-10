@@ -5,15 +5,18 @@ return [
         'quotes' => [
             'submitted' => [
                 'listing' => 'importer/manage-submitted',
-                'review' => 'importer/submitted-view/{quote_id}'
+                'review' => 'importer/submitted-view/{quote}'
             ],
             'drafted' => [
                 'listing' => 'importer/manage',
-                'review' => 'importer/quote-review/{quote_id}/false'
+                'review' => 'importer/quote-review/{quote}/false'
             ]
         ],
         'customers' => [
             'listing' => 'importer/customers'
+        ],
+        'users' => [
+            'profile' => 'users/profile'
         ]
     ]
 ];

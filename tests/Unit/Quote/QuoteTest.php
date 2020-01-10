@@ -50,4 +50,23 @@ class QuoteTest extends TestCase
         $response->assertOk()
             ->assertExactJson(['id' => $this->quote->id]);
     }
+
+    /**
+     * Test moving quote to drafted.
+     *
+     * @return void
+     */
+    public function testUnsubmitQuote()
+    {
+        $this->quote->submit();
+
+        $response = $this->putJson(url("api/quotes/submitted/unsubmit/{$this->quote->id}"), [], $this->authorizationHeader);
+
+        $response->assertOk()
+            ->assertExactJson([true]);
+
+        $this->quote->refresh();
+
+        $this->assertNull($this->quote->submitted_at);
+    }
 }

@@ -79,6 +79,11 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
             ->firstOrFail()->withAppends();
     }
 
+    public function findByVat(string $vat)
+    {
+        return $this->company->query()->whereVat($vat)->first();
+    }
+
     public function random(int $limit = 1, ?Closure $scope = null)
     {
         $method = $limit > 1 ? 'get' : 'first';

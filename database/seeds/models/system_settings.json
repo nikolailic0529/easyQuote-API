@@ -105,7 +105,7 @@
     },
     {
         "key": "failure_report_recipients",
-        "value": [],
+        "value": ["fakhar.anwar@supportwarehouse.com"],
         "possible_values": "\\App\\Models\\User:email as label,id as value",
         "type": "array",
         "is_read_only": false
