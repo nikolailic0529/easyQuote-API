@@ -36,7 +36,7 @@ class CustomerRepository implements CustomerRepositoryInterface
     public function drafted()
     {
         return cache()->sear($this->draftedCacheKey, function () {
-            $customers = $this->customer->drafted()->limit(1000)->get();
+            $customers = $this->customer->drafted()->latest()->limit(1000)->get();
             return CustomerRepositoryResource::collection($customers);
         });
     }

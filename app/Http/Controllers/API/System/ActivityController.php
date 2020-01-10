@@ -9,6 +9,7 @@ use App\Contracts\Repositories\{
 };
 use App\Http\Requests\System\GetActivitiesRequest;
 use App\Models\System\Activity;
+use App\Http\Resources\UserListResource;
 use App\Models\User;
 
 class ActivityController extends Controller
@@ -99,7 +100,7 @@ class ActivityController extends Controller
         $this->authorize('viewAny', Activity::class);
 
         $meta = $this->activity->meta();
-        $users = $this->user->listWithTrashed();
+        $users = UserListResource::collection($this->user->list());
 
         return response()->json(
             $meta + compact('users')

@@ -83,7 +83,7 @@ class Period
 
     private function periodToString(Carbon $from, Carbon $till, string $name = 'today')
     {
-        $dateFormat = config('date.format_with_time');
+        $dateFormat = config('date.format');
         $name = Str::formatAttributeKey($name);
 
         return $from === $till
