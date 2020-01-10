@@ -25,7 +25,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         $schedule->command('eq:notify-quotes-expiration')->everyMinute();
-        $schedule->command('eq:notify-change-password')->daily();
+        $schedule->command('eq:notify-password-expiration')->daily();
     }
 
     /**

@@ -4,7 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Contracts\Repositories\UserRepositoryInterface as User;
-use Arr;
+use Str;
 
 class SystemSettingsSync extends Command
 {
@@ -52,17 +52,15 @@ class SystemSettingsSync extends Command
 
         \DB::transaction(function () use ($settings) {
             collect($settings)->each(function ($setting) {
-                $possibleValues = optional($setting)['possible_values'];
-
-                if ($setting['key'] === 'failure_report_recipients') {
-                    $setting['value'] = $this->user->findByEmail($setting['value'])->pluck('id')->toArray();
-                }
+                $key = $setting['key'];
+                $value = $this->formatValue($key, $setting['value']);
+                $possibleValues = $this->formatPossibleValues(optional($setting)['possible_values']);
 
                 setting()->updateOrCreate(
-                    ['key' => $setting['key']],
+                    compact('key'),
                     [
-                        'key' => $setting['key'],
-                        'value' => $setting['value'],
+                        'key' => $key,
+                        'value' => $value,
                         'type' => $setting['type'] ?? 'string',
                         'possible_values' => $possibleValues,
                         'is_read_only' => $setting['is_read_only'] ?? false,
@@ -77,5 +75,51 @@ class SystemSettingsSync extends Command
         activity()->enableLogging();
 
         $this->info("\nSystem Settings were synchronized!");
+    }
+
+    protected function formatValue(string $key, $value)
+    {
+        if ($key === 'failure_report_recipients') {
+            return app('user.repository')->findByEmail($value)->pluck('id')->toArray();
+        }
+
+        if (is_array($value)) {
+            return $value;
+        }
+
+        if (is_string($value) && Str::contains($value, 'CONST:')) {
+            return constant(Str::after($value, 'CONST:'));
+        }
+
+        return $value;
+    }
+
+    protected function formatPossibleValues($values)
+    {
+        if (is_string($values) && Str::containsAll($values, ['RANGE:', ',', '{value}'])) {
+            $range = Str::after($values, 'RANGE:');
+            $parameters = explode(',', $range);
+
+            if (count($parameters) < 3) {
+                return $values;
+            }
+
+            $from = (int) $parameters[0];
+            $to = (int) $parameters[1];
+            $label = $parameters[2];
+
+            $values = [];
+
+            for ($i = $from; $i <= $to; $i++) {
+                array_push($values, [
+                    'label' => str_replace('{value}', $i, $label),
+                    'value' => $i
+                ]);
+            }
+
+            return $values;
+        }
+
+        return $values;
     }
 }

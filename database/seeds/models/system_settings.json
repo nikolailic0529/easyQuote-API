@@ -111,6 +111,13 @@
         "is_read_only": false
     },
     {
+        "key": "password_expiry_notification",
+        "value": "CONST:UN_PWD_EXP",
+        "possible_values": "RANGE:7,30,{value} Days Before Expiration",
+        "type": "integer",
+        "is_read_only": false
+    },
+    {
         "key": "exchange_rates_update",
         "value": "2019-11-17 09:28:19",
         "type": "datetime",

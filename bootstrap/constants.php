@@ -14,7 +14,10 @@ define('AU_01', 'You are already authenticated in another account.');
 define('PRE_01', 'Your Password Reset link is expired, please contact your line-manager to resend the link.');
 define('USD_01', 'You could not delete yourself.');
 define('AEU_01', 'You could not update an Administrator\'s email.');
+define('PWDE_01', 'Your password expires at :expires_at.');
 define('UN_01', 'user-notifications');
+define('UN_PWD_EXP', 7);
+define('ENF_PWD_CHANGE_DAYS', 90);
 
 /**
  * Activity.
@@ -103,14 +106,20 @@ define('S4_CSS_01', 'S4 data has been successfully received.');
 define('S4_CSF_01', 'Failed to receive S4 data.');
 
 /**
+ * Settings.
+ */
+define('SS_INV_01', 'The given Setting value is invalid.');
+define('SS_INV_02', 'You could not to update this setting as it is read only.');
+
+/**
  * Misc.
  */
 define('THROTTLE_RATE_01', 'throttle:240,1');
-define('INV_ARG_RA_01', 'The 1 passed argument must be an array or an instance of \Illuminate\Http\Request');
-define('INV_ARG_QPK_01', 'The 1 passed argument must be a primary key or an instance of \App\Models\Quote\Quote');
-define('INV_ARG_NPK_01', 'The 1 passed argument must be a primary key or an instance of \App\Models\System\Notification');
-define('INV_ARG_UPK_01', 'The 2 passed argument must be a primary key or an instance of \App\Models\User');
-define('INV_ARG_SA_01', 'The 1 passed argument must be a string or an array.');
+define('INV_ARG_RA_01', 'Argument 1 must be an array or an instance of \Illuminate\Http\Request');
+define('INV_ARG_QPK_01', 'Argument 1 must be a primary key or an instance of \App\Models\Quote\Quote');
+define('INV_ARG_NPK_01', 'Argument 1 must be a primary key or an instance of \App\Models\System\Notification');
+define('INV_ARG_UPK_01', 'Argument 2 must be a primary key or an instance of \App\Models\User');
+define('INV_ARG_SA_01', 'Argument 1 must be a string or an array.');
 define('UA_01', 'Unauthenticated Request.');
 define('INVDP_01', 'Invalid Data Provided.');
 define('UNE_01', 'Unknown Error.');

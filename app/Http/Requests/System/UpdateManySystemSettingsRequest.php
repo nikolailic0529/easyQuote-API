@@ -47,27 +47,25 @@ class UpdateManySystemSettingsRequest extends FormRequest
                 function ($attribute, $value, $fail) {
                     $key = Str::before($attribute, '.value');
                     $id = $this->input("{$key}.id");
-                    $systemSetting = $this->presentSystemSettings()->firstWhere('id', $id);
+                    $setting = $this->presentSystemSettings()->firstWhere('id', $id);
 
-                    if (is_null($systemSetting)) {
+                    if (is_null($setting)) {
                         return;
                     }
 
-                    if ($systemSetting->is_read_only) {
-                        return $fail('You could not to update this setting as it is read only.');
+                    if ($setting->is_read_only) {
+                        return $fail(SS_INV_02);
                     }
 
-                    $possibleValuesString = implode(', ', $systemSetting->flattenPossibleValues);
-
                     if (is_array($value)) {
-                        if (filled(array_diff($value, $systemSetting->flattenPossibleValues))) {
-                            return $fail('The given Setting value is invalid.');
+                        if (filled(array_diff($value, $setting->flattenPossibleValues))) {
+                            return $fail(SS_INV_01);
                         }
                         return;
                     }
 
-                    if (!isset(array_flip($systemSetting->flattenPossibleValues)[$value])) {
-                        return $fail("The given Setting value must be in: {$possibleValuesString}.");
+                    if (!isset(array_flip($setting->flattenPossibleValues)[$value])) {
+                        return $fail(SS_INV_01);
                     }
                 }
             ]

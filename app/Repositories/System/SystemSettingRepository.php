@@ -106,7 +106,7 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
 
     protected function getFailureReportRecipientsSetting()
     {
-        $value = $this->get('failure_report_recipients', false);
+        $value = $this->get('failure_report_recipients', false) ?? [];
 
         return app('user.repository')->findMany($value);
     }

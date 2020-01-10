@@ -39,8 +39,8 @@ class S4ContractPostRequestTest extends TestCase
 
         $response = $this->postContract($contract);
 
-        $response->assertSuccessful();
-        $response->assertJsonStructure(array_keys($contract));
+        $response->assertSuccessful()
+            ->assertJsonStructure(array_keys($contract));
 
         $this->assertCustomerExistsInDataBase($contract);
     }

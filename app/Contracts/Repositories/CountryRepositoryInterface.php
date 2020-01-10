@@ -14,8 +14,8 @@ interface CountryRepositoryInterface
     /**
      * Retrieve Country Id by passed ISO 3166 2 code.
      *
-     * @param string $iso_3166_2
+     * @param string|array $code
      * @return string|null
      */
-    public function findIdByCode(string $iso_3166_2);
+    public function findIdByCode($code);
 }

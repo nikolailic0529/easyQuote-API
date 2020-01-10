@@ -4,6 +4,7 @@ namespace App\Http\Requests\S4;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Support\Carbon;
 
 class StoreContractRequest extends FormRequest
 {
@@ -28,13 +29,15 @@ class StoreContractRequest extends FormRequest
             'addresses.*' => 'required|array',
             'addresses.*.address_type' => 'required|string|in:Equipment,Software',
             'addresses.*.address_1' => 'required|string|min:2',
+
+            /** Non-mandatory */
             'addresses.*.address_2' => 'nullable|string|min:2',
-            'addresses.*.city' => 'required|string|min:2',
-            'addresses.*.state' => 'required|string|min:2',
-            'addresses.*.post_code' => 'required|string|min:4',
-            'addresses.*.country_code' => 'required|string|size:2|exists:countries,iso_3166_2',
-            'addresses.*.contact_name' => 'required|string|min:2',
-            'addresses.*.contact_number' => 'required|string|min:4'
+            'addresses.*.city' => 'nullable|string|min:2',
+            'addresses.*.state' => 'nullable|string|min:2',
+            'addresses.*.post_code' => 'nullable|string|min:4',
+            'addresses.*.country_code' => 'nullable|string|size:2|exists:countries,iso_3166_2',
+            'addresses.*.contact_name' => 'nullable|string|min:2',
+            'addresses.*.contact_number' => 'nullable|string|min:4'
         ];
     }
 
@@ -71,23 +74,49 @@ class StoreContractRequest extends FormRequest
 
         $country_id = app('country.repository')->findIdByCode($this->country);
 
-        $addresses = collect($validated->get('addresses'))->transform(function ($address) {
-            $country_id = app('country.repository')->findIdByCode(data_get($address, 'country_code'));
-            data_set($address, 'country_id', $country_id);
-            return $address;
-        });
+        $addresses = $this->formatAddresses();
 
-        $support_dates = collect($this->only(['support_start_date', 'support_end_date']))
-            ->transform(function ($date) {
-                return now()->createFromFormat('Y-m-d', $date);
-            })->toArray();
-
-        $valid_until = now()->createFromFormat('m/d/Y', $this->quotation_valid_until);
-
-        $dates = array_merge($support_dates, compact('valid_until'));
+        $dates = $this->formatDates();
 
         $validated = $validated->merge(compact('country_id', 'addresses'))->merge($dates);
 
         return $validated->toArray();
+    }
+
+    protected function formatAddresses(): array
+    {
+        $addresses = $this->addresses;
+        $codes = data_get($addresses, '*.country_code');
+
+        if (blank($codes)) {
+            return $addresses ?? [];
+        }
+
+        $countryIds = app('country.repository')
+            ->findIdByCode($codes);
+
+        return collect($addresses)
+            ->transform(function ($address) use ($countryIds) {
+                $code = optional($address)['country_code'];
+
+                if (blank($code)) {
+                    return $address;
+                }
+
+                $address['country_id'] = data_get($countryIds, $code);
+                return $address;
+            })
+            ->toArray();
+    }
+
+    protected function formatDates(): array
+    {
+        return collect($this->only(['support_start_date', 'support_end_date', 'quotation_valid_until']))
+            ->transform(function ($date, $key) {
+                $format = $key === 'quotation_valid_until' ? 'm/d/Y' : 'Y-m-d';
+
+                return Carbon::createFromFormat($format, $date);
+            })
+            ->toArray();
     }
 }
