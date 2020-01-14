@@ -84,8 +84,8 @@ class UserTest extends TestCase
     public function testUserUpdating()
     {
         $attributes = [
-            'first_name' => $this->faker->firstName,
-            'last_name' => $this->faker->lastName,
+            'first_name' => Str::filterLetters($this->faker->firstName),
+            'last_name' => Str::filterLetters($this->faker->lastName),
             'country_id' => $this->user->country_id,
             'timezone_id' => $this->user->timezone_id,
             'role_id' => $this->user->role_id
@@ -100,7 +100,9 @@ class UserTest extends TestCase
          * Checking that the current model attributes are matching expected attributes.
          */
         $this->user->refresh();
+
         $currentAttributes = $this->user->only(array_keys($attributes));
+
         $this->assertEquals(0, $attributes <=> $currentAttributes);
     }
 

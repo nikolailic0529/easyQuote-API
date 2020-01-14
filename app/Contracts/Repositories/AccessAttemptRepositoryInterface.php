@@ -2,10 +2,7 @@
 
 namespace App\Contracts\Repositories;
 
-use App\Models\{
-    AccessAttempt,
-    User
-};
+use App\Models\AccessAttempt;
 
 interface AccessAttemptRepositoryInterface
 {
@@ -19,8 +16,16 @@ interface AccessAttemptRepositoryInterface
     /**
      * Create a new access attempt.
      *
-     * @param array $array
+     * @param array $attributes
      * @return \App\Models\AccessAttempt
      */
-    public function create(array $array): AccessAttempt;
+    public function create(array $attributes): AccessAttempt;
+
+    /**
+     * Retrieve recently created attempt or create.
+     *
+     * @param array $attributes
+     * @return \App\Models\AccessAttempt
+     */
+    public function retrieveOrCreate(array $attributes): AccessAttempt;
 }

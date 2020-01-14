@@ -26,6 +26,23 @@ class PrePayDiscountTest extends DiscountTest
         $response->assertOk();
     }
 
+    /**
+     * Test creating discount with existing duration attribute.
+     *
+     * @return void
+     */
+    public function testExistingDiscountCreating()
+    {
+        $attributes = $this->makeGenericDiscountAttributes();
+
+        $discount = $this->discountRepository()->create($attributes);
+
+        $response = $this->postJson(url("api/discounts/{$this->discountResource()}"), $attributes, $this->authorizationHeader);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors('durations.duration.duration');
+    }
+
     protected function discountResource(): string
     {
         return 'pre_pay';
@@ -48,7 +65,7 @@ class PrePayDiscountTest extends DiscountTest
             'country_id' => $country->id,
             'vendor_id' => $vendor->id,
             'durations' => [
-                compact('duration', 'value')
+                'duration' => compact('duration', 'value')
             ],
             'user_id' => $this->user->id
         ];

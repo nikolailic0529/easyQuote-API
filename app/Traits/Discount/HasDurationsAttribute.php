@@ -15,9 +15,12 @@ trait HasDurationsAttribute
     public function scopeDuration($query, $duration, bool $or = false)
     {
         $duration = (int) $duration;
-        $where = $or ? 'orWhereJsonContains' : 'whereJsonContains';
+        $where = $or ? 'orWhere' : 'where';
 
-        return $query->{$where}('durations', DB::raw("json_object('duration', '{$duration}')"));
+        return $query->{$where}(function ($query) use ($duration) {
+            $query->whereJsonContains('durations', DB::raw("json_object('duration', '{$duration}')"))
+                ->orWhereJsonContains('durations->duration', DB::raw("json_object('duration', '{$duration}')"));
+        });
     }
 
     public function scopeDurationIn($query, array $durations)

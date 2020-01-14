@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use Elasticsearch\Client;
+use Illuminate\Database\Eloquent\Model;
 
 class SearchObserver
 {
@@ -14,21 +15,19 @@ class SearchObserver
         $this->elasticsearch = $elasticsearch;
     }
 
-    public function saved($model)
+    public function saved(Model $model)
     {
         if (app()->runningInConsole()) {
             return;
         }
 
-        try {
+        rescue(function () use ($model) {
             $this->elasticsearch->index([
                 'index' => $model->getSearchIndex(),
                 'id' => $model->getKey(),
                 'body' => $model->toSearchArray(),
             ]);
-        } catch (\Exception $exception) {
-            logger($exception->getMessage());
-        }
+        });
     }
 
     public function deleted($model)
@@ -36,14 +35,13 @@ class SearchObserver
         if (app()->runningInConsole()) {
             return;
         }
-        try {
+
+        rescue(function () use ($model) {
             $this->elasticsearch->delete([
                 'index' => $model->getSearchIndex(),
-                'type' => $model->getSearchType(),
                 'id' => $model->getKey(),
+                'type' => $model->getSearchType(),
             ]);
-        } catch (\Exception $exception) {
-            logger($exception->getMessage());
-        }
+        });
     }
 }

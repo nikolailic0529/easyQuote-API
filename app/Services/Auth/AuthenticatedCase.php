@@ -6,7 +6,7 @@ use App\Models\{
     User,
     AccessAttempt
 };
-use App\Notifications\AccessAttempt as AttemptMail;
+use App\Notifications\AccessAttempt as AccessAttemptNotification;
 
 class AuthenticatedCase
 {
@@ -40,7 +40,23 @@ class AuthenticatedCase
 
     public function notifyUser(): void
     {
-        $this->user->notify(new AttemptMail($this->attempt));
+        /**
+         * We are not notifying user if the attempt is previously known.
+         */
+        if ($this->attempt->previouslyKnown) {
+            return;
+        }
+
+        $ip_address = $this->attempt->ip_address;
+
+        $this->user->notify(new AccessAttemptNotification($this->attempt));
+
+        notification()
+            ->for($this->user)
+            ->message(__(AT_01, compact('ip_address')))
+            ->subject($this->user)
+            ->priority(3)
+            ->store();
     }
 
     public function abort(string $message, string $code): void

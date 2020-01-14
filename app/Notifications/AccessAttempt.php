@@ -37,9 +37,11 @@ class AccessAttempt extends Notification
      */
     public function toMail($user)
     {
+        $ip_address = $this->attempt->ip_address;
+
         return (new MailMessage)
                 ->greeting("Hi {$user->fullname}")
-                ->line("Some one tried to login to your account from ip address: {$this->attempt->ip_address}.")
+                ->line(__(AT_01, compact('ip_address')))
                 ->line("System has prevented this attempt. If it wasn't you then it's highly recommended to change your password.")
                 ->line('If it was you, then please logout from your existing session and then try logging in again.');
     }

@@ -16,8 +16,12 @@ define('USD_01', 'You could not delete yourself.');
 define('AEU_01', 'You could not update an Administrator\'s email.');
 define('PWDE_01', 'Your password expires at :expires_at.');
 define('UN_01', 'user-notifications');
+define('UN_LATEST_LIMIT', 3);
 define('UN_PWD_EXP', 7);
-define('ENF_PWD_CHANGE_DAYS', 90);
+define('UN_FALLBACK_ROUTE', 'users.notifications');
+define('ENF_PWD_CHANGE_DAYS', 30);
+define('AT_01', 'Some one tried to login to your account from ip address: :ip_address.');
+define('AT_THROTTLE_TIME', 15);
 
 /**
  * Activity.
@@ -44,6 +48,8 @@ define('QDS_01', 'Quote with RFQ :rfq_number has been successfully moved to draf
 define('QSF_01', 'Quote submission was failed.');
 define('QE_01', 'Quote with RFQ :rfq_number expires at :expires_at.');
 define('QE_02', 'expiring-quotes');
+define('QG_FTNF_01', 'From or To Group Description is not found.');
+define('QG_NF_01', 'The Group Description is not found.');
 
 /**
  * Quote Template.
@@ -63,11 +69,13 @@ define('QFWS_01', 'It seems you\'ve chosen wrong Data Select Separator');
 define('QFUH_01', 'Unknown Header');
 define('QFNR_01', 'The given file isn\'t readable. Please try to re-save it.');
 define('QFNC_01', 'The given file hasn\'t required columns');
+define('QFNE_01', 'Sorry, no files found.');
 
 /**
  * Discount.
  */
-define('DE_01', 'Discount for the given Country and Vendor with the same value already exists.');
+define('DE_01', 'Discount with the same Value for the given Country and Vendor already exists.');
+define('DE_02', 'Discount with the same Duration for the given Country and Vendor already exists.');
 define('DNF_01', 'No Discount Defined for your selection, please contact administrator.');
 
 /**
@@ -104,6 +112,7 @@ define('S4_CS_01', 'S4 contract with RFQ :rfq was successfully stored.');
 define('S4_CS_02', 'Request for S4 contract storing.');
 define('S4_CSS_01', 'S4 data has been successfully received.');
 define('S4_CSF_01', 'Failed to receive S4 data.');
+define('S4_NAME', 'S4 Customers Service');
 
 /**
  * Settings.
@@ -137,3 +146,13 @@ define('SN_IMG_QSS', 'img/slack/qss.gif');
 define('SN_IMG_QSF', 'img/slack/qsf.gif');
 define('SN_IMG_S4RDS', 'img/slack/s4rds.gif');
 define('SN_IMG_S4RDF', 'img/slack/s4rdf.gif');
+
+/**
+ * Routes.
+ */
+define('ROUTE_CRUD', ['index', 'show', 'create', 'store', 'update', 'destroy']);
+define('ROUTE_CRD', ['index', 'show', 'store', 'destroy']);
+define('ROUTE_CR', ['index', 'show', 'store']);
+define('ROUTE_RD', ['index', 'show', 'destroy']);
+define('ROUTE_RU', ['index', 'show', 'update']);
+define('ROUTE_R', ['index', 'show']);

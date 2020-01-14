@@ -71,4 +71,29 @@ class NotificationController extends Controller
             $this->notification->deleteAll(auth()->user())
         );
     }
+
+    /**
+     * Mark as read the specified Notification in storage.
+     *
+     * @param  \App\Models\System\Notification $notification
+     * @return \Illuminate\Http\Response
+     */
+    public function read(Notification $notification)
+    {
+        return response()->json(
+            $this->notification->read($notification)
+        );
+    }
+
+    /**
+     * Mark as read all the existing Notifications.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function readAll()
+    {
+        return response()->json(
+            $this->notification->readAll()
+        );
+    }
 }

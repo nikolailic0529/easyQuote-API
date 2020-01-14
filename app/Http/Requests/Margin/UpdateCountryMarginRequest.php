@@ -5,15 +5,16 @@ use Illuminate\Validation\Rule;
 
 class UpdateCountryMarginRequest extends FormRequest
 {
-    protected $types;
+    /** @var string */
+    protected $quoteTypes;
 
-    protected $margin;
+    /** @var string */
+    protected $marginMethods;
 
     public function __construct()
     {
-        $this->types = collect(__('quote.types'))->implode(',');
-        $this->margin['types'] = collect(__('margin.types'))->implode(',');
-        $this->margin['methods'] = collect(__('margin.methods'))->implode(',');
+        $this->quoteTypes = collect(__('quote.types'))->implode(',');
+        $this->marginMethods = collect(__('margin.methods'))->implode(',');
     }
 
     /**
@@ -39,7 +40,8 @@ class UpdateCountryMarginRequest extends FormRequest
             ],
             'vendor_id' => [
                 'uuid',
-                Rule::exists('country_vendor')->where('country_id', $this->country_id)
+                Rule::exists('country_vendor')
+                    ->where('country_id', $this->country_id)
             ],
             'country_id' => [
                 'uuid',
@@ -47,15 +49,24 @@ class UpdateCountryMarginRequest extends FormRequest
             ],
             'quote_type' => [
                 'string',
-                'in:' . $this->types
+                'in:' . $this->quoteTypes
             ],
             'method' => [
                 'string',
-                'in:' . $this->margin['methods']
+                'in:' . $this->marginMethods
             ],
             'value' => [
                 'numeric',
-                $this->ifEquals('is_fixed', false, 'max:100')
+                value(function () {
+                    return $this->is_fixed == false ? 'max:100' : null;
+                }),
+                Rule::unique('country_margins')
+                    ->where('country_id', $this->country_id ?: $this->margin->country_id)
+                    ->where('vendor_id', $this->vendor_id ?: $this->margin->vendor_id)
+                    ->where('is_fixed', $this->is_fixed ?: $this->margin->is_fixed)
+                    ->where('method', $this->input('method') ?: $this->margin->method)
+                    ->whereNull('deleted_at')
+                    ->ignore($this->margin)
             ]
         ];
     }
@@ -63,14 +74,8 @@ class UpdateCountryMarginRequest extends FormRequest
     public function messages()
     {
         return [
-            'vendor_id.exists' => 'The chosen vendor should belong to the chosen country.'
+            'vendor_id.exists' => 'The chosen vendor should belong to the chosen country.',
+            'value.unique' => ME_01
         ];
-    }
-
-    public function ifEquals($anotherAttribute, $value, $rule)
-    {
-        if($this->input($anotherAttribute) == $value) {
-            return $rule;
-        }
     }
 }

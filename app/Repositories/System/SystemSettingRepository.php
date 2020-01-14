@@ -59,6 +59,11 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
         return $this->find($id)->update($attributes);
     }
 
+    public function firstOrCreate(array $attributes, array $values = [])
+    {
+        return $this->systemSetting->firstOrCreate($attributes, $values);
+    }
+
     public function updateOrCreate(array $attributes, array $values = [])
     {
         return $this->systemSetting->updateOrCreate($attributes, $values);

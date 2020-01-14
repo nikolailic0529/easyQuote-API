@@ -1,5 +1,7 @@
 <?php namespace App\Http\Requests\Discount;
 
+use App\Rules\UniqueValue;
+
 class StoreSNDrequest extends StoreDiscountRequest
 {
     public function additionalRules()
@@ -8,7 +10,8 @@ class StoreSNDrequest extends StoreDiscountRequest
             'value' => [
                 'required',
                 'numeric',
-                'min:0'
+                'min:0',
+                new UniqueValue('sn_discounts')
             ]
         ];
     }

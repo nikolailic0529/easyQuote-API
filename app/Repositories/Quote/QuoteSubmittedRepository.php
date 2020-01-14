@@ -8,8 +8,14 @@ use App\Contracts\Repositories\{
 };
 use App\Http\Resources\QuoteRepository\SubmittedCollection;
 use App\Repositories\SearchableRepository;
-use App\Models\Quote\Quote;
-use App\Models\Quote\BaseQuote;
+use App\Models\Quote\{
+    Quote,
+    BaseQuote
+};
+use App\Repositories\Concerns\{
+    ResolvesImplicitModel,
+    ResolvesQuoteVersion
+};
 use Illuminate\Database\Eloquent\{
     Model,
     Builder
@@ -19,6 +25,8 @@ use Arr, File, DB, Storage;
 
 class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubmittedRepositoryInterface
 {
+    use ResolvesImplicitModel, ResolvesQuoteVersion;
+
     protected $quote;
 
     protected $table;
@@ -89,9 +97,9 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     {
         $quote = $this->quote->submitted()->activated()->orderByDesc('submitted_at')->rfq($rfq)->first();
 
-        error_abort_if(is_null($quote) || blank($quote->usingVersion->submitted_data), EQ_NF_01, 'EQ_NF_01', 404);
+        error_abort_if(is_null($quote), EQ_NF_01, 'EQ_NF_01', 404);
 
-        return $quote->usingVersion;
+        return $quote;
     }
 
     public function find(string $id): Quote
@@ -99,53 +107,51 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         return $this->userQuery()->whereId($id)->firstOrFail();
     }
 
-    public function rfq(string $rfq): iterable
+    public function rfq(string $rfq, bool $service = false): iterable
     {
         $quote = $this->findByRfq($rfq);
 
-        $submitted_data = Arr::sortRecursive($quote->submitted_data);
+        $submitted_data = Arr::sortRecursive($quote->usingVersion->submitted_data);
+
+        activity()->on($quote)->causedByService(S4_NAME)
+            ->log('retrieved');
 
         return $submitted_data;
     }
 
     public function price(string $rfq)
     {
-        $priceList = $this->findByRfq($rfq)->priceList;
+        $quote = $this->findByRfq($rfq);
+        $priceList = $quote->usingVersion->priceList;
 
         $path = $priceList->original_file_path;
-        $storage_path = Storage::path($path);
-
-        (blank($path) || Storage::missing($path)) && abort('404', __('quote_file.not_exists_exception'));
+        $storagePath = $this->resolveFilepath($priceList->original_file_path);
 
         if ($priceList->isCsv()) {
             $csvPath = File::dirname($path) . DIRECTORY_SEPARATOR . File::name($path) . '.csv';
 
             Storage::missing($csvPath) && Storage::copy($path, $csvPath);
 
-            return Storage::path($csvPath);
+            return $this->resolveFilepath($csvPath);
         }
 
-        return $storage_path;
+        return $storagePath;
     }
 
     public function schedule(string $rfq)
     {
-        $path = $this->findByRfq($rfq)->paymentSchedule->original_file_path;
-        $storage_path = Storage::path($path);
+        $quote = $this->findByRfq($rfq);
+        $paymentSchedule = $quote->usingVersion->paymentSchedule;
 
-        (blank($path) || Storage::missing($path)) && abort('404', __('quote_file.not_exists_exception'));
-
-        return $storage_path;
+        return $this->resolveFilepath($paymentSchedule->original_file_path);
     }
 
     public function pdf(string $rfq)
     {
-        $path = $this->findByRfq($rfq)->generatedPdf->original_file_path;
-        $storage_path = Storage::path($path);
+        $quote = $this->findByRfq($rfq);
+        $generatedPdf = $quote->usingVersion->generatedPdf;
 
-        (blank($path) || Storage::missing($path)) && abort('404', __('quote_file.not_exists_exception'));
-
-        return $storage_path;
+        return $this->resolveFilepath($generatedPdf->original_file_path);
     }
 
     public function delete(string $id)
@@ -172,16 +178,11 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     public function copy($quote)
     {
-        if (is_string($quote)) {
-            $quote = $this->find($quote);
-        }
+        $quote = $this->resolveModel($quote);
+        $version = $this->resolveQuoteVersion($quote, $quote->usingVersion);
 
-        if (!$quote instanceof Quote) {
-            throw new \InvalidArgumentException(INV_ARG_QPK_01);
-        }
-
-        return DB::transaction(function () use ($quote) {
-            $replicatedQuote = $quote->usingVersion->replicate(['laravel_through_key']);
+        return DB::transaction(function () use ($quote, $version) {
+            $replicatedQuote = $version->replicate(['laravel_through_key']);
             $replicatedQuote->is_version = false;
 
             $quote->deactivate();
@@ -231,13 +232,25 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
             if ($copied) {
                 activity()
                     ->on($replicatedQuote)
-                    ->withProperties(['old' => Quote::logChanges($quote->usingVersion), 'attributes' => Quote::logChanges($replicatedQuote)])
+                    ->withProperties(['old' => Quote::logChanges($version), 'attributes' => Quote::logChanges($replicatedQuote)])
                     ->by(request()->user())
                     ->log('copied');
             }
 
             return $copied;
         });
+    }
+
+    public function model(): string
+    {
+        return Quote::class;
+    }
+
+    protected function resolveFilepath($path)
+    {
+        abort_if(blank($path) || Storage::missing($path), 404, QFNE_01);
+
+        return Storage::path($path);
     }
 
     protected function filterQueryThrough(): array

@@ -7,6 +7,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\WithFakeUser;
 use Illuminate\Http\UploadedFile;
 use Arr, Setting;
+use Illuminate\Support\Collection;
 
 class SettingTest extends TestCase
 {
@@ -52,10 +53,13 @@ class SettingTest extends TestCase
                 return (bool) $setting->is_read_only || blank($setting->possible_values);
             })
             ->map(function ($setting) {
-                return [
-                    'id' => $setting->id,
-                    'value' => Arr::random($setting->possible_values)['value']
-                ];
+                $value = $setting->possible_values instanceof Collection
+                    ? $setting->possible_values->random()
+                    : Arr::random($setting->possible_values);
+
+                $value = data_get($value, 'value');
+
+                return $setting->only('id') + compact('value');
             })
             ->toArray();
 

@@ -51,9 +51,11 @@ Route::group(['namespace' => 'API'], function () {
                 Route::apiResource('notifications', 'NotificationController', ['only' => ['index', 'destroy']]);
                 Route::get('notifications/latest', 'NotificationController@latest');
                 Route::delete('notifications', 'NotificationController@destroyAll');
+                Route::put('notifications/{notification}', 'NotificationController@read');
+                Route::put('notifications', 'NotificationController@readAll');
             });
 
-            Route::apiResource('settings', 'SystemSettingController', ['only' => config('route.ru')]);
+            Route::apiResource('settings', 'SystemSettingController', ['only' => ROUTE_RU]);
             Route::patch('settings', 'SystemSettingController@updateMany');
 
             Route::match(['get', 'post'], 'activities', 'ActivityController@index');
@@ -65,19 +67,19 @@ Route::group(['namespace' => 'API'], function () {
 
         Route::group(['middleware' => THROTTLE_RATE_01], function () {
             Route::get('users/list', 'UserController@list');
-            Route::resource('users', 'UserController', ['only' => config('route.crud')]);
+            Route::resource('users', 'UserController', ['only' => ROUTE_CRUD]);
             Route::put('users/activate/{user}', 'UserController@activate');
             Route::put('users/deactivate/{user}', 'UserController@deactivate');
             Route::patch('users/reset-password/{user}', 'UserController@resetPassword');
             Route::put('users/reset-account/{user}', 'UserController@resetAccount');
 
-            Route::apiResource('invitations', 'InvitationController', ['only' => config('route.rd')]);
+            Route::apiResource('invitations', 'InvitationController', ['only' => ROUTE_RD]);
             Route::put('invitations/resend/{invitation}', 'InvitationController@resend');
             Route::put('invitations/cancel/{invitation}', 'InvitationController@cancel');
         });
 
         Route::group(['middleware' => THROTTLE_RATE_01], function () {
-            Route::resource('roles', 'RoleController', ['only' => config('route.crud')]);
+            Route::resource('roles', 'RoleController', ['only' => ROUTE_CRUD]);
             Route::put('roles/activate/{role}', 'RoleController@activate');
             Route::put('roles/deactivate/{role}', 'RoleController@deactivate');
         });
@@ -90,13 +92,13 @@ Route::group(['namespace' => 'API'], function () {
             Route::put('templates/deactivate/{template}', 'QuoteTemplateController@deactivate');
             Route::put('templates/copy/{template}', 'QuoteTemplateController@copy');
 
-            Route::resource('template_fields', 'TemplateFieldController', ['only' => config('route.crud')]);
+            Route::resource('template_fields', 'TemplateFieldController', ['only' => ROUTE_CRUD]);
             Route::put('template_fields/activate/{template_fields}', 'TemplateFieldController@activate');
             Route::put('template_fields/deactivate/{template_fields}', 'TemplateFieldController@deactivate');
         });
 
         Route::group(['middleware' => THROTTLE_RATE_01], function () {
-            Route::resource('companies', 'CompanyController', ['only' => config('route.crud')]);
+            Route::resource('companies', 'CompanyController', ['only' => ROUTE_CRUD]);
             Route::put('companies/activate/{company}', 'CompanyController@activate');
             Route::put('companies/deactivate/{company}', 'CompanyController@deactivate');
         });
@@ -154,25 +156,25 @@ Route::group(['namespace' => 'API'], function () {
                 /**
                  * Drafted Quotes
                  */
-                Route::apiResource('drafted', 'QuoteDraftedController', ['only' => config('route.rd')]);
+                Route::apiResource('drafted', 'QuoteDraftedController', ['only' => ROUTE_RD]);
                 Route::patch('drafted/{drafted}', 'QuoteDraftedController@activate');
                 Route::put('drafted/{drafted}', 'QuoteDraftedController@deactivate');
 
                 /**
                  * Submitted Quotes
                  */
-                Route::apiResource('submitted', 'QuoteSubmittedController', ['only' => config('route.rd')]);
+                Route::apiResource('submitted', 'QuoteSubmittedController', ['only' => ROUTE_RD]);
                 Route::patch('submitted/{submitted}', 'QuoteSubmittedController@activate');
                 Route::put('submitted/{submitted}', 'QuoteSubmittedController@deactivate');
                 Route::put('submitted/copy/{submitted}', 'QuoteSubmittedController@copy');
                 Route::put('submitted/unsubmit/{submitted}', 'QuoteSubmittedController@unsubmit');
 
-                Route::apiResource('file', 'QuoteFilesController', ['only' => config('route.cr')]);
+                Route::apiResource('file', 'QuoteFilesController', ['only' => ROUTE_CR]);
 
                 /**
                  * S4 Customers
                  */
-                Route::apiResource('customers', 'CustomerController', ['only' => config('route.r')]);
+                Route::apiResource('customers', 'CustomerController', ['only' => ROUTE_RD]);
 
                 Route::group(['prefix' => 'step'], function () {
                         Route::get('1', 'QuoteController@step1');

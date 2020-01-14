@@ -4,14 +4,18 @@ namespace App\Http\Controllers\API\Quotes;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\Customer\CustomerRepositoryInterface as CustomerRepository;
+use App\Models\Customer\Customer;
 
 class CustomerController extends Controller
 {
+    /** @var \App\Contracts\Repositories\Customer\CustomerRepositoryInterface */
     protected $customer;
 
     public function __construct(CustomerRepository $customer)
     {
         $this->customer = $customer;
+
+        $this->authorizeResource(Customer::class, 'customer');
     }
 
     /**
@@ -22,20 +26,35 @@ class CustomerController extends Controller
     public function index()
     {
         return response()->json(
-            $this->customer->drafted()
+            $this->customer->toCollection(
+                $this->customer->drafted()
+            )
         );
     }
 
     /**
      * Display the specified resource.
      *
-     * @param  string  $id
+     * @param  \App\Models\Customer\Customer  $customer
      * @return \Illuminate\Http\Response
      */
-    public function show(string $id)
+    public function show(Customer $customer)
     {
         return response()->json(
-            $this->customer->find($id)
+            $this->customer->find($customer->id)
+        );
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  \App\Models\Customer\Customer $company
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy(Customer $customer)
+    {
+        return response()->json(
+            $this->customer->delete($customer)
         );
     }
 }

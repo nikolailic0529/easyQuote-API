@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\{
 };
 use Illuminate\Support\Collection;
 use League\Csv\Writer as CsvWriter;
+use Illuminate\Support\Carbon;
 use Str;
 
 class ActivityRepository extends SearchableRepository implements ActivityRepositoryInterface
@@ -81,29 +82,26 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
         $types = config('activitylog.types');
         $expectedTypes = array_combine($types, array_fill(0, count($types), 0));
 
-        $summary = $this->filterQuery($this->query())
+        $types = collect(config('activitylog.types'));
+
+        $query = $this->filterQuery($this->query())
             ->when(filled($subject_id), function ($query) use ($subject_id) {
                 $query->whereSubjectId($subject_id);
             })
-            ->select(['description', \DB::raw('count(*) as count')])
-            ->whereIn('description', $types)
-            ->groupBy('description')
-            ->pluck('count', 'description')
-            ->union($expectedTypes);
+            ->selectRaw('count(*) as `total`');
 
-        $summary = $summary
-            ->sortBy(function ($count, $type) use ($types) {
-                return array_search($type, $types);
-            })
-            ->transform(function ($count, $type) {
-                $type = ucfirst($type);
-                return compact('type', 'count');
-            })
-            ->values();
+        $types->each(function ($type) use ($query) {
+            $query->selectRaw("count(case when `description` = '{$type}' then 1 end) as '{$type}'");
+        });
 
-        $summary->push(['type' => 'Total', 'count' => $summary->sum('count')]);
+        $totals = collect($query->toBase()->first());
 
-        return $summary;
+        $totals = $totals->transform(function ($count, $type) {
+            $type = __('activitylog.totals.'.$type);
+            return compact('type', 'count');
+        })->values();
+
+        return $totals;
     }
 
     public function export(string $type)
@@ -147,7 +145,7 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
     public function meta(): array
     {
         $periods = collect(config('activitylog.periods'))->transform(function ($value) {
-            $label = now()->period($value)->label;
+            $label = Carbon::period($value)->label;
             return compact('label', 'value');
         });
 

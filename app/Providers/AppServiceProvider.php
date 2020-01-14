@@ -12,6 +12,8 @@ use App\Contracts\{
     Services\QuoteServiceInterface,
     Services\ReportLoggerInterface,
     Services\SlackInterface,
+    Services\NotificationInterface,
+    Services\UIServiceInterface,
     Repositories\TimezoneRepositoryInterface,
     Repositories\CountryRepositoryInterface,
     Repositories\UserRepositoryInterface,
@@ -78,15 +80,18 @@ use App\Repositories\{
     RoleRepository
 };
 use App\Services\{
+    ActivityLogger,
     Auth\AuthService,
     Auth\AuthenticatedCase,
     CsvParser,
+    NotificationStorage,
     ParserService,
     WordParser,
     QuoteService,
     PdfParser\PdfParser,
     ReportLogger,
-    SlackClient
+    SlackClient,
+    UIService
 };
 use Elasticsearch\{
     Client as ElasticsearchClient,
@@ -134,11 +139,14 @@ class AppServiceProvider extends ServiceProvider
         ContactRepositoryInterface::class => ContactRepository::class,
         AuthServiceInterface::class => AuthService::class,
         ReportLoggerInterface::class => ReportLogger::class,
-        NotificationRepositoryInterface::class => NotificationRepository::class
+        NotificationRepositoryInterface::class => NotificationRepository::class,
+        UIServiceInterface::class => UIService::class
     ];
 
     public $bindings = [
-        SlackInterface::class => SlackClient::class
+        SlackInterface::class => SlackClient::class,
+        \Spatie\Activitylog\ActivityLogger::class => ActivityLogger::class,
+        NotificationInterface::class => NotificationStorage::class
     ];
 
     public $aliases = [
@@ -164,7 +172,9 @@ class AppServiceProvider extends ServiceProvider
         ReportLoggerInterface::class => 'report.logger',
         SlackInterface::class => 'slack.client',
         SystemSettingRepositoryInterface::class => 'setting.repository',
-        NotificationRepositoryInterface::class => 'notification.repository'
+        NotificationRepositoryInterface::class => 'notification.repository',
+        NotificationInterface::class => 'notification.storage',
+        UIServiceInterface::class => 'ui.service'
     ];
 
     /**
@@ -174,17 +184,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        if (property_exists($this, 'aliases')) {
+            foreach ($this->aliases as $key => $value) {
+                $this->app->alias($key, $value);
+            }
+        }
+
         $this->app->instance('path.storage', config('filesystems.disks.local.path'));
 
         $this->app->bind(ElasticsearchClient::class, function () {
             return ElasticsearchBuilder::create()->setHosts(app('config')->get('services.search.hosts'))->build();
         });
 
-        if (property_exists($this, 'aliases')) {
-            foreach ($this->aliases as $key => $value) {
-                $this->app->alias($key, $value);
-            }
-        }
     }
 
     /**

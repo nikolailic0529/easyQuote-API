@@ -16,6 +16,7 @@ use App\Models\{
     System\SystemSetting
 };
 use App\Models\Customer\Customer;
+use App\Models\System\Notification;
 use App\Observers\{
     VendorObserver,
     QuoteObserver,
@@ -27,6 +28,7 @@ use App\Observers\{
     QuoteTemplateObserver,
     Collaboration\InvitationObserver,
     CustomerObserver,
+    NotificationObserver,
     SystemSettingObserver
 };
 
@@ -70,5 +72,7 @@ class ObserverServiceProvider extends ServiceProvider
         SystemSetting::observe(SystemSettingObserver::class);
 
         Customer::observe(CustomerObserver::class);
+
+        Notification::observe(NotificationObserver::class);
     }
 }

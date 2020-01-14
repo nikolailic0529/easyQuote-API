@@ -3,6 +3,8 @@
 namespace App\Listeners;
 
 use App\Events\RfqReceived;
+use App\Http\Resources\CustomerResponseResource;
+use App\Models\Customer\Customer;
 
 class RfqReceivedListener
 {
@@ -14,13 +16,19 @@ class RfqReceivedListener
      */
     public function handle(RfqReceived $event)
     {
-        report_logger(['message' => S4_CS_01], $event->customer);
+        report_logger(['message' => S4_CS_01], CustomerResponseResource::make($event->customer));
 
-        slack_client()
+        slack()
             ->title('Receiving RFQ / Data from S4')
             ->url(ui_route('customers.listing'))
-            ->status([S4_CSS_01, 'Proposed RFQ' => $event->customer['rfq_number']])
+            ->status([S4_CSS_01, 'Proposed RFQ' => $event->customer->rfq])
             ->image(assetExternal(SN_IMG_S4RDS))
             ->send();
+
+        activity()
+            ->on($event->customer)
+            ->withProperties(['attributes' => Customer::logChanges($event->customer)])
+            ->causedByService(S4_NAME)
+            ->log('created');
     }
 }

@@ -27,9 +27,9 @@ class S4QuoteController extends Controller
      */
     public function show(string $rfq)
     {
-        return response()->json(
-            $this->quote->rfq($rfq)
-        );
+        $quote = $this->quote->rfq($rfq);
+
+        return response()->json($quote);
     }
 
     /**

@@ -118,9 +118,9 @@ class AuthTest extends TestCase
         $password = $this->faker->password;
 
         return [
-            'first_name' => $this->faker->firstName,
-            'middle_name' => $this->faker->firstName,
-            'last_name' => $this->faker->lastName,
+            'first_name' => Str::filterLetters($this->faker->firstName),
+            'middle_name' => Str::filterLetters($this->faker->firstName),
+            'last_name' => Str::filterLetters($this->faker->lastName),
             'email' => $this->faker->email,
             'password' => $password,
             'password_confirmation' => $password,

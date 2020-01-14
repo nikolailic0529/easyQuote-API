@@ -14,24 +14,6 @@ class MarginObserver
      */
     public function saving(CountryMargin $countryMargin)
     {
-        if (app()->runningInConsole()) {
-            return;
-        }
-
-        error_abort_if($this->exists($countryMargin), ME_01, 'ME_01', 409);
-    }
-
-    private function exists(CountryMargin $countryMargin)
-    {
-        return $countryMargin
-            ->query()
-            ->where('id', '!=', $countryMargin->id)
-            ->where('quote_type', $countryMargin->quote_type)
-            ->where('country_id', $countryMargin->country_id)
-            ->where('vendor_id', $countryMargin->vendor_id)
-            ->where('is_fixed', $countryMargin->is_fixed)
-            ->where('method', $countryMargin->method)
-            ->where('value', $countryMargin->value)
-            ->exists();
+        //
     }
 }

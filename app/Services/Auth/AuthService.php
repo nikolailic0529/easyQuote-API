@@ -15,15 +15,18 @@ use Auth, Arr;
 
 class AuthService implements AuthServiceInterface
 {
-    protected $attemptRepository;
-
-    protected $currentAttempt;
-
+    /** @var boolean */
     public $checkIp = true;
 
-    public function __construct(AccessAttemptRepository $attemptRepository)
+    /** @var \App\Contracts\Repositories\AccessAttemptRepositoryInterface */
+    protected $attempt;
+
+    /** @var \App\Models\AccessAttempt */
+    protected $currentAttempt;
+
+    public function __construct(AccessAttemptRepository $attempt)
     {
-        $this->attemptRepository = $attemptRepository;
+        $this->attempt = $attempt;
     }
 
     public function disableCheckIp(): AuthServiceInterface
@@ -39,7 +42,7 @@ class AuthService implements AuthServiceInterface
             $request = $request->validated();
         }
 
-        $this->currentAttempt = $this->storeAccessAttempt($request);
+        $this->currentAttempt = $this->attempt->retrieveOrCreate($request);
 
         $this->checkCredentials(Arr::only($request, ['email', 'password']));
 
@@ -54,7 +57,7 @@ class AuthService implements AuthServiceInterface
     {
         $token_type = 'Bearer';
         $access_token = $token->accessToken;
-        $expires_at = Carbon::parse($token->token->expires_at)->toDateTimeString();
+        $expires_at = optional($token->token->expires_at)->toDateTimeString();
 
         return compact('access_token', 'token_type', 'expires_at');
     }
@@ -83,11 +86,6 @@ class AuthService implements AuthServiceInterface
         activity()->on($user)->by($user)->log('authenticated');
     }
 
-    public function storeAccessAttempt(array $payload)
-    {
-        return $this->attemptRepository->create($payload);
-    }
-
     public function generateToken(array $attributes): PersonalAccessTokenResult
     {
         $tokenResult = request()->user()->createToken('Personal Access Token');
@@ -105,7 +103,11 @@ class AuthService implements AuthServiceInterface
          * When Logout the System is revoking all the existing User's Personal Access Tokens.
          * Also the User will be marked as Logged Out.
          */
-        return $user->revokeTokens() && $user->markAsLoggedOut();
+        $pass = $user->revokeTokens() && $user->markAsLoggedOut();
+
+        activity()->on($user)->by($user)->log('deauthenticated');
+
+        return $pass;
     }
 
     protected function checkAlreadyAuthenticatedCase(User $user): void

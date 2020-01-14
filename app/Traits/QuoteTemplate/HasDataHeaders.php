@@ -32,11 +32,17 @@ trait HasDataHeaders
         $this->attributes['data_headers'] = json_encode($value);
     }
 
-    public function dataHeader(string $key): string
+    public function dataHeader(string $key, ?string $fallback = null): string
     {
         $headers = $this->data_headers->keyBy('key');
+        $defaultKey = 'template.data_headers.' . $key;
+        $default = __($defaultKey);
 
-        return data_get($headers, "{$key}.value", __('template.data_headers.' . $key));
+        if ($default === $defaultKey && is_string($fallback)) {
+            $default = $fallback;
+        }
+
+        return data_get($headers, "{$key}.value", $default);
     }
 
     public static function defaultDataHeaders(): Collection

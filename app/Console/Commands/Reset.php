@@ -3,22 +3,25 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Console\ConfirmableTrait;
 
 class Reset extends Command
 {
+    use ConfirmableTrait;
+
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'eq:reset';
+    protected $signature = 'eq:reset {--force : Force the operation to run when in production}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Wipe Database, fresh Migrates, force install Passport, clear Cache';
+    protected $description = 'Wipe database, re-run all migrates, force install Passport, clear Cache';
 
     /**
      * Create a new command instance.
@@ -37,8 +40,13 @@ class Reset extends Command
      */
     public function handle()
     {
+        if (!$this->confirmToProceed()) {
+            return;
+        }
+
         $this->call('migrate:fresh', [
-            '--seed' => true
+            '--seed' => true,
+            '--force' => true
         ]);
         $this->call('passport:install', [
             '--force' => true

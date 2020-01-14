@@ -377,7 +377,7 @@ trait HasMapping
         return $this->templateFields->whereNotIn('name', $except)
             ->sortBy('order')->pluck('header', 'name')
             ->map(function ($header, $name) {
-                return $this->quoteTemplate->dataHeader($name);
+                return $this->quoteTemplate->dataHeader($name, $header);
             })
             ->toArray();
     }

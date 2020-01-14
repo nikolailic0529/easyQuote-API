@@ -39,7 +39,7 @@ class SystemSetting extends BaseModel
     public static $cachedValues = [];
 
     protected static $logAttributes = [
-        'value:logValue'
+        'value:log_value'
     ];
 
     protected static $logOnlyDirty = true;

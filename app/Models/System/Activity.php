@@ -160,9 +160,15 @@ class Activity extends BaseModel implements ActivityContract
 
     public function getCauserNameAttribute()
     {
-        return isset($this->causer)
-            ? "{$this->causer->email} ({$this->causer->full_name})"
-            : null;
+        if (isset($this->causer_service)) {
+            return $this->causer_service;
+        }
+
+        if (isset($this->causer)) {
+            return "{$this->causer->email} ({$this->causer->full_name})";
+        }
+
+        return null;
     }
 
     public function getSubjectTypeBaseAttribute(): string

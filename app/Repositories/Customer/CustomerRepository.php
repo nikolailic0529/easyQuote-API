@@ -11,11 +11,16 @@ use App\Http\Resources\{
     CustomerRepositoryResource,
     CustomerResponseResource
 };
+use App\Repositories\Concerns\ResolvesImplicitModel;
 
 class CustomerRepository implements CustomerRepositoryInterface
 {
+    use ResolvesImplicitModel;
+
+    /** @var \App\Models\Customer\Customer */
     protected $customer;
 
+    /** @var string */
     protected $draftedCacheKey = 'customers-drafted';
 
     public function __construct(Customer $customer)
@@ -36,8 +41,7 @@ class CustomerRepository implements CustomerRepositoryInterface
     public function drafted()
     {
         return cache()->sear($this->draftedCacheKey, function () {
-            $customers = $this->customer->drafted()->latest()->limit(1000)->get();
-            return CustomerRepositoryResource::collection($customers);
+            return $this->customer->drafted()->latest()->limit(1000)->get();
         });
     }
 
@@ -49,6 +53,11 @@ class CustomerRepository implements CustomerRepositoryInterface
     public function find(string $id)
     {
         return $this->customer->whereId($id)->firstOrFail();
+    }
+
+    public function findByRfq(string $rfq): Customer
+    {
+        return $this->customer->whereRfq($rfq)->firstOrFail();
     }
 
     public function random(): Customer
@@ -71,8 +80,25 @@ class CustomerRepository implements CustomerRepositoryInterface
 
         $customerResponse = CustomerResponseResource::make($customer);
 
-        event(new RfqReceived($customerResponse));
+        event(new RfqReceived($customer));
 
         return $customerResponse;
+    }
+
+    public function delete($customer): bool
+    {
+        $customer = $this->resolveModel($customer);
+
+        return $customer->delete();
+    }
+
+    public function toCollection($resource)
+    {
+        return CustomerRepositoryResource::collection($resource);
+    }
+
+    public function model(): string
+    {
+        return Customer::class;
     }
 }

@@ -61,6 +61,7 @@ class QuoteVersionTest extends TestCase
         $this->updateQuoteStateFromNewUser();
 
         $nonUsingVersion = $this->quote->versionsSelection->firstWhere('is_using', '===', false);
+
         $version_id = $nonUsingVersion['id'];
 
         $response = $this->patchJson(url("api/quotes/version/{$this->quote->id}"), compact('version_id'), $this->authorizationHeader);

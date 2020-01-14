@@ -147,9 +147,11 @@ class StoreQuoteStateRequest extends FormRequest
                         return;
                     }
 
-                    if ($this->quote()->has_not_group_description) {
-                        $fail('For using the Grouped Rows assign at least one group.');
-                    }
+                    tap($this->quote(), function ($quote) use ($fail) {
+                        if ($quote->usingVersion->has_not_group_description) {
+                            $fail('For using the Grouped Rows assign at least one group.');
+                        }
+                    });
                 }
             ],
             'quote_data.last_drafted_step' => 'string|max:20',

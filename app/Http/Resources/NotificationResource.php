@@ -19,8 +19,10 @@ class NotificationResource extends JsonResource
             'user_id' => $this->user_id,
             'message' => $this->message,
             'url' => $this->url,
-            'priority' => __('priority.' . $this->priority),
-            'created_at' => $this->created_at
+            'priority' => $this->priority,
+            'read' => $this->read,
+            'created_at' => $this->created_at,
+            'read_at' => $this->read_at
         ];
     }
 }

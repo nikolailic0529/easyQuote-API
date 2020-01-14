@@ -1,4 +1,8 @@
-<?php namespace App\Http\Requests\Discount;
+<?php
+
+namespace App\Http\Requests\Discount;
+
+use App\Rules\UniqueValue;
 
 class UpdatePromotionalDiscountRequest extends UpdateDiscountRequest
 {
@@ -8,7 +12,8 @@ class UpdatePromotionalDiscountRequest extends UpdateDiscountRequest
             'value' => [
                 'required',
                 'numeric',
-                'min:0'
+                'min:0',
+                (new UniqueValue('promotional_discounts'))->ignore($this->promotion)
             ],
             'minimum_limit' => [
                 'numeric',

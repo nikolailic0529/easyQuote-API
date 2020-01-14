@@ -56,7 +56,7 @@ class SystemSettingsSync extends Command
                 $value = $this->formatValue($key, $setting['value']);
                 $possibleValues = $this->formatPossibleValues(optional($setting)['possible_values']);
 
-                setting()->updateOrCreate(
+                setting()->firstOrCreate(
                     compact('key'),
                     [
                         'key' => $key,

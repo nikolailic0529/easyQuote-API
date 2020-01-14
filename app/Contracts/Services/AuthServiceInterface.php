@@ -24,15 +24,6 @@ interface AuthServiceInterface
     public function disableCheckIp(): AuthServiceInterface;
 
     /**
-     * Store Access Attempt
-     * If successfull will set relevant flag
-     *
-     * @param array $payload
-     * @return void
-     */
-    public function storeAccessAttempt(array $payload);
-
-    /**
      * Generate and return token for authenticated user
      *
      * @param array $attributes

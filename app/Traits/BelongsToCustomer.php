@@ -11,7 +11,7 @@ trait BelongsToCustomer
 {
     public function customer(): BelongsTo
     {
-        return $this->belongsTo(Customer::class)->withDefault(Customer::make());
+        return $this->belongsTo(Customer::class)->withDefault()->withTrashed();
     }
 
     public function scopeRfq(Builder $query, string $rfq): Builder

@@ -10,7 +10,8 @@ use App\Traits\{
     HasAddressTypes,
     HasContactTypes,
     Submittable,
-    Quote\HasQuotes
+    Quote\HasQuotes,
+    Activity\LogsActivity
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -23,7 +24,8 @@ class Customer extends BaseModel
         HasContactTypes,
         Submittable,
         HasQuotes,
-        SoftDeletes;
+        SoftDeletes,
+        LogsActivity;
 
     protected $attributes = [
         'support_start' => null,
@@ -56,6 +58,18 @@ class Customer extends BaseModel
     ];
 
     protected $dates = ['valid_until', 'support_start', 'support_end'];
+
+    protected static $logAttributes = [
+        'customer_name',
+        'support_start_date',
+        'support_end_date',
+        'rfq_number',
+        'quotation_valid_until',
+        'invoicing_terms',
+        'service_levels:service_levels_formatted'
+    ];
+
+    protected static $recordEvents = ['deleted'];
 
     public function getSupportStartAttribute($value)
     {
@@ -91,6 +105,11 @@ class Customer extends BaseModel
     public function getValidUntilDateAttribute()
     {
         return carbon_format($this->attributes['valid_until'], $this->dynamicDateFormat);
+    }
+
+    public function getValidUntilUiAttribute()
+    {
+        return carbon_format($this->attributes['valid_until'], config('date.format_ui'));
     }
 
     public function getQuotationValidUntilAttribute()
@@ -159,6 +178,11 @@ class Customer extends BaseModel
     {
         return $this->makeHidden(['name', 'support_start', 'support_end', 'valid_until', 'rfq'])
             ->append('customer_name', 'rfq_number', 'support_start_date', 'support_end_date', 'quotation_valid_until');
+    }
+
+    public function getItemNameAttribute(): string
+    {
+        return "Customer ({$this->rfq})";
     }
 
     public function toCacheableArray()

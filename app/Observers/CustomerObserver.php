@@ -29,17 +29,6 @@ class CustomerObserver
     }
 
     /**
-     * Handle the customer "force deleted" event.
-     *
-     * @param  \App\Models\Customer\Customer  $customer
-     * @return void
-     */
-    public function forceDeleted(Customer $customer)
-    {
-        app('customer.repository')->forgetDraftedCache();
-    }
-
-    /**
      * Handle the customer "submitted" event.
      *
      * @param Customer $customer

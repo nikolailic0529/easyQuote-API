@@ -14,7 +14,8 @@
             "view_companies", "create_companies", "update_companies", "delete_companies",
             "view_vendors", "create_vendors", "update_vendors", "delete_vendors",
             "view_discounts", "create_discounts", "update_discounts", "delete_discounts",
-            "view_margins", "create_margins", "update_margins", "delete_margins"
+            "view_margins", "create_margins", "update_margins", "delete_margins",
+            "delete_customers"
         ],
         "privileges": {
             "Settings": "Read & Write",

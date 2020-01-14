@@ -1,7 +1,7 @@
 <?php
 
-if (!function_exists('slack_client')) {
-    function slack_client()
+if (!function_exists('slack')) {
+    function slack()
     {
         if (func_num_args() > 0) {
             return app('slack.client')->send(...func_get_args());
@@ -14,6 +14,6 @@ if (!function_exists('slack_client')) {
 if (!function_exists('notification')) {
     function notification(array $attributes = [])
     {
-        return app('notification.repository')->make($attributes);
+        return app('notification.storage')->setAttributes($attributes);
     }
 }

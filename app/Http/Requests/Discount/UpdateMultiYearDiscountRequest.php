@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Discount;
 
+use App\Rules\UniqueDuration;
+
 class UpdateMultiYearDiscountRequest extends UpdateDiscountRequest
 {
     public function additionalRules()
@@ -13,13 +15,21 @@ class UpdateMultiYearDiscountRequest extends UpdateDiscountRequest
             'durations.*.duration' => [
                 'required',
                 'integer',
-                'between:1,5'
+                'between:1,5',
+                (new UniqueDuration('multi_year_discounts'))->ignore($this->multi_year)
             ],
             'durations.*.value' => [
                 'required',
                 'numeric',
                 'min:0'
             ]
+        ];
+    }
+
+    public function messages()
+    {
+        return [
+            'durations.*.duration.between' => 'The duration must be between :min and :max years.'
         ];
     }
 }

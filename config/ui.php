@@ -16,7 +16,8 @@ return [
             'listing' => 'importer/customers'
         ],
         'users' => [
-            'profile' => 'users/profile'
+            'profile' => 'users/profile',
+            'notifications' => 'users/notification'
         ]
     ]
 ];

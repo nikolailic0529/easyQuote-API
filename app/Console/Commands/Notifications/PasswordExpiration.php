@@ -62,7 +62,7 @@ class PasswordExpiration extends Command
         notification()
             ->for($user)
             ->message(__(PWDE_01, compact('expires_at')))
-            ->withSubject($user)
+            ->subject($user)
             ->url(ui_route('users.profile'))
             ->priority(3)
             ->store();

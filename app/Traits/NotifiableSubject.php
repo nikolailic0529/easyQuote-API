@@ -9,6 +9,6 @@ trait NotifiableSubject
 {
     public function notifications(): MorphMany
     {
-        return $this->morphMany(Notification::class, 'subject');
+        return $this->morphMany(Notification::class, 'subject')->withTrashed();
     }
 }

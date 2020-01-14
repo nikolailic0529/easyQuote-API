@@ -75,7 +75,7 @@ class QuotesExpiration extends Command
                 notification()
                     ->for($quote->user)
                     ->message($this->formatMessage($quote))
-                    ->withSubject($quote)
+                    ->subject($quote)
                     ->url(ui_route('quotes.drafted.review', compact('quote')))
                     ->priority(2)
                     ->store();

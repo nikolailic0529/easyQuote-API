@@ -16,13 +16,14 @@ class S4ContractPostRequestTest extends TestCase
      *
      * @return void
      */
-    public function testRequestWithProperlyPostedData(): void
+    public function testRequestWithValidAttributes(): void
     {
         $contract = $this->makeGenericContract();
         $response = $this->postContract($contract);
 
         $response->assertSuccessful();
         $response->assertJsonStructure(array_keys($contract));
+
 
         $this->assertCustomerExistsInDataBase($contract);
     }
@@ -46,11 +47,11 @@ class S4ContractPostRequestTest extends TestCase
     }
 
     /**
-     * Test Storing S4 Contract with wrong RFQ Number.
+     * Test Storing S4 Contract with invalid RFQ Number.
      *
      * @return void
      */
-    public function testRequestWithWrongRfqNumber(): void
+    public function testRequestWithInvalidRfqNumber(): void
     {
         $contract = $this->makeGenericContract();
         data_set($contract, 'rfq_number', Str::random(40));
@@ -77,6 +78,33 @@ class S4ContractPostRequestTest extends TestCase
         $response->assertStatus(422);
     }
 
+    /**
+     * Test Storing S4 Contract with the same RFQ number of a Contract which was deleted.
+     *
+     * @return void
+     */
+    public function testRequestWithSoftDeletedCustomer(): void
+    {
+        $customer = tap(app('customer.repository')->random())->delete();
+
+        $this->assertSoftDeleted($customer);
+
+        $attributes = transform(
+            $this->makeGenericContract(),
+            function ($attributes) use ($customer) {
+                $attributes['rfq_number'] = $customer->rfq;
+                return $attributes;
+            }
+        );
+
+        $response = $this->postContract($attributes);
+
+        $response->assertOk()
+            ->assertJsonStructure(array_keys($attributes));
+
+        $this->assertCustomerExistsInDataBase($attributes);
+    }
+
     protected function postContract(array $data)
     {
         return $this->postJson(url('/api/s4/quotes'), $data, $this->authorizationHeader);
@@ -84,7 +112,10 @@ class S4ContractPostRequestTest extends TestCase
 
     protected function assertCustomerExistsInDataBase(array $contract): void
     {
-        $customerExistsInDatabase = DB::table('customers')->whereNull('deleted_at')->whereRfq($contract['rfq_number'])->exists();
+        $customerExistsInDatabase = DB::table('customers')
+            ->whereNull('deleted_at')
+            ->whereRfq($contract['rfq_number'])
+            ->exists();
 
         $this->assertTrue($customerExistsInDatabase);
     }

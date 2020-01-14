@@ -2,14 +2,14 @@
 
 namespace App\Events;
 
-use App\Http\Resources\CustomerResponseResource;
+use App\Models\Customer\Customer;
 use Illuminate\Foundation\Events\Dispatchable;
 
 class RfqReceived
 {
     use Dispatchable;
 
-    /** @var \App\Http\Resources\CustomerResponseResource */
+    /** @var \App\Models\Customer\Customer */
     public $customer;
 
     /**
@@ -17,7 +17,7 @@ class RfqReceived
      *
      * @return void
      */
-    public function __construct(CustomerResponseResource $customer)
+    public function __construct(Customer $customer)
     {
         $this->customer = $customer;
     }

@@ -58,9 +58,10 @@ interface NotificationRepositoryInterface
     /**
      * Retrieve the latest existing limited Notifications.
      *
+     * @param \App\Models\User|null $user
      * @return mixed
      */
-    public function latest();
+    public function latest(?User $user = null);
 
     /**
      * Search over the exiting Notifications.
@@ -86,12 +87,28 @@ interface NotificationRepositoryInterface
     public function delete($notification): bool;
 
     /**
+     * Read a specified Notification.
+     *
+     * @param \App\Models\System\Notification|string $notification
+     * @return boolean
+     */
+    public function read($notification): bool;
+
+    /**
      * Delete all the existing Notifications for specified User.
      *
      * @param \App\Models\User|null $user
      * @return boolean
      */
     public function deleteAll(?User $user = null): bool;
+
+    /**
+     * Read all the existing Notifications for specified User.
+     *
+     * @param \App\Models\User|null $user
+     * @return boolean
+     */
+    public function readAll(?User $user = null): bool;
 
     /**
      * Transforms resource to Collection.

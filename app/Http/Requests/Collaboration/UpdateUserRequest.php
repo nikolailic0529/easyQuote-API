@@ -36,7 +36,7 @@ class UpdateUserRequest extends FormRequest
             'role_id' => [
                 'string',
                 'uuid',
-                Rule::exists('roles', 'id')->whereNotNull('activated_at')
+                Rule::exists('roles', 'id')->whereNotNull('activated_at')->whereNull('deleted_at')
             ]
         ];
     }

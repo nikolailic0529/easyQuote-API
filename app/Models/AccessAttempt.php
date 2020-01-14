@@ -10,6 +10,9 @@ use Str;
 
 class AccessAttempt extends BaseModel
 {
+    /** @var boolean */
+    public $previouslyKnown = false;
+
     protected $fillable = [
         'email', 'ip_address', 'local_ip'
     ];
@@ -31,11 +34,16 @@ class AccessAttempt extends BaseModel
         ])->save();
     }
 
-    public function setDetails()
+    public function setDetails(): void
     {
         $this->forceFill([
             'user_agent' => request()->userAgent()
         ]);
+    }
+
+    public function markAsPreviouslyKnown(): void
+    {
+        $this->previouslyKnown = true;
     }
 
     public function getIpAddressAttribute($value): string

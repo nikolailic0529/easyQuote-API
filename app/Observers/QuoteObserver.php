@@ -30,7 +30,7 @@ class QuoteObserver
     public function submitting(Quote $quote)
     {
         if ($this->sameRfqSubmittedQuoteExists($quote)) {
-            slack_client()
+            slack()
                 ->title('Quote Submission')
                 ->url(ui_route('quotes.drafted.review', compact('quote')))
                 ->status([QSF_01, 'Quote RFQ' => $quote->rfqNumber, 'Reason' => QSE_01, 'Caused By' => optional(request()->user())->fullname])
@@ -50,9 +50,9 @@ class QuoteObserver
     public function submitted(Quote $quote)
     {
         $rfq_number = $quote->rfq_number;
-        $url = ui_route('quotes.submitted.review', ['quote_id' => $quote->id]);
+        $url = ui_route('quotes.submitted.review', compact('quote'));
 
-        slack_client()
+        slack()
             ->title('Quote Submission')
             ->url($url)
             ->status([QSS_01, 'Quote RFQ' => $rfq_number, 'Caused By' => optional(request()->user())->fullname])
@@ -62,7 +62,7 @@ class QuoteObserver
         notification()
             ->for($quote->user)
             ->message(__(QSS_02, compact('rfq_number')))
-            ->withSubject($quote)
+            ->subject($quote)
             ->url($url)
             ->priority(1)
             ->store();
@@ -82,7 +82,7 @@ class QuoteObserver
         notification()
             ->for($quote->user)
             ->message(__(QDS_01, compact('rfq_number')))
-            ->withSubject($quote)
+            ->subject($quote)
             ->url($url)
             ->priority(1)
             ->store();

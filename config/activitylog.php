@@ -55,6 +55,7 @@ return [
             \App\Models\Quote\Quote::class,
             \App\Models\Quote\QuoteVersion::class
         ],
+        'customer' => \App\Models\Customer\Customer::class,
         'discount' => [
             \App\Models\Quote\Discount\MultiYearDiscount::class,
             \App\Models\Quote\Discount\PrePayDiscount::class,
@@ -72,7 +73,7 @@ return [
         'setting' => \App\Models\System\SystemSetting::class,
         'invitation' => \App\Models\Collaboration\Invitation::class
     ],
-    'types' => ['created', 'updated', 'deleted', 'copied', 'authenticated', 'created_version'],
+    'types' => ['created', 'updated', 'deleted', 'copied', 'retrieved', 'created_version', 'authenticated', 'deauthenticated'],
     'periods' => [
         'today',
         'yesterday',

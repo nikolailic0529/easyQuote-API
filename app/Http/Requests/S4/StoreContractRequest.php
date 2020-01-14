@@ -5,6 +5,7 @@ namespace App\Http\Requests\S4;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 
 class StoreContractRequest extends FormRequest
 {
@@ -17,7 +18,14 @@ class StoreContractRequest extends FormRequest
     {
         return [
             'customer_name' => 'required|string|min:2',
-            'rfq_number' => 'required|string|min:2|regex:/^[[:alnum:]]+$/i|max:20|unique:customers,rfq',
+            'rfq_number' => [
+                'required',
+                'string',
+                'min:2',
+                'regex:/^[[:alnum:]]+$/i',
+                'max:20',
+                Rule::unique('customers', 'rfq')->whereNull('deleted_at')
+            ],
             'service_levels' => 'nullable|array',
             'service_levels.*.service_level' => 'required|string|min:2',
             'quotation_valid_until' => 'required|string|date_format:m/d/Y',
@@ -59,7 +67,7 @@ class StoreContractRequest extends FormRequest
 
     protected function failedValidation(Validator $validator)
     {
-        slack_client()
+        slack()
             ->title('Receiving RFQ / Data from S4')
             ->status([S4_CSF_01, 'Proposed RFQ' => $this->rfq_number, 'Reason' => optional($validator->errors())->first()])
             ->image(assetExternal(SN_IMG_S4RDF))
