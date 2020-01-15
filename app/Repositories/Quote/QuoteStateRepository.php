@@ -269,34 +269,6 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         return $this->findVersion($id)->rowsDataByColumnsGroupable($query)->get();
     }
 
-    public function submit(Quote $quote): void
-    {
-        $this->quoteService->export($quote->usingVersion);
-        $submitted_data = QuoteResource::make($quote->usingVersion->disableReview())->resolve();
-
-        if ($quote->is($quote->usingVersion)) {
-            $quote->submit($submitted_data);
-            optional($quote->customer)->submit();
-            return;
-        }
-
-        $quote->usingVersion->submit($submitted_data);
-        optional($quote->usingVersion->customer)->submit();
-        $quote->exists && $quote->submit($submitted_data);
-    }
-
-    public function draft(Quote $quote): void
-    {
-        if ($quote->isNot($quote->usingVersion)) {
-            $quote->usingVersion->submitted_data = null;
-            $quote->usingVersion->markAsDrafted();
-            return;
-        }
-
-        $quote->submitted_data = null;
-        $quote->markAsDrafted();
-    }
-
     public function setVersion(string $version_id, $quote): bool
     {
         if (is_string($quote)) {
@@ -328,7 +300,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
                 $newVersion->versionName,
                 $oldVersion->versionName
             )
-            ->logWhen('updated', $pass);
+            ->queueWhen('updated', $pass);
 
         return $pass;
     }
@@ -483,7 +455,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
                 activity()
                     ->on($replicatedVersion)
                     ->withProperties(['old' => $this->quote->logChanges($version), 'attributes' => $this->quote->logChanges($replicatedVersion)])
-                    ->log('created_version');
+                    ->queue('created_version');
             }
 
             return $replicatedVersion;
@@ -538,7 +510,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
             activity()
                 ->on($quote)
                 ->withAttribute('discounts', null, $oldDiscounts->toString('discountable.name'))
-                ->log('updated');
+                ->queue('updated');
 
             return;
         }
@@ -568,18 +540,19 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         activity()
             ->on($quote)
             ->withAttribute('discounts', $newDiscounts->toString('discountable.name'), $oldDiscounts->toString('discountable.name'))
-            ->logWhen('updated', $diff);
+            ->queueWhen('updated', $diff);
     }
 
     protected function draftOrSubmit(Collection $state, Quote $quote): void
     {
         if (!$state->has('save') || !$state->get('save')) {
-            $this->draft($quote);
+            $quote->markAsDrafted();
             return;
         }
 
         if ($state->get('save')) {
-            $this->submit($quote);
+            $quote->submit();
+            optional($quote->customer)->submit();
         }
     }
 
@@ -613,7 +586,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         activity()
             ->on($quote)
             ->withAttribute('selected_rows', $newRowsIds->count(), $oldRowsIds->count())
-            ->log('updated');
+            ->queue('updated');
 
         /**
          * Fresh Discounts Margin Percentage.
@@ -694,7 +667,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         activity()
             ->performedOn($quote)
             ->withAttribute('quote_files', $newQuoteFiles->toString('original_file_name'), $oldQuoteFiles->toString('original_file_name'))
-            ->log('updated');
+            ->queue('updated');
     }
 
     protected function detachScheduleIfRequested(Collection $state, BaseQuote $quote): void

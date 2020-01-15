@@ -14,4 +14,9 @@ trait Notifiable
     {
         return $this->hasMany(Notification::class);
     }
+
+    public function setRecentNotificationsLimitAttribute($value): void
+    {
+        $this->attributes['recent_notifications_limit'] = (int) $value;
+    }
 }

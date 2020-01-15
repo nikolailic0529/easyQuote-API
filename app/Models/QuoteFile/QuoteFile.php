@@ -71,17 +71,12 @@ class QuoteFile extends BaseModel implements HasOrderedScope
 
     public function scopePriceLists($query)
     {
-        return $query->where('file_type', 'Distributor Price List');
+        return $query->where('file_type', QFT_PL);
     }
 
     public function scopePaymentSchedules($query)
     {
-        return $query->where('file_type', 'Payment Schedule');
-    }
-
-    public function scopeGeneratedPdf($query)
-    {
-        return $query->where('file_type', 'Generated PDF');
+        return $query->where('file_type', QFT_PS);
     }
 
     public function isNewSeparator($id)

@@ -65,7 +65,7 @@ class QuoteObserver
             ->subject($quote)
             ->url($url)
             ->priority(1)
-            ->store();
+            ->queue();
     }
 
     /**
@@ -85,7 +85,7 @@ class QuoteObserver
             ->subject($quote)
             ->url($url)
             ->priority(1)
-            ->store();
+            ->queue();
     }
 
     protected function sameRfqSubmittedQuoteExists(Quote $quote)

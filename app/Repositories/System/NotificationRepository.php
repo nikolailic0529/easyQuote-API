@@ -26,8 +26,6 @@ class NotificationRepository extends SearchableRepository implements Notificatio
     /** @var \App\Models\System\Notification */
     protected $notification;
 
-    protected static $latestLimit = UN_LATEST_LIMIT;
-
     public function __construct(Notification $notification)
     {
         $this->notification = $notification;
@@ -52,6 +50,8 @@ class NotificationRepository extends SearchableRepository implements Notificatio
 
     public function latest(?User $user = null)
     {
+        $user = $user ?? auth()->user();
+
         $totals = $this->userQuery($user)
             ->selectRaw('count(*) as `total`')
             ->selectRaw('count(`read_at` or null) as `read`')
@@ -59,8 +59,10 @@ class NotificationRepository extends SearchableRepository implements Notificatio
             ->toBase()
             ->first();
 
-        $resource = $this->userQuery($user)->latest()->whereNull('read_at')
-            ->limit(static::$latestLimit)->get();
+        $limit = (int) $user->recent_notifications_limit;
+
+        $resource = $this->userQuery($user)->latest()->whereNull('read_at')->limit($limit)->get();
+
         $data = $this->toCollection($resource);
 
         return compact('data') + (array) $totals;

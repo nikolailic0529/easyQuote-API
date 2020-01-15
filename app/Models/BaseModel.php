@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\Quote\BaseQuote;
 use Illuminate\Database\Eloquent\Model;
 use Webpatser\Uuid\Uuid;
 use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
@@ -81,7 +80,7 @@ class BaseModel extends Model
 
     public function saveWithoutEvents(array $options = [])
     {
-        return static::withoutEvents(function() use ($options) {
+        return static::withoutEvents(function () use ($options) {
             return $this->save($options);
         });
     }

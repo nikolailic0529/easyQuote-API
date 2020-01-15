@@ -13,7 +13,7 @@ class QuoteSubmittedController extends Controller
     public function __construct(QuoteRepository $quote)
     {
         $this->quote = $quote;
-        $this->authorizeResource(Quote::class, 'submitted');
+        // $this->authorizeResource(Quote::class, 'submitted');
     }
 
     /**
@@ -108,5 +108,18 @@ class QuoteSubmittedController extends Controller
         return response()->json(
             $this->quote->unSubmit($submitted->id)
         );
+    }
+
+    /**
+     * Retrieve if exists Generated PDF file by RFQ number.
+     *
+     * @param string $rfq
+     * @return \Illuminate\Http\Response
+     */
+    public function pdf(string $rfq)
+    {
+        $this->authorize('download_pdf', Quote::class);
+
+        return $this->quote->pdf($rfq);
     }
 }

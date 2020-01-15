@@ -1,6 +1,9 @@
 <?php
 
 return [
+    'properties' => [
+        'download_quote_pdf'
+    ],
     'privileges' => [
         'Read Only',
         'Read & Write',

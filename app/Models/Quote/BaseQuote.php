@@ -181,11 +181,6 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
         return $this->hasOne(QuoteFile::class)->paymentSchedules()->withDefault();
     }
 
-    public function generatedPdf()
-    {
-        return $this->hasOne(QuoteFile::class)->generatedPdf()->withDefault();
-    }
-
     public function rowsData()
     {
         return $this->hasManyThrough(ImportedRow::class, QuoteFile::class)

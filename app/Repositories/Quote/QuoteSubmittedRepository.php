@@ -2,12 +2,13 @@
 
 namespace App\Repositories\Quote;
 
-use App\Contracts\Repositories\{
-    Quote\QuoteSubmittedRepositoryInterface,
-    QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
+use App\Contracts\{
+    Repositories\Quote\QuoteSubmittedRepositoryInterface,
+    Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository,
+    Services\QuoteServiceInterface
 };
-use App\Http\Resources\QuoteRepository\SubmittedCollection;
 use App\Repositories\SearchableRepository;
+use App\Http\Resources\QuoteRepository\SubmittedCollection;
 use App\Models\Quote\{
     Quote,
     BaseQuote
@@ -27,19 +28,24 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 {
     use ResolvesImplicitModel, ResolvesQuoteVersion;
 
+    /** @var \App\Models\Quote\Quote */
     protected $quote;
 
+    /** @var string */
     protected $table;
 
+    /** @var \App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface */
     protected $quoteFile;
 
+    /** @var \App\Contracts\Services\QuoteServiceInterface */
     protected $quoteService;
 
-    public function __construct(Quote $quote, QuoteFileRepository $quoteFile)
+    public function __construct(Quote $quote, QuoteFileRepository $quoteFile, QuoteServiceInterface $quoteService)
     {
         $this->quote = $quote;
         $this->table = $quote->getTable();
         $this->quoteFile = $quoteFile;
+        $this->quoteService = $quoteService;
     }
 
     public function all()
@@ -107,16 +113,13 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         return $this->userQuery()->whereId($id)->firstOrFail();
     }
 
-    public function rfq(string $rfq, bool $service = false): iterable
+    public function rfq(string $rfq, bool $service = false): BaseQuote
     {
         $quote = $this->findByRfq($rfq);
 
-        $submitted_data = Arr::sortRecursive($quote->usingVersion->submitted_data);
+        activity()->on($quote)->causedByService(S4_NAME)->queue('retrieved');
 
-        activity()->on($quote)->causedByService(S4_NAME)
-            ->log('retrieved');
-
-        return $submitted_data;
+        return $quote->usingVersion->disableReview();
     }
 
     public function price(string $rfq)
@@ -149,9 +152,8 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     public function pdf(string $rfq)
     {
         $quote = $this->findByRfq($rfq);
-        $generatedPdf = $quote->usingVersion->generatedPdf;
 
-        return $this->resolveFilepath($generatedPdf->original_file_path);
+        return $this->quoteService->export($quote->usingVersion);
     }
 
     public function delete(string $id)
@@ -234,7 +236,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
                     ->on($replicatedQuote)
                     ->withProperties(['old' => Quote::logChanges($version), 'attributes' => Quote::logChanges($replicatedQuote)])
                     ->by(request()->user())
-                    ->log('copied');
+                    ->queue('copied');
             }
 
             return $copied;

@@ -61,9 +61,9 @@ interface QuoteSubmittedRepositoryInterface
      * Find Submitted Quote Data by RFQ number.
      *
      * @param string $rfq
-     * @return iterable
+     * @return \App\Models\Quote\BaseQuote
      */
-    public function rfq(string $rfq): iterable;
+    public function rfq(string $rfq): BaseQuote;
 
     /**
      * Submitted Price List by RFQ number.

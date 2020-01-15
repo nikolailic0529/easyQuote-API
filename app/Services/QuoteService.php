@@ -13,7 +13,7 @@ use App\Models\Quote\{
     Margin\CountryMargin
 };
 use Illuminate\Support\Collection;
-use Storage, Closure, Str;
+use Arr, Str;
 
 class QuoteService implements QuoteServiceInterface
 {
@@ -224,12 +224,12 @@ class QuoteService implements QuoteServiceInterface
         $resource = QuoteResource::make($quote->enableReview())->resolve();
         $data = to_array_recursive(data_get($resource, 'quote_data', []));
 
-        $design = $quote->quoteTemplate->form_values_data;
-
-        if (isset($design['payment_page'])) {
-            $design['payment_schedule'] = $design['payment_page'];
-            unset($design['payment_page']);
-        }
+        $design = tap($quote->quoteTemplate->form_values_data, function (&$design) {
+            if (isset($design['payment_page'])) {
+                $design['payment_schedule'] = $design['payment_page'];
+                unset($design['payment_page']);
+            }
+        });
 
         $company_logos = $quote->quoteTemplate->company->logoSelection ?? [];
         $vendor_logos = $quote->quoteTemplate->vendor->logoSelection ?? [];
@@ -242,18 +242,11 @@ class QuoteService implements QuoteServiceInterface
     {
         $export = $this->prepareQuoteExport($quote);
 
-        if (blank($export['design']) || blank($export['data'])) {
-            return;
-        };
+        $filename = $this->makePdfFilename($quote);
 
-        $hash = md5($quote->customer->rfq . time());
-        $filename = "{$quote->customer->rfq}_{$hash}.pdf";
-
-        $original_file_path = "{$quote->user->quoteFilesDirectory}/$filename";
-        $path = Storage::path($original_file_path);
-        $pass = $this->pdfWrapper()->loadView('quotes.pdf', $export)->save(storage_path("app/{$original_file_path}"));
-
-        $this->quoteFile->createPdf($quote, compact('original_file_path', 'filename'));
+        return $this->pdfWrapper()
+            ->loadView('quotes.pdf', $export)
+            ->download($filename);
     }
 
     public function inlinePdf(Quote $quote, bool $html = false)
@@ -358,5 +351,12 @@ class QuoteService implements QuoteServiceInterface
     protected function pdfWrapper()
     {
         return app('snappy.pdf.wrapper');
+    }
+
+    private function makePdfFilename(Quote $quote): string
+    {
+        $hash = md5($quote->customer->rfq . time());
+
+        return "{$quote->customer->rfq}_{$hash}.pdf";
     }
 }

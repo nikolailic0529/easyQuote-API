@@ -33,8 +33,9 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
     {
         $privileges = config('role.privileges');
         $modules = collect(config('role.modules'))->keys();
+        $properties = config('role.properties');
 
-        return collect(compact('privileges', 'modules'));
+        return collect(compact('privileges', 'modules', 'properties'));
     }
 
     public function allActivated(array $columns = ['*']): IlluminateCollection
@@ -49,7 +50,8 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
 
     public function find(string $id): Role
     {
-        return $this->userQuery()->whereId($id)->firstOrFail();
+        return $this->userQuery()
+            ->whereId($id)->firstOrFail()->append('properties');
     }
 
     public function findByName(string $name): Role
@@ -60,23 +62,27 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
     public function create($request): Role
     {
         if ($request instanceof \Illuminate\Http\Request) {
-            $user = $request->user();
             $request = $request->validated();
-            data_set($request, 'user_id', $user->id);
+            data_set($request, 'user_id', auth()->id());
         }
 
         throw_unless(is_array($request), new \InvalidArgumentException(INV_ARG_RA_01));
 
-        return $this->role->create($request)->syncPrivileges();
+        return tap($this->role->create($request), function ($role) use ($request) {
+            $role->syncPrivileges(data_get($request, 'properties'));
+            $role->append('properties');
+        });
     }
 
     public function update(UpdateRoleRequest $request, string $id): Role
     {
         $role = $this->find($id);
-        $role->update($request->validated());
-        $role->syncPrivileges();
 
-        return $role;
+        return tap($role, function ($role) use ($request) {
+            $role->update($request->validated());
+            $role->syncPrivileges($request->input('properties'));
+            $role->append('properties');
+        });
     }
 
     public function delete(string $id): bool

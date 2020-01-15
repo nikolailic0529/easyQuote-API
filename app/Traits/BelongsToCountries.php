@@ -33,7 +33,7 @@ trait BelongsToCountries
         activity()
             ->on($this)
             ->withAttribute('countries', $newCountries->toString('name'), $oldCountries->toString('name'))
-            ->log('updated');
+            ->queue('updated');
     }
 
     public function scopeCountry(Builder $query, string $id): Builder

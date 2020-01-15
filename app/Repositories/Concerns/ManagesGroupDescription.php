@@ -70,7 +70,7 @@ trait ManagesGroupDescription
                 $quote->group_description_with_meta->toString('name', 'total_count'),
                 $old_group_description_with_meta->toString('name', 'total_count')
             )
-            ->log('updated');
+            ->queue('updated');
 
         $quote->forgetCachedComputableRows();
 
@@ -111,7 +111,7 @@ trait ManagesGroupDescription
                 $quote->group_description_with_meta->toString('name', 'total_count'),
                 $old_group_description_with_meta->toString('name', 'total_count')
             )
-            ->log('updated');
+            ->queue('updated');
 
         $quote->forgetCachedComputableRows();
 
@@ -144,7 +144,7 @@ trait ManagesGroupDescription
                 $quote->group_description_with_meta->toString('name', 'total_count'),
                 $old_group_description_with_meta->toString('name', 'total_count')
             )
-            ->log('updated');
+            ->queue('updated');
 
         $quote->forgetCachedComputableRows();
 
@@ -182,7 +182,7 @@ trait ManagesGroupDescription
                 $quote->group_description_with_meta->toString('name', 'total_count'),
                 $old_group_description_with_meta->toString('name', 'total_count')
             )
-            ->log('updated');
+            ->queue('updated');
 
         $quote->forgetCachedComputableRows();
 

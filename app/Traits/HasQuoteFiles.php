@@ -11,4 +11,11 @@ trait HasQuoteFiles
     {
         return $this->hasMany(QuoteFile::class);
     }
+
+    public function resolveQuoteFile(string $type)
+    {
+        return optional(
+            $this->quoteFiles->firstWhere('file_type', $type)
+        );
+    }
 }

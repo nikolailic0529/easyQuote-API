@@ -8,6 +8,7 @@ use App\Contracts\Repositories\{
 };
 use App\Http\Controllers\Controller;
 use App\Http\Requests\S4\StoreContractRequest;
+use App\Http\Resources\QuoteResource;
 
 class S4QuoteController extends Controller
 {
@@ -29,7 +30,9 @@ class S4QuoteController extends Controller
     {
         $quote = $this->quote->rfq($rfq);
 
-        return response()->json($quote);
+        return response()->json(
+            QuoteResource::make($quote)
+        );
     }
 
     /**
@@ -66,9 +69,7 @@ class S4QuoteController extends Controller
      */
     public function pdf(string $rfq)
     {
-        return response()->download(
-            $this->quote->pdf($rfq)
-        );
+        return $this->quote->pdf($rfq);
     }
 
     /**

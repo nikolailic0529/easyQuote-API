@@ -48,6 +48,6 @@ trait BelongsToContacts
         activity()
             ->on($this)
             ->withAttribute('contacts', $this->load('contacts')->contacts->toString('item_name'), $old->toString('item_name'))
-            ->log('updated');
+            ->queue('updated');
     }
 }

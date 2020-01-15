@@ -31,6 +31,6 @@ trait BelongsToVendors
         activity()
             ->on($this)
             ->withAttribute('vendors', $newVendors->toString('name'), $oldVendors->toString('name'))
-            ->log('updated');
+            ->queue('updated');
     }
 }

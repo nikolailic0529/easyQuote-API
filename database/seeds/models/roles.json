@@ -8,7 +8,7 @@
             "view_contacts", "create_contacts", "update_contacts", "delete_contacts",
             "view_users", "invite_collaboration_users", "update_users", "delete_users", "reset_users_password",
             "view_roles", "create_roles", "update_roles", "delete_roles",
-            "view_quotes", "create_quotes", "update_quotes", "delete_quotes", "submit_quotes",
+            "view_quotes", "create_quotes", "update_quotes", "delete_quotes", "submit_quotes", "download_quote_pdf",
             "view_quote_files", "create_quote_files", "update_quote_files", "handle_quote_files", "delete_quote_files",
             "view_templates", "create_templates", "update_templates", "delete_templates",
             "view_companies", "create_companies", "update_companies", "delete_companies",
@@ -32,7 +32,7 @@
     {
         "name": "Sales Manager",
         "permissions": [
-            "view_own_quotes", "create_quotes", "update_own_quotes", "delete_own_quotes", "submit_own_quotes",
+            "view_own_quotes", "create_quotes", "update_own_quotes", "delete_own_quotes", "submit_own_quotes", "download_quote_pdf",
             "view_quote_files", "create_quote_files", "update_quote_files", "handle_quote_files", "delete_quote_files",
             "view_templates", "create_templates", "update_templates", "delete_templates",
             "view_companies", "create_companies", "update_companies", "delete_companies",

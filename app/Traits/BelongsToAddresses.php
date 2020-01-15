@@ -48,6 +48,6 @@ trait BelongsToAddresses
         activity()
             ->on($this)
             ->withAttribute('addresses', $this->load('addresses')->addresses->toString('address_1', 'address_type'), $old->toString('address_1', 'address_type'))
-            ->log('updated');
+            ->queue('updated');
     }
 }

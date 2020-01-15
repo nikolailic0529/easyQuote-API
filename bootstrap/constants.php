@@ -16,7 +16,6 @@ define('USD_01', 'You could not delete yourself.');
 define('AEU_01', 'You could not update an Administrator\'s email.');
 define('PWDE_01', 'Your password expires at :expires_at.');
 define('UN_01', 'user-notifications');
-define('UN_LATEST_LIMIT', 3);
 define('UN_PWD_EXP', 7);
 define('UN_FALLBACK_ROUTE', 'users.notifications');
 define('ENF_PWD_CHANGE_DAYS', 30);
@@ -70,6 +69,8 @@ define('QFUH_01', 'Unknown Header');
 define('QFNR_01', 'The given file isn\'t readable. Please try to re-save it.');
 define('QFNC_01', 'The given file hasn\'t required columns');
 define('QFNE_01', 'Sorry, no files found.');
+define('QFT_PL', 'Distributor Price List');
+define('QFT_PS', 'Payment Schedule');
 
 /**
  * Discount.

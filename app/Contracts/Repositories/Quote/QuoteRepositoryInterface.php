@@ -165,22 +165,6 @@ interface QuoteRepositoryInterface
     public function deleteGroupDescription(string $id, string $quote_id): bool;
 
     /**
-     * Store Submittable Data for S4 and Submit Quote.
-     *
-     * @param Quote $quote
-     * @return void
-     */
-    public function submit(Quote $quote): void;
-
-    /**
-     * Remove Stored Submittable Data and Mark Quote as Drafted.
-     *
-     * @param Quote $quote
-     * @return void
-     */
-    public function draft(Quote $quote): void;
-
-    /**
      * Create a new Quote Version if an authenticated user is not the initial Quote creator.
      *
      * @param Quote $quote

@@ -142,7 +142,7 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
         ) {
             activity()
                 ->on($quoteTemplate)
-                ->log('updated');
+                ->queue('updated');
         }
 
         return $quoteTemplate->load('company', 'vendor', 'countries', 'templateFields', 'currency')->makeVisible(['form_data', 'form_values_data']);
@@ -183,7 +183,7 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
                 ->on($template)
                 ->withProperties(['old' => QuoteTemplate::logChanges($replicatableTemplate), 'attributes' => QuoteTemplate::logChanges($template)])
                 ->by(request()->user())
-                ->log('copied');
+                ->queue('copied');
         }
 
         return ['id' => $replicatableTemplate->id];

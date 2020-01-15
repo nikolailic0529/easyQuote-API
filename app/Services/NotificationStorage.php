@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\Services\NotificationInterface;
+use App\Jobs\CreateNotification;
 use App\Models\System\Notification;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -70,6 +71,15 @@ class NotificationStorage implements NotificationInterface
     public function priority(int $value): NotificationInterface
     {
         return $this->setAttribute(__FUNCTION__, $value);
+    }
+
+    public function queue(): void
+    {
+        $this->checkAttributes();
+
+        $this->setAttribute('created_at', now());
+
+        CreateNotification::dispatch($this->notification);
     }
 
     public function store(): Notification

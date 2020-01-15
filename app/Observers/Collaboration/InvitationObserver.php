@@ -31,7 +31,7 @@ class InvitationObserver
 
         activity()
             ->performedOn($invitation)
-            ->log('resended');
+            ->queue('resended');
     }
 
     /**
@@ -44,6 +44,6 @@ class InvitationObserver
     {
         activity()
             ->performedOn($invitation)
-            ->log('canceled');
+            ->queue('canceled');
     }
 }

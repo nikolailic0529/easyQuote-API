@@ -29,6 +29,6 @@ class RfqReceivedListener
             ->on($event->customer)
             ->withProperties(['attributes' => Customer::logChanges($event->customer)])
             ->causedByService(S4_NAME)
-            ->log('created');
+            ->queue('created');
     }
 }

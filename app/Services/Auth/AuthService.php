@@ -83,7 +83,7 @@ class AuthService implements AuthServiceInterface
          */
         $user->markAsLoggedIn($this->currentAttempt->ip) && $user->freshActivity();
 
-        activity()->on($user)->by($user)->log('authenticated');
+        activity()->on($user)->by($user)->queue('authenticated');
     }
 
     public function generateToken(array $attributes): PersonalAccessTokenResult
@@ -105,7 +105,7 @@ class AuthService implements AuthServiceInterface
          */
         $pass = $user->revokeTokens() && $user->markAsLoggedOut();
 
-        activity()->on($user)->by($user)->log('deauthenticated');
+        activity()->on($user)->by($user)->queue('deauthenticated');
 
         return $pass;
     }

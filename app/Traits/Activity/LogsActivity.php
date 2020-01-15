@@ -47,7 +47,12 @@ trait LogsActivity
                     $logger->tap([$model, 'tapActivity'], $eventName);
                 }
 
-                $logger->log($description);
+                if (static::shouldQueueLog()) {
+                    $logger->queue($description);
+                    return;
+                }
+
+                $logger->queue($description);
             });
         });
     }
@@ -93,6 +98,11 @@ trait LogsActivity
         }
 
         return config('activitylog.default_log_name');
+    }
+
+    protected static function shouldQueueLog()
+    {
+        return !isset(static::$queueLog) || static::$queueLog === true;
     }
 
     /*

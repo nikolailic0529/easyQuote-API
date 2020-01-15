@@ -76,7 +76,7 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
      * @var array
      */
     protected $fillable = [
-        'first_name', 'middle_name', 'last_name', 'timezone_id', 'email', 'password', 'role_id', 'phone', 'default_route'
+        'first_name', 'middle_name', 'last_name', 'timezone_id', 'email', 'password', 'role_id', 'phone', 'default_route', 'recent_notifications_limit'
     ];
 
     /**
@@ -166,6 +166,11 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
         return $this->role->privileges;
     }
 
+    public function getRolePropertiesAttribute()
+    {
+        return $this->role->properties;
+    }
+
     public function imagesDirectory(): string
     {
         return "images/users";
@@ -183,7 +188,7 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
 
     public function withAppends(...$attributes)
     {
-        $appends = ['role_id', 'role_name', 'picture', 'privileges', 'must_change_password'];
+        $appends = ['role_id', 'role_name', 'picture', 'privileges', 'role_properties', 'must_change_password'];
         return $this->append(array_merge($appends, $attributes));
     }
 }

@@ -123,7 +123,7 @@ class S4QuoteGetRequestTest extends TestCase
 
     protected function submitQuote(Quote $quote): void
     {
-        $this->quoteRepository->submit($quote);
+        $quote->submit();
         $quote->refresh();
 
         $this->assertNotNull($quote->submitted_at, 'Fail when submitting a Quote');

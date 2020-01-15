@@ -24,11 +24,13 @@ use Spatie\Permission\{
     Contracts\Role as RoleContract
 };
 use Illuminate\Database\Eloquent\{
+    Collection as EloquentCollection,
     SoftDeletes,
     Relations\MorphToMany,
     Relations\BelongsToMany
 };
 use Arr;
+use Illuminate\Support\Collection;
 
 class Role extends BaseModel implements RoleContract, ActivatableInterface
 {
@@ -225,24 +227,55 @@ class Role extends BaseModel implements RoleContract, ActivatableInterface
         $this->attributes['privileges'] = $value;
     }
 
-    public function syncPrivileges($privileges = null)
+    public function syncPrivileges(?array $properties = null): void
     {
-        $privileges = isset($privileges) ? collect($privileges) : $this->privileges;
-
-        $permissionsNames = $privileges->reduce(function ($carry, $privilege) {
+        $permissionsNames = collect($this->privileges)->reduce(function ($carry, $privilege) {
             $permissions = config('role.modules')[$privilege['module']][$privilege['privilege']];
             array_push($carry, ...$permissions);
             return $carry;
         }, []);
 
         $permissions = Permission::whereIn('name', $permissionsNames)->get();
+        $properties = static::getPropertiesPermissions($properties);
 
-        return $this->syncPermissions($permissions);
+        if ($properties->isNotEmpty()) {
+            $permissions->push(...$properties);
+        }
+
+        $this->syncPermissions($permissions);
+    }
+
+    public static function getPropertiesPermissions(?array $properties = null): EloquentCollection
+    {
+        if (is_null($properties)) {
+            return EloquentCollection::make();
+        }
+
+        $roleProperties = array_flip(config('role.properties'));
+
+        $permissionsNames = collect($properties)
+            ->filter(function ($property) use ($roleProperties) {
+                return Arr::has($roleProperties, data_get($property, 'key')) &&
+                    data_get($property, 'value', false);
+            })
+            ->pluck('key')
+            ->toArray();
+
+        return Permission::whereIn('name', $permissionsNames)->get();
+    }
+
+    public function getPropertiesAttribute(): Collection
+    {
+        return collect(config('role.properties'))->flip()
+            ->transform(function ($value, $key) {
+                $value = $this->permissions->pluck('name')->contains($key);
+                return $value;
+            });
     }
 
     public function getModulesPrivilegesAttribute()
     {
-        return $this->privileges->toString('module', 'privilege');
+        return collect()->wrap($this->privileges)->toString('module', 'privilege');
     }
 
     public static function administrator()

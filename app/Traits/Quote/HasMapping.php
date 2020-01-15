@@ -180,6 +180,16 @@ trait HasMapping
                             [$mapping->importable_column_id]
                         );
                         break;
+                    case 'qty':
+                        $query->selectRaw(
+                            "max(if(`imported_columns`.`importable_column_id` = ?,
+                                    greatest(cast(`imported_columns`.`value` as unsigned), 1),
+                                    null
+                                )
+                            ) as {$mapping->templateField->name}",
+                            [$mapping->importable_column_id]
+                        );
+                        break;
                     default:
                         $query->selectRaw(
                             "max(if(`imported_columns`.`importable_column_id` = ?,

@@ -5,11 +5,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class QuoteResource extends JsonResource
 {
     /**
-     * @var array
-     */
-    public $prepend = [];
-
-    /**
      * Transform the resource into an array.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -17,14 +12,17 @@ class QuoteResource extends JsonResource
      */
     public function toArray($request)
     {
-        return array_merge($this->prepend, [
-            'pdf_file' => $this->when(($this->generatedPdf->original_file_path && $this->customer->rfq), function () {
+        $this->loadMissing('quoteFiles');
+        $this->customer->loadMissing('addresses', 'contacts');
+
+        return [
+            'pdf_file' => $this->when($this->customer->rfq, function () {
                 return route('s4.pdf', ['rfq' => $this->customer->rfq]);
             }),
-            'price_list_file' => $this->when(($this->priceList->original_file_path && $this->customer->rfq), function () {
+            'price_list_file' => $this->when($this->resolveQuoteFile(QFT_PL)->original_file_path && $this->customer->rfq, function () {
                 return route('s4.price', ['rfq' => $this->customer->rfq]);
             }),
-            'payment_schedule_file' => $this->when(($this->paymentSchedule->original_file_path && $this->customer->rfq), function () {
+            'payment_schedule_file' => $this->when($this->resolveQuoteFile(QFT_PS)->original_file_path && $this->customer->rfq, function () {
                 return route('s4.schedule', ['rfq' => $this->customer->rfq]);
             }),
             'quote_data' => [
@@ -82,12 +80,6 @@ class QuoteResource extends JsonResource
                     ];
                 })
             ]
-        ]);
-    }
-
-    public function prepend(array $prepend)
-    {
-        $this->prepend = $prepend;
-        return $this;
+        ];
     }
 }

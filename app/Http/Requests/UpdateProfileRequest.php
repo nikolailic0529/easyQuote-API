@@ -57,7 +57,8 @@ class UpdateProfileRequest extends FormRequest
                 'different:current_password',
                 'confirmed'
             ],
-            'default_route' => 'nullable|string|max:200'
+            'default_route' => 'nullable|string|max:200',
+            'recent_notifications_limit' => 'integer|min:1|max:30'
         ];
     }
 

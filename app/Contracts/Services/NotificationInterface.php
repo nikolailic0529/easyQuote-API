@@ -79,4 +79,11 @@ interface NotificationInterface
      * @return \App\Models\System\Notification
      */
     public function store(): Notification;
+
+    /**
+     * Dispatch notification storing in queue.
+     *
+     * @return void
+     */
+    public function queue(): void;
 }

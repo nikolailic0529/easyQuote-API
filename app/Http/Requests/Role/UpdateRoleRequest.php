@@ -1,39 +1,10 @@
 <?php namespace App\Http\Requests\Role;
 
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Str;
 
-class UpdateRoleRequest extends FormRequest
+class UpdateRoleRequest extends Request
 {
-    /**
-     * Available Privileges
-     *
-     * @var array
-     */
-    protected $privileges;
-
-    /**
-     * Privileges Mapping with specified Modules.
-     *
-     * @var \Illuminate\Support\Collection
-     */
-    protected $privilegesMapping;
-
-    /**
-     * Available Modules
-     *
-     * @var array
-     */
-    protected $modules;
-
-    public function __construct()
-    {
-        $this->privileges = collect(config('role.privileges'))->toArray();
-        $this->privilegesMapping = collect(config('role.modules'))->eachKeys();
-        $this->modules = $this->privilegesMapping->keys()->toArray();
-    }
-
     /**
      * Get the validation rules that apply to the request.
      *
@@ -53,23 +24,21 @@ class UpdateRoleRequest extends FormRequest
             'privileges.*.module' => [
                 'required',
                 'string',
-                Rule::in($this->modules)
+                Rule::in(static::$modules)
             ],
             'privileges.*.privilege' => [
                 'required',
                 'string',
-                function ($attribute, $value, $fail) {
-                    $moduleAttrubute = Str::before($attribute, '.privilege') . '.module';
-                    $module = $this->input($moduleAttrubute);
-
-                    $modulePrivileges = $this->privilegesMapping->get($module, []);
-                    $message = "The privilege for `{$module}` module must be " . collect($modulePrivileges)->implodeWithWrap(' or ', '`');
-
-                    if (!isset(array_flip($modulePrivileges)[$value])) {
-                        $fail($message);
-                    }
-                }
-            ]
+                $this->privilegeRule()
+            ],
+            'properties' => 'array',
+            'properties.*' => 'required|array',
+            'properties.*.key' => [
+                'required',
+                'string',
+                Rule::in(static::$properties)
+            ],
+            'properties.*.value' => 'required|boolean'
         ];
     }
 }
