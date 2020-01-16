@@ -12,9 +12,9 @@ class CompleteInvitationRequest extends FormRequest
     public function rules()
     {
         return [
-            'first_name' => 'required|string|alpha',
-            'middle_name' => 'nullable|string|alpha',
-            'last_name' => 'required|string|alpha',
+            'first_name' => 'required|string|alpha_spaces',
+            'middle_name' => 'nullable|string|alpha_spaces',
+            'last_name' => 'required|string|alpha_spaces',
             'password' => 'required|string|min:6|confirmed',
             'phone' => 'nullable|string|min:4|phone',
             'timezone_id' => 'required|string|size:36|exists:timezones,id'

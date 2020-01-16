@@ -33,7 +33,6 @@ use App\Traits\{
     Quote\HasMapping,
     Quote\HasCustomDiscountAttribute,
     Quote\HasGroupDescriptionAttribute,
-    Quote\HasSubmittedDataAttribute,
     Quote\HasAdditionalHtmlAttributes,
     QuoteTemplate\BelongsToQuoteTemplate,
     CachesRelations\CachesRelations,
@@ -43,6 +42,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
 use Carbon\Carbon;
 use Arr, Str;
+use Illuminate\Support\Traits\Tappable;
 
 abstract class BaseQuote extends BaseModel implements HasOrderedScope, ActivatableInterface
 {
@@ -65,12 +65,12 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
         HasMapping,
         HasCustomDiscountAttribute,
         HasGroupDescriptionAttribute,
-        HasSubmittedDataAttribute,
         LogsActivity,
         CachesRelations,
         HasAdditionalHtmlAttributes,
         Reviewable,
-        Completable;
+        Completable,
+        Tappable;
 
     protected $connection = 'mysql';
 
@@ -201,10 +201,10 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
     public function toSearchArray()
     {
         return [
-            'customer' => Arr::except($this->customer->toArray(), 'service_levels'),
-            'company' => $this->company->toArray(),
-            'vendor' => $this->vendor->toArray(),
-            'user' => $this->user->toArray()
+            'customer' => optional($this->customer)->toArray(),
+            'company' => optional($this->company)->toSearchArray(),
+            'vendor' => optional($this->vendor)->toSearchArray(),
+            'user' => optional($this->user)->toSearchArray()
         ];
     }
 

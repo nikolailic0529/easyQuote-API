@@ -33,7 +33,7 @@ class QuoteObserver
             slack()
                 ->title('Quote Submission')
                 ->url(ui_route('quotes.drafted.review', compact('quote')))
-                ->status([QSF_01, 'Quote RFQ' => $quote->rfqNumber, 'Reason' => QSE_01, 'Caused By' => optional(request()->user())->fullname])
+                ->status([QSF_01, 'Quote RFQ' => $quote->rfq_number, 'Reason' => QSE_01, 'Caused By' => optional(request()->user())->fullname])
                 ->image(assetExternal(SN_IMG_QSF))
                 ->send();
 

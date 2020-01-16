@@ -5,6 +5,7 @@ namespace App\Console\Commands\Notifications;
 use Illuminate\Console\Command;
 use App\Contracts\Repositories\UserRepositoryInterface as User;
 use App\Models\User as UserModel;
+use App\Notifications\PasswordExpiration as PasswordExpirationNotification;
 use Illuminate\Database\Eloquent\Builder;
 use Closure;
 
@@ -56,8 +57,9 @@ class PasswordExpiration extends Command
 
     protected function serveUser(UserModel $user): void
     {
-        $expiresInDays = ENF_PWD_CHANGE_DAYS - optional($user->password_changed_at)->diffInDays(now());
-        $expires_at = now()->addDays($expiresInDays)->format('d M');
+        $expiresInDays = ENF_PWD_CHANGE_DAYS - optional($user->password_changed_at)->diffInDays(now()->startOfDay());
+        $expirationDate = now()->startOfDay()->addDays($expiresInDays);
+        $expires_at = $expirationDate->format('d M Y');
 
         notification()
             ->for($user)
@@ -66,6 +68,8 @@ class PasswordExpiration extends Command
             ->url(ui_route('users.profile'))
             ->priority(3)
             ->store();
+
+        $user->notify(new PasswordExpirationNotification($expirationDate));
     }
 
     protected function scope(): Closure

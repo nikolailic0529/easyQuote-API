@@ -21,6 +21,14 @@ class SearchObserver
             return;
         }
 
+        if ($model->exists && !$model->wasChanged()) {
+            return;
+        }
+
+        if ($model->reindexDisabled()) {
+            return;
+        }
+
         rescue(function () use ($model) {
             $this->elasticsearch->index([
                 'index' => $model->getSearchIndex(),

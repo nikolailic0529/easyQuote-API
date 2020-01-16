@@ -156,6 +156,13 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         return $this->quoteService->export($quote->usingVersion);
     }
 
+    public function exportPdf($quote)
+    {
+        $quote = $this->resolveModel($quote);
+
+        return $this->quoteService->export($quote->usingVersion);
+    }
+
     public function delete(string $id)
     {
         return $this->find($id)->delete();

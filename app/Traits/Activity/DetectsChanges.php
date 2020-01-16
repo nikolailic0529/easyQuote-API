@@ -9,6 +9,7 @@ use Spatie\Activitylog\Exceptions\CouldNotLogChanges;
 
 trait DetectsChanges
 {
+    /** @var array */
     protected $oldAttributes = [];
 
     protected static function bootDetectsChanges()

@@ -96,16 +96,16 @@ class ReindexCommand extends Command
 
             $bar = $this->output->createProgressBar($model::count());
 
-            $model::chunk(500, function ($chunk) use ($bar) {
-                foreach ($chunk as $entry) {
-                    $this->elasticsearch->index([
-                        'index' => $entry->getSearchIndex(),
-                        'id' => $entry->getKey(),
-                        'body' => $entry->toSearchArray(),
-                    ]);
+            $model::cursor()->each(function ($entry) use ($bar) {
+                $this->elasticsearch->index([
+                    'index' => $entry->getSearchIndex(),
+                    'id' => $entry->getKey(),
+                    'body' => $entry->toSearchArray(),
+                ]);
 
-                    $bar->advance();
-                }
+                unset($entry);
+
+                $bar->advance();
             });
 
             $bar->finish();

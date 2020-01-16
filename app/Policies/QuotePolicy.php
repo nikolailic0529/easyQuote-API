@@ -126,10 +126,11 @@ class QuotePolicy
      * Determine whether the user can download the generated quote pdf.
      *
      * @param User $user
+     * @param Quote $quote
      * @return mixed
      */
-    public function download_pdf(User $user)
+    public function download_pdf(User $user, Quote $quote)
     {
-        return $user->can('download_quote_pdf');
+        return $user->can('download_quote_pdf') && $this->view($user, $quote);
     }
 }

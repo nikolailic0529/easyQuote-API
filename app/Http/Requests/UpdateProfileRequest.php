@@ -28,9 +28,9 @@ class UpdateProfileRequest extends FormRequest
     public function rules()
     {
         return [
-            'first_name' => 'string|min:2|alpha',
-            'middle_name' => 'nullable|string|alpha',
-            'last_name' => 'string|min:2|alpha',
+            'first_name' => 'string|min:2|alpha_spaces',
+            'middle_name' => 'nullable|string|alpha_spaces',
+            'last_name' => 'string|min:2|alpha_spaces',
             'email' => [
                 'string',
                 'email',

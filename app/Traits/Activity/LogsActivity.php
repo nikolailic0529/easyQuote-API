@@ -52,7 +52,7 @@ trait LogsActivity
                     return;
                 }
 
-                $logger->queue($description);
+                $logger->log($description);
             });
         });
     }
@@ -67,14 +67,14 @@ trait LogsActivity
         return empty($attrs['attributes'] ?? []) && empty($attrs['old'] ?? []);
     }
 
-    public function disableLogging()
+    public function disableLogging(): self
     {
         $this->enableLoggingModelsEvents = false;
 
         return $this;
     }
 
-    public function enableLogging()
+    public function enableLogging(): self
     {
         $this->enableLoggingModelsEvents = true;
 

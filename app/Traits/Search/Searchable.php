@@ -6,11 +6,38 @@ use App\Observers\SearchObserver;
 
 trait Searchable
 {
+    /** @var boolean */
+    protected $reindexEnabled = true;
+
     public static function bootSearchable()
     {
         if (config('services.search.enabled')) {
             static::observe(SearchObserver::class);
         }
+    }
+
+    public function disableReindex(): self
+    {
+        $this->reindexEnabled = false;
+
+        return $this;
+    }
+
+    public function enableReindex(): self
+    {
+        $this->reindexEnabled = true;
+
+        return $this;
+    }
+
+    public function reindexEnabled(): bool
+    {
+        return $this->reindexEnabled === true;
+    }
+
+    public function reindexDisabled(): bool
+    {
+        return $this->reindexEnabled === false;
     }
 
     public function getSearchIndex()

@@ -2,12 +2,7 @@
 
 namespace App\Providers;
 
-use App\Listeners\LogSentMessage;
-use Illuminate\Support\Facades\Event;
-use Illuminate\Auth\Events\Registered;
-use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
-use Illuminate\Mail\Events\MessageSent;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -17,18 +12,24 @@ class EventServiceProvider extends ServiceProvider
      * @var array
      */
     protected $listen = [
-        Registered::class => [
-            SendEmailVerificationNotification::class,
+        \Illuminate\Auth\Events\Registered::class => [
+            \Illuminate\Auth\Listeners\SendEmailVerificationNotification::class,
         ],
-        MessageSent::class => [
-            LogSentMessage::class
+        \Illuminate\Mail\Events\MessageSent::class => [
+            \App\Listeners\LogSentMessage::class
         ],
         \App\Events\RfqReceived::class => [
             \App\Listeners\RfqReceivedListener::class
-        ],
-        'eloquent.deleted: *' => [
-            \App\Listeners\EloquentDeletedListener::class
         ]
+    ];
+
+    /**
+     * The subscriber classes to register.
+     *
+     * @var array
+     */
+    protected $subscribe = [
+        \App\Listeners\EloquentEventSubscriber::class
     ];
 
     /**

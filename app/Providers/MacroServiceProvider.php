@@ -45,5 +45,9 @@ class MacroServiceProvider extends ServiceProvider
         Validator::extend('phone', function ($attribute, $value, $parameters) {
             return preg_match('/\+?[\d]+/', $value);
         }, 'Phone must contain only digits.');
+
+        Validator::extend('alpha_spaces', function ($attribute, $value, $parameters) {
+            return preg_match('/^[\pL\s]+$/', $value);
+        }, 'The :attribute may only contain letters and spaces.');
     }
 }

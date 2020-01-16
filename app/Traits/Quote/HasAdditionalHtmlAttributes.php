@@ -4,13 +4,16 @@ namespace App\Traits\Quote;
 
 trait HasAdditionalHtmlAttributes
 {
+    protected static function bootHasAdditionalHtmlAttributes()
+    {
+        if (property_exists(static::class, 'logAttributes')) {
+            static::$logAttributes = array_merge(static::$logAttributes, ['additional_notes:additional_notes_text', 'additional_details:additional_details_text']);
+        }
+    }
+
     public function initializeHasAdditionalHtmlAttributes()
     {
         $this->fillable = array_merge($this->fillable, ['additional_notes', 'additional_details']);
-
-        if (property_exists($this, 'logAttributes')) {
-            static::$logAttributes = array_merge(static::$logAttributes, ['additional_notes:additional_notes_text', 'additional_details:additional_details_text']);
-        }
     }
 
     public function getAdditionalNotesTextAttribute()

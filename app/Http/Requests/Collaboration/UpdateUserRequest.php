@@ -23,9 +23,9 @@ class UpdateUserRequest extends FormRequest
     public function rules()
     {
         return [
-            'first_name' => 'string|alpha',
-            'middle_name' => 'nullable|string|alpha',
-            'last_name' => 'string|alpha',
+            'first_name' => 'string|alpha_spaces',
+            'middle_name' => 'nullable|string|alpha_spaces',
+            'last_name' => 'string|alpha_spaces',
             'email' => [
                 'string',
                 'email',

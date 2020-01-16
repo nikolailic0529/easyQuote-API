@@ -12,17 +12,15 @@ trait Submittable
         $this->observables = array_merge($this->observables, ['submitting', 'unsubmitting', 'submitted', 'unsubmitted']);
     }
 
-    public function submit(?array $submitted_data = null): bool
+    public function submit(): bool
     {
         $this->fireModelEvent('submitting');
 
-        $fill = ['submitted_at' => now()->toDateTimeString()];
-
-        if (filled($submitted_data)) {
-            data_fill($fill, 'submitted_data', $submitted_data);
+        if ($this->exists && !is_null($this->submitted_at)) {
+            return true;
         }
 
-        $pass = $this->forceFill($fill)->save();
+        $pass = $this->forceFill(['submitted_at' => now()])->save();
 
         $this->fireModelEvent('submitted', false);
 
@@ -33,13 +31,11 @@ trait Submittable
     {
         $this->fireModelEvent('unsubmitting');
 
-        $attributes = ['submitted_at' => null];
-
-        if (Arr::has($this->getAttributes(), 'submitted_data')) {
-            data_set($attributes, 'submitted_data', null);
+        if (is_null($this->submitted_at)) {
+            return true;
         }
 
-        $pass = $this->forceFill($attributes)->save();
+        $pass = $this->forceFill(['submitted_at' => null])->save();
 
         $this->fireModelEvent('unsubmitted');
 

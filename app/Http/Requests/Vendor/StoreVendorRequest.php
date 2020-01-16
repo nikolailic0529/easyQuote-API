@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Vendor;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreVendorRequest extends FormRequest
 {
@@ -32,7 +33,8 @@ class StoreVendorRequest extends FormRequest
             'short_code' => [
                 'required',
                 'string',
-                'min:2'
+                'min:2',
+                Rule::unique('vendors')->whereNull('deleted_at')
             ],
             'logo' => [
                 'image',

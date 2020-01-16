@@ -111,15 +111,15 @@ class QuoteSubmittedController extends Controller
     }
 
     /**
-     * Retrieve if exists Generated PDF file by RFQ number.
+     * Export a specified Quote as PDF.
      *
-     * @param string $rfq
+     * @param Quote $submitted
      * @return \Illuminate\Http\Response
      */
-    public function pdf(string $rfq)
+    public function pdf(Quote $submitted)
     {
-        $this->authorize('download_pdf', Quote::class);
+        $this->authorize('download_pdf', $submitted);
 
-        return $this->quote->pdf($rfq);
+        return $this->quote->exportPdf($submitted);
     }
 }

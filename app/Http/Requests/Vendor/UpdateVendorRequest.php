@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Vendor;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateVendorRequest extends FormRequest
 {
@@ -30,7 +31,8 @@ class UpdateVendorRequest extends FormRequest
             ],
             'short_code' => [
                 'string',
-                'min:2'
+                'min:2',
+                Rule::unique('vendors')->whereNull('deleted_at')
             ],
             'logo' => [
                 'image',

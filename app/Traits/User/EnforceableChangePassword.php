@@ -14,19 +14,20 @@ trait EnforceableChangePassword
         $this->fillable = array_merge($this->fillable, ['password_changed_at']);
 
         static::creating(function (Model $model) {
-            $model->password_changed_at = now();
+            $model->password_changed_at = now()->startOfDay();
         });
 
         static::updating(function (Model $model) {
             if ($model->isDirty('password')) {
-                $model->password_changed_at = now();
+                $model->password_changed_at = now()->startOfDay();
             }
         });
     }
 
     public function mustChangePassword(): bool
     {
-        return is_null($this->password_changed_at) || now()->diffInDays($this->password_changed_at) >= 90;
+        return is_null($this->password_changed_at) ||
+            now()->startOfDay()->diffInDays($this->password_changed_at) >= ENF_PWD_CHANGE_DAYS;
     }
 
     public function getMustChangePasswordAttribute(): bool

@@ -98,7 +98,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
             $state = $request->validatedData();
             $quoteData = $request->validatedQuoteData();
 
-            $version->fill($quoteData);
+            $version->fill($quoteData)->save();
 
             $this->draftOrSubmit($state, $quote);
 
@@ -118,6 +118,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
             /**
              * We are always returning original Quote Id regardless of the versions.
              */
+
             return ['id' => $version->parent_id];
         }, 3);
     }
@@ -317,7 +318,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
          *
          */
 
-        if ($quote->exists && $quote->usingVersion->user_id !== request()->user()->id) {
+        if ($quote->exists && $quote->usingVersion->user_id !== auth()->id()) {
             $replicatedVersion = $this->replicateVersion($quote, $quote->usingVersion);
 
             $quote->attachNewVersion($replicatedVersion);
@@ -551,7 +552,14 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         }
 
         if ($state->get('save')) {
-            $quote->submit();
+            tap($quote->disableReindex()->disableLogging())
+                ->submit()->enableReindex()->enableLogging();
+
+            activity()
+                ->on($quote)
+                ->withAttribute('submitted_at', $quote->submitted_at, null)
+                ->queue('updated');
+
             optional($quote->customer)->submit();
         }
     }

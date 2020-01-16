@@ -90,6 +90,14 @@ interface QuoteSubmittedRepositoryInterface
     public function pdf(string $rfq);
 
     /**
+     * Export a specified Quote as PDF.
+     *
+     * @param \App\Models\Quote|string $quote
+     * @return void
+     */
+    public function exportPdf($quote);
+
+    /**
      * Delete Submitted Quote.
      *
      * @param string $id
