@@ -46,28 +46,42 @@ class RolesUpdate extends Command
         activity()->disableLogging();
 
         \DB::transaction(function () {
-            $roles = json_decode(file_get_contents(database_path('seeds/models/roles.json')), true);
-
-            collect($roles)->each(function ($attributes) {
-                $role = Role::whereName($attributes['name'])->firstOrFail();
-
-                $privileges = collect($attributes['privileges'])->transform(function ($privilege, $module) {
-                    return compact('module', 'privilege');
-                });
-
-                $role->fill(compact('privileges'))->save();
-
-                $permissions = collect($attributes['permissions'])->map(function ($name) {
-                    $this->output->write('.');
-                    return Permission::where('name', $name)->firstOrCreate(compact('name'));
-                });
-
-                $role->syncPermissions($permissions)->save();
-            });
+            $this->updateSystemRoles();
+            $this->updateNonSystemRoles();
         });
 
         activity()->enableLogging();
 
         $this->info("\nSystem Defined Roles were updated!");
+    }
+
+    protected function updateSystemRoles()
+    {
+        $roles = json_decode(file_get_contents(database_path('seeds/models/roles.json')), true);
+
+        collect($roles)->each(function ($attributes) {
+            $role = Role::whereName($attributes['name'])->firstOrFail();
+
+            $privileges = collect($attributes['privileges'])->transform(function ($privilege, $module) {
+                return compact('module', 'privilege');
+            });
+
+            $role->fill(compact('privileges'))->save();
+
+            $permissions = collect($attributes['permissions'])->map(function ($name) {
+                $this->output->write('.');
+                return Permission::where('name', $name)->firstOrCreate(compact('name'));
+            });
+
+            $role->syncPermissions($permissions)->save();
+        });
+    }
+
+    protected function updateNonSystemRoles()
+    {
+        app('role.repository')->allNonSystem()
+            ->each(function ($role) {
+                $role->syncPrivileges();
+            });
     }
 }

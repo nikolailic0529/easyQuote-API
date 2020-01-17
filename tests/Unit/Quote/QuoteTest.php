@@ -88,6 +88,26 @@ class QuoteTest extends TestCase
         $this->assertNull($this->quote->submitted_at);
     }
 
+    /**
+     * Test Copying Submitted Quote.
+     *
+     * @return void
+     */
+    public function testSubmittedQuoteCopying()
+    {
+        $this->quote->submit();
+
+        $response = $this->putJson(url("api/quotes/submitted/copy/{$this->quote->id}"), [], $this->authorizationHeader);
+
+        $response->assertOk()
+            ->assertExactJson([true]);
+
+        $this->quote->refresh();
+
+        // The copied original Quote should be deactivated after copying.
+        $this->assertNull($this->quote->activated_at);
+    }
+
 
     /**
      * Test creating Group Description with valid attributes.

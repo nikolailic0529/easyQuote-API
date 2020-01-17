@@ -43,6 +43,11 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
         return $this->userQuery()->activated()->get($columns);
     }
 
+    public function allNonSystem(array $columns = ['*']): IlluminateCollection
+    {
+        return $this->role->query()->where('is_system', false)->get($columns);
+    }
+
     public function userQuery(): Builder
     {
         return $this->role->query();

@@ -13,7 +13,7 @@ class QuoteSubmittedController extends Controller
     public function __construct(QuoteRepository $quote)
     {
         $this->quote = $quote;
-        // $this->authorizeResource(Quote::class, 'submitted');
+        $this->authorizeResource(Quote::class, 'submitted');
     }
 
     /**

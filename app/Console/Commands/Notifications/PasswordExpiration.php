@@ -78,7 +78,10 @@ class PasswordExpiration extends Command
             $beforeDays = ENF_PWD_CHANGE_DAYS - setting('password_expiry_notification');
 
             $query->whereNull('password_changed_at')
-                ->orWhereRaw('datediff(now(), `password_changed_at`) >= ?', [$beforeDays]);
+                ->orWhere(function (Builder $query) use ($beforeDays) {
+                    $query->whereRaw('datediff(now(), `password_changed_at`) >= ?', [$beforeDays])
+                        ->whereRaw('datediff(now(), `password_changed_at`) < ?', ENF_PWD_CHANGE_DAYS);
+                });
         };
     }
 }

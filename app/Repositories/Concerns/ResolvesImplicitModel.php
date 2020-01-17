@@ -2,8 +2,6 @@
 
 namespace App\Repositories\Concerns;
 
-use Illuminate\Database\Eloquent\Model;
-
 trait ResolvesImplicitModel
 {
     protected function resolveModel($model)
@@ -14,7 +12,9 @@ trait ResolvesImplicitModel
 
         $class = $this->model();
 
-        throw_unless($model instanceof $class, new \InvalidArgumentException(INV_ARG_NPK_01));
+        throw_unless($model instanceof $class, new \InvalidArgumentException(
+            sprintf(INV_ARG_SC_01, __METHOD__, $class)
+        ));
 
         return $model;
     }

@@ -40,16 +40,18 @@ return [
         ],
         'Quotes' => [
             'Read Only' => [
-                'view_own_quotes'
+                'view_own_quotes', 'view_quote_files'
             ],
             'Read & Write' => [
                 'view_own_quotes',
+                'view_quote_files',
                 'create_quotes', 'update_own_quotes',
                 'create_quote_files', 'update_quote_files', 'handle_quote_files',
             ],
             'Read, Write and Delete' => [
                 'view_own_quotes',
                 'create_quotes', 'update_own_quotes', 'delete_own_quotes',
+                'view_quote_files',
                 'create_quote_files', 'update_quote_files', 'handle_quote_files',
                 'delete_quote_files'
             ]

@@ -2,26 +2,21 @@
 
 namespace App\Traits\User;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Observers\PasswordObserver;
 
 trait EnforceableChangePassword
 {
     protected $oldPassword;
 
+    protected static function bootEnforceableChangePassword()
+    {
+        static::observe(PasswordObserver::class);
+    }
+
     protected function initializeEnforceableChangePassword()
     {
         $this->casts = array_merge($this->casts, ['password_changed_at' => 'datetime']);
         $this->fillable = array_merge($this->fillable, ['password_changed_at']);
-
-        static::creating(function (Model $model) {
-            $model->password_changed_at = now()->startOfDay();
-        });
-
-        static::updating(function (Model $model) {
-            if ($model->isDirty('password')) {
-                $model->password_changed_at = now()->startOfDay();
-            }
-        });
     }
 
     public function mustChangePassword(): bool

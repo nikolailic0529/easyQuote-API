@@ -10,6 +10,16 @@ if (!function_exists('error_response')) {
     }
 }
 
+if (!function_exists('error_response_s4')) {
+    function error_response_s4(string $constant, string $code, int $status)
+    {
+        return response()->json([
+            'ErrorCode' => $code,
+            'ErrorDetails' => $constant
+        ], $status);
+    }
+}
+
 if (!function_exists('error_abort')) {
     function error_abort(string $constant, string $code, int $status)
     {

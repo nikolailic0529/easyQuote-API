@@ -201,7 +201,7 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
     public function toSearchArray()
     {
         return [
-            'customer' => optional($this->customer)->toArray(),
+            'customer' => optional($this->customer)->toSearchArray(),
             'company' => optional($this->company)->toSearchArray(),
             'vendor' => optional($this->vendor)->toSearchArray(),
             'user' => optional($this->user)->toSearchArray()

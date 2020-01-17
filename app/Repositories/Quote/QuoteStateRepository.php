@@ -552,8 +552,11 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         }
 
         if ($state->get('save')) {
-            tap($quote->disableReindex()->disableLogging())
-                ->submit()->enableReindex()->enableLogging();
+            $quote->disableReindex()
+                ->disableLogging()
+                ->tap()->submit()
+                ->enableReindex()
+                ->enableLogging();
 
             activity()
                 ->on($quote)
@@ -568,11 +571,11 @@ class QuoteStateRepository implements QuoteRepositoryInterface
     {
         if (blank($selectedRowsIds = data_get($state, 'quote_data.selected_rows', [])) && blank(data_get($state, 'quote_data.selected_rows_is_rejected'))) {
             return;
-        };
+        }
 
         if (data_get($state, 'quote_data.selected_rows_is_rejected', false)) {
             $reject = true;
-        };
+        }
 
         $updatableScope = $reject ? 'whereNotIn' : 'whereIn';
 

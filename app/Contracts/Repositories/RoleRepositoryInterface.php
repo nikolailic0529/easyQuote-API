@@ -34,6 +34,14 @@ interface RoleRepositoryInterface
     public function allActivated(array $columns = ['*']): IlluminateCollection;
 
     /**
+     * Retrieve all non-system roles.
+     *
+     * @param array $columns
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function allNonSystem(array $columns = ['*']): IlluminateCollection;
+
+    /**
      * Search over Collaboration Roles.
      *
      * @param string $query

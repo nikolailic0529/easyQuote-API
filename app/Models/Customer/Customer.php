@@ -185,6 +185,17 @@ class Customer extends BaseModel
         return "Customer ({$this->rfq})";
     }
 
+    public function toSearchArray()
+    {
+        return [
+            'name' => $this->name,
+            'rfq' => $this->rfq,
+            'valid_until' => $this->valid_until_date,
+            'support_start' => $this->support_start_date,
+            'support_end' => $this->support_end_date
+        ];
+    }
+
     public function toCacheableArray()
     {
         return [
