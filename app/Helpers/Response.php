@@ -1,37 +1,24 @@
 <?php
 
 if (!function_exists('error_response')) {
-    function error_response(string $constant, string $code, int $status)
+    function error_response(string $details, string $code, int $status)
     {
-        return response()->json([
-            'message' => $constant,
-            'error_code' => $code
-        ], $status);
-    }
-}
-
-if (!function_exists('error_response_s4')) {
-    function error_response_s4(string $constant, string $code, int $status)
-    {
-        return response()->json([
-            'ErrorCode' => $code,
-            'ErrorDetails' => $constant
-        ], $status);
+        return app('response.service')->make(...func_get_args());
     }
 }
 
 if (!function_exists('error_abort')) {
-    function error_abort(string $constant, string $code, int $status)
+    function error_abort(string $details, string $code, int $status)
     {
-        abort(error_response($constant, $code, $status));
+        abort(error_response($details, $code, $status));
     }
 }
 
 if (!function_exists('error_abort_if')) {
-    function error_abort_if($boolean, $constant, $code, $status)
+    function error_abort_if($boolean, $details, $code, $status)
     {
         if ($boolean) {
-            error_abort($constant, $code, $status);
+            error_abort($details, $code, $status);
         }
     }
 }

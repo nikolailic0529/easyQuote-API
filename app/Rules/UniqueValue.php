@@ -37,6 +37,7 @@ class UniqueValue implements Rule
             ->when($this->ignore, function ($query) {
                 $query->where('id', '!=', $this->ignore);
             })
+            ->where('name', request('name'))
             ->where('vendor_id', request('vendor_id'))
             ->where('country_id', request('country_id'))
             ->where('value', $value)

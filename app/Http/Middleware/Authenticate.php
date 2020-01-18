@@ -15,7 +15,7 @@ class Authenticate extends Middleware
     protected function redirectTo($request)
     {
         if (!$request->expectsJson()) {
-            abort(401, UA_01);
+            abort(401, EQ_UA_01);
         }
     }
 
@@ -30,6 +30,6 @@ class Authenticate extends Middleware
      */
     protected function unauthenticated($request, array $guards)
     {
-        error_abort(UA_01, 'UA_01',  401);
+        error_abort(EQ_UA_01, 'EQ_UA_01',  401);
     }
 }

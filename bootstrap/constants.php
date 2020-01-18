@@ -133,8 +133,10 @@ define('INV_ARG_NPK_01', 'Argument 1 must be a primary key or an instance of \Ap
 define('INV_ARG_SC_01', 'Argument 1 passed to %s() method must be a string or instance of %s.');
 define('INV_ARG_UPK_01', 'Argument 2 must be a primary key or an instance of \App\Models\User');
 define('INV_ARG_SA_01', 'Argument 1 must be a string or an array.');
-define('UA_01', 'Unauthenticated Request.');
-define('INVDP_01', 'Invalid Data Provided.');
+define('EQ_UA_01', 'Unauthenticated Request.');
+define('EQ_INV_DP_01', 'Invalid Data Provided.');
+define('EQ_INV_REQ_01', 'Invalid Request.');
+define('EQ_SE_01', 'Server Error.');
 define('UNE_01', 'Unknown Error.');
 define('MLFQ_01', 'Malformed request.');
 define('FFTC_01', 'Failed when flushing Eloquent tagged cache.');

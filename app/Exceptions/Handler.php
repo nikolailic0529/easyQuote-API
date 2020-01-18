@@ -101,37 +101,11 @@ class Handler extends ExceptionHandler
      */
     protected function invalidJson($request, ValidationException $exception)
     {
-        report_logger(['ErrorCode' => 'INVDP_01'], $exception->errors());
-
-        if ($request->is('api/s4/*')) {
-            return $this->invalidJsonForS4($request, $exception);
-        }
+        report_logger(['ErrorCode' => 'EQ_INV_DP_01'], $exception->errors());
 
         return response()->json([
             'message' => optional($exception->validator->errors())->first(),
             'errors' => $exception->errors(),
-        ], $exception->status);
-    }
-
-
-    /**
-     * Convert a validation exception into a JSON response for S4 service.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Illuminate\Validation\ValidationException  $exception
-     * @return \Illuminate\Http\JsonResponse
-     */
-    protected function invalidJsonForS4($request, ValidationException $exception)
-    {
-        return response()->json([
-            'ErrorUrl' => $request->fullUrl(),
-            'ErrorCode' => 'INVDP_01',
-            'Error' => [
-                'headers' => [],
-                'original' => $exception->errors(),
-                'exception' => null
-            ],
-            'ErrorDetails' => INVDP_01
         ], $exception->status);
     }
 

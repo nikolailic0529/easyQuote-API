@@ -14,6 +14,7 @@ use App\Contracts\{
     Services\SlackInterface,
     Services\NotificationInterface,
     Services\UIServiceInterface,
+    Services\ResponseInterface,
     Repositories\TimezoneRepositoryInterface,
     Repositories\CountryRepositoryInterface,
     Repositories\UserRepositoryInterface,
@@ -90,6 +91,7 @@ use App\Services\{
     QuoteService,
     PdfParser\PdfParser,
     ReportLogger,
+    Response,
     SlackClient,
     UIService
 };
@@ -97,6 +99,8 @@ use Elasticsearch\{
     Client as ElasticsearchClient,
     ClientBuilder as ElasticsearchBuilder
 };
+use Illuminate\Contracts\Debug\ExceptionHandler;
+use App\Exceptions\HandlerS4;
 use Schema;
 
 class AppServiceProvider extends ServiceProvider
@@ -140,7 +144,8 @@ class AppServiceProvider extends ServiceProvider
         AuthServiceInterface::class => AuthService::class,
         ReportLoggerInterface::class => ReportLogger::class,
         NotificationRepositoryInterface::class => NotificationRepository::class,
-        UIServiceInterface::class => UIService::class
+        UIServiceInterface::class => UIService::class,
+        ResponseInterface::class => Response::class
     ];
 
     public $bindings = [
@@ -175,7 +180,8 @@ class AppServiceProvider extends ServiceProvider
         SystemSettingRepositoryInterface::class => 'setting.repository',
         NotificationRepositoryInterface::class => 'notification.repository',
         NotificationInterface::class => 'notification.storage',
-        UIServiceInterface::class => 'ui.service'
+        UIServiceInterface::class => 'ui.service',
+        ResponseInterface::class => 'response.service'
     ];
 
     /**
@@ -189,6 +195,10 @@ class AppServiceProvider extends ServiceProvider
             foreach ($this->aliases as $key => $value) {
                 $this->app->alias($key, $value);
             }
+        }
+
+        if (request()->is('api/s4/*')) {
+            $this->app->bind(ExceptionHandler::class, HandlerS4::class);
         }
 
         $this->app->instance('path.storage', config('filesystems.disks.local.path'));

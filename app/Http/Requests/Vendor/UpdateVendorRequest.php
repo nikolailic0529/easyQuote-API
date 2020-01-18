@@ -32,7 +32,7 @@ class UpdateVendorRequest extends FormRequest
             'short_code' => [
                 'string',
                 'min:2',
-                Rule::unique('vendors')->whereNull('deleted_at')
+                Rule::unique('vendors')->whereNull('deleted_at')->ignore($this->vendor)
             ],
             'logo' => [
                 'image',

@@ -21,6 +21,7 @@ class UserRepositoryResource extends JsonResource
             'middle_name' => $this->middle_name,
             'last_name' => $this->last_name,
             'role_name' => $this->role_name,
+            'already_logged_in' => (bool) $this->already_logged_in,
             'activated_at' => $this->activated_at
         ];
     }
