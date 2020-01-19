@@ -6,17 +6,23 @@ use App\Contracts\Services\ResponseInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class Response implements ResponseInterface
 {
+    protected $invalidRequestExceptions = [
+        \Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class,
+        \Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException::class
+    ];
+
     public function isS4(): bool
     {
         return app('request')->is('api/s4/*');
     }
 
-    public function make(string $details, string $code, int $status): JsonResponse
+    public function makeErrorResponse(string $details, string $code, int $status): JsonResponse
     {
-        $data = $this->prepareData($details, $code);
+        $data = $this->errorToArray($details, $code);
 
         return new JsonResponse($data, $status);
     }
@@ -35,9 +41,14 @@ class Response implements ResponseInterface
         ], $e->status);
     }
 
-    public function prepareData(string $details, string $code): array
+    public function isInvalidRequestException(Throwable $exception): bool
     {
-        if ($this->isS4()) {
+        return isset(array_flip($this->invalidRequestExceptions)[get_class($exception)]);
+    }
+
+    public function errorToArray(string $details, string $code, bool $s4Format = false): array
+    {
+        if ($s4Format || $this->isS4()) {
             return [
                 'ErrorCode' => $code,
                 'ErrorDetails' => $details

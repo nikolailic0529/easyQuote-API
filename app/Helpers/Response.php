@@ -3,7 +3,7 @@
 if (!function_exists('error_response')) {
     function error_response(string $details, string $code, int $status)
     {
-        return app('response.service')->make(...func_get_args());
+        return app('response.service')->makeErrorResponse(...func_get_args());
     }
 }
 

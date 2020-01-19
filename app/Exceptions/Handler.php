@@ -4,10 +4,12 @@ namespace App\Exceptions;
 
 use App\Mail\FailureReportMail;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Arr;
-use Illuminate\Validation\ValidationException;
 use App\Facades\Failure;
+use Illuminate\Support\{
+    Arr,
+    Facades\Mail
+};
+use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\AuthenticationException;
 use Exception;
 
@@ -119,5 +121,20 @@ class Handler extends ExceptionHandler
     protected function unauthenticated($request, AuthenticationException $exception)
     {
         return response()->json(['message' => $exception->getMessage()], 401);
+    }
+
+    /**
+     * Convert the given exception to an array.
+     *
+     * @param  \Exception  $e
+     * @return array
+     */
+    protected function convertExceptionToArray(Exception $e)
+    {
+        if(app('response.service')->isInvalidRequestException($e)) {
+            return app('response.service')->errorToArray(EQ_INV_REQ_01, 'EQ_INV_REQ_01', true);
+        }
+
+        return parent::{__FUNCTION__}($e);
     }
 }

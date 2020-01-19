@@ -21,10 +21,6 @@ class SearchObserver
             return;
         }
 
-        if ($model->exists && !$model->wasChanged()) {
-            return;
-        }
-
         if ($model->reindexDisabled()) {
             return;
         }

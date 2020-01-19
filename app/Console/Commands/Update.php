@@ -52,7 +52,7 @@ class Update extends Command
         $this->call('eq:create-personal-access-client');
         $this->call('eq:create-client-credentials');
         $this->call('eq:search-reindex');
-        $this->call('eq:cache-relations');
+        // $this->call('eq:cache-relations');
         $this->call('optimize:clear');
         $this->call('optimize');
         $this->call('route:clear');

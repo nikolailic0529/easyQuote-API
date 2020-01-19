@@ -5,6 +5,7 @@ namespace App\Contracts\Services;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 interface ResponseInterface
 {
@@ -23,7 +24,15 @@ interface ResponseInterface
      * @param integer $status
      * @return \Illuminate\Http\JsonResponse
      */
-    public function make(string $details, string $code, int $status): JsonResponse;
+    public function makeErrorResponse(string $details, string $code, int $status): JsonResponse;
+
+    /**
+     * Determine if the given exception is related to invalid request exceptions.
+     *
+     * @param Throwable $exception
+     * @return boolean
+     */
+    public function isInvalidRequestException(Throwable $exception): bool;
 
     /**
      * Convert a validation exception into a JSON response.
@@ -39,7 +48,8 @@ interface ResponseInterface
      *
      * @param string $details
      * @param string $code
+     * @param boolean $s4Format
      * @return array
      */
-    public function prepareData(string $details, string $code): array;
+    public function errorToArray(string $details, string $code, bool $s4Format = false): array;
 }

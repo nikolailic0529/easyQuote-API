@@ -5,18 +5,17 @@ namespace App\Exceptions;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Container\Container;
-use Exception;
 
 class HandlerS4 extends Handler
 {
     /** @var \App\Contracts\Services\ResponseInterface */
-    protected $responseService;
+    protected $response;
 
     public function __construct(Container $container)
     {
         parent::__construct($container);
 
-        $this->responseService = $container->make('response.service');
+        $this->response = $container->make('response.service');
     }
 
     /**
@@ -30,7 +29,7 @@ class HandlerS4 extends Handler
     {
         report_logger(['ErrorCode' => 'EQ_INV_DP_01'], $exception->errors());
 
-        return $this->responseService->invalidJson($request, $exception);
+        return $this->response->invalidJson($request, $exception);
     }
 
     /**
@@ -42,20 +41,6 @@ class HandlerS4 extends Handler
      */
     protected function unauthenticated($request, AuthenticationException $exception)
     {
-        return $this->responseService->make(EQ_UA_01, 'EQ_UA_01', 401);
-    }
-
-    /**
-     * Convert the given exception to an array.
-     *
-     * @param  \Exception  $e
-     * @return array
-     */
-    protected function convertExceptionToArray(Exception $e)
-    {
-        return $this->responseService->prepareData(
-            $this->isHttpException($e) ? EQ_INV_REQ_01 : EQ_SE_01,
-            $this->isHttpException($e) ? 'EQ_INV_REQ_01' : 'EQ_SE_01'
-        );
+        return $this->response->makeErrorResponse(EQ_UA_01, 'EQ_UA_01', 401);
     }
 }

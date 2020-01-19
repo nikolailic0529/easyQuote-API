@@ -198,7 +198,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         if (request()->is('api/s4/*')) {
-            $this->app->bind(ExceptionHandler::class, HandlerS4::class);
+            $this->app->singleton(ExceptionHandler::class, HandlerS4::class);
         }
 
         $this->app->instance('path.storage', config('filesystems.disks.local.path'));

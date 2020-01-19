@@ -44,7 +44,20 @@ class DBRearrangeTimestamps extends Command
         $db = config('database.connections.mysql.database');
         $tables = collect(data_get(Schema::getAllTables(), "*.Tables_in_{$db}"));
 
-        $knownTimestamps = ['created_at', 'updated_at', 'deleted_at', 'activated_at', 'drafted_at', 'submitted_at', 'expires_at', 'handled_at', 'automapped_at'];
+        $knownTimestamps = [
+            'created_at',
+            'updated_at',
+            'deleted_at',
+            'activated_at',
+            'drafted_at',
+            'submitted_at',
+            'expires_at',
+            'handled_at',
+            'automapped_at',
+            'last_activity_at',
+            'password_changed_at',
+            'email_verified_at'
+        ];
 
         $tables->each(function ($table) use ($knownTimestamps) {
             $columns = collect(Schema::getColumnListing($table));
