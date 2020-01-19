@@ -230,6 +230,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
                 $replicatedSchedule = $schedule->replicate();
                 unset($replicatedSchedule->scheduleData);
                 $replicatedSchedule->save();
+
                 if (isset($schedule->scheduleData)) {
                     $replicatedSchedule->scheduleData()->save($schedule->scheduleData->replicate());
                 }
