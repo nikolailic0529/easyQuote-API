@@ -4,8 +4,8 @@ namespace Tests\Unit\Traits;
 
 trait WithClientCredentials
 {
-    /** @var array|null */
-    protected $clientAuthorizationHeader;
+    /** @var array */
+    protected $clientAuthHeader;
 
     protected function setUpClientCredentials(): void
     {
@@ -16,10 +16,10 @@ trait WithClientCredentials
             'scope' => '*'
         ]);
 
-        $response = $this->postJson(url('oauth/token'), $attributes);
+        $response = $this->withoutMiddleware()->postJson(url('oauth/token'), $attributes);
 
-        $clientAuth = ['Authorization' => 'Bearer ' . $response->json('access_token')];
+        $accessToken = $response->json('access_token');
 
-        $this->clientAuthorizationHeader = $clientAuth;
+        $this->clientAuthHeader = ['Authorization' => 'Bearer ' . $accessToken];
     }
 }

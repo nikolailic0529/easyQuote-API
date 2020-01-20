@@ -7,13 +7,18 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\{
     WithFakeUser,
     AssertsListing,
+    TruncatesDatabaseTables,
     WithFakeQuote
 };
 use Arr;
 
 abstract class DiscountTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, WithFakeQuote, AssertsListing;
+    use DatabaseTransactions, TruncatesDatabaseTables, WithFakeUser, WithFakeQuote, AssertsListing;
+
+    protected $truncatableTables = [
+        'multi_year_discounts', 'sn_discounts', 'pre_pay_discounts', 'promotional_discounts'
+    ];
 
     /**
      * Test Discount listing.

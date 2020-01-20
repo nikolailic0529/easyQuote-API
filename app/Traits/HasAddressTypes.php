@@ -21,22 +21,16 @@ trait HasAddressTypes
 
     public function getEquipmentAddressAttribute()
     {
-        return optional(
-            $this->addresses->firstWhere('address_type', 'Equipment')
-        );
+        return $this->addresses->firstWhere('address_type', 'Equipment') ?? optional();
     }
 
     public function getHardwareAddressAttribute()
     {
-        return optional(
-            $this->addresses->firstWhere('address_type', 'Hardware')
-        );
+        return $this->addresses->firstWhere('address_type', 'Hardware') ?? optional();
     }
 
     public function getSoftwareAddressAttribute()
     {
-        return optional(
-            $this->addresses->firstWhere('address_type', 'Software')
-        );
+        return $this->addresses->firstWhere('address_type', 'Software') ?? optional();
     }
 }

@@ -4,6 +4,7 @@ namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Tests\Unit\Traits\{
+    TruncatesDatabaseTables,
     WithClientCredentials,
     WithFakeQuote,
     WithFakeQuoteFile,
@@ -22,6 +23,10 @@ abstract class TestCase extends BaseTestCase
     protected function setUpTraits()
     {
         $uses = parent::setUpTraits();
+
+        if (isset($uses[TruncatesDatabaseTables::class])) {
+            $this->truncateDatabaseTables();
+        }
 
         if (isset($uses[WithClientCredentials::class])) {
             $this->setUpClientCredentials();

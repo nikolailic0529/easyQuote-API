@@ -16,15 +16,11 @@ trait HasContactTypes
 
     public function getHardwareContactAttribute()
     {
-        return optional(
-            $this->addresses->firstWhere('address_type', 'Hardware')
-        );
+        return $this->addresses->firstWhere('address_type', 'Hardware') ?? optional();
     }
 
     public function getSoftwareContactAttribute()
     {
-        return optional(
-            $this->addresses->firstWhere('address_type', 'Software')
-        );
+        return $this->addresses->firstWhere('address_type', 'Software') ?? optional();
     }
 }

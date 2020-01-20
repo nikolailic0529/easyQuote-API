@@ -6,13 +6,18 @@ use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\{
     WithFakeUser,
-    AssertsListing
+    AssertsListing,
+    TruncatesDatabaseTables
 };
 use Str;
 
 class MarginTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, AssertsListing;
+    use TruncatesDatabaseTables, DatabaseTransactions, WithFakeUser, AssertsListing;
+
+    protected $truncatableTables = [
+        'country_margins'
+    ];
 
     /**
      * Test Margin listing.
@@ -125,7 +130,7 @@ class MarginTest extends TestCase
      */
     public function testMarginActivating()
     {
-        $margin = app('margin.repository')->random();
+        $margin = app('margin.repository')->create($this->makeGenericMarginAttributes());
 
         $response = $this->putJson(url("api/margins/activate/{$margin->id}"), [], $this->authorizationHeader);
 
@@ -144,7 +149,7 @@ class MarginTest extends TestCase
      */
     public function testMarginDeactivating()
     {
-        $margin = app('margin.repository')->random();
+        $margin = app('margin.repository')->create($this->makeGenericMarginAttributes());
 
         $response = $this->putJson(url("api/margins/deactivate/{$margin->id}"), [], $this->authorizationHeader);
 

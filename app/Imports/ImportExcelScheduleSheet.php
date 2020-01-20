@@ -14,7 +14,9 @@ use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 class ImportExcelScheduleSheet implements OnEachRow, WithEvents, WithChunkReading
 {
-    const DATES_REGEXP = '/((?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:[0-9][0-9]))[\.\/]\d{2,4})/';
+    const DATE_REGEXP = '/((?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:[0-9][0-9]))[\.\/]\d{2,4})/';
+
+    const PRICE_REGEXP = '/((\p{Sc})?[ ]?(?<price>([\d]+[ ]?,?)?[,\.]?\d+[,\.]?\d+))/';
 
     /**
      * QuoteFile Model Instance
@@ -123,20 +125,20 @@ class ImportExcelScheduleSheet implements OnEachRow, WithEvents, WithChunkReadin
             return $value;
         })->toArray();
 
-        return (bool) preg_grep(static::DATES_REGEXP, $row);
+        return (bool) preg_grep(static::DATE_REGEXP, $row);
     }
 
     private function filterDates(array $array)
     {
         return collect($array)->filter(function ($value) {
-            return (bool) preg_match(static::DATES_REGEXP, $value);
+            return (bool) preg_match(static::DATE_REGEXP, $value);
         })->values();
     }
 
     private function filterPrices(array $array)
     {
         return collect($array)->filter(function ($value) {
-            return (bool) preg_match('/((\p{Sc})?[ ]?(?<price>([\d]+[ ]?,?)?[,\.]?\d+[,\.]?\d+))/', $value);
+            return (bool) preg_match(static::PRICE_REGEXP, $value);
         })->values();
     }
 }
