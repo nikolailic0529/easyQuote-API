@@ -4,6 +4,7 @@ namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Tests\Unit\Traits\{
+    WithClientCredentials,
     WithFakeQuote,
     WithFakeQuoteFile,
     WithFakeUser
@@ -21,6 +22,10 @@ abstract class TestCase extends BaseTestCase
     protected function setUpTraits()
     {
         $uses = parent::setUpTraits();
+
+        if (isset($uses[WithClientCredentials::class])) {
+            $this->setUpClientCredentials();
+        }
 
         if (isset($uses[WithFakeUser::class])) {
             $this->setUpFakeUser();

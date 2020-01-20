@@ -111,12 +111,29 @@ return [
     ],
 
     /**
-     * Client Credentials for S4 Service.
+     * Client Credentials for third-party Service.
      */
-    's4' => [
-        'client_name' => env('S4_CLIENT_NAME', null),
-        'client_id' => env('S4_CLIENT_ID', null),
-        'client_secret' => env('S4_CLIENT_SECRET', null)
+    'client_credentials' => [
+        's4' => [
+            'client_name' => env('S4_CLIENT_NAME', null),
+            'client_id' => env('S4_CLIENT_ID', null),
+            'client_secret' => env('S4_CLIENT_SECRET', null)
+        ],
+        'proteus' => [
+            'client_name' => env('PROTEUS_CLIENT_NAME', null),
+            'client_id' => env('PROTEUS_CLIENT_ID', null),
+            'client_secret' => env('PROTEUS_CLIENT_SECRET', null)
+        ],
+        'triton' => [
+            'client_name' => env('TRITON_CLIENT_NAME', null),
+            'client_id' => env('TRITON_CLIENT_ID', null),
+            'client_secret' => env('TRITON_CLIENT_SECRET', null)
+        ],
+        'epd' => [
+            'client_name' => env('EPD_CLIENT_NAME', null),
+            'client_id' => env('EPD_CLIENT_ID', null),
+            'client_secret' => env('EPD_CLIENT_SECRET', null)
+        ]
     ],
 
     'must_change_password' => [

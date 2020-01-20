@@ -36,13 +36,6 @@ interface QuoteSubmittedRepositoryInterface
     public function userQuery(): Builder;
 
     /**
-     * Get NonEloquent Query Builder.
-     *
-     * @return \Illuminate\Database\Query\Builder
-     */
-    public function dbQuery(): DatabaseBuilder;
-
-    /**
      * Find Submitted Quote.
      *
      * @return \App\Models\Quote\Quote
@@ -61,9 +54,10 @@ interface QuoteSubmittedRepositoryInterface
      * Find Submitted Quote Data by RFQ number.
      *
      * @param string $rfq
+     * @param boolean $serviceCaused
      * @return \App\Models\Quote\BaseQuote
      */
-    public function rfq(string $rfq): BaseQuote;
+    public function rfq(string $rfq, bool $serviceCaused = false): BaseQuote;
 
     /**
      * Submitted Price List by RFQ number.

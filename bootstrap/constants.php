@@ -115,13 +115,17 @@ define('S4_CS_01', 'S4 contract with RFQ :rfq was successfully stored.');
 define('S4_CS_02', 'Request for S4 contract storing.');
 define('S4_CSS_01', 'S4 data has been successfully received.');
 define('S4_CSF_01', 'Failed to receive S4 data.');
-define('S4_NAME', 'S4 Customers Service');
 
 /**
  * Settings.
  */
 define('SS_INV_01', 'The given Setting value is invalid.');
 define('SS_INV_02', 'You could not to update this setting as it is read only.');
+
+/**
+ * Third-party services.
+ */
+//
 
 /**
  * Misc.
@@ -140,6 +144,7 @@ define('EQ_SE_01', 'Server Error.');
 define('UNE_01', 'Unknown Error.');
 define('MLFQ_01', 'Malformed request.');
 define('FFTC_01', 'Failed when flushing Eloquent tagged cache.');
+define('TABLE_COUNT_POSTFIX', '_count');
 
 /**
  * Slack.

@@ -5,6 +5,7 @@ namespace Tests\Unit\S4;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\{
+    WithClientCredentials,
     WithFakeUser,
     WithFakeQuote,
     WithFakeQuoteFile
@@ -14,7 +15,7 @@ use App\Models\Quote\Quote;
 
 class S4QuoteGetRequestTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, WithFakeQuote, WithFakeQuoteFile;
+    use DatabaseTransactions, WithFakeUser, WithFakeQuote, WithFakeQuoteFile, WithClientCredentials;
 
     /**
      * Submit the Quote and check availability using request.
@@ -111,7 +112,7 @@ class S4QuoteGetRequestTest extends TestCase
 
     protected function requestQuoteByRfq(Quote $quote): TestResponse
     {
-        return $this->getJson(url("/api/s4/quotes/{$quote->customer->rfq}"), $this->authorizationHeader);
+        return $this->getJson(url("/api/s4/quotes/{$quote->customer->rfq}"), $this->clientAuthorizationHeader);
     }
 
     protected function importQuoteFile(): void

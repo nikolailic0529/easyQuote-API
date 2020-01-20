@@ -10,9 +10,12 @@ use Maatwebsite\Excel\{
     Concerns\WithChunkReading
 };
 use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
 
 class ImportExcelScheduleSheet implements OnEachRow, WithEvents, WithChunkReading
 {
+    const DATES_REGEXP = '/((?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:[0-9][0-9]))[\.\/]\d{2,4})/';
+
     /**
      * QuoteFile Model Instance
      *
@@ -110,15 +113,23 @@ class ImportExcelScheduleSheet implements OnEachRow, WithEvents, WithChunkReadin
         return $schedule;
     }
 
-    private function hasDates(array $row)
+    private function hasDates(array &$row)
     {
-        return (bool) preg_grep('/((?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:[0-9][0-9]))[\.\/]\d{2,4})/', $row);
+        $row = collect($row)->transform(function ($value) {
+            if (is_int($value)) {
+                return Date::excelToDateTimeObject($value)->format('d/m/Y');
+            }
+
+            return $value;
+        })->toArray();
+
+        return (bool) preg_grep(static::DATES_REGEXP, $row);
     }
 
     private function filterDates(array $array)
     {
         return collect($array)->filter(function ($value) {
-            return (bool) preg_match('/((?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:[0-9][0-9]))[\.\/]\d{2,4})/', $value);
+            return (bool) preg_match(static::DATES_REGEXP, $value);
         })->values();
     }
 

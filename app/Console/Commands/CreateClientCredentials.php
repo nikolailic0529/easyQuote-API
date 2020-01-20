@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Arr;
 
 class CreateClientCredentials extends Command
 {
@@ -37,24 +38,42 @@ class CreateClientCredentials extends Command
      */
     public function handle()
     {
-        if (blank(config('auth.s4.client_id')) || blank(config('auth.s4.client_secret') || blank(config('auth.s4.client_name')))) {
-            return $this->error('The S4 Client Credentials are not set.');
+        $this->call('config:cache');
+
+        collect(config('auth.client_credentials'))
+            ->each(function ($credentials, $service) {
+                $this->createClientCredentials($credentials, $service);
+            });
+    }
+
+    protected function createClientCredentials(array $credentials, string $service)
+    {
+        if ($this->checkClientCredentials($credentials)) {
+            return $this->warn("Client Credentials for {$service} are not defined.");
         }
 
         $attributes = [
-            'id' => config('auth.s4.client_id'),
-            'name' => config('auth.s4.client_name'),
-            'secret' => config('auth.s4.client_secret'),
+            'id' => $credentials['client_id'],
+            'name' => $credentials['client_name'],
+            'secret' => $credentials['client_secret'],
             'redirect' => url('/auth/callback'),
             'created_at' => now(),
             'updated_at' => now()
         ];
 
-        \DB::table('oauth_clients')->updateOrInsert(['id' => $attributes['id']], $attributes);
+        \DB::table('oauth_clients')
+            ->updateOrInsert(['id' => $attributes['id']], $attributes);
 
-        $this->info('S4 client created successfully.');
+        $this->info($attributes['name'] . ' client created successfully.');
 
         $this->line('<comment>Client ID:</comment> ' . $attributes['id']);
         $this->line('<comment>Client secret:</comment> ' . $attributes['secret']);
+    }
+
+    protected function checkClientCredentials(array $credentials): bool
+    {
+        return is_null(Arr::first($credentials, function ($parameter) {
+            return filled($parameter);
+        }));
     }
 }

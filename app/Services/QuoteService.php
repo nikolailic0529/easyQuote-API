@@ -155,7 +155,7 @@ class QuoteService implements QuoteServiceInterface
 
         $initialTotalPayments = $quote->scheduleData->value->sum('price');
 
-        if ((float) $initialTotalPayments === 0) {
+        if ((float) $initialTotalPayments === 0.0) {
             return;
         }
 

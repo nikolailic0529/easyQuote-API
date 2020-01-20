@@ -18,6 +18,8 @@ class S4QuoteController extends Controller
     {
         $this->quote = $quote;
         $this->customer = $customer;
+
+        $this->middleware('client:s4,proteus,triton,epd');
     }
 
     /**
@@ -28,7 +30,7 @@ class S4QuoteController extends Controller
      */
     public function show(string $rfq)
     {
-        $quote = $this->quote->rfq($rfq);
+        $quote = $this->quote->rfq($rfq, true);
 
         return response()->json(
             QuoteResource::make($quote)

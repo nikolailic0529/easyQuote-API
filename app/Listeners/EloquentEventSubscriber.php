@@ -34,7 +34,7 @@ class EloquentEventSubscriber
         $model = $this->resolveModel($event);
         $table = $model->getTable();
 
-        cache()->tags($table)->flush();
+        cache()->tags($table.TABLE_COUNT_POSTFIX)->flush();
     }
 
     private function resolveModel(string $event): Model

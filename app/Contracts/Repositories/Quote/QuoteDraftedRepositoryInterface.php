@@ -47,13 +47,6 @@ interface QuoteDraftedRepositoryInterface
     public function getExpiring(CarbonInterval $interval, $user = null, ?Closure $scope = null): Collection;
 
     /**
-     * Get NonEloquent Query Builder.
-     *
-     * @return \Illuminate\Database\Query\Builder
-     */
-    public function dbQuery(): DatabaseBuilder;
-
-    /**
      * Find Drafted Quote.
      *
      * @return \App\Models\Quote

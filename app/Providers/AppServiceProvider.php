@@ -47,6 +47,7 @@ use App\Contracts\{
     Repositories\System\FailureRepositoryInterface,
     Repositories\System\NotificationRepositoryInterface
 };
+use App\Contracts\Repositories\System\ClientCredentialsInterface;
 use App\Repositories\{
     TimezoneRepository,
     CountryRepository,
@@ -101,6 +102,7 @@ use Elasticsearch\{
 };
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use App\Exceptions\HandlerS4;
+use App\Repositories\System\ClientCredentialsRepository;
 use Schema;
 
 class AppServiceProvider extends ServiceProvider
@@ -145,7 +147,8 @@ class AppServiceProvider extends ServiceProvider
         ReportLoggerInterface::class => ReportLogger::class,
         NotificationRepositoryInterface::class => NotificationRepository::class,
         UIServiceInterface::class => UIService::class,
-        ResponseInterface::class => Response::class
+        ResponseInterface::class => Response::class,
+        ClientCredentialsInterface::class => ClientCredentialsRepository::class
     ];
 
     public $bindings = [
@@ -181,7 +184,8 @@ class AppServiceProvider extends ServiceProvider
         NotificationRepositoryInterface::class => 'notification.repository',
         NotificationInterface::class => 'notification.storage',
         UIServiceInterface::class => 'ui.service',
-        ResponseInterface::class => 'response.service'
+        ResponseInterface::class => 'response.service',
+        ClientCredentialsInterface::class => 'client.repository'
     ];
 
     /**

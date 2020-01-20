@@ -80,7 +80,7 @@ class CustomerRepository implements CustomerRepositoryInterface
 
         $customerResponse = CustomerResponseResource::make($customer);
 
-        event(new RfqReceived($customer));
+        event(new RfqReceived($customer, request('client_name', 'service')));
 
         return $customerResponse;
     }

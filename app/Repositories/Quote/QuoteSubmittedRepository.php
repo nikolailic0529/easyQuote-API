@@ -21,8 +21,7 @@ use Illuminate\Database\Eloquent\{
     Model,
     Builder
 };
-use Illuminate\Database\Query\Builder as DatabaseBuilder;
-use Arr, File, DB, Storage;
+use File, DB, Storage;
 
 class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubmittedRepositoryInterface
 {
@@ -65,35 +64,6 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
             ->submitted();
     }
 
-    public function dbQuery(): DatabaseBuilder
-    {
-        return $this->quote->query()
-            ->currentUserWhen(request()->user()->cant('view_quotes'))
-            ->toBase()
-            ->whereNotNull("{$this->table}.submitted_at")
-            ->join('users as user', 'user.id', '=', "{$this->table}.user_id")
-            ->join('customers as customer', 'customer.id', '=', "{$this->table}.customer_id")
-            ->leftJoin('companies as company', 'company.id', '=', "{$this->table}.company_id")
-            ->select([
-                "{$this->table}.id",
-                "{$this->table}.customer_id",
-                "{$this->table}.company_id",
-                "{$this->table}.user_id",
-                "{$this->table}.completeness",
-                "{$this->table}.created_at",
-                "{$this->table}.activated_at",
-                "customer.name as customer_name",
-                "customer.rfq as customer_rfq",
-                "customer.valid_until as customer_valid_until",
-                "customer.support_start as customer_support_start",
-                "customer.support_end as customer_support_end",
-                "company.name as company_name",
-                "user.first_name as user_first_name",
-                "user.last_name as user_last_name"
-            ])
-            ->groupBy("{$this->table}.id");
-    }
-
     public function toCollection($resource): SubmittedCollection
     {
         return SubmittedCollection::make($resource);
@@ -113,11 +83,13 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         return $this->userQuery()->whereId($id)->firstOrFail();
     }
 
-    public function rfq(string $rfq, bool $service = false): BaseQuote
+    public function rfq(string $rfq, bool $serviceCaused = false): BaseQuote
     {
         $quote = $this->findByRfq($rfq);
 
-        activity()->on($quote)->causedByService(S4_NAME)->queue('retrieved');
+        if ($serviceCaused) {
+            activity()->on($quote)->causedByService(request('client_name', 'Service'))->queue('retrieved');
+        }
 
         return $quote->usingVersion->disableReview();
     }

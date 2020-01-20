@@ -5,11 +5,12 @@ namespace Tests\Unit\S4;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\WithFakeUser;
+use Tests\Unit\Traits\WithClientCredentials;
 use Str, DB;
 
 class S4ContractPostRequestTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser;
+    use DatabaseTransactions, WithFakeUser, WithClientCredentials;
 
     /**
      * Test Storing S4 Contract with valid attributes.
@@ -107,7 +108,7 @@ class S4ContractPostRequestTest extends TestCase
 
     protected function postContract(array $data)
     {
-        return $this->postJson(url('/api/s4/quotes'), $data, $this->authorizationHeader);
+        return $this->postJson(url('/api/s4/quotes'), $data, $this->clientAuthorizationHeader);
     }
 
     protected function assertCustomerExistsInDataBase(array $contract): void

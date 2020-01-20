@@ -49,35 +49,6 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
             ->drafted();
     }
 
-    public function dbQuery(): DatabaseBuilder
-    {
-        return $this->quote->query()
-            ->currentUserWhen(request()->user()->cant('view_quotes'))
-            ->toBase()
-            ->whereNull("{$this->table}.submitted_at")
-            ->join('users as user', 'user.id', '=', "{$this->table}.user_id")
-            ->join('customers as customer', 'customer.id', '=', "{$this->table}.customer_id")
-            ->leftJoin('companies as company', 'company.id', '=', "{$this->table}.company_id")
-            ->select([
-                "{$this->table}.id",
-                "{$this->table}.customer_id",
-                "{$this->table}.company_id",
-                "{$this->table}.user_id",
-                "{$this->table}.completeness",
-                "{$this->table}.created_at",
-                "{$this->table}.activated_at",
-                "customer.name as customer_name",
-                "customer.rfq as customer_rfq",
-                "customer.valid_until as customer_valid_until",
-                "customer.support_start as customer_support_start",
-                "customer.support_end as customer_support_end",
-                "company.name as company_name",
-                "user.first_name as user_first_name",
-                "user.last_name as user_last_name"
-            ])
-            ->groupBy("{$this->table}.id");
-    }
-
     public function toCollection($resource): DraftedCollection
     {
         return DraftedCollection::make($resource);

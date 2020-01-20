@@ -24,14 +24,6 @@ class QueryBuilderServiceProvider extends ServiceProvider
         Builder::macro('apiPaginate', $this->apiPaginateMacro());
 
         DatabaseBuilder::macro('apiPaginate', $this->apiPaginateMacro());
-
-        DatabaseBuilder::macro('activated', function () {
-            return $this->whereNotNull("{$this->from}.activated_at")->limit(999999);
-        });
-
-        DatabaseBuilder::macro('deactivated', function () {
-            return $this->whereNull("{$this->from}.activated_at")->limit(999999);
-        });
     }
 
     protected function apiPaginateMacro()
@@ -83,9 +75,13 @@ class QueryBuilderServiceProvider extends ServiceProvider
                 ->cloneWithoutBindings($this->unions ? ['order'] : ['select', 'order'])
                 ->setAggregate('count', $this->withoutSelectAliases($columns));
 
-            return cache()->tags($query->from)->remember((clone $query)->toSql(), config('api-paginate.count_cache_ttl'), function () use ($query) {
-                return $query->get()->all();
-            });
+            $clonedQuery = clone $query;
+            $cacheKey = md5('query|' . $clonedQuery->toSql() . implode('', $clonedQuery->getBindings()));
+
+            return cache()->tags($query->from.TABLE_COUNT_POSTFIX)
+                ->remember($cacheKey, config('api-paginate.count_cache_ttl'), function () use ($query) {
+                    return $query->get()->all();
+                });
         };
     }
 }
