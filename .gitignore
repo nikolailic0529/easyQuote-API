@@ -16,3 +16,5 @@ dropForeign(['timezone_id'])
 on('users')
 uuid('country_id')
 uuid('timezone_id')
+@templates
+@templates_edited

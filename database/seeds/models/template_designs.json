@@ -1394,7 +1394,7 @@
                         "position": 2
                     }
                 ],
-                "class": "three-column field-dragger",
+                "class": "two-column field-dragger",
                 "order": 3,
                 "controls": [],
                 "is_field": false,

@@ -2,7 +2,7 @@
 
 namespace App\Events;
 
-use App\Http\Resources\CustomerBroadcastResource;
+use App\Http\Resources\CustomerRepositoryResource;
 use App\Models\Customer\Customer;
 use Illuminate\Broadcasting\{
     InteractsWithSockets,
@@ -13,25 +13,21 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Support\LazyCollection;
 
-class RfqReceived implements ShouldBroadcast
+class RfqDeleted implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets;
 
     /** @var \App\Models\Customer\Customer */
     public $customer;
 
-    /** @var string */
-    public $service;
-
     /**
      * Create a new event instance.
      *
      * @return void
      */
-    public function __construct(Customer $customer, string $service)
+    public function __construct(Customer $customer)
     {
         $this->customer = $customer;
-        $this->service = $service;
     }
 
     /**
@@ -53,7 +49,7 @@ class RfqReceived implements ShouldBroadcast
      */
     public function broadcastAs()
     {
-        return 'customer.created';
+        return 'customer.deleted';
     }
 
     /**
@@ -63,7 +59,7 @@ class RfqReceived implements ShouldBroadcast
      */
     public function broadcastWith()
     {
-        return CustomerBroadcastResource::make($this->customer)->resolve();
+        return CustomerRepositoryResource::make($this->customer)->resolve();
     }
 
     private function loggedInUsers(): LazyCollection

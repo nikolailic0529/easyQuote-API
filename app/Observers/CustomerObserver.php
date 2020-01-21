@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Events\RfqDeleted;
 use App\Models\Customer\Customer;
 
 class CustomerObserver
@@ -26,6 +27,8 @@ class CustomerObserver
     public function deleted(Customer $customer)
     {
         app('customer.repository')->forgetDraftedCache();
+
+        event(new RfqDeleted($customer));
     }
 
     /**
