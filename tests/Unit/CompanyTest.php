@@ -72,7 +72,8 @@ class CompanyTest extends TestCase
 
         $response = $this->postJson(url('api/companies'), $attributes, $this->authorizationHeader);
 
-        $response->assertJsonValidationErrors(['vat']);
+        $response->assertStatus(422)
+            ->assertJsonStructure(['Error' => ['original' => ['vat']]]);
     }
 
     /**

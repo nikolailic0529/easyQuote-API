@@ -73,7 +73,9 @@ class RoleTest extends TestCase
 
         $response = $this->postJson(url('api/roles'), $attributesWithWrongPrivileges, $this->authorizationHeader);
 
-        $response->assertJsonValidationErrors('privileges.0.privilege');
+        $response->assertJsonStructure([
+            'Error' => ['original' => ['privileges.0.privilege']]
+        ]);
     }
 
     /**

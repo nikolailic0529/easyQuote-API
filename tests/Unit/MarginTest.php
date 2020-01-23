@@ -73,7 +73,7 @@ class MarginTest extends TestCase
         $response = $this->postJson(url('api/margins'), $attributes, $this->authorizationHeader);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['value']);
+            ->assertJsonStructure(['Error' => ['original' => ['value']]]);
     }
 
     /**
@@ -99,7 +99,7 @@ class MarginTest extends TestCase
         $response = $this->postJson(url('api/margins'), $attributes, $this->authorizationHeader);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['vendor_id']);
+            ->assertJsonStructure(['Error' => ['original' => ['vendor_id']]]);
     }
 
     /**

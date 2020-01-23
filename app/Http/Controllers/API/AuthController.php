@@ -15,6 +15,8 @@ use App\Contracts\{
     Repositories\UserRepositoryInterface,
     Services\AuthServiceInterface
 };
+use App\Contracts\Repositories\System\BuildRepositoryInterface;
+use App\Http\Resources\AuthenticatedUserResource;
 use App\Models\{
     Collaboration\Invitation,
     PasswordReset
@@ -104,10 +106,11 @@ class AuthController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function user()
+    public function user(BuildRepositoryInterface $build)
     {
         return response()->json(
-            request()->user()->withAppends()
+            AuthenticatedUserResource::make(auth()->user())
+                ->additional(['build' => $build->latest()])
         );
     }
 
@@ -140,7 +143,7 @@ class AuthController extends Controller
     /**
      * Verify the specified PasswordReset Token.
      * Returns False if is expired or doesn't exist.
-     * Return True if the token isn't expired and exists.
+     * Returns True if the token isn't expired and exists.
      *
      * @param string $reset
      * @return void

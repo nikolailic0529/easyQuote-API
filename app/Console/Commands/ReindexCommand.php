@@ -89,26 +89,30 @@ class ReindexCommand extends Command
 
     private function handleModels(array $models)
     {
-        foreach ($models as $model) {
+        foreach ($models as &$model) {
             $plural = Str::plural(class_basename($model));
 
             $this->comment("Indexing all {$plural}...");
 
             $bar = $this->output->createProgressBar($model::count());
 
-            $model::cursor()->each(function ($entry) use ($bar) {
+            $model = app($model);
+            $model->unsetEventDispatcher();
+
+            $cursor = $model::on('mysql_unbuffered')->cursor();
+
+            $cursor->each(function ($entry) use ($bar) {
                 $this->elasticsearch->index([
                     'index' => $entry->getSearchIndex(),
                     'id' => $entry->getKey(),
                     'body' => $entry->toSearchArray(),
                 ]);
 
-                unset($entry);
-
                 $bar->advance();
             });
 
             $bar->finish();
+
             $this->info("\nDone!");
         }
     }

@@ -1,0 +1,33 @@
+[
+    {
+        "exception": "BadMethodCallException",
+        "reasons": [
+            "An undefined method was called.",
+            "An undefined scope method was called in any model.",
+            "Trying to use a method which doesn't exist in Query Builder / Eloquent Query Builder.",
+            "Previously used package is not installed or removed."
+        ]
+    },
+    {
+        "exception": "Illuminate\\Database\\QueryException",
+        "reasons": [
+            "If the provided trace has `SQLSTATE[42S22]` it means that model field is unknown in database table.",
+            "If the provided trace has `SQLSTATE[23000]` it means that model the inserting value already exists in database table",
+            "A typo error in the database query / statement."
+        ]
+    },
+    {
+        "exception": "Whoops\\Exception\\ErrorException",
+        "reasons": [
+            "If provided message has `Allowed memory size of ... bytes` it's possible due importing file is too large.",
+            "Someone of the API routes is missing."
+        ]
+    },
+    {
+        "exception": "Swift_SwiftException",
+        "reasons": [
+            "Wrong settings for SwiftMailer.",
+            "A network issue when sending a mail."
+        ]
+    }
+]

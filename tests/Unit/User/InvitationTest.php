@@ -136,8 +136,9 @@ class InvitationTest extends TestCase
 
         $response->assertNotFound()
             ->assertExactJson([
-                'message' => IE_01,
-                'error_code' => 'IE_01'
+                'ErrorCode' => 'IE_01',
+                'ErrorDetails' => IE_01,
+                'message' => IE_01
             ]);
     }
 

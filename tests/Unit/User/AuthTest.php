@@ -56,9 +56,10 @@ class AuthTest extends TestCase
 
         $response = $this->postJson(url('/api/auth/signin'), Arr::only($attributes, ['email', 'password']));
 
-        $response->assertStatus(422);
-
-        $response->assertJsonValidationErrors('local_ip');
+        $response->assertStatus(422)
+            ->assertJsonStructure([
+                'Error' => ['original' => ['local_ip']]
+            ]);
     }
 
     /**
@@ -93,8 +94,9 @@ class AuthTest extends TestCase
 
         $response->assertUnauthorized()
             ->assertExactJson([
-                'message' => LO_00,
-                'error_code' => 'LO_00'
+                'ErrorCode' => 'LO_00',
+                'ErrorDetails' => LO_00,
+                'message' => LO_00
             ]);
     }
 

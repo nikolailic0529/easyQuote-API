@@ -231,6 +231,21 @@ class QuoteTest extends TestCase
         );
     }
 
+    /**
+     * Test Submitted Quote Export in PDF.
+     *
+     * @return void
+     */
+    public function testSubmittedQuoteExport()
+    {
+        $this->quote->submit();
+
+        $response = $this->getJson(url("api/quotes/submitted/pdf/{$this->quote->id}"), $this->authorizationHeader);
+
+        $response->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+    }
+
     protected function createFakeGroupDescription(): Collection
     {
         $attributes = $this->makeGenericGroupDescriptionAttributes();

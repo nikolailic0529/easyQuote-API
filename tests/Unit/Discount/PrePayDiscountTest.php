@@ -40,7 +40,7 @@ class PrePayDiscountTest extends DiscountTest
         $response = $this->postJson(url("api/discounts/{$this->discountResource()}"), $attributes, $this->authorizationHeader);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors('durations.duration.duration');
+            ->assertJsonStructure(['Error' => ['original' => ['durations.duration.duration']]]);
     }
 
     protected function discountResource(): string

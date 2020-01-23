@@ -20,10 +20,14 @@ use Str;
 
 class ActivityRepository extends SearchableRepository implements ActivityRepositoryInterface
 {
+    const EXPORT_LIMIT_CSV = 1000;
+
+    const EXPORT_LIMIT_PDF = 1000;
+
+    /** @var \App\Models\System\Activity */
     protected $activity;
 
-    protected static $exportLimit = ['csv' => 5000, 'pdf' => 1000];
-
+    /** @var string */
     protected $summaryCacheKey = 'activities-summary';
 
     public function __construct(Activity $activity)
@@ -164,7 +168,15 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
 
     protected function exportLimitForType(string $type): int
     {
-        return data_get(static::$exportLimit, $type, 0);
+        if ($type === 'csv') {
+            return static::EXPORT_LIMIT_CSV;
+        }
+
+        if ($type === 'pdf') {
+            return static::EXPORT_LIMIT_PDF;
+        }
+
+        return 0;
     }
 
     protected function subjectScope(string $subject_id)
@@ -255,6 +267,8 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
             $writer->insertAll($activity);
         });
 
+        unset($writer);
+
         return storage_real_path($filepath);
     }
 
@@ -268,7 +282,9 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
     {
         $filepath = $this->exportFilepath('pdf');
 
-        $this->pdfWrapper()->loadView('activities.pdf', compact('activityCollection'))->save(storage_path("app/{$filepath}"));
+        $pdf = $this->pdfWrapper()->loadView('activities.pdf', compact('activityCollection'))->save(storage_path("app/{$filepath}"));
+
+        unset($pdf);
 
         return storage_real_path($filepath);
     }

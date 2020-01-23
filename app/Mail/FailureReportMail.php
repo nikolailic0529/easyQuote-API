@@ -3,7 +3,7 @@
 namespace App\Mail;
 
 use Illuminate\Mail\Mailable;
-use App\Repositories\System\Failure\FailureHelp;
+use App\Factories\Failure\FailureHelp;
 use Illuminate\Database\Eloquent\Collection;
 
 class FailureReportMail extends Mailable
@@ -11,7 +11,7 @@ class FailureReportMail extends Mailable
     /**
      * FailureHelp instance.
      *
-     * @var \App\Repositories\System\Failure\FailureHelp
+     * @var \App\Factories\Failure\FailureHelp
      */
     protected $failure;
 

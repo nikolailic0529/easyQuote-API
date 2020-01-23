@@ -14,7 +14,7 @@ use App\Contracts\{
     Services\SlackInterface,
     Services\NotificationInterface,
     Services\UIServiceInterface,
-    Services\ResponseInterface,
+    Services\HttpInterface,
     Repositories\TimezoneRepositoryInterface,
     Repositories\CountryRepositoryInterface,
     Repositories\UserRepositoryInterface,
@@ -44,10 +44,11 @@ use App\Contracts\{
     Repositories\Quote\QuoteSubmittedRepositoryInterface,
     Repositories\AddressRepositoryInterface,
     Repositories\ContactRepositoryInterface,
-    Repositories\System\FailureRepositoryInterface,
-    Repositories\System\NotificationRepositoryInterface
+    Factories\FailureInterface,
+    Repositories\System\NotificationRepositoryInterface,
+    Repositories\System\ClientCredentialsInterface,
+    Repositories\System\BuildRepositoryInterface
 };
-use App\Contracts\Repositories\System\ClientCredentialsInterface;
 use App\Repositories\{
     TimezoneRepository,
     CountryRepository,
@@ -66,9 +67,10 @@ use App\Repositories\{
     QuoteTemplate\TemplateFieldRepository,
     Customer\CustomerRepository,
     System\SystemSettingRepository,
-    System\Failure\FailureRepository,
     System\ActivityRepository,
     System\NotificationRepository,
+    System\ClientCredentialsRepository,
+    System\BuildRepository,
     Quote\Discount\MultiYearDiscountRepository,
     Quote\Discount\PromotionalDiscountRepository,
     Quote\Discount\PrePayDiscountRepository,
@@ -92,7 +94,7 @@ use App\Services\{
     QuoteService,
     PdfParser\PdfParser,
     ReportLogger,
-    Response,
+    HttpService,
     SlackClient,
     UIService
 };
@@ -100,9 +102,7 @@ use Elasticsearch\{
     Client as ElasticsearchClient,
     ClientBuilder as ElasticsearchBuilder
 };
-use Illuminate\Contracts\Debug\ExceptionHandler;
-use App\Exceptions\HandlerS4;
-use App\Repositories\System\ClientCredentialsRepository;
+use App\Factories\Failure\Failure;
 use Schema;
 
 class AppServiceProvider extends ServiceProvider
@@ -123,7 +123,7 @@ class AppServiceProvider extends ServiceProvider
         DataSelectSeparatorRepositoryInterface::class => DataSelectSeparatorRepository::class,
         CustomerRepositoryInterface::class => CustomerRepository::class,
         SystemSettingRepositoryInterface::class => SystemSettingRepository::class,
-        FailureRepositoryInterface::class => FailureRepository::class,
+        FailureInterface::class => Failure::class,
         MarginRepositoryInterface::class => MarginRepository::class,
         QuoteServiceInterface::class => QuoteService::class,
         MultiYearDiscountRepositoryInterface::class => MultiYearDiscountRepository::class,
@@ -147,8 +147,9 @@ class AppServiceProvider extends ServiceProvider
         ReportLoggerInterface::class => ReportLogger::class,
         NotificationRepositoryInterface::class => NotificationRepository::class,
         UIServiceInterface::class => UIService::class,
-        ResponseInterface::class => Response::class,
-        ClientCredentialsInterface::class => ClientCredentialsRepository::class
+        HttpInterface::class => HttpService::class,
+        ClientCredentialsInterface::class => ClientCredentialsRepository::class,
+        BuildRepositoryInterface::class => BuildRepository::class
     ];
 
     public $bindings = [
@@ -184,8 +185,9 @@ class AppServiceProvider extends ServiceProvider
         NotificationRepositoryInterface::class => 'notification.repository',
         NotificationInterface::class => 'notification.storage',
         UIServiceInterface::class => 'ui.service',
-        ResponseInterface::class => 'response.service',
-        ClientCredentialsInterface::class => 'client.repository'
+        HttpInterface::class => 'http.service',
+        ClientCredentialsInterface::class => 'client.repository',
+        BuildRepositoryInterface::class => 'build.repository'
     ];
 
     /**
@@ -199,10 +201,6 @@ class AppServiceProvider extends ServiceProvider
             foreach ($this->aliases as $key => $value) {
                 $this->app->alias($key, $value);
             }
-        }
-
-        if (request()->is('api/s4/*')) {
-            $this->app->singleton(ExceptionHandler::class, HandlerS4::class);
         }
 
         $this->app->instance('path.storage', config('filesystems.disks.local.path'));

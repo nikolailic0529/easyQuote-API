@@ -3,12 +3,12 @@
 namespace App\Facades;
 
 use Illuminate\Support\Facades\Facade;
-use App\Contracts\Repositories\System\FailureRepositoryInterface;
+use App\Contracts\Factories\FailureInterface;
 
 class Failure extends Facade
 {
     protected static function getFacadeAccessor()
     {
-        return FailureRepositoryInterface::class;
+        return FailureInterface::class;
     }
 }

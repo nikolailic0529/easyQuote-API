@@ -51,7 +51,9 @@ class Handler extends ExceptionHandler
     {
         parent::report($exception);
 
-        $this->failureReport($exception);
+        if ($this->shouldReportMail($exception)) {
+            report_failure($exception);
+        }
     }
 
     /**
@@ -64,19 +66,6 @@ class Handler extends ExceptionHandler
     public function render($request, Exception $exception)
     {
         return parent::render($request, $exception);
-    }
-
-    public function failureReport(Exception $exception)
-    {
-        if ($this->shouldntReportMail($exception)) {
-            return;
-        }
-
-        $failure = Failure::helpFor($exception);
-
-        Mail::send(new FailureReportMail($failure, setting('failure_report_recipients')));
-
-        report_logger(['ErrorCode' => 'UNE_01'], ['ErrorDetails' => $failure->message]);
     }
 
     /**
@@ -95,6 +84,17 @@ class Handler extends ExceptionHandler
     }
 
     /**
+     * Determine if the exception should be reported by mail.
+     *
+     * @param  \Exception  $e
+     * @return bool
+     */
+    public function shouldReportMail(Exception $e)
+    {
+        return !$this->shouldntReportMail($e);
+    }
+
+    /**
      * Convert a validation exception into a JSON response.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -105,10 +105,9 @@ class Handler extends ExceptionHandler
     {
         report_logger(['ErrorCode' => 'EQ_INV_DP_01'], $exception->errors());
 
-        return response()->json([
-            'message' => optional($exception->validator->errors())->first(),
-            'errors' => $exception->errors(),
-        ], $exception->status);
+        $http = $this->container->make('http.service');
+
+        return $http->invalidJson($request, $exception);
     }
 
     /**
@@ -120,7 +119,9 @@ class Handler extends ExceptionHandler
      */
     protected function unauthenticated($request, AuthenticationException $exception)
     {
-        return response()->json(['message' => $exception->getMessage()], 401);
+        $http = $this->container->make('http.service');
+
+        return $http->makeErrorResponse(EQ_UA_01, 'EQ_UA_01', 401);
     }
 
     /**
@@ -129,12 +130,14 @@ class Handler extends ExceptionHandler
      * @param  \Exception  $e
      * @return array
      */
-    protected function convertExceptionToArray(Exception $e)
+    protected function convertExceptionToArray(Exception $exception)
     {
-        if(app('response.service')->isInvalidRequestException($e)) {
-            return app('response.service')->errorToArray(EQ_INV_REQ_01, 'EQ_INV_REQ_01', true);
+        $http = $this->container->make('http.service');
+
+        if ($http->isInvalidRequestException($exception)) {
+            return $http->convertErrorToArray(EQ_INV_REQ_01, 'EQ_INV_REQ_01', true);
         }
 
-        return parent::{__FUNCTION__}($e);
+        return parent::{__FUNCTION__}($exception);
     }
 }

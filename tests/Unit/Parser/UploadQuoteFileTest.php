@@ -56,7 +56,7 @@ class UploadQuoteFileTest extends TestCase
         $response->assertStatus(422);
 
         $response->assertJsonStructure([
-            'message', 'errors' => ['quote_file']
+            'message', 'Error' => ['original' => ['quote_file']]
         ]);
     }
 
@@ -69,7 +69,7 @@ class UploadQuoteFileTest extends TestCase
         $response->assertStatus(422);
 
         $response->assertJsonStructure([
-            'message', 'errors' => ['quote_file']
+            'message', 'Error' => ['original' => ['quote_file']]
         ]);
     }
 

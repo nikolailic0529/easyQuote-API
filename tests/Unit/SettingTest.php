@@ -113,7 +113,9 @@ class SettingTest extends TestCase
             $this->authorizationHeader
         );
 
-        $response->assertJsonValidationErrors('quote_file');
+        $response->assertJsonStructure([
+            'Error' => ['original' => ['quote_file']]
+        ]);
 
         /**
          * Test after updating Setting value to max possible value.
