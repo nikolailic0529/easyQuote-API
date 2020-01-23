@@ -76,6 +76,8 @@ class QuoteObserver
      */
     public function unsubmitted(Quote $quote)
     {
+        app('quote.submitted.repository')->flushQuotePdfCache($quote);
+
         $url = ui_route('quotes.drafted.review', compact('quote'));
         $rfq_number = $quote->rfq_number;
 

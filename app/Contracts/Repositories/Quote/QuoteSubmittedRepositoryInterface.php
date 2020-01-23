@@ -138,4 +138,12 @@ interface QuoteSubmittedRepositoryInterface
      * @return \App\Http\Resources\QuoteRepository\SubmittedCollection
      */
     public function toCollection($resource): SubmittedCollection;
+
+    /**
+     * Flush cached Quote PDF.
+     *
+     * @param \App\Models\Quote\Quote $quote
+     * @return void
+     */
+    public function flushQuotePdfCache(Quote $quote): void;
 }

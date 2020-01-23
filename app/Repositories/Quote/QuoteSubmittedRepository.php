@@ -27,6 +27,10 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 {
     use ResolvesImplicitModel, ResolvesQuoteVersion;
 
+    const EXPORT_CACHE_TTL = 60;
+
+    const EXPORT_CACHE_PREFIX = 'quote-pdf:';
+
     /** @var \App\Models\Quote\Quote */
     protected $quote;
 
@@ -125,14 +129,14 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     {
         $quote = $this->findByRfq($rfq);
 
-        return $this->quoteService->export($quote->usingVersion);
+        return $this->retrieveCachedQuotePdf($quote);
     }
 
     public function exportPdf($quote)
     {
         $quote = $this->resolveModel($quote);
 
-        return $this->quoteService->export($quote->usingVersion);
+        return $this->retrieveCachedQuotePdf($quote);
     }
 
     public function delete(string $id)
@@ -229,6 +233,11 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         return Quote::class;
     }
 
+    public function flushQuotePdfCache(Quote $quote): void
+    {
+        cache()->forget($this->quotePdfCacheKey($quote));
+    }
+
     protected function resolveFilepath($path)
     {
         abort_if(blank($path) || Storage::missing($path), 404, QFNE_01);
@@ -286,5 +295,17 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     protected function searchableScope($query)
     {
         return $query;
+    }
+
+    private function retrieveCachedQuotePdf(Quote $quote)
+    {
+        return cache()->remember($this->quotePdfCacheKey($quote), self::EXPORT_CACHE_TTL, function () use ($quote) {
+            return $this->quoteService->export($quote->usingVersion);
+        });
+    }
+
+    private function quotePdfCacheKey(Quote $quote): string
+    {
+        return self::EXPORT_CACHE_PREFIX . $quote->id;
     }
 }
