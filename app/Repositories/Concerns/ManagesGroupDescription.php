@@ -125,8 +125,8 @@ trait ManagesGroupDescription
         $group_description = collect($quote->group_description);
         $old_group_description_with_meta = $quote->group_description_with_meta;
 
-        $from_group_key = $quote->findGroupDescription($request->from_group_id);
-        $to_group_key = $quote->findGroupDescription($request->to_group_id);
+        $from_group_key = $quote->findGroupDescriptionKey($request->from_group_id);
+        $to_group_key = $quote->findGroupDescriptionKey($request->to_group_id);
 
         abort_if(($from_group_key === false || $to_group_key === false), 404, QG_FTNF_01);
 
@@ -191,7 +191,7 @@ trait ManagesGroupDescription
 
     protected function findGroupDescriptionKey(string $id, BaseQuote $quote)
     {
-        return tap($quote->findGroupDescription($id), function ($key) {
+        return tap($quote->findGroupDescriptionKey($id), function ($key) {
             abort_if($key === false, 404, QG_NF_01);
         });
     }

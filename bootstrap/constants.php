@@ -59,6 +59,8 @@ define('QTAD_01', 'You could not delete this Template because it is already in u
 define('QTNF_01', 'No any Quote Templates found');
 define('QTSU_01', 'You could not update the system defined Template.');
 define('QTSD_01', 'You could not delete the system defined Template.');
+define('QT_TYPE_QUOTE', null);
+define('QT_TYPE_CONTRACT', 'contract');
 
 /**
  * Quote File.
@@ -121,11 +123,6 @@ define('S4_CSF_01', 'Failed to receive S4 data.');
  */
 define('SS_INV_01', 'The given Setting value is invalid.');
 define('SS_INV_02', 'You could not to update this setting as it is read only.');
-
-/**
- * Third-party services.
- */
-//
 
 /**
  * Misc.

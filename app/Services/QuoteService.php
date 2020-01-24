@@ -224,7 +224,7 @@ class QuoteService implements QuoteServiceInterface
         $resource = QuoteResource::make($quote->enableReview())->resolve();
         $data = to_array_recursive(data_get($resource, 'quote_data', []));
 
-        $design = tap($quote->quoteTemplate->form_values_data, function (&$design) {
+        $design = tap($quote->quoteTemplate->form_data, function (&$design) {
             if (isset($design['payment_page'])) {
                 $design['payment_schedule'] = $design['payment_page'];
                 unset($design['payment_page']);

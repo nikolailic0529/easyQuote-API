@@ -28,8 +28,7 @@ class StoreQuoteTemplateRequest extends FormRequest
             'countries' => 'required|array',
             'countries.*' => 'required|string|uuid|exists:countries,id',
             'currency_id' => 'nullable|string|uuid|exists:currencies,id',
-            'form_data' => 'array',
-            'form_values_data' => 'required_with:form_data|array'
+            'form_data' => 'array'
         ];
     }
 }

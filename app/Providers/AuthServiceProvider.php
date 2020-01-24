@@ -14,17 +14,19 @@ use App\Models\{
     Quote\Discount\Discount,
     QuoteFile\QuoteFile,
     QuoteTemplate\QuoteTemplate,
+    QuoteTemplate\ContractTemplate,
     Collaboration\Invitation,
     System\SystemSetting,
-    System\Activity
+    System\Activity,
+    System\Notification,
+    Customer\Customer
 };
-use App\Models\Customer\Customer;
-use App\Models\System\Notification;
 use App\Policies\{
     ActivityPolicy,
     AddressPolicy,
     CompanyPolicy,
     ContactPolicy,
+    ContractTemplatePolicy,
     CustomerPolicy,
     DiscountPolicy,
     InvitationPolicy,
@@ -54,22 +56,23 @@ class AuthServiceProvider extends ServiceProvider
      * @var array
      */
     protected $policies = [
-        Quote::class => QuotePolicy::class,
-        QuoteFile::class => QuoteFilePolicy::class,
-        QuoteTemplate::class => QuoteTemplatePolicy::class,
-        Company::class => CompanyPolicy::class,
-        Vendor::class => VendorPolicy::class,
-        Discount::class => DiscountPolicy::class,
-        Margin::class => MarginPolicy::class,
-        Role::class => RolePolicy::class,
-        User::class => UserPolicy::class,
-        Invitation::class => InvitationPolicy::class,
-        SystemSetting::class => SystemSettingPolicy::class,
-        Activity::class => ActivityPolicy::class,
-        Address::class => AddressPolicy::class,
-        Contact::class => ContactPolicy::class,
-        Notification::class => NotificationPolicy::class,
-        Customer::class => CustomerPolicy::class
+        Quote::class                => QuotePolicy::class,
+        QuoteFile::class            => QuoteFilePolicy::class,
+        QuoteTemplate::class        => QuoteTemplatePolicy::class,
+        ContractTemplate::class     => ContractTemplatePolicy::class,
+        Company::class              => CompanyPolicy::class,
+        Vendor::class               => VendorPolicy::class,
+        Discount::class             => DiscountPolicy::class,
+        Margin::class               => MarginPolicy::class,
+        Role::class                 => RolePolicy::class,
+        User::class                 => UserPolicy::class,
+        Invitation::class           => InvitationPolicy::class,
+        SystemSetting::class        => SystemSettingPolicy::class,
+        Activity::class             => ActivityPolicy::class,
+        Address::class              => AddressPolicy::class,
+        Contact::class              => ContactPolicy::class,
+        Notification::class         => NotificationPolicy::class,
+        Customer::class             => CustomerPolicy::class
     ];
 
     public function register()

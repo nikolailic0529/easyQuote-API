@@ -91,10 +91,15 @@ Route::group(['namespace' => 'API'], function () {
             Route::put('templates/activate/{template}', 'QuoteTemplateController@activate');
             Route::put('templates/deactivate/{template}', 'QuoteTemplateController@deactivate');
             Route::put('templates/copy/{template}', 'QuoteTemplateController@copy');
+        });
 
-            Route::resource('template_fields', 'TemplateFieldController', ['only' => ROUTE_CRUD]);
-            Route::put('template_fields/activate/{template_fields}', 'TemplateFieldController@activate');
-            Route::put('template_fields/deactivate/{template_fields}', 'TemplateFieldController@deactivate');
+        Route::group(['namespace' => 'Templates', 'middleware' => THROTTLE_RATE_01], function () {
+            Route::get('contract-templates/designer/{contract_template}', 'ContractTemplateController@designer');
+            Route::get('contract-templates/country/{country}', 'ContractTemplateController@country');
+            Route::apiResource('contract-templates', 'ContractTemplateController');
+            Route::put('contract-templates/activate/{contract_template}', 'ContractTemplateController@activate');
+            Route::put('contract-templates/deactivate/{contract_template}', 'ContractTemplateController@deactivate');
+            Route::put('contract-templates/copy/{contract_template}', 'ContractTemplateController@copy');
         });
 
         Route::group(['middleware' => THROTTLE_RATE_01], function () {

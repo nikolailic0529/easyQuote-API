@@ -65,7 +65,10 @@ return [
         'margin' => \App\Models\Quote\Margin\CountryMargin::class,
         'vendor' => \App\Models\Vendor::class,
         'company' => \App\Models\Company::class,
-        'template' => \App\Models\QuoteTemplate\QuoteTemplate::class,
+        'template' => [
+            \App\Models\QuoteTemplate\QuoteTemplate::class,
+            \App\Models\QuoteTemplate\ContractTemplate::class
+        ],
         'address' => \App\Models\Address::class,
         'contact' => \App\Models\Contact::class,
         'user' => \App\Models\User::class,

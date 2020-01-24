@@ -13,10 +13,11 @@ use App\Models\{
     Quote\Discount\SND,
     QuoteTemplate\QuoteTemplate,
     Collaboration\Invitation,
-    System\SystemSetting
+    System\SystemSetting,
+    Customer\Customer,
+    QuoteTemplate\ContractTemplate,
+    System\Notification
 };
-use App\Models\Customer\Customer;
-use App\Models\System\Notification;
 use App\Observers\{
     VendorObserver,
     QuoteObserver,
@@ -66,6 +67,8 @@ class ObserverServiceProvider extends ServiceProvider
         Vendor::observe(VendorObserver::class);
 
         QuoteTemplate::observe(QuoteTemplateObserver::class);
+
+        ContractTemplate::observe(QuoteTemplateObserver::class);
 
         Invitation::observe(InvitationObserver::class);
 

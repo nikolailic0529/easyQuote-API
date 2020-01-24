@@ -28,6 +28,8 @@ trait BelongsToCountries
             return;
         }
 
+        $this->fireModelEvent('saved', false);
+
         $newCountries = $this->load('countries')->countries;
 
         activity()

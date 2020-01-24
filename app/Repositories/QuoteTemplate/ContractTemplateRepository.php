@@ -2,63 +2,78 @@
 
 namespace App\Repositories\QuoteTemplate;
 
-use App\Contracts\Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface;
-use App\Http\Requests\GetQuoteTemplatesRequest;
+use App\Contracts\Repositories\QuoteTemplate\ContractTemplateRepositoryInterface;
+use App\Models\QuoteTemplate\ContractTemplate;
 use App\Repositories\SearchableRepository;
-use App\Models\QuoteTemplate\QuoteTemplate;
-use App\Http\Requests\QuoteTemplate\UpdateQuoteTemplateRequest;
 use Illuminate\Database\Eloquent\{
     Model,
     Builder,
-    Collection
+    Collection as EloquentCollection
 };
-use Illuminate\Support\Collection as SupportCollection;
-use Arr, \Closure;
+use Illuminate\Support\Collection;
+use Closure, Arr;
 
-class QuoteTemplateRepository extends SearchableRepository implements QuoteTemplateRepositoryInterface
+class ContractTemplateRepository extends SearchableRepository implements ContractTemplateRepositoryInterface
 {
     const DESIGN_ATTRIBUTES = ['form_data', 'complete_design'];
 
-    /** @var \App\Models\QuoteTemplate\QuoteTemplate */
-    protected $quoteTemplate;
+    /** @var \App\QuoteTemplate\ContractTemplate */
+    protected $template;
 
-    /** @var string */
-    protected $table;
-
-    public function __construct(QuoteTemplate $quoteTemplate)
+    public function __construct(ContractTemplate $template)
     {
-        $this->quoteTemplate = $quoteTemplate;
-        $this->table = $quoteTemplate->getTable();
+        $this->template = $template;
     }
 
-    public function userQuery(): Builder
+    public function query(): Builder
     {
-        return $this->quoteTemplate->query()->with('company:id,name', 'vendor:id,name', 'countries:id,name');
+        return $this->template->query();
     }
 
-    public function find(string $id): QuoteTemplate
+    public function paginate()
     {
-        return $this->quoteTemplate->query()->whereId($id)->firstOrFail();
+        return parent::all();
     }
 
-    public function findByCompanyVendorCountry(GetQuoteTemplatesRequest $request): Collection
+    public function find(string $id): ContractTemplate
     {
-        return $this->userQuery()
-            ->where('quote_templates.company_id', $request->company_id)
-            ->where('quote_templates.vendor_id', $request->vendor_id)
-            ->join('country_quote_template', function ($join) use ($request) {
+        return $this->template->whereId($id)->firstOrFail();
+    }
+
+    public function create(array $attributes): ContractTemplate
+    {
+        return tap($this->template->create($attributes), function ($template) use ($attributes) {
+            $template->syncCountries(data_get($attributes, 'countries'));
+        });
+    }
+
+    public function findByCompanyVendorCountry($request): EloquentCollection
+    {
+        if ($request instanceof \Illuminate\Http\Request) {
+            $request = $request->validated();
+        }
+
+        throw_unless(is_array($request), new \InvalidArgumentException(INV_ARG_RA_01));
+
+        $company_id = data_get($request, 'company_id');
+        $vendor_id = data_get($request, 'vendor_id');
+        $country_id = data_get($request, 'country_id');
+
+        return $this->query()
+            ->where('quote_templates.company_id', $company_id)
+            ->where('quote_templates.vendor_id', $vendor_id)
+            ->join('country_quote_template', function ($join) use ($country_id) {
                 $join->on('quote_templates.id', '=', 'country_quote_template.quote_template_id')
-                    ->where('country_id', $request->country_id);
+                    ->where('country_id', $country_id);
             })
-            ->joinWhere('companies', 'companies.id', '=', $request->company_id)
+            ->joinWhere('companies', 'companies.id', '=', $company_id)
             ->orderByRaw('field(`quote_templates`.`id`, `companies`.`default_template_id`, null) desc')
-            ->select('quote_templates.*')
             ->get();
     }
 
-    public function country(string $countryId): Collection
+    public function country(string $countryId): EloquentCollection
     {
-        return $this->quoteTemplate->query()
+        return $this->query()
             ->whereHas('countries', function ($query) use ($countryId) {
                 $query->whereId($countryId);
             })->get();
@@ -68,7 +83,7 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
     {
         $method = $limit > 1 ? 'get' : 'first';
 
-        $query = $this->quoteTemplate->query()->inRandomOrder()->limit($limit);
+        $query = $this->query()->inRandomOrder()->limit($limit);
 
         if ($scope instanceof Closure) {
             $scope($query);
@@ -77,7 +92,7 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
         return $query->{$method}();
     }
 
-    public function designer(string $id): SupportCollection
+    public function designer(string $id): Collection
     {
         $template = $this->find($id)->load('company', 'vendor.image');
 
@@ -95,43 +110,26 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
         return $designer;
     }
 
-    public function create($request): QuoteTemplate
+    public function update(array $attributes, string $id): ContractTemplate
     {
-        if ($request instanceof \Illuminate\Http\Request) {
-            $request = $request->validated();
-        }
-
-        throw_unless(is_array($request), new \InvalidArgumentException(INV_ARG_RA_01));
-
-        return tap($this->quoteTemplate->create($request), function ($template) use ($request) {
-            $template->syncCountries(data_get($request, 'countries'));
+        $template = tap($this->find($id), function ($template) use ($attributes) {
+            $template->update($attributes);
+            $template->syncCountries(data_get($attributes, 'countries'));
         });
-    }
-
-    public function update(UpdateQuoteTemplateRequest $request, string $id): QuoteTemplate
-    {
-        $attributes = $request->validated();
-
-        $quoteTemplate = $this->find($id);
-        $quoteTemplate->update($attributes);
-        $quoteTemplate->syncCountries(data_get($attributes, 'countries'));
 
         /**
-         * Determine that passed $attributes have only design related values (form_data & form_values_data).
+         * Determine that passed $attributes have only design related values (self::DESIGN_ATTRIBUTES).
          * Then if the passed $attributes have complete_design we'll perform record log with updated description.
          */
-        $designKeys = ['form_data', 'complete_design'];
 
         if (
-            Arr::has($attributes, $designKeys)
-            && blank(array_diff_key($attributes, array_flip($designKeys)))
+            Arr::has($attributes, self::DESIGN_ATTRIBUTES)
+            && blank(array_diff_key($attributes, array_flip(self::DESIGN_ATTRIBUTES)))
         ) {
-            activity()
-                ->on($quoteTemplate)
-                ->queue('updated');
+            activity()->on($template)->queue('updated');
         }
 
-        return $quoteTemplate->load('company', 'vendor', 'countries', 'templateFields', 'currency')->makeVisible(['form_data', 'form_values_data']);
+        return $template;
     }
 
     public function delete(string $id): bool
@@ -149,7 +147,7 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
         return $this->find($id)->deactivate();
     }
 
-    public function copy(string $id): array
+    public function copy(string $id)
     {
         activity()->disableLogging();
 
@@ -167,12 +165,17 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
         if ($copied) {
             activity()
                 ->on($template)
-                ->withProperties(['old' => QuoteTemplate::logChanges($replicatableTemplate), 'attributes' => QuoteTemplate::logChanges($template)])
+                ->withProperties(['old' => ContractTemplate::logChanges($replicatableTemplate), 'attributes' => ContractTemplate::logChanges($template)])
                 ->by(request()->user())
                 ->queue('copied');
         }
 
         return ['id' => $replicatableTemplate->id];
+    }
+
+    public function model(): string
+    {
+        return ContractTemplate::class;
     }
 
     protected function filterQueryThrough(): array
@@ -189,14 +192,14 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
     protected function filterableQuery()
     {
         return [
-            $this->userQuery()->activated(),
-            $this->userQuery()->deactivated()
+            $this->query()->activated(),
+            $this->query()->deactivated()
         ];
     }
 
     protected function searchableModel(): Model
     {
-        return $this->quoteTemplate;
+        return $this->template;
     }
 
     protected function searchableFields(): array

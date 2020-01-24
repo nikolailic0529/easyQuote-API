@@ -103,7 +103,7 @@ class StoreQuoteStateRequest extends FormRequest
             ],
             'quote_data.quote_template_id' => [
                 'uuid',
-                'exists:quote_templates,id'
+                Rule::exists('quote_templates', 'id')->whereNull('deleted_at')->whereNull('type')
             ],
             'quote_data.files.*' => [
                 'uuid',

@@ -2,34 +2,33 @@
 
 namespace App\Observers;
 
-use App\Models\QuoteTemplate\QuoteTemplate;
+use App\Models\QuoteTemplate\BaseQuoteTemplate;
 
 class QuoteTemplateObserver
 {
-
     /**
-     * Handle the QuoteTemplate "relicating" event.
+     * Handle the Template "relicating" event.
      *
-     * @param QuoteTemplate $quoteTemplate
+     * @param \App\Models\QuoteTemplate\BaseQuoteTemplate $quoteTemplate
      * @return void
      */
-    public function replicating(QuoteTemplate $quoteTemplate)
+    public function replicating(BaseQuoteTemplate $template)
     {
-        $quoteTemplate->name = "{$quoteTemplate->name} [copy]";
+        $template->name = "{$template->name} [copy]";
     }
 
     /**
-     * Handle the QuoteTemplate "deleting" event.
+     * Handle the Template "deleting" event.
      *
-     * @param QuoteTemplate $quoteTemplate
+     * @param App\Models\QuoteTemplate\BaseQuoteTemplate $quoteTemplate
      * @return void
      */
-    public function deleting(QuoteTemplate $quoteTemplate)
+    public function deleting(BaseQuoteTemplate $template)
     {
         if (app()->runningInConsole()) {
             return;
         }
 
-        error_abort_if($quoteTemplate->isAttached(), QTAD_01, 'QTAD_01', 409);
+        error_abort_if($template->isAttached(), QTAD_01, 'QTAD_01', 409);
     }
 }

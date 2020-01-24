@@ -2,10 +2,12 @@
 
 namespace App\Models\QuoteTemplate;
 
-use App\Scopes\QuoteTemplateScope;
+use App\Scopes\ContractTemplateScope;
 
-class QuoteTemplate extends BaseQuoteTemplate
+class ContractTemplate extends BaseQuoteTemplate
 {
+    protected $table = 'quote_templates';
+
     protected $fillable = [
         'name', 'company_id', 'vendor_id', 'form_data'
     ];
@@ -16,23 +18,22 @@ class QuoteTemplate extends BaseQuoteTemplate
 
     protected $casts = [
         'is_system' => 'boolean',
-        'form_data' => 'array',
-        'form_values_data' => 'array'
+        'form_data' => 'array'
     ];
 
     protected $attributes = [
-        'type' => QT_TYPE_QUOTE
+        'type' => QT_TYPE_CONTRACT
     ];
 
     protected static function boot()
     {
         parent::boot();
 
-        static::addGlobalScope(new QuoteTemplateScope);
+        static::addGlobalScope(new ContractTemplateScope);
     }
 
     public function getItemNameAttribute()
     {
-        return "Quote Template ({$this->name})";
+        return "Contract Template ({$this->name})";
     }
 }

@@ -23,6 +23,11 @@ trait HasGroupDescriptionAttribute
 
     public function findGroupDescription(string $id)
     {
+        return collect($this->group_description)->firstWhere('id', $id);
+    }
+
+    public function findGroupDescriptionKey(string $id)
+    {
         return collect($this->group_description)->search(function ($group) use ($id) {
             return isset($group['id']) && $group['id'] === $id;
         });

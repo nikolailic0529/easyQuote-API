@@ -21,6 +21,7 @@ use App\Http\Requests\{
 use App\Http\Requests\Quote\SetVersionRequest;
 use App\Http\Requests\Quote\TryDiscountsRequest;
 use App\Http\Resources\QuoteVersionResource;
+use App\Http\Resources\TemplateRepository\TemplateResourceListing;
 use App\Models\Quote\Quote;
 use Setting;
 
@@ -100,7 +101,7 @@ class QuoteController extends Controller
 
         if ($request->has('search')) {
             return response()->json(
-                $this->quote->rows($request->quote_id, $request->search)
+                $this->quote->rows($request->quote_id, $request->search, $request->group_id)
             );
         }
 
@@ -126,9 +127,9 @@ class QuoteController extends Controller
 
     public function templates(GetQuoteTemplatesRequest $request)
     {
-        return response()->json(
-            $this->template->findByCompanyVendorCountry($request)
-        );
+        $resource = $this->template->findByCompanyVendorCountry($request);
+
+        return response()->json(TemplateResourceListing::collection($resource));
     }
 
     public function step3()

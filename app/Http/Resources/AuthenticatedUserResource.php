@@ -14,7 +14,7 @@ class AuthenticatedUserResource extends JsonResource
      */
     public function toArray($request)
     {
-        $build = optional($this->additional)['build'];
+        $build = optional(optional($this->additional)['build']);
 
         return [
             'id'                            => $this->id,

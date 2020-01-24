@@ -8,6 +8,11 @@ use App\Http\Requests\QuoteTemplate\{
     StoreQuoteTemplateRequest,
     UpdateQuoteTemplateRequest
 };
+use App\Http\Resources\TemplateRepository\{
+    TemplateCollection,
+    TemplateResourceListing,
+    TemplateResourceWithIncludes
+};
 use App\Models\QuoteTemplate\QuoteTemplate;
 
 class QuoteTemplateController extends Controller
@@ -27,10 +32,12 @@ class QuoteTemplateController extends Controller
      */
     public function index()
     {
+        $resource = request()->filled('search')
+            ? $this->quoteTemplate->search(request('search'))
+            : $this->quoteTemplate->all();
+
         return response()->json(
-            request()->filled('search')
-                ? $this->quoteTemplate->search(request('search'))
-                : $this->quoteTemplate->all()
+            TemplateCollection::make($resource)
         );
     }
 
@@ -44,9 +51,9 @@ class QuoteTemplateController extends Controller
     {
         $this->authorize('viewAny', QuoteTemplate::class);
 
-        return response()->json(
-            $this->quoteTemplate->country($country)
-        );
+        $resource = $this->quoteTemplate->country($country);
+
+        return response()->json(TemplateResourceListing::collection($resource));
     }
 
     /**
@@ -57,8 +64,10 @@ class QuoteTemplateController extends Controller
      */
     public function store(StoreQuoteTemplateRequest $request)
     {
+        $template = $this->quoteTemplate->create($request);
+
         return response()->json(
-            $this->quoteTemplate->create($request)
+            TemplateResourceWithIncludes::make($template)
         );
     }
 
@@ -70,9 +79,7 @@ class QuoteTemplateController extends Controller
      */
     public function show(QuoteTemplate $template)
     {
-        return response()->json(
-            $this->quoteTemplate->find($template->id)
-        );
+        return response()->json(TemplateResourceWithIncludes::make($template));
     }
 
     /**
@@ -84,9 +91,9 @@ class QuoteTemplateController extends Controller
      */
     public function update(UpdateQuoteTemplateRequest $request, QuoteTemplate $template)
     {
-        return response()->json(
-            $this->quoteTemplate->update($request, $template->id)
-        );
+        $template = $this->quoteTemplate->update($request, $template->id);
+
+        return response()->json(TemplateResourceWithIncludes::make($template));
     }
 
     /**

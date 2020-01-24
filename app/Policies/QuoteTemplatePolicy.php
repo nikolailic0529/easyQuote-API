@@ -20,9 +20,7 @@ class QuoteTemplatePolicy
      */
     public function viewAny(User $user)
     {
-        if ($user->can('view_templates')) {
-            return true;
-        }
+        return $user->can('view_templates');
     }
 
     /**
@@ -34,9 +32,7 @@ class QuoteTemplatePolicy
      */
     public function view(User $user, QuoteTemplate $quoteTemplate)
     {
-        if ($user->can('view_templates')) {
-            return true;
-        }
+        return $user->can('view_templates');
     }
 
     /**
@@ -47,9 +43,7 @@ class QuoteTemplatePolicy
      */
     public function create(User $user)
     {
-        if ($user->can('create_templates')) {
-            return true;
-        }
+        return $user->can('create_templates');
     }
 
     /**
@@ -65,9 +59,7 @@ class QuoteTemplatePolicy
             return $this->deny(QTSU_01);
         }
 
-        if ($user->can('update_templates')) {
-            return true;
-        }
+        return $user->can('update_templates');
     }
 
     /**
@@ -83,13 +75,11 @@ class QuoteTemplatePolicy
             return $this->deny(QTSD_01);
         }
 
-        if ($user->can('delete_templates')) {
-            return true;
-        }
+        return $user->can('delete_templates');
     }
 
     /**
-     * Determine whether the user can make copy of the quote.
+     * Determine whether the user can make copy of the template.
      *
      * @param User $user
      * @param QuoteTemplate $quoteTemplate

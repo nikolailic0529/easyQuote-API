@@ -25,6 +25,7 @@ class MappingReviewRequest extends FormRequest
     {
         return [
             'quote_id' => 'required|uuid|exists:quotes,id',
+            'group_id' => 'nullable|string|uuid',
             'search' => 'string'
         ];
     }

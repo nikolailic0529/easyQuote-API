@@ -48,6 +48,7 @@ class ActivityTest extends TestCase
         });
 
         $response = $this->postJson(url('api/activities'), compact('types'), $this->authorizationHeader);
+
         $this->assertListing($response);
     }
 

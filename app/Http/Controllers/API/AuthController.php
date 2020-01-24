@@ -120,10 +120,11 @@ class AuthController extends Controller
      * @param UpdateProfileRequest $request
      * @return \Illuminate\Http\Response
      */
-    public function updateOwnProfile(UpdateProfileRequest $request)
+    public function updateOwnProfile(UpdateProfileRequest $request, BuildRepositoryInterface $build)
     {
         return response()->json(
-            $this->user->updateOwnProfile($request)
+            AuthenticatedUserResource::make($this->user->updateOwnProfile($request))
+                ->additional(['build' => $build->latest()])
         );
     }
 
@@ -131,7 +132,7 @@ class AuthController extends Controller
      * Perform Reset Password.
      *
      * @param ResetPassword $reset
-     * @return void
+     * @return \Illuminate\Http\Response
      */
     public function resetPassword(PasswordResetRequest $request, PasswordReset $reset)
     {
@@ -146,7 +147,7 @@ class AuthController extends Controller
      * Returns True if the token isn't expired and exists.
      *
      * @param string $reset
-     * @return void
+     * @return \Illuminate\Http\Response
      */
     public function verifyPasswordReset(string $reset)
     {

@@ -265,9 +265,21 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         return QuoteReviewResource::make($quote->enableReview());
     }
 
-    public function rows(string $id, string $query = ''): Collection
+    public function rows(string $id, string $query = '', ?string $group_id = null): Collection
     {
-        return $this->findVersion($id)->rowsDataByColumnsGroupable($query)->get();
+        $quote = $this->findVersion($id);
+
+        $foundRows = $quote->rowsDataByColumnsGroupable($query)->get();
+
+        if (isset($group_id) && null !== ($group = $quote->findGroupDescription($group_id))) {
+            $groupName = optional($group)['name'];
+
+            $existingRows = $quote->groupedRows(null, false, $groupName)->get();
+
+            $foundRows = $foundRows->merge($existingRows);
+        }
+
+        return $foundRows;
     }
 
     public function setVersion(string $version_id, $quote): bool
