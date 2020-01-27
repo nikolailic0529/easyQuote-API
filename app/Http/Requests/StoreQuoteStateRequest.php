@@ -105,6 +105,10 @@ class StoreQuoteStateRequest extends FormRequest
                 'uuid',
                 Rule::exists('quote_templates', 'id')->whereNull('deleted_at')->whereNull('type')
             ],
+            'quote_data.contract_template_id' => [
+                'uuid',
+                Rule::exists('quote_templates', 'id')->whereNull('deleted_at')->where('type', QT_TYPE_CONTRACT)
+            ],
             'quote_data.files.*' => [
                 'uuid',
                 'exists:quote_files,id'
@@ -155,9 +159,9 @@ class StoreQuoteStateRequest extends FormRequest
                 }
             ],
             'quote_data.last_drafted_step' => 'string|max:20',
-            'quote_data.pricing_document' => 'string|max:40|min:2',
-            'quote_data.service_agreement_id' => 'string|max:40|min:2',
-            'quote_data.system_handle' => 'string|max:40|min:2',
+            'quote_data.pricing_document' => 'string|max:150|min:2',
+            'quote_data.service_agreement_id' => 'string|max:150|min:2',
+            'quote_data.system_handle' => 'string|max:150|min:2',
             'quote_data.additional_details' => 'nullable|string|max:20000|min:2',
             'quote_data.checkbox_status' => 'array',
             'quote_data.closing_date' => 'date_format:Y-m-d',

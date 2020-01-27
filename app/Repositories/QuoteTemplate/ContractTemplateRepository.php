@@ -68,6 +68,7 @@ class ContractTemplateRepository extends SearchableRepository implements Contrac
             })
             ->joinWhere('companies', 'companies.id', '=', $company_id)
             ->orderByRaw('field(`quote_templates`.`id`, `companies`.`default_template_id`, null) desc')
+            ->select('quote_templates.*')
             ->get();
     }
 

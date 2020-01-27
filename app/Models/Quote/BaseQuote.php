@@ -35,14 +35,15 @@ use App\Traits\{
     Quote\HasGroupDescriptionAttribute,
     Quote\HasAdditionalHtmlAttributes,
     QuoteTemplate\BelongsToQuoteTemplate,
+    QuoteTemplate\BelongsToContractTemplate,
     CachesRelations\CachesRelations,
     Activity\LogsActivity,
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Traits\Tappable;
 use Carbon\Carbon;
 use Arr, Str;
-use Illuminate\Support\Traits\Tappable;
 
 abstract class BaseQuote extends BaseModel implements HasOrderedScope, ActivatableInterface
 {
@@ -55,6 +56,7 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
         BelongsToCountry,
         BelongsToMargin,
         BelongsToQuoteTemplate,
+        BelongsToContractTemplate,
         Draftable,
         Submittable,
         Activatable,
@@ -82,6 +84,7 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
         'country_id',
         'language_id',
         'quote_template_id',
+        'contract_template_id',
         'last_drafted_step',
         'pricing_document',
         'service_agreement_id',

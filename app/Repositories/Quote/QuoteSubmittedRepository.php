@@ -228,6 +228,11 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         });
     }
 
+    public function setContractTemplate(string $id, string $contract_template_id): bool
+    {
+        return $this->find($id)->update(compact('contract_template_id'));
+    }
+
     public function model(): string
     {
         return Quote::class;

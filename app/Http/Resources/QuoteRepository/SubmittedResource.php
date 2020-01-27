@@ -35,6 +35,7 @@ class SubmittedResource extends JsonResource
             ],
             'last_drafted_step' => $this->last_drafted_step,
             'completeness' => $this->completeness,
+            'has_contract_template' => (bool) $this->hasContractTemplate,
             'created_at' => $this->created_at,
             'activated_at' => $this->activated_at,
         ];

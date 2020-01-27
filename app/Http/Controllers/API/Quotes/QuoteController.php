@@ -39,13 +39,13 @@ class QuoteController extends Controller
 
     public function __construct(
         QuoteRepository $quote,
-        QuoteTemplateRepository $template,
+        QuoteTemplateRepository $quoteTemplates,
         MarginRepository $margin,
         CompanyRepository $company,
         DataSelectRepository $dataSelect
     ) {
         $this->quote = $quote;
-        $this->template = $template;
+        $this->quoteTemplates = $quoteTemplates;
         $this->margin = $margin;
         $this->company = $company;
         $this->dataSelect = $dataSelect;
@@ -55,10 +55,10 @@ class QuoteController extends Controller
     {
         $this->authorize('view', $quote);
 
+        $resource = $this->quote->find($quote);
+
         return response()->json(
-            QuoteVersionResource::make(
-                $this->quote->find($quote)
-            )
+            filter(QuoteVersionResource::make($resource))
         );
     }
 
@@ -127,7 +127,7 @@ class QuoteController extends Controller
 
     public function templates(GetQuoteTemplatesRequest $request)
     {
-        $resource = $this->template->findByCompanyVendorCountry($request);
+        $resource = $request->repository()->findByCompanyVendorCountry($request);
 
         return response()->json(TemplateResourceListing::collection($resource));
     }

@@ -3,16 +3,20 @@
 namespace App\Http\Controllers\API\Quotes;
 
 use App\Http\Controllers\Controller;
-use App\Contracts\Repositories\Quote\QuoteSubmittedRepositoryInterface as QuoteRepository;
-use App\Models\Quote\Quote;
+use App\Contracts\Repositories\Quote\QuoteSubmittedRepositoryInterface as Repository;
+use App\Models\{
+    Quote\Quote,
+    QuoteTemplate\ContractTemplate
+};
 
 class QuoteSubmittedController extends Controller
 {
-    protected $quote;
+    /** @var \App\Contracts\Repositories\Quote\QuoteSubmittedRepositoryInterface */
+    protected $repository;
 
-    public function __construct(QuoteRepository $quote)
+    public function __construct(Repository $repository)
     {
-        $this->quote = $quote;
+        $this->repository = $repository;
         $this->authorizeResource(Quote::class, 'submitted');
     }
 
@@ -25,15 +29,21 @@ class QuoteSubmittedController extends Controller
     {
         return response()->json(
             request()->filled('search')
-                ? $this->quote->search(request('search'))
-                : $this->quote->all()
+                ? $this->repository->search(request('search'))
+                : $this->repository->all()
         );
     }
 
+    /**
+     * Retrieve the specified Submitted Quote.
+     *
+     * @param Quote $submitted
+     * @return \Illuminate\Http\Response
+     */
     public function show(Quote $submitted)
     {
         return response()->json(
-            $this->quote->find($submitted->id)
+            $this->repository->find($submitted->id)
         );
     }
 
@@ -46,7 +56,7 @@ class QuoteSubmittedController extends Controller
     public function destroy(Quote $submitted)
     {
         return response()->json(
-            $this->quote->delete($submitted->id)
+            $this->repository->delete($submitted->id)
         );
     }
 
@@ -61,7 +71,7 @@ class QuoteSubmittedController extends Controller
         $this->authorize('update', $submitted);
 
         return response()->json(
-            $this->quote->activate($submitted->id)
+            $this->repository->activate($submitted->id)
         );
     }
 
@@ -76,7 +86,7 @@ class QuoteSubmittedController extends Controller
         $this->authorize('update', $submitted);
 
         return response()->json(
-            $this->quote->deactivate($submitted->id)
+            $this->repository->deactivate($submitted->id)
         );
     }
 
@@ -91,7 +101,7 @@ class QuoteSubmittedController extends Controller
         $this->authorize('copy', $submitted);
 
         return response()->json(
-            $this->quote->copy($submitted)
+            $this->repository->copy($submitted)
         );
     }
 
@@ -106,12 +116,12 @@ class QuoteSubmittedController extends Controller
         $this->authorize('update', $submitted);
 
         return response()->json(
-            $this->quote->unSubmit($submitted->id)
+            $this->repository->unSubmit($submitted->id)
         );
     }
 
     /**
-     * Export a specified Quote as PDF.
+     * Export the specified Quote as PDF.
      *
      * @param Quote $submitted
      * @return \Illuminate\Http\Response
@@ -120,6 +130,22 @@ class QuoteSubmittedController extends Controller
     {
         $this->authorize('download_pdf', $submitted);
 
-        return $this->quote->exportPdf($submitted);
+        return $this->repository->exportPdf($submitted);
+    }
+
+    /**
+     * Set the specified Contract Template for the Quote.
+     *
+     * @param Quote $submitted
+     * @param ContractTemplate $template
+     * @return \Illuminate\Http\Response
+     */
+    public function setContractTemplate(Quote $submitted, ContractTemplate $template)
+    {
+        $this->authorize('update', $submitted);
+
+        return response()->json(
+            $this->repository->setContractTemplate($submitted->id, $template->id)
+        );
     }
 }

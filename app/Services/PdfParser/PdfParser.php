@@ -120,6 +120,13 @@ class PdfParser implements PdfParserInterface
 
         $content = Storage::get($filePath);
 
+        /**
+         * Finding end of the payment lines to exclude total payments.
+         */
+        if (preg_match_all('/Total\s+for.*/i', $content, $matches, PREG_SET_ORDER)) {
+            $content = Str::beforeLast($content, head(last($matches)));
+        };
+
         preg_match_all(self::REGEXP_SCHEDULE_PAYMENTS, $content, $matches, PREG_UNMATCHED_AS_NULL, 0);
 
         $matches = collect($matches)->only('payment', 'account', 'payment_dates', 'payment_dates_options')
@@ -171,7 +178,10 @@ class PdfParser implements PdfParserInterface
 
         // Payment Lines
         $paymentLines = collect($paymentLines)
-            ->transform(function ($paymentLine) {
+            ->transform(function ($paymentLine, $key) {
+                if ($key === 4) {
+                    dd($paymentLine);
+                }
                 preg_match_all(self::REGEXP_SCHEDULE_PRICE, $paymentLine, $matches);
                 return data_get($matches, 'price');
             })->transform(function ($line) use ($colsMapping) {
@@ -189,18 +199,15 @@ class PdfParser implements PdfParserInterface
             return collect($line)->splice(0, count(head($paymentOptions)));
         });
 
-        $paymentSchedule = [];
-
-        $array = [
-            'from' => data_get($paymentOptions, '0.0'),
-            'to' => data_get($paymentOptions, '1.0')
-        ];
-
-        foreach ($paymentLines[0] as $key => $price) {
-            $from = data_get($paymentOptions, "0.{$key}");
-            $to = data_get($paymentOptions, "1.{$key}");
-            data_set($paymentSchedule, $key, compact('from', 'to', 'price'));
-        };
+        $paymentSchedule = $paymentLines->map(function ($paymentLine) use ($paymentOptions) {
+            return collect($paymentLine)->transform(function ($price, $key) use ($paymentOptions) {
+                return [
+                    'from' => data_get($paymentOptions, "0.{$key}"),
+                    'to' => data_get($paymentOptions, "1.{$key}"),
+                    'price' => $price
+                ];
+            })->toArray();
+        })->collapse()->toArray();
 
         return $paymentSchedule;
     }

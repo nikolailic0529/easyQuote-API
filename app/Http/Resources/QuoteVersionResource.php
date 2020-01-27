@@ -3,10 +3,12 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
-use Arr;
+use App\Http\Resources\TemplateRepository\TemplateResourceDesign;
 
 class QuoteVersionResource extends JsonResource
 {
+    public $availableIncludes = ['contractTemplate'];
+
     /**
      * Transform the resource into an array.
      *
@@ -15,13 +17,11 @@ class QuoteVersionResource extends JsonResource
      */
     public function toArray($request)
     {
-        $this->usingVersion->quoteTemplate
-            ->makeVisible(['form_data', 'form_values_data']);
-
         return [
             'id'                                        => $this->id,
             'user_id'                                   => $this->usingVersion->user_id,
             'quote_template_id'                         => $this->usingVersion->quote_template_id,
+            'contract_template_id'                      => $this->contract_template_id,
             'company_id'                                => $this->usingVersion->company_id,
             'vendor_id'                                 => $this->usingVersion->vendor_id,
             'customer_id'                               => $this->usingVersion->customer_id,
@@ -55,7 +55,8 @@ class QuoteVersionResource extends JsonResource
             'user_margin_percentage'                    => $this->usingVersion->user_margin_percentage,
             'custom_discount'                           => $this->usingVersion->custom_discount,
             'quote_files'                               => $this->usingVersion->quoteFiles,
-            'quote_template'                            => $this->usingVersion->quoteTemplate,
+            'quote_template'                            => TemplateResourceDesign::make($this->usingVersion->quoteTemplate),
+            'contract_template'                         => TemplateResourceDesign::make($this->whenLoaded('contractTemplate')),
             'country_margin'                            => $this->usingVersion->countryMargin,
             'discounts'                                 => $this->usingVersion->discounts,
             'customer'                                  => [

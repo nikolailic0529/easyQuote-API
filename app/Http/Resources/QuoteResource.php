@@ -1,4 +1,6 @@
-<?php namespace App\Http\Resources;
+<?php
+
+namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -43,7 +45,9 @@ class QuoteResource extends JsonResource
                     'final_price' => $this->final_price_formatted,
                     'invoicing_terms' => $this->customer->invoicing_terms,
                     'full_name' => $this->user->full_name,
-                    'date' => $this->updated_at
+                    'date' => $this->updated_at,
+                    'service_agreement_id' => $this->service_agreement_id,
+                    'system_handle' => $this->system_handle,
                 ],
                 'data_pages' => [
                     'pricing_document' => $this->pricing_document,

@@ -174,6 +174,7 @@ Route::group(['namespace' => 'API'], function () {
                 Route::put('submitted/{submitted}', 'QuoteSubmittedController@deactivate');
                 Route::put('submitted/copy/{submitted}', 'QuoteSubmittedController@copy');
                 Route::put('submitted/unsubmit/{submitted}', 'QuoteSubmittedController@unsubmit');
+                Route::put('submitted/contract-template/{submitted}/{template}', 'QuoteSubmittedController@setContractTemplate');
 
                 Route::apiResource('file', 'QuoteFilesController', ['only' => ROUTE_CR]);
 

@@ -132,6 +132,15 @@ interface QuoteSubmittedRepositoryInterface
     public function copy(string $id);
 
     /**
+     * Set the specified Contract Template for the given Quote.
+     *
+     * @param string $id
+     * @param string $templateId
+     * @return boolean
+     */
+    public function setContractTemplate(string $id, string $templateId): bool;
+
+    /**
      * Map Resource to UserRepositoryCollection.
      *
      * @param mixed $resource

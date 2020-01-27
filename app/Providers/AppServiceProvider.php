@@ -109,6 +109,7 @@ use Elasticsearch\{
     ClientBuilder as ElasticsearchBuilder
 };
 use App\Factories\Failure\Failure;
+use App\Http\Resources\RequestQueryFilter;
 use Schema;
 
 class AppServiceProvider extends ServiceProvider
@@ -158,7 +159,8 @@ class AppServiceProvider extends ServiceProvider
         ClientCredentialsInterface::class => ClientCredentialsRepository::class,
         BuildRepositoryInterface::class => BuildRepository::class,
         ExchangeRateRepositoryInterface::class => ExchangeRateRepository::class,
-        ExchangeRateServiceInterface::class => ER_SERVICE_CLASS
+        ExchangeRateServiceInterface::class => ER_SERVICE_CLASS,
+        'request.filter' => RequestQueryFilter::class
     ];
 
     public $bindings = [

@@ -61,6 +61,7 @@ define('QTSU_01', 'You could not update the system defined Template.');
 define('QTSD_01', 'You could not delete the system defined Template.');
 define('QT_TYPE_QUOTE', null);
 define('QT_TYPE_CONTRACT', 'contract');
+define('QT_TYPES', ['quote', 'contract']);
 
 /**
  * Quote File.
