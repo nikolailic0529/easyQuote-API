@@ -18,11 +18,6 @@
 
         <div class="page-break"></div>
 
-        <div class="row form-group">
-            <div class="col-lg-12 border-right">
-                <h5 class="blue-text">{{ __('Quotation Detail') }}</h5>
-            </div>
-        </div>
         <div class="details">
             @include ('quotes.components.page', ['page_name' => 'data_pages'])
         </div>

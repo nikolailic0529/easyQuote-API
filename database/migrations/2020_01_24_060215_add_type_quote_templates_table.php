@@ -28,6 +28,7 @@ class AddTypeQuoteTemplatesTable extends Migration
     {
         Schema::table('quote_templates', function (Blueprint $table) {
             $table->dropColumn('type');
+            $table->dropIndex(['id', 'type']);
         });
     }
 }

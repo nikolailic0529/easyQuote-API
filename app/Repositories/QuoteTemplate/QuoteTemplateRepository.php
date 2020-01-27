@@ -36,6 +36,13 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
         return $this->quoteTemplate->query()->with('company:id,name', 'vendor:id,name', 'countries:id,name');
     }
 
+    public function allUserDefined(array $columns = ['*'], bool $cursor = false)
+    {
+        $method = $cursor ? 'cursor' : 'get';
+
+        return $this->quoteTemplate->query()->where('is_system', false)->{$method}($columns);
+    }
+
     public function find(string $id): QuoteTemplate
     {
         return $this->quoteTemplate->query()->whereId($id)->firstOrFail();
@@ -172,7 +179,7 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
                 ->queue('copied');
         }
 
-        return ['id' => $replicatableTemplate->id];
+        return ['id' => $template->id];
     }
 
     protected function filterQueryThrough(): array

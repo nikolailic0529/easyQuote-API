@@ -179,7 +179,7 @@ class SystemSetting extends BaseModel
             return $this->possible_values->whereIn('value', $this->value)->toString('label');
         }
 
-        return $this->value;
+        return $this->valueToString();
     }
 
     public function isKey(string $key): bool

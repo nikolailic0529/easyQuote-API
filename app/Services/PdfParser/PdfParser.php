@@ -11,12 +11,30 @@ use Storage, Str;
 
 class PdfParser implements PdfParserInterface
 {
+    const REGEXP_PRICE_LINES = '/^(?<product_no>\d+\-\w{3}|[a-zA-Z]\w{3,4}?[a-zA-Z]{1,2})\s+(?<description>.+?\w)\s+(?<serial_no>\d?[a-zA-Z]{1,3}[a-zA-Z\d]{7,8})\s+((?<date_from>(([0-2][0-9])|(3[0-1]))[\.\/]((0[0-9])|(1[0-2]))[\.\/]\d{4})\s+?)?((?<date_to>(([0-2][0-9])|(3[0-1]))[\.\/]((0[0-9])|(1[0-2]))[\.\/]\d{4})\s+?)?(?<qty>\d{1,3}(?=\s+?))?(\s+?((\p{Sc})?\s?(?<price>(\d{1,3},)?\d+([,\.]\d{1,2}))))([a-zA-Z].+?)?$/m';
+
+    const REGEXP_PRICE_SID = '/(?<=Service Agreement ID:)(.+)/i';
+
+    const REGEXP_SCHEDULE_PAYMENTS = '/(?<payment_dates>(?:system handle|periode de|from)(?<date>(?:[\ha-z-]+)(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))([\.\/]\d{2,4})(?:[\ha-z-]*?))+$)|(^(\h)?(?!payment (\h+)? schedule)(?:period au|to)?(?<payment_dates_options>(\g\'date\')+(?:([\ha-z-]+)?)$))|(?<payment>^(?<account>\h?\w[\w\h-]+?)(\h{2,}((\p{Sc})?[ ]?(?<price>([\d]+[ ]?,?)?[,\.]?\d+[,\.]?\d+)))+$)/mi';
+
+    const REGEXP_SCHEDULE_PRICE = '/(\h{2,}((\p{Sc})?[ ]?(?<price>([\d]+[ ]?,?)?[,\.]?\d+[,\.]?\d+)))/';
+
+    const REGEXP_SCHEDULE_DATE = '/(?<date>(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{2,4})/';
+
+    const REGEXP_SCHEDULE_COLUMNS = '/(?:periode de|system handle|from\h+)|(?<cols>(?<date>(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{2,4})|(\b(\w+)\b))/mi';
+
+    const CACHE_PREFIX_RAW_DATA = 'raw-data:';
+
+    /** @var \App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface */
     protected $importableColumn;
 
+    /** @var \Smalot\PdfParser\Parser */
     protected $smalotPdfParser;
 
+    /** @var \Spatie\PdfToText\Pdf */
     protected $spatiePdfParser;
 
+    /** @var string */
     protected $binPath;
 
     public function __construct(
@@ -58,37 +76,37 @@ class PdfParser implements PdfParserInterface
 
     public function parse(array $array)
     {
-        $regexp = '/^(?<product_no>\d+\-\w{3}|[a-zA-Z]\w{3,4}?[a-zA-Z]{1,2})\s+(?<description>.+?\w)\s+(?<serial_no>\d?[a-zA-Z]{1,3}[a-zA-Z\d]{7,8})\s+((?<date_from>(([0-2][0-9])|(3[0-1]))[\.\/]((0[0-9])|(1[0-2]))[\.\/]\d{4})\s+?)?((?<date_to>(([0-2][0-9])|(3[0-1]))[\.\/]((0[0-9])|(1[0-2]))[\.\/]\d{4})\s+?)?(?<qty>\d{1,3}(?=\s+?))?(\s+?((\p{Sc})?\s?(?<price>(\d{1,3},)?\d+([,\.]\d{1,2}))))([a-zA-Z].+?)?$/m';
-
         $pages = LazyCollection::make(function () use ($array) {
             foreach ($array as $page) {
                 yield ['page' => $page['page'], 'content' => Storage::get($page['file_path'])];
             }
         });
 
-        $pagesData = $pages->map(function ($page, $key) use ($regexp) {
+        $pagesData = $pages->map(function ($page, $key) {
             ['page' => $page, 'content' => $content] = $page;
 
-            preg_match_all($regexp, $content, $matches, PREG_UNMATCHED_AS_NULL, 0);
+            preg_match(self::REGEXP_PRICE_SID, $content, $matchesSid, PREG_UNMATCHED_AS_NULL, 0);
+            preg_match_all(self::REGEXP_PRICE_LINES, $content, $matches, PREG_UNMATCHED_AS_NULL, 0);
+
+            $linesCount = count(head($matches));
+
+            /**
+             * We are finding Service Agreement ID on each page and assign it to all rows on the page.
+             */
+            $sid = optional($matchesSid)[1];
+
+            $searchable = array_fill(0, $linesCount, $sid);
+            $matches['searchable'] = $searchable;
 
             $columnsAliases = $this->importableColumn->allNames();
-
             $matches = collect($matches)->only($columnsAliases)->toArray();
-
-            $matches = $this->handleValues($matches);
 
             /**
              * Resetting Coverage Periods for rows with the same Product Number
              */
             $matches = $this->resetCoveragePeriods($matches);
 
-            $rows = [];
-
-            foreach ($matches as $column => $values) {
-                foreach ($values as $key => $value) {
-                    $rows[$key][$column] = $value ? trim($value) : null;
-                }
-            }
+            $rows = $this->mapColumns($matches);
 
             return compact('page', 'rows');
         });
@@ -102,25 +120,22 @@ class PdfParser implements PdfParserInterface
 
         $content = Storage::get($filePath);
 
-        // dd($content);
+        preg_match_all(self::REGEXP_SCHEDULE_PAYMENTS, $content, $matches, PREG_UNMATCHED_AS_NULL, 0);
 
-        $priceGroup = '(\h{2,}((\p{Sc})?[ ]?(?<price>([\d]+[ ]?,?)?[,\.]?\d+[,\.]?\d+)))';
-        $dateGroup = '(?<date>(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{2,4})';
+        $matches = collect($matches)->only('payment', 'account', 'payment_dates', 'payment_dates_options')
+            ->transform(function ($item) {
+                return collect($item)->filter(function ($value) {
+                    return !is_null($value);
+                })->transform(function ($value) {
+                    return trim($value);
+                })->values();
+            })
+            ->reject(function ($item) {
+                return $item->isEmpty();
+            });
 
-        $regexp = '/(?<payment_dates>(?:system handle|periode de|from)(?<date>(?:[\ha-z-]+)(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))([\.\/]\d{2,4})(?:[\ha-z-]*?))+$)|(^(\h)?(?!payment (\h+)? schedule)(?:period au|to)?(?<payment_dates_options>(\g\'date\')+(?:([\ha-z-]+)?)$))|(?<payment>^(?<account>\h?\w[\w\h-]+?)(\h{2,}((\p{Sc})?[ ]?(?<price>([\d]+[ ]?,?)?[,\.]?\d+[,\.]?\d+)))+$)/mi';
-
-        preg_match_all($regexp, $content, $matches, PREG_UNMATCHED_AS_NULL, 0);
-
-        $matches = collect($matches)->only('payment', 'account', 'payment_dates', 'payment_dates_options')->map(function ($item) {
-            return collect($item)->filter(function ($value) {
-                return !is_null($value);
-            })->map(function ($value) {
-                return trim($value);
-            })->values();
-        });
-
-        if ($matches['account']->isEmpty() || $matches['payment']->isEmpty() || ($matches['payment_dates']->isEmpty() && $matches['payment_dates_options']->isEmpty())) {
-            throw new \ErrorException(QFNS_01);
+        if (!$matches->has('payment', 'account', 'payment_dates', 'payment_dates_options')) {
+            error_abort(QFNS_01, 'QFNS_01', 422);
         }
 
         $account = str_replace(' ', '', data_get($matches, 'account.0'));
@@ -129,25 +144,23 @@ class PdfParser implements PdfParserInterface
         $paymentDatesOptions = data_get($matches, 'payment_dates_options', []);
 
         // Payment dates options
-        $datesRegexp = "/{$dateGroup}/";
         $paymentOptions = [];
 
-        preg_match_all($datesRegexp, $paymentDatesStandard, $matches);
+        preg_match_all(self::REGEXP_SCHEDULE_DATE, $paymentDatesStandard, $matches);
         $paymentOptions[] = $matches['date'];
 
-        $wholeRegexp = '/(?:periode de|system handle|from\h+)|(?<cols>(?<date>(?:(?:[0-2][0-9])|(?:3[0-1]))[\.\/](?:(?:0[0-9])|(?:1[0-2]))[\.\/]\d{2,4})|(\b(\w+)\b))/mi';
-        preg_match_all($wholeRegexp, $paymentDatesStandard, $matches, PREG_UNMATCHED_AS_NULL, 0);
+        preg_match_all(self::REGEXP_SCHEDULE_COLUMNS, $paymentDatesStandard, $matches, PREG_UNMATCHED_AS_NULL, 0);
 
         $colsMapping = collect($matches['cols'])->filter(function ($value) {
             return isset($value);
-        })->values()->transform(function ($value) use ($datesRegexp) {
-            return (bool) preg_match($datesRegexp, $value);
+        })->values()->transform(function ($value) {
+            return (bool) preg_match(self::REGEXP_SCHEDULE_DATE, $value);
         });
 
         $colsCount = $colsMapping->filter()->count();
 
         foreach ($paymentDatesOptions as $paymentOption) {
-            preg_match_all($datesRegexp, $paymentOption, $matches);
+            preg_match_all(self::REGEXP_SCHEDULE_DATE, $paymentOption, $matches);
 
             if (count(data_get($matches, 'date', [])) !== $colsCount) {
                 continue;
@@ -157,11 +170,9 @@ class PdfParser implements PdfParserInterface
         }
 
         // Payment Lines
-        $paymentsRegexp = "/{$priceGroup}/";
-
         $paymentLines = collect($paymentLines)
-            ->transform(function ($paymentLine) use ($paymentsRegexp) {
-                preg_match_all($paymentsRegexp, $paymentLine, $matches);
+            ->transform(function ($paymentLine) {
+                preg_match_all(self::REGEXP_SCHEDULE_PRICE, $paymentLine, $matches);
                 return data_get($matches, 'price');
             })->transform(function ($line) use ($colsMapping) {
                 return collect($line)->filter(function ($payment, $key) use ($colsMapping) {
@@ -203,38 +214,39 @@ class PdfParser implements PdfParserInterface
         return count($document->getPages());
     }
 
-    private function handleValues(array $array)
+    private function mapColumns(array $columns): array
     {
-        $description = collect($array['description']);
+        $rows = [];
 
-        $description->transform(function ($value) {
-            if (is_null($value)) {
-                return $value;
+        foreach ($columns as $column => $values) {
+            foreach ($values as $key => $value) {
+                $rows[$key][$column] = $this->handleColumnValue($value);
             }
+        }
 
-            /**
-             * Prevent multi-spaces
-             */
-            $value = preg_replace('/\s{2,}/', ' ', $value);
-
-            return $value;
-        })->toArray();
-
-        return array_merge($array, compact('description'));
+        return $rows;
     }
 
-    private function setBinPath()
+    private function handleColumnValue($value)
+    {
+        return is_string($value)
+            ? trim(preg_replace('/[\s\t]+/', ' ', $value))
+            : $value;
+    }
+
+    private function setBinPath(): void
     {
         if (windows_os()) {
-            return $this->binPath = app_path(config('pdfparser.pdftotext.win'));
+            $this->binPath = app_path(config('pdfparser.pdftotext.win'));
+            return;
         }
 
         if (!windows_os() && !config('pdfparser.pdftotext.default_bin')) {
-            return $this->binPath = config('pdfparser.pdftotext.linux');
+            $this->binPath = config('pdfparser.pdftotext.linux');
         }
     }
 
-    private function resetCoveragePeriods(array $array)
+    private function resetCoveragePeriods(array $array): array
     {
         $productNo = $array['product_no'];
         $periodFrom = $array['date_from'];

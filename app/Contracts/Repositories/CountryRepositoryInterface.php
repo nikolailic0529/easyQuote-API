@@ -12,7 +12,7 @@ interface CountryRepositoryInterface
     public function all();
 
     /**
-     * Retrieve Country Id by passed ISO 3166 2 code.
+     * Retrieve Country Id by passed Country ISO code.
      *
      * @param string|array $code
      * @return string|null

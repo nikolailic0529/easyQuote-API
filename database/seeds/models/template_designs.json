@@ -15,7 +15,7 @@
                                 "name": "h-1",
                                 "show": true,
                                 "type": "h",
-                                "class": "bold",
+                                "class": null,
                                 "label": "Heading",
                                 "value": "Why choose Support Warehouse to deliver your HPE Services Contract?",
                                 "is_field": true,
@@ -148,6 +148,42 @@
             }
         ],
         "data_pages": [
+            {
+                "id": "a73915b6-29f2-4688-ae3d-ee8ef9054f47",
+                "name": "Single Column",
+                "child": [
+                    {
+                        "id": "f7f3b4e6-6a00-4748-9cfa-66c479b7e3b7",
+                        "class": "col-lg-12",
+                        "controls": [
+                            {
+                                "id": "820d7aea-804a-423b-8d63-3696f70ba365",
+                                "src": null,
+                                "name": "h-1",
+                                "show": true,
+                                "type": "h",
+                                "class": null,
+                                "label": "Heading",
+                                "value": "Quotation Detail",
+                                "is_field": true,
+                                "is_image": false,
+                                "droppable": false,
+                                "is_system": false,
+                                "is_required": false,
+                                "attached_child_id": "f7f3b4e6-6a00-4748-9cfa-66c479b7e3b7",
+                                "attached_element_id": "a73915b6-29f2-4688-ae3d-ee8ef9054f47"
+                            }
+                        ],
+                        "position": 1
+                    }
+                ],
+                "class": "single-column field-dragger",
+                "order": 1,
+                "controls": [],
+                "is_field": false,
+                "droppable": false,
+                "decoration": "1"
+            },
             {
                 "id": "09972220-37f0-4e7e-b9cf-796772aa4472",
                 "name": "Four Column",
@@ -2501,7 +2537,7 @@
                                 "name": "h-1",
                                 "show": true,
                                 "type": "h",
-                                "class": "bold",
+                                "class": null,
                                 "label": "Heading",
                                 "value": "Why choose Support Warehouse to deliver your HPE Services Contract?",
                                 "is_field": true,
@@ -2634,6 +2670,42 @@
             }
         ],
         "data_pages": [
+            {
+                "id": "a73915b6-29f2-4688-ae3d-ee8ef9054f47",
+                "name": "Single Column",
+                "child": [
+                    {
+                        "id": "f7f3b4e6-6a00-4748-9cfa-66c479b7e3b7",
+                        "class": "col-lg-12",
+                        "controls": [
+                            {
+                                "id": "820d7aea-804a-423b-8d63-3696f70ba365",
+                                "src": null,
+                                "name": "h-1",
+                                "show": true,
+                                "type": "h",
+                                "class": null,
+                                "label": "Heading",
+                                "value": "Quotation Detail",
+                                "is_field": true,
+                                "is_image": false,
+                                "droppable": false,
+                                "is_system": false,
+                                "is_required": false,
+                                "attached_child_id": "f7f3b4e6-6a00-4748-9cfa-66c479b7e3b7",
+                                "attached_element_id": "a73915b6-29f2-4688-ae3d-ee8ef9054f47"
+                            }
+                        ],
+                        "position": 1
+                    }
+                ],
+                "class": "single-column field-dragger",
+                "order": 1,
+                "controls": [],
+                "is_field": false,
+                "droppable": false,
+                "decoration": "1"
+            },
             {
                 "id": "09972220-37f0-4e7e-b9cf-796772aa4472",
                 "name": "Four Column",

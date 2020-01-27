@@ -15,6 +15,7 @@ use App\Contracts\{
     Services\NotificationInterface,
     Services\UIServiceInterface,
     Services\HttpInterface,
+    Services\ExchangeRateServiceInterface,
     Repositories\TimezoneRepositoryInterface,
     Repositories\CountryRepositoryInterface,
     Repositories\UserRepositoryInterface,
@@ -48,7 +49,8 @@ use App\Contracts\{
     Factories\FailureInterface,
     Repositories\System\NotificationRepositoryInterface,
     Repositories\System\ClientCredentialsInterface,
-    Repositories\System\BuildRepositoryInterface
+    Repositories\System\BuildRepositoryInterface,
+    Repositories\ExchangeRateRepositoryInterface
 };
 use App\Repositories\{
     TimezoneRepository,
@@ -82,6 +84,7 @@ use App\Repositories\{
     VendorRepository,
     CompanyRepository,
     ContactRepository,
+    ExchangeRateRepository,
     InvitationRepository,
     RoleRepository
 };
@@ -90,6 +93,7 @@ use App\Services\{
     Auth\AuthService,
     Auth\AuthenticatedCase,
     CsvParser,
+    ExchangeRate\HMRCRates,
     NotificationStorage,
     ParserService,
     WordParser,
@@ -152,7 +156,9 @@ class AppServiceProvider extends ServiceProvider
         UIServiceInterface::class => UIService::class,
         HttpInterface::class => HttpService::class,
         ClientCredentialsInterface::class => ClientCredentialsRepository::class,
-        BuildRepositoryInterface::class => BuildRepository::class
+        BuildRepositoryInterface::class => BuildRepository::class,
+        ExchangeRateRepositoryInterface::class => ExchangeRateRepository::class,
+        ExchangeRateServiceInterface::class => ER_SERVICE_CLASS
     ];
 
     public $bindings = [
@@ -191,7 +197,8 @@ class AppServiceProvider extends ServiceProvider
         UIServiceInterface::class => 'ui.service',
         HttpInterface::class => 'http.service',
         ClientCredentialsInterface::class => 'client.repository',
-        BuildRepositoryInterface::class => 'build.repository'
+        BuildRepositoryInterface::class => 'build.repository',
+        ExchangeRateServiceInterface::class => 'exchange.service'
     ];
 
     /**

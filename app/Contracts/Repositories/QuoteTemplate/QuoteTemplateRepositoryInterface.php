@@ -22,6 +22,15 @@ interface QuoteTemplateRepositoryInterface
     public function all();
 
     /**
+     * Retrieve all user defined Quote Templates.
+     *
+     * @param array $columns
+     * @param boolean $cursor
+     * @return \Illuminate\Database\Eloquent\Collection|\Illuminate\Support\LazyCollection
+     */
+    public function allUserDefined(array $columns = ['*'], bool $cursor = false);
+
+    /**
      * Search over Quote Templates.
      *
      * @param string $query

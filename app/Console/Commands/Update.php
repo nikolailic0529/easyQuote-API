@@ -47,6 +47,7 @@ class Update extends Command
         $this->call('eq:vendors-update');
         $this->call('eq:roles-update');
         $this->call('eq:settings-sync');
+        $this->call('eq:update-exchange-rates');
         $this->call('eq:templatefields-update');
         $this->call('eq:templates-update');
         $this->call('eq:create-personal-access-client');

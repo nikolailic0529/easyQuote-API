@@ -20,6 +20,9 @@ class EventServiceProvider extends ServiceProvider
         ],
         \App\Events\RfqReceived::class => [
             \App\Listeners\RfqReceivedListener::class
+        ],
+        \App\Events\ExchangeRatesUpdated::class => [
+            \App\Listeners\ExchangeRatesListener::class
         ]
     ];
 

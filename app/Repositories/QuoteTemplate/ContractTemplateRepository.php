@@ -170,7 +170,7 @@ class ContractTemplateRepository extends SearchableRepository implements Contrac
                 ->queue('copied');
         }
 
-        return ['id' => $replicatableTemplate->id];
+        return ['id' => $template->id];
     }
 
     public function model(): string

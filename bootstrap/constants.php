@@ -156,6 +156,16 @@ define('SN_IMG_S4RDS', 'img/slack/s4rds.gif');
 define('SN_IMG_S4RDF', 'img/slack/s4rdf.gif');
 
 /**
+ * Exchange Rates.
+ */
+// Exchange Rate Service implementation.
+define('ER_SERVICE_CLASS', \App\Services\ExchangeRate\HMRCRates::class);
+// Exchange Rates update frequency. daily, weekly, monthly.
+define('ER_UPD_FREQUENCY', 'monthly');
+define('ER_PARSE_ERROR_01', 'An error occured when trying to parse exchange rates from %s.');
+define('ER_SETTING_UPDATE_KEY', 'exchange_rates_update');
+
+/**
  * Routes.
  */
 define('ROUTE_CRUD', ['index', 'show', 'create', 'store', 'update', 'destroy']);

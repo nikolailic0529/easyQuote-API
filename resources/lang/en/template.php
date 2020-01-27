@@ -19,7 +19,9 @@ return [
             ['id' => 'list_price', 'label' => 'Total List Price'],
             ['id' => 'applicable_discounts', 'label' => 'Total Discounts'],
             ['id' => 'final_price', 'label' => 'Final Price'],
-            ['id' => 'invoicing_terms', 'label' => 'Invoicing Terms']
+            ['id' => 'invoicing_terms', 'label' => 'Invoicing Terms'],
+            ['id' => 'service_agreement_id', 'label' => 'Service Agreement Id'],
+            ['id' => 'system_handle', 'label' => 'System Handle'],
         ],
         'data_pages' => [
             ['id' => 'pricing_document', 'label' => 'Pricing Document'],
