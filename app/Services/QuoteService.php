@@ -292,7 +292,12 @@ class QuoteService implements QuoteServiceInterface
 
     protected function getTemplateAssets(BaseQuoteTemplate $template)
     {
-        $design = $template->form_data;
+        $design = tap($template->form_data, function (&$design) {
+            if (isset($design['payment_page'])) {
+                $design['payment_schedule'] = $design['payment_page'];
+                unset($design['payment_page']);
+            }
+        });
 
         $company_logos = $template->company->logoSelection ?? [];
         $vendor_logos = $template->vendor->logoSelection ?? [];
