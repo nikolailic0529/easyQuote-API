@@ -27,11 +27,11 @@
             <div class="mt-2">{!! $data['data_pages']['additional_details'] !!}</div>
         @endisset
 
-        <div class="page-break"></div>
 
-        @isset($data['payment_page']['data'])
-            @include ('quotes.components.page', ['page_name' => 'payment_page'])
-            @include ('quotes.components.data.table', ['page_name' => 'payment_page', 'data_key' => 'data'])
+        <div class="page-break"></div>
+        @isset($data['payment_schedule']['data'])
+            @include ('quotes.components.page', ['page_name' => 'payment_schedule'])
+            @include ('quotes.components.data.table', ['page_name' => 'payment_schedule', 'data_key' => 'data'])
             <div class="page-break"></div>
         @endisset
 
