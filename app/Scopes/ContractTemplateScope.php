@@ -19,6 +19,6 @@ class ContractTemplateScope implements Scope
      */
     public function apply(Builder $builder, Model $model)
     {
-        $builder->where("{$model->getTable()}.type", 'contract');
+        $builder->where("{$model->getTable()}.type", QT_TYPE_CONTRACT);
     }
 }

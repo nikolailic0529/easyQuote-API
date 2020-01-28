@@ -39,7 +39,8 @@ define('IE_01', 'Your invitation link is expired, please contact your line-manag
  */
 define('EQ_NF_01', 'Quote not found for the provided RFQ #');
 define('QSE_01', 'An activated submitted Quote with the same RFQ number already exists.');
-define('QNT_01', 'Please set a Template for the Quote before Importing.');
+define('QNT_01', 'Please specify a template for the Quote before import.');
+define('QNT_02', 'Please specify a template for the Quote before export.');
 define('QNF_01', 'Quote not found.');
 define('QSU_01', 'You could not update a submitted Quote.');
 define('QUC_01', 'You could not change a Customer for a given Quote.');
@@ -59,9 +60,10 @@ define('QTAD_01', 'You could not delete this Template because it is already in u
 define('QTNF_01', 'No any Quote Templates found');
 define('QTSU_01', 'You could not update the system defined Template.');
 define('QTSD_01', 'You could not delete the system defined Template.');
-define('QT_TYPE_QUOTE', null);
+define('QT_TYPE_QUOTE', 'quote');
 define('QT_TYPE_CONTRACT', 'contract');
 define('QT_TYPES', ['quote', 'contract']);
+define('INV_QT_TYPE', 'Invalid Quote Template Type passed.');
 
 /**
  * Quote File.

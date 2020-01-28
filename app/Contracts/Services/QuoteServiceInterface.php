@@ -80,14 +80,6 @@ interface QuoteServiceInterface
     public function prepareQuoteReview(Quote $quote): void;
 
     /**
-     * Prepare Quote Data for PDF rendering.
-     *
-     * @param Quote $quote
-     * @return array
-     */
-    public function prepareQuoteExport(Quote $quote): array;
-
-    /**
      * Format Computable Rows.
      *
      * @param Quote $quote
@@ -102,14 +94,6 @@ interface QuoteServiceInterface
      * @return void
      */
     public function prepareSchedule(Quote $quote): void;
-
-    /**
-     * Inline output Generated PDF Quote file.
-     *
-     * @param Quote $quote
-     * @return mixed
-     */
-    public function inlinePdf(Quote $quote);
 
     /**
      * Export Quote in PDF format.

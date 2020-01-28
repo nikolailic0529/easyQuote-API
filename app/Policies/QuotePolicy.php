@@ -133,4 +133,20 @@ class QuotePolicy
     {
         return $user->can('download_quote_pdf') && $this->view($user, $quote);
     }
+
+    /**
+     * Determine whether the user can download the generated contract pdf.
+     *
+     * @param User $user
+     * @param Quote $quote
+     * @return mixed
+     */
+    public function download_contract_pdf(User $user, Quote $quote)
+    {
+        if ($this->download_pdf($user, $quote) && $quote->contractTemplate()->doesntExist()) {
+            return $this->deny(QNT_02);
+        }
+
+        return $this->download_pdf($user, $quote);
+    }
 }

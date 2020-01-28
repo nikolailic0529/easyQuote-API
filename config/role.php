@@ -56,6 +56,32 @@ return [
                 'delete_quote_files'
             ]
         ],
+        'Countries' => [
+            'Read Only' => [
+                'view_countries'
+            ],
+            'Read & Write' => [
+                'view_countries',
+                'create_countries', 'update_countries'
+            ],
+            'Read, Write and Delete' => [
+                'view_countries',
+                'create_countries', 'update_countries', 'delete_countries'
+            ]
+        ],
+        'Contracts' => [
+            'Read Only' => [
+                'view_own_contracts'
+            ],
+            'Read & Write' => [
+                'view_own_contracts',
+                'create_contracts', 'update_own_contracts'
+            ],
+            'Read, Write and Delete' => [
+                'view_own_contracts',
+                'create_contracts', 'update_own_contracts', 'delete_own_contracts'
+            ]
+        ],
         'Templates' => [
             'Read Only' => [
                 'view_templates'

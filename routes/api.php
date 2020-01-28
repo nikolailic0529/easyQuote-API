@@ -169,6 +169,7 @@ Route::group(['namespace' => 'API'], function () {
                  * Submitted Quotes
                  */
                 Route::get('submitted/pdf/{submitted}', 'QuoteSubmittedController@pdf');
+                Route::get('submitted/pdf/{submitted}/contract', 'QuoteSubmittedController@contractPdf');
                 Route::apiResource('submitted', 'QuoteSubmittedController', ['only' => ROUTE_RD]);
                 Route::patch('submitted/{submitted}', 'QuoteSubmittedController@activate');
                 Route::put('submitted/{submitted}', 'QuoteSubmittedController@deactivate');

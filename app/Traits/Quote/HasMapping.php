@@ -25,6 +25,13 @@ trait HasMapping
      */
     protected $systemHiddenFields = ['service_level_description'];
 
+    /**
+     * Template Fields which will be hidden when Quote Mode is Contract.
+     *
+     * @var array
+     */
+    protected $contractHiddenFields = ['price'];
+
     public function getComputableRowsAttribute()
     {
         return $this->computableRows;
@@ -404,7 +411,13 @@ trait HasMapping
 
     public function getSystemHiddenFieldsAttribute()
     {
-        return $this->templateFields->whereIn('name', $this->systemHiddenFields)->pluck('name')->toArray();
+        $systemHiddenFields = $this->systemHiddenFields;
+
+        if ($this->isMode(QT_TYPE_CONTRACT)) {
+            array_push($systemHiddenFields, ...$this->contractHiddenFields);
+        }
+
+        return $this->templateFields->whereIn('name', $systemHiddenFields)->pluck('name')->toArray();
     }
 
     public function getSortFieldsAttribute()

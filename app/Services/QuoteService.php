@@ -12,11 +12,16 @@ use App\Models\Quote\{
     Discount,
     Margin\CountryMargin
 };
+use App\Models\QuoteTemplate\BaseQuoteTemplate;
 use Illuminate\Support\Collection;
 use Arr, Str;
+use Exception;
 
 class QuoteService implements QuoteServiceInterface
 {
+    const QUOTE_EXPORT_VIEW = 'quotes.pdf';
+
+    /** @var \App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface */
     protected $quoteFile;
 
     public function __construct(QuoteFileRepository $quoteFile)
@@ -70,7 +75,7 @@ class QuoteService implements QuoteServiceInterface
         }
 
         if ($countryMargin->isFixed() && $countryMargin->isNoMargin()) {
-             $quote->totalPrice = $countryMargin->calculate($quote->totalPrice);
+            $quote->totalPrice = $countryMargin->calculate($quote->totalPrice);
         }
     }
 
@@ -217,27 +222,6 @@ class QuoteService implements QuoteServiceInterface
         $this->prepareSchedule($quote);
     }
 
-    public function prepareQuoteExport(Quote $quote): array
-    {
-        $this->prepareQuoteReview($quote);
-
-        $resource = QuoteResource::make($quote->enableReview())->resolve();
-        $data = to_array_recursive(data_get($resource, 'quote_data', []));
-
-        $design = tap($quote->quoteTemplate->form_data, function (&$design) {
-            if (isset($design['payment_page'])) {
-                $design['payment_schedule'] = $design['payment_page'];
-                unset($design['payment_page']);
-            }
-        });
-
-        $company_logos = $quote->quoteTemplate->company->logoSelection ?? [];
-        $vendor_logos = $quote->quoteTemplate->vendor->logoSelection ?? [];
-        $images = array_merge($company_logos, $vendor_logos);
-
-        return compact('data', 'design', 'images');
-    }
-
     public function export(Quote $quote)
     {
         $export = $this->prepareQuoteExport($quote);
@@ -245,24 +229,13 @@ class QuoteService implements QuoteServiceInterface
         $filename = $this->makePdfFilename($quote);
 
         return $this->pdfWrapper()
-            ->loadView('quotes.pdf', $export)
+            ->loadView(self::QUOTE_EXPORT_VIEW, $export)
             ->download($filename);
-    }
-
-    public function inlinePdf(Quote $quote, bool $html = false)
-    {
-        $export = array_merge($this->prepareQuoteExport($quote), compact('html'));
-
-        if ($html) {
-            return view('quotes.pdf', $export);
-        }
-
-        return $this->pdfWrapper()->loadView('quotes.pdf', $export)->inline();
     }
 
     public function prepareRows(Quote $quote): void
     {
-        $keys = $quote->has_group_description && $quote->use_groups
+        $keys = $quote->groupsReady()
             ? array_merge($quote->rowsHeaderToArray(), array_flip(['group_name']))
             : $quote->rowsHeaderToArray();
 
@@ -278,28 +251,14 @@ class QuoteService implements QuoteServiceInterface
             $quote->computableRows = $quote->renderableRows = collect();
         }
 
-        if ($quote->has_group_description && $quote->use_groups) {
-            $groups_meta = $quote->getGroupDescriptionWithMeta(null, $quote->calculate_list_price);
-            $quote->computableRows = $quote->computableRows
-                ->rowsToGroups('group_name', $groups_meta, true, $quote->quoteTemplate->currency_symbol)
-                ->exceptEach('group_name')
-                ->sortByFields($quote->sort_group_description);
-
-            $quote->renderableRows = $quote->computableRows->map(function ($group) use ($quote) {
-                $rows = $group->get('rows')->exceptEach($quote->systemHiddenFields);
-                data_set($group, 'rows', $rows);
-                data_set($group, 'headers_count', $group->get('headers_count') - count($quote->systemHiddenFields));
-                return $group;
-            });
-
+        if ($quote->groupsReady()) {
+            $this->formatGroupDescription($quote);
             return;
         }
 
-        $quote->renderableRows->transform(function ($row) use ($quote) {
-            $price = data_get($row, 'price');
-            data_set($row, 'price', Str::prepend(Str::decimal($price), $quote->quoteTemplate->currency_symbol, true));
-            return $row;
-        });
+        if ($quote->isMode(QT_TYPE_QUOTE)) {
+            $this->formatLinePrices($quote);
+        }
     }
 
     public function prepareSchedule(Quote $quote): void
@@ -315,6 +274,63 @@ class QuoteService implements QuoteServiceInterface
 
                 return $payment;
             });
+    }
+
+    protected function prepareQuoteExport(Quote $quote): array
+    {
+        $this->prepareQuoteReview($quote);
+
+        $resource = QuoteResource::make($quote->enableReview())->resolve();
+        $data = to_array_recursive(data_get($resource, 'quote_data', []));
+
+        $template = $quote->{$quote->mode . 'Template'};
+
+        $assets = $this->getTemplateAssets($template);
+
+        return compact('data') + $assets;
+    }
+
+    protected function getTemplateAssets(BaseQuoteTemplate $template)
+    {
+        $design = $template->form_data;
+
+        $company_logos = $template->company->logoSelection ?? [];
+        $vendor_logos = $template->vendor->logoSelection ?? [];
+        $images = array_merge($company_logos, $vendor_logos);
+
+        return compact('design', 'images');
+    }
+
+    protected function formatGroupDescription(Quote $quote): void
+    {
+        $groups_meta = $quote->getGroupDescriptionWithMeta(null, $quote->calculate_list_price);
+        $quote->computableRows = $quote->computableRows
+            ->rowsToGroups('group_name', $groups_meta, true, $quote->quoteTemplate->currency_symbol)
+            ->exceptEach('group_name')
+            ->sortByFields($quote->sort_group_description);
+
+        $groupHiddenFields = $quote->isMode(QT_TYPE_CONTRACT) ? ['total_price'] : [];
+
+        $quote->renderableRows = $quote->computableRows->map(function ($group) use ($quote, $groupHiddenFields) {
+            $group->forget($groupHiddenFields);
+
+            $rows = $group->get('rows')->exceptEach($quote->systemHiddenFields);
+            $group->put('rows', $rows);
+
+            $headers_count = $group->get('headers_count') - count($quote->systemHiddenFields);
+            $group->put('headers_count', $headers_count);
+
+            return $group;
+        });
+    }
+
+    protected function formatLinePrices(Quote $quote): void
+    {
+        $quote->renderableRows->transform(function ($row) use ($quote) {
+            $price = data_get($row, 'price');
+            data_set($row, 'price', Str::prepend(Str::decimal($price), $quote->quoteTemplate->currency_symbol, true));
+            return $row;
+        });
     }
 
     protected function interactableDiscounts(Quote $quote): Collection

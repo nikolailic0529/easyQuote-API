@@ -130,7 +130,20 @@ class QuoteSubmittedController extends Controller
     {
         $this->authorize('download_pdf', $submitted);
 
-        return $this->repository->exportPdf($submitted);
+        return $this->repository->exportPdf($submitted, QT_TYPE_QUOTE);
+    }
+
+    /**
+     * Export the specified Quote as Contract PDF.
+     *
+     * @param Quote $submitted
+     * @return \Illuminate\Http\Response
+     */
+    public function contractPdf(Quote $submitted)
+    {
+        $this->authorize('download_contract_pdf', $submitted);
+
+        return $this->repository->exportPdf($submitted, QT_TYPE_CONTRACT);
     }
 
     /**

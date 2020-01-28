@@ -51,4 +51,9 @@ trait HasGroupDescriptionAttribute
 
         $this->attributes['use_groups'] = $value;
     }
+
+    public function groupsReady(): bool
+    {
+        return $this->use_groups && $this->has_group_description;
+    }
 }

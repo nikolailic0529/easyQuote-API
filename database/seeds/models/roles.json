@@ -9,6 +9,8 @@
             "view_users", "invite_collaboration_users", "update_users", "delete_users", "reset_users_password",
             "view_roles", "create_roles", "update_roles", "delete_roles",
             "view_quotes", "create_quotes", "update_quotes", "delete_quotes", "submit_quotes", "download_quote_pdf",
+            "view_contracts", "create_contracts", "update_contracts", "delete_contracts",
+            "view_countries", "create_countries", "update_countries", "delete_countries",
             "view_quote_files", "create_quote_files", "update_quote_files", "handle_quote_files", "delete_quote_files",
             "view_templates", "create_templates", "update_templates", "delete_templates",
             "view_companies", "create_companies", "update_companies", "delete_companies",
@@ -19,9 +21,11 @@
         ],
         "privileges": {
             "Settings": "Read & Write",
+            "Countries": "Read, Write and Delete",
             "Audit": "Read Only",
             "Users": "Read, Write and Delete",
             "Quotes": "Read, Write and Delete",
+            "Contracts": "Read, Write and Delete",
             "Templates": "Read, Write and Delete",
             "Companies": "Read, Write and Delete",
             "Vendors": "Read, Write and Delete",
@@ -33,6 +37,7 @@
         "name": "Sales Manager",
         "permissions": [
             "view_own_quotes", "create_quotes", "update_own_quotes", "delete_own_quotes", "submit_own_quotes", "download_quote_pdf",
+            "view_own_contracts", "create_contracts", "update_own_contracts", "delete_own_contracts",
             "view_quote_files", "create_quote_files", "update_quote_files", "handle_quote_files", "delete_quote_files",
             "view_templates", "create_templates", "update_templates", "delete_templates",
             "view_companies", "create_companies", "update_companies", "delete_companies",
@@ -42,6 +47,7 @@
         ],
         "privileges": {
             "Quotes": "Read, Write and Delete",
+            "Contracts": "Read, Write and Delete",
             "Templates": "Read, Write and Delete",
             "Companies": "Read, Write and Delete",
             "Vendors": "Read, Write and Delete",

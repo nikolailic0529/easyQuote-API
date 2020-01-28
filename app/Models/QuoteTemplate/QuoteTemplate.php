@@ -21,7 +21,7 @@ class QuoteTemplate extends BaseQuoteTemplate
     ];
 
     protected $attributes = [
-        'type' => QT_TYPE_QUOTE
+        'type' => null
     ];
 
     protected static function boot()

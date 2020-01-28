@@ -31,6 +31,7 @@ use App\Traits\{
     Margin\HasMarginPercentageAttribute,
     Quote\HasPricesAttributes,
     Quote\HasMapping,
+    Quote\SwitchesMode,
     Quote\HasCustomDiscountAttribute,
     Quote\HasGroupDescriptionAttribute,
     Quote\HasAdditionalHtmlAttributes,
@@ -72,6 +73,7 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
         HasAdditionalHtmlAttributes,
         Reviewable,
         Completable,
+        SwitchesMode,
         Tappable;
 
     protected $connection = 'mysql';
