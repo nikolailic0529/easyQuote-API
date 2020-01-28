@@ -39,4 +39,9 @@ trait SwitchesMode
     {
         return $this->mode === $type;
     }
+
+    public function getModeTemplateAttribute()
+    {
+        return $this->{$this->mode.'Template'};
+    }
 }

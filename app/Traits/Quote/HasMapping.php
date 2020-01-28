@@ -7,7 +7,6 @@ use App\Models\{
     QuoteFile\ImportableColumn,
     QuoteTemplate\TemplateField
 };
-use Illuminate\Support\Collection;
 use DB, Arr, Cache;
 
 trait HasMapping
@@ -30,7 +29,7 @@ trait HasMapping
      *
      * @var array
      */
-    protected $contractHiddenFields = ['price'];
+    protected $contractHiddenFields = ['price', 'searchable'];
 
     public function getComputableRowsAttribute()
     {
@@ -394,7 +393,7 @@ trait HasMapping
         return $this->templateFields->whereNotIn('name', $except)
             ->sortBy('order')->pluck('header', 'name')
             ->map(function ($header, $name) {
-                return $this->quoteTemplate->dataHeader($name, $header);
+                return $this->modeTemplate->dataHeader($name, $header);
             })
             ->toArray();
     }

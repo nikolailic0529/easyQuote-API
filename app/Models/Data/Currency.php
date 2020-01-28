@@ -8,10 +8,6 @@ use Setting;
 
 class Currency extends BaseModel implements HasOrderedScope
 {
-    protected $appends = [
-        'label'
-    ];
-
     public function scopeOrdered($query)
     {
         return $query->orderByRaw("field(`currencies`.`code`, ?, null) desc", [Setting::get('base_currency')]);

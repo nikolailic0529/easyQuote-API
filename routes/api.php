@@ -23,7 +23,7 @@ Route::group(['namespace' => 'API'], function () {
             Route::get('currencies', 'CurrenciesController');
             Route::get('fileformats', 'FileFormatsController');
         });
-        Route::get('countries', 'CountriesController'); // exclusive high throttle rate
+        Route::get('countries', 'CountryController'); // exclusive high throttle rate
     });
 
     Route::group(['prefix' => 's4', 'as' => 's4.', 'middleware' => [THROTTLE_RATE_01]], function () {
@@ -35,6 +35,11 @@ Route::group(['namespace' => 'API'], function () {
     });
 
     Route::group(['middleware' => 'auth:api'], function () {
+        Route::group(['middleware' => THROTTLE_RATE_01, 'namespace' => 'Data'], function () {
+            Route::apiResource('countries', 'CountryController');
+            Route::put('countries/activate/{country}', 'CountryController@activate');
+            Route::put('countries/deactivate/{country}', 'CountryController@deactivate');
+        });
 
         Route::group(['middleware' => THROTTLE_RATE_01], function () {
             Route::apiResource('addresses', 'AddressController');
@@ -185,10 +190,10 @@ Route::group(['namespace' => 'API'], function () {
                 Route::apiResource('customers', 'CustomerController', ['only' => ROUTE_RD]);
 
                 Route::group(['prefix' => 'step'], function () {
-                        Route::get('1', 'QuoteController@step1');
-                        Route::post('1', 'QuoteController@templates');
-                        Route::post('2', 'QuoteController@step2');
-                        Route::get('3', 'QuoteController@step3');
+                    Route::get('1', 'QuoteController@step1');
+                    Route::post('1', 'QuoteController@templates');
+                    Route::post('2', 'QuoteController@step2');
+                    Route::get('3', 'QuoteController@step3');
                 });
             });
         });
