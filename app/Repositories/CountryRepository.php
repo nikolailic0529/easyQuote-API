@@ -4,8 +4,11 @@ namespace App\Repositories;
 
 use App\Contracts\Repositories\CountryRepositoryInterface;
 use App\Models\Data\Country;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\{
+    Builder,
+    Model
+};
+use Closure;
 
 class CountryRepository extends SearchableRepository implements CountryRepositoryInterface
 {
@@ -55,6 +58,19 @@ class CountryRepository extends SearchableRepository implements CountryRepositor
         return cache()->sear("country-id-iso:{$code}", function () use ($code) {
             return $this->country->where('iso_3166_2', $code)->value('id');
         });
+    }
+
+    public function random(int $limit = 1, ?Closure $scope = null)
+    {
+        $method = $limit > 1 ? 'get' : 'first';
+
+        $query = $this->country->query()->inRandomOrder()->limit($limit);
+
+        if ($scope instanceof Closure) {
+            $scope($query);
+        }
+
+        return $query->{$method}();
     }
 
     public function create(array $attributes): Country

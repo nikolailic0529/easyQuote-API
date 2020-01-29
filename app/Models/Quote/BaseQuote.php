@@ -8,7 +8,6 @@ use App\Contracts\{
     HasOrderedScope
 };
 use App\Models\{
-    CompletableModel,
     QuoteFile\ImportedRow,
     QuoteFile\QuoteFile,
     QuoteFile\ScheduleData
@@ -44,7 +43,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Traits\Tappable;
 use Carbon\Carbon;
-use Arr, Str;
+use Str;
 
 abstract class BaseQuote extends BaseModel implements HasOrderedScope, ActivatableInterface
 {
@@ -209,7 +208,8 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
             'customer' => optional($this->customer)->toSearchArray(),
             'company' => optional($this->company)->toSearchArray(),
             'vendor' => optional($this->vendor)->toSearchArray(),
-            'user' => optional($this->user)->toSearchArray()
+            'user' => optional($this->user)->toSearchArray(),
+            'created_at' => $this->created_at
         ];
     }
 
@@ -236,8 +236,6 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
 
     public function withAppends(...$attributes)
     {
-        isset($this->quoteTemplate) && $this->quoteTemplate->makeVisible(['form_data', 'form_values_data']);
-
         $attributes = array_merge($attributes, [
             'list_price',
             'hidden_fields',

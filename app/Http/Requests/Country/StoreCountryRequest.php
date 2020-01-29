@@ -23,4 +23,11 @@ class StoreCountryRequest extends FormRequest
             'currency_symbol' => 'nullable|string|max:10'
         ];
     }
+
+    public function messages()
+    {
+        return [
+            'iso_3166_2.unique' => 'The given ISO Code has already taken.'
+        ];
+    }
 }

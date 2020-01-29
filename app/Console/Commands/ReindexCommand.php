@@ -20,7 +20,8 @@ use App\Models\{
     Quote\Discount\PromotionalDiscount,
     Quote\Discount\SND,
     Collaboration\Invitation,
-    System\Activity
+    System\Activity,
+    Data\Country
 };
 use Str;
 
@@ -82,7 +83,8 @@ class ReindexCommand extends Command
                 Invitation::class,
                 Activity::class,
                 Address::class,
-                Contact::class
+                Contact::class,
+                Country::class
             ]
         );
     }

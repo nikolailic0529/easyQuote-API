@@ -70,7 +70,7 @@ class QuoteResource extends JsonResource
                 'last_page' => [
                     'additional_details' => $this->additional_details
                 ],
-                'payment_schedule' => $this->when($this->scheduleData, function () {
+                'payment_schedule' => $this->when($this->isMode(QT_TYPE_QUOTE) && $this->scheduleData, function () {
                     return [
                         'company_name' => $this->company->name,
                         'vendor_name' => $this->vendor->name,

@@ -4,6 +4,7 @@ namespace App\Contracts\Repositories;
 
 use App\Models\Data\Country;
 use Illuminate\Database\Eloquent\Builder;
+use Closure;
 
 interface CountryRepositoryInterface
 {
@@ -28,6 +29,15 @@ interface CountryRepositoryInterface
      * @return string|null
      */
     public function findIdByCode($code);
+
+    /**
+     * Retrieve random existing Country.
+     *
+     * @param int $limit
+     * @param \Closure $scope
+     * @return \App\Models\Data\Country|\Illuminate\Database\Eloquent\Collection|null
+     */
+    public function random(int $limit = 1, ?Closure $scope = null);
 
     /**
      * Paginate existing Countries.

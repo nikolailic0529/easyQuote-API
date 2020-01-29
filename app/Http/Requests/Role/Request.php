@@ -54,6 +54,10 @@ abstract class Request extends FormRequest
 
     protected function prepareForValidation()
     {
+        $privileges = collect($this->input('privileges'))->unique('module')->toArray();
+
+        $this->merge(compact('privileges'));
+
         if (!$this->has('properties')) {
             return;
         }

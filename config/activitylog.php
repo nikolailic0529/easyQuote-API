@@ -69,6 +69,7 @@ return [
             \App\Models\QuoteTemplate\QuoteTemplate::class,
             \App\Models\QuoteTemplate\ContractTemplate::class
         ],
+        'country' => \App\Models\Data\Country::class,
         'address' => \App\Models\Address::class,
         'contact' => \App\Models\Contact::class,
         'user' => \App\Models\User::class,

@@ -16,12 +16,13 @@ use App\Traits\{
 };
 use Illuminate\Database\Eloquent\{
     Builder,
-    Relations\BelongsTo
+    Relations\BelongsTo,
+    SoftDeletes
 };
 
 class Country extends BaseModel implements HasOrderedScope, ActivatableInterface
 {
-    use Multitenantable, Activatable, Systemable, Searchable, LogsActivity;
+    use Multitenantable, Activatable, Systemable, Searchable, LogsActivity, SoftDeletes;
 
     protected $fillable = [
         'iso_3166_2', 'name', 'default_currency_id', 'currency_code', 'currency_name', 'currency_symbol', 'user_id'
@@ -57,6 +58,11 @@ class Country extends BaseModel implements HasOrderedScope, ActivatableInterface
     public function getCodeAttribute()
     {
         return $this->iso_3166_2;
+    }
+
+    public function getItemNameAttribute()
+    {
+        return $this->name;
     }
 
     public function toSearchArray()
