@@ -11,7 +11,8 @@ use App\Traits\{
     Activatable,
     Systemable,
     Auth\Multitenantable,
-    Search\Searchable
+    Search\Searchable,
+    Activity\LogsActivity
 };
 use Illuminate\Database\Eloquent\{
     Builder,
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\{
 
 class Country extends BaseModel implements HasOrderedScope, ActivatableInterface
 {
-    use Multitenantable, Activatable, Systemable, Searchable;
+    use Multitenantable, Activatable, Systemable, Searchable, LogsActivity;
 
     protected $fillable = [
         'iso_3166_2', 'name', 'default_currency_id', 'currency_code', 'currency_name', 'currency_symbol', 'user_id'
@@ -29,6 +30,14 @@ class Country extends BaseModel implements HasOrderedScope, ActivatableInterface
     protected $hidden = [
         'pivot', 'iso_3166_3', 'full_name', 'country_code', 'capital', 'citizenship', 'calling_code'
     ];
+
+    protected static $logAttributes = [
+        'name', 'iso_3166_2', 'currency_code', 'currency_name', 'currency_symbol', 'defaultCurrency.code'
+    ];
+
+    protected static $logOnlyDirty = true;
+
+    protected static $submitEmptyLogs = false;
 
     public function defaultCurrency(): BelongsTo
     {
@@ -48,5 +57,17 @@ class Country extends BaseModel implements HasOrderedScope, ActivatableInterface
     public function getCodeAttribute()
     {
         return $this->iso_3166_2;
+    }
+
+    public function toSearchArray()
+    {
+        return [
+            'name' => $this->name,
+            'iso_3166_2' => $this->iso_3166_2,
+            'currency_code' => $this->currency_code,
+            'currency_name' => $this->currency_name,
+            'currency_symbol' => $this->currency_symbol,
+            'created_at' => $this->created_at
+        ];
     }
 }

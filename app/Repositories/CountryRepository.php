@@ -94,8 +94,8 @@ class CountryRepository extends SearchableRepository implements CountryRepositor
     protected function filterableQuery()
     {
         return [
-            $this->country->activated(),
-            $this->country->deactivated()
+            $this->query()->with('defaultCurrency')->activated(),
+            $this->query()->with('defaultCurrency')->deactivated()
         ];
     }
 

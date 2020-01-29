@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 use Smalot\PdfParser\Parser as SmalotPdfParser;
 use Spatie\PdfToText\Pdf as SpatiePdfParser;
 use Illuminate\Support\LazyCollection;
-use Storage, Str;
+use Storage, Str, Arr;
 
 class PdfParser implements PdfParserInterface
 {
@@ -21,17 +21,17 @@ class PdfParser implements PdfParserInterface
     /** @var \Spatie\PdfToText\Pdf */
     protected $spatiePdfParser;
 
-    /** @var string */
-    protected $binPath;
+    /** @var array|null */
+    protected static $columnNames;
 
     public function __construct(
         ImportableColumnRepository $importableColumn,
-        SmalotPdfParser $smalotPdfParser
+        SmalotPdfParser $smalotPdfParser,
+        SpatiePdfParser $spatiePdfParser
     ) {
         $this->importableColumn = $importableColumn;
         $this->smalotPdfParser = $smalotPdfParser;
-        $this->setBinPath();
-        $this->spatiePdfParser = new SpatiePdfParser($this->binPath);
+        $this->spatiePdfParser = $spatiePdfParser;
     }
 
     public function getText(string $path, bool $storage = true)
@@ -72,21 +72,11 @@ class PdfParser implements PdfParserInterface
         $pagesData = $pages->map(function ($page, $key) {
             ['page' => $page, 'content' => $content] = $page;
 
-            preg_match(PdfOptions::REGEXP_PRICE_SID, $content, $matchesSid, PREG_UNMATCHED_AS_NULL, 0);
-            preg_match_all(PdfOptions::REGEXP_PRICE_LINES, $content, $matches, PREG_UNMATCHED_AS_NULL, 0);
+            $rows = [];
 
-            $linesCount = count(head($matches));
-
-            /**
-             * We are finding Service Agreement ID on each page and assign it to all rows on the page.
-             */
-            $sid = optional($matchesSid)[1];
-
-            $searchable = array_fill(0, $linesCount, $sid);
-            $matches['searchable'] = $searchable;
-
-            $columnsAliases = $this->importableColumn->allNames();
-            $matches = collect($matches)->only($columnsAliases)->toArray();
+            if (blank($matches = $this->fetchPricePage($content))) {
+                return compact('page', 'rows');
+            }
 
             /**
              * Resetting Coverage Periods for rows with the same Product Number
@@ -136,6 +126,47 @@ class PdfParser implements PdfParserInterface
         $document = $this->smalotPdfParser->parseFile($filePath);
 
         return count($document->getPages());
+    }
+
+    protected function getColumnNames(): array
+    {
+        if (isset(static::$columnNames)) {
+            return static::$columnNames;
+        }
+
+        return static::$columnNames = $this->importableColumn->allNames();
+    }
+
+    private function fetchPricePage(string $content): array
+    {
+        $lines = [];
+
+        $matches = collect([PdfOptions::REGEXP_PRICE_LINES_01, PdfOptions::REGEXP_PRICE_LINES_02])
+            ->contains(function ($regexp) use ($content, &$lines) {
+                return preg_match_all($regexp, $content, $lines, PREG_UNMATCHED_AS_NULL, 0) > 0;
+            });
+
+        if (!$matches) {
+            return [];
+        }
+
+        /**
+         * We are finding Service Agreement ID on each page and assign it to all rows on the page.
+         */
+        $count = count(head($lines));
+        $sid = $this->findSID($content);
+
+        $searchable = array_fill(0, $count, $sid);
+        $lines += compact('searchable');
+
+        return Arr::only($lines, $this->getColumnNames());
+    }
+
+    private function findSID(string $content)
+    {
+        preg_match(PdfOptions::REGEXP_PRICE_SID, $content, $matches, PREG_UNMATCHED_AS_NULL, 0);
+
+        return optional($matches)[1];
     }
 
     private function findPaymentDates(string $content): array
@@ -238,18 +269,6 @@ class PdfParser implements PdfParserInterface
         return is_string($value)
             ? trim(preg_replace('/[\s\t]+/', ' ', $value))
             : $value;
-    }
-
-    private function setBinPath(): void
-    {
-        if (windows_os()) {
-            $this->binPath = app_path(config('pdfparser.pdftotext.win'));
-            return;
-        }
-
-        if (!windows_os() && !config('pdfparser.pdftotext.default_bin')) {
-            $this->binPath = config('pdfparser.pdftotext.linux');
-        }
     }
 
     private function resetCoveragePeriods(array $array): array

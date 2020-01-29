@@ -4,7 +4,9 @@ namespace App\Services\PdfParser;
 
 final class PdfOptions
 {
-    const REGEXP_PRICE_LINES = '/^(?<product_no>\d+\-\w{3}|[a-zA-Z]\w{3,4}?[a-zA-Z]{1,2})\s+(?<description>.+?\w)\s+(?<serial_no>\d?[a-zA-Z]{1,3}[a-zA-Z\d]{7,8})\s+((?<date_from>(([0-2][0-9])|(3[0-1]))[\.\/]((0[0-9])|(1[0-2]))[\.\/]\d{4})\s+?)?((?<date_to>(([0-2][0-9])|(3[0-1]))[\.\/]((0[0-9])|(1[0-2]))[\.\/]\d{4})\s+?)?(?<qty>\d{1,3}(?=\s+?))?(\s+?((\p{Sc})?\s?(?<price>(\d{1,3},)?\d+([,\.]\d{1,2}))))([a-zA-Z].+?)?$/m';
+    const REGEXP_PRICE_LINES_01 = '/^(?<product_no>\d+\-\w{3}|[a-zA-Z]\w{3,4}?[a-zA-Z]{1,2})\s+(?<description>(.(?![\s\h]{4,}))+[\w\-\+]+)\s+(?<serial_no>\d?[a-zA-Z]{1,3}[a-zA-Z\d]{7,8})\s+((?<date_from>(([0-2][0-9])|(3[0-1]))[\.\/]((0[0-9])|(1[0-2]))[\.\/]\d{4})\s+?)?((?<date_to>(([0-2][0-9])|(3[0-1]))[\.\/]((0[0-9])|(1[0-2]))[\.\/]\d{4})\s+?)?(?<qty>\d{1,3}(?=\s+?))?(\s+(\p{Sc})?\s?(?<price>(\d{1,3},)?\d+([,\.]\d{1,4}))(?=\s))([a-zA-Z].+)?$/m';
+
+    const REGEXP_PRICE_LINES_02 = '/^(?<product_no>\d+\-\w{3}|[a-zA-Z]\w{3,4}?[a-zA-Z]{1,4})\s+(?<description>(.(?![\s\h]{4,}))+[\w\-\+]+)\s+((?<date_from>(([0-2][0-9])|(3[0-1]))[\.\/]((0[0-9])|(1[0-2]))[\.\/]\d{4})\s+?)?((?<date_to>(([0-2][0-9])|(3[0-1]))[\.\/]((0[0-9])|(1[0-2]))[\.\/]\d{4})\s+?)?(?<qty>\d{1,3}(?=\s+?))?\s+(?<price>(\d{1,3},)?\d+([,\.]\d{1,2}))$\s+(?<serial_no>\d?[a-zA-Z]{1,3}[a-zA-Z-\d]{7,12})$/m';
 
     const REGEXP_PRICE_SID = '/(?<=Service Agreement ID:)(.+)/i';
 

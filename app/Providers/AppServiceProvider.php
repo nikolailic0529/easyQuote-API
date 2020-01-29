@@ -222,6 +222,15 @@ class AppServiceProvider extends ServiceProvider
             return ElasticsearchBuilder::create()->setHosts(app('config')->get('services.search.hosts'))->build();
         });
 
+        $this->app->when(\Spatie\PdfToText\Pdf::class)->needs('$binPath')->give(function () {
+            if (windows_os()) {
+                return app_path(config('pdfparser.pdftotext.win'));
+            }
+
+            if (!windows_os() && !config('pdfparser.pdftotext.default_bin')) {
+                return config('pdfparser.pdftotext.linux');
+            }
+        });
     }
 
     /**
