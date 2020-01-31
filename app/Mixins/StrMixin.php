@@ -119,4 +119,11 @@ class StrMixin
             return preg_replace('/[^[:alpha:]]/', '', $value);
         };
     }
+
+    public function trim()
+    {
+        return function ($value) {
+            return is_string($value) ? trim($value) : $value;
+        };
+    }
 }

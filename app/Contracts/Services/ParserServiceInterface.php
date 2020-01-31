@@ -7,67 +7,43 @@ use App\Http\Requests\{
     StoreQuoteFileRequest,
     HandleQuoteFileRequest
 };
+use App\Models\Quote\Quote;
+use App\Models\QuoteFile\QuoteFileFormat;
 
 interface ParserServiceInterface
 {
     /**
-     * Parse raw text by columns from XLSX format Quote File
-     *
-     * @param QuoteFile $quoteFile
-     * @return void
-     */
-    public function importExcel(QuoteFile $quoteFile);
-
-    /**
      * Determine Quote File format and return the related parser
      *
-     * @param QuoteFile $quoteFile
+     * @param \App\Models\QuoteFile\QuoteFile $quoteFile
      * @return void
      */
-    public function routeParser(QuoteFile $quoteFile);
+    public function routeParser(QuoteFile $quoteFile): void;
 
     /**
      * Check for existing handling
      *
-     * @param HandleQuoteFileRequest $request
-     * @return void
+     * @param \App\Http\Requests\HandleQuoteFileRequest $request
+     * @return mixed
      */
     public function handle(HandleQuoteFileRequest $request);
 
     /**
      * Extract number of sheets/pages and check for errors in Quote File
      *
-     * @param QuoteFile $quoteFile
+     * @param \App\Http\Requests\StoreQuoteFileRequest $request
      * @return array
      */
-    public function preHandle(StoreQuoteFileRequest $request);
-
-    /**
-     * Handle PDF format Quote File and store parsed data
-     * Return collection as parsed rows
-     *
-     * @param QuoteFile $quoteFile
-     * @return \Illuminate\Support\Collection
-     */
-    public function handlePdf(QuoteFile $quoteFile);
-
-    /**
-     * Handle Excel format Quote File and store parsed data
-     * Return collection as parsed rows
-     *
-     * @param QuoteFile $quoteFile
-     * @return \Illuminate\Support\Collection
-     */
-    public function handleExcel(QuoteFile $quoteFile);
+    public function preHandle(StoreQuoteFileRequest $request): array;
 
     /**
      * Determine File format before storing
-     * Will throw exception, if File Format doesn't exist
      *
      * @param string $path
      * @return \App\Models\QuoteFile\QuoteFileFormat
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
-    public function determineFileFormat(string $path);
+    public function determineFileFormat(string $path): QuoteFileFormat;
 
     /**
      * Count pages/sheets in the uploaded Quote File depends on file format
@@ -75,5 +51,14 @@ interface ParserServiceInterface
      * @param string $path
      * @return int
      */
-    public function countPages(string $path, bool $storage = true);
+    public function countPages(string $path, bool $storage = true): int;
+
+    /**
+     * Map known columns to fields in the Quote.
+     *
+     * @param \App\Models\Quote\Quote $quote
+     * @param \App\Models\QuoteFile\QuoteFile $quoteFile
+     * @return void
+     */
+    public function mapColumnsToFields(Quote $quote, QuoteFile $quoteFile);
 }

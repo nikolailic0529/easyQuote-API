@@ -23,7 +23,7 @@ use App\Imports\Concerns\{
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Webpatser\Uuid\Uuid;
-use Arr, DB;
+use Arr, DB, Str;
 
 class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkReading
 {
@@ -115,23 +115,32 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
      */
     protected $chunkSize = 500;
 
+    /**
+     * Price Meta Attributes.
+     *
+     * @var array
+     */
+    protected $priceAttributes = [];
+
     public function __construct(QuoteFile $quoteFile)
     {
-        $this->quoteFile = $quoteFile->load('user');
+        \DB::enableQueryLog();
+        $this->quoteFile = $quoteFile;
         $this->user = $quoteFile->user;
         $this->systemImportableColumns = $this->importRepository()->allSystem();
 
-        HeadingRowFormatter::
-        default('none');
+        HeadingRowFormatter::default('none');
     }
 
-    public function onRow(Row $row)
+    public function onRow(Row $excelRow)
     {
-        if ($row->getIndex() < $this->startRow) {
+        $row = $excelRow->toCollection(null, true);
+
+        if ($excelRow->getIndex() < $this->startRow) {
+            $this->findPriceAttributes($row);
             return;
         }
 
-        $row = $row->toCollection(null, true);
         $importableRow = $this->fetchRow($row);
 
         if (!$this->checkColumnsData($importableRow['imported_columns'])) {
@@ -148,25 +157,13 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
     {
         return [
             BeforeSheet::class => function ($event) {
-                $this->beforeNextSheet();
-
-                $worksheet = $event->sheet->getDelegate();
-                $highestRow = $worksheet->getHighestRow();
-
-                while (!$this->checkHeadingRow($worksheet) && $this->headingRow < $highestRow) {
-                    continue;
-                }
-
-                $this->determineCoveragePeriod($worksheet);
+                $this->beforeNextSheet($event->sheet->getDelegate());
             },
             AfterSheet::class => function ($event) {
                 $this->importSheetData();
             },
             AfterImport::class => function ($event) {
-                if ($this->rowsCount < 1) {
-                    $this->quoteFile->setException(QFNRF_01, 'QFNRF_01');
-                    $this->quoteFile->markAsUnHandled();
-                }
+                $this->afterImport();
             }
         ];
     }
@@ -208,12 +205,30 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         $this->performInsert($this->importableSheetData);
     }
 
-    protected function beforeNextSheet(): void
+    protected function beforeNextSheet(Worksheet $sheet): void
     {
         $this->importableSheetData = [];
         $this->activeSheetIndex++;
         $this->headingRow = 1;
         $this->startRow = 2;
+
+        $highestRow = $sheet->getHighestRow();
+
+        while (!$this->checkHeadingRow($sheet) && $this->headingRow < $highestRow) {
+            continue;
+        }
+
+        $this->determineCoveragePeriod($sheet);
+    }
+
+    protected function afterImport(): void
+    {
+        if ($this->rowsCount < 1) {
+            tap($this->quoteFile)->setException(QFNRF_01, 'QFNRF_01')
+                ->markAsUnHandled();
+        }
+
+        $this->quoteFile->storeMetaAttributes($this->priceAttributes);
     }
 
     protected function increaseRowsCount(): void
@@ -344,7 +359,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
     protected function mapRequiredHeaders(): void
     {
         $this->requiredHeadersMapping = collect($this->requiredHeaders)->mapWithKeys(function ($name) {
-            $aliases = $this->systemImportableColumns->where('name', $name)->first()->aliases->pluck('alias');
+            $aliases = $this->systemImportableColumns->firstWhere('name', $name)->aliases->pluck('alias');
 
             $header = $this->headersMapping->search(function ($id, $header) use ($aliases) {
                 return $aliases->contains(function ($alias) use ($header) {
@@ -354,5 +369,29 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
             return [$name => $header];
         });
+    }
+
+    protected function findPriceAttributes(Collection $row): void
+    {
+        $foundAttributes = [
+            'service_agreement_id'  => Str::trim($this->findRowAttribute(ImportExcelOptions::REGEXP_SAID, $row)),
+            'pricing_document'      => Str::trim($this->findRowAttribute(ImportExcelOptions::REGEXP_PD, $row)),
+            'system_handle'         => Str::trim($this->findRowAttribute(ImportExcelOptions::REGEXP_SH, $row)),
+        ];
+
+        $this->priceAttributes = array_filter($this->priceAttributes) + $foundAttributes;
+    }
+
+    private function findRowAttribute(string $regexp, Collection $row)
+    {
+        if (filled($matches = preg_grep($regexp, $row->toArray(null, true)))) {
+            $key = $row->values()->search(head($matches)) + 1;
+
+            return $row->slice($key)->filter()->first(function ($col) use ($matches) {
+                return !is_null($col);
+            });
+        }
+
+        return null;
     }
 }

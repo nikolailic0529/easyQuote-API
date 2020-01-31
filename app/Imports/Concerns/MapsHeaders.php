@@ -27,6 +27,9 @@ trait MapsHeaders
         throw_unless(property_exists($this, 'header'), new \InvalidArgumentException('The header property must be defined.'));
 
         $aliasesMapping = $this->importRepository()->allSystem()->pluck('aliases.*.alias', 'id');
+        $userAliasesMapping = $this->importRepository()->userColumns(array_filter($this->header))->pluck('aliases.*.alias', 'id');
+        $aliasesMapping = $aliasesMapping->merge($userAliasesMapping);
+
         $this->headersMapping = [];
         $mapping = collect([]);
 
@@ -62,7 +65,7 @@ trait MapsHeaders
                     }
                 );
 
-                $importableColumn->aliases()->where('alias', $name)->firstOrCreate(compact('alias'));
+                $importableColumn->aliases()->firstOrCreate(compact('alias'));
                 $column = $importableColumn->id;
             }
 

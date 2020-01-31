@@ -28,6 +28,7 @@ use App\Imports\{
     ImportExcelSchedule,
     CountPages
 };
+use App\Models\QuoteFile\QuoteFileFormat;
 use Excel, Storage, File, Setting, DB;
 use Illuminate\Pipeline\Pipeline;
 
@@ -75,7 +76,7 @@ class ParserService implements ParserServiceInterface
         $this->defaultSeparator = Setting::get('parser.default_separator');
     }
 
-    public function preHandle(StoreQuoteFileRequest $request)
+    public function preHandle(StoreQuoteFileRequest $request): array
     {
         $tempFile = $request->file('quote_file');
 
@@ -121,14 +122,15 @@ class ParserService implements ParserServiceInterface
 
         if ($quoteFile->isPrice() && $quoteFile->isNotAutomapped() && $quoteFile->processing_percentage > 1) {
             $this->mapColumnsToFields($quote, $quoteFile);
+            $this->fillMetaAttributes($quote, $quoteFile);
         }
 
         return $quoteFile->processing_state;
     }
 
-    public function mapColumnsToFields(Quote $quote, QuoteFile $quoteFile)
+    public function mapColumnsToFields(Quote $quote, QuoteFile $quoteFile): void
     {
-        $templateFields = $quote->quoteTemplate->templateFields;
+        $templateFields = $quote->usingVersion->quoteTemplate->templateFields;
         $templateFieldsNames = $templateFields->pluck('name')->toArray();
 
         $row = $quoteFile->rowsData()->with([
@@ -162,25 +164,25 @@ class ParserService implements ParserServiceInterface
 
         $quote->usingVersion->forgetCachedMappingReview();
 
-        return $quoteFile->markAsAutomapped();
+        $quoteFile->markAsAutomapped();
     }
 
-    public function routeParser(QuoteFile $quoteFile)
+    public function routeParser(QuoteFile $quoteFile): void
     {
         switch ($quoteFile->format->extension) {
             case 'pdf':
-                return $this->handlePdf($quoteFile);
+                $this->handlePdf($quoteFile);
                 break;
             case 'csv':
-                return $this->handleCsv($quoteFile);
+                $this->handleCsv($quoteFile);
                 break;
             case 'xlsx':
             case 'xls':
-                return $this->handleExcel($quoteFile);
+                $this->handleExcel($quoteFile);
                 break;
             case 'doc':
             case 'docx':
-                return $this->handleWord($quoteFile);
+                $this->handleWord($quoteFile);
                 break;
             default:
                 error_abort(QFTNS_01, 'QFTNS_01',  422);
@@ -188,117 +190,7 @@ class ParserService implements ParserServiceInterface
         }
     }
 
-    public function handlePdf(QuoteFile $quoteFile)
-    {
-        DB::transaction(function () use ($quoteFile) {
-            $rawData = $this->quoteFile->getRawData($quoteFile)->toArray();
-
-            if ($quoteFile->isSchedule()) {
-                $pageData = collect($rawData)->firstWhere('page', $quoteFile->imported_page);
-
-                $parsedData = $this->pdfParser->parseSchedule($pageData);
-
-                $this->quoteFile->createScheduleData(
-                    $quoteFile,
-                    $parsedData
-                );
-
-                $quoteFile->markAsHandled();
-                return;
-            }
-
-            $parsedData = $this->pdfParser->parse($rawData);
-
-            $this->quoteFile->createRowsData(
-                $quoteFile,
-                $parsedData
-            );
-
-            $quoteFile->markAsHandled();
-            return;
-        }, 3);
-    }
-
-    public function handleExcel(QuoteFile $quoteFile)
-    {
-        DB::transaction(function () use ($quoteFile) {
-            if ($quoteFile->isSchedule()) {
-                $this->importExcelSchedule($quoteFile);
-                return;
-            }
-
-            $this->importExcel($quoteFile);
-        }, 3);
-    }
-
-    public function handleCsv(QuoteFile $quoteFile)
-    {
-        if (request()->has('data_select_separator_id')) {
-            $quoteFile->dataSelectSeparator()->associate(request()->data_select_separator_id)->save();
-        }
-
-        DB::transaction(function () use ($quoteFile) {
-            $this->importCsv($quoteFile);
-        }, 3);
-    }
-
-    public function handleWord(QuoteFile $quoteFile)
-    {
-        $separator = $this->dataSelectSeparator->findByName($this->defaultSeparator);
-        $quoteFile->dataSelectSeparator()->associate($separator)->save();
-
-        DB::transaction(function () use ($quoteFile) {
-            $this->importWord($quoteFile);
-        }, 3);
-    }
-
-    public function importExcel(QuoteFile $quoteFile)
-    {
-        $filePath = $quoteFile->original_file_path;
-
-        $quoteFile->rowsData()->forceDelete();
-
-        (new ImportExcel($quoteFile))->import($filePath);
-
-        $quoteFile->markAsHandled();
-    }
-
-    public function importExcelSchedule(QuoteFile $quoteFile)
-    {
-        $filePath = $quoteFile->original_file_path;
-
-        $quoteFile->scheduleData()->forceDelete();
-
-        (new ImportExcelSchedule($quoteFile))->import($filePath);
-
-        $quoteFile->markAsHandled();
-    }
-
-    public function importCsv(QuoteFile $quoteFile)
-    {
-        $quoteFile->rowsData()->forceDelete();
-
-        (new ImportCsv($quoteFile))->import();
-
-        $quoteFile->markAsHandled();
-    }
-
-    public function importWord(QuoteFile $quoteFile)
-    {
-        $rawData = $this->quoteFile->getRawData($quoteFile);
-
-        $quoteFile->rowsData()->forceDelete();
-
-        $rawData->each(function ($file) use ($quoteFile) {
-            $filePath = $file->file_path;
-
-            (new ImportCsv($quoteFile, $filePath))->import();
-        });
-
-        $quoteFile->markAsHandled();
-    }
-
-    public function countPages(string $path, bool $storage = true)
+    public function countPages(string $path, bool $storage = true): int
     {
         $format = $this->determineFileFormat($path, $storage);
 
@@ -315,7 +207,130 @@ class ParserService implements ParserServiceInterface
         }
     }
 
-    public function countExcelPages(string $path, bool $storage = true)
+    public function determineFileFormat(string $path, bool $storage = true): QuoteFileFormat
+    {
+        $file = $storage ? Storage::path($path) : $path;
+
+        $extensions = collect(File::extension($file));
+
+        if ($extensions->first() === 'txt') {
+            $extensions->push('csv');
+        }
+
+        $format = $this->fileFormat->whereInExtension($extensions->toArray());
+
+        return $format;
+    }
+
+    protected function fillMetaAttributes(Quote $quote, QuoteFile $quoteFile): void
+    {
+        $quote->usingVersion->fill($quoteFile->meta_attributes)->saveWithoutEvents();
+    }
+
+    protected function handlePdf(QuoteFile $quoteFile): void
+    {
+        DB::transaction(function () use ($quoteFile) {
+            $rawData = $this->quoteFile->getRawData($quoteFile)->toArray();
+
+            if ($quoteFile->isSchedule()) {
+                $pageData = collect($rawData)->firstWhere('page', $quoteFile->imported_page);
+
+                $parsedData = $this->pdfParser->parseSchedule($pageData);
+
+                $this->quoteFile->createScheduleData($quoteFile, $parsedData);
+
+                $quoteFile->markAsHandled();
+                return;
+            }
+
+            $parsedData = $this->pdfParser->parse($rawData);
+
+            $this->quoteFile->createRowsData($quoteFile, $parsedData['pages']);
+
+            tap($quoteFile)->storeMetaAttributes($parsedData['attributes'])->markAsHandled();
+        }, 3);
+    }
+
+    protected function handleExcel(QuoteFile $quoteFile): void
+    {
+        DB::transaction(function () use ($quoteFile) {
+            if ($quoteFile->isSchedule()) {
+                $this->importExcelSchedule($quoteFile);
+                return;
+            }
+
+            $this->importExcel($quoteFile);
+        }, 3);
+    }
+
+    protected function handleCsv(QuoteFile $quoteFile): void
+    {
+        if (request()->has('data_select_separator_id')) {
+            $quoteFile->dataSelectSeparator()->associate(request()->data_select_separator_id)->save();
+        }
+
+        DB::transaction(function () use ($quoteFile) {
+            $this->importCsv($quoteFile);
+        }, 3);
+    }
+
+    protected function handleWord(QuoteFile $quoteFile): void
+    {
+        $separator = $this->dataSelectSeparator->findByName($this->defaultSeparator);
+        $quoteFile->dataSelectSeparator()->associate($separator)->save();
+
+        DB::transaction(function () use ($quoteFile) {
+            $this->importWord($quoteFile);
+        }, 3);
+    }
+
+    protected function importExcel(QuoteFile $quoteFile): void
+    {
+        $filePath = $quoteFile->original_file_path;
+
+        $quoteFile->rowsData()->forceDelete();
+
+        (new ImportExcel($quoteFile))->import($filePath);
+
+        $quoteFile->markAsHandled();
+    }
+
+    protected function importExcelSchedule(QuoteFile $quoteFile): void
+    {
+        $filePath = $quoteFile->original_file_path;
+
+        $quoteFile->scheduleData()->forceDelete();
+
+        (new ImportExcelSchedule($quoteFile))->import($filePath);
+
+        $quoteFile->markAsHandled();
+    }
+
+    protected function importCsv(QuoteFile $quoteFile): void
+    {
+        $quoteFile->rowsData()->forceDelete();
+
+        (new ImportCsv($quoteFile))->import();
+
+        $quoteFile->markAsHandled();
+    }
+
+    protected function importWord(QuoteFile $quoteFile): void
+    {
+        $rawData = $this->quoteFile->getRawData($quoteFile);
+
+        $quoteFile->rowsData()->forceDelete();
+
+        $rawData->each(function ($file) use ($quoteFile) {
+            $filePath = $file->file_path;
+
+            (new ImportCsv($quoteFile, $filePath))->import();
+        });
+
+        $quoteFile->markAsHandled();
+    }
+
+    protected function countExcelPages(string $path, bool $storage = true): int
     {
         $filePath = $storage ? Storage::path($path) : $path;
 
@@ -330,21 +345,6 @@ class ParserService implements ParserServiceInterface
         }
 
         return $import->getSheetCount();
-    }
-
-    public function determineFileFormat(string $path, bool $storage = true)
-    {
-        $file = $storage ? Storage::path($path) : $path;
-
-        $extensions = collect(File::extension($file));
-
-        if ($extensions->first() === 'txt') {
-            $extensions->push('csv');
-        }
-
-        $format = $this->fileFormat->whereInExtension($extensions->toArray());
-
-        return $format;
     }
 
     protected function handleOrRetrieve(Quote $quote, QuoteFile $quoteFile): bool

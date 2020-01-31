@@ -135,7 +135,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     public function getRawData(QuoteFile $quoteFile)
     {
-        return $quoteFile->importedRawData()->get();
+        return $quoteFile->importedRawData()->orderBy('page')->get();
     }
 
     public function createRowsData(QuoteFile $quoteFile, array $array)

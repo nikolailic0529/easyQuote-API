@@ -69,10 +69,14 @@ class PdfParser implements PdfParserInterface
             }
         });
 
-        $pagesData = $pages->map(function ($page, $key) {
+        $attributes = [];
+
+        $pages = $pages->map(function ($page, $key) use (&$attributes) {
             ['page' => $page, 'content' => $content] = $page;
 
             $rows = [];
+
+            $attributes = $this->findPriceAttributes($content, $attributes);
 
             if (blank($matches = $this->fetchPricePage($content))) {
                 return compact('page', 'rows');
@@ -88,7 +92,9 @@ class PdfParser implements PdfParserInterface
             return compact('page', 'rows');
         });
 
-        return $pagesData->toArray();
+        $pages = $pages->toArray();
+
+        return compact('pages', 'attributes');
     }
 
     public function parseSchedule(array $array)
@@ -154,17 +160,32 @@ class PdfParser implements PdfParserInterface
          * We are finding Service Agreement ID on each page and assign it to all rows on the page.
          */
         $count = count(head($lines));
-        $sid = $this->findSID($content);
+        $said = $this->findSAID($content);
 
-        $searchable = array_fill(0, $count, $sid);
+        $searchable = array_fill(0, $count, $said);
         $lines += compact('searchable');
 
         return Arr::only($lines, $this->getColumnNames());
     }
 
-    private function findSID(string $content)
+    private function findPriceAttributes(string $content, array $attributes): array
     {
-        preg_match(PdfOptions::REGEXP_PRICE_SID, $content, $matches, PREG_UNMATCHED_AS_NULL, 0);
+        preg_match(PdfOptions::REGEXP_PD, $content, $pd, PREG_UNMATCHED_AS_NULL, 0);
+        preg_match(PdfOptions::REGEXP_SH, $content, $sh, PREG_UNMATCHED_AS_NULL, 0);
+        preg_match(PdfOptions::REGEXP_SAID, $content, $said, PREG_UNMATCHED_AS_NULL, 0);
+
+        $foundAttributes = [
+            'pricing_document'      => Str::trim(last($pd)),
+            'system_handle'         => Str::trim(last($sh)),
+            'service_agreement_id'  => Str::trim(last($said))
+        ];
+
+        return array_filter($attributes) + $foundAttributes;
+    }
+
+    private function findSAID(string $content)
+    {
+        preg_match(PdfOptions::REGEXP_PRICE_SAID, $content, $matches, PREG_UNMATCHED_AS_NULL, 0);
 
         return optional($matches)[1];
     }
