@@ -7,6 +7,7 @@ use App\Contracts\Repositories\{
     Quote\QuoteRepositoryInterface as QuoteRepository,
     Quote\Margin\MarginRepositoryInterface as MarginRepository,
     CompanyRepositoryInterface as CompanyRepository,
+    CurrencyRepositoryInterface as CurrencyRepository,
     QuoteTemplate\QuoteTemplateRepositoryInterface as QuoteTemplateRepository,
     QuoteFile\DataSelectSeparatorRepositoryInterface as DataSelectRepository
 };
@@ -27,35 +28,45 @@ use Setting;
 
 class QuoteController extends Controller
 {
-    protected $quote;
+    /** @var \App\Contracts\Repositories\Quote\QuoteRepositoryInterface */
+    protected $quotes;
 
-    protected $template;
+    /** @var \App\Contracts\Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface */
+    protected $quoteTemplates;
 
-    protected $margin;
+    /** @var \App\Contracts\Repositories\CountryRepositoryInterface */
+    protected $margins;
 
-    protected $company;
+    /** @var \App\Contracts\Repositories\CompanyRepositoryInterface */
+    protected $companies;
 
-    protected $dataSelect;
+    /** @var \App\Contracts\Repositories\CurrencyRepositoryInterface */
+    protected $currencies;
+
+    /** @var \App\Contracts\Repositories\QuoteFile\DataSelectSeparatorRepositoryInterface */
+    protected $dataSelects;
 
     public function __construct(
-        QuoteRepository $quote,
+        QuoteRepository $quotes,
         QuoteTemplateRepository $quoteTemplates,
-        MarginRepository $margin,
-        CompanyRepository $company,
-        DataSelectRepository $dataSelect
+        MarginRepository $margins,
+        CompanyRepository $companies,
+        DataSelectRepository $dataSelects,
+        CurrencyRepository $currencies
     ) {
-        $this->quote = $quote;
+        $this->quotes = $quotes;
         $this->quoteTemplates = $quoteTemplates;
-        $this->margin = $margin;
-        $this->company = $company;
-        $this->dataSelect = $dataSelect;
+        $this->margins = $margins;
+        $this->companies = $companies;
+        $this->dataSelects = $dataSelects;
+        $this->currencies = $currencies;
     }
 
     public function quote(Quote $quote)
     {
         $this->authorize('view', $quote);
 
-        $resource = $this->quote->find($quote);
+        $resource = $this->quotes->find($quote);
 
         return response()->json(
             filter(QuoteVersionResource::make($resource))
@@ -71,7 +82,7 @@ class QuoteController extends Controller
         }
 
         return response()->json(
-            $this->quote->storeState($request)
+            $this->quotes->storeState($request)
         );
     }
 
@@ -80,7 +91,7 @@ class QuoteController extends Controller
         $this->authorize('update', $quote);
 
         return response()->json(
-            $this->quote->setVersion($request->version_id, $quote)
+            $this->quotes->setVersion($request->version_id, $quote)
         );
     }
 
@@ -88,25 +99,26 @@ class QuoteController extends Controller
     {
         return response()->json(
             [
-                'companies' => $this->company->allWithVendorsAndCountries(),
-                'data_select_separators' => $this->dataSelect->all(),
-                'supported_file_types' => Setting::get('supported_file_types_ui')
+                'companies'                 => $this->companies->allWithVendorsAndCountries(),
+                'data_select_separators'    => $this->dataSelects->all(),
+                'supported_file_types'      => Setting::get('supported_file_types_ui'),
+                'currencies'                => $this->currencies->all()
             ]
         );
     }
 
     public function step2(MappingReviewRequest $request)
     {
-        $this->authorize('view', $this->quote->find($request->quote_id));
+        $this->authorize('view', $this->quotes->find($request->quote_id));
 
         if ($request->has('search')) {
             return response()->json(
-                $this->quote->rows($request->quote_id, $request->search, $request->group_id)
+                $this->quotes->rows($request->quote_id, $request->search, $request->group_id)
             );
         }
 
         return response()->json(
-            $this->quote->step2($request)
+            $this->quotes->step2($request)
         );
     }
 
@@ -121,7 +133,7 @@ class QuoteController extends Controller
         $this->authorize('view', $quote);
 
         return response()->json(
-            $this->quote->rowsGroups($quote->id)
+            $this->quotes->rowsGroups($quote->id)
         );
     }
 
@@ -135,7 +147,7 @@ class QuoteController extends Controller
     public function step3()
     {
         return response()->json(
-            $this->margin->data()
+            $this->margins->data()
         );
     }
 
@@ -150,7 +162,7 @@ class QuoteController extends Controller
         $this->authorize('view', $quote);
 
         return response()->json(
-            $this->quote->discounts($quote->id)
+            $this->quotes->discounts($quote->id)
         );
     }
 
@@ -167,7 +179,7 @@ class QuoteController extends Controller
         $this->authorize('view', $quote);
 
         return response()->json(
-            $this->quote->tryDiscounts($request, $quote->id)
+            $this->quotes->tryDiscounts($request, $quote->id)
         );
     }
 
@@ -182,7 +194,7 @@ class QuoteController extends Controller
         $this->authorize('view', $quote);
 
         return response()->json(
-            $this->quote->review($quote->id)
+            $this->quotes->review($quote->id)
         );
     }
 
@@ -198,7 +210,7 @@ class QuoteController extends Controller
         $this->authorize('view', $quote);
 
         return response()->json(
-            $this->quote->findGroupDescription($group, $quote->id)
+            $this->quotes->findGroupDescription($group, $quote->id)
         );
     }
 
@@ -214,7 +226,7 @@ class QuoteController extends Controller
         $this->authorize('update', $quote);
 
         return response()->json(
-            $this->quote->createGroupDescription($request, $quote->id)
+            $this->quotes->createGroupDescription($request, $quote->id)
         );
     }
 
@@ -231,7 +243,7 @@ class QuoteController extends Controller
         $this->authorize('update', $quote);
 
         return response()->json(
-            $this->quote->updateGroupDescription($request, $group, $quote->id)
+            $this->quotes->updateGroupDescription($request, $group, $quote->id)
         );
     }
 
@@ -247,7 +259,7 @@ class QuoteController extends Controller
         $this->authorize('update', $quote);
 
         return response()->json(
-            $this->quote->moveGroupDescriptionRows($request, $quote->id)
+            $this->quotes->moveGroupDescriptionRows($request, $quote->id)
         );
     }
 
@@ -263,7 +275,7 @@ class QuoteController extends Controller
         $this->authorize('update', $quote);
 
         return response()->json(
-            $this->quote->deleteGroupDescription($group, $quote->id)
+            $this->quotes->deleteGroupDescription($group, $quote->id)
         );
     }
 }

@@ -12,6 +12,8 @@ use DB, Storage;
 
 class ImportCsv
 {
+    use MapsHeaders, LimitsHeaders;
+
     /**
      * Csv Reader Instance
      *
@@ -95,8 +97,6 @@ class ImportCsv
      * @var string
      */
     protected $importableFilePath;
-
-    use MapsHeaders, LimitsHeaders;
 
     public function __construct(QuoteFile $quoteFile, $filePath = null, int $headerOffset = 0)
     {

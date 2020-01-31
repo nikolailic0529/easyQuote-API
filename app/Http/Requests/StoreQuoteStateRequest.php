@@ -109,6 +109,18 @@ class StoreQuoteStateRequest extends FormRequest
                 'uuid',
                 Rule::exists('quote_templates', 'id')->whereNull('deleted_at')->where('type', QT_TYPE_CONTRACT)
             ],
+            'quote_data.source_currency_id' => [
+                'nullable',
+                'string',
+                'uuid',
+                Rule::exists('currencies', 'id')
+            ],
+            'quote_data.target_currency_id' => [
+                'nullable',
+                'string',
+                'uuid',
+                Rule::exists('currencies', 'id')
+            ],
             'quote_data.files.*' => [
                 'uuid',
                 'exists:quote_files,id'

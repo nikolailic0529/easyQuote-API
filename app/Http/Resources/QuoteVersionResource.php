@@ -26,6 +26,8 @@ class QuoteVersionResource extends JsonResource
             'vendor_id'                                 => $this->usingVersion->vendor_id,
             'customer_id'                               => $this->usingVersion->customer_id,
             'country_margin_id'                         => $this->usingVersion->country_margin_id,
+            'source_currency_id'                        => $this->usingVersion->source_currency_id,
+            'target_currency_id'                        => $this->usingVersion->target_currency_id,
             'type'                                      => $this->usingVersion->type,
             'completeness'                              => $this->usingVersion->completeness,
             'last_drafted_step'                         => $this->usingVersion->last_drafted_step,

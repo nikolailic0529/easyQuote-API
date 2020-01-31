@@ -38,9 +38,12 @@ use App\Traits\{
     QuoteTemplate\BelongsToContractTemplate,
     CachesRelations\CachesRelations,
     Activity\LogsActivity,
+    Currency\ConvertsCurrency
 };
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\{
+    SoftDeletes,
+    Builder
+};
 use Illuminate\Support\Traits\Tappable;
 use Carbon\Carbon;
 use Str;
@@ -73,6 +76,7 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
         Reviewable,
         Completable,
         SwitchesMode,
+        ConvertsCurrency,
         Tappable;
 
     protected $connection = 'mysql';

@@ -8,6 +8,9 @@ use Closure;
 
 class ImportableColumnRepository implements ImportableColumnRepositoryInterface
 {
+    const CACHE_KEY_SYSTEM_COLS = 'importable-columns:system';
+
+    /** @var \App\Models\QuoteFile\ImportableColumn */
     protected $importableColumn;
 
     public function __construct(ImportableColumn $importableColumn)
@@ -22,7 +25,16 @@ class ImportableColumnRepository implements ImportableColumnRepositoryInterface
 
     public function allSystem()
     {
-        return $this->importableColumn->ordered()->system()->with('aliases')->get();
+        return cache()->sear(self::CACHE_KEY_SYSTEM_COLS, function () {
+            return $this->importableColumn->ordered()->system()->with('aliases')->get();
+        });
+    }
+
+    public function userColumns(array $alises = [])
+    {
+        return $this->importableColumn->nonSystem()->whereHas('aliases', function ($query) use ($alises) {
+            $query->whereIn('alias', $alises);
+        })->get();
     }
 
     public function allNames()

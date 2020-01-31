@@ -29,6 +29,14 @@ interface ImportableColumnRepositoryInterface
     public function allSystem();
 
     /**
+     * Get all User defined Importable Columns matching the aliases.
+     *
+     * @param array $aliases
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function userColumns(array $aliases = []);
+
+    /**
      * Find ImportableColumn by Name
      *
      * @param string $name

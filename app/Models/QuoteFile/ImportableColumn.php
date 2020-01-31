@@ -10,13 +10,13 @@ use App\Contracts\HasOrderedScope;
 use App\Models\Quote\FieldColumn;
 use App\Traits\{
     HasColumnsData,
-    HasSystemScope,
-    BelongsToUser
+    BelongsToUser,
+    Systemable
 };
 
 class ImportableColumn extends BaseModel implements HasOrderedScope
 {
-    use BelongsToUser, HasColumnsData, HasSystemScope;
+    use BelongsToUser, HasColumnsData, Systemable;
 
     public $timestamps = false;
 

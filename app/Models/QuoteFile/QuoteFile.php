@@ -14,6 +14,7 @@ use App\Traits\{
     HasFileFormat,
     Draftable,
     Handleable,
+    HasMetaAttributes,
     HasScheduleData,
     Import\Automappable,
     Misc\GeneratesException
@@ -28,6 +29,7 @@ class QuoteFile extends BaseModel implements HasOrderedScope
         BelongsToQuote,
         BelongsToUser,
         HasFileFormat,
+        HasMetaAttributes,
         Handleable,
         Draftable,
         GeneratesException,
