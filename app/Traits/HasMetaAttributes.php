@@ -18,4 +18,12 @@ trait HasMetaAttributes
     {
         return json_decode($value, true) ?? [];
     }
+
+    public function getFormattedMetaAttributesAttribute(): array
+    {
+        return array_map(function ($attribute) {
+            $attribute = is_array($attribute) ? implode(', ', $attribute) : $attribute;
+            return filled($attribute) ? $attribute : null;
+        }, $this->meta_attributes);
+    }
 }

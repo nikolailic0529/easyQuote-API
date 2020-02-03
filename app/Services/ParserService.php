@@ -224,7 +224,7 @@ class ParserService implements ParserServiceInterface
 
     protected function fillMetaAttributes(Quote $quote, QuoteFile $quoteFile): void
     {
-        $quote->usingVersion->fill($quoteFile->meta_attributes)->saveWithoutEvents();
+        $quote->usingVersion->fill($quoteFile->formatted_meta_attributes)->saveWithoutEvents();
     }
 
     protected function handlePdf(QuoteFile $quoteFile): void

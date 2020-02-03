@@ -123,7 +123,7 @@ class StrMixin
     public function trim()
     {
         return function ($value) {
-            return is_string($value) ? trim($value) : $value;
+            return is_string($value) ? preg_replace('/\h+/', ' ', trim($value)) : $value;
         };
     }
 }

@@ -170,17 +170,23 @@ class PdfParser implements PdfParserInterface
 
     private function findPriceAttributes(string $content, array $attributes): array
     {
-        preg_match(PdfOptions::REGEXP_PD, $content, $pd, PREG_UNMATCHED_AS_NULL, 0);
-        preg_match(PdfOptions::REGEXP_SH, $content, $sh, PREG_UNMATCHED_AS_NULL, 0);
-        preg_match(PdfOptions::REGEXP_SAID, $content, $said, PREG_UNMATCHED_AS_NULL, 0);
+        preg_match(PdfOptions::REGEXP_PD, $content, $pd, PREG_UNMATCHED_AS_NULL);
+        preg_match(PdfOptions::REGEXP_SH, $content, $sh, PREG_UNMATCHED_AS_NULL);
+        preg_match(PdfOptions::REGEXP_SAID, $content, $said, PREG_UNMATCHED_AS_NULL);
 
         $foundAttributes = [
-            'pricing_document'      => Str::trim(last($pd)),
-            'system_handle'         => Str::trim(last($sh)),
-            'service_agreement_id'  => Str::trim(last($said))
+            'pricing_document'      => [Str::trim(last($pd))],
+            'system_handle'         => [Str::trim(last($sh))],
+            'service_agreement_id'  => [Str::trim(last($said))]
         ];
 
-        return array_filter($attributes) + $foundAttributes;
+        $attributes = array_merge_recursive(array_filter($attributes), $foundAttributes);
+
+        $attributes = array_map(function ($attribute) {
+            return array_values(array_flip(array_flip(array_filter($attribute))));
+        }, $attributes);
+
+        return $attributes;
     }
 
     private function findSAID(string $content)

@@ -374,12 +374,16 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
     protected function findPriceAttributes(Collection $row): void
     {
         $foundAttributes = [
-            'service_agreement_id'  => Str::trim($this->findRowAttribute(ImportExcelOptions::REGEXP_SAID, $row)),
-            'pricing_document'      => Str::trim($this->findRowAttribute(ImportExcelOptions::REGEXP_PD, $row)),
-            'system_handle'         => Str::trim($this->findRowAttribute(ImportExcelOptions::REGEXP_SH, $row)),
+            'service_agreement_id'  => [Str::trim($this->findRowAttribute(ImportExcelOptions::REGEXP_SAID, $row))],
+            'pricing_document'      => [Str::trim($this->findRowAttribute(ImportExcelOptions::REGEXP_PD, $row))],
+            'system_handle'         => [Str::trim($this->findRowAttribute(ImportExcelOptions::REGEXP_SH, $row))],
         ];
 
-        $this->priceAttributes = array_filter($this->priceAttributes) + $foundAttributes;
+        $attributes = array_merge_recursive(array_filter($this->priceAttributes), $foundAttributes);
+
+        $this->priceAttributes = array_map(function ($attribute) {
+            return array_values(array_flip(array_flip(array_filter($attribute))));
+        }, $attributes);
     }
 
     private function findRowAttribute(string $regexp, Collection $row)

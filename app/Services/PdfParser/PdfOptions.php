@@ -10,11 +10,11 @@ final class PdfOptions
 
     const REGEXP_PRICE_SAID = '/(?<=Service Agreement ID:)(.+)/i';
 
-    const REGEXP_PD = '/(pricing[\h]{1,4}document|reference[\h]{1,4}no\.):\s+(\w+)\s/i';
+    const REGEXP_PD = '/(pricing[\h]{1,4}document|reference[\h]{1,4}no\.):\s+(\w+)\s/im';
 
-    const REGEXP_SH = '/system[\h]{1,4}handle:\h{1,}((?!service|coverage|description|subtotal)\b[\w\- ]+\b)(?:\h{2,}|\n)/i';
+    const REGEXP_SH = '/system[\h]{1,4}handle:\h{1,}((?!service|coverage|description|subtotal)\b[\w\- ]+\b)(?:\h{2,}|\n)/im';
 
-    const REGEXP_SAID = '/service[\h]{1,4}agreement(?:[\h]{1,4}id)?:\s+((?:[\d]+\s)+)\s/i';
+    const REGEXP_SAID = '/service[\h]{1,4}agreement(?:[\h]{1,4}id)?:\s+((?:[\d]{4}[\s]+){3,4})\s/im';
 
     const SCHEDULE_MATCHES = ['payments', 'payment_dates', 'payment_dates_options'];
 
