@@ -124,7 +124,6 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
     public function __construct(QuoteFile $quoteFile)
     {
-        \DB::enableQueryLog();
         $this->quoteFile = $quoteFile;
         $this->user = $quoteFile->user;
         $this->systemImportableColumns = $this->importRepository()->allSystem();
@@ -239,7 +238,6 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
     protected function checkHeadingRow(Worksheet $worksheet): bool
     {
         $this->setHeader($worksheet);
-        $this->mapHeaders();
         $this->mapRequiredHeaders();
 
         if (!$this->requiredHeadersPresent()) {
@@ -247,6 +245,8 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
             $this->headingRow++;
             return false;
         }
+
+        $this->mapHeaders();
 
         return true;
     }
@@ -361,11 +361,11 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         $this->requiredHeadersMapping = collect($this->requiredHeaders)->mapWithKeys(function ($name) {
             $aliases = $this->systemImportableColumns->firstWhere('name', $name)->aliases->pluck('alias');
 
-            $header = $this->headersMapping->search(function ($id, $header) use ($aliases) {
+            $header = Arr::first($this->header, function ($header) use ($aliases) {
                 return $aliases->contains(function ($alias) use ($header) {
                     return preg_match("~^{$alias}.*?~i", $header);
                 });
-            });
+            }, false);
 
             return [$name => $header];
         });
