@@ -152,11 +152,11 @@ trait HasMapping
                             "max(
                                 if(
                                     `imported_columns`.`importable_column_id` = ?,
-                                    ExtractDecimal(`imported_columns`.`value`),
+                                    cast((ExtractDecimal(`imported_columns`.`value`) * ?) as decimal(15,2)),
                                     null
                                 )
                             ) as {$mapping->templateField->name}",
-                            [$mapping->importable_column_id]
+                            [$mapping->importable_column_id, $this->targetExchangeRate]
                         );
                         break;
                     case 'date_from':
@@ -171,6 +171,7 @@ trait HasMapping
                                             if(length(trim(`imported_columns`.`value`)) = 0, `customers`.`{$default}`, null),
                                             str_to_date(`imported_columns`.`value`, '%d.%m.%Y'),
                                             str_to_date(`imported_columns`.`value`, '%d/%m/%Y'),
+                                            str_to_date(`imported_columns`.`value`, '%m/%d/%Y'),
                                             str_to_date(`imported_columns`.`value`, '%Y.%m.%d'),
                                             str_to_date(`imported_columns`.`value`, '%Y/%m/%d'),
                                             str_to_date(`imported_columns`.`value`, '%Y-%d-%m'),
