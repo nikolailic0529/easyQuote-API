@@ -152,6 +152,7 @@ trait HasMapping
                             "max(
                                 if(
                                     `imported_columns`.`importable_column_id` = ?,
+                                    ExtractDecimal(`imported_columns`.`value`),
                                     null
                                 )
                             ) as {$mapping->templateField->name}",
