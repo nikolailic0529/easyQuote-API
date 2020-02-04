@@ -152,7 +152,6 @@ trait HasMapping
                             "max(
                                 if(
                                     `imported_columns`.`importable_column_id` = ?,
-                                    ExtractDecimal(`imported_columns`.`value`),
                                     null
                                 )
                             ) as {$mapping->templateField->name}",
@@ -171,6 +170,7 @@ trait HasMapping
                                             if(length(trim(`imported_columns`.`value`)) = 0, `customers`.`{$default}`, null),
                                             str_to_date(`imported_columns`.`value`, '%d.%m.%Y'),
                                             str_to_date(`imported_columns`.`value`, '%d/%m/%Y'),
+                                            str_to_date(`imported_columns`.`value`, '%m/%d/%Y'),
                                             str_to_date(`imported_columns`.`value`, '%Y.%m.%d'),
                                             str_to_date(`imported_columns`.`value`, '%Y/%m/%d'),
                                             str_to_date(`imported_columns`.`value`, '%Y-%d-%m'),
