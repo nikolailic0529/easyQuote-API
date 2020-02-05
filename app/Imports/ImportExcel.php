@@ -322,28 +322,14 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
     protected function fetchRow(Collection $row): array
     {
-        $imported_row_id = Uuid::generate(4)->string;
-        $now = now()->toDateTimeString();
-        $imported_row = [
-            'id' => $imported_row_id,
-            'user_id' => $this->user->id,
-            'quote_file_id' => $this->quoteFile->id,
-            'page' => $this->activeSheetIndex,
-            'created_at' => $now,
-            'updated_at' => $now,
-            'processed_at' => $now
-        ];
+        $imported_row = $this->makeImportedRow();
 
-        $imported_columns = $row->map(function ($value, $header) use ($row, $imported_row_id) {
-            if (isset($value)) {
-                $value = preg_replace('/(^[\h]+)|([\h]+$)/um', '', str_replace('_x000D_', '', $value));
-            }
-
-            $id = Uuid::generate(4)->string;
-            $importable_column_id = $this->headersMapping->get($header);
-            $header = $this->limitHeader($this->quoteFile, $header);
-
-            return compact('id', 'imported_row_id', 'importable_column_id', 'value', 'header');
+        $imported_columns = $row->map(function ($value, $header) use ($row, $imported_row) {
+            return $this->makeImportedColumn([
+                'value'             => $value,
+                'header'            => $header,
+                'imported_row_id'   => $imported_row['id']
+            ]);
         })->filter(function ($column) {
             return isset($column['importable_column_id']) && $column['header'] !== $column['value'];
         })->values();
@@ -374,9 +360,9 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
     protected function findPriceAttributes(Collection $row): void
     {
         $foundAttributes = [
-            'service_agreement_id'  => [Str::trim($this->findRowAttribute(ImportExcelOptions::REGEXP_SAID, $row))],
-            'pricing_document'      => [Str::trim($this->findRowAttribute(ImportExcelOptions::REGEXP_PD, $row))],
-            'system_handle'         => [Str::trim($this->findRowAttribute(ImportExcelOptions::REGEXP_SH, $row))],
+            'service_agreement_id'  => (array) $this->findRowAttribute(ImportExcelOptions::REGEXP_SAID, ImportExcelOptions::REGEXP_SAID_VALUE, $row),
+            'pricing_document'      => (array) $this->findRowAttribute(ImportExcelOptions::REGEXP_PD, ImportExcelOptions::REGEXP_PD_VALUE, $row),
+            'system_handle'         => (array) $this->findRowAttribute(ImportExcelOptions::REGEXP_SH, ImportExcelOptions::REGEXP_SH_VALUE, $row),
         ];
 
         $attributes = array_merge_recursive(array_filter($this->priceAttributes), $foundAttributes);
@@ -386,14 +372,54 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         }, $attributes);
     }
 
-    private function findRowAttribute(string $regexp, Collection $row)
+    private function makeImportedRow(): array
+    {
+        $now = now()->toDateTimeString();
+
+        return [
+            'id'            => Uuid::generate(4)->string,
+            'user_id'       => $this->user->id,
+            'quote_file_id' => $this->quoteFile->id,
+            'page'          => $this->activeSheetIndex,
+            'created_at'    => $now,
+            'updated_at'    => $now,
+            'processed_at'  => $now
+        ];
+    }
+
+    private function makeImportedColumn(array $attributes): array
+    {
+        if (!Arr::has($attributes, ['header', 'value', 'imported_row_id'])) {
+            return [];
+        }
+
+        if (isset($attributes['value'])) {
+            $attributes['value'] = preg_replace('/(^[\h]+)|([\h]+$)/um', '', str_replace('_x000D_', '', $attributes['value']));
+        }
+
+        return [
+            'id'                    => Uuid::generate(4)->string,
+            'imported_row_id'       => $attributes['imported_row_id'],
+            'importable_column_id'  => $this->headersMapping->get($attributes['header']),
+            'header'                => $this->limitHeader($this->quoteFile, $attributes['header']),
+            'value'                 => $attributes['value']
+        ];
+    }
+
+    private function findRowAttribute(string $regexp, string $cellRegexp, Collection $row)
     {
         if (filled($matches = preg_grep($regexp, $row->toArray(null, true)))) {
-            $key = $row->values()->search(head($matches)) + 1;
+            $cell = head($matches);
 
-            return $row->slice($key)->filter()->first(function ($col) use ($matches) {
+            if (preg_match($cellRegexp, $cell, $cellMatches)) {
+                return Str::trim(last($cellMatches));
+            }
+
+            $key = $row->values()->search($cell) + 1;
+
+            return Str::trim($row->slice($key)->filter()->first(function ($col) {
                 return !is_null($col);
-            });
+            }));
         }
 
         return null;
