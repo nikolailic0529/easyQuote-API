@@ -163,7 +163,10 @@ class ImportCsv
         if ($this->quoteFile->rowsCount === 0) {
             $this->quoteFile->setException(QFNRF_01, 'QFNRF_01');
             $this->quoteFile->throwExceptionIfExists();
+            return;
         }
+
+        $this->findPriceAttributes();
     }
 
     protected function checkHeader(): void
@@ -174,8 +177,8 @@ class ImportCsv
     protected function filterHeader(array $header): array
     {
         return collect($header)->map(function ($name, $key) {
-            if (mb_strlen(trim($name)) === 0) {
-                return "Unknown Header {$key}";
+            if (blank($name)) {
+                return 'Unknown Header '. ++$key;
             }
             return $name;
         })->toArray();
@@ -218,5 +221,26 @@ class ImportCsv
         }
 
         $this->importableFilePath = $path;
+    }
+
+    protected function findPriceAttributes(): void
+    {
+        $attributes = [
+            'pricing_document'      => $this->getPriceHeaderAttributes(ImportCsvOptions::REGEXP_PD),
+            'system_handle'         => $this->getPriceHeaderAttributes(ImportCsvOptions::REGEXP_SH),
+            'service_agreement_id'  => $this->getPriceHeaderAttributes(ImportCsvOptions::REGEXP_SAID)
+        ];
+
+        $this->quoteFile->storeMetaAttributes($attributes);
+    }
+
+    private function getPriceHeaderAttributes(string $regexp): array
+    {
+        if (!($header = head(preg_grep($regexp, $this->header)))) {
+            return [];
+        }
+
+        return DB::table($this->dataTable)->select($header)->distinct($header)
+            ->get()->pluck($header)->toArray();
     }
 }

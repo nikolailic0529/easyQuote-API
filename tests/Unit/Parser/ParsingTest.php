@@ -17,7 +17,7 @@ use Tests\Unit\Traits\{
 
 abstract class ParsingTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, WithFakeQuote, WithFakeQuoteFile;
+    use WithFakeUser, WithFakeQuote, WithFakeQuoteFile;
 
     public function message(QuoteFile $quoteFile)
     {
