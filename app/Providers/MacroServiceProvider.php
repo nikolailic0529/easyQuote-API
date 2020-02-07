@@ -14,9 +14,10 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\{
     Str,
     Collection,
-    Facades\File,
     Arr,
-    Carbon
+    Carbon,
+    Facades\File,
+    Facades\Blade
 };
 use Spatie\Activitylog\ActivityLogger;
 use Illuminate\Support\Facades\Validator;
@@ -41,6 +42,10 @@ class MacroServiceProvider extends ServiceProvider
         File::mixin(new FileMixin);
 
         ActivityLogger::mixin(new ActivityLoggerMixin);
+
+        Blade::if('textoverflow', function ($value, int $max, $when = true) {
+            return $when && strlen($value) > $max && strpos($value, ' ') === false;
+        });
 
         Validator::extend('phone', function ($attribute, $value, $parameters) {
             return preg_match('/\+?[\d]+/', $value);

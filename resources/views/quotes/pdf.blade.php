@@ -27,7 +27,6 @@
             <div class="mt-2">{!! $data['data_pages']['additional_details'] !!}</div>
         @endisset
 
-
         <div class="page-break"></div>
         @isset($data['payment_schedule']['data'])
             @include ('quotes.components.page', ['page_name' => 'payment_schedule'])
