@@ -44,7 +44,7 @@ class MacroServiceProvider extends ServiceProvider
         ActivityLogger::mixin(new ActivityLoggerMixin);
 
         Blade::if('textoverflow', function ($value, int $max, $when = true) {
-            return $when && strlen($value) > $max && strpos($value, ' ') === false;
+            return $when && (bool) preg_match("~\b(\w+){{$max},}\b~", $value);
         });
 
         Validator::extend('phone', function ($attribute, $value, $parameters) {
