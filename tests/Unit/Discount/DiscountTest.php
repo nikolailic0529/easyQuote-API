@@ -27,7 +27,7 @@ abstract class DiscountTest extends TestCase
      */
     public function testDiscountListing()
     {
-        $response = $this->getJson(url("api/discounts/{$this->discountResource()}"), $this->authorizationHeader);
+        $response = $this->getJson(url("api/discounts/{$this->resource()}"));
 
         $this->assertListing($response);
     }
@@ -39,12 +39,12 @@ abstract class DiscountTest extends TestCase
      */
     public function testDiscountCreating()
     {
-        $attributes = $this->makeGenericDiscountAttributes();
+        $attributes = factory($this->model())->raw();
 
-        $response = $this->postJson(url("api/discounts/{$this->discountResource()}"), $attributes, $this->authorizationHeader);
+        $response = $this->postJson(url("api/discounts/{$this->resource()}"), $attributes);
 
         $response->assertOk()
-            ->assertJsonStructure(array_keys(Arr::except($attributes, ['user_id'])));
+            ->assertJsonStructure(array_keys($attributes));
     }
 
     /**
@@ -54,15 +54,15 @@ abstract class DiscountTest extends TestCase
      */
     public function testDiscountUpdating()
     {
-        $discount = $this->discountRepository()->create($this->makeGenericDiscountAttributes());
+        $discount = factory($this->model())->create();
 
-        $newAttributes = $this->makeGenericDiscountAttributes();
+        $attributes = factory($this->model())->raw();
 
-        $response = $this->patchJson(url("api/discounts/{$this->discountResource()}/{$discount->id}"), $newAttributes, $this->authorizationHeader);
+        $response = $this->patchJson(url("api/discounts/{$this->resource()}/{$discount->id}"), $attributes);
 
         $response->assertOk()
-            ->assertJsonStructure(array_keys(Arr::except($newAttributes, ['user_id'])))
-            ->assertJsonFragment(Arr::except($newAttributes, ['user_id']));
+            ->assertJsonStructure(array_keys(Arr::except($attributes, ['user_id'])))
+            ->assertJsonFragment(Arr::except($attributes, ['user_id']));
     }
 
     /**
@@ -72,16 +72,14 @@ abstract class DiscountTest extends TestCase
      */
     public function testDiscountDeleting()
     {
-        $discount = $this->discountRepository()->create($this->makeGenericDiscountAttributes());
+        $discount = factory($this->model())->create();
 
-        $response = $this->deleteJson(url("api/discounts/{$this->discountResource()}/{$discount->id}"), [], $this->authorizationHeader);
+        $response = $this->deleteJson(url("api/discounts/{$this->resource()}/{$discount->id}"));
 
         $response->assertOk()
             ->assertExactJson([true]);
 
-        $discount->refresh();
-
-        $this->assertNotNull($discount->deleted_at);
+        $this->assertSoftDeleted($discount);
     }
 
     /**
@@ -91,13 +89,9 @@ abstract class DiscountTest extends TestCase
      */
     public function testDiscountActivating()
     {
-        $attributes = $this->makeGenericDiscountAttributes();
+        $discount = factory($this->model())->create(['country_id' => $this->quote->country_id, 'vendor_id' => $this->quote->vendor_id]);
 
-        $attributes = array_merge($attributes, ['country_id' => $this->quote->country_id, 'vendor_id' => $this->quote->vendor_id]);
-
-        $discount = $this->discountRepository()->create($attributes);
-
-        $response = $this->putJson(url("api/discounts/{$this->discountResource()}/activate/{$discount->id}"), [], $this->authorizationHeader);
+        $response = $this->putJson(url("api/discounts/{$this->resource()}/activate/{$discount->id}"));
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -109,7 +103,7 @@ abstract class DiscountTest extends TestCase
         /**
          * Test availability at the acceptable discounts endpoint.
          */
-        $response = $this->getJson(url("api/quotes/discounts/{$this->quote->id}"), $this->authorizationHeader);
+        $response = $this->getJson(url("api/quotes/discounts/{$this->quote->id}"));
 
         $response->assertOk()
             ->assertJsonFragment(['id' => $discount->id]);
@@ -122,9 +116,9 @@ abstract class DiscountTest extends TestCase
      */
     public function testDiscountDeactivating()
     {
-        $discount = $this->discountRepository()->create($this->makeGenericDiscountAttributes());
+        $discount = factory($this->model())->create();
 
-        $response = $this->putJson(url("api/discounts/{$this->discountResource()}/deactivate/{$discount->id}"), [], $this->authorizationHeader);
+        $response = $this->putJson(url("api/discounts/{$this->resource()}/deactivate/{$discount->id}"));
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -136,30 +130,23 @@ abstract class DiscountTest extends TestCase
         /**
          * Test no availability at the acceptable discounts endpoint.
          */
-        $response = $this->getJson(url("api/quotes/discounts/{$this->quote->id}"), $this->authorizationHeader);
+        $response = $this->getJson(url("api/quotes/discounts/{$this->quote->id}"));
 
         $response->assertOk()
             ->assertJsonMissing(['id' => $discount->id]);
     }
 
     /**
-     * Discount type in snake-case.
+     * Resource type in snake-case.
      *
      * @return string
      */
-    abstract protected function discountResource(): string;
+    abstract protected function resource(): string;
 
     /**
-     * Repository implementation for a specified Discount type.
+     * Model class.
      *
-     * @return void
+     * @return string
      */
-    abstract protected function discountRepository();
-
-    /**
-     * Generic Discount attributes specified for a type.
-     *
-     * @return array
-     */
-    abstract protected function makeGenericDiscountAttributes(): array;
+    abstract protected function model(): string;
 }

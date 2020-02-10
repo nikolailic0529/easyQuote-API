@@ -78,6 +78,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
             $this->createRawData($quoteFile, $attributes['rawData']);
         }
 
+
         return $quoteFile->load('dataSelectSeparator')->makeHidden('user');
     }
 
@@ -242,14 +243,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         $exceptedQuoteFileId = $quoteFile->id;
         $quote = $quoteFile->quote;
 
-        $priceLists = $quote->quoteFiles()
-            ->priceLists()->whereKeyNot($exceptedQuoteFileId)->get();
-
-        $priceLists->each(function ($price) {
-            $price->rowsData()->delete();
-        });
-
-        return $priceLists->each->delete();
+        return $quote->quoteFiles()->priceLists()->whereKeyNot($exceptedQuoteFileId)->delete();
     }
 
     public function deletePaymentSchedulesExcept(QuoteFile $quoteFile)
@@ -257,14 +251,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         $exceptedQuoteFileId = $quoteFile->id;
         $quote = $quoteFile->quote;
 
-        $paymentSchedules = $quote->quoteFiles()
-            ->paymentSchedules()->whereKeyNot($exceptedQuoteFileId)->get();
-
-        $paymentSchedules->each(function ($schedule) {
-            $schedule->scheduleData()->delete();
-        });
-
-        return $paymentSchedules->each->delete();
+        return $quote->quoteFiles()->paymentSchedules()->whereKeyNot($exceptedQuoteFileId)->delete();
     }
 
     public function deleteExcept(QuoteFile $quoteFile)
@@ -276,50 +263,97 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         return $this->deletePriceListsExcept($quoteFile);
     }
 
-    public function replicatePriceList(QuoteFile $quoteFile): QuoteFile
+    public function replicatePriceList(QuoteFile $quoteFile, ?string $quoteId = null): QuoteFile
     {
         $quote_file_id = $quoteFile->id;
         $user_id = $quoteFile->user_id;
-        $quoteFileCopy = $quoteFile->replicate();
-        $quoteFileCopy->saveOrFail();
+
+        $quoteFileCopy = tap($quoteFile->replicate(), function ($file) use ($quoteId) {
+            $file->quote()->associate($quoteId);
+            $file->saveOrFail();
+        });
         $new_quote_file_id = $quoteFileCopy->id;
 
-        Schema::dropIfExists('new_imported_columns');
+        $tempTable = 'temp_import_table_' . uniqid();
+        $importedRowColumn = 'temp_imported_row_id';
 
-        /**
-         * Generating new Ids for Imported Columns and Rows in the temporary table
-         */
+        /** Generating new Ids for Imported Columns and Rows in the temporary table. */
         DB::select(
-            'create temporary table `new_imported_columns`
+            "create temporary table `{$tempTable}`
             select * from `imported_columns`
-            join (select uuid() as new_imported_row_id, imported_row_id as temp_imported_row_id
+            join (select uuid() as new_imported_row_id, imported_row_id as {$importedRowColumn}
                 from `imported_columns`
                 group by imported_row_id) as temp_imported_columns
-                on temp_imported_columns.temp_imported_row_id = `imported_columns`.imported_row_id
+                on temp_imported_columns.{$importedRowColumn} = `imported_columns`.imported_row_id
             join (select id as row_id, quote_file_id, page, is_selected, processed_at, group_name from imported_rows) as imported_rows
                 on imported_rows.row_id = `imported_columns`.imported_row_id
-                where imported_rows.quote_file_id = :quote_file_id',
+                where imported_rows.quote_file_id = :quote_file_id",
             compact('quote_file_id')
         );
 
-        /**
-         * Inserting Imported Rows with new Ids
-         */
+        /** We are marking temporary rows as selected if the related payload is present in the current request. */
+        $this->updateTempSelectedImportedRows($tempTable, $importedRowColumn);
+
+        /** We are updating temporary group description if the related payload is present in the current request. */
+        $this->updateTempGroupDescription($tempTable, $importedRowColumn);
+
+        /** Inserting Imported Rows with new Ids. */
         DB::insert(
-            'insert into `imported_rows` (id, user_id, quote_file_id, page, is_selected, processed_at, group_name)
-            select new_imported_row_id, :user_id, :new_quote_file_id, page, is_selected, processed_at, group_name from new_imported_columns group by new_imported_row_id',
+            "insert into `imported_rows` (id, user_id, quote_file_id, page, is_selected, processed_at, group_name)
+            select new_imported_row_id, :user_id, :new_quote_file_id, page, is_selected, processed_at, group_name
+            from `{$tempTable}` group by new_imported_row_id",
             compact('user_id', 'new_quote_file_id')
         );
 
-        /**
-         * Inserting Imported Columns with new Ids and new assigned Imported Rows Ids
-         */
+        /** Inserting Imported Columns with new Ids and new assigned Imported Rows Ids. */
         DB::insert(
-            'insert into `imported_columns` (id, imported_row_id, importable_column_id, value, header)
-            select uuid(), new_imported_row_id, importable_column_id, value, header from new_imported_columns
-            '
+            "insert into `imported_columns` (id, imported_row_id, importable_column_id, value, header)
+            select uuid(), new_imported_row_id, importable_column_id, value, header from `{$tempTable}`"
         );
 
         return $quoteFileCopy;
+    }
+
+    private function updateTempSelectedImportedRows(string $table, string $column): void
+    {
+        if (request()->missing('quote_data.selected_rows') && request()->missing('quote_data.selected_rows_is_rejected')) {
+            return;
+        }
+
+        $selectedRowsIds = (array) request()->input('quote_data.selected_rows', []);
+        $reject = (bool) request()->input('quote_data.selected_rows_is_rejected', false);
+
+        $updatableScope = $reject ? 'whereNotIn' : 'whereIn';
+
+        DB::table($table)->update(['is_selected' => false]);
+
+        DB::table($table)->{$updatableScope}($column, $selectedRowsIds)->update(['is_selected' => true]);
+    }
+
+    private function updateTempGroupDescription(string $table, string $column): void
+    {
+        if (!request()->is('api/quotes/groups/*')) {
+            return;
+        }
+
+        $rowsIds = request()->input('rows', []);
+        $name = request()->input('name');
+
+        /** Create Group Description request */
+        if (request()->isMethod('post')) {
+            DB::table($table)->whereIn($column, $rowsIds)->update(['group_name' => $name]);
+        }
+
+        /** Update Group Description request */
+        if (request()->isMethod('patch')) {
+            DB::table($table)->where('group_name', request()->group_name)->update(['group_name' => null]);
+            DB::table($table)->whereIn($column, $rowsIds)->update(['group_name' => $name]);
+        }
+
+        /** Move Group Description rows request */
+        if (request()->isMethod('put')) {
+            DB::table($table)->where('group_name', request()->from_group_name)->whereIn($column, $rowsIds)
+                ->update(['group_name' => request()->to_group_name]);
+        }
     }
 }

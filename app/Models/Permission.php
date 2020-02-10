@@ -20,8 +20,7 @@ use Illuminate\Support\Collection;
 
 class Permission extends BaseModel implements PermissionContract
 {
-    use HasRoles;
-    use RefreshesPermissionCache;
+    use HasRoles, RefreshesPermissionCache;
 
     protected $guarded = ['id'];
 

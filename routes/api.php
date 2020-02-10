@@ -20,7 +20,7 @@ Route::group(['namespace' => 'API'], function () {
         Route::group(['middleware' => THROTTLE_RATE_01], function () {
             Route::get('timezones', 'TimezonesController');
             Route::get('languages', 'LanguagesController');
-            Route::get('currencies', 'CurrenciesController');
+            Route::get('currencies', 'CurrencyController');
             Route::get('fileformats', 'FileFormatsController');
         });
         Route::get('countries', 'CountryController'); // exclusive high throttle rate
@@ -39,6 +39,8 @@ Route::group(['namespace' => 'API'], function () {
             Route::apiResource('countries', 'CountryController');
             Route::put('countries/activate/{country}', 'CountryController@activate');
             Route::put('countries/deactivate/{country}', 'CountryController@deactivate');
+
+            Route::post('currencies/rate', 'CurrencyController@targetRate');
         });
 
         Route::group(['middleware' => THROTTLE_RATE_01], function () {
@@ -146,6 +148,33 @@ Route::group(['namespace' => 'API'], function () {
             Route::put('snd/deactivate/{snd}', 'SNDcontroller@deactivate');
         });
 
+        Route::group(['prefix' => 'contracts', 'namespace' => 'Contracts'], function () {
+
+            /**
+             * Contract State.
+             */
+            Route::apiResource('state', 'ContractStateController')->only(['show', 'update'])->parameters([
+                'state' => 'contract'
+            ]);
+            Route::get('state/review/{contract}', 'ContractStateController@review');
+
+            /**
+             * Drafted Contracts.
+             */
+            Route::apiResource('drafted', 'ContractDraftedController', ['only' => ROUTE_RD]);
+            Route::patch('drafted/{drafted}', 'ContractDraftedController@activate');
+            Route::put('drafted/{drafted}', 'ContractDraftedController@deactivate');
+            Route::post('drafted/submit/{drafted}', 'ContractDraftedController@submit');
+
+            /**
+             * Submitted Contracts.
+             */
+            Route::apiResource('submitted', 'ContractSubmittedController', ['only' => ROUTE_RD]);
+            Route::patch('submitted/{submitted}', 'ContractSubmittedController@activate');
+            Route::put('submitted/{submitted}', 'ContractSubmittedController@deactivate');
+            Route::post('submitted/unsubmit/{submitted}', 'ContractSubmittedController@unsubmit');
+        });
+
         Route::group(['prefix' => 'quotes', 'namespace' => 'Quotes'], function () {
             Route::post('handle', 'QuoteFilesController@handle'); // exclusive high throttle rate
             Route::put('/get/{quote}', 'QuoteController@quote'); // exclusive high throttle rate
@@ -169,6 +198,7 @@ Route::group(['namespace' => 'API'], function () {
                 Route::apiResource('drafted', 'QuoteDraftedController', ['only' => ROUTE_RD]);
                 Route::patch('drafted/{drafted}', 'QuoteDraftedController@activate');
                 Route::put('drafted/{drafted}', 'QuoteDraftedController@deactivate');
+                Route::delete('drafted/version/{version}', 'QuoteDraftedController@destroyVersion');
 
                 /**
                  * Submitted Quotes
@@ -180,6 +210,7 @@ Route::group(['namespace' => 'API'], function () {
                 Route::put('submitted/{submitted}', 'QuoteSubmittedController@deactivate');
                 Route::put('submitted/copy/{submitted}', 'QuoteSubmittedController@copy');
                 Route::put('submitted/unsubmit/{submitted}', 'QuoteSubmittedController@unsubmit');
+                Route::post('submitted/contract/{submitted}', 'QuoteSubmittedController@createContract');
                 Route::put('submitted/contract-template/{submitted}/{template}', 'QuoteSubmittedController@setContractTemplate');
 
                 Route::apiResource('file', 'QuoteFilesController', ['only' => ROUTE_CR]);

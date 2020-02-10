@@ -7,6 +7,7 @@ use App\Models\{
     QuoteFile\ImportableColumn,
     QuoteTemplate\TemplateField
 };
+use App\Contracts\Repositories\QuoteTemplate\TemplateFieldRepositoryInterface as Fields;
 use DB, Arr, Cache;
 
 trait HasMapping
@@ -109,6 +110,8 @@ trait HasMapping
                 $join->where('customers.id', $this->customer_id);
             });
 
+        $priceMultiplier = $this->convertExchangeRate(1);
+
         if (isset($flags)) {
             foreach ($flags as $flag) {
                 switch ($flag) {
@@ -122,7 +125,7 @@ trait HasMapping
             }
         }
 
-        $this->fieldsColumns->each(function ($mapping) use ($query) {
+        $this->fieldsColumns->each(function ($mapping) use ($query, $priceMultiplier) {
             if (filled($mapping->sort)) {
                 $query->orderBy($mapping->templateField->name, $mapping->sort);
             }
@@ -152,11 +155,11 @@ trait HasMapping
                             "max(
                                 if(
                                     `imported_columns`.`importable_column_id` = ?,
-                                    ExtractDecimal(`imported_columns`.`value`),
+                                    cast((ExtractDecimal(`imported_columns`.`value`) * ?) as decimal(15,2)),
                                     null
                                 )
                             ) as {$mapping->templateField->name}",
-                            [$mapping->importable_column_id]
+                            [$mapping->importable_column_id, $priceMultiplier]
                         );
                         break;
                     case 'date_from':
@@ -331,9 +334,9 @@ trait HasMapping
         }
 
         if (!$this->has_group_description || !$this->use_groups) {
-            $sub = $this->rowsDataByColumnsCalculated(['where_selected'], $this->calculate_list_price);
+            $sub = $this->rowsDataByColumnsCalculated(['where_selected'], (bool) $this->calculate_list_price);
         } else {
-            $sub = $this->groupedRows(null, $this->calculate_list_price);
+            $sub = $this->groupedRows(null, (bool) $this->calculate_list_price);
         }
 
         $query = DB::query()->fromSub($sub, 'rows_data');
@@ -357,18 +360,14 @@ trait HasMapping
 
     public function getFieldColumnAttribute()
     {
-        if (!isset($this->quoteTemplate) || !isset($this->quoteTemplate->templateFields)) {
-            return [];
-        }
-
-        $this->quoteTemplate->load(['templateFields.fieldColumn' => function ($query) {
-            return $query->where('quote_id', $this->id)->withDefault(FieldColumn::make([]));
+        $templateFields = app(Fields::class)->allSystem()->loadMissing(['fieldColumn' => function ($query) {
+            return $query->where('quote_id', $this->id)->withDefault();
         }]);
 
-        $templateFields = $this->quoteTemplate->templateFields->map(function ($templateField) {
+        $templateFields->transform(function ($templateField) {
             $template_field_id = $templateField->id;
             $template_field_name = $templateField->name;
-            return array_merge(compact('template_field_id', 'template_field_name'), $templateField->fieldColumn->toArray());
+            return compact('template_field_id', 'template_field_name') + $templateField->fieldColumn->toArray();
         });
 
         return $templateFields;

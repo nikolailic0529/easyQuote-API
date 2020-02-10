@@ -35,10 +35,9 @@ trait HasDataHeaders
     public function dataHeader(string $key, ?string $fallback = null): string
     {
         $headers = $this->data_headers->keyBy('key');
-        $defaultKey = 'template.data_headers.' . $key;
-        $default = __($defaultKey);
+        $default = data_get(static::dataHeadersDictionary(), $key);
 
-        if ($default === $defaultKey && is_string($fallback)) {
+        if (is_null($default) && is_string($fallback)) {
             $default = $fallback;
         }
 
@@ -47,16 +46,18 @@ trait HasDataHeaders
 
     public static function defaultDataHeaders(): Collection
     {
-        return collect(__('template.data_headers'));
+        return collect(static::dataHeadersDictionary());
     }
 
     public static function defaultDataHeader(?string $key): string
     {
-        return __('template.data_headers.' . $key);
+        return data_get(static::dataHeadersDictionary(), $key);
     }
 
     public static function dataHeaderKeys(): array
     {
-        return Arr::pluck(__('template.data_headers'), 'key');
+        return Arr::pluck(static::dataHeadersDictionary(), 'key');
     }
+
+    abstract public static function dataHeadersDictionary(): array;
 }

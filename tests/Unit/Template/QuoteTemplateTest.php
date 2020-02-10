@@ -23,7 +23,7 @@ class QuoteTemplateTest extends TestCase
      */
     public function testTemplateListing()
     {
-        $response = $this->getJson(url("api/templates"), $this->authorizationHeader);
+        $response = $this->getJson(url("api/templates"));
 
         $this->assertListing($response);
 
@@ -49,7 +49,7 @@ class QuoteTemplateTest extends TestCase
     {
         $attributes = $this->makeGenericTemplateAttributes();
 
-        $response = $this->postJson(url("api/templates"), $attributes, $this->authorizationHeader);
+        $response = $this->postJson(url("api/templates"), $attributes);
 
         $response->assertOk()
             ->assertJsonStructure(static::$assertableAttributes)
@@ -67,7 +67,7 @@ class QuoteTemplateTest extends TestCase
 
         $attributes = $this->makeGenericTemplateAttributes();
 
-        $response = $this->patchJson(url("api/templates/{$template->id}"), $attributes, $this->authorizationHeader);
+        $response = $this->patchJson(url("api/templates/{$template->id}"), $attributes);
 
         $response->assertOk()
             ->assertJsonStructure(static::$assertableAttributes)
@@ -87,7 +87,7 @@ class QuoteTemplateTest extends TestCase
 
         $attributes = $this->makeGenericTemplateAttributes();
 
-        $response = $this->patchJson(url("api/templates/{$template->id}"), $attributes, $this->authorizationHeader);
+        $response = $this->patchJson(url("api/templates/{$template->id}"), $attributes);
 
         $response->assertForbidden()
             ->assertJsonFragment(['message' => QTSU_01]);
@@ -104,7 +104,7 @@ class QuoteTemplateTest extends TestCase
             $query->system();
         });
 
-        $response = $this->putJson(url("api/templates/copy/{$template->id}"), [], $this->authorizationHeader);
+        $response = $this->putJson(url("api/templates/copy/{$template->id}"), []);
 
         $response->assertOk();
 
@@ -112,7 +112,7 @@ class QuoteTemplateTest extends TestCase
          * Test that a newly copied Template existing.
          */
         $id = $response->json('id');
-        $response = $this->getJson(url("api/templates/{$id}"), $this->authorizationHeader);
+        $response = $this->getJson(url("api/templates/{$id}"));
 
         $response->assertOk()
             ->assertJsonStructure(static::$assertableAttributes);
@@ -127,7 +127,7 @@ class QuoteTemplateTest extends TestCase
     {
         $template = app('template.repository')->create($this->makeGenericTemplateAttributes());
 
-        $response = $this->deleteJson(url("api/templates/{$template->id}"), [], $this->authorizationHeader);
+        $response = $this->deleteJson(url("api/templates/{$template->id}"), []);
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -148,7 +148,7 @@ class QuoteTemplateTest extends TestCase
             $query->system();
         });
 
-        $response = $this->deleteJson(url("api/templates/{$template->id}"), [], $this->authorizationHeader);
+        $response = $this->deleteJson(url("api/templates/{$template->id}"), []);
 
         $response->assertForbidden()
             ->assertJsonFragment(['message' => QTSD_01]);
@@ -167,7 +167,7 @@ class QuoteTemplateTest extends TestCase
     {
         $template = app('template.repository')->create($this->makeGenericTemplateAttributes());
 
-        $response = $this->putJson(url("api/templates/activate/{$template->id}"), [], $this->authorizationHeader);
+        $response = $this->putJson(url("api/templates/activate/{$template->id}"), []);
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -186,7 +186,7 @@ class QuoteTemplateTest extends TestCase
     {
         $template = app('template.repository')->create($this->makeGenericTemplateAttributes());
 
-        $response = $this->putJson(url("api/templates/deactivate/{$template->id}"), [], $this->authorizationHeader);
+        $response = $this->putJson(url("api/templates/deactivate/{$template->id}"), []);
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -205,7 +205,7 @@ class QuoteTemplateTest extends TestCase
     {
         $template = app('template.repository')->random();
 
-        $response = $this->getJson(url("api/templates/designer/{$template->id}"), $this->authorizationHeader);
+        $response = $this->getJson(url("api/templates/designer/{$template->id}"));
 
         $response->assertOk()
             ->assertJsonStructure([

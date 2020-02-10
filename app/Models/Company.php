@@ -23,13 +23,15 @@ use App\Traits\{
     Systemable,
     Quote\HasQuotes,
     QuoteTemplate\HasQuoteTemplates,
-    Activity\LogsActivity
+    Activity\LogsActivity,
+    Auth\Multitenantable
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Company extends BaseModel implements WithImage, WithLogo, ActivatableInterface, HasOrderedScope
 {
-    use HasLogo,
+    use Multitenantable,
+        HasLogo,
         HasImage,
         BelongsToUser,
         BelongsToVendors,

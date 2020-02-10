@@ -34,7 +34,9 @@ class ImportableColumnRepository implements ImportableColumnRepositoryInterface
     {
         return $this->importableColumn->nonSystem()->whereHas('aliases', function ($query) use ($alises) {
             $query->whereIn('alias', $alises);
-        })->get();
+        })->with(['aliases' => function ($query) {
+            $query->groupBy('alias');
+        }])->get();
     }
 
     public function allNames()

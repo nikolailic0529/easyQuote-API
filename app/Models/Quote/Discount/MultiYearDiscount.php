@@ -11,6 +11,8 @@ class MultiYearDiscount extends Discount
 {
     use HasDurationsAttribute, LogsActivity;
 
+    protected $fillable = ['country_id', 'vendor_id', 'name'];
+
     protected static $logAttributes = [
         'name', 'country.name', 'vendor.name', 'duration', 'value'
     ];

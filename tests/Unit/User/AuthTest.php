@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\User;
 
+use App\Models\User;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\WithFakeUser;
@@ -11,6 +12,12 @@ class AuthTest extends TestCase
 {
     use DatabaseTransactions, WithFakeUser;
 
+    /** @var boolean */
+    protected $dontAuthenticate = true;
+
+    /** @var array */
+    protected static $assertableAttributes = ['email', 'password', 'local_ip'];
+
     /**
      * Test Authentication of the existing user.
      *
@@ -18,10 +25,9 @@ class AuthTest extends TestCase
      */
     public function testAuthExistingUser()
     {
-        $attributes = $this->makeGenericUserAttributes();
-        app('user.repository')->create($attributes);
+        $attributes = factory(User::class, 'authentication')->raw();
 
-        $response = $this->postJson(url('/api/auth/signin'), Arr::only($attributes, ['email', 'password', 'local_ip']));
+        $response = $this->postJson(url('/api/auth/signin'), $attributes);
 
         $response->assertOk()
             ->assertJsonStructure(['access_token', 'token_type', 'expires_at']);
@@ -34,12 +40,11 @@ class AuthTest extends TestCase
      */
     public function testFailingAuthExistingUser()
     {
-        $attributes = $this->makeGenericUserAttributes();
-        app('user.repository')->create($attributes);
+        $attributes = factory(User::class, 'authentication')->raw();
 
         data_set($attributes, 'password', Str::random(20));
 
-        $response = $this->postJson(url('/api/auth/signin'), Arr::only($attributes, ['email', 'password', 'local_ip']));
+        $response = $this->postJson(url('/api/auth/signin'), $attributes);
 
         $response->assertUnauthorized();
     }
@@ -51,8 +56,7 @@ class AuthTest extends TestCase
      */
     public function testAuthUserWithoutLocalIp()
     {
-        $attributes = $this->makeGenericUserAttributes();
-        app('user.repository')->create($attributes);
+        $attributes = factory(User::class, 'authentication')->raw();
 
         $response = $this->postJson(url('/api/auth/signin'), Arr::only($attributes, ['email', 'password']));
 
@@ -69,7 +73,7 @@ class AuthTest extends TestCase
      */
     public function testSignupUser()
     {
-        $attributes = $this->makeGenericUserAttributes();
+        $attributes = factory(User::class, 'registration')->raw();
 
         $response = $this->postJson(url('/api/auth/signup'), $attributes);
 
@@ -86,7 +90,7 @@ class AuthTest extends TestCase
     {
         $this->user->setLastActivityAt(now()->subHour());
 
-        $response = $this->getJson(url('api/auth/user'), $this->authorizationHeader);
+        $response = $this->authenticate()->getJson(url('api/auth/user'));
 
         $this->assertFalse(
             $this->user->tokens()->where('revoked', false)->exists()
@@ -107,28 +111,11 @@ class AuthTest extends TestCase
      */
     public function testCurrentUserRetrieving()
     {
-        $response = $this->getJson(url('api/auth/user'), $this->authorizationHeader);
+        $response = $this->authenticate()->getJson(url('api/auth/user'));
 
         $response->assertOk()
             ->assertJsonStructure([
                 'id', 'email', 'first_name', 'middle_name', 'last_name', 'default_route', 'already_logged_in', 'role_id', 'role_name', 'privileges'
             ]);
-    }
-
-    protected function makeGenericUserAttributes(): array
-    {
-        $password = $this->faker->password;
-
-        return [
-            'first_name' => Str::filterLetters($this->faker->firstName),
-            'middle_name' => Str::filterLetters($this->faker->firstName),
-            'last_name' => Str::filterLetters($this->faker->lastName),
-            'email' => $this->faker->email,
-            'password' => $password,
-            'password_confirmation' => $password,
-            'country_id' => \DB::table('countries')->value('id'),
-            'timezone_id' => \DB::table('timezones')->value('id'),
-            'local_ip' => $this->faker->ipv4
-        ];
     }
 }

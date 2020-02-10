@@ -9,6 +9,6 @@ trait BelongsToQuote
 {
     public function quote(): BelongsTo
     {
-        return $this->belongsTo(Quote::class);
+        return $this->belongsTo(Quote::class)->withDefault();
     }
 }

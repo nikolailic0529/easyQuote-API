@@ -4,17 +4,36 @@ namespace App\Models\Data;
 
 use App\Models\BaseModel;
 use App\Contracts\HasOrderedScope;
+use App\Traits\Currency\HasExchangeRate;
 use Setting;
 
 class Currency extends BaseModel implements HasOrderedScope
 {
+    use HasExchangeRate;
+
+    public $timestamps = false;
+
+    protected $fillable = [
+        'name', 'code', 'symbol'
+    ];
+
     public function scopeOrdered($query)
     {
-        return $query->orderByRaw("field(`currencies`.`code`, ?, null) desc", [Setting::get('base_currency')]);
+        return $query->orderByRaw("field(`currencies`.`code`, ?, null) desc, `currencies`.`code`", [Setting::get('base_currency')]);
     }
 
     public function getLabelAttribute()
     {
         return "{$this->symbol} ({$this->code})";
+    }
+
+    public function isBaseCurrency(): bool
+    {
+        return app('exchange.service')->baseCurrency() === $this->code;
+    }
+
+    public function isNotBaseCurrency(): bool
+    {
+        return !$this->isBaseCurrency();
     }
 }

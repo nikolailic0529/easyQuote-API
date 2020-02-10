@@ -60,20 +60,17 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
     public function create($request): Vendor
     {
         if ($request instanceof \Illuminate\Http\Request) {
-            $user = $request->user();
             $request = $request->validated();
-            data_set($request, 'user_id', $user->id);
         }
 
         throw_unless(is_array($request), new \InvalidArgumentException(INV_ARG_RA_01));
 
-        $vendor = $this->vendor->create($request);
-        $vendor->createLogo(data_get($request, 'logo'));
-        $vendor->syncCountries(data_get($request, 'countries'));
-        $vendor->load('countries');
-        $vendor->appendLogo();
-
-        return $vendor;
+        return tap($this->vendor->create($request), function ($vendor) use ($request) {
+            $vendor->createLogo(data_get($request, 'logo'));
+            $vendor->syncCountries(data_get($request, 'countries'));
+            $vendor->load('countries');
+            $vendor->appendLogo();
+        });
     }
 
     public function update(UpdateVendorRequest $request, string $id): Vendor

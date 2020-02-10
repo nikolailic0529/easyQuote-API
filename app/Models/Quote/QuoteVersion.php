@@ -3,6 +3,7 @@
 namespace App\Models\Quote;
 
 use App\Scopes\VersionScope;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class QuoteVersion extends BaseQuote
 {
@@ -13,6 +14,11 @@ class QuoteVersion extends BaseQuote
         parent::boot();
 
         static::addGlobalScope(new VersionScope);
+    }
+
+    public function quote(): HasOneThrough
+    {
+        return $this->hasOneThrough(Quote::class, QuoteVersionPivot::class, 'version_id', 'id', 'id', 'quote_id')->withDefault();
     }
 
     public function getVersionNumberAttribute($value): int
@@ -45,11 +51,12 @@ class QuoteVersion extends BaseQuote
         $this->setRelation('user', $this->cached_relations->user ?? $this->user);
 
         return [
-            'id' => $this->id,
-            'name'  => $this->versionName,
-            'is_using' => $this->isUsing,
-            'is_original' => $this->isOriginal,
-            'updated_at' => $this->updated_at
+            'id'            => $this->id,
+            'user_id'       => $this->user_id,
+            'name'          => $this->versionName,
+            'is_using'      => $this->isUsing,
+            'is_original'   => $this->isOriginal,
+            'updated_at'    => $this->drafted_at
         ];
     }
 

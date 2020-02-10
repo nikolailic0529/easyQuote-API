@@ -9,6 +9,7 @@ use App\Http\Requests\QuoteTemplate\{
 };
 use App\Models\QuoteTemplate\TemplateField;
 use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 interface TemplateFieldRepositoryInterface
 {
@@ -25,6 +26,13 @@ interface TemplateFieldRepositoryInterface
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function all();
+
+    /**
+     * Get all system defined template fields.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function allSystem(): EloquentCollection;
 
     /**
      * Search over Template Fields.

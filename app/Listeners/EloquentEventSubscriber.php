@@ -19,7 +19,8 @@ class EloquentEventSubscriber
                 'eloquent.created: *',
                 'eloquent.deleted: *',
                 'eloquent.submitted: *',
-                'eloquent.unsubmitted: *'
+                'eloquent.unsubmitted: *',
+                'eloquent.deleted_all: *'
             ],
             self::class . '@flushModelCache'
         );

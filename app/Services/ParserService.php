@@ -112,8 +112,6 @@ class ParserService implements ParserServiceInterface
     {
         $quote = $this->quote->find($request->quote_id);
 
-        error_abort_if(!$quote->quoteTemplate()->exists(), QNT_01, 'QNT_01', 422);
-
         $quoteFile = $this->quoteFile->find($request->quote_file_id);
 
         $this->handleOrRetrieve($quote, $quoteFile);

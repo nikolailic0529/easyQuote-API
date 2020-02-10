@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Jobs\IndexModel;
 use Elasticsearch\Client;
 use Illuminate\Database\Eloquent\Model;
 
@@ -25,13 +26,7 @@ class SearchObserver
             return;
         }
 
-        rescue(function () use ($model) {
-            $this->elasticsearch->index([
-                'index' => $model->getSearchIndex(),
-                'id' => $model->getKey(),
-                'body' => $model->toSearchArray(),
-            ]);
-        });
+        dispatch(new IndexModel($model));
     }
 
     public function deleted($model)
@@ -43,8 +38,8 @@ class SearchObserver
         rescue(function () use ($model) {
             $this->elasticsearch->delete([
                 'index' => $model->getSearchIndex(),
-                'id' => $model->getKey(),
-                'type' => $model->getSearchType(),
+                'id'    => $model->getKey(),
+                'type'  => $model->getSearchType(),
             ]);
         });
     }

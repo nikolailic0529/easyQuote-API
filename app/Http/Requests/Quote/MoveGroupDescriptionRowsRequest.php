@@ -1,6 +1,8 @@
 <?php namespace App\Http\Requests\Quote;
 
+use App\Models\Quote\QuoteVersion;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Collection;
 
 class MoveGroupDescriptionRowsRequest extends FormRequest
 {
@@ -27,5 +29,32 @@ class MoveGroupDescriptionRowsRequest extends FormRequest
             'rows' => 'required|array',
             'rows.*' => 'required|string|uuid|exists:imported_rows,id'
         ];
+    }
+
+    public function groupDescription(): Collection
+    {
+        return collect($this->route('quote')->usingVersion->group_description);
+    }
+
+    public function fromGroupName()
+    {
+        $group = $this->groupDescription()->firstWhere('id', $this->from_group_id);
+
+        return data_get($group, 'name');
+    }
+
+    public function toGroupName()
+    {
+        $group = $this->groupDescription()->firstWhere('id', $this->to_group_id);
+
+        return data_get($group, 'name');
+    }
+
+    protected function passedValidation()
+    {
+        request()->merge([
+            'from_group_name' => $this->fromGroupName(),
+            'to_group_name' => $this->toGroupName()
+        ]);
     }
 }

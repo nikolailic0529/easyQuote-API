@@ -15,6 +15,11 @@ class HMRCRates extends ExchangeRateService
         return strtr(HMRCOptions::SERVICE_URL, ['{m}' => $month, '{y}' => $year]);
     }
 
+    public function baseCurrency(): string
+    {
+        return 'GBP';
+    }
+
     protected function prepareAttributes(SimpleXMLElement $rate): array
     {
         $countryCode = (string) $rate->{HMRCOptions::XML_ATTR_COUNTRY_CODE};

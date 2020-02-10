@@ -9,18 +9,18 @@ trait Activatable
 {
     protected static function bootActivatable()
     {
-        if (property_exists(static::class, 'logAttributes')) {
+        if (isset(static::$logAttributes)) {
             static::$logAttributes = array_merge(static::$logAttributes, ['activated_at']);
         }
+
+        static::creating(function (Model $model) {
+            $model->setAttribute('activated_at', now()->toDateTimeString());
+        });
     }
 
     public function initializeActivatable()
     {
         $this->observables = array_merge($this->observables, ['activating', 'deactivating']);
-
-        static::creating(function (Model $model) {
-            $model->setAttribute('activated_at', now()->toDateTimeString());
-        });
     }
 
     public function deactivate(): bool

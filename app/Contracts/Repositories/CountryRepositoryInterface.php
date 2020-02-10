@@ -23,6 +23,14 @@ interface CountryRepositoryInterface
     public function query(): Builder;
 
     /**
+     * Retrieve Country by passed Country ISO code.
+     *
+     * @param string|null $code
+     * @return string|null
+     */
+    public function findByCode(?string $code);
+
+    /**
      * Retrieve Country Id by passed Country ISO code.
      *
      * @param string|array $code
@@ -79,6 +87,15 @@ interface CountryRepositoryInterface
      * @return \App\Models\Data\Country
      */
     public function update(array $attributes, string $id): Country;
+
+    /**
+     * Create or update a record matching the attributes, and fill it with values.
+     *
+     * @param  array  $attributes
+     * @param  array  $values
+     * @return \App\Models\Data\Country
+     */
+    public function updateOrCreate(array $attributes, array $values = []): Country;
 
     /**
      * Delete a Country with specified ID from the repository.

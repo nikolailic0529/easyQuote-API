@@ -15,12 +15,13 @@ use App\Traits\{
     BelongsToVendor,
     Search\Searchable
 };
+use App\Traits\Auth\Multitenantable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Arr;
 
 abstract class Discount extends BaseModel implements ActivatableInterface
 {
-    use Activatable, Searchable, BelongsToCountry, BelongsToVendor, BelongsToUser, SoftDeletes;
+    use Multitenantable, Activatable, Searchable, BelongsToCountry, BelongsToVendor, BelongsToUser, SoftDeletes;
 
     protected $perPage = 8;
 
@@ -38,13 +39,6 @@ abstract class Discount extends BaseModel implements ActivatableInterface
         static::creating(function (Discount $model) {
             $model->quoteDiscount()->create([]);
         });
-    }
-
-    public function getFillable()
-    {
-        $fillable = ['country_id', 'vendor_id', 'name'];
-
-        return array_merge($this->fillable, array_diff($fillable, $this->guarded));
     }
 
     public function toSearchArray()

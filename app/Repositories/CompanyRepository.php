@@ -53,7 +53,7 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
             'vendors' => function ($query) {
                 $query->activated();
             },
-            'vendors.countries'
+            'vendors.countries.defaultCurrency',
         ])
             ->activated()->ordered()->get();
 
@@ -100,19 +100,16 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
     public function create($request): Company
     {
         if ($request instanceof \Illuminate\Http\Request) {
-            $user = $request->user();
             $request = $request->validated();
-            data_set($request, 'user_id', $user->id);
         }
 
         throw_unless(is_array($request), new \InvalidArgumentException(INV_ARG_RA_01));
 
-        $company = $this->company->create($request);
-        $company->createLogo(data_get($request, 'logo'));
-        $company->syncVendors(data_get($request, 'vendors'));
-        $company->load('vendors.countries')->appendLogo()->sortVendorsCountries();
-
-        return $company;
+        return tap($this->company->create($request), function ($company) use ($request) {
+            $company->createLogo(data_get($request, 'logo'));
+            $company->syncVendors(data_get($request, 'vendors'));
+            $company->load('vendors.countries')->appendLogo()->sortVendorsCountries();
+        });
     }
 
     public function update(UpdateCompanyRequest $request, string $id): Company
@@ -167,6 +164,7 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
             \App\Http\Query\Company\OrderByVat::class,
             \App\Http\Query\Company\OrderByPhone::class,
             \App\Http\Query\Company\OrderByWebsite::class,
+            \App\Http\Query\Company\OrderByEmail::class,
             \App\Http\Query\Company\OrderByType::class,
             \App\Http\Query\Company\OrderByCategory::class
         ];

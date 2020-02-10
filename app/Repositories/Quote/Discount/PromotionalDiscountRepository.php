@@ -37,9 +37,7 @@ class PromotionalDiscountRepository extends DiscountRepository implements Promot
     public function create($request): PromotionalDiscount
     {
         if ($request instanceof \Illuminate\Http\Request) {
-            $user = $request->user();
             $request = $request->validated();
-            data_set($request, 'user_id', $user->id);
         }
 
         throw_unless(is_array($request), new \InvalidArgumentException(INV_ARG_RA_01));

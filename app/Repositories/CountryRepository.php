@@ -42,6 +42,11 @@ class CountryRepository extends SearchableRepository implements CountryRepositor
         return $this->query()->whereId($id)->firstOrFail();
     }
 
+    public function findByCode(?string $code)
+    {
+        return $this->query()->where('iso_3166_2', $code)->first();
+    }
+
     public function findIdByCode($code)
     {
         if (is_array($code)) {
@@ -81,6 +86,11 @@ class CountryRepository extends SearchableRepository implements CountryRepositor
     public function update(array $attributes, string $id): Country
     {
         return tap($this->find($id))->update($attributes);
+    }
+
+    public function updateOrCreate(array $attributes, array $values = []): Country
+    {
+        return $this->country->updateOrCreate($attributes, $values);
     }
 
     public function delete(string $id): bool

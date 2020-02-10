@@ -109,6 +109,7 @@ class NotificationRepository extends SearchableRepository implements Notificatio
         $deleted = $this->userQuery($user)->delete();
 
         event(new NotificationDeletedAll($user));
+        event('eloquent.deleted_all: ' . Notification::class);
 
         return $deleted;
     }

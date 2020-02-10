@@ -12,7 +12,6 @@ use Illuminate\Database\Query\Builder as DatabaseBuilder;
 
 interface QuoteSubmittedRepositoryInterface
 {
-
     /**
      * Get All Submitted Quotes.
      *

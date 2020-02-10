@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\S4;
 
+use App\Models\Customer\Customer;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\WithFakeUser;
@@ -19,11 +20,11 @@ class S4ContractPostRequestTest extends TestCase
      */
     public function testRequestWithValidAttributes(): void
     {
-        $contract = $this->makeGenericContract();
+        $contract = factory(Customer::class, 'request')->state('addresses')->raw();
         $response = $this->postContract($contract);
 
-        $response->assertSuccessful();
-        $response->assertJsonStructure(array_keys($contract));
+        $response->assertSuccessful()
+            ->assertJsonStructure(array_keys($contract));
 
         $this->assertCustomerExistsInDataBase($contract);
     }
@@ -35,8 +36,7 @@ class S4ContractPostRequestTest extends TestCase
      */
     public function testRequestWithoutAddresses(): void
     {
-        $contract = $this->makeGenericContract();
-        unset($contract['addresses']);
+        $contract = factory(Customer::class, 'request')->raw();
 
         $response = $this->postContract($contract);
 
@@ -53,8 +53,7 @@ class S4ContractPostRequestTest extends TestCase
      */
     public function testRequestWithInvalidRfqNumber(): void
     {
-        $contract = $this->makeGenericContract();
-        data_set($contract, 'rfq_number', Str::random(40));
+        $contract = factory(Customer::class, 'request')->raw(['rfq_number' => Str::random(40)]);
 
         $response = $this->postContract($contract);
 
@@ -68,10 +67,9 @@ class S4ContractPostRequestTest extends TestCase
      */
     public function testRequestWithAlreadyExistingRfqNumber(): void
     {
-        $contract = $this->makeGenericContract();
-        $existingRfqNumber = DB::table('customers')->whereNull('deleted_at')->value('rfq');
+        $rfq_number = DB::table('customers')->whereNull('deleted_at')->value('rfq');
 
-        data_set($contract, 'rfq_number', $existingRfqNumber);
+        $contract = factory(Customer::class, 'request')->raw(compact('rfq_number'));
 
         $response = $this->postContract($contract);
 
@@ -89,13 +87,7 @@ class S4ContractPostRequestTest extends TestCase
 
         $this->assertSoftDeleted($customer);
 
-        $attributes = transform(
-            $this->makeGenericContract(),
-            function ($attributes) use ($customer) {
-                $attributes['rfq_number'] = $customer->rfq;
-                return $attributes;
-            }
-        );
+        $attributes = factory(Customer::class, 'request')->raw(['rfq_number' => $customer->rfq]);
 
         $response = $this->postContract($attributes);
 
@@ -118,35 +110,5 @@ class S4ContractPostRequestTest extends TestCase
             ->exists();
 
         $this->assertTrue($customerExistsInDatabase);
-    }
-
-    protected function makeGenericContract()
-    {
-        return [
-            'customer_name' => $this->faker->company,
-            'rfq_number' => $this->faker->bankAccountNumber,
-            'service_levels' => collect()->times(10)->map(function () {
-                return ['service_level' => $this->faker->sentence];
-            }),
-            'quotation_valid_until' => $this->faker->date('m/d/Y'),
-            'support_start_date' => $this->faker->date,
-            'support_end_date' => $this->faker->date,
-            'invoicing_terms' => $this->faker->sentence,
-            'country' => $this->faker->countryCode,
-            'addresses' => collect()->times(3)->map(function () {
-                return [
-                    'address_type' => collect(['Equipment', 'Software'])->random(),
-                    'address_1' => $this->faker->address,
-                    'address_2' => $this->faker->address,
-                    'city' => $this->faker->city,
-                    'state' => $this->faker->state,
-                    'state_code' => $this->faker->stateAbbr,
-                    'post_code' => $this->faker->postcode,
-                    'country_code' => $this->faker->countryCode,
-                    'contact_name' => $this->faker->firstName,
-                    'contact_number' => $this->faker->phoneNumber
-                ];
-            })
-        ];
     }
 }

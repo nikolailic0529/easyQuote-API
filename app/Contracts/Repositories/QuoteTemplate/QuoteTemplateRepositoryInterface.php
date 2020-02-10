@@ -66,10 +66,10 @@ interface QuoteTemplateRepositoryInterface
     /**
      * Get Quote Templates by Company, Vendor, Country.
      *
-     * @param \App\Http\Requests\GetQuoteTemplatesRequest $request
+     * @param mixed $request
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function findByCompanyVendorCountry(GetQuoteTemplatesRequest $request): EloquentCollection;
+    public function findByCompanyVendorCountry($request): EloquentCollection;
 
     /**
      * Template Tags and other Data for Template Designer

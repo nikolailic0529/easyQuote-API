@@ -37,9 +37,7 @@ class SNDrepository extends DiscountRepository implements SNDrepositoryInterface
     public function create($request): SND
     {
         if ($request instanceof \Illuminate\Http\Request) {
-            $user = $request->user();
             $request = $request->validated();
-            data_set($request, 'user_id', $user->id);
         }
 
         throw_unless(is_array($request), new \InvalidArgumentException(INV_ARG_RA_01));

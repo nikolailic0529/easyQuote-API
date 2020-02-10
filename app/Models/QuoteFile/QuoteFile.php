@@ -20,11 +20,13 @@ use App\Traits\{
     Misc\GeneratesException
 };
 use App\Contracts\HasOrderedScope;
+use App\Traits\Auth\Multitenantable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class QuoteFile extends BaseModel implements HasOrderedScope
 {
-    use Automappable,
+    use Multitenantable,
+        Automappable,
         HasScheduleData,
         BelongsToQuote,
         BelongsToUser,

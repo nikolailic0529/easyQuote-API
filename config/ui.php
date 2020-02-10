@@ -10,6 +10,12 @@ return [
             'drafted' => [
                 'listing' => 'importer/manage',
                 'review' => 'importer/quote-review/{quote}/false'
+            ],
+            'status' => 'importer/quote-status/{quote}'
+        ],
+        'contracts' => [
+            'submitted' => [
+                'review' => 'contracts/view/{contract}/submit'
             ]
         ],
         'customers' => [

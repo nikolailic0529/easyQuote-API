@@ -4,16 +4,16 @@ namespace App\Contracts\Repositories\Quote;
 
 use App\Http\Resources\QuoteRepository\DraftedCollection;
 use App\Models\Quote\Quote;
+use App\Models\Quote\QuoteVersion;
 use Carbon\Carbon;
 use Carbon\CarbonInterval;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Query\Builder as DatabaseBuilder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Closure;
 
 interface QuoteDraftedRepositoryInterface
 {
-
     /**
      * Get All Drafted Quotes.
      *
@@ -49,9 +49,18 @@ interface QuoteDraftedRepositoryInterface
     /**
      * Find Drafted Quote.
      *
-     * @return \App\Models\Quote
+     * @return \App\Models\Quote\Quote
      */
     public function find(string $id): Quote;
+
+    /**
+     * Find the specified Quote Version.
+     *
+     * @param string $id
+     * @return \App\Models\Quote\QuoteVersion
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     */
+    public function findVersion(string $id): QuoteVersion;
 
     /**
      * Delete Drafted Quote.
@@ -84,4 +93,12 @@ interface QuoteDraftedRepositoryInterface
      * @return \App\Http\Resources\QuoteRepository\DraftedCollection
      */
     public function toCollection($resource): DraftedCollection;
+
+    /**
+     * Delete the specified Quote Version.
+     *
+     * @param string $id
+     * @return boolean
+     */
+    public function deleteVersion(string $id): bool;
 }

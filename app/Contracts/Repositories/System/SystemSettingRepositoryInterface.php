@@ -58,6 +58,7 @@ interface SystemSettingRepositoryInterface
      * @return \App\Models\System\SystemSetting|static
      */
     public function firstOrCreate(array $attributes, array $values = []);
+
     /**
      * Create or update a record matching the attributes, and fill it with values.
      *

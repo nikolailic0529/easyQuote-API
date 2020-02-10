@@ -36,9 +36,6 @@ class QuotesExpiration extends Command
     /** @var \App\Contracts\Repositories\Quote\QuoteDraftedRepositoryInterface */
     protected $quote;
 
-    /** @var \Carbon\CarbonInterval */
-    protected $time;
-
     /**
      * Create a new job instance.
      *
@@ -50,7 +47,6 @@ class QuotesExpiration extends Command
 
         $this->user = $user;
         $this->quote = $quote;
-        $this->time = setting('notification_time');
     }
 
     /**
@@ -70,13 +66,13 @@ class QuotesExpiration extends Command
 
     protected function serveUser(UserModel $user): void
     {
-        $this->quote->getExpiring($this->time, $user, $this->scope())
+        $this->quote->getExpiring(setting('notification_time'), $user, $this->scope())
             ->each(function ($quote) {
                 notification()
                     ->for($quote->user)
                     ->message($this->formatMessage($quote))
                     ->subject($quote)
-                    ->url(ui_route('quotes.drafted.review', compact('quote')))
+                    ->url(ui_route('quotes.status', compact('quote')))
                     ->priority(2)
                     ->store();
             });

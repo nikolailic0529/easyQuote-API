@@ -48,112 +48,115 @@ trait ManagesGroupDescription
 
         throw_unless(is_array($attributes), new \InvalidArgumentException(INV_ARG_RA_01));
 
-        $quote = $this->findVersion($quote_id);
-        $old_group_description_with_meta = $quote->group_description_with_meta;
+        $quote = $this->find($quote_id);
+        $version = $this->createNewVersionIfNonCreator($quote);
+
+        $old_group_description_with_meta = $version->group_description_with_meta;
 
         $data = collect($attributes);
         $group = $data->only(['name', 'search_text'])->prepend(Uuid::generate(4)->string, 'id');
-
         $rows = $data->get('rows', []);
 
-        $quote->rowsData()->whereIn('imported_rows.id', $rows)
-            ->update(['group_name' => $group->get('name')]);
+        /** We are updating group description rows only in case when new version was not created, because there are different rows ids. */
+        if ($quote->wasNotCreatedNewVersion) {
+            $version->rowsData()->whereIn('imported_rows.id', $rows)->update(['group_name' => $group->get('name')]);
+        }
 
-        $quote->group_description = collect($quote->group_description)->push($group)->values();
+        $version->group_description = collect($version->group_description)->push($group)->values();
 
-        $quote->save();
+        $version->save();
 
         activity()
-            ->on($quote)
+            ->on($version)
             ->withAttribute(
                 'group_description',
-                $quote->group_description_with_meta->toString('name', 'total_count'),
+                $version->group_description_with_meta->toString('name', 'total_count'),
                 $old_group_description_with_meta->toString('name', 'total_count')
             )
             ->queue('updated');
 
-        $quote->forgetCachedComputableRows();
+        $version->forgetCachedComputableRows();
 
         return $group;
     }
 
     public function updateGroupDescription(UpdateGroupDescriptionRequest $request, string $id, string $quote_id): bool
     {
-        $quote = $this->findVersion($quote_id);
+        $quote = $this->find($quote_id);
+        $version = $this->createNewVersionIfNonCreator($quote);
 
-        $group_description = collect($quote->group_description);
-        $old_group_description_with_meta = $quote->group_description_with_meta;
+        $old_group_description_with_meta = $version->group_description_with_meta;
 
         $data = collect($request->validated());
         $group = $data->only(['name', 'search_text'])->toArray();
         $rows = $data->get('rows', []);
 
-        $group_key = $this->findGroupDescriptionKey($id, $quote);
+        $group_key = $this->findGroupDescriptionKey($id, $version);
 
-        $updatableGroup = $group_description->get($group_key);
+        $updatableGroup = $request->group();
 
-        $quote->rowsData()->whereGroupName($updatableGroup['name'])
-            ->update(['group_name' => null]);
-
-        $quote->rowsData()->whereIn('imported_rows.id', $rows)
-            ->update(['group_name' => $group['name']]);
+        /** We are updating group description rows only in case when new version was not created, because there are different rows ids. */
+        if ($quote->wasNotCreatedNewVersion) {
+            $version->rowsData()->whereGroupName($updatableGroup['name'])->update(['group_name' => null]);
+            $version->rowsData()->whereIn('imported_rows.id', $rows)->update(['group_name' => $group['name']]);
+        }
 
         $updatedGroup = array_merge($updatableGroup, $group);
 
-        $quote->group_description = collect($quote->group_description)->put($group_key, $updatedGroup)->values();
+        $version->group_description = collect($version->group_description)->put($group_key, $updatedGroup)->values();
 
-        $saved = $quote->save();
+        $saved = $version->save();
 
         activity()
-            ->on($quote)
+            ->on($version)
             ->withAttribute(
                 'group_description',
-                $quote->group_description_with_meta->toString('name', 'total_count'),
+                $version->group_description_with_meta->toString('name', 'total_count'),
                 $old_group_description_with_meta->toString('name', 'total_count')
             )
             ->queue('updated');
 
-        $quote->forgetCachedComputableRows();
+        $version->forgetCachedComputableRows();
 
         return $saved;
     }
 
     public function moveGroupDescriptionRows(MoveGroupDescriptionRowsRequest $request, string $quote_id): bool
     {
-        $quote = $this->findVersion($quote_id);
+        $quote = $this->find($quote_id);
+        $version = $this->createNewVersionIfNonCreator($quote);
 
-        $group_description = collect($quote->group_description);
-        $old_group_description_with_meta = $quote->group_description_with_meta;
+        $old_group_description_with_meta = $version->group_description_with_meta;
 
-        $from_group_key = $quote->findGroupDescriptionKey($request->from_group_id);
-        $to_group_key = $quote->findGroupDescriptionKey($request->to_group_id);
+        $fromGroupName = $request->fromGroupName();
+        $toGroupName = $request->fromGroupName();
 
-        abort_if(($from_group_key === false || $to_group_key === false), 404, QG_FTNF_01);
+        abort_if(count(array_filter([$fromGroupName, $toGroupName])) < 2, 404, QG_FTNF_01);
 
-        $from_group = $group_description->get($from_group_key);
-        $to_group = $group_description->get($to_group_key);
-
-        $updated = $quote->rowsData()->whereGroupName($from_group['name'])
-            ->whereIn('imported_rows.id', $request->rows)
-            ->update(['group_name' => $to_group['name']]);
+        /** We are updating group description rows only in case when new version was not created, because there are different rows ids. */
+        if ($quote->wasNotCreatedNewVersion) {
+            $version->rowsData()->whereGroupName($fromGroupName)
+                ->whereIn('imported_rows.id', $request->rows)
+                ->update(['group_name' => $toGroupName]);
+        }
 
         activity()
-            ->on($quote)
+            ->on($version)
             ->withAttribute(
                 'group_description',
-                $quote->group_description_with_meta->toString('name', 'total_count'),
+                $version->group_description_with_meta->toString('name', 'total_count'),
                 $old_group_description_with_meta->toString('name', 'total_count')
             )
             ->queue('updated');
 
-        $quote->forgetCachedComputableRows();
+        $version->forgetCachedComputableRows();
 
-        return $updated;
+        return true;
     }
 
     public function deleteGroupDescription(string $id, string $quote_id): bool
     {
-        $quote = $this->findVersion($quote_id);
+        $quote = $this->createNewVersionIfNonCreator($this->find($quote_id));
 
         $group_description = collect($quote->group_description);
         $old_group_description_with_meta = $quote->group_description_with_meta;
@@ -162,8 +165,7 @@ trait ManagesGroupDescription
 
         $removableGroup = $group_description->get($group_key);
 
-        $quote->rowsData()->whereGroupName($removableGroup['name'])
-            ->update(['group_name' => null]);
+        $quote->rowsData()->whereGroupName($removableGroup['name'])->update(['group_name' => null]);
 
         $group_description->forget($group_key);
 

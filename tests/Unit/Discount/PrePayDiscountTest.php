@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Discount;
 
-use App\Contracts\Repositories\Quote\Discount\PrePayDiscountRepositoryInterface;
+use App\Models\Quote\Discount\PrePayDiscount;
 use Str;
 
 class PrePayDiscountTest extends DiscountTest
@@ -12,16 +12,16 @@ class PrePayDiscountTest extends DiscountTest
         parent::{__FUNCTION__}();
 
         $query = http_build_query([
-            'search' => Str::random(10),
-            'order_by_created_at' => 'asc',
-            'order_by_country' => 'asc',
-            'order_by_vendor' => 'asc',
-            'order_by_name' => 'asc',
-            'order_by_durations_duration' => 'asc',
-            'order_by_durations_value' => 'asc'
+            'search'                        => Str::random(10),
+            'order_by_created_at'           => 'asc',
+            'order_by_country'              => 'asc',
+            'order_by_vendor'               => 'asc',
+            'order_by_name'                 => 'asc',
+            'order_by_durations_duration'   => 'asc',
+            'order_by_durations_value'      => 'asc'
         ]);
 
-        $response = $this->getJson(url("api/discounts/{$this->discountResource()}?" . $query), $this->authorizationHeader);
+        $response = $this->getJson(url("api/discounts/{$this->resource()}?" . $query));
 
         $response->assertOk();
     }
@@ -33,41 +33,25 @@ class PrePayDiscountTest extends DiscountTest
      */
     public function testExistingDiscountCreating()
     {
-        $attributes = $this->makeGenericDiscountAttributes();
+        $attributes = factory($this->model())->raw();
 
-        $discount = $this->discountRepository()->create($attributes);
+        factory($this->model())->create($attributes);
 
-        $response = $this->postJson(url("api/discounts/{$this->discountResource()}"), $attributes, $this->authorizationHeader);
+        $response = $this->postJson(url("api/discounts/{$this->resource()}"), $attributes);
 
         $response->assertStatus(422)
-            ->assertJsonStructure(['Error' => ['original' => ['durations.duration.duration']]]);
+            ->assertJsonStructure([
+                'Error' => ['original' => ['durations.duration.duration']]
+            ]);
     }
 
-    protected function discountResource(): string
+    protected function resource(): string
     {
         return 'pre_pay';
     }
 
-    protected function discountRepository()
+    protected function model(): string
     {
-        return app(PrePayDiscountRepositoryInterface::class);
-    }
-
-    protected function makeGenericDiscountAttributes(): array
-    {
-        $vendor = app('vendor.repository')->random();
-        $country = $vendor->load('countries')->countries->random();
-        $duration = rand(1, 3);
-        $value = number_format(rand(1, 99), 2, '.', '');
-
-        return [
-            'name' => "PP {$country->code} {$value}",
-            'country_id' => $country->id,
-            'vendor_id' => $vendor->id,
-            'durations' => [
-                'duration' => compact('duration', 'value')
-            ],
-            'user_id' => $this->user->id
-        ];
+        return PrePayDiscount::class;
     }
 }

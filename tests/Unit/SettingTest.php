@@ -30,7 +30,7 @@ class SettingTest extends TestCase
      */
     public function testSettingListing()
     {
-        $response = $this->getJson(url('api/settings'), $this->authorizationHeader);
+        $response = $this->getJson(url('api/settings'));
 
         $response->assertOk();
 
@@ -63,7 +63,7 @@ class SettingTest extends TestCase
             })
             ->toArray();
 
-        $response = $this->patchJson(url('api/settings'), $attributes, $this->authorizationHeader);
+        $response = $this->patchJson(url('api/settings'), $attributes);
 
         $response->assertOk()
             ->assertExactJson([true]);

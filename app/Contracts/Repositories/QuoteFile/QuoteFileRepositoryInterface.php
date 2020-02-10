@@ -136,7 +136,8 @@ interface QuoteFileRepositoryInterface
      * Full replicates a provided QuoteFile and its all Imported Data.
      *
      * @param QuoteFile $quoteFile
+     * @param string|null $quoteId
      * @return QuoteFile
      */
-    public function replicatePriceList(QuoteFile $quoteFile): QuoteFile;
+    public function replicatePriceList(QuoteFile $quoteFile, ?string $quoteId = null): QuoteFile;
 }

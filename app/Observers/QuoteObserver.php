@@ -14,11 +14,7 @@ class QuoteObserver
      */
     public function activating(Quote $quote)
     {
-        if (!$quote->isSubmitted()) {
-            return;
-        }
-
-        error_abort_if($this->sameRfqSubmittedQuoteExists($quote), QSE_01, 'QSE_01', 409);
+        //
     }
 
     /**
@@ -29,16 +25,26 @@ class QuoteObserver
      */
     public function submitting(Quote $quote)
     {
-        if ($this->sameRfqSubmittedQuoteExists($quote)) {
-            slack()
-                ->title('Quote Submission')
-                ->url(ui_route('quotes.drafted.review', compact('quote')))
-                ->status([QSF_01, 'Quote RFQ' => $quote->rfq_number, 'Reason' => QSE_01, 'Caused By' => optional(request()->user())->fullname])
-                ->image(assetExternal(SN_IMG_QSF))
-                ->send();
+        //
+    }
 
-            error_abort(QSE_01, 'QSE_01', 409);
-        }
+    /**
+     * Handle the Quote "deleted" event.
+     *
+     * @param Quote $quote
+     * @return void
+     */
+    public function deleted(Quote $quote)
+    {
+        $rfq_number = $quote->rfq_number;
+
+        notification()
+            ->for($quote->user)
+            ->message(__(QD_01, compact('rfq_number')))
+            ->subject($quote)
+            ->url(ui_route('users.notifications'))
+            ->priority(3)
+            ->queue();
     }
 
     /**
@@ -88,15 +94,5 @@ class QuoteObserver
             ->url($url)
             ->priority(1)
             ->queue();
-    }
-
-    protected function sameRfqSubmittedQuoteExists(Quote $quote)
-    {
-        return $quote->query()
-            ->submitted()
-            ->activated()
-            ->where('id', '!=', $quote->id)
-            ->rfq($quote->customer->rfq)
-            ->exists();
     }
 }

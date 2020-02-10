@@ -75,6 +75,7 @@ class BaseModel extends Model
     public static function generateId(Model $model)
     {
         $model->{$model->getKeyName()} = Uuid::generate(4)->string;
+
         $model->fireModelEvent('generated', false);
     }
 

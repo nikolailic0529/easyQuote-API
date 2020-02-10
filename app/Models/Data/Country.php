@@ -24,6 +24,8 @@ class Country extends BaseModel implements HasOrderedScope, ActivatableInterface
 {
     use Multitenantable, Activatable, Systemable, Searchable, LogsActivity, SoftDeletes;
 
+    const FLAGS_DIRECTORY = 'img/countries';
+
     protected $fillable = [
         'iso_3166_2', 'name', 'default_currency_id', 'currency_code', 'currency_name', 'currency_symbol', 'user_id'
     ];
@@ -58,6 +60,13 @@ class Country extends BaseModel implements HasOrderedScope, ActivatableInterface
     public function getCodeAttribute()
     {
         return $this->iso_3166_2;
+    }
+
+    public function getFlagAttribute($flag)
+    {
+        return !is_null($flag)
+            ? asset(static::FLAGS_DIRECTORY . '/' . $flag)
+            : null;
     }
 
     public function getItemNameAttribute()

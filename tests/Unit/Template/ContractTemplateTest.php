@@ -23,7 +23,7 @@ class ContractTemplateTest extends TestCase
      */
     public function testTemplateListing()
     {
-        $response = $this->getJson(url("api/contract-templates"), $this->authorizationHeader);
+        $response = $this->getJson(url("api/contract-templates"));
 
         $this->assertListing($response);
 
@@ -49,7 +49,7 @@ class ContractTemplateTest extends TestCase
     {
         $attributes = $this->makeGenericTemplateAttributes();
 
-        $response = $this->postJson(url("api/contract-templates"), $attributes, $this->authorizationHeader);
+        $response = $this->postJson(url("api/contract-templates"), $attributes);
 
         $response->assertOk()
             ->assertJsonStructure(static::$assertableAttributes)
@@ -67,7 +67,7 @@ class ContractTemplateTest extends TestCase
 
         $attributes = $this->makeGenericTemplateAttributes();
 
-        $response = $this->patchJson(url("api/contract-templates/{$template->id}"), $attributes, $this->authorizationHeader);
+        $response = $this->patchJson(url("api/contract-templates/{$template->id}"), $attributes);
 
         $response->assertOk()
             ->assertJsonStructure(static::$assertableAttributes)
@@ -83,7 +83,7 @@ class ContractTemplateTest extends TestCase
     {
         $template = app('contract_template.repository')->create($this->makeGenericTemplateAttributes());
 
-        $response = $this->putJson(url("api/contract-templates/copy/{$template->id}"), [], $this->authorizationHeader);
+        $response = $this->putJson(url("api/contract-templates/copy/{$template->id}"), []);
 
         $response->assertOk();
 
@@ -91,7 +91,7 @@ class ContractTemplateTest extends TestCase
          * Test that a newly copied Template existing.
          */
         $id = $response->json('id');
-        $response = $this->getJson(url("api/contract-templates/{$id}"), $this->authorizationHeader);
+        $response = $this->getJson(url("api/contract-templates/{$id}"));
 
         $response->assertOk()
             ->assertJsonStructure(static::$assertableAttributes);
@@ -106,7 +106,7 @@ class ContractTemplateTest extends TestCase
     {
         $template = app('contract_template.repository')->create($this->makeGenericTemplateAttributes());
 
-        $response = $this->deleteJson(url("api/contract-templates/{$template->id}"), [], $this->authorizationHeader);
+        $response = $this->deleteJson(url("api/contract-templates/{$template->id}"), []);
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -125,7 +125,7 @@ class ContractTemplateTest extends TestCase
     {
         $template = app('contract_template.repository')->create($this->makeGenericTemplateAttributes());
 
-        $response = $this->putJson(url("api/contract-templates/activate/{$template->id}"), [], $this->authorizationHeader);
+        $response = $this->putJson(url("api/contract-templates/activate/{$template->id}"), []);
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -144,7 +144,7 @@ class ContractTemplateTest extends TestCase
     {
         $template = app('contract_template.repository')->create($this->makeGenericTemplateAttributes());
 
-        $response = $this->putJson(url("api/contract-templates/deactivate/{$template->id}"), [], $this->authorizationHeader);
+        $response = $this->putJson(url("api/contract-templates/deactivate/{$template->id}"), []);
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -163,7 +163,7 @@ class ContractTemplateTest extends TestCase
     {
         $template = app('contract_template.repository')->create($this->makeGenericTemplateAttributes());
 
-        $response = $this->getJson(url("api/contract-templates/designer/{$template->id}"), $this->authorizationHeader);
+        $response = $this->getJson(url("api/contract-templates/designer/{$template->id}"));
 
         $response->assertOk()
             ->assertJsonStructure([

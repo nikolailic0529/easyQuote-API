@@ -9,13 +9,22 @@ use App\Traits\{
     CanGenerateToken,
     Expirable,
     Search\Searchable,
-    Activity\LogsActivity
+    Activity\LogsActivity,
+    Auth\Multitenantable
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Invitation extends BaseModel
 {
-    use BelongsToUser, BelongsToRole, SoftDeletes, Searchable, CanGenerateToken, Expirable, LogsActivity, SoftDeletes;
+    use Multitenantable,
+        BelongsToUser,
+        BelongsToRole,
+        SoftDeletes,
+        Searchable,
+        CanGenerateToken,
+        Expirable,
+        LogsActivity,
+        SoftDeletes;
 
     protected $fillable = [
         'email', 'user_id', 'role_id', 'host'

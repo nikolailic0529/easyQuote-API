@@ -38,14 +38,13 @@ return [
             // Quotation Service Level
             ['id' => 'service_levels', 'label' => 'Service Level (s)'],
         ],
-        'last_page' => [
-        ],
+        'last_page' => [],
         'payment_schedule' => [
             ['id' => 'period', 'label' => 'Payment Schedule Period'],
             ['id' => 'data', 'label' => 'Payment Schedule Data']
         ]
     ],
-    'data_headers' => [
+    'quote_data_headers' => [
         [
             'key' => 'product_no',
             'value' => 'Product No',
@@ -80,6 +79,38 @@ return [
             'key' => 'price',
             'value' => 'Price',
             'label' => 'Price'
+        ]
+    ],
+    'contract_data_headers' => [
+        [
+            'key' => 'product_no',
+            'value' => 'Product No',
+            'label' => 'Product No'
+        ],
+        [
+            'key' => 'description',
+            'value' => 'Description',
+            'label' => 'Description'
+        ],
+        [
+            'key' => 'serial_no',
+            'value' => 'Serial Number',
+            'label' => 'Serial Number'
+        ],
+        [
+            'key' => 'date_from',
+            'value' => 'From Date',
+            'label' => 'From Date'
+        ],
+        [
+            'key' => 'date_to',
+            'value' => 'To Date',
+            'label' => 'To Date'
+        ],
+        [
+            'key' => 'qty',
+            'value' => 'Quantity',
+            'label' => 'Quantity'
         ]
     ]
 ];

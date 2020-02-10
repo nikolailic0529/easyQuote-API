@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Contracts\Repositories\ExchangeRateRepositoryInterface;
 use App\Models\Data\ExchangeRate;
+use App\Repositories\Concerns\ResolvesImplicitModel;
 
 class ExchangeRateRepository implements ExchangeRateRepositoryInterface
 {

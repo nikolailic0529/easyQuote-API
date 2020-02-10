@@ -35,4 +35,9 @@ class QuoteTemplate extends BaseQuoteTemplate
     {
         return "Quote Template ({$this->name})";
     }
+
+    public static function dataHeadersDictionary(): array
+    {
+        return __('template.quote_data_headers');
+    }
 }

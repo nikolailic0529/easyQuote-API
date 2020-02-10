@@ -2,10 +2,7 @@
 
 namespace App\Models\QuoteFile;
 
-use App\Models\{
-    BaseModel,
-    QuoteFile\ImportableColumn
-};
+use App\Models\BaseModel;
 use App\Traits\{
     Draftable,
     BelongsToImportedRow,
@@ -13,8 +10,6 @@ use App\Traits\{
     HasSystemScope
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Collection;
-use Str;
 
 class ImportedColumn extends BaseModel
 {
@@ -27,55 +22,13 @@ class ImportedColumn extends BaseModel
     ];
 
     protected $hidden = [
-        'created_at', 'updated_at', 'drafted_at', 'deleted_at',
-        'unknown_header', 'importableColumn', 'imported_row_id', 'template_field_name'
+        'created_at',
+        'updated_at',
+        'drafted_at',
+        'deleted_at',
+        'unknown_header',
+        'importableColumn',
+        'imported_row_id',
+        'template_field_name'
     ];
-
-    public function associateImportableColumnOrCreate($importableColumn, Collection $carry)
-    {
-        $carryHasImportableColumn = $carry->contains(function ($column) use ($importableColumn) {
-            if (!isset($importableColumn->id)) {
-                return false;
-            }
-
-            return $column->importableColumn->id === $importableColumn->id;
-        });
-
-        if ($importableColumn instanceof ImportableColumn && !$carryHasImportableColumn) {
-            $this->importableColumn()->associate($importableColumn);
-
-            return $importableColumn;
-        };
-
-        $alias = $header = $this->header;
-        $name = Str::columnName($header);
-        $user = request()->user();
-
-        if (!isset($this->header) || mb_strlen(trim($this->header)) === 0) {
-            $alias = $header = QFUH_01;
-            $name = Str::columnName($header);
-            $importableColumn = $user->importableColumns()->where('name', $name)->firstOrCreate(compact('header', 'name'));
-            $importableColumn->aliases()->create(compact('alias'));
-
-            $this->importableColumn()->associate($importableColumn);
-
-            return $importableColumn;
-        }
-
-        $importableColumn = $user->importableColumns()->where('name', $name)->firstOrCreate(compact('header', 'name'));
-        $importableColumn->aliases()->where('alias', $name)->firstOrCreate(compact('alias'));
-
-        $this->importableColumn()->associate($importableColumn);
-
-        return $importableColumn;
-    }
-
-    public function getValueAttribute()
-    {
-        if (!isset($this->template_field_name) || $this->template_field_name !== 'price') {
-            return $this->attributes['value'];
-        }
-
-        return Str::price($this->attributes['value']);
-    }
 }

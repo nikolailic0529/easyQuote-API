@@ -3,8 +3,8 @@
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Contracts\Repositories\QuoteTemplate\{
-    QuoteTemplateRepositoryInterface,
-    ContractTemplateRepositoryInterface
+    QuoteTemplateRepositoryInterface as QuoteTemplates,
+    ContractTemplateRepositoryInterface as ContractTemplates
 };
 
 class GetQuoteTemplatesRequest extends FormRequest
@@ -27,10 +27,11 @@ class GetQuoteTemplatesRequest extends FormRequest
     public function rules()
     {
         return [
-            'company_id' => 'required|exists:companies,id',
-            'vendor_id' => 'nullable|exists:vendors,id',
-            'country_id' => 'nullable|exists:countries,id',
-            'type' => ['nullable', 'string', Rule::in(QT_TYPES)]
+            'company_id'        => ['required', 'string', 'uuid', Rule::exists('companies', 'id')->whereNull('deleted_at')],
+            'vendor_id'         => ['nullable', 'string', 'uuid', Rule::exists('vendors', 'id')->whereNull('deleted_at')],
+            'country_id'        => ['nullable', 'string', 'uuid', Rule::exists('countries', 'id')->whereNull('deleted_at')],
+            'quote_template_id' => ['nullable', 'string', 'uuid', Rule::exists('quote_templates', 'id')->whereNull('deleted_at')->whereNull('type')],
+            'type'              => ['nullable', 'string', Rule::in(QT_TYPES)]
         ];
     }
 
@@ -39,12 +40,25 @@ class GetQuoteTemplatesRequest extends FormRequest
         return $this->input('type') === QT_TYPE_CONTRACT;
     }
 
+    public function validated()
+    {
+        $validated = parent::validated();
+
+        if ($this->missing('quote_template_id')) {
+            return $validated;
+        }
+
+        $quote_template = app(QuoteTemplates::class)->find($this->quote_template_id);
+
+        return $validated + compact('quote_template');
+    }
+
     public function repository()
     {
         if ($this->contract()) {
-            return app(ContractTemplateRepositoryInterface::class);
+            return app(ContractTemplates::class);
         }
 
-        return app(QuoteTemplateRepositoryInterface::class);
+        return app(QuoteTemplates::class);
     }
 }

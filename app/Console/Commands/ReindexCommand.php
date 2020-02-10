@@ -23,6 +23,7 @@ use App\Models\{
     System\Activity,
     Data\Country
 };
+use App\Models\Quote\Contract;
 use Str;
 
 class ReindexCommand extends Command
@@ -71,6 +72,7 @@ class ReindexCommand extends Command
                 User::class,
                 Role::class,
                 Quote::class,
+                Contract::class,
                 QuoteTemplate::class,
                 TemplateField::class,
                 CountryMargin::class,

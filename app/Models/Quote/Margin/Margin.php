@@ -13,7 +13,8 @@ use App\Models\{
 use App\Traits\{
     BelongsToUser,
     BelongsToVendor,
-    Activatable
+    Activatable,
+    Auth\Multitenantable
 };
 use Illuminate\Database\Eloquent\{
     Builder,
@@ -23,7 +24,7 @@ use Str;
 
 abstract class Margin extends BaseModel implements HasOrderedScope, ActivatableInterface
 {
-    use BelongsToUser, BelongsToVendor, SoftDeletes, Activatable;
+    use Multitenantable, BelongsToUser, BelongsToVendor, SoftDeletes, Activatable;
 
     protected $perPage = 8;
 

@@ -55,6 +55,9 @@ class NotificationRead implements ShouldBroadcastNow
      */
     public function broadcastWith()
     {
-        return ['id' => $this->notification->id];
+        return [
+            'id'        => $this->notification->id,
+            'decrement' => true
+        ];
     }
 }

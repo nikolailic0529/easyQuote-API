@@ -59,6 +59,11 @@ class Notification extends BaseModel
         return !is_null($this->read_at);
     }
 
+    public function getUnreadAttribute(): bool
+    {
+        return !$this->read;
+    }
+
     public function getPriorityAttribute($value): string
     {
         return __('priority.' . $value);

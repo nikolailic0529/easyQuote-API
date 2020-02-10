@@ -22,7 +22,15 @@ class ImportedRow extends BaseModel
     ];
 
     protected $hidden = [
-        'quote_file', 'user', 'quote_file_id', 'user_id', 'created_at', 'updated_at', 'drafted_at', 'deleted_at', 'page',
+        'quote_file',
+        'user',
+        'quote_file_id',
+        'user_id',
+        'created_at',
+        'updated_at',
+        'drafted_at',
+        'deleted_at',
+        'page',
         'laravel_through_key'
     ];
 

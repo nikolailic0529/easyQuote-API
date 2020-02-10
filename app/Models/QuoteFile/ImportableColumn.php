@@ -30,7 +30,7 @@ class ImportableColumn extends BaseModel implements HasOrderedScope
 
     public function scopeOrdered($query)
     {
-        return $query->orderBy('order', 'asc');
+        return $query->orderBy('order');
     }
 
     public function aliases()

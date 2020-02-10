@@ -14,12 +14,15 @@ use App\Models\QuoteTemplate\{
 use App\Repositories\SearchableRepository;
 use Illuminate\Database\Eloquent\{
     Model,
-    Builder
+    Builder,
+    Collection
 };
 use Illuminate\Support\Collection as SupportCollection;
 
 class TemplateFieldRepository extends SearchableRepository implements TemplateFieldRepositoryInterface
 {
+    const SYSTEM_FIELDS_CACHE_KEY = 'system-template-fields';
+
     protected $templateField;
 
     protected $templateFieldType;
@@ -41,6 +44,13 @@ class TemplateFieldRepository extends SearchableRepository implements TemplateFi
         $types = $this->templateFieldType->get();
 
         return collect(compact('types'));
+    }
+
+    public function allSystem(): Collection
+    {
+        return cache()->sear(static::SYSTEM_FIELDS_CACHE_KEY, function () {
+            return $this->templateField->system()->ordered()->get();
+        });
     }
 
     public function find(string $id): TemplateField

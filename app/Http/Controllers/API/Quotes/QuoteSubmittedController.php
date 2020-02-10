@@ -3,7 +3,12 @@
 namespace App\Http\Controllers\API\Quotes;
 
 use App\Http\Controllers\Controller;
-use App\Contracts\Repositories\Quote\QuoteSubmittedRepositoryInterface as Repository;
+use App\Contracts\Repositories\{
+    Quote\ContractStateRepositoryInterface as Contracts,
+    Quote\QuoteSubmittedRepositoryInterface as Repository
+};
+use App\Http\Requests\Quote\CreateQuoteContractRequest;
+use App\Http\Resources\ContractVersionResource;
 use App\Models\{
     Quote\Quote,
     QuoteTemplate\ContractTemplate
@@ -14,9 +19,13 @@ class QuoteSubmittedController extends Controller
     /** @var \App\Contracts\Repositories\Quote\QuoteSubmittedRepositoryInterface */
     protected $repository;
 
-    public function __construct(Repository $repository)
+    /** @var \App\Contracts\Repositories\Quote\ContractStateRepositoryInterface */
+    protected $contracts;
+
+    public function __construct(Repository $repository, Contracts $contracts)
     {
         $this->repository = $repository;
+        $this->contracts = $contracts;
         $this->authorizeResource(Quote::class, 'submitted');
     }
 
@@ -37,7 +46,7 @@ class QuoteSubmittedController extends Controller
     /**
      * Retrieve the specified Submitted Quote.
      *
-     * @param Quote $submitted
+     * @param \App\Models\Quote\Quote $submitted
      * @return \Illuminate\Http\Response
      */
     public function show(Quote $submitted)
@@ -68,7 +77,7 @@ class QuoteSubmittedController extends Controller
      */
     public function activate(Quote $submitted)
     {
-        $this->authorize('update', $submitted);
+        $this->authorize('activate', $submitted);
 
         return response()->json(
             $this->repository->activate($submitted->id)
@@ -93,7 +102,7 @@ class QuoteSubmittedController extends Controller
     /**
      * Create copy of the specified Submitted Quote
      *
-     * @param Quote $submitted
+     * @param \App\Models\Quote\Quote $submitted
      * @return \Illuminate\Http\Response
      */
     public function copy(Quote $submitted)
@@ -108,7 +117,7 @@ class QuoteSubmittedController extends Controller
     /**
      * Back a specified Quote to drafted.
      *
-     * @param Quote $submitted
+     * @param \App\Models\Quote\Quote $submitted
      * @return \Illuminate\Http\Response
      */
     public function unSubmit(Quote $submitted)
@@ -121,14 +130,32 @@ class QuoteSubmittedController extends Controller
     }
 
     /**
+     * Create a new Contract based on the given Quote.
+     *
+     * @param \App\Http\Requests\Quote\CreateQuoteContractRequest $request
+     * @param \App\Models\Quote\Quote $submitted
+     * @return \Illuminate\Http\Response
+     */
+    public function createContract(CreateQuoteContractRequest $request, Quote $submitted)
+    {
+        $this->authorize('createContract', $submitted);
+
+        $resource = $this->contracts->createFromQuote($submitted, $request->validated());
+
+        return response()->json(
+            ContractVersionResource::make($resource)
+        );
+    }
+
+    /**
      * Export the specified Quote as PDF.
      *
-     * @param Quote $submitted
+     * @param \App\Models\Quote\Quote $submitted
      * @return \Illuminate\Http\Response
      */
     public function pdf(Quote $submitted)
     {
-        $this->authorize('download_pdf', $submitted);
+        $this->authorize('downloadPdf', $submitted);
 
         return $this->repository->exportPdf($submitted, QT_TYPE_QUOTE);
     }
@@ -136,12 +163,12 @@ class QuoteSubmittedController extends Controller
     /**
      * Export the specified Quote as Contract PDF.
      *
-     * @param Quote $submitted
+     * @param \App\Models\Quote\Quote $submitted
      * @return \Illuminate\Http\Response
      */
     public function contractPdf(Quote $submitted)
     {
-        $this->authorize('download_contract_pdf', $submitted);
+        $this->authorize('downloadContractPdf', $submitted);
 
         return $this->repository->exportPdf($submitted, QT_TYPE_CONTRACT);
     }
@@ -149,7 +176,7 @@ class QuoteSubmittedController extends Controller
     /**
      * Set the specified Contract Template for the Quote.
      *
-     * @param Quote $submitted
+     * @param \App\Models\Quote\Quote $submitted
      * @param ContractTemplate $template
      * @return \Illuminate\Http\Response
      */

@@ -7,6 +7,7 @@ use App\Contracts\{
     ActivatableInterface,
     HasOrderedScope
 };
+use App\Http\Resources\ImportedRow\ImportedRowResource;
 use App\Models\{
     QuoteFile\ImportedRow,
     QuoteFile\QuoteFile,
@@ -38,7 +39,8 @@ use App\Traits\{
     QuoteTemplate\BelongsToContractTemplate,
     CachesRelations\CachesRelations,
     Activity\LogsActivity,
-    Currency\ConvertsCurrency
+    Currency\ConvertsCurrency,
+    Auth\Multitenantable
 };
 use Illuminate\Database\Eloquent\{
     SoftDeletes,
@@ -50,7 +52,8 @@ use Str;
 
 abstract class BaseQuote extends BaseModel implements HasOrderedScope, ActivatableInterface
 {
-    use Searchable,
+    use Multitenantable,
+        Searchable,
         HasQuoteFiles,
         BelongsToUser,
         BelongsToCustomer,
@@ -87,10 +90,11 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
         'company_id',
         'vendor_id',
         'country_id',
+        'last_drafted_step',
+        'completeness',
         'language_id',
         'quote_template_id',
         'contract_template_id',
-        'last_drafted_step',
         'pricing_document',
         'service_agreement_id',
         'system_handle',
@@ -138,6 +142,9 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
         'custom_discount',
         'use_groups',
         'buy_price',
+        'sourceCurrency.code',
+        'targetCurrency.code',
+        'exchange_rate_margin',
         'submitted_at'
     ];
 
@@ -198,7 +205,9 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
 
     public function getRowsDataAttribute()
     {
-        return $this->rowsData()->with('columnsData')->processed()->limit(1)->get();
+        return ImportedRowResource::collection(
+            $this->rowsData()->with('columnsData')->processed()->oldest()->limit(1)->get()
+        );
     }
 
     public function detachQuoteFile(QuoteFile $quoteFile)
@@ -209,11 +218,14 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
     public function toSearchArray()
     {
         return [
-            'customer' => optional($this->customer)->toSearchArray(),
-            'company' => optional($this->company)->toSearchArray(),
-            'vendor' => optional($this->vendor)->toSearchArray(),
-            'user' => optional($this->user)->toSearchArray(),
-            'created_at' => $this->created_at
+            'company_name'              => optional($this->company)->name,
+            'customer_name'             => optional($this->customer)->name,
+            'customer_rfq'              => optional($this->customer)->rfq,
+            'customer_valid_until'      => optional($this->customer)->valid_until,
+            'customer_support_start'    => optional($this->customer)->support_start,
+            'customer_support_end'      => optional($this->customer)->support_end,
+            'user_fullname'             => optional($this->user)->fullname,
+            'created_at'                => $this->created_at
         ];
     }
 
@@ -222,20 +234,22 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
         return __('quote.stages');
     }
 
-    public function getClosingDateAttribute()
+    public function getClosingDateAttribute($value)
     {
-        if (!isset($this->attributes['closing_date'])) {
-            return null;
-        }
-
-        return Carbon::parse($this->attributes['closing_date'])->format('d/m/Y');
+        return carbon_format($value, config('date.format_ui'));
     }
 
     public function getItemNameAttribute()
     {
-        $customer_rfq = $this->customer->rfq ?? 'unknown RFQ';
+        return "Quote ({$this->customer->rfq})";
+    }
 
-        return "Quote ({$customer_rfq})";
+    public function getCurrencySymbolAttribute()
+    {
+        return $this->targetCurrency->symbol
+            ?? $this->sourceCurrency->symbol
+            ?? $this->quoteTemplate->currency->symbol
+            ?? null;
     }
 
     public function withAppends(...$attributes)
@@ -266,7 +280,7 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
 
     public function getForeignKey()
     {
-        return Str::snake(Str::after(class_basename(self::class), 'Base')).'_'.$this->getKeyName();
+        return Str::snake(Str::after(class_basename(self::class), 'Base')) . '_' . $this->getKeyName();
     }
 
     protected function defaultRelationships(): array

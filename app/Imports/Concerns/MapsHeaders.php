@@ -24,61 +24,91 @@ trait MapsHeaders
 
     protected function mapHeaders(): void
     {
-        throw_unless(property_exists($this, 'header'), new \InvalidArgumentException('The header property must be defined.'));
-
-        $aliasesMapping = $this->importRepository()->allSystem()->pluck('aliases.*.alias', 'id');
-        $userAliasesMapping = $this->importRepository()->userColumns(array_filter($this->header))->pluck('aliases.*.alias', 'id');
-        $aliasesMapping = $aliasesMapping->merge($userAliasesMapping);
+        $aliasesMapping = $this->getAliasesMapping();
 
         $this->headersMapping = [];
-        $mapping = collect([]);
+        $actualMapping = collect();
 
-        $this->headersMapping = collect($this->header)->mapWithKeys(function ($header, $key) use ($aliasesMapping, $mapping) {
-            $column = false;
-            $column_num = $key + 1;
+        $this->headersMapping = $this->getHeader()->mapWithKeys(function ($header, $key) use ($aliasesMapping, $actualMapping) {
+            $id = $this->findImportableColumn($header, $aliasesMapping, $actualMapping);
 
-            if (filled($header)) {
-                $column = $aliasesMapping->search(function ($aliases, $importable_column_id) use ($header, $mapping) {
-                    if ($mapping->contains($importable_column_id)) {
-                        return false;
-                    }
+            $header = $this->formatImportableHeader($header, $key);
 
-                    $matchingHeader = preg_quote($header, '~');
-                    $match = preg_grep("~^{$matchingHeader}.*?~i", $aliases);
-
-                    return filled($match);
-                });
+            if ($id == false) {
+                $id = $this->createUnknownImportableColumn($header, $actualMapping);
             }
 
-            blank($header) && $header = "Unknown Header {$column_num}";
+            $actualMapping->push($id);
 
-            if (!$column) {
-                $alias = $header;
-                $name = Str::columnName($header);
-                $user_id = $this->quoteFile->user_id;
-
-                $importableColumn = $this->importRepository()->firstOrCreate(
-                    compact('name'),
-                    compact('header', 'name', 'user_id'),
-                    function ($query) use ($mapping) {
-                        $query->whereNotIn('id', $mapping->toArray());
-                    }
-                );
-
-                $importableColumn->aliases()->firstOrCreate(compact('alias'));
-                $column = $importableColumn->id;
-            }
-
-            $mapping->push($column);
-
-            return [$header => $column];
+            return [$header => $id];
         });
 
-        $this->headersCount = $mapping->count();
+        $this->headersCount = $actualMapping->count();
     }
 
     protected function importRepository(): ImportableColumnRepositoryInterface
     {
         return app(ImportableColumnRepositoryInterface::class);
+    }
+
+    private function getAliasesMapping(): Collection
+    {
+        $systemColumnsAliases = $this->importRepository()->allSystem()->pluck('aliases.*.alias', 'id');
+        $userColumnsAliases = $this->importRepository()->userColumns(array_filter($this->header))->pluck('aliases.*.alias', 'id');
+
+        return $systemColumnsAliases->merge($userColumnsAliases);
+    }
+
+    private function getHeader(): Collection
+    {
+        if (isset($this->header)) {
+            return Collection::wrap($this->header);
+        }
+
+        return collect();
+    }
+
+    private function findImportableColumn(?string $header, Collection $mapping, Collection $actualMapping)
+    {
+        if (blank($header)) {
+            return false;
+        }
+
+        return $mapping->search(function ($aliases, $id) use ($header, $actualMapping) {
+            if ($actualMapping->contains($id)) {
+                return false;
+            }
+
+            $quotedHeader = preg_quote($header, '~');
+            return count(preg_grep("~^\b{$quotedHeader}\b(.*)?~i", $aliases)) > 0;
+        });
+    }
+
+    private function createUnknownImportableColumn(string $header, Collection $actualMapping): string
+    {
+        $alias = $header;
+        $name = Str::slug($header, '_');
+        $user_id = $this->quoteFile->user_id;
+
+        $importableColumn = $this->importRepository()->firstOrCreate(
+            compact('name'),
+            compact('header', 'name', 'user_id'),
+            function ($query) use ($actualMapping) {
+                $query->whereNotIn('id', $actualMapping->toArray());
+            }
+        );
+
+        $importableColumn->aliases()->firstOrCreate(compact('alias'));
+
+        return $importableColumn->id;
+    }
+
+    private function formatImportableHeader(?string $header, int $key): string
+    {
+        if (blank($header)) {
+            return 'Unknown Header ' . ++$key;
+        }
+
+        return $header;
     }
 }

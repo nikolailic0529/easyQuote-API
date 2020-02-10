@@ -42,7 +42,7 @@ class QuoteTest extends TestCase
             'quote_id' => $this->quote->id
         ];
 
-        $response = $this->postJson(url('api/quotes/state'), $state, $this->authorizationHeader);
+        $response = $this->postJson(url('api/quotes/state'), $state);
 
         $response->assertForbidden()
             ->assertJsonFragment([
@@ -63,7 +63,7 @@ class QuoteTest extends TestCase
             'quote_id' => $this->quote->id
         ];
 
-        $response = $this->postJson(url('api/quotes/state'), $state, $this->authorizationHeader);
+        $response = $this->postJson(url('api/quotes/state'), $state);
 
         $response->assertOk()
             ->assertExactJson(['id' => $this->quote->id]);
@@ -78,7 +78,7 @@ class QuoteTest extends TestCase
     {
         $this->quote->submit();
 
-        $response = $this->putJson(url("api/quotes/submitted/unsubmit/{$this->quote->id}"), [], $this->authorizationHeader);
+        $response = $this->putJson(url("api/quotes/submitted/unsubmit/{$this->quote->id}"), []);
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -97,7 +97,7 @@ class QuoteTest extends TestCase
     {
         $this->quote->submit();
 
-        $response = $this->putJson(url("api/quotes/submitted/copy/{$this->quote->id}"), [], $this->authorizationHeader);
+        $response = $this->putJson(url("api/quotes/submitted/copy/{$this->quote->id}"), []);
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -118,7 +118,7 @@ class QuoteTest extends TestCase
     {
         $attributes = $this->makeGenericGroupDescriptionAttributes();
 
-        $response = $this->postJson(url("api/quotes/groups/{$this->quote->id}"), $attributes, $this->authorizationHeader);
+        $response = $this->postJson(url("api/quotes/groups/{$this->quote->id}"), $attributes);
 
         $response->assertOk()
             ->assertJsonStructure([
@@ -138,7 +138,7 @@ class QuoteTest extends TestCase
 
         $attributes = $this->makeGenericGroupDescriptionAttributes();
 
-        $response = $this->patchJson(url("api/quotes/groups/{$this->quote->id}/{$id}"), $attributes, $this->authorizationHeader);
+        $response = $this->patchJson(url("api/quotes/groups/{$this->quote->id}/{$id}"), $attributes);
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -154,7 +154,7 @@ class QuoteTest extends TestCase
         $group = $this->createFakeGroupDescription();
         $id = $group->get('id');
 
-        $response = $this->deleteJson(url("api/quotes/groups/{$this->quote->id}/{$id}"), [], $this->authorizationHeader);
+        $response = $this->deleteJson(url("api/quotes/groups/{$this->quote->id}/{$id}"), []);
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -180,7 +180,7 @@ class QuoteTest extends TestCase
             'rows' => data_get($fromGroup, 'rows.*')
         ];
 
-        $response = $this->putJson(url("api/quotes/groups/{$this->quote->id}"), $attributes, $this->authorizationHeader);
+        $response = $this->putJson(url("api/quotes/groups/{$this->quote->id}"), $attributes);
 
         $response->assertOk();
 
@@ -197,7 +197,7 @@ class QuoteTest extends TestCase
         $group = $this->createFakeGroupDescription();
         $id = $group->get('id');
 
-        $response = $this->getJson(url("api/quotes/groups/{$this->quote->id}/{$id}"), $this->authorizationHeader);
+        $response = $this->getJson(url("api/quotes/groups/{$this->quote->id}/{$id}"));
 
         $response->assertOk()
             ->assertJsonStructure([
@@ -218,7 +218,7 @@ class QuoteTest extends TestCase
             $this->createFakeGroupDescription();
         });
 
-        $response = $this->getJson(url("api/quotes/groups/{$this->quote->id}"), $this->authorizationHeader);
+        $response = $this->getJson(url("api/quotes/groups/{$this->quote->id}"));
 
         $response->assertOk();
 
@@ -240,7 +240,7 @@ class QuoteTest extends TestCase
     {
         $this->quote->submit();
 
-        $response = $this->getJson(url("api/quotes/submitted/pdf/{$this->quote->id}"), $this->authorizationHeader);
+        $response = $this->getJson(url("api/quotes/submitted/pdf/{$this->quote->id}"));
 
         $response->assertOk()
             ->assertHeader('content-type', 'application/pdf');

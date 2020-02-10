@@ -12,7 +12,8 @@ use App\Traits\{
     BelongsToUser,
     Search\Searchable,
     Systemable,
-    Activity\LogsActivity
+    Activity\LogsActivity,
+    Auth\Multitenantable
 };
 use Spatie\Permission\{
     Guard,
@@ -34,7 +35,8 @@ use Illuminate\Support\Collection;
 
 class Role extends BaseModel implements RoleContract, ActivatableInterface
 {
-    use HasPermissions,
+    use Multitenantable,
+        HasPermissions,
         RefreshesPermissionCache,
         BelongsToUser,
         Searchable,

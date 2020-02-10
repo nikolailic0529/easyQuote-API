@@ -3,6 +3,7 @@
 namespace App\Models\QuoteTemplate;
 
 use App\Scopes\ContractTemplateScope;
+use Arr;
 
 class ContractTemplate extends BaseQuoteTemplate
 {
@@ -35,5 +36,10 @@ class ContractTemplate extends BaseQuoteTemplate
     public function getItemNameAttribute()
     {
         return "Contract Template ({$this->name})";
+    }
+
+    public static function dataHeadersDictionary(): array
+    {
+        return __('template.contract_data_headers');
     }
 }

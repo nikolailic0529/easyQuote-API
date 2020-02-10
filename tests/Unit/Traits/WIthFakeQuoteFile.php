@@ -69,13 +69,13 @@ trait WithFakeQuoteFile
         File::copy(base_path($relativePath), Storage::path($filepath));
 
         $quoteFile = $quote->user->quoteFiles()->create([
-            'quote_id' => $quote->id,
-            'original_file_path' => Storage::path($filepath),
-            'quote_file_format_id' => $this->determineFileFormat($extension),
-            'file_type' => $fileType,
-            'pages' => $this->parser->countPages($filepath, true),
-            'imported_page' => 1,
-            'original_file_name' => $originalFileName
+            'quote_id'              => $quote->id,
+            'original_file_path'    => Storage::path($filepath),
+            'quote_file_format_id'  => $this->determineFileFormat($extension),
+            'file_type'             => $fileType,
+            'pages'                 => $this->parser->countPages($filepath, true),
+            'imported_page'         => 1,
+            'original_file_name'    => $originalFileName
         ]);
 
         $this->preHandle($quoteFile);
@@ -86,13 +86,13 @@ trait WithFakeQuoteFile
     protected function createFakeQuoteFile(Quote $quote): QuoteFile
     {
         return $quote->user->quoteFiles()->create([
-            'quote_id' => $quote->id,
-            'original_file_path' => Str::random(40) . '.pdf',
-            'quote_file_format_id' => DB::table('quote_file_formats')->where('extension', 'pdf')->value('id'),
-            'file_type' => 'Distributor Price List',
-            'pages' => 2,
-            'imported_page' => 1,
-            'original_file_name' => Str::random(40) . '.pdf'
+            'quote_id'              => $quote->id,
+            'original_file_path'    => Str::random(40) . '.pdf',
+            'quote_file_format_id'  => DB::table('quote_file_formats')->where('extension', 'pdf')->value('id'),
+            'file_type'             => 'Distributor Price List',
+            'pages'                 => 2,
+            'imported_page'         => 1,
+            'original_file_name'    => Str::random(40) . '.pdf'
         ]);
     }
 

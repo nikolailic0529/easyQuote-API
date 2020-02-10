@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Models\Company;
 use Illuminate\Database\Eloquent\Builder;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -22,7 +23,7 @@ class CompanyTest extends TestCase
      */
     public function testCompanyListing()
     {
-        $response = $this->getJson(url('api/companies'), $this->authorizationHeader);
+        $response = $this->getJson(url('api/companies'));
 
         $this->assertListing($response);
 
@@ -49,9 +50,9 @@ class CompanyTest extends TestCase
      */
     public function testCompanyCreating()
     {
-        $attributes = $this->makeGenericCompanyAttributes();
+        $attributes = factory(Company::class)->raw();
 
-        $response = $this->postJson(url('api/companies'), $attributes, $this->authorizationHeader);
+        $response = $this->postJson(url('api/companies'), $attributes);
 
         $response->assertOk()
             ->assertJsonStructure(array_keys($attributes));
@@ -64,13 +65,13 @@ class CompanyTest extends TestCase
      */
     public function testCompanyCreatingWithExistingVat()
     {
-        $attributes = $this->makeGenericCompanyAttributes();
+        $attributes = factory(Company::class)->raw();
 
         $existingVat = app('company.repository')->random()->vat;
 
         data_set($attributes, 'vat', $existingVat);
 
-        $response = $this->postJson(url('api/companies'), $attributes, $this->authorizationHeader);
+        $response = $this->postJson(url('api/companies'), $attributes);
 
         $response->assertStatus(422)
             ->assertJsonStructure(['Error' => ['original' => ['vat']]]);
@@ -83,18 +84,18 @@ class CompanyTest extends TestCase
      */
     public function testCompanyUpdating()
     {
-        $attributes = $this->makeGenericCompanyAttributes();
+        $attributes = factory(Company::class)->raw();
 
         data_set($attributes, 'user_id', $this->user->id);
 
         $company = app('company.repository')->create($attributes);
 
         $newAttributes = array_merge(
-            $this->makeGenericCompanyAttributes(),
+            factory(Company::class)->raw(),
             ['_method' => 'PATCH']
         );
 
-        $response = $this->postJson(url("api/companies/{$company->id}"), $newAttributes, $this->authorizationHeader);
+        $response = $this->postJson(url("api/companies/{$company->id}"), $newAttributes);
 
         $response->assertOk()
             ->assertJsonStructure(array_keys($attributes))
@@ -108,13 +109,13 @@ class CompanyTest extends TestCase
      */
     public function testCompanyActivating()
     {
-        $attributes = $this->makeGenericCompanyAttributes();
+        $attributes = factory(Company::class)->raw();
 
         data_set($attributes, 'user_id', $this->user->id);
 
         $company = app('company.repository')->create($attributes);
 
-        $response = $this->putJson(url("api/companies/activate/{$company->id}"), [], $this->authorizationHeader);
+        $response = $this->putJson(url("api/companies/activate/{$company->id}"), []);
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -123,7 +124,7 @@ class CompanyTest extends TestCase
 
         $this->assertNotNull($company->activated_at);
 
-        $response = $this->getJson(url('api/quotes/step/1'), $this->authorizationHeader);
+        $response = $this->getJson(url('api/quotes/step/1'));
 
         $response->assertOk()
             ->assertJsonFragment(['id' => $company->id]);
@@ -136,13 +137,13 @@ class CompanyTest extends TestCase
      */
     public function testCompanyDeactivating()
     {
-        $attributes = $this->makeGenericCompanyAttributes();
+        $attributes = factory(Company::class)->raw();
 
         data_set($attributes, 'user_id', $this->user->id);
 
         $company = app('company.repository')->create($attributes);
 
-        $response = $this->putJson(url("api/companies/deactivate/{$company->id}"), [], $this->authorizationHeader);
+        $response = $this->putJson(url("api/companies/deactivate/{$company->id}"), []);
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -151,7 +152,7 @@ class CompanyTest extends TestCase
 
         $this->assertNull($company->activated_at);
 
-        $response = $this->getJson(url('api/quotes/step/1'), $this->authorizationHeader);
+        $response = $this->getJson(url('api/quotes/step/1'));
 
         $response->assertOk()
             ->assertJsonMissing(['id' => $company->id]);
@@ -164,13 +165,13 @@ class CompanyTest extends TestCase
      */
     public function testCompanyDeleting()
     {
-        $attributes = $this->makeGenericCompanyAttributes();
+        $attributes = factory(Company::class)->raw();
 
         data_set($attributes, 'user_id', $this->user->id);
 
         $company = app('company.repository')->create($attributes);
 
-        $response = $this->deleteJson(url("api/companies/{$company->id}"), [], $this->authorizationHeader);
+        $response = $this->deleteJson(url("api/companies/{$company->id}"), []);
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -187,7 +188,7 @@ class CompanyTest extends TestCase
             $query->system();
         });
 
-        $response = $this->deleteJson(url("api/companies/{$systemCompany->id}"), [], $this->authorizationHeader);
+        $response = $this->deleteJson(url("api/companies/{$systemCompany->id}"), []);
 
         $response->assertForbidden()
             ->assertJsonFragment([
@@ -202,11 +203,11 @@ class CompanyTest extends TestCase
      */
     public function testDefaultCompanyVendor()
     {
-        $company = app('company.repository')->create($this->makeGenericCompanyAttributes());
+        $company = app('company.repository')->create(factory(Company::class)->raw());
 
         $vendor = $company->vendors->random();
 
-        $response = $this->patchJson(url("api/companies/{$company->id}"), ['default_vendor_id' => $vendor->id], $this->authorizationHeader);
+        $response = $this->patchJson(url("api/companies/{$company->id}"), ['default_vendor_id' => $vendor->id]);
 
         $response->assertOk();
 
@@ -215,7 +216,7 @@ class CompanyTest extends TestCase
         /**
          * Test assigned Default Vendor in the data for Quote Importer screen.
          */
-        $response = $this->getJson(url('api/quotes/step/1'), $this->authorizationHeader);
+        $response = $this->getJson(url('api/quotes/step/1'));
 
         $firstCompanyVendor = head(collect($response->json('companies'))->firstWhere('id', $company->id)['vendors']);
 
@@ -224,7 +225,7 @@ class CompanyTest extends TestCase
 
     public function testDefaultCompanyCountry()
     {
-        $attributes = $this->makeGenericCompanyAttributes();
+        $attributes = factory(Company::class)->raw();
 
         $attributes['default_vendor_id'] = Arr::random($attributes['vendors']);
 
@@ -232,7 +233,7 @@ class CompanyTest extends TestCase
 
         $country = $company->defaultVendor->countries->random();
 
-        $response = $this->patchJson(url("api/companies/{$company->id}"), ['default_country_id' => $country->id], $this->authorizationHeader);
+        $response = $this->patchJson(url("api/companies/{$company->id}"), ['default_country_id' => $country->id]);
 
         $response->assertOk();
 
@@ -241,26 +242,12 @@ class CompanyTest extends TestCase
         /**
          * Test assigned Default Country in the data for Quote Importer screen.
          */
-        $response = $this->getJson(url('api/quotes/step/1'), $this->authorizationHeader);
+        $response = $this->getJson(url('api/quotes/step/1'));
 
         $responseCompany = collect($response->json('companies'))->firstWhere('id', $company->id);
 
         $firstCompanyVendorCountry = head(head($responseCompany['vendors'])['countries']);
 
         $this->assertEquals($country->id, $firstCompanyVendorCountry['id']);
-    }
-
-    protected function makeGenericCompanyAttributes()
-    {
-        return [
-            'name' => $this->faker->company,
-            'vat' => Str::random(10),
-            'type' => 'Internal',
-            'email' => $this->faker->companyEmail,
-            'phone' => $this->faker->phoneNumber,
-            'website' => $this->faker->url,
-            'vendors' => app('vendor.repository')->random(2)->pluck('id')->toArray(),
-            'user_id' => $this->user->id
-        ];
     }
 }

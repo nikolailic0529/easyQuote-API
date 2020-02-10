@@ -1,0 +1,13 @@
+[
+    {
+        "language": "English",
+        "company": {
+            "vat": "GB758501125",
+            "acronym": "SWH"
+        },
+        "vendor": "HPE",
+        "countries": [
+            "GB", "US", "BE", "CA", "DK", "FR", "NL", "SE", "DE", "AT", "IE", "NO", "ZA", "CH"
+        ]
+    }
+]

@@ -6,7 +6,7 @@ use App\Models\Quote\{
     Quote, QuoteVersion, BaseQuote
 };
 use App\Http\Requests\{
-    StoreQuoteStateRequest,
+    Quote\StoreQuoteStateRequest,
     GetQuoteTemplatesRequest,
     MappingReviewRequest,
     Quote\MoveGroupDescriptionRowsRequest,
@@ -171,4 +171,22 @@ interface QuoteRepositoryInterface
      * @return QuoteVersion
      */
     public function createNewVersionIfNonCreator(Quote $quote): QuoteVersion;
+
+    /**
+     * Replicate Discounts from Source Quote to Target Quote.
+     *
+     * @param string $sourceId
+     * @param string $targetId
+     * @return void
+     */
+    public function replicateDiscounts(string $sourceId, string $targetId): void;
+
+    /**
+     * Replicate Mapping from Source Quote to Target Quote.
+     *
+     * @param string $sourceId
+     * @param string $targetId
+     * @return void
+     */
+    public function replicateMapping(string $sourceId, string $targetId): void;
 }

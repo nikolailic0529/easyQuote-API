@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\User;
 
+use App\Models\Collaboration\Invitation;
+use App\Models\User;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\WithFakeUser;
@@ -54,11 +56,7 @@ class InvitationTest extends TestCase
     {
         $attributes = $this->makeGenericInvitationAttributes();
 
-        $response = $this->postJson(
-            url('api/users'),
-            $attributes,
-            $this->authorizationHeader
-        );
+        $response = $this->postJson(url('api/users'), $attributes);
 
         $response->assertOk()
             ->assertJsonStructure([
@@ -91,13 +89,7 @@ class InvitationTest extends TestCase
 
         $password = $this->faker->password;
 
-        $response = $this->postJson($invitationUrl, [
-            'first_name' => $this->faker->firstName,
-            'last_name' => $this->faker->lastName,
-            'password' => $password,
-            'password_confirmation' => $password,
-            'timezone_id' => app('timezone.repository')->random()->id
-        ]);
+        $response = $this->postJson($invitationUrl, factory(User::class, 'registration')->raw());
 
         $response->assertOk()
             ->assertJsonStructure([
@@ -119,11 +111,7 @@ class InvitationTest extends TestCase
     {
         $invitation = $this->userRepository->invite($this->makeGenericInvitationAttributes());
 
-        $response = $this->putJson(
-            url("api/invitations/cancel/{$invitation->invitation_token}"),
-            [],
-            $this->authorizationHeader
-        );
+        $response = $this->putJson(url("api/invitations/cancel/{$invitation->invitation_token}"));
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -152,9 +140,7 @@ class InvitationTest extends TestCase
         $invitation = $this->userRepository->invite($this->makeGenericInvitationAttributes());
 
         $response = $this->deleteJson(
-            url("api/invitations/{$invitation->invitation_token}"),
-            [],
-            $this->authorizationHeader
+            url("api/invitations/{$invitation->invitation_token}")
         );
 
         $response->assertOk()
@@ -173,11 +159,9 @@ class InvitationTest extends TestCase
     {
         $role = $this->roleRepository->findByName('Administrator');
 
-        return [
-            'email' => $this->faker->safeEmail,
+        return factory(Invitation::class)->raw([
             'role_id' => $role->id,
-            'user_id' => $this->user->id,
-            'host' => config('app.url')
-        ];
+            'user_id' => $this->user->id
+        ]);
     }
 }

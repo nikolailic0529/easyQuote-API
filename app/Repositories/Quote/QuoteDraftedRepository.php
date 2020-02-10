@@ -5,9 +5,11 @@ namespace App\Repositories\Quote;
 use App\Contracts\Repositories\Quote\QuoteDraftedRepositoryInterface;
 use App\Http\Resources\QuoteRepository\DraftedCollection;
 use App\Repositories\SearchableRepository;
-use App\Models\Quote\Quote;
+use App\Models\Quote\{
+    Quote,
+    QuoteVersion
+};
 use App\Models\User;
-use Carbon\Carbon;
 use Carbon\CarbonInterval;
 use Closure;
 use Illuminate\Database\Eloquent\{
@@ -15,20 +17,23 @@ use Illuminate\Database\Eloquent\{
     Builder,
     Collection
 };
-use Illuminate\Database\Query\Builder as DatabaseBuilder;
 
 class QuoteDraftedRepository extends SearchableRepository implements QuoteDraftedRepositoryInterface
 {
     /** @var \App\Models\Quote\Quote */
     protected $quote;
 
+    /** @var \App\Models\Quote\QuoteVersion */
+    protected $quoteVersion;
+
     /** @var string */
     protected $table;
 
-    public function __construct(Quote $quote)
+    public function __construct(Quote $quote, QuoteVersion $quoteVersion)
     {
         $this->quote = $quote;
         $this->table = $quote->getTable();
+        $this->quoteVersion = $quoteVersion;
     }
 
     public function all()
@@ -45,7 +50,7 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
     {
         return $this->quote
             ->currentUserWhen(request()->user()->cant('view_quotes'))
-            ->with('versions:id,quotes.user_id,version_number,created_at,updated_at')
+            ->with('versions:id,quotes.user_id,version_number,created_at,updated_at,drafted_at')
             ->drafted();
     }
 
@@ -86,9 +91,19 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
         return $this->userQuery()->whereId($id)->firstOrFail();
     }
 
+    public function findVersion(string $id): QuoteVersion
+    {
+        return $this->quoteVersion->query()->whereId($id)->firstOrFail();
+    }
+
     public function delete(string $id)
     {
         return $this->find($id)->delete();
+    }
+
+    public function deleteVersion(string $id): bool
+    {
+        return $this->findVersion($id)->delete();
     }
 
     public function activate(string $id)
@@ -137,13 +152,13 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
     protected function searchableFields(): array
     {
         return [
-            'customer.name^5',
-            'customer.valid_until^3',
-            'customer.support_start^4',
-            'customer.support_end^4',
-            'customer.rfq^5',
-            'company.name^5',
-            'type^2',
+            'company_name^5',
+            'customer_name^5',
+            'customer_rfq^5',
+            'customer_valid_until^4',
+            'customer_support_start^4',
+            'customer_support_end^4',
+            'user_fullname^4',
             'created_at^1'
         ];
     }

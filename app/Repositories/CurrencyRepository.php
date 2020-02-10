@@ -29,6 +29,25 @@ class CurrencyRepository implements CurrencyRepositoryInterface
         });
     }
 
+    public function allHaveExrate()
+    {
+        return $this->currency->query()
+            ->whereHas('exchangeRate')
+            ->orWhere('code', app('exchange.service')->baseCurrency())
+            ->ordered()
+            ->get();
+    }
+
+    public function find(string $id): Currency
+    {
+        return $this->currency->query()->whereId($id)->firstOrFail();
+    }
+
+    public function findByCode(?string $code)
+    {
+        return $this->currency->query()->whereCode($code)->first();
+    }
+
     public function findIdByCode($code)
     {
         if (is_array($code)) {
@@ -44,5 +63,10 @@ class CurrencyRepository implements CurrencyRepositoryInterface
         return cache()->sear(self::CACHE_PREFIX_CODE . $code, function () use ($code) {
             return $this->currency->whereCode($code)->value('id');
         });
+    }
+
+    public function firstOrCreate(array $attributes, array $values = []): Currency
+    {
+        return $this->currency->firstOrCreate($attributes, $values);
     }
 }

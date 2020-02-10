@@ -12,7 +12,7 @@ use App\Contracts\Repositories\{
     QuoteFile\DataSelectSeparatorRepositoryInterface as DataSelectRepository
 };
 use App\Http\Requests\{
-    StoreQuoteStateRequest,
+    Quote\StoreQuoteStateRequest,
     GetQuoteTemplatesRequest,
     MappingReviewRequest,
     Quote\MoveGroupDescriptionRowsRequest,
@@ -34,7 +34,7 @@ class QuoteController extends Controller
     /** @var \App\Contracts\Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface */
     protected $quoteTemplates;
 
-    /** @var \App\Contracts\Repositories\CountryRepositoryInterface */
+    /** @var \App\Contracts\Repositories\Quote\Margin\MarginRepositoryInterface */
     protected $margins;
 
     /** @var \App\Contracts\Repositories\CompanyRepositoryInterface */
@@ -102,7 +102,7 @@ class QuoteController extends Controller
                 'companies'                 => $this->companies->allWithVendorsAndCountries(),
                 'data_select_separators'    => $this->dataSelects->all(),
                 'supported_file_types'      => Setting::get('supported_file_types_ui'),
-                'currencies'                => $this->currencies->all()
+                'currencies'                => $this->currencies->allHaveExrate()
             ]
         );
     }

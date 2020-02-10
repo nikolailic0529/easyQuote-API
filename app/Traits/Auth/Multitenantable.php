@@ -8,10 +8,10 @@ trait Multitenantable
 {
     protected static function bootMultitenantable()
     {
-        if (auth()->check()) {
-            static::creating(function (Model $model) {
+        static::creating(function (Model $model) {
+            if (auth()->check()) {
                 $model->user_id = auth()->id();
-            });
-        }
+            }
+        });
     }
 }

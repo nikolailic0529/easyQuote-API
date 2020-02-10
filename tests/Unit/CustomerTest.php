@@ -11,18 +11,7 @@ class CustomerTest extends TestCase
 {
     use DatabaseTransactions, WithFakeUser;
 
-    protected $customerRepository;
-
-    protected $customerFields;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->customerRepository = app('customer.repository');
-
-        $this->customerFields = ['id', 'name', 'rfq', 'valid_until', 'support_start', 'support_end', 'created_at'];
-    }
+    protected static $assertableAttributes = ['id', 'name', 'rfq', 'valid_until', 'support_start', 'support_end', 'created_at'];
 
     /**
      * Test Customers listing.
@@ -31,11 +20,11 @@ class CustomerTest extends TestCase
      */
     public function testCustomerListing()
     {
-        $response = $this->getJson(url('api/quotes/customers'), $this->authorizationHeader);
+        $response = $this->getJson(url('api/quotes/customers'));
 
         $response->assertOk();
 
-        $responseItemHasFields = Arr::has($response->json('0'), $this->customerFields);
+        $responseItemHasFields = Arr::has($response->json('0'), static::$assertableAttributes);
 
         $this->assertTrue($responseItemHasFields);
     }
@@ -47,11 +36,11 @@ class CustomerTest extends TestCase
      */
     public function testSpecifiedCustomerDisplaying()
     {
-        $customer = $this->customerRepository->random();
+        $customer = app('customer.repository')->random();
 
-        $response = $this->getJson(url("api/quotes/customers/{$customer->id}"), $this->authorizationHeader);
+        $response = $this->getJson(url("api/quotes/customers/{$customer->id}"));
 
         $response->assertOk()
-            ->assertJsonStructure($this->customerFields);
+            ->assertJsonStructure(static::$assertableAttributes);
     }
 }

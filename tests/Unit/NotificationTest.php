@@ -20,7 +20,7 @@ class NotificationTest extends TestCase
      */
     public function testNotificationListing()
     {
-        $response = $this->getJson(url('api/notifications'), $this->authorizationHeader);
+        $response = $this->getJson(url('api/notifications'));
 
         $this->assertListing($response);
 
@@ -41,7 +41,7 @@ class NotificationTest extends TestCase
      */
     public function testLatestNotificationListing()
     {
-        $response = $this->getJson(url('api/notifications/latest'), $this->authorizationHeader);
+        $response = $this->getJson(url('api/notifications/latest'));
 
         $response->assertOk()
             ->assertJsonStructure(['data', 'total']);
@@ -56,7 +56,7 @@ class NotificationTest extends TestCase
     {
         $notification = $this->createFakeNotification();
 
-        $response = $this->deleteJson(url("api/notifications/{$notification->id}"), [], $this->authorizationHeader);
+        $response = $this->deleteJson(url("api/notifications/{$notification->id}"));
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -73,12 +73,12 @@ class NotificationTest extends TestCase
     {
         $this->createFakeNotification();
 
-        $response = $this->deleteJson(url('api/notifications'), [], $this->authorizationHeader);
+        $response = $this->deleteJson(url('api/notifications'));
 
         $response->assertOk()
             ->assertExactJson([true]);
 
-        $response = $this->getJson(url('api/notifications/latest'), $this->authorizationHeader);
+        $response = $this->getJson(url('api/notifications/latest'));
 
         $response->assertOk()
             ->assertExactJson([
@@ -98,7 +98,7 @@ class NotificationTest extends TestCase
     {
         $notification = $this->createFakeNotification();
 
-        $response = $this->putJson(url("api/notifications/{$notification->id}"), [], $this->authorizationHeader);
+        $response = $this->putJson(url("api/notifications/{$notification->id}"));
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -110,12 +110,12 @@ class NotificationTest extends TestCase
     {
         $this->createFakeNotification();
 
-        $response = $this->putJson(url('api/notifications'), [], $this->authorizationHeader);
+        $response = $this->putJson(url('api/notifications'));
 
         $response->assertOk()
             ->assertExactJson([true]);
 
-        $response = $this->getJson(url('api/notifications/latest'), $this->authorizationHeader);
+        $response = $this->getJson(url('api/notifications/latest'));
 
         $response->assertOk();
 

@@ -13,6 +13,8 @@ class SND extends Discount
 
     protected $table = 'sn_discounts';
 
+    protected $fillable = ['country_id', 'vendor_id', 'name'];
+
     protected static $logAttributes = [
         'name', 'country.name', 'vendor.name', 'value'
     ];

@@ -48,16 +48,26 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
         return $this->quoteTemplate->query()->whereId($id)->firstOrFail();
     }
 
-    public function findByCompanyVendorCountry(GetQuoteTemplatesRequest $request): Collection
+    public function findByCompanyVendorCountry($request): Collection
     {
+        if ($request instanceof \Illuminate\Http\Request) {
+            $request = $request->validated();
+        }
+
+        throw_unless(is_array($request), new \InvalidArgumentException(INV_ARG_RA_01));
+
+        $company_id = data_get($request, 'company_id');
+        $vendor_id = data_get($request, 'vendor_id');
+        $country_id = data_get($request, 'country_id');
+
         return $this->userQuery()
-            ->where('quote_templates.company_id', $request->company_id)
-            ->where('quote_templates.vendor_id', $request->vendor_id)
-            ->join('country_quote_template', function ($join) use ($request) {
+            ->where('quote_templates.company_id', $company_id)
+            ->where('quote_templates.vendor_id', $vendor_id)
+            ->join('country_quote_template', function ($join) use ($country_id) {
                 $join->on('quote_templates.id', '=', 'country_quote_template.quote_template_id')
-                    ->where('country_id', $request->country_id);
+                    ->where('country_id', $country_id);
             })
-            ->joinWhere('companies', 'companies.id', '=', $request->company_id)
+            ->joinWhere('companies', 'companies.id', '=', $company_id)
             ->orderByRaw('field(`quote_templates`.`id`, `companies`.`default_template_id`, null) desc')
             ->select('quote_templates.*')
             ->get();

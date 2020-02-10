@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\User;
 
+use App\Models\User;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\{
@@ -14,15 +15,6 @@ class UserTest extends TestCase
 {
     use DatabaseTransactions, WithFakeUser, AssertsListing;
 
-    protected $userRepository;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->userRepository = app('user.repository');
-    }
-
     /**
      * Test User Listing.
      *
@@ -30,7 +22,7 @@ class UserTest extends TestCase
      */
     public function testUserListing()
     {
-        $response = $this->getJson(url('api/users'), $this->authorizationHeader);
+        $response = $this->getJson(url('api/users'));
 
         $this->assertListing($response);
 
@@ -55,7 +47,7 @@ class UserTest extends TestCase
      */
     public function testSpecifiedUserDisplaying()
     {
-        $user = $this->userRepository->random();
+        $user = app('user.repository')->random();
 
         $response = $this->getJson(url("api/users/{$user->id}"), $this->authorizationHeader);
 
@@ -83,13 +75,7 @@ class UserTest extends TestCase
      */
     public function testUserUpdating()
     {
-        $attributes = [
-            'first_name' => Str::filterLetters($this->faker->firstName),
-            'last_name' => Str::filterLetters($this->faker->lastName),
-            'country_id' => $this->user->country_id,
-            'timezone_id' => $this->user->timezone_id,
-            'role_id' => $this->user->role_id
-        ];
+        $attributes = factory(User::class)->make()->only('first_name', 'last_name', 'timezone_id');
 
         $response = $this->patchJson(url("api/users/{$this->user->id}"), $attributes, $this->authorizationHeader);
 
@@ -113,7 +99,7 @@ class UserTest extends TestCase
      */
     public function testAdministratorEmailUpdating()
     {
-        $response = $this->patchJson(url("api/users/{$this->user->id}"), ['email' => $this->faker->safeEmail], $this->authorizationHeader);
+        $response = $this->patchJson(url("api/users/{$this->user->id}"), ['email' => $this->faker->unique()->safeEmail]);
 
         $response->assertForbidden();
     }
@@ -125,7 +111,7 @@ class UserTest extends TestCase
      */
     public function testUserActivating()
     {
-        $response = $this->putJson(url("api/users/activate/{$this->user->id}"), [], $this->authorizationHeader);
+        $response = $this->putJson(url("api/users/activate/{$this->user->id}"));
 
         $response->assertOk()->assertExactJson([true]);
 
@@ -141,7 +127,7 @@ class UserTest extends TestCase
      */
     public function testUserDeactivating()
     {
-        $response = $this->putJson(url("api/users/deactivate/{$this->user->id}"), [], $this->authorizationHeader);
+        $response = $this->putJson(url("api/users/deactivate/{$this->user->id}"));
 
         $response->assertOk()->assertExactJson([true]);
 
@@ -157,7 +143,7 @@ class UserTest extends TestCase
      */
     public function testSelfDeleting()
     {
-        $response = $this->deleteJson(url("api/users/{$this->user->id}"), [], $this->authorizationHeader);
+        $response = $this->deleteJson(url("api/users/{$this->user->id}"));
 
         $response->assertForbidden();
     }
@@ -171,13 +157,10 @@ class UserTest extends TestCase
     {
         $user = $this->createUser();
 
-        $response = $this->deleteJson(url("api/users/{$user->id}"), [], $this->authorizationHeader);
+        $response = $this->deleteJson(url("api/users/{$user->id}"));
 
-        $response->assertOk()
-            ->assertExactJson([true]);
+        $response->assertOk()->assertExactJson([true]);
 
-        $user->refresh();
-
-        $this->assertNotNull($user->deleted_at);
+        $this->assertSoftDeleted($user);
     }
 }

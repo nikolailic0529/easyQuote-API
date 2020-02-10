@@ -15,13 +15,11 @@ trait BelongsToUser
     {
         $this->fillable = array_merge($this->fillable, ['user_id']);
 
-        static::replicating(function (Model $model) {
-            if (app()->runningInConsole()) {
-                return;
-            }
-
-            $model->user_id = request()->user()->id;
-        });
+        if (!app()->runningInConsole()) {
+            static::replicating(function (Model $model) {
+                $model->user_id = auth()->id();
+            });
+        }
     }
 
     public function user(): BelongsTo

@@ -46,12 +46,26 @@ define('QSU_01', 'You could not update a submitted Quote.');
 define('QUC_01', 'You could not change a Customer for a given Quote.');
 define('QSS_01', 'Quote has been successfully submitted.');
 define('QSS_02', 'Quote with RFQ :rfq_number has been successfully submitted.');
+define('QD_01', 'Quote with RFQ :rfq_number has been deleted.');
 define('QDS_01', 'Quote with RFQ :rfq_number has been successfully moved to drafted.');
 define('QSF_01', 'Quote submission was failed.');
 define('QE_01', 'Quote with RFQ :rfq_number expires at :expires_at.');
 define('QE_02', 'expiring-quotes');
 define('QG_FTNF_01', 'From or To Group Description is not found.');
 define('QG_NF_01', 'The Group Description is not found.');
+define('QV_SD_01', 'You could not delete the given Version as the Quote is already submitted.');
+define('Q_TYPE_QUOTE', 'quote');
+define('Q_TYPE_CONTRACT', 'contract');
+define('QCE_01', 'Contract for the given Quote already exists.');
+
+/**
+ * Contracts.
+ */
+define('CTSS_01', 'Contract has been successfully submitted.');
+define('CTSS_02', 'Contract with number :contract_number has been successfully submitted.');
+define('CTSE_01', 'An activated submitted Contract with the same Contract Number already exists.');
+define('CTSU_01', 'You could not update a submitted Contract.');
+define('CTD_01', 'Contract with number :contract_number has been deleted.');
 
 /**
  * Quote Template.
@@ -151,6 +165,7 @@ define('UNE_01', 'Unknown Error.');
 define('MLFQ_01', 'Malformed request.');
 define('FFTC_01', 'Failed when flushing Eloquent tagged cache.');
 define('TABLE_COUNT_POSTFIX', '_count');
+define('ND_01', 'N/A');
 
 /**
  * Slack.
@@ -173,6 +188,7 @@ define('ER_SERVICE_CLASS', \App\Services\ExchangeRate\HMRCRates::class);
 define('ER_UPD_FREQUENCY', 'monthly');
 define('ER_PARSE_ERROR_01', 'An error occured when trying to parse exchange rates from %s.');
 define('ER_SETTING_UPDATE_KEY', 'exchange_rates_update');
+define('ER_MARGIN_DEFAULT', 6);
 
 /**
  * Routes.

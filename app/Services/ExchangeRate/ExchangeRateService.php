@@ -9,12 +9,14 @@ use App\Contracts\Repositories\{
     CurrencyRepositoryInterface as Currencies
 };
 use App\Events\ExchangeRatesUpdated;
+use App\Models\Data\Currency;
 use App\Models\Data\ExchangeRate;
 use GuzzleHttp\{
     Client,
     RequestOptions
 };
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Validator;
 use SimpleXMLElement;
 use Arr;
 
@@ -70,25 +72,59 @@ abstract class ExchangeRateService implements ExchangeRateServiceInterface
         $rates = collect(iterator_to_array($rates, false));
 
         $created = \DB::transaction(function () use ($rates) {
-           return $rates->reduce(function ($created, $rate) {
+            return $rates->reduce(function ($created, $rate) {
                 $created[] = $this->storeRate($rate);
 
                 return $created;
             }, []);
         }, 3);
 
-        return tap(count($rates) === count($created), function ($updated) {
+        return tap((bool) count(array_filter($created)), function ($updated) {
             $updated && event(new ExchangeRatesUpdated);
         });
     }
 
-    protected function storeRate(SimpleXMLElement $rate): ExchangeRate
+    public function getTargetRate(Currency $source, Currency $target, ?int $precision = null): float
+    {
+        if ($source->isBaseCurrency()) {
+            return $target->exchangeRate->exchange_rate;
+        }
+
+        if ($target->isNotBaseCurrency() && !$target->exchangeRate->exists) {
+            return 1;
+        }
+
+        $rate = $target->exchangeRate->exchange_rate * (1 / $source->exchangeRate->exchange_rate);
+
+        if (is_int($precision)) {
+            return round($rate, $precision);
+        }
+
+        return $rate;
+    }
+
+    protected function storeRate(SimpleXMLElement $rate)
     {
         $attributes = $values = $this->prepareAttributes($rate);
 
+        if (!$this->validateRateAttributes($attributes)) {
+            return;
+        }
+
         $attributes = Arr::only($attributes, ['currency_code', 'date']);
 
+        $values = ['base_currency' => $this->baseCurrency()] + $values;
+
         return $this->repository->firstOrCreate($attributes, $values);
+    }
+
+    protected function validateRateAttributes(array $attributes): bool
+    {
+        $validator = Validator::make($attributes, [
+            'currency_id' => 'required'
+        ]);
+
+        return !$validator->fails();
     }
 
     abstract protected function prepareAttributes(SimpleXMLElement $rate): array;

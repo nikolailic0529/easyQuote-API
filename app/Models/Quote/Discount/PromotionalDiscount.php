@@ -11,9 +11,7 @@ class PromotionalDiscount extends Discount
 {
     use HasValueAttribute, LogsActivity;
 
-    protected $fillable = [
-        'minimum_limit'
-    ];
+    protected $fillable = ['country_id', 'vendor_id', 'name', 'minimum_limit'];
 
     protected $casts = [
         'minimum_limit' => 'decimal,2'

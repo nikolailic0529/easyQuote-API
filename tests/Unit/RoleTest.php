@@ -3,22 +3,26 @@
 namespace Tests\Unit;
 
 use Tests\TestCase;
-use Tests\Unit\Traits\AssertsListing;
-use Tests\Unit\Traits\WithFakeUser;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\Unit\Traits\{
+    AssertsListing,
+    WithFakeUser
+};
+use App\Models\Role;
 use Str, Arr;
 
 class RoleTest extends TestCase
 {
     use DatabaseTransactions, WithFakeUser, AssertsListing;
 
-    protected $roleRepository;
+    /** @var \App\Contracts\Repositories\RoleRepositoryInterface */
+    protected $roles;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->roleRepository = app('role.repository');
+        $this->roles = app('role.repository');
     }
 
     /**
@@ -28,7 +32,7 @@ class RoleTest extends TestCase
      */
     public function testRoleListing()
     {
-        $response = $this->getJson(url('api/roles'), $this->authorizationHeader);
+        $response = $this->getJson(url('api/roles'));
 
         $this->assertListing($response);
 
@@ -50,9 +54,9 @@ class RoleTest extends TestCase
      */
     public function testRoleCreating()
     {
-        $attributes = $this->makeGenericRoleAttributes();
+        $attributes = factory(Role::class)->raw();
 
-        $response = $this->postJson(url('api/roles'), $attributes, $this->authorizationHeader);
+        $response = $this->postJson(url('api/roles'), $attributes);
 
         $response->assertOk()
             ->assertJsonStructure([
@@ -65,13 +69,13 @@ class RoleTest extends TestCase
      *
      * @return void
      */
-    public function testRoleCreatingWithWrongAttributes()
+    public function testRoleCreatingWithInvalidAttributes()
     {
-        $attributesWithWrongPrivileges = $this->makeGenericRoleAttributes();
+        $attributes = factory(Role::class)->raw();
 
-        data_set($attributesWithWrongPrivileges, 'privileges.0', Str::random(20));
+        data_set($attributes, 'privileges.0', Str::random(20));
 
-        $response = $this->postJson(url('api/roles'), $attributesWithWrongPrivileges, $this->authorizationHeader);
+        $response = $this->postJson(url('api/roles'), $attributes);
 
         $response->assertJsonStructure([
             'Error' => ['original' => ['privileges.0.privilege']]
@@ -85,13 +89,11 @@ class RoleTest extends TestCase
      */
     public function testRoleUpdating()
     {
-        $attributes = $this->makeGenericRoleAttributes();
+        $role = factory(Role::class)->create();
 
-        $role = $this->roleRepository->create($attributes);
+        $newAttributes = factory(Role::class)->raw();
 
-        $newAttributes = $this->makeGenericRoleAttributes();
-
-        $response = $this->patchJson(url("api/roles/{$role->id}"), $newAttributes, $this->authorizationHeader);
+        $response = $this->patchJson(url("api/roles/{$role->id}"), $newAttributes);
 
         $response->assertOk()
             ->assertJsonStructure([
@@ -107,11 +109,11 @@ class RoleTest extends TestCase
      */
     public function testSystemDefinedRoleUpdating()
     {
-        $role = $this->roleRepository->findByName('Administrator');
+        $role = $this->roles->findByName('Administrator');
 
-        $attributes = $this->makeGenericRoleAttributes();
+        $attributes = factory(Role::class)->raw();
 
-        $response = $this->patchJson(url("api/roles/{$role->id}"), $attributes, $this->authorizationHeader);
+        $response = $this->patchJson(url("api/roles/{$role->id}"), $attributes);
 
         $response->assertForbidden();
 
@@ -125,9 +127,9 @@ class RoleTest extends TestCase
      */
     public function testRoleDeleting()
     {
-        $role = $this->roleRepository->create($this->makeGenericRoleAttributes());
+        $role = factory(Role::class)->create();
 
-        $response = $this->deleteJson(url("api/roles/{$role->id}"), [], $this->authorizationHeader);
+        $response = $this->deleteJson(url("api/roles/{$role->id}"));
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -140,9 +142,9 @@ class RoleTest extends TestCase
      */
     public function testSystemDefinedRoleDeleting()
     {
-        $role = $this->roleRepository->findByName('Administrator');
+        $role = $this->roles->findByName('Administrator');
 
-        $response = $this->deleteJson(url("api/roles/{$role->id}"), [], $this->authorizationHeader);
+        $response = $this->deleteJson(url("api/roles/{$role->id}"));
 
         $response->assertForbidden();
 
@@ -156,9 +158,9 @@ class RoleTest extends TestCase
      */
     public function testRoleActivating()
     {
-        $role = $this->roleRepository->create($this->makeGenericRoleAttributes());
+        $role = factory(Role::class)->create();
 
-        $response = $this->putJson(url("api/roles/activate/{$role->id}"), [], $this->authorizationHeader);
+        $response = $this->putJson(url("api/roles/activate/{$role->id}"));
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -171,28 +173,11 @@ class RoleTest extends TestCase
      */
     public function testRoleDeactivating()
     {
-        $role = $this->roleRepository->create($this->makeGenericRoleAttributes());
+        $role = factory(Role::class)->create();
 
-        $response = $this->putJson(url("api/roles/deactivate/{$role->id}"), [], $this->authorizationHeader);
+        $response = $this->putJson(url("api/roles/deactivate/{$role->id}"));
 
         $response->assertOk()
             ->assertExactJson([true]);
-    }
-
-    protected function makeGenericRoleAttributes(): array
-    {
-        $modulePrivileges = collect(config('role.modules'))->eachKeys();
-        $modules = array_keys(config('role.modules'));
-
-        $privileges = collect($modules)->transform(function ($module) use ($modulePrivileges) {
-            $privilege = collect($modulePrivileges->get($module))->random();
-            return compact('module', 'privilege');
-        })->toArray();
-
-        return [
-            'name' => Str::random(40),
-            'privileges' => $privileges,
-            'user_id' => $this->user->id
-        ];
     }
 }

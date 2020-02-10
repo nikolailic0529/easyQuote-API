@@ -1,6 +1,7 @@
 <?php namespace App\Http\Requests\Quote;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 
 class UpdateGroupDescriptionRequest extends FormRequest
@@ -27,7 +28,7 @@ class UpdateGroupDescriptionRequest extends FormRequest
                 'required',
                 'string',
                 'min:1',
-                Rule::notIn(collect($this->quote->group_description)->where('id', '!==', $this->group)->pluck('name'))
+                Rule::notIn($this->groupDescription()->where('id', '!==', $this->group)->pluck('name'))
             ],
             'search_text' => 'required|string|min:1',
             'rows' => 'required|array',
@@ -40,5 +41,27 @@ class UpdateGroupDescriptionRequest extends FormRequest
         return [
             'name.not_in' => 'The selected Group name is already taken.'
         ];
+    }
+
+    public function groupDescription(): Collection
+    {
+        return collect($this->route('quote')->usingVersion->group_description);
+    }
+
+    public function group()
+    {
+        return $this->groupDescription()->firstWhere('id', $this->group);
+    }
+
+    public function groupName()
+    {
+        return data_get($this->group(), 'name');
+    }
+
+    protected function passedValidation()
+    {
+        request()->merge([
+            'group_name' => $this->groupName()
+        ]);
     }
 }

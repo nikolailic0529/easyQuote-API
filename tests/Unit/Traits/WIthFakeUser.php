@@ -41,26 +41,20 @@ trait WithFakeUser
         $this->user = $this->createUser();
         $this->accessToken = $this->createAccessToken();
         $this->authorizationHeader = ['Authorization' => "Bearer {$this->accessToken}"];
+
+        if (!isset($this->dontAuthenticate) || $this->dontAuthenticate !== true) {
+            $this->authenticate();
+        }
+    }
+
+    protected function authenticate(): self
+    {
+        return $this->be($this->user, 'api');
     }
 
     protected function createUser(): User
     {
-        $user = app('user.repository')->create(
-            [
-                'email' => $this->faker->email,
-                'first_name' => $this->faker->firstName,
-                'last_name' => $this->faker->lastName,
-                'password' => $this->faker->password,
-                'country_id' => DB::table('countries')->value('id'),
-                'timezone_id' => DB::table('timezones')->value('id'),
-                'password_changed_at' => now(),
-                'last_activity_at' => now()
-            ]
-        );
-
-        $user->syncRoles('Administrator');
-
-        return $user;
+        return factory(User::class)->create();
     }
 
     protected function createAccessToken(?User $user = null): string

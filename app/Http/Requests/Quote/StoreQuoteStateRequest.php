@@ -188,7 +188,7 @@ class StoreQuoteStateRequest extends FormRequest
             'margin.value' => [
                 'required_with:margin.method,margin.type,margin.quote_type,margin.is_fixed',
                 'numeric',
-                $this->input('margin.is_fixed') == false ? 'max:100' : null
+                'min:0'
             ],
             'margin.delete' => [
                 'boolean'

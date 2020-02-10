@@ -18,6 +18,7 @@ use App\Models\{
     QuoteTemplate\ContractTemplate,
     System\Notification
 };
+use App\Models\Quote\Contract;
 use App\Observers\{
     VendorObserver,
     QuoteObserver,
@@ -28,6 +29,7 @@ use App\Observers\{
     Discount\SNDobserver,
     QuoteTemplateObserver,
     Collaboration\InvitationObserver,
+    ContractObserver,
     CustomerObserver,
     NotificationObserver,
     SystemSettingObserver
@@ -53,6 +55,8 @@ class ObserverServiceProvider extends ServiceProvider
     public function boot()
     {
         Quote::observe(QuoteObserver::class);
+
+        Contract::observe(ContractObserver::class);
 
         CountryMargin::observe(MarginObserver::class);
 

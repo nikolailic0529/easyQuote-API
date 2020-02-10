@@ -2,12 +2,14 @@
 
 namespace Tests\Unit\Quote;
 
-use App\Models\User;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Tests\Unit\Traits\WithFakeQuote;
-use Tests\Unit\Traits\WithFakeUser;
-use Arr, Str;
+use Tests\Unit\Traits\{
+    WithFakeQuote,
+    WithFakeUser
+};
+use App\Models\Quote\Quote;
+use Illuminate\Support\Carbon;
 
 class QuoteVersionTest extends TestCase
 {
@@ -36,7 +38,7 @@ class QuoteVersionTest extends TestCase
         $state = $this->makeGenericQuoteAttributes();
         $state['quote_id'] = $this->quote->id;
 
-        $this->postJson(url('api/quotes/state'), $state, $this->authorizationHeader);
+        $this->postJson(url('api/quotes/state'), $state);
 
         $versionsCount = $this->quote->versions()->count();
         $this->assertEquals(0, $versionsCount);
@@ -58,6 +60,11 @@ class QuoteVersionTest extends TestCase
         $this->assertEquals($expectedVersionsCount, $actualVersionsCount);
     }
 
+    /**
+     * Test assigning a newly created Quote Version.
+     *
+     * @return void
+     */
     public function testVersionSet()
     {
         $this->updateQuoteStateFromNewUser();
@@ -66,66 +73,40 @@ class QuoteVersionTest extends TestCase
 
         $version_id = $nonUsingVersion['id'];
 
-        $response = $this->patchJson(url("api/quotes/version/{$this->quote->id}"), compact('version_id'), $this->authorizationHeader);
+        $response = $this->patchJson(url("api/quotes/version/{$this->quote->id}"), compact('version_id'));
 
-        $response->assertOk()
-            ->assertExactJson([true]);
+        $response->assertOk()->assertExactJson([true]);
 
         $actualUsingVersion = $this->quote->load('usingVersion')->usingVersion;
 
         $this->assertEquals($version_id, $actualUsingVersion->id);
     }
 
+    /**
+     * Test deleting a newly created Quote Version.
+     *
+     * @return void
+     */
+    public function testVersionDeleting()
+    {
+        $this->updateQuoteStateFromNewUser();
+
+        $version = $this->quote->versions()->first();
+
+        $response = $this->deleteJson(url("api/quotes/drafted/version/{$version->id}"));
+
+        $response->assertOk()->assertExactJson([true]);
+
+        $this->assertSoftDeleted($version);
+    }
+
     public function testVersionUpdatingWithNewAttributes()
     {
-        $user = $this->createUser();
-        $authorizationHeader = $this->createAuthorizationHeaderForNewUser($user);
+        $user = tap($this->createUser(), fn ($user) => $this->actingAs($user, 'api'));
 
-        $step1Response = $this->getJson(url('api/quotes/step/1'), $authorizationHeader);
+        $state = factory(Quote::class, 'state')->raw(['quote_id' => $this->quote->id]);
 
-        $company = Arr::random($step1Response->json('companies'));
-        $vendor = Arr::random(Arr::get($company, 'vendors'));
-        $country = Arr::random(Arr::get($vendor, 'countries'));
-
-        $templatesParameters = [
-            'company_id' => $company['id'],
-            'vendor_id' => $vendor['id'],
-            'country_id' => $country['id']
-        ];
-
-        $templatesResponse = $this->postJson(url('api/quotes/step/1'), $templatesParameters, $authorizationHeader);
-
-        $template = Arr::random($templatesResponse->json());
-
-        $closingDate = now()->addDays(rand(1, 10));
-
-        $state = [
-            'quote_id' => $this->quote->id,
-            'quote_data' => [
-                'company_id' => $company['id'],
-                'vendor_id' => $vendor['id'],
-                'country_id' => $country['id'],
-                'quote_template_id' => $template['id'],
-                'last_drafted_step' => 'Complete',
-                'pricing_document' => Str::random(20),
-                'service_agreement_id' => Str::random(20),
-                'system_handle' => Str::random(20),
-                'additional_details' => Str::random(2000),
-                'additional_notes' => Str::random(2000),
-                'closing_date' => $closingDate->format('Y-m-d'),
-                'calculate_list_price' => true,
-                'buy_price' => (float) rand(10000, 40000),
-                'custom_discount' => (float) rand(5, 99),
-            ],
-            'margin' => [
-                'quote_type' => 'Renewal',
-                'method' => 'No Margin',
-                'is_fixed' => false,
-                'value' => (float) rand(1, 99)
-            ]
-        ];
-
-        $response = $this->postJson(url('api/quotes/state'), $state, $authorizationHeader);
+        $response = $this->postJson(url('api/quotes/state'), $state);
 
         $response->assertOk()
             ->assertExactJson(['id' => $this->quote->id]);
@@ -133,7 +114,7 @@ class QuoteVersionTest extends TestCase
         $this->quote->usingVersion->refresh();
 
         $expectedQuoteAttributes = $state['quote_data'];
-        $expectedQuoteAttributes['closing_date'] = $closingDate->format('d/m/Y');
+        $expectedQuoteAttributes['closing_date'] = Carbon::createFromFormat('Y-m-d', $expectedQuoteAttributes['closing_date'])->format('d/m/Y');
 
         $assertableAttributes = array_keys($expectedQuoteAttributes);
         $actualQuoteAttributes = $this->quote->usingVersion->only($assertableAttributes);
@@ -148,21 +129,15 @@ class QuoteVersionTest extends TestCase
         $this->assertEquals($actualMarginAttributes, $expectedMarginAttributes);
     }
 
-    protected function createAuthorizationHeaderForNewUser(?User $user = null): array
-    {
-        $user = $user ?: $this->createUser();
-        $token = $this->createAccessToken($user);
-
-        return ['Authorization' => "Bearer {$token}"];
-    }
-
     protected function updateQuoteStateFromNewUser(): void
     {
         $state = $this->makeGenericQuoteAttributes();
         $state['quote_id'] = $this->quote->id;
 
-        $authorizationHeader = $this->createAuthorizationHeaderForNewUser();
+        $this->be($this->createUser(), 'api');
 
-        $this->postJson(url('api/quotes/state'), $state, $authorizationHeader);
+        $this->postJson(url('api/quotes/state'), $state);
+
+        $this->be($this->user);
     }
 }

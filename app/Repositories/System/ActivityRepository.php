@@ -22,7 +22,7 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
 {
     const EXPORT_LIMIT_CSV = 1000;
 
-    const EXPORT_LIMIT_PDF = 1000;
+    const EXPORT_LIMIT_PDF = 500;
 
     /** @var \App\Models\System\Activity */
     protected $activity;

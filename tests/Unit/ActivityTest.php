@@ -21,7 +21,7 @@ class ActivityTest extends TestCase
      */
     public function testActivityListing()
     {
-        $response = $this->postJson(url('api/activities'), [], $this->authorizationHeader);
+        $response = $this->postJson(url('api/activities'));
 
         $this->assertListing($response);
 
@@ -43,11 +43,11 @@ class ActivityTest extends TestCase
         $types = config('activitylog.types');
 
         collect($types)->each(function ($type) {
-            $response = $this->postJson(url('api/activities'), ['types' => [$type]], $this->authorizationHeader);
+            $response = $this->postJson(url('api/activities'), ['types' => [$type]]);
             $this->assertListing($response);
         });
 
-        $response = $this->postJson(url('api/activities'), compact('types'), $this->authorizationHeader);
+        $response = $this->postJson(url('api/activities'), compact('types'));
 
         $this->assertListing($response);
     }
@@ -62,11 +62,11 @@ class ActivityTest extends TestCase
         $subject_types = array_keys(config('activitylog.subject_types'));
 
         collect($subject_types)->each(function ($type) {
-            $response = $this->postJson(url('api/activities'), ['subject_types' => [$type]], $this->authorizationHeader);
+            $response = $this->postJson(url('api/activities'), ['subject_types' => [$type]]);
             $this->assertListing($response);
         });
 
-        $response = $this->postJson(url('api/activities'), compact('subject_types'), $this->authorizationHeader);
+        $response = $this->postJson(url('api/activities'), compact('subject_types'));
         $this->assertListing($response);
     }
 
@@ -80,7 +80,7 @@ class ActivityTest extends TestCase
         $periods = config('activitylog.periods');
 
         collect($periods)->each(function ($period) {
-            $response = $this->postJson(url('api/activities'), compact('period'), $this->authorizationHeader);
+            $response = $this->postJson(url('api/activities'), compact('period'));
             $this->assertListing($response);
         });
     }
@@ -92,7 +92,7 @@ class ActivityTest extends TestCase
      */
     public function testActivityExportPdf()
     {
-        $response = $this->post(url('api/activities/export/pdf'), [], $this->authorizationHeader);
+        $response = $this->post(url('api/activities/export/pdf'));
 
         $response->assertOk()
             ->assertHeader('content-type', 'application/pdf');
@@ -105,7 +105,7 @@ class ActivityTest extends TestCase
      */
     public function testActivityExportCsv()
     {
-        $response = $this->post(url('api/activities/export/csv'), [], $this->authorizationHeader);
+        $response = $this->post(url('api/activities/export/csv'));
 
         $response->assertOk()
             ->assertHeader('content-type', 'text/plain');

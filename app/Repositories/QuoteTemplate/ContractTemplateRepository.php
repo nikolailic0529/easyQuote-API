@@ -4,6 +4,7 @@ namespace App\Repositories\QuoteTemplate;
 
 use App\Contracts\Repositories\QuoteTemplate\ContractTemplateRepositoryInterface;
 use App\Models\QuoteTemplate\ContractTemplate;
+use App\Models\QuoteTemplate\QuoteTemplate;
 use App\Repositories\SearchableRepository;
 use Illuminate\Database\Eloquent\{
     Model,
@@ -58,6 +59,7 @@ class ContractTemplateRepository extends SearchableRepository implements Contrac
         $company_id = data_get($request, 'company_id');
         $vendor_id = data_get($request, 'vendor_id');
         $country_id = data_get($request, 'country_id');
+        $quoteTemplate = data_get($request, 'quote_template');
 
         return $this->query()
             ->where('quote_templates.company_id', $company_id)
@@ -67,6 +69,9 @@ class ContractTemplateRepository extends SearchableRepository implements Contrac
                     ->where('country_id', $country_id);
             })
             ->joinWhere('companies', 'companies.id', '=', $company_id)
+            ->when($quoteTemplate instanceof QuoteTemplate, function ($query) use ($quoteTemplate) {
+                $query->orderByRaw('field(`quote_templates`.`name`, ?, null) desc', [$quoteTemplate->name]);
+            })
             ->orderByRaw('field(`quote_templates`.`id`, `companies`.`default_template_id`, null) desc')
             ->select('quote_templates.*')
             ->get();

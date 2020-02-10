@@ -15,31 +15,32 @@ class DraftedResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'id' => $this->id,
+            'id'                => $this->id,
             'user' => [
-                'id' => $this->user_id,
-                'first_name' => $this->cached_relations->user->first_name,
-                'last_name' => $this->cached_relations->user->last_name
+                'id'            => $this->user_id,
+                'first_name'    => $this->cached_relations->user->first_name,
+                'last_name'     => $this->cached_relations->user->last_name
             ],
             'company' => [
-                'id' => $this->company_id,
-                'name' => $this->cached_relations->company->name
+                'id'            => $this->company_id,
+                'name'          => $this->cached_relations->company->name
             ],
             'customer' => [
-                'id' => $this->customer_id,
-                'name' => $this->cached_relations->customer->name,
-                'rfq' => $this->cached_relations->customer->rfq,
-                'valid_until' => $this->cached_relations->customer->valid_until,
+                'id'            => $this->customer_id,
+                'name'          => $this->cached_relations->customer->name,
+                'rfq'           => $this->cached_relations->customer->rfq,
+                'valid_until'   => $this->cached_relations->customer->valid_until,
                 'support_start' => $this->cached_relations->customer->support_start,
-                'support_end' => $this->cached_relations->customer->support_end
+                'support_end'   => $this->cached_relations->customer->support_end
             ],
-            'has_versions' => $this->has_versions,
-            'versions' => $this->versionsSelection,
+            'has_versions'      => $this->has_versions,
+            'versions'          => $this->versionsSelection,
             'last_drafted_step' => $this->last_drafted_step,
-            'completeness' => $this->completeness,
-            'created_at' => $this->created_at,
-            'activated_at' => $this->activated_at,
-            'updated_at' => $this->usingVersionFromSelection->updated_at
+            'completeness'      => $this->completeness,
+            'is_author'         => $this->user_id === auth()->id(),
+            'created_at'        => $this->created_at,
+            'activated_at'      => $this->activated_at,
+            'updated_at'        => $this->usingVersionFromSelection->updated_at
         ];
     }
 }

@@ -22,7 +22,7 @@ class CountryResource extends JsonResource
             'default_currency_id'   => $this->default_currency_id,
             'currency_name'         => $this->currency_name,
             'currency_symbol'       => $this->currency_symbol,
-            'currency_symbol'       => $this->currency_code,
+            'currency_code'         => $this->currency_code,
             'default_currency'      => $this->whenLoaded('defaultCurrency'),
             'created_at'            => $this->created_at,
             'activated_at'          => $this->activated_at

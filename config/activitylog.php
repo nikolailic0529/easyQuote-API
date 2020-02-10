@@ -55,6 +55,7 @@ return [
             \App\Models\Quote\Quote::class,
             \App\Models\Quote\QuoteVersion::class
         ],
+        'contract' => \App\Models\Quote\Contract::class,
         'customer' => \App\Models\Customer\Customer::class,
         'discount' => [
             \App\Models\Quote\Discount\MultiYearDiscount::class,

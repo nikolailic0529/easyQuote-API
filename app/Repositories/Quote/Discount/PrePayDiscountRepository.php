@@ -37,9 +37,7 @@ class PrePayDiscountRepository extends DiscountRepository implements PrePayDisco
     public function create($request): PrePayDiscount
     {
         if ($request instanceof \Illuminate\Http\Request) {
-            $user = $request->user();
             $request = $request->validated();
-            data_set($request, 'user_id', $user->id);
         }
 
         throw_unless(is_array($request), new \InvalidArgumentException(INV_ARG_RA_01));

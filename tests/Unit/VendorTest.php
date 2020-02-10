@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Models\Vendor;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\{
@@ -21,7 +22,7 @@ class VendorTest extends TestCase
      */
     public function testVendorListing()
     {
-        $response = $this->getJson(url('api/vendors'), $this->authorizationHeader);
+        $response = $this->getJson(url('api/vendors'));
 
         $this->assertListing($response);
 
@@ -44,9 +45,9 @@ class VendorTest extends TestCase
      */
     public function testVendorCreating()
     {
-        $attributes = $this->makeGenericVendorAttributes();
+        $attributes = factory(Vendor::class)->state('countries')->raw();
 
-        $response = $this->postJson(url('api/vendors'), $attributes, $this->authorizationHeader);
+        $response = $this->postJson(url('api/vendors'), $attributes);
 
         $response->assertOk()
             ->assertJsonStructure(array_keys(Arr::except($attributes, ['user_id', 'countries'])));
@@ -59,13 +60,11 @@ class VendorTest extends TestCase
      */
     public function testVendorUpdating()
     {
-        $attributes = $this->makeGenericVendorAttributes();
+        $vendor = factory(Vendor::class)->create();
 
-        $vendor = app('vendor.repository')->create($attributes);
+        $newAttributes = factory(Vendor::class)->state('countries')->raw();
 
-        $newAttributes = $this->makeGenericVendorAttributes();
-
-        $response = $this->patchJson(url("api/vendors/{$vendor->id}"), $newAttributes, $this->authorizationHeader);
+        $response = $this->patchJson(url("api/vendors/{$vendor->id}"), $newAttributes);
 
         $response->assertOk()
             ->assertJsonStructure(array_keys(Arr::except($newAttributes, ['user_id', 'countries'])))
@@ -79,9 +78,9 @@ class VendorTest extends TestCase
      */
     public function testVendorActivating()
     {
-        $vendor = app('vendor.repository')->create($this->makeGenericVendorAttributes());
+        $vendor = factory(Vendor::class)->create();
 
-        $response = $this->putJson(url("api/vendors/activate/{$vendor->id}"), [], $this->authorizationHeader);
+        $response = $this->putJson(url("api/vendors/activate/{$vendor->id}"));
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -98,9 +97,9 @@ class VendorTest extends TestCase
      */
     public function testVendorDeactivating()
     {
-        $vendor = app('vendor.repository')->create($this->makeGenericVendorAttributes());
+        $vendor = factory(Vendor::class)->create();
 
-        $response = $this->putJson(url("api/vendors/deactivate/{$vendor->id}"), [], $this->authorizationHeader);
+        $response = $this->putJson(url("api/vendors/deactivate/{$vendor->id}"));
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -117,9 +116,9 @@ class VendorTest extends TestCase
      */
     public function testVendorDeleting()
     {
-        $vendor = app('vendor.repository')->create($this->makeGenericVendorAttributes());
+        $vendor = factory(Vendor::class)->create();
 
-        $response = $this->deleteJson(url("api/vendors/{$vendor->id}"), [], $this->authorizationHeader);
+        $response = $this->deleteJson(url("api/vendors/{$vendor->id}"));
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -127,15 +126,5 @@ class VendorTest extends TestCase
         $vendor->refresh();
 
         $this->assertNotNull($vendor->deleted_at);
-    }
-
-    protected function makeGenericVendorAttributes(): array
-    {
-        return [
-            'name' => $this->faker->company,
-            'short_code' => strtoupper(Str::random(6)),
-            'countries' => app('country.repository')->all()->take(4)->pluck('id')->toArray(),
-            'user_id' => $this->user->id
-        ];
     }
 }

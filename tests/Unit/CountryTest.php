@@ -25,7 +25,7 @@ class CountryTest extends TestCase
     {
         $attributes = factory(Country::class)->raw();
 
-        $response = $this->postJson(url('api/countries'), $attributes, $this->authorizationHeader);
+        $response = $this->postJson(url('api/countries'), $attributes);
 
         $response->assertOk()
             ->assertJsonStructure(static::$assertableAttributes);
@@ -42,7 +42,7 @@ class CountryTest extends TestCase
 
         $attributes = factory(Country::class)->raw();
 
-        $response = $this->patchJson(url("api/countries/{$country->id}"), $attributes, $this->authorizationHeader);
+        $response = $this->patchJson(url("api/countries/{$country->id}"), $attributes);
 
         $response->assertOk()
             ->assertJsonStructure(static::$assertableAttributes)
@@ -62,7 +62,7 @@ class CountryTest extends TestCase
 
         $attributes = factory(Country::class)->raw();
 
-        $response = $this->patchJson(url("api/countries/{$country->id}"), $attributes, $this->authorizationHeader);
+        $response = $this->patchJson(url("api/countries/{$country->id}"), $attributes);
 
         $response->assertForbidden();
     }
@@ -76,7 +76,7 @@ class CountryTest extends TestCase
     {
         $country = factory(Country::class)->create();
 
-        $response = $this->deleteJson(url("api/countries/{$country->id}"), [], $this->authorizationHeader);
+        $response = $this->deleteJson(url("api/countries/{$country->id}"));
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -93,7 +93,7 @@ class CountryTest extends TestCase
     {
         $country = factory(Country::class)->create();
 
-        $response = $this->putJson(url("api/countries/activate/{$country->id}"), [], $this->authorizationHeader);
+        $response = $this->putJson(url("api/countries/activate/{$country->id}"));
 
         $response->assertOk()
             ->assertExactJson([true]);
@@ -110,7 +110,7 @@ class CountryTest extends TestCase
     {
         $country = factory(Country::class)->create();
 
-        $response = $this->putJson(url("api/countries/deactivate/{$country->id}"), [], $this->authorizationHeader);
+        $response = $this->putJson(url("api/countries/deactivate/{$country->id}"));
 
         $response->assertOk()
             ->assertExactJson([true]);

@@ -2,15 +2,13 @@
 
 namespace App\Traits;
 
-use Carbon\Carbon;
-
 trait Draftable
 {
     public function markAsDrafted(): bool
     {
-        return $this->forceFill([
-            'drafted_at' => Carbon::now()->toDateTimeString(),
-        ])->save();
+        $drafted = $this->forceFill(['drafted_at' => now()])->save();
+
+        return $drafted;
     }
 
     public function markAsNotDrafted(): bool

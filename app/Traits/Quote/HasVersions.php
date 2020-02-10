@@ -40,7 +40,7 @@ trait HasVersions
 
     public function attachNewVersion(QuoteVersion $version): void
     {
-        $this->versions()->update(['is_using' => false]);
+        $this->versions()->newPivotStatement()->where('quote_id', $this->getKey())->update(['is_using' => false]);
         $this->versions()->attach($version, ['is_using' => true]);
         $this->wasCreatedNewVersion = true;
     }
@@ -90,7 +90,7 @@ trait HasVersions
         return $this->versionsSelection = (clone $this->versions)
             ->push($this->getAttribute('original_version'))
             ->map->toSelectionArray()
-            ->sortBy('name')
+            ->sortByDesc('updated_at')
             ->values();
     }
 

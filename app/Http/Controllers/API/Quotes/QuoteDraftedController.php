@@ -4,7 +4,10 @@ namespace App\Http\Controllers\API\Quotes;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\Quote\QuoteDraftedRepositoryInterface as QuoteRepository;
-use App\Models\Quote\Quote;
+use App\Models\{
+    Quote\Quote,
+    Quote\QuoteVersion
+};
 
 class QuoteDraftedController extends Controller
 {
@@ -47,6 +50,21 @@ class QuoteDraftedController extends Controller
     {
         return response()->json(
             $this->quote->delete($drafted->id)
+        );
+    }
+
+    /**
+     * Remove the specified Drafted Quote Version.
+     *
+     * @param  QuoteVersion $version
+     * @return \Illuminate\Http\Response
+     */
+    public function destroyVersion(QuoteVersion $version, Quote $quote)
+    {
+        $this->authorize('deleteVersion', [$quote, $version]);
+
+        return response()->json(
+            $this->quote->deleteVersion($version->id)
         );
     }
 

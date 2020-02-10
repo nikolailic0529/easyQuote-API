@@ -22,11 +22,13 @@ use App\Models\{
     Customer\Customer,
     Data\Country
 };
+use App\Models\Quote\Contract;
 use App\Policies\{
     ActivityPolicy,
     AddressPolicy,
     CompanyPolicy,
     ContactPolicy,
+    ContractPolicy,
     ContractTemplatePolicy,
     CountryPolicy,
     CustomerPolicy,
@@ -59,6 +61,7 @@ class AuthServiceProvider extends ServiceProvider
      */
     protected $policies = [
         Quote::class                => QuotePolicy::class,
+        Contract::class             => ContractPolicy::class,
         QuoteFile::class            => QuoteFilePolicy::class,
         QuoteTemplate::class        => QuoteTemplatePolicy::class,
         ContractTemplate::class     => ContractTemplatePolicy::class,

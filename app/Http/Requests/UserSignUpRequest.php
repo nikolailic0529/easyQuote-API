@@ -14,7 +14,7 @@ class UserSignUpRequest extends FormRequest
     {
         return [
             'first_name' => 'required|string|alpha',
-            'middle_name' => 'required|string|alpha',
+            'middle_name' => 'nullable|string|alpha',
             'last_name' => 'required|string|alpha',
             'email' => [
                 'required',

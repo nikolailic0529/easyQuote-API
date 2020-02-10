@@ -4,7 +4,8 @@ namespace App\Policies;
 
 use App\Models\{
     User,
-    Quote\Quote
+    Quote\Quote,
+    Quote\QuoteVersion
 };
 use Illuminate\Auth\Access\HandlesAuthorization;
 
@@ -93,6 +94,30 @@ class QuotePolicy
     }
 
     /**
+     * Determine whether the user can activate the quote.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Quote\Quote  $quote
+     * @return mixed
+     */
+    public function activate(User $user, Quote $quote)
+    {
+        if (!$this->update($user, $quote)) {
+            return false;
+        }
+
+        if ($quote->query()->submitted()->activated()
+            ->where('id', '!=', $quote->id)
+            ->rfq($quote->customer->rfq)
+            ->doesntExist()
+        ) {
+            return true;
+        }
+
+        return $this->deny(QSE_01);
+    }
+
+    /**
      * Determine whether the user can delete the quote.
      *
      * @param  \App\Models\User  $user
@@ -107,6 +132,29 @@ class QuotePolicy
 
         if ($user->can('delete_own_quotes')) {
             return $user->id === $quote->user_id;
+        }
+    }
+
+    /**
+     * Determine whether the user can delete the quote version.
+     *
+     * @param \App\Models\User $user
+     * @param \App\Models\Quote\Quote $quote
+     * @param \App\Models\Quote\QuoteVersion $version
+     * @return mixed
+     */
+    public function deleteVersion(User $user, Quote $quote, QuoteVersion $version)
+    {
+        if ($quote->isSubmitted()) {
+            return $this->deny(QV_SD_01);
+        }
+
+        if ($user->can('delete_quotes')) {
+            return true;
+        }
+
+        if ($user->can('delete_own_quotes')) {
+            return $user->id === $version->user_id;
         }
     }
 
@@ -129,7 +177,19 @@ class QuotePolicy
      * @param Quote $quote
      * @return mixed
      */
-    public function download_pdf(User $user, Quote $quote)
+    public function createContract(User $user, Quote $quote)
+    {
+        return $user->can('create_contracts');
+    }
+
+    /**
+     * Determine whether the user can download the generated quote pdf.
+     *
+     * @param User $user
+     * @param Quote $quote
+     * @return mixed
+     */
+    public function downloadPdf(User $user, Quote $quote)
     {
         return $user->can('download_quote_pdf') && $this->view($user, $quote);
     }
@@ -141,12 +201,12 @@ class QuotePolicy
      * @param Quote $quote
      * @return mixed
      */
-    public function download_contract_pdf(User $user, Quote $quote)
+    public function downloadContractPdf(User $user, Quote $quote)
     {
-        if ($this->download_pdf($user, $quote) && $quote->contractTemplate()->doesntExist()) {
+        if ($this->downloadPdf($user, $quote) && $quote->contractTemplate()->doesntExist()) {
             return $this->deny(QNT_02);
         }
 
-        return $this->download_pdf($user, $quote);
+        return $this->downloadPdf($user, $quote);
     }
 }

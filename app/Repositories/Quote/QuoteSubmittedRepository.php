@@ -270,8 +270,8 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     protected function filterableQuery()
     {
         return [
-            $this->userQuery()->activated(),
-            $this->userQuery()->deactivated()
+            $this->userQuery()->activated()->with('contract.customer'),
+            $this->userQuery()->deactivated()->with('contract.customer')
         ];
     }
 
@@ -282,19 +282,19 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     protected function searchableQuery()
     {
-        return $this->userQuery();
+        return $this->userQuery()->with('contract.customer');
     }
 
     protected function searchableFields(): array
     {
         return [
-            'customer.name^5',
-            'customer.valid_until^3',
-            'customer.support_start^4',
-            'customer.support_end^4',
-            'customer.rfq^5',
-            'company.name^5',
-            'type^2',
+            'company_name^5',
+            'customer_name^5',
+            'customer_rfq^5',
+            'customer_valid_until^4',
+            'customer_support_start^4',
+            'customer_support_end^4',
+            'user_fullname^4',
             'created_at^1'
         ];
     }

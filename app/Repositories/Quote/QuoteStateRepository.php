@@ -19,7 +19,7 @@ use App\Models\{
     User
 };
 use App\Http\Requests\{
-    StoreQuoteStateRequest,
+    Quote\StoreQuoteStateRequest,
     MappingReviewRequest
 };
 use App\Http\Requests\Quote\TryDiscountsRequest;
@@ -34,6 +34,7 @@ use App\Repositories\Concerns\{
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Builder;
 use DB, Arr, Str;
+use Symfony\Component\Process\Process;
 
 class QuoteStateRepository implements QuoteRepositoryInterface
 {
@@ -98,7 +99,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
             $state = $request->validatedData();
             $quoteData = $request->validatedQuoteData();
 
-            $version->fill($quoteData)->save();
+            $version->fill($quoteData)->markAsDrafted();
 
             $this->draftOrSubmit($state, $quote);
 
@@ -111,14 +112,19 @@ class QuoteStateRepository implements QuoteRepositoryInterface
             $this->attachColumnsToFields($state, $version);
             $this->hideFields($state, $version);
             $this->sortFields($state, $version);
-            $this->markRowsAsSelectedOrUnSelected($state, $version);
+
+            /**
+             * We are selecting imported rows only when a new version has not been created.
+             * Rows will be selected when replicating the version.
+             */
+            $quote->wasNotCreatedNewVersion && $this->markRowsAsSelectedOrUnSelected($state, $version);
+
             $this->setMargin($state, $version);
             $this->setDiscounts($state, $version);
 
             /**
              * We are always returning original Quote Id regardless of the versions.
              */
-
             return ['id' => $version->parent_id];
         }, 3);
     }
@@ -327,9 +333,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
          * 2) Using version doesn't belong to the current editor.
          *
          * If an editing version (which is using version) belongs to editor, the system shouldn't create a new version and continue modify current version.
-         *
          */
-
         if ($quote->exists && $quote->usingVersion->user_id !== auth()->id()) {
             $replicatedVersion = $this->replicateVersion($quote, $quote->usingVersion);
 
@@ -343,6 +347,33 @@ class QuoteStateRepository implements QuoteRepositoryInterface
     public function model(): string
     {
         return Quote::class;
+    }
+
+    public function replicateDiscounts(string $sourceId, string $targetId): void
+    {
+        DB::table('quote_discount')->insertUsing(
+            ['quote_id', 'discount_id', 'duration'],
+            DB::table('quote_discount')->select(
+                DB::raw("'{$targetId}' as quote_id"),
+                'discount_id',
+                'duration'
+            )
+                ->where('quote_id', $sourceId)
+        );
+    }
+
+    public function replicateMapping(string $sourceId, string $targetId): void
+    {
+        DB::table('quote_field_column')->insertUsing(
+            ['quote_id', 'template_field_id', 'importable_column_id', 'is_default_enabled'],
+            DB::table('quote_field_column')->select(
+                DB::raw("'{$targetId}' as quote_id"),
+                'template_field_id',
+                'importable_column_id',
+                'is_default_enabled'
+            )
+                ->where('quote_id', $sourceId)
+        );
     }
 
     protected function hideFields(Collection $state, BaseQuote $quote): void
@@ -403,66 +434,39 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         return DB::transaction(function () use ($parent, $version, $user) {
             $replicatedVersion = $version->replicate(['laravel_through_key']);
 
-            $countUserVersions = $parent->versions()->whereHas('user', function ($query) use ($replicatedVersion) {
-                $query->whereId($replicatedVersion->user_id);
-            })->count();
-
-            /**
-             * We are incrementing a new version on 2 point if parent author equals a new version author as we are not record original version to the pivot table.
-             * Incrementing number equals 1 if there is a new version from non-author.
-             */
-            $countUserVersions += $parent->user_id === $replicatedVersion->user_id ? 1 : 0;
+            $versionNumber = $this->countVersionNumber($parent, $replicatedVersion);
 
             $replicatedVersion->forceFill([
                 'is_version' => true,
-                'version_number' => $countUserVersions + 1
+                'version_number' => $versionNumber
             ]);
 
             if (isset($user)) {
                 $replicatedVersion->user()->associate($user);
             }
 
-            $pass = $replicatedVersion->saveOrFail();
+            $pass = $replicatedVersion->save();
 
-            /**
-             * Discounts Replication
-             */
-            $discounts = DB::table('quote_discount')
-                ->select(DB::raw("'{$replicatedVersion->id}' `quote_id`"), 'discount_id', 'duration')
-                ->where('quote_id', $version->id);
-            DB::table('quote_discount')->insertUsing(['quote_id', 'discount_id', 'duration'], $discounts);
+            /** Discounts Replication. */
+            $this->replicateDiscounts($version->id, $replicatedVersion->id);
 
-            /**
-             * Mapping Replication
-             */
-            $mapping = DB::table('quote_field_column')
-                ->select(DB::raw("'{$replicatedVersion->id}' as `quote_id`"), 'template_field_id', 'importable_column_id', 'is_default_enabled')
-                ->where('quote_id', $version->id);
-            DB::table('quote_field_column')->insertUsing(
-                ['quote_id', 'template_field_id', 'importable_column_id', 'is_default_enabled'],
-                $mapping
-            );
+            /** Mapping Replication. */
+            $this->replicateMapping($version->id, $replicatedVersion->id);
 
-            $quoteFilesToSave = collect();
-
-            $priceList = $version->quoteFiles()->priceLists()->first();
-            if (isset($priceList)) {
-                $quoteFilesToSave->push($this->quoteFileRepository->replicatePriceList($priceList));
-            }
-
-            $schedule = $version->quoteFiles()->paymentSchedules()->with('scheduleData')->first();
-            if (isset($schedule)) {
-                $replicatedSchedule = $schedule->replicate(['scheduleData']);
-                $replicatedSchedule->save();
-
-                if (isset($schedule->scheduleData) && $scheduleData = $schedule->scheduleData->replicate()) {
-                    $replicatedSchedule->scheduleData()->save($scheduleData);
+            $version->quoteFiles()->get()->each(function ($quoteFile) use ($replicatedVersion) {
+                switch ($quoteFile->file_type) {
+                    case QFT_PL:
+                        $this->quoteFileRepository->replicatePriceList($quoteFile, $replicatedVersion->id);
+                        break;
+                    case QFT_PS:
+                        tap($quoteFile->replicate(), function ($schedule) use ($replicatedVersion, $quoteFile) {
+                            $schedule->quote()->associate($replicatedVersion);
+                            $schedule->save();
+                            $schedule->scheduleData()->save($quoteFile->scheduleData->replicate());
+                        });
+                        break;
                 }
-
-                $quoteFilesToSave->push($replicatedSchedule);
-            }
-
-            $copied = $pass && $replicatedVersion->quoteFiles()->saveMany($quoteFilesToSave);
+            });
 
             if ($pass) {
                 activity()
@@ -558,17 +562,13 @@ class QuoteStateRepository implements QuoteRepositoryInterface
 
     protected function draftOrSubmit(Collection $state, Quote $quote): void
     {
-        if (!$state->has('save') || !$state->get('save')) {
-            $quote->markAsDrafted();
+        if ($state->get('save', false) == false) {
+            $quote->save();
             return;
         }
 
         if ($state->get('save')) {
-            $quote->disableReindex()
-                ->disableLogging()
-                ->tap()->submit()
-                ->enableReindex()
-                ->enableLogging();
+            $quote->disableLogging()->tap()->submit()->enableLogging();
 
             activity()
                 ->on($quote)
@@ -700,5 +700,20 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         }
 
         $quote->quoteFiles()->paymentSchedules()->delete();
+    }
+
+    private function countVersionNumber(Quote $quote, QuoteVersion $version): int
+    {
+        $count = $quote->versions()->where('user_id', $version->user_id)->count();
+
+        /**
+         * We are incrementing a new version on 2 point if parent author equals a new version author as we are not record original version to the pivot table.
+         * Incrementing number equals 1 if there is a new version from non-author.
+         */
+        if ($quote->user_id === $version->user_id) {
+            $count += 1;
+        }
+
+        return ++$count;
     }
 }
