@@ -81,7 +81,7 @@ class StrMixin
 
     public function prepend()
     {
-        return function (string $value, ?string $prependable, bool $noBreak = false) {
+        return function (?string $value, ?string $prependable, bool $noBreak = false) {
             $space = $noBreak ? "\xC2\xA0" : ' ';
 
             return filled($prependable) ? "{$prependable}{$space}{$value}" : $value;

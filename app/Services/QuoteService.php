@@ -85,13 +85,12 @@ class QuoteService implements QuoteServiceInterface
             return;
         }
 
-        $divider = (100 - ($quote->countryMargin->value - $quote->custom_discount)) / 100;
+        $targetMargin = $quote->countryMargin->value - $quote->custom_discount;
 
-        if ((float) $divider === 0.0) {
-            data_fill($quote->computableRows, '*.price', 0.0);
+        $divider = (100 - $targetMargin) / 100;
 
-            $quote->totalPrice = 0.0;
-            return;
+        if ($divider <= 0) {
+            $divider = 1 / (($targetMargin + 100) / 100);
         }
 
         $quote->totalPrice = 0.0;
@@ -158,7 +157,9 @@ class QuoteService implements QuoteServiceInterface
             return;
         }
 
-        $initialTotalPayments = $quote->scheduleData->value->sum('price');
+        $targetExchangeRate = $quote->targetExchangeRate;
+
+        $initialTotalPayments = $quote->scheduleData->value->sum('price') * $targetExchangeRate;
 
         if ((float) $initialTotalPayments === 0.0) {
             return;
@@ -166,9 +167,9 @@ class QuoteService implements QuoteServiceInterface
 
         $reverseMultiplier = $quote->finalPrice / $initialTotalPayments;
 
-        $quote->scheduleData->value = collect($quote->scheduleData->value)->map(function ($payment) use ($reverseMultiplier) {
+        $quote->scheduleData->value = collect($quote->scheduleData->value)->map(function ($payment) use ($targetExchangeRate, $reverseMultiplier) {
             $price = data_get($payment, 'price', 0.0);
-            data_set($payment, 'price', Str::price($price) * $reverseMultiplier);
+            data_set($payment, 'price', Str::price($price) * $targetExchangeRate * $reverseMultiplier);
 
             return $payment;
         });
@@ -205,6 +206,8 @@ class QuoteService implements QuoteServiceInterface
 
     public function prepareQuoteReview(Quote $quote): void
     {
+        $quote->enableExchangeRateConversion();
+
         $this->assignComputableRows($quote);
 
         /**
@@ -270,7 +273,7 @@ class QuoteService implements QuoteServiceInterface
         $quote->scheduleData->value = collect($quote->scheduleData->value)
             ->transform(function ($payment) use ($quote) {
                 $price = data_get($payment, 'price', 0.0);
-                data_set($payment, 'price', Str::prepend(Str::decimal($price, 2), $quote->quoteTemplate->currency_symbol));
+                data_set($payment, 'price', Str::prepend(Str::decimal($price, 2), $quote->currencySymbol));
 
                 return $payment;
             });
@@ -310,7 +313,7 @@ class QuoteService implements QuoteServiceInterface
     {
         $groups_meta = $quote->getGroupDescriptionWithMeta(null, $quote->calculate_list_price);
         $quote->computableRows = $quote->computableRows
-            ->rowsToGroups('group_name', $groups_meta, true, $quote->quoteTemplate->currency_symbol)
+            ->rowsToGroups('group_name', $groups_meta, true, $quote->currencySymbol)
             ->exceptEach('group_name')
             ->sortByFields($quote->sort_group_description);
 
@@ -333,7 +336,7 @@ class QuoteService implements QuoteServiceInterface
     {
         $quote->renderableRows->transform(function ($row) use ($quote) {
             $price = data_get($row, 'price');
-            data_set($row, 'price', Str::prepend(Str::decimal($price), $quote->quoteTemplate->currency_symbol, true));
+            data_set($row, 'price', Str::prepend(Str::decimal($price), $quote->currencySymbol, true));
             return $row;
         });
     }
