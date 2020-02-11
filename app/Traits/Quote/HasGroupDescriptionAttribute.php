@@ -7,8 +7,23 @@ trait HasGroupDescriptionAttribute
     public function initializeHasGroupDescriptionAttribute()
     {
         $this->casts = array_merge($this->casts, ['group_description' => 'array', 'use_groups' => 'boolean', 'sort_group_description' => 'array']);
-        $this->fillable = array_merge($this->fillable, ['use_groups', 'sort_group_description']);
+        $this->fillable = array_merge($this->fillable, ['group_description', 'use_groups', 'sort_group_description']);
         $this->appends = array_merge($this->appends, ['has_group_description']);
+    }
+
+    public function setGroupDescriptionAttribute($value): void
+    {
+        if (is_string($value)) {
+            $this->attributes['group_description'] = $value;
+            return;
+        }
+
+        if (is_iterable($value)) {
+            $this->attributes['group_description'] = json_encode($value, true);
+            return;
+        }
+
+        $this->attributes['group_description'] = $value;
     }
 
     public function getHasGroupDescriptionAttribute(): bool
