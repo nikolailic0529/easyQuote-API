@@ -156,9 +156,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     public function unSubmit(string $id): bool
     {
-        $quote = $this->find($id);
-
-        return $quote->unSubmit() && optional($quote->customer)->unSubmit();
+        return $this->find($id)->unsubmit();
     }
 
     public function copy($quote)

@@ -8,6 +8,7 @@ use App\Repositories\SearchableRepository;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Arr, DB;
 
 class ImportableColumnRepository extends SearchableRepository implements ImportableColumnRepositoryInterface
 {
@@ -64,9 +65,7 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
 
     public function allNames()
     {
-        $names = $this->importableColumn->system()->select('name')->get()->toArray();
-
-        return collect($names)->flatten()->toArray();
+        return $this->importableColumn->system()->pluck('name')->toArray();
     }
 
     public function findByName(string $name): ImportableColumn
@@ -82,7 +81,7 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
             call_user_func($scope, $query);
         }
 
-        if (! is_null($instance = $query->where($attributes)->first())) {
+        if (!is_null($instance = $query->where($attributes)->first())) {
             return $instance;
         }
 
@@ -98,19 +97,37 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
 
     public function create(array $attributes): ImportableColumn
     {
-        return $this->importableColumn->create($attributes);
+        return tap($this->importableColumn->create($attributes), function ($importableColumn) use ($attributes) {
+            $aliases = static::parseAliasesAttributes(data_get($attributes, 'aliases'));
+            $importableColumn->aliases()->createMany($aliases);
+        });
     }
 
     public function update(array $attributes, string $id): ImportableColumn
     {
         return tap($this->find($id), function ($importableColumn) use ($attributes) {
-            $importableColumn->update($attributes);
+            DB::transaction(function () use ($importableColumn, $attributes) {
+                $importableColumn->update($attributes);
+
+                $aliases = data_get($attributes, 'aliases');
+                $importableColumn->aliases()->whereNotIn('alias', $aliases)->delete();
+
+                $existingAliases = $importableColumn->aliases()->whereIn('alias', $aliases)->pluck('alias')->flip();
+
+                $creatingAliases = Arr::where($aliases, function ($alias) use ($existingAliases) {
+                    return !$existingAliases->has($alias);
+                });
+
+                $importableColumn->aliases()->createMany(static::parseAliasesAttributes($creatingAliases));
+            });
         });
     }
 
     public function delete(string $id): bool
     {
-        return $this->find($id)->delete();
+        return tap($this->find($id), function ($importableColumn) {
+            $importableColumn->aliases()->delete();
+        })->delete();
     }
 
     public function activate(string $id): bool
@@ -130,23 +147,37 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
 
     protected function filterableQuery()
     {
-        return $this->regularQuery();
+        return $this->regularQuery()->with('country');
     }
 
     protected function searchableQuery()
     {
-        return $this->regularQuery();
+        return $this->regularQuery()->with('country');
     }
 
     protected function filterQueryThrough(): array
     {
         return [
-            \App\Http\Query\DefaultOrderBy::class
+            \App\Http\Query\DefaultOrderBy::class,
+            \App\Http\Query\ImportableColumn\OrderByHeader::class,
+            \App\Http\Query\ImportableColumn\OrderByType::class,
+            \App\Http\Query\ImportableColumn\OrderByCountryName::class
         ];
     }
 
     protected function searchableFields(): array
     {
-        return ['header', 'name'];
+        return ['header^5', 'type^4', 'aliases^4', 'country_name^3', 'created_at'];
+    }
+
+    private static function parseAliasesAttributes($aliases): array
+    {
+        if (!is_array($aliases)) {
+            return [];
+        }
+
+        return array_map(function ($alias) {
+            return compact('alias');
+        }, $aliases);
     }
 }

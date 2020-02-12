@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
-class AddSoftDeletesIsTempImportableColumnsTable extends Migration
+class AddTypeImportableColumnsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -15,15 +15,11 @@ class AddSoftDeletesIsTempImportableColumnsTable extends Migration
     public function up()
     {
         Schema::table('importable_columns', function (Blueprint $table) {
-            $table->timestamps();
-            $table->softDeletes();
-            $table->boolean('is_temp')->default(false)->after('is_system');
+            $table->string('type')->nullable()->after('name');
         });
 
         DB::transaction(function () {
-            $now = now();
-            DB::table('importable_columns')->update(['created_at' => $now, 'updated_at' => $now]);
-            DB::table('importable_columns')->where('is_system', false)->update(['is_temp' => true]);
+            DB::table('importable_columns')->update(['type' => 'text']);
         });
     }
 
@@ -35,9 +31,7 @@ class AddSoftDeletesIsTempImportableColumnsTable extends Migration
     public function down()
     {
         Schema::table('importable_columns', function (Blueprint $table) {
-            $table->dropTimestamps();
-            $table->dropSoftDeletes();
-            $table->dropColumn('is_temp');
+            $table->dropColumn('type');
         });
     }
 }

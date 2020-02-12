@@ -143,6 +143,12 @@ define('SS_INV_01', 'The given Setting value is invalid.');
 define('SS_INV_02', 'You could not to update this setting as it is read only.');
 
 /**
+ * Importable Columns.
+ */
+define('ICSU_01', 'You could not update the system defined Importable Column.');
+define('ICSD_01', 'You could not delete the system defined Importable Column.');
+
+/**
  * Countries.
  */
 define('CSU_01', 'You could not update the system defined Country.');

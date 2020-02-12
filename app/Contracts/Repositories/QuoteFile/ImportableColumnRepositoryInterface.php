@@ -46,6 +46,14 @@ interface ImportableColumnRepositoryInterface
     public function paginate();
 
     /**
+     * Search Importable Columns by specified query.
+     *
+     * @param string $query
+     * @return mixed
+     */
+    public function search(string $query = '');
+
+    /**
      * Retrieve all importable columns names.
      *
      * @return mixed

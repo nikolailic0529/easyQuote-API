@@ -3,10 +3,15 @@
 namespace App\Http\Controllers\API\System;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface as ImportableColumns;
-use App\Http\Resources\ImportableColumn\ImportableColumnCollection;
-use App\Http\Resources\ImportableColumn\ImportableColumnResource;
+use App\Http\Requests\ImportableColumn\{
+    CreateImportableColumnRequest,
+    UpdateImportableColumnRequest
+};
+use App\Http\Resources\ImportableColumn\{
+    ImportableColumnCollection,
+    ImportableColumnResource
+};
 use App\Models\QuoteFile\ImportableColumn;
 
 class ImportableColumnController extends Controller
@@ -17,6 +22,8 @@ class ImportableColumnController extends Controller
     public function __construct(ImportableColumns $importableColumns)
     {
         $this->importableColumns = $importableColumns;
+
+        $this->authorizeResource(ImportableColumn::class, 'importable_column');
     }
 
     /**
@@ -26,20 +33,29 @@ class ImportableColumnController extends Controller
      */
     public function index()
     {
+        $resource = request()->filled('search')
+            ? $this->importableColumns->search(request('search'))
+            : $this->importableColumns->paginate();
+
         return response()->json(
-            ImportableColumnCollection::make($this->importableColumns->paginate())
+            ImportableColumnCollection::make($resource)
         );
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Http\Requests\ImportableColumn\CreateImportableColumnRequest  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(CreateImportableColumnRequest $request)
     {
-        //
+        $importableColumn = $this->importableColumns->create($request->validated());
+
+        return response()->json(
+            filter(ImportableColumnResource::make($importableColumn)),
+            201
+        );
     }
 
     /**
@@ -58,23 +74,59 @@ class ImportableColumnController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
+     * @param  \App\Http\Requests\ImportableColumn\UpdateImportableColumnRequest  $request
+     * @param \App\Models\QuoteFile\ImportableColumn  $importableColumn
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(UpdateImportableColumnRequest $request, ImportableColumn $importableColumn)
     {
-        //
+        $importableColumn = $this->importableColumns->update($request->validated(), $importableColumn->id);
+
+        return response()->json(
+            filter(ImportableColumnResource::make($importableColumn))
+        );
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param  int  $id
+     * @param  \App\Models\QuoteFile\ImportableColumn  $importableColumn
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(ImportableColumn $importableColumn)
     {
-        //
+        return response()->json(
+            $this->importableColumns->delete($importableColumn->id)
+        );
+    }
+
+    /**
+     * Activate the specified resource in storage.
+     *
+     * @param  \App\Models\QuoteFile\ImportableColumn  $importableColumn
+     * @return \Illuminate\Http\Response
+     */
+    public function activate(ImportableColumn $importableColumn)
+    {
+        $this->authorize('update', $importableColumn);
+
+        return response()->json(
+            $this->importableColumns->activate($importableColumn->id)
+        );
+    }
+
+    /**
+     * Deactivate the specified resource in storage.
+     *
+     * @param  \App\Models\QuoteFile\ImportableColumn  $importableColumn
+     * @return \Illuminate\Http\Response
+     */
+    public function deactivate(ImportableColumn $importableColumn)
+    {
+        $this->authorize('update', $importableColumn);
+
+        return response()->json(
+            $this->importableColumns->deactivate($importableColumn->id)
+        );
     }
 }

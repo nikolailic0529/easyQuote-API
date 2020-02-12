@@ -72,6 +72,8 @@ Route::group(['namespace' => 'API'], function () {
             Route::match(['get', 'post'], 'activities/subject/{subject}/export/{type}', 'ActivityController@exportSubject');
 
             Route::apiResource('importable-columns', 'ImportableColumnController');
+            Route::put('importable-columns/activate/{importable_column}', 'ImportableColumnController@activate');
+            Route::put('importable-columns/deactivate/{importable_column}', 'ImportableColumnController@deactivate');
         });
 
         Route::group(['middleware' => THROTTLE_RATE_01], function () {

@@ -78,7 +78,7 @@ return [
         'setting' => \App\Models\System\SystemSetting::class,
         'invitation' => \App\Models\Collaboration\Invitation::class
     ],
-    'types' => ['created', 'updated', 'deleted', 'copied', 'retrieved', 'created_version', 'authenticated', 'deauthenticated'],
+    'types' => ['created', 'updated', 'deleted', 'copied', 'retrieved', 'submitted', 'unravel', 'created_version', 'authenticated', 'deauthenticated'],
     'periods' => [
         'today',
         'yesterday',

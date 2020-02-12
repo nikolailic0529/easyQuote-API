@@ -12,6 +12,7 @@ use App\Models\{
     Vendor,
     Contact,
     Quote\Quote,
+    Quote\Contract,
     QuoteTemplate\QuoteTemplate,
     QuoteTemplate\TemplateField,
     Quote\Margin\CountryMargin,
@@ -21,9 +22,10 @@ use App\Models\{
     Quote\Discount\SND,
     Collaboration\Invitation,
     System\Activity,
-    Data\Country
+    Data\Country,
+    QuoteFile\ImportableColumn
 };
-use App\Models\Quote\Contract;
+use Illuminate\Database\Eloquent\Builder;
 use Str;
 
 class ReindexCommand extends Command
@@ -86,7 +88,8 @@ class ReindexCommand extends Command
                 Activity::class,
                 Address::class,
                 Contact::class,
-                Country::class
+                Country::class,
+                ImportableColumn::regular()
             ]
         );
     }
@@ -94,18 +97,24 @@ class ReindexCommand extends Command
     private function handleModels(array $models)
     {
         foreach ($models as &$model) {
+            if ($model instanceof Builder) {
+                $query = $model;
+                $model = $model->getModel();
+            } else {
+                $model = app($model);
+                $query = $model->query();
+            }
+
+            $model->unsetEventDispatcher();
+            $model->setConnection('mysql_unbuffered');
+
             $plural = Str::plural(class_basename($model));
 
             $this->comment("Indexing all {$plural}...");
 
-            $bar = $this->output->createProgressBar($model::count());
+            $bar = $this->output->createProgressBar($query->count());
 
-            $model = app($model);
-            $model->unsetEventDispatcher();
-
-            $cursor = $model::on('mysql_unbuffered')->cursor();
-
-            $cursor->each(function ($entry) use ($bar) {
+            $query->cursor()->each(function ($entry) use ($bar) {
                 $this->elasticsearch->index([
                     'index' => $entry->getSearchIndex(),
                     'id' => $entry->getKey(),

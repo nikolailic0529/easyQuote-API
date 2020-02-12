@@ -20,9 +20,10 @@ use App\Models\{
     System\Activity,
     System\Notification,
     Customer\Customer,
-    Data\Country
+    Data\Country,
+    Quote\Contract,
+    QuoteFile\ImportableColumn
 };
-use App\Models\Quote\Contract;
 use App\Policies\{
     ActivityPolicy,
     AddressPolicy,
@@ -33,6 +34,7 @@ use App\Policies\{
     CountryPolicy,
     CustomerPolicy,
     DiscountPolicy,
+    ImportableColumnPolicy,
     InvitationPolicy,
     MarginPolicy,
     NotificationPolicy,
@@ -78,7 +80,8 @@ class AuthServiceProvider extends ServiceProvider
         Contact::class              => ContactPolicy::class,
         Notification::class         => NotificationPolicy::class,
         Customer::class             => CustomerPolicy::class,
-        Country::class              => CountryPolicy::class
+        Country::class              => CountryPolicy::class,
+        ImportableColumn::class     => ImportableColumnPolicy::class
     ];
 
     public function register()

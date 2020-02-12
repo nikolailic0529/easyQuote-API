@@ -32,16 +32,23 @@ class ImportableColumnsUpdate extends Command
 
         activity()->disableLogging();
 
-        \DB::transaction(function () {
-            $importable_columns = json_decode(file_get_contents(database_path('seeds/models/importable_columns.json')), true);
+        $importableColumns = json_decode(file_get_contents(database_path('seeds/models/importable_columns.json')), true);
 
-            collect($importable_columns)->each(function ($column) {
+        $importableColumns = collect($importableColumns)->transform(function ($attributes) {
+            $country_id = app('country.repository')->findIdByCode($attributes['country']);
+            return compact('country_id') + $attributes;
+        });
+
+        \DB::transaction(function () use ($importableColumns) {
+            $importableColumns->each(function ($attributes) {
                 $importableColumn = ImportableColumn::firstOrCreate(
-                    ['name' => $column['name'], 'is_system' => true],
-                    $column
+                    ['name' => $attributes['name'], 'is_system' => true],
+                    $attributes
                 );
 
-                collect($column['aliases'])->each(function ($alias) use ($importableColumn) {
+                $importableColumn->update($attributes);
+
+                collect($attributes['aliases'])->each(function ($alias) use ($importableColumn) {
                     $importableColumn->aliases()->firstOrCreate(compact('alias'));
                 });
 

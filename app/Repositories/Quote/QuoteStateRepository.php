@@ -567,13 +567,6 @@ class QuoteStateRepository implements QuoteRepositoryInterface
 
         if ($state->get('save')) {
             $quote->disableLogging()->tap()->submit()->enableLogging();
-
-            activity()
-                ->on($quote)
-                ->withAttribute('submitted_at', $quote->submitted_at, null)
-                ->queue('updated');
-
-            optional($quote->customer)->submit();
         }
     }
 

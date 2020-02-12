@@ -144,8 +144,7 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
         'buy_price',
         'sourceCurrency.code',
         'targetCurrency.code',
-        'exchange_rate_margin',
-        'submitted_at'
+        'exchange_rate_margin'
     ];
 
     protected static $logOnlyDirty = true;

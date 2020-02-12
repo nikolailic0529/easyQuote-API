@@ -2,6 +2,8 @@
     {
         "header": "Product No.",
         "name": "product_no",
+        "type": "text",
+        "country": "GB",
         "order": 0,
         "aliases": [
             "product number",
@@ -24,6 +26,8 @@
     {
         "header": "Description",
         "name": "description",
+        "type": "text",
+        "country": "GB",
         "order": 1,
         "aliases": [
             "description",
@@ -37,6 +41,8 @@
     {
         "header": "Serial No.",
         "name": "serial_no",
+        "type": "text",
+        "country": "GB",
         "order": 2,
         "aliases": [
             "serial",
@@ -52,7 +58,9 @@
     {
         "header": "Coverage from",
         "name": "date_from",
+        "type": "date",
         "order": 3,
+        "country": "GB",
         "aliases": [
             "start",
             "start date",
@@ -73,7 +81,9 @@
     {
         "header": "Coverage to",
         "name": "date_to",
+        "type": "date",
         "order": 4,
+        "country": "GB",
         "aliases": [
             "end",
             "end date",
@@ -94,7 +104,9 @@
     {
         "header": "Quantity",
         "name": "qty",
+        "type": "number",
         "order": 5,
+        "country": "GB",
         "aliases": [
             "quantity",
             "qty",
@@ -105,7 +117,9 @@
     {
         "header": "Price",
         "name": "price",
+        "type": "decimal",
         "order": 6,
+        "country": "GB",
         "aliases": [
             "price",
             "priceeur",
@@ -133,7 +147,9 @@
     {
         "header": "Searchable",
         "name": "searchable",
+        "type": "text",
         "order": 7,
+        "country": "GB",
         "aliases": [
             "searchable",
             "service agreement id",

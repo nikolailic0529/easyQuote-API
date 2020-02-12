@@ -22,6 +22,8 @@ trait Submittable
 
         $pass = $this->forceFill(['submitted_at' => now()])->save();
 
+        activity()->on($this)->queue('submitted');
+
         $this->fireModelEvent('submitted', false);
 
         return $pass;
@@ -36,6 +38,8 @@ trait Submittable
         }
 
         $pass = $this->forceFill(['submitted_at' => null])->save();
+
+        activity()->on($this)->queue('unravel');
 
         $this->fireModelEvent('unsubmitted');
 

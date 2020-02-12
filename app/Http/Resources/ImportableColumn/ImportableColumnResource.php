@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\ImportableColumn;
 
+use App\Http\Resources\Country\CountryResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ImportableColumnResource extends JsonResource
@@ -20,7 +21,10 @@ class ImportableColumnResource extends JsonResource
             'id'            => $this->id,
             'header'        => $this->header,
             'name'          => $this->name,
+            'type'          => $this->type,
             'is_system'     => (bool) $this->is_system,
+            'country_id'    => $this->country_id,
+            'country'       => $this->whenLoaded('country', $this->country->only('name')),
             'aliases'       => AliasResource::collection($this->whenLoaded('aliases')),
             'created_at'    => $this->created_at,
             'activated_at'  => $this->activated_at
