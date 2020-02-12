@@ -9,19 +9,31 @@ use App\Models\{
 use App\Contracts\HasOrderedScope;
 use App\Models\Quote\FieldColumn;
 use App\Traits\{
+    Activatable,
     HasColumnsData,
     BelongsToUser,
-    Systemable
+    Systemable,
+    Activity\LogsActivity,
+    Search\Searchable,
+    Auth\Multitenantable
 };
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ImportableColumn extends BaseModel implements HasOrderedScope
 {
-    use BelongsToUser, HasColumnsData, Systemable;
+    use BelongsToUser,
+        Multitenantable,
+        HasColumnsData,
+        Systemable,
+        LogsActivity,
+        SoftDeletes,
+        Searchable,
+        Activatable;
 
     public $timestamps = false;
 
     protected $fillable = [
-        'header', 'name', 'order'
+        'header', 'name', 'order', 'is_temp'
     ];
 
     protected $hidden = [
@@ -41,15 +53,5 @@ class ImportableColumn extends BaseModel implements HasOrderedScope
     public function fieldColumn()
     {
         return $this->belongsTo(FieldColumn::class, 'quote_field_column');
-    }
-
-    public function isDateFrom()
-    {
-        return $this->name === 'date_from';
-    }
-
-    public function isDateTo()
-    {
-        return $this->name === 'date_to';
     }
 }

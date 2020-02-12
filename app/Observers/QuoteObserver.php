@@ -7,31 +7,20 @@ use App\Models\Quote\Quote;
 class QuoteObserver
 {
     /**
-     * Handle the Quote "activating" event.
+     * Handle the Quote "created" event.
      *
-     * @param Quote $quote
+     * @param \App\Models\Quote\Quote $quote
      * @return void
      */
-    public function activating(Quote $quote)
+    public function created(Quote $quote)
     {
-        //
-    }
-
-    /**
-     * Handle the Quote "submitting" event.
-     *
-     * @param Quote $quote
-     * @return void
-     */
-    public function submitting(Quote $quote)
-    {
-        //
+        app('customer.repository')->flushListingCache();
     }
 
     /**
      * Handle the Quote "deleted" event.
      *
-     * @param Quote $quote
+     * @param \App\Models\Quote\Quote $quote
      * @return void
      */
     public function deleted(Quote $quote)
@@ -50,7 +39,7 @@ class QuoteObserver
     /**
      * Handle the Quote "submitted" event.
      *
-     * @param Quote $quote
+     * @param \App\Models\Quote\Quote $quote
      * @return void
      */
     public function submitted(Quote $quote)
@@ -77,7 +66,7 @@ class QuoteObserver
     /**
      * Handle the Quote "unsubmitted" event.
      *
-     * @param Quote $quote
+     * @param \App\Models\Quote\Quote $quote
      * @return void
      */
     public function unsubmitted(Quote $quote)

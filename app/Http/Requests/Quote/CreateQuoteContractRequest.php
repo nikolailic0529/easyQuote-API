@@ -20,7 +20,8 @@ class CreateQuoteContractRequest extends FormRequest
                 'string',
                 'uuid',
                 Rule::exists('quote_templates', 'id')->whereNull('deleted_at')->where('type', QT_TYPE_CONTRACT)
-            ]
+            ],
+            'service_agreement_id' => 'string|max:300|min:2'
         ];
     }
 }

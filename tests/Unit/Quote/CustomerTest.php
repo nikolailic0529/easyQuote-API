@@ -36,7 +36,7 @@ class CustomerTest extends TestCase
      */
     public function testCustomerDeleting()
     {
-        $customer = app('customer.repository')->drafted()->random();
+        $customer = app('customer.repository')->list()->random();
 
         $response = $this->deleteJson(url("api/quotes/customers/{$customer->id}"));
 

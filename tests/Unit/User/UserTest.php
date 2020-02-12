@@ -7,13 +7,16 @@ use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\{
     WithFakeUser,
-    AssertsListing
+    AssertsListing,
+    TruncatesDatabaseTables
 };
 use Str;
 
 class UserTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, AssertsListing;
+    use DatabaseTransactions, WithFakeUser, AssertsListing, TruncatesDatabaseTables;
+
+    protected $truncatableTables = ['users'];
 
     /**
      * Test User Listing.

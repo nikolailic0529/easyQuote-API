@@ -70,6 +70,8 @@ Route::group(['namespace' => 'API'], function () {
             Route::match(['get', 'post'], 'activities/export/{type}', 'ActivityController@export')->where('type', 'csv|excel|pdf');
             Route::match(['get', 'post'], 'activities/subject/{subject}', 'ActivityController@subject');
             Route::match(['get', 'post'], 'activities/subject/{subject}/export/{type}', 'ActivityController@exportSubject');
+
+            Route::apiResource('importable-columns', 'ImportableColumnController');
         });
 
         Route::group(['middleware' => THROTTLE_RATE_01], function () {

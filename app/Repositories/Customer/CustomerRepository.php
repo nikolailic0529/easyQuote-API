@@ -12,6 +12,7 @@ use App\Http\Resources\{
     CustomerResponseResource
 };
 use App\Repositories\Concerns\ResolvesImplicitModel;
+use Illuminate\Database\Eloquent\Model;
 
 class CustomerRepository implements CustomerRepositoryInterface
 {
@@ -21,7 +22,7 @@ class CustomerRepository implements CustomerRepositoryInterface
     protected $customer;
 
     /** @var string */
-    protected $draftedCacheKey = 'customers-drafted';
+    protected $listingCacheKey = 'customers-listing';
 
     public function __construct(Customer $customer)
     {
@@ -38,16 +39,16 @@ class CustomerRepository implements CustomerRepositoryInterface
         return $this->query()->limit(1000)->get();
     }
 
-    public function drafted()
+    public function list()
     {
-        return cache()->sear($this->draftedCacheKey, function () {
-            return $this->customer->drafted()->latest()->limit(1000)->get();
+        return cache()->sear($this->listingCacheKey, function () {
+            return $this->listingQuery()->get();
         });
     }
 
-    public function forgetDraftedCache(): bool
+    public function flushListingCache(): void
     {
-        return cache()->forget($this->draftedCacheKey);
+        cache()->forget($this->listingCacheKey);
     }
 
     public function find(string $id)
@@ -100,5 +101,10 @@ class CustomerRepository implements CustomerRepositoryInterface
     public function model(): string
     {
         return Customer::class;
+    }
+
+    protected function listingQuery(): Builder
+    {
+        return $this->query()->doesntHave('quotes')->latest()->limit(1000);
     }
 }

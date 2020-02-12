@@ -26,7 +26,7 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('eq:notify-quotes-expiration')->everyMinute();
         $schedule->command('eq:notify-password-expiration')->daily();
-        $schedule->command('eq:update-exchange-rates')->{ER_UPD_FREQUENCY}();
+        $schedule->command('eq:update-exchange-rates')->{setting('exchange_rate_update_schedule')}();
     }
 
     /**

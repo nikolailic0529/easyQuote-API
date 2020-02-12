@@ -27,7 +27,7 @@ class CustomerController extends Controller
     {
         return response()->json(
             $this->customer->toCollection(
-                $this->customer->drafted()
+                $this->customer->list()
             )
         );
     }

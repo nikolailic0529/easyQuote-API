@@ -15,7 +15,7 @@ class SystemSetting extends BaseModel
     public $timestamps = false;
 
     protected $fillable = [
-        'possible_values', 'value', 'type', 'key'
+        'possible_values', 'value', 'type', 'key', 'section'
     ];
 
     protected $hidden = [

@@ -23,7 +23,6 @@ use App\Http\Requests\{
     MappingReviewRequest
 };
 use App\Http\Requests\Quote\TryDiscountsRequest;
-use App\Http\Resources\QuoteResource;
 use App\Http\Resources\QuoteReviewResource;
 use App\Models\Quote\QuoteVersion;
 use App\Repositories\Concerns\{
@@ -34,7 +33,6 @@ use App\Repositories\Concerns\{
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Builder;
 use DB, Arr, Str;
-use Symfony\Component\Process\Process;
 
 class QuoteStateRepository implements QuoteRepositoryInterface
 {

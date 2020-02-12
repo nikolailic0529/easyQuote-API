@@ -6,13 +6,23 @@ use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\{
     WithFakeUser,
-    AssertsListing
+    AssertsListing,
+    TruncatesDatabaseTables
 };
 use Str;
 
 class ActivityTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, AssertsListing;
+    use DatabaseTransactions, WithFakeUser, AssertsListing, TruncatesDatabaseTables;
+
+    protected $truncatableTables = ['activity_log'];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        activity()->log('test');
+    }
 
     /**
      * Test Activity listing.

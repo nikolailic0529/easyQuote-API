@@ -85,13 +85,18 @@ class QuoteService implements QuoteServiceInterface
             return;
         }
 
-        $targetMargin = $quote->countryMargin->value - $quote->custom_discount;
+        $targetMargin = ($quote->countryMargin->value - $quote->custom_discount) / 100;
 
-        $divider = (100 - $targetMargin) / 100;
-
-        if ($divider <= 0) {
-            $divider = 1 / (($targetMargin + 100) / 100);
-        }
+        $divider = $targetMargin >= 1
+            /**
+             * When target margin is greater than or equal to 100% we are reversing bottom up rule.
+             * It will be increasing total price and line prices accordingly.
+             */
+            ? 1 / ($targetMargin + 1)
+            /**
+             * When target margin is less than 100% we are using default bottom up rule
+             * */
+            : 1 - $targetMargin;
 
         $quote->totalPrice = 0.0;
 

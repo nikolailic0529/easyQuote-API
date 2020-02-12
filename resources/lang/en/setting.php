@@ -2,14 +2,16 @@
 
 return [
     'titles' => [
-        'base_currency' => 'Base Currency',
-        'file_upload_size' => 'File Upload Size',
-        'price_calculation_duration' => 'Price Calculation Duration',
-        'notification_time' => 'Notification Time',
-        'exchange_rates_update' => 'Exchange Rates Update',
-        'supported_file_types' => 'Supported File Types',
-        'failure_report_recipients' => 'Failure Report Recipients',
-        'password_expiry_notification' => 'Password Expiry Notification'
+        'base_currency'                 => 'Base Currency',
+        'file_upload_size'              => 'File Upload Size',
+        'price_calculation_duration'    => 'Price Calculation Duration',
+        'notification_time'             => 'Notification Time',
+        'exchange_rates_update'         => 'Exchange Rates Update',
+        'supported_file_types'          => 'Supported File Types',
+        'failure_report_recipients'     => 'Failure Report Recipients',
+        'password_expiry_notification'  => 'Password Expiry Notification',
+        'exchange_rate_update_schedule' => 'Update Rates Schedule',
+        'exchange_rate_provider'        => 'Exchange Rate Provider',
     ],
     'supported_file_types' => [
         'pdf' => [

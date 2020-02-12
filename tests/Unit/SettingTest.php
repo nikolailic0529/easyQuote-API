@@ -13,6 +13,7 @@ class SettingTest extends TestCase
 {
     use DatabaseTransactions, WithFakeUser;
 
+    /** @var array */
     protected static $assertableAttributes = [
         'id',
         'value',
@@ -21,6 +22,11 @@ class SettingTest extends TestCase
         'label',
         'field_title',
         'field_type'
+    ];
+
+    /** @var array */
+    protected static $asserableSections = [
+        'global', 'exchange_rates'
     ];
 
     /**
@@ -34,10 +40,14 @@ class SettingTest extends TestCase
 
         $response->assertOk();
 
-        $setting = head($response->json());
+        $json = $response->json();
 
         $this->assertTrue(
-            Arr::has($setting, static::$assertableAttributes)
+            Arr::has($json, static::$asserableSections)
+        );
+
+        $this->assertTrue(
+            Arr::has(head(head($json)), static::$assertableAttributes)
         );
     }
 

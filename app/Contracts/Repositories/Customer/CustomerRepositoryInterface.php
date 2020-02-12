@@ -15,18 +15,18 @@ interface CustomerRepositoryInterface
     public function all();
 
     /**
-     * Retrieve NonInUse Customers.
+     * Retrieve Customers without Quotes.
      *
      * @return void
      */
-    public function drafted();
+    public function list();
 
     /**
-     * Forget Cached Drafted Customers.
+     * Flush Customers listing cache.
      *
-     * @return bool
+     * @return void
      */
-    public function forgetDraftedCache(): bool;
+    public function flushListingCache(): void;
 
     /**
      * Find Customer by id.

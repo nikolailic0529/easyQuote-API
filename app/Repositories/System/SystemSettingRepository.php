@@ -147,6 +147,13 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
         return $this->get('file_upload_size', false) * 1000;
     }
 
+    protected function getExchangeRateUpdateSchedule()
+    {
+        $value = $this->get('exchange_rate_update_schedule', false);
+
+        return is_null($value) ? ER_UPD_DEFAULT_SCHEDULE : $value;
+    }
+
     /**
      * Determine if a get mutator exists for a setting value.
      *

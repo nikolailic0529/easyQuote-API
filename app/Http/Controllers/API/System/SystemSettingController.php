@@ -8,6 +8,7 @@ use App\Http\Requests\System\{
     UpdateManySystemSettingsRequest,
     UpdateSystemSettingRequest
 };
+use App\Http\Resources\Setting\SettingCollection;
 use App\Models\System\SystemSetting;
 
 class SystemSettingController extends Controller
@@ -28,7 +29,7 @@ class SystemSettingController extends Controller
     public function index()
     {
         return response()->json(
-            $this->systemSetting->all()
+            SettingCollection::make($this->systemSetting->all())
         );
     }
 

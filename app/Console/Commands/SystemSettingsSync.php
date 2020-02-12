@@ -4,7 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Contracts\Repositories\UserRepositoryInterface as User;
-use Str;
+use Str, Arr;
 
 class SystemSettingsSync extends Command
 {
@@ -56,17 +56,24 @@ class SystemSettingsSync extends Command
                 $value = $this->formatValue($key, $setting['value']);
                 $possibleValues = $this->formatPossibleValues(optional($setting)['possible_values']);
 
-                setting()->firstOrCreate(
+                $attributes = [
+                    'key'               => $key,
+                    'value'             => $value,
+                    'type'              => $setting['type'] ?? 'string',
+                    'possible_values'   => $possibleValues,
+                    'section'           => $setting['section'],
+                    'is_read_only'      => $setting['is_read_only'] ?? false,
+                    'label_format'      => $setting['label_format'] ?? null
+                ];
+
+                $setting = setting()->firstOrCreate(
                     compact('key'),
-                    [
-                        'key' => $key,
-                        'value' => $value,
-                        'type' => $setting['type'] ?? 'string',
-                        'possible_values' => $possibleValues,
-                        'is_read_only' => $setting['is_read_only'] ?? false,
-                        'label_format' => $setting['label_format'] ?? null
-                    ]
+                    $attributes
                 );
+
+                if (!$setting->wasRecentlyCreated) {
+                    $setting->update(Arr::except($attributes, 'value'));
+                }
 
                 $this->output->write('.');
             });

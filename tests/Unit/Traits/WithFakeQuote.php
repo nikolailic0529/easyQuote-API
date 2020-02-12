@@ -33,8 +33,13 @@ trait WithFakeQuote
         $this->quoteRepository = app('quote.repository');
 
         if (isset($uses[WithFakeUser::class])) {
-            $this->quote = $this->createQuote($this->user);
+            $this->quote = $this->firstOrCreateQuote();
         }
+    }
+
+    protected function firstOrCreateQuote()
+    {
+        return $this->createQuote($this->user);
     }
 
     protected function createQuote(User $user): Quote

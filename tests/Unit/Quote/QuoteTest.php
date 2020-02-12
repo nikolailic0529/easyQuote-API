@@ -6,6 +6,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Collection;
 use Tests\TestCase;
 use Tests\Unit\Traits\{
+    TruncatesDatabaseTables,
     WithFakeQuote,
     WithFakeQuoteFile,
     WithFakeUser
@@ -14,13 +15,17 @@ use Str, Arr;
 
 class QuoteTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, WithFakeQuote, WithFakeQuoteFile;
+    use DatabaseTransactions, WithFakeUser, WithFakeQuote, WithFakeQuoteFile, TruncatesDatabaseTables;
 
     /** @var \App\Models\QuoteFile\QuoteFile */
     protected $quoteFile;
 
     /** @var array */
     protected static $assertableGroupDescriptionAttributes = ['id', 'name', 'search_text', 'total_count', 'total_price', 'rows'];
+
+    protected $truncatableTables = [
+        'quotes'
+    ];
 
     protected function setUp(): void
     {

@@ -46,6 +46,7 @@ define('QSU_01', 'You could not update a submitted Quote.');
 define('QUC_01', 'You could not change a Customer for a given Quote.');
 define('QSS_01', 'Quote has been successfully submitted.');
 define('QSS_02', 'Quote with RFQ :rfq_number has been successfully submitted.');
+define('Q_RFQE_01', 'Quote with the given RFQ number already exists.');
 define('QD_01', 'Quote with RFQ :rfq_number has been deleted.');
 define('QDS_01', 'Quote with RFQ :rfq_number has been successfully moved to drafted.');
 define('QSF_01', 'Quote submission was failed.');
@@ -185,7 +186,7 @@ define('SN_IMG_S4RDF', 'img/slack/s4rdf.gif');
 // Exchange Rate Service implementation.
 define('ER_SERVICE_CLASS', \App\Services\ExchangeRate\HMRCRates::class);
 // Exchange Rates update frequency. daily, weekly, monthly.
-define('ER_UPD_FREQUENCY', 'monthly');
+define('ER_UPD_DEFAULT_SCHEDULE', 'monthly');
 define('ER_PARSE_ERROR_01', 'An error occured when trying to parse exchange rates from %s.');
 define('ER_SETTING_UPDATE_KEY', 'exchange_rates_update');
 define('ER_MARGIN_DEFAULT', 6);

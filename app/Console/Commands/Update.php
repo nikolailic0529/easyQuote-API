@@ -51,6 +51,7 @@ class Update extends Command
         $this->call('eq:templatefields-update');
         $this->call('eq:templates-update');
         $this->call('eq:currencies-update');
+        $this->call('eq:countries-update');
         $this->call('eq:create-personal-access-client');
         $this->call('eq:create-client-credentials');
         $this->call('eq:search-reindex');

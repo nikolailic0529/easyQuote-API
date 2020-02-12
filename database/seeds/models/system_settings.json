@@ -3,19 +3,22 @@
         "key": "parser.default_separator",
         "value": "Tab",
         "type": "string",
-        "is_read_only": false
+        "is_read_only": false,
+        "section": "global"
     },
     {
         "key": "parser.default_page",
         "value": 2,
         "type": "integer",
-        "is_read_only": false
+        "is_read_only": false,
+        "section": "global"
     },
     {
         "key": "base_currency",
         "value": "GBP",
         "type": "string",
         "is_read_only": false,
+        "section": "global",
         "possible_values": [
             {
                 "label": "GBP (British Pound Sterling)",
@@ -44,6 +47,7 @@
         "value": 2,
         "type": "integer",
         "is_read_only": false,
+        "section": "global",
         "possible_values": [
             {
                 "label": "2 MB",
@@ -64,6 +68,7 @@
         "value": "day",
         "type": "string",
         "is_read_only": false,
+        "section": "global",
         "possible_values": [
             {
                 "label": "Day",
@@ -88,6 +93,7 @@
         "value": 1,
         "type": "integer",
         "is_read_only": false,
+        "section": "global",
         "possible_values": [
             {
                 "label": "1 Week Before Closing Date",
@@ -108,26 +114,64 @@
         "value": ["fakhar.anwar@supportwarehouse.com"],
         "possible_values": "\\App\\Models\\User:email as label,id as value",
         "type": "array",
-        "is_read_only": false
+        "is_read_only": false,
+        "section": "global"
     },
     {
         "key": "password_expiry_notification",
         "value": "CONST:UN_PWD_EXP",
         "possible_values": "RANGE:7,30,{value} Days Before Expiration",
         "type": "integer",
-        "is_read_only": false
+        "is_read_only": false,
+        "section": "global"
+    },
+    {
+        "key": "supported_file_types",
+        "value": ["CSV", "PDF", "XLSX", "DOCX"],
+        "type": "array",
+        "is_read_only": true,
+        "section": "global"
     },
     {
         "key": "exchange_rates_update",
         "value": "2019-11-17 09:28:19",
         "type": "datetime",
         "is_read_only": true,
+        "section": "exchange_rates",
         "label_format": "Last Update was done :value"
     },
     {
-        "key": "supported_file_types",
-        "value": ["CSV", "PDF", "XLSX", "DOCX"],
-        "type": "array",
-        "is_read_only": true
+        "key": "exchange_rate_provider",
+        "value": "HMRC",
+        "type": "string",
+        "is_read_only": false,
+        "section": "exchange_rates",
+        "possible_values": [
+            {
+                "label": "HMRC",
+                "value": "HMRC"
+            }
+        ]
+    },
+    {
+        "key": "exchange_rate_update_schedule",
+        "value": "monthly",
+        "type": "string",
+        "is_read_only": false,
+        "section": "exchange_rates",
+        "possible_values": [
+            {
+                "label": "Monthly",
+                "value": "monthly"
+            },
+            {
+                "label": "Weekly",
+                "value": "weekly"
+            },
+            {
+                "label": "Daily",
+                "value": "daily"
+            }
+        ]
     }
 ]

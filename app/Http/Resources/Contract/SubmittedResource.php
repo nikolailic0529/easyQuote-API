@@ -30,7 +30,7 @@ class SubmittedResource extends JsonResource
             'contract_customer' => [
                 'rfq'           => $this->contract_number
             ],
-            'quote_customer'    => QuoteCustomerResource::make($this->whenLoaded('quote')),
+            'quote_customer'    => QuoteCustomerResource::make($this),
             'created_at'        => $this->created_at,
             'activated_at'      => $this->activated_at,
         ];

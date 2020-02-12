@@ -9,6 +9,7 @@ use App\Models\{
     Quote\Quote,
     Customer\Customer
 };
+use App\Rules\UniqueCustomer;
 use Illuminate\Support\Collection;
 
 class StoreQuoteStateRequest extends FormRequest
@@ -47,12 +48,16 @@ class StoreQuoteStateRequest extends FormRequest
     {
         return [
             'quote_id' => [
+                'string',
                 'uuid',
                 Rule::exists('quotes', 'id')->where('is_version', false)
             ],
             'quote_data.customer_id' => [
+                $this->customerRequired(),
+                'string',
                 'uuid',
-                'exists:customers,id'
+                Rule::exists('customers', 'id')->whereNull('deleted_at'),
+                (new UniqueCustomer)->ignore($this->quote())
             ],
             'quote_data.company_id' => [
                 'required_with:quote_data.vendor_id,quote_data.country_id,quote_data.language_id',
@@ -227,9 +232,10 @@ class StoreQuoteStateRequest extends FormRequest
     public function messages()
     {
         return [
-            'margin.value.max' => 'Margin Percentage can not be greater than :max%.',
-            'quote_data.service_agreement_id.string' => 'Service Agreement ID must not be empty.',
-            'margin.value.numeric' => 'Margin Value must be a number.'
+            'margin.value.max'                          => 'Margin Percentage can not be greater than :max%.',
+            'quote_data.service_agreement_id.string'    => 'Service Agreement ID must not be empty.',
+            'margin.value.numeric'                      => 'Margin Value must be a number.',
+            'quote_data.customer_id.required'           => 'Customer is required when creating a new Quote.'
         ];
     }
 
@@ -265,6 +271,11 @@ class StoreQuoteStateRequest extends FormRequest
         return $this->quote()->exists &&
             $this->has('quote_data.customer_id') &&
             $this->input('quote_data.customer_id') !== $this->quote->customer_id;
+    }
+
+    protected function customerRequired()
+    {
+        return is_null($this->quote()->customer_id) ? 'required' : null;
     }
 
     protected function submitting(): bool
