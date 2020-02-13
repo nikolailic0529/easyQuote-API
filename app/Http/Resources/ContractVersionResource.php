@@ -31,6 +31,7 @@ class ContractVersionResource extends JsonResource
             'actual_exchange_rate'                      => $this->usingVersion->actual_exchange_rate,
             'target_exchange_rate'                      => $this->usingVersion->target_exchange_rate,
             'type'                                      => $this->usingVersion->type,
+            'previous_state'                            => $this->usingVersion->previous_state,
             'completeness'                              => $this->usingVersion->completeness,
             'last_drafted_step'                         => $this->usingVersion->last_drafted_step,
             'margin_data'                               => $this->usingVersion->margin_data,

@@ -113,7 +113,7 @@ class CompanyTest extends TestCase
 
         data_set($attributes, 'user_id', $this->user->id);
 
-        $company = app('company.repository')->create($attributes);
+        $company = tap(app('company.repository')->create($attributes))->deactivate();
 
         $response = $this->putJson(url("api/companies/activate/{$company->id}"), []);
 

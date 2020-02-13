@@ -6,6 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Models\QuoteFile\ImportableColumn;
 use App\Rules\UniqueAliases;
+use Arr;
 
 class UpdateImportableColumnRequest extends FormRequest
 {
@@ -20,20 +21,17 @@ class UpdateImportableColumnRequest extends FormRequest
 
         return [
             'header' => [
-                'required',
                 'string',
                 'min:2',
                 'max:100',
-                Rule::unique('importable_columns', 'header')->whereNull('deleted_at')->ignore($importableColumn)
+                Rule::unique('importable_columns', 'header')->whereNull('deleted_at')->where('is_temp', false)->ignore($importableColumn)
             ],
             'country_id' => [
-                'required',
                 'string',
                 'uuid',
                 Rule::exists('countries', 'id')->whereNull('deleted_at')
             ],
             'type'  => [
-                'required',
                 'string',
                 Rule::in(ImportableColumn::TYPES)
             ],
@@ -47,5 +45,18 @@ class UpdateImportableColumnRequest extends FormRequest
                 'distinct'
             ]
         ];
+    }
+
+    protected function prepareForValidation()
+    {
+        $importableColumn = $this->route('importable_column');
+
+        if ($importableColumn->isNotSystem()) {
+            return;
+        }
+
+        $source = $this->getInputSource();
+
+        $source->replace(Arr::only($source->all(), 'aliases'));
     }
 }

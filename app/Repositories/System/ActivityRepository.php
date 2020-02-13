@@ -159,7 +159,7 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
         });
 
         $subject_types = collect(config('activitylog.subject_types'))->keys()->transform(function ($value) {
-            $label = ucfirst($value);
+            $label = Str::formatAttributeKey($value);
             return compact('label', 'value');
         });
 

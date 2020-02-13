@@ -9,6 +9,7 @@ use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Arr, DB;
+use Webpatser\Uuid\Uuid;
 
 class ImportableColumnRepository extends SearchableRepository implements ImportableColumnRepositoryInterface
 {
@@ -81,7 +82,7 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
             call_user_func($scope, $query);
         }
 
-        if (!is_null($instance = $query->where($attributes)->first())) {
+        if (!is_null($instance = $query->where($attributes)->orderBy('is_temp')->first())) {
             return $instance;
         }
 
@@ -97,17 +98,27 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
 
     public function create(array $attributes): ImportableColumn
     {
-        return tap($this->importableColumn->create($attributes), function ($importableColumn) use ($attributes) {
+        return tap($this->importableColumn->make($attributes), function (ImportableColumn $importableColumn) use ($attributes) {
+            $importableColumn->disableLogging()->save();
+
             $aliases = static::parseAliasesAttributes(data_get($attributes, 'aliases'));
             $importableColumn->aliases()->createMany($aliases);
+
+            $importableColumn->load('aliases');
+
+            activity()->on($importableColumn)
+                ->withProperty('attributes', $importableColumn->logChanges($importableColumn))
+                ->queue('created');
         });
     }
 
     public function update(array $attributes, string $id): ImportableColumn
     {
-        return tap($this->find($id), function ($importableColumn) use ($attributes) {
+        return tap($this->find($id), function (ImportableColumn $importableColumn) use ($attributes) {
             DB::transaction(function () use ($importableColumn, $attributes) {
-                $importableColumn->update($attributes);
+                $oldAttributes = $importableColumn->logChanges($importableColumn);
+
+                $importableColumn->disableLogging()->update($attributes);
 
                 $aliases = data_get($attributes, 'aliases');
                 $importableColumn->aliases()->whereNotIn('alias', $aliases)->delete();
@@ -119,6 +130,16 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
                 });
 
                 $importableColumn->aliases()->createMany(static::parseAliasesAttributes($creatingAliases));
+
+                $importableColumn->load('aliases');
+
+                if ($importableColumn->isSystem()) {
+                    $this->flushSystemImportableColumnsCache();
+                }
+
+                activity()->on($importableColumn)
+                    ->withProperties(['attributes' => $importableColumn->logChanges($importableColumn), 'old' => $oldAttributes])
+                    ->queue('updated');
             });
         });
     }
@@ -140,6 +161,11 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
         return $this->find($id)->deactivate();
     }
 
+    protected function createWithoutEvents(array $attributes)
+    {
+        return tap($this->importableColumn->make($attributes)->forceFill(['id' => (string) Uuid::generate(4)]))->saveWithoutEvents();
+    }
+
     protected function searchableModel(): Model
     {
         return $this->importableColumn;
@@ -147,7 +173,10 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
 
     protected function filterableQuery()
     {
-        return $this->regularQuery()->with('country');
+        return [
+            $this->regularQuery()->with('country')->activated(),
+            $this->regularQuery()->with('country')->deactivated()
+        ];
     }
 
     protected function searchableQuery()
@@ -168,6 +197,11 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
     protected function searchableFields(): array
     {
         return ['header^5', 'type^4', 'aliases^4', 'country_name^3', 'created_at'];
+    }
+
+    private static function flushSystemImportableColumnsCache(): void
+    {
+        cache()->forget(self::CACHE_KEY_SYSTEM_COLS);
     }
 
     private static function parseAliasesAttributes($aliases): array

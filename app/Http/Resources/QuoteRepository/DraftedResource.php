@@ -36,7 +36,7 @@ class DraftedResource extends JsonResource
             'has_versions'      => $this->has_versions,
             'versions'          => $this->versionsSelection,
             'last_drafted_step' => $this->last_drafted_step,
-            'completeness'      => $this->completeness,
+            'completeness'      => $this->usingVersionFromSelection->completeness,
             'is_author'         => $this->user_id === auth()->id(),
             'created_at'        => $this->created_at,
             'activated_at'      => $this->activated_at,

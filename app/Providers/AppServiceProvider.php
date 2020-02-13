@@ -182,6 +182,7 @@ class AppServiceProvider extends ServiceProvider
         ElasticsearchClient::class                      => 'elasticsearch.client',
         QuoteServiceInterface::class                    => 'quote.service',
         QuoteRepositoryInterface::class                 => 'quote.repository',
+        ContractStateRepositoryInterface::class         => 'contract.repository',
         QuoteDraftedRepositoryInterface::class          => 'quote.drafted.repository',
         QuoteSubmittedRepositoryInterface::class        => 'quote.submitted.repository',
         QuoteFileRepositoryInterface::class             => 'quotefile.repository',

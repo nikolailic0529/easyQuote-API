@@ -16,7 +16,7 @@ class ContractObserver
     public function submitted(Contract $contract)
     {
         $contract_number = $contract->contract_number;
-        $causer = request()->user();
+        $causer = optional(request()->user());
         $url = ui_route('contracts.submitted.review', compact('contract'));
         $notificationRecepients = collect([$contract->user, $contract->quote->user])
             ->whereInstanceOf(User::class)

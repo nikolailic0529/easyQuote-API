@@ -28,7 +28,7 @@ class StoreContractStateRequest extends FormRequest
     {
         return [
             'closing_date' => 'nullable|date_format:Y-m-d',
-            'additional_notes' => 'nullable|string|max:20000|min:2'
+            'additional_notes' => 'nullable|string|max:20000'
         ];
     }
 

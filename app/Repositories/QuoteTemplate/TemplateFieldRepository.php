@@ -49,7 +49,7 @@ class TemplateFieldRepository extends SearchableRepository implements TemplateFi
     public function allSystem(): Collection
     {
         return cache()->sear(static::SYSTEM_FIELDS_CACHE_KEY, function () {
-            return $this->templateField->system()->ordered()->get();
+            return $this->templateField->system()->with('templateFieldType')->ordered()->get();
         });
     }
 

@@ -76,9 +76,10 @@ return [
         'user' => \App\Models\User::class,
         'role' => \App\Models\Role::class,
         'setting' => \App\Models\System\SystemSetting::class,
+        'importable_column' => \App\Models\QuoteFile\ImportableColumn::class,
         'invitation' => \App\Models\Collaboration\Invitation::class
     ],
-    'types' => ['created', 'updated', 'deleted', 'copied', 'retrieved', 'submitted', 'unravel', 'created_version', 'authenticated', 'deauthenticated'],
+    'types' => ['created', 'updated', 'deleted', 'copied', 'retrieved', 'submitted', 'unravel', 'activated', 'deactivated', 'created_version', 'authenticated', 'deauthenticated'],
     'periods' => [
         'today',
         'yesterday',

@@ -63,13 +63,31 @@
         "order": 7
     },
     {
+        "header": "Pricing Document",
+        "name": "pricing_document",
+        "is_required": true,
+        "is_system": true,
+        "is_column": true,
+        "type": "textbox",
+        "order": 8
+    },
+    {
+        "header": "System Handle",
+        "name": "system_handle",
+        "is_required": true,
+        "is_system": true,
+        "is_column": true,
+        "type": "textbox",
+        "order": 9
+    },
+    {
         "header": "Searchable",
         "name": "searchable",
         "is_required": false,
         "is_system": true,
         "is_column": true,
         "type": "textbox",
-        "order": 8
+        "order": 10
     },
     {
         "header": "Service Level Description",
@@ -78,6 +96,6 @@
         "is_system": true,
         "is_column": true,
         "type": "textbox",
-        "order": 9
+        "order": 11
     }
 ]

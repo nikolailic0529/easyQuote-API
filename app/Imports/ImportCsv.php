@@ -165,8 +165,6 @@ class ImportCsv
             $this->quoteFile->throwExceptionIfExists();
             return;
         }
-
-        $this->findPriceAttributes();
     }
 
     protected function checkHeader(): void
@@ -221,26 +219,5 @@ class ImportCsv
         }
 
         $this->importableFilePath = $path;
-    }
-
-    protected function findPriceAttributes(): void
-    {
-        $attributes = [
-            'pricing_document'      => $this->getPriceHeaderAttributes(ImportCsvOptions::REGEXP_PD),
-            'system_handle'         => $this->getPriceHeaderAttributes(ImportCsvOptions::REGEXP_SH),
-            'service_agreement_id'  => $this->getPriceHeaderAttributes(ImportCsvOptions::REGEXP_SAID)
-        ];
-
-        $this->quoteFile->storeMetaAttributes($attributes);
-    }
-
-    private function getPriceHeaderAttributes(string $regexp): array
-    {
-        if (!($header = head(preg_grep($regexp, $this->header)))) {
-            return [];
-        }
-
-        return DB::table($this->dataTable)->select($header)->distinct($header)
-            ->get()->pluck($header)->toArray();
     }
 }

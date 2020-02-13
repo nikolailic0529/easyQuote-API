@@ -55,6 +55,10 @@ class TemplateFieldsUpdate extends Command
 
                 $templateField = TemplateField::firstOrCreate(['name' => $field['name'], 'is_system' => true], $field);
 
+                if (!$templateField->wasRecentlyCreated) {
+                    $templateField->update($field);
+                }
+
                 $this->output->write('.');
 
                 return $templateField->id;

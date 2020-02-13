@@ -108,7 +108,7 @@ class ImportableColumnController extends Controller
      */
     public function activate(ImportableColumn $importableColumn)
     {
-        $this->authorize('update', $importableColumn);
+        $this->authorize('activate', $importableColumn);
 
         return response()->json(
             $this->importableColumns->activate($importableColumn->id)
@@ -123,7 +123,7 @@ class ImportableColumnController extends Controller
      */
     public function deactivate(ImportableColumn $importableColumn)
     {
-        $this->authorize('update', $importableColumn);
+        $this->authorize('deactivate', $importableColumn);
 
         return response()->json(
             $this->importableColumns->deactivate($importableColumn->id)

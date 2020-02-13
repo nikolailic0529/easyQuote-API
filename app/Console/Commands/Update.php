@@ -56,6 +56,7 @@ class Update extends Command
         $this->call('eq:create-client-credentials');
         $this->call('eq:search-reindex');
         // $this->call('eq:cache-relations');
+        $this->call('cache:clear');
         $this->call('optimize');
     }
 }

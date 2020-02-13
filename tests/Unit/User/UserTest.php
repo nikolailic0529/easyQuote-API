@@ -114,6 +114,8 @@ class UserTest extends TestCase
      */
     public function testUserActivating()
     {
+        $this->user->deactivate();
+
         $response = $this->putJson(url("api/users/activate/{$this->user->id}"));
 
         $response->assertOk()->assertExactJson([true]);
@@ -130,6 +132,8 @@ class UserTest extends TestCase
      */
     public function testUserDeactivating()
     {
+        $this->user->activate();
+
         $response = $this->putJson(url("api/users/deactivate/{$this->user->id}"));
 
         $response->assertOk()->assertExactJson([true]);

@@ -165,7 +165,7 @@ class QuoteTemplateTest extends TestCase
      */
     public function testTemplateActivating()
     {
-        $template = app('template.repository')->create($this->makeGenericTemplateAttributes());
+        $template = tap(app('template.repository')->create($this->makeGenericTemplateAttributes()))->deactivate();
 
         $response = $this->putJson(url("api/templates/activate/{$template->id}"), []);
 
@@ -184,7 +184,7 @@ class QuoteTemplateTest extends TestCase
      */
     public function testTemplateDeactivating()
     {
-        $template = app('template.repository')->create($this->makeGenericTemplateAttributes());
+        $template = tap(app('template.repository')->create($this->makeGenericTemplateAttributes()))->activate();
 
         $response = $this->putJson(url("api/templates/deactivate/{$template->id}"), []);
 

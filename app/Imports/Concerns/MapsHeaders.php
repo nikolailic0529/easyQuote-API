@@ -80,7 +80,7 @@ trait MapsHeaders
             }
 
             $quotedHeader = preg_quote($header, '~');
-            return count(preg_grep("~^\b{$quotedHeader}\b(.*)?~i", $aliases)) > 0;
+            return count(preg_grep("~^{$quotedHeader}(?![^\h]).*~i", $aliases)) > 0;
         });
     }
 

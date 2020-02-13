@@ -58,6 +58,8 @@ define('QV_SD_01', 'You could not delete the given Version as the Quote is alrea
 define('Q_TYPE_QUOTE', 'quote');
 define('Q_TYPE_CONTRACT', 'contract');
 define('QCE_01', 'Contract for the given Quote already exists.');
+define('QCE_UN_01', 'A contract exists for this quote, please delete the contract first to undo this quote');
+define('QCE_D_01', 'A contract exists for this quote, please delete the contract first to delete this quote');
 
 /**
  * Contracts.

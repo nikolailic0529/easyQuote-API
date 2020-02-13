@@ -158,7 +158,7 @@ class RoleTest extends TestCase
      */
     public function testRoleActivating()
     {
-        $role = factory(Role::class)->create();
+        $role = tap(factory(Role::class)->create())->deactivate();
 
         $response = $this->putJson(url("api/roles/activate/{$role->id}"));
 
@@ -173,7 +173,7 @@ class RoleTest extends TestCase
      */
     public function testRoleDeactivating()
     {
-        $role = factory(Role::class)->create();
+        $role = tap(factory(Role::class)->create())->activate();
 
         $response = $this->putJson(url("api/roles/deactivate/{$role->id}"));
 

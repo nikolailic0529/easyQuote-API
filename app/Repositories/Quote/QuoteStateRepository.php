@@ -24,6 +24,7 @@ use App\Http\Requests\{
 };
 use App\Http\Requests\Quote\TryDiscountsRequest;
 use App\Http\Resources\QuoteReviewResource;
+use App\Jobs\RetrievePriceAttributes;
 use App\Models\Quote\QuoteVersion;
 use App\Repositories\Concerns\{
     ManagesGroupDescription,
@@ -647,6 +648,8 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         if (!$hasChanges) {
             return;
         }
+
+        dispatch(new RetrievePriceAttributes($quote));
 
         /**
          * Clear Cache Mapping Review Data when Mapping was changed.

@@ -53,10 +53,6 @@ class ImportableColumnPolicy
      */
     public function update(User $user, ImportableColumn $importableColumn)
     {
-        if ($user->can('update_system_settings') && $importableColumn->isSystem()) {
-            return $this->deny(ICSU_01);
-        }
-
         return $user->can('update_system_settings');
     }
 
@@ -77,26 +73,42 @@ class ImportableColumnPolicy
     }
 
     /**
-     * Determine whether the user can restore the importable column.
+     * Determine whether the user can activate the importable column.
      *
      * @param  \App\Models\User  $user
      * @param  \App\Models\QuoteFile\ImportableColumn  $importableColumn
      * @return mixed
      */
-    public function restore(User $user, ImportableColumn $importableColumn)
+    public function activate(User $user, ImportableColumn $importableColumn)
     {
-        //
+        if (!$this->update($user, $importableColumn)) {
+            return false;
+        }
+
+        if ($importableColumn->isSystem()) {
+            return $this->deny(ICSU_01);
+        }
+
+        return true;
     }
 
     /**
-     * Determine whether the user can permanently delete the importable column.
+     * Determine whether the user can deactivate the importable column.
      *
      * @param  \App\Models\User  $user
      * @param  \App\Models\QuoteFile\ImportableColumn  $importableColumn
      * @return mixed
      */
-    public function forceDelete(User $user, ImportableColumn $importableColumn)
+    public function deactivate(User $user, ImportableColumn $importableColumn)
     {
-        //
+        if (!$this->update($user, $importableColumn)) {
+            return false;
+        }
+
+        if ($importableColumn->isSystem()) {
+            return $this->deny(ICSU_01);
+        }
+
+        return true;
     }
 }

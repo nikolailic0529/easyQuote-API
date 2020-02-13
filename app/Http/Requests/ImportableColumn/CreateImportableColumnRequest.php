@@ -22,7 +22,7 @@ class CreateImportableColumnRequest extends FormRequest
                 'string',
                 'min:2',
                 'max:100',
-                Rule::unique('importable_columns', 'header')->whereNull('deleted_at')
+                Rule::unique('importable_columns', 'header')->whereNull('deleted_at')->where('is_temp', false)
             ],
             'country_id' => [
                 'required',

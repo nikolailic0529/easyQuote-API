@@ -120,12 +120,11 @@ class MarginTest extends TestCase
      */
     public function testMarginActivating()
     {
-        $margin = factory(CountryMargin::class)->create();
+        $margin = tap(factory(CountryMargin::class)->create())->deactivate();
 
         $response = $this->putJson(url("api/margins/activate/{$margin->id}"));
 
-        $response->assertOk()
-            ->assertExactJson([true]);
+        $response->assertOk()->assertExactJson([true]);
 
         $margin->refresh();
 
@@ -139,7 +138,7 @@ class MarginTest extends TestCase
      */
     public function testMarginDeactivating()
     {
-        $margin = factory(CountryMargin::class)->create();
+        $margin = tap(factory(CountryMargin::class)->create())->activate();
 
         $response = $this->putJson(url("api/margins/deactivate/{$margin->id}"));
 

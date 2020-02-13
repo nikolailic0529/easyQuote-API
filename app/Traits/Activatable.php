@@ -9,10 +9,6 @@ trait Activatable
 {
     protected static function bootActivatable()
     {
-        if (isset(static::$logAttributes)) {
-            static::$logAttributes = array_merge(static::$logAttributes, ['activated_at']);
-        }
-
         static::creating(function (Model $model) {
             $model->setAttribute('activated_at', now()->toDateTimeString());
         });
@@ -27,18 +23,26 @@ trait Activatable
     {
         $this->fireModelEvent('deactivating');
 
-        return $this->forceFill([
-            'activated_at' => null
-        ])->save();
+        if (is_null($this->activated_at)) {
+            return false;
+        }
+
+        return tap($this->forceFill(['activated_at' => null])->save(), function ($deactivated) {
+            activity()->on($this)->queueWhen('deactivated', $deactivated);
+        });
     }
 
     public function activate(): bool
     {
         $this->fireModelEvent('activating');
 
-        return $this->forceFill([
-            'activated_at' => now()->toDateTimeString()
-        ])->save();
+        if (!is_null($this->activated_at)) {
+            return false;
+        }
+
+        return tap($this->forceFill(['activated_at' => now()])->save(), function ($activated) {
+            activity()->on($this)->queueWhen('activated', $activated);
+        });
     }
 
     public function scopeActivated(Builder $query): Builder

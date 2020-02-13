@@ -39,7 +39,7 @@ class ImportableColumn extends BaseModel implements HasOrderedScope
     const TYPES = ['text', 'number', 'decimal', 'date'];
 
     protected $fillable = [
-        'header', 'name', 'order', 'is_temp', 'type', 'country_id'
+        'header', 'name', 'order', 'is_temp', 'type', 'country_id', 'is_system'
     ];
 
     protected static $logAttributes = [
@@ -92,5 +92,10 @@ class ImportableColumn extends BaseModel implements HasOrderedScope
             'country_name'  => $this->country->name,
             'aliases'       => $this->aliases->pluck('alias')->toArray()
         ];
+    }
+
+    public function getItemNameAttribute()
+    {
+        return "Importable Column ({$this->header})";
     }
 }

@@ -94,6 +94,26 @@ class QuotePolicy
     }
 
     /**
+     * Determine whether the user can unravel the quote.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Quote\Quote  $quote
+     * @return mixed
+     */
+    public function unravel(User $user, Quote $quote)
+    {
+        if (!$this->update($user, $quote)) {
+            return false;
+        }
+
+        if ($quote->contract()->exists()) {
+            return $this->deny(QCE_UN_01);
+        }
+
+        return true;
+    }
+
+    /**
      * Determine whether the user can activate the quote.
      *
      * @param  \App\Models\User  $user
@@ -126,6 +146,10 @@ class QuotePolicy
      */
     public function delete(User $user, Quote $quote)
     {
+        if ($quote->contract()->exists()) {
+            return $this->deny(QCE_D_01);
+        }
+
         if ($user->can('delete_quotes')) {
             return true;
         }

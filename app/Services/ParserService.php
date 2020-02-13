@@ -28,6 +28,7 @@ use App\Imports\{
     ImportExcelSchedule,
     CountPages
 };
+use App\Jobs\RetrievePriceAttributes;
 use App\Models\QuoteFile\QuoteFileFormat;
 use Excel, Storage, File, Setting, DB;
 use Illuminate\Pipeline\Pipeline;
@@ -120,7 +121,7 @@ class ParserService implements ParserServiceInterface
 
         if ($quoteFile->isPrice() && $quoteFile->isNotAutomapped() && $quoteFile->processing_percentage > 1) {
             $this->mapColumnsToFields($quote, $quoteFile);
-            $this->fillMetaAttributes($quote, $quoteFile);
+            dispatch(new RetrievePriceAttributes($quote->usingVersion));
         }
 
         return $quoteFile->processing_state;
@@ -218,11 +219,6 @@ class ParserService implements ParserServiceInterface
         $format = $this->fileFormat->whereInExtension($extensions->toArray());
 
         return $format;
-    }
-
-    protected function fillMetaAttributes(Quote $quote, QuoteFile $quoteFile): void
-    {
-        $quote->usingVersion->fill($quoteFile->formatted_meta_attributes)->saveWithoutEvents();
     }
 
     protected function handlePdf(QuoteFile $quoteFile): void

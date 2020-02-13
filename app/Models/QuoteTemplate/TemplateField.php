@@ -95,17 +95,16 @@ class TemplateField extends BaseModel implements HasOrderedScope, ActivatableInt
 
     public function getTypeAttribute()
     {
-        if (!isset($this->templateFieldType)) {
-            return null;
-        }
-
-        return $this->templateFieldType->name;
+        return optional($this->templateFieldType)->name;
     }
 
     public function setHeaderAttribute($value)
     {
         $this->attributes['header'] = $value;
-        $this->attributes['name'] = Str::name($value);
+
+        if (!isset($this->attributes['name'])) {
+            $this->attributes['name'] = Str::slug($value, '_');
+        }
     }
 
     public function isAttached()

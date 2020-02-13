@@ -91,12 +91,11 @@ class CountryTest extends TestCase
      */
     public function testCountryActivating()
     {
-        $country = factory(Country::class)->create();
+        $country = tap(factory(Country::class)->create())->deactivate();
 
         $response = $this->putJson(url("api/countries/activate/{$country->id}"));
 
-        $response->assertOk()
-            ->assertExactJson([true]);
+        $response->assertOk()->assertExactJson([true]);
 
         $this->assertNotNull($country->refresh()->activated_at);
     }

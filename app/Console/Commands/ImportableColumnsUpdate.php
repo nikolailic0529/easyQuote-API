@@ -48,9 +48,11 @@ class ImportableColumnsUpdate extends Command
 
                 $importableColumn->update($attributes);
 
-                collect($attributes['aliases'])->each(function ($alias) use ($importableColumn) {
+                collect($attributes['aliases'])->unique()->each(function ($alias) use ($importableColumn) {
                     $importableColumn->aliases()->firstOrCreate(compact('alias'));
                 });
+
+                $this->deleteDuplicatedAliases($importableColumn);
 
                 $this->output->write('.');
             });
@@ -59,5 +61,18 @@ class ImportableColumnsUpdate extends Command
         activity()->enableLogging();
 
         $this->info("\nSystem Defined Importable Columns were updated!");
+    }
+
+    protected function deleteDuplicatedAliases(ImportableColumn $importableColumn): void
+    {
+        $aliases = $importableColumn->aliases()->get()->toBase();
+
+        $duplicates = $aliases->duplicates('alias');
+
+        $duplicatedIds = $aliases->filter(function ($alias, $key) use ($duplicates) {
+            return $duplicates->get($key, false);
+        })->pluck('id');
+
+        $importableColumn->aliases()->whereIn('id', $duplicatedIds)->forceDelete();
     }
 }

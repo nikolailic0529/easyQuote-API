@@ -23,7 +23,7 @@ trait HasMapping
      *
      * @var array
      */
-    protected $systemHiddenFields = ['service_level_description'];
+    protected $systemHiddenFields = ['service_level_description', 'pricing_document', 'system_handle'];
 
     /**
      * Template Fields which will be hidden when Quote Mode is Contract.

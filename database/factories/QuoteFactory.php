@@ -5,7 +5,8 @@
 use App\Contracts\Repositories\{
     CompanyRepositoryInterface as Companies,
     QuoteTemplate\QuoteTemplateRepositoryInterface as Templates,
-    CurrencyRepositoryInterface as Currencies
+    CurrencyRepositoryInterface as Currencies,
+    Customer\CustomerRepositoryInterface as Customers
 };
 use App\Models\Quote\Margin\CountryMargin;
 use App\Models\Quote\Quote;
@@ -23,11 +24,13 @@ $factory->define(Quote::class, function (Faker $faker) {
     ])->random();
     $sourceCurrency = app(Currencies::class)->all()->random();
     $targetCurrency = app(Currencies::class)->all()->random();
+    $customer = app(Customers::class)->list()->random();
 
     return [
         'company_id'            => $company->id,
         'vendor_id'             => $vendor->id,
         'country_id'            => $country->id,
+        'customer_id'           => $customer->id,
         'quote_template_id'     => $template->id,
         'source_currency_id'    => $sourceCurrency->id,
         'target_currency_id'    => $targetCurrency->id,
@@ -46,7 +49,7 @@ $factory->define(Quote::class, function (Faker $faker) {
 });
 
 $factory->defineAs(Quote::class, 'state', function () use ($factory) {
-    $quote_data = $factory->raw(Quote::class);
+    $quote_data = Arr::except($factory->raw(Quote::class), 'customer_id');
     $margin = $factory->raw(CountryMargin::class, Arr::only($quote_data, ['country_id', 'vendor_id']));
 
     return compact('quote_data', 'margin');

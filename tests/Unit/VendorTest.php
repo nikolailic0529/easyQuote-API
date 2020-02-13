@@ -78,7 +78,7 @@ class VendorTest extends TestCase
      */
     public function testVendorActivating()
     {
-        $vendor = factory(Vendor::class)->create();
+        $vendor = tap(factory(Vendor::class)->create())->deactivate();
 
         $response = $this->putJson(url("api/vendors/activate/{$vendor->id}"));
 
@@ -97,7 +97,7 @@ class VendorTest extends TestCase
      */
     public function testVendorDeactivating()
     {
-        $vendor = factory(Vendor::class)->create();
+        $vendor = tap(factory(Vendor::class)->create())->activate();
 
         $response = $this->putJson(url("api/vendors/deactivate/{$vendor->id}"));
 

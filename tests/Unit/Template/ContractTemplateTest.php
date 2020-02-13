@@ -123,7 +123,7 @@ class ContractTemplateTest extends TestCase
      */
     public function testTemplateActivating()
     {
-        $template = app('contract_template.repository')->create($this->makeGenericTemplateAttributes());
+        $template = tap(app('contract_template.repository')->create($this->makeGenericTemplateAttributes()))->deactivate();
 
         $response = $this->putJson(url("api/contract-templates/activate/{$template->id}"), []);
 
@@ -142,7 +142,7 @@ class ContractTemplateTest extends TestCase
      */
     public function testTemplateDeactivating()
     {
-        $template = app('contract_template.repository')->create($this->makeGenericTemplateAttributes());
+        $template = tap(app('contract_template.repository')->create($this->makeGenericTemplateAttributes()))->activate();
 
         $response = $this->putJson(url("api/contract-templates/deactivate/{$template->id}"), []);
 

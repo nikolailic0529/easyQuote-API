@@ -14,8 +14,7 @@ class SubmitContractRequest extends FormRequest
     public function rules()
     {
         return [
-            'closing_date' => 'required|date_format:Y-m-d',
-            'additional_notes' => 'required|string|max:20000|min:2'
+            'additional_notes' => 'string|max:20000'
         ];
     }
 
@@ -23,6 +22,6 @@ class SubmitContractRequest extends FormRequest
     {
         $closing_date = now()->format('Y-m-d');
 
-        return parent::validated() + compact('closing_date');
+        return compact('closing_date') + parent::validated();
     }
 }

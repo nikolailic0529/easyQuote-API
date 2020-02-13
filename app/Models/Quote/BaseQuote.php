@@ -40,14 +40,14 @@ use App\Traits\{
     CachesRelations\CachesRelations,
     Activity\LogsActivity,
     Currency\ConvertsCurrency,
-    Auth\Multitenantable
+    Auth\Multitenantable,
+    SavesPreviousState
 };
 use Illuminate\Database\Eloquent\{
     SoftDeletes,
     Builder
 };
 use Illuminate\Support\Traits\Tappable;
-use Carbon\Carbon;
 use Str;
 
 abstract class BaseQuote extends BaseModel implements HasOrderedScope, ActivatableInterface
@@ -80,7 +80,14 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
         Completable,
         SwitchesMode,
         ConvertsCurrency,
+        SavesPreviousState,
         Tappable;
+
+    const PRICE_ATTRIBUTES_MAPPING = [
+        'pricing_document'      => 'pricing_document',
+        'system_handle'         => 'system_handle',
+        'service_agreement_id'  => 'searchable'
+    ];
 
     protected $connection = 'mysql';
 
@@ -153,6 +160,8 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
 
     protected static $cacheRelations = ['user', 'customer', 'company'];
 
+    protected static $saveStateAttributes = ['service_agreement_id'];
+
     public function scopeNewType($query)
     {
         return $query->whereType('New');
@@ -168,7 +177,7 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
         return $query->orderByDesc('created_at');
     }
 
-    public function scopeRfq($query, string $rfq)
+    public function scopeRfq($query, ?string $rfq)
     {
         return $query->whereHas('customer', function ($query) use ($rfq) {
             $query->whereRfq($rfq);
@@ -288,7 +297,7 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
             'quoteFiles' => function ($query) {
                 return $query->isNotHandledSchedule();
             },
-            'quoteTemplate.templateFields.templateFieldType',
+            'quoteTemplate',
             'countryMargin',
             'discounts',
             'customer',

@@ -122,7 +122,7 @@ class QuoteSubmittedController extends Controller
      */
     public function unSubmit(Quote $submitted)
     {
-        $this->authorize('update', $submitted);
+        $this->authorize('unravel', $submitted);
 
         return response()->json(
             $this->repository->unSubmit($submitted->id)

@@ -89,7 +89,8 @@ abstract class DiscountTest extends TestCase
      */
     public function testDiscountActivating()
     {
-        $discount = factory($this->model())->create(['country_id' => $this->quote->country_id, 'vendor_id' => $this->quote->vendor_id]);
+        $attributes = ['country_id' => $this->quote->country_id, 'vendor_id' => $this->quote->vendor_id];
+        $discount = tap(factory($this->model())->create($attributes))->deactivate();
 
         $response = $this->putJson(url("api/discounts/{$this->resource()}/activate/{$discount->id}"));
 

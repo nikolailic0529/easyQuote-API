@@ -65,7 +65,6 @@
             "start",
             "start date",
             "date_from",
-            "coverage period from",
             "coverage_from",
             "coverage_period_from",
             "coverage period from",
@@ -88,7 +87,6 @@
             "end",
             "end date",
             "date_to",
-            "coverage period to",
             "coverage_to",
             "coverage_period_to",
             "coverage period to",
@@ -123,15 +121,16 @@
         "aliases": [
             "price",
             "priceeur",
+            "price/eur",
             "line_amount",
             "lineamount",
-            "line amount",
             "monthly list price",
             "unit net price",
             "line amount",
             "line item",
             "total",
             "subtotal",
+            "subtotal/€",
             "prix",
             "pris",
             "prix liste par élément",
@@ -145,13 +144,37 @@
         ]
     },
     {
-        "header": "Searchable",
-        "name": "searchable",
+        "header": "Pricing Document",
+        "name": "pricing_document",
         "type": "text",
         "order": 7,
         "country": "GB",
         "aliases": [
+            "pricing document",
+            "pricing document id"
+        ]
+    },
+    {
+        "header": "System Handle",
+        "name": "system_handle",
+        "type": "text",
+        "order": 8,
+        "country": "GB",
+        "aliases": [
+            "system handle",
+            "system handle id",
+            "support account reference"
+        ]
+    },
+    {
+        "header": "Searchable",
+        "name": "searchable",
+        "type": "text",
+        "order": 9,
+        "country": "GB",
+        "aliases": [
             "searchable",
+            "service agreement",
             "service agreement id",
             "n° accord service"
         ]
