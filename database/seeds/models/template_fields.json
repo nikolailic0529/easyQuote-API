@@ -65,7 +65,7 @@
     {
         "header": "Pricing Document",
         "name": "pricing_document",
-        "is_required": true,
+        "is_required": false,
         "is_system": true,
         "is_column": true,
         "type": "textbox",
@@ -74,7 +74,7 @@
     {
         "header": "System Handle",
         "name": "system_handle",
-        "is_required": true,
+        "is_required": false,
         "is_system": true,
         "is_column": true,
         "type": "textbox",

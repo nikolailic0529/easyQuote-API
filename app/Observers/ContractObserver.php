@@ -27,7 +27,7 @@ class ContractObserver
             ->url($url)
             ->status([CTSS_01, 'Contract Number' => $contract_number, 'Caused By' => $causer->fullname])
             ->image(assetExternal(SN_IMG_QSS))
-            ->send();
+            ->queue();
 
         $notificationRecepients->each(function ($user) use ($url, $contract, $contract_number) {
             notification()

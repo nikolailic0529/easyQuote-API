@@ -300,6 +300,6 @@ class StoreQuoteStateRequest extends FormRequest
             ->url(ui_route('quotes.drafted.review', ['quote' => $this->quote()]))
             ->status([QSF_01, 'Quote RFQ' => $this->quoteRfq(), 'Reason' => QSE_01, 'Caused By' => optional($this->user())->fullname])
             ->image(assetExternal(SN_IMG_QSF))
-            ->send();
+            ->queue();
     }
 }

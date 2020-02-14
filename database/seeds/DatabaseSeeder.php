@@ -61,6 +61,9 @@ class DatabaseSeeder extends Seeder
         $this->call(QuoteTemplatesSeeder::class);
         $this->command->info('Seeded the system defined quote templates!');
 
+        $this->call(ContractTemplatesSeeder::class);
+        $this->command->info('Seeded the system defined contract templates!');
+
         $this->call(CustomersSeeder::class);
         $this->command->info('Seeded the S4 customers!');
 

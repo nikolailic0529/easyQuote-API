@@ -23,13 +23,17 @@ class ImportableColumnsSeeder extends Seeder
 
         collect($importable_columns)->each(function ($column) {
             $columnId = (string) Uuid::generate(4);
+            $now = now();
 
             DB::table('importable_columns')->insert([
-                'id' => $columnId,
-                'header' => $column['header'],
-                'name' => $column['name'],
-                'order' => $column['order'],
-                'is_system' => true
+                'id'            => $columnId,
+                'header'        => $column['header'],
+                'name'          => $column['name'],
+                'order'         => $column['order'],
+                'is_system'     => true,
+                'created_at'    => $now,
+                'updated_at'    => $now,
+                'activated_at'  => $now
             ]);
 
             collect($column['aliases'])->each(function ($alias) use ($columnId) {

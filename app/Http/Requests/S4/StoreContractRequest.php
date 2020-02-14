@@ -71,7 +71,7 @@ class StoreContractRequest extends FormRequest
             ->title('Receiving RFQ / Data from S4')
             ->status([S4_CSF_01, 'Proposed RFQ' => $this->rfq_number, 'Reason' => optional($validator->errors())->first()])
             ->image(assetExternal(SN_IMG_S4RDF))
-            ->send();
+            ->queue();
 
         parent::{__FUNCTION__}($validator);
     }

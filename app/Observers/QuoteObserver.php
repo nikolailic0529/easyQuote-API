@@ -52,7 +52,7 @@ class QuoteObserver
             ->url($url)
             ->status([QSS_01, 'Quote RFQ' => $rfq_number, 'Caused By' => optional(request()->user())->fullname])
             ->image(assetExternal(SN_IMG_QSS))
-            ->send();
+            ->queue();
 
         notification()
             ->for($quote->user)

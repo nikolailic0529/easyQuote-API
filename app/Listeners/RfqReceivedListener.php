@@ -23,7 +23,7 @@ class RfqReceivedListener
             ->url(ui_route('customers.listing'))
             ->status([S4_CSS_01, 'Proposed RFQ' => $event->customer->rfq])
             ->image(assetExternal(SN_IMG_S4RDS))
-            ->send();
+            ->queue();
 
         activity()
             ->on($event->customer)

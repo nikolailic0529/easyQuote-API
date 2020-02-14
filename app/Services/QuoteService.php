@@ -166,7 +166,7 @@ class QuoteService implements QuoteServiceInterface
 
         $initialTotalPayments = $quote->scheduleData->value->sum('price') * $targetExchangeRate;
 
-        if ((float) $initialTotalPayments === 0.0) {
+        if ($initialTotalPayments == 0) {
             return;
         }
 

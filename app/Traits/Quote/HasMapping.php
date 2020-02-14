@@ -296,9 +296,10 @@ trait HasMapping
         $query = DB::query()->fromSub($this->groupedRows($flags, $calculate, $group_name), 'rows_data')
             ->groupBy('group_name')
             ->select('group_name')
-            ->selectRaw('count(`id`) as `total_count`');
-
-        in_array('price', $this->templateFieldsToArray()) && $query->selectRaw('cast(sum(`price`) as decimal(15,2)) as `total_price`');;
+            ->selectRaw('count(`id`) as `total_count`')
+            ->when(isset(array_flip($this->templateFieldsToArray())['price']), function ($query) {
+                $query->selectRaw('cast(sum(`price`) as decimal(15,2)) as `total_price`');
+            });
 
         return $query;
     }

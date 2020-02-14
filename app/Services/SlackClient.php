@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\Services\SlackInterface;
+use App\Jobs\SendSlackNotification;
 use Psr\Http\Message\ResponseInterface;
 use Exception, Arr, Str;
 
@@ -29,9 +30,7 @@ class SlackClient implements SlackInterface
             $this->attributes = $attributes;
         }
 
-        if (!isset($this->attributes) || !Arr::has($this->attributes, ['title', 'status'])) {
-            throw static::undefinedAttributes();
-        }
+        $this->validateAttributes();
 
         try {
             $response = $this->request($this->toArray());
@@ -48,6 +47,17 @@ class SlackClient implements SlackInterface
 
             return false;
         }
+    }
+
+    public function queue(?array $attributes = null)
+    {
+        if (isset($attributes)) {
+            $this->attributes = $attributes;
+        }
+
+        $this->validateAttributes();
+
+        dispatch(new SendSlackNotification($this->attributes));
     }
 
     public function title($title): SlackInterface
@@ -114,6 +124,13 @@ class SlackClient implements SlackInterface
     public function getImage()
     {
         return optional($this->attributes)['image'];
+    }
+
+    protected function validateAttributes(): void
+    {
+        if (!isset($this->attributes) || !Arr::has($this->attributes, ['title', 'status'])) {
+            throw static::undefinedAttributes();
+        }
     }
 
     protected function request(array $payload): ResponseInterface

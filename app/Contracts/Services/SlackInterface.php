@@ -13,6 +13,14 @@ interface SlackInterface
     public function send(?array $attributes = null);
 
     /**
+     * Queue a newly created Slack message.
+     *
+     * @param array|null $attributes
+     * @return mixed
+     */
+    public function queue(?array $attributes = null);
+
+    /**
      * Set the Title attribute.
      *
      * @param mixed $title
