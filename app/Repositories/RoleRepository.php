@@ -21,7 +21,11 @@ use Arr;
 
 class RoleRepository extends SearchableRepository implements RoleRepositoryInterface
 {
-    protected $role;
+    /** @var \App\Models\Role */
+    protected Role $role;
+
+    /** @var \App\Models\Permission */
+    protected Permission $permission;
 
     public function __construct(Role $role, Permission $permission)
     {
@@ -68,7 +72,6 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
     {
         if ($request instanceof \Illuminate\Http\Request) {
             $request = $request->validated();
-            data_set($request, 'user_id', auth()->id());
         }
 
         throw_unless(is_array($request), new \InvalidArgumentException(INV_ARG_RA_01));
@@ -81,9 +84,7 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
 
     public function update(UpdateRoleRequest $request, string $id): Role
     {
-        $role = $this->find($id);
-
-        return tap($role, function ($role) use ($request) {
+        return tap($this->find($id), function (Role $role) use ($request) {
             $role->update($request->validated());
             $role->syncPrivileges($request->input('properties'));
             $role->append('properties');

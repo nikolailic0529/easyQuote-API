@@ -15,7 +15,7 @@ class SystemSetting extends BaseModel
     public $timestamps = false;
 
     protected $fillable = [
-        'possible_values', 'value', 'type', 'key', 'section'
+        'possible_values', 'value', 'type', 'key', 'section', 'order'
     ];
 
     protected $hidden = [
@@ -29,7 +29,7 @@ class SystemSetting extends BaseModel
     ];
 
     protected $types = [
-        'string', 'integer', 'array', 'datetime'
+        'string', 'integer', 'float', 'decimal', 'array', 'datetime'
     ];
 
     protected $appends = [

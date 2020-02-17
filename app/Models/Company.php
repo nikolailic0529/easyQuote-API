@@ -91,10 +91,8 @@ class Company extends BaseModel implements WithImage, WithLogo, ActivatableInter
     public function sortVendorsCountries(): self
     {
         $vendors = $this->vendors->map(function ($vendor) {
-            $countries = $vendor->countries->sortByDesc(function ($country) {
-                return $this->default_country_id === $country->id;
-            })->values();
-
+            $countries = $vendor->countries
+                ->sortByDesc(fn ($country) => ($this->default_country_id === $country->id))->values();
             return $vendor->setRelation('countries', $countries);
         });
 
@@ -103,14 +101,12 @@ class Company extends BaseModel implements WithImage, WithLogo, ActivatableInter
 
     public function scopeVendor($query, string $id)
     {
-        return $query->whereHas('vendors', function ($query) use ($id) {
-            $query->where('vendors.id', $id);
-        });
+        return $query->whereHas('vendors', fn ($query) => $query->where('vendors.id', $id));
     }
 
     public function scopeOrdered($query)
     {
-        return $query->orderByRaw("field(`vat`, ?, null) desc", ['GB758501125']);
+        return $query->orderByRaw("field(`vat`, ?, null) desc", [CP_DEF_VAT]);
     }
 
     public function inUse()
@@ -126,5 +122,17 @@ class Company extends BaseModel implements WithImage, WithLogo, ActivatableInter
     public function withAppends()
     {
         return $this->append('logo');
+    }
+
+    public function toSearchArray()
+    {
+        return [
+            'name'          => $this->name,
+            'vat'           => $this->vat,
+            'type'          => $this->type,
+            'email'         => $this->email,
+            'phone'         => $this->phone,
+            'created_at'    => $this->created_at
+        ];
     }
 }

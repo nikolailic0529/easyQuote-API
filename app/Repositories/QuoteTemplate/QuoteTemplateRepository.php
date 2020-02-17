@@ -20,15 +20,11 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
     const DESIGN_ATTRIBUTES = ['form_data', 'complete_design'];
 
     /** @var \App\Models\QuoteTemplate\QuoteTemplate */
-    protected $quoteTemplate;
-
-    /** @var string */
-    protected $table;
+    protected QuoteTemplate $quoteTemplate;
 
     public function __construct(QuoteTemplate $quoteTemplate)
     {
         $this->quoteTemplate = $quoteTemplate;
-        $this->table = $quoteTemplate->getTable();
     }
 
     public function userQuery(): Builder
@@ -76,9 +72,8 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
     public function country(string $countryId): Collection
     {
         return $this->quoteTemplate->query()
-            ->whereHas('countries', function ($query) use ($countryId) {
-                $query->whereId($countryId);
-            })->get();
+            ->whereHas('countries', fn ($query) => $query->whereId($countryId))
+            ->get();
     }
 
     public function random(int $limit = 1, ?Closure $scope = null)
@@ -102,9 +97,8 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
         $vendor_logos = $template->vendor->appendLogo()->logoDimensions ?? [];
 
         $designer = collect(__('template.designer'))->transform(function ($page) {
-            return collect($page)->transform(function ($tag) {
-                return array_merge($tag, ['is_image' => false]);
-            })->toArray();
+            data_set($page, '*.is_image', false);
+            return $page;
         });
 
         $designer['first_page'] = array_merge($designer['first_page'], $company_logos, $vendor_logos);
@@ -120,9 +114,10 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
 
         throw_unless(is_array($request), new \InvalidArgumentException(INV_ARG_RA_01));
 
-        return tap($this->quoteTemplate->create($request), function ($template) use ($request) {
-            $template->syncCountries(data_get($request, 'countries'));
-        });
+        return tap(
+            $this->quoteTemplate->create($request),
+            fn (QuoteTemplate $template) => $template->syncCountries(data_get($request, 'countries'))
+        );
     }
 
     public function update(UpdateQuoteTemplateRequest $request, string $id): QuoteTemplate

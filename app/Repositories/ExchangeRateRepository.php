@@ -11,7 +11,7 @@ class ExchangeRateRepository implements ExchangeRateRepositoryInterface
     const CACHE_PREFIX = 'exchange_rate:';
 
     /** @var \App\Models\Data\ExchangeRate */
-    protected $exchangeRate;
+    protected ExchangeRate $exchangeRate;
 
     public function __construct(ExchangeRate $exchangeRate)
     {

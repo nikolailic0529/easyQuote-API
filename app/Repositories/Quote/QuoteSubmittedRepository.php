@@ -32,21 +32,17 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     const EXPORT_CACHE_PREFIX = 'quote-pdf';
 
     /** @var \App\Models\Quote\Quote */
-    protected $quote;
-
-    /** @var string */
-    protected $table;
+    protected Quote $quote;
 
     /** @var \App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface */
-    protected $quoteFile;
+    protected QuoteFileRepository $quoteFile;
 
     /** @var \App\Contracts\Services\QuoteServiceInterface */
-    protected $quoteService;
+    protected QuoteServiceInterface $quoteService;
 
     public function __construct(Quote $quote, QuoteFileRepository $quoteFile, QuoteServiceInterface $quoteService)
     {
         $this->quote = $quote;
-        $this->table = $quote->getTable();
         $this->quoteFile = $quoteFile;
         $this->quoteService = $quoteService;
     }

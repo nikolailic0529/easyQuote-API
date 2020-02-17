@@ -80,23 +80,19 @@ class Role extends BaseModel implements RoleContract, ActivatableInterface
         $attributes['guard_name'] = $attributes['guard_name'] ?? 'web';
 
         if (!app()->runningInConsole()) {
-            $attributes['user_id'] = $attributes['user_id'] ?? request()->user()->id;
+            $attributes['user_id'] = $attributes['user_id'] ?? auth()->id();
         }
 
         if (
             static::where('name', $attributes['name'])
             ->where('guard_name', $attributes['guard_name'])
-            ->where(function ($query) use ($attributes) {
-                $query->where('user_id', $attributes['user_id'] ?? null)
-                    ->orWhere('is_system', true);
-            })
+            ->where(
+                fn ($query) => $query->where('user_id', optional($attributes)['user_id'])
+                    ->orWhere('is_system', true)
+            )
             ->first()
         ) {
             throw RoleAlreadyExists::create($attributes['name'], $attributes['guard_name']);
-        }
-
-        if (isNotLumen() && app()::VERSION < '5.4') {
-            return parent::create($attributes);
         }
 
         return static::query()->create($attributes);
@@ -173,14 +169,14 @@ class Role extends BaseModel implements RoleContract, ActivatableInterface
      *
      * @return \Spatie\Permission\Contracts\Role
      */
-    public static function findOrCreate(string $name, $guardName = null): RoleContract
+    public static function findOrCreate(string $name, $guard_name = null): RoleContract
     {
-        $guardName = $guardName ?? Guard::getDefaultName(static::class);
+        $guard_name ??= Guard::getDefaultName(static::class);
 
-        $role = static::where('name', $name)->where('guard_name', $guardName)->first();
+        $role = static::where(compact('name', 'guard_name'))->first();
 
         if (!$role) {
-            return static::query()->create(['name' => $name, 'guard_name' => $guardName]);
+            return static::query()->create(compact('name', 'guard_name'));
         }
 
         return $role;

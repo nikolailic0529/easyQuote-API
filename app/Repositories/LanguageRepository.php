@@ -16,8 +16,6 @@ class LanguageRepository implements LanguageRepositoryInterface
 
     public function all()
     {
-        return cache()->sear('all-languages', function () {
-            return $this->language->ordered()->get();
-        });
+        return cache()->sear('all-languages', fn () => $this->language->ordered()->get());
     }
 }

@@ -8,9 +8,16 @@ use App\Models\{
     Data\Currency,
     Data\Country
 };
+use Illuminate\Database\Eloquent\Collection;
 
 class ContractTemplatesSeeder extends Seeder
 {
+    /** @var string */
+    protected string $design;
+
+    /** @var \App\Models\Data\Currency */
+    protected Currency $currency;
+
     /**
      * Run the database seeds.
      *
@@ -19,40 +26,47 @@ class ContractTemplatesSeeder extends Seeder
     public function run()
     {
         $templates = json_decode(file_get_contents(__DIR__ . '/models/contract_templates.json'), true);
-        $design = file_get_contents(database_path('seeds/models/contract_template_design.json'));
+        $this->design = file_get_contents(database_path('seeds/models/contract_template_design.json'));
+        $this->currency = Currency::whereCode(Setting::get('base_currency'))->first();
 
-        \DB::transaction(function () use ($templates, $design) {
-            collect($templates)->each(function ($attributes) use ($design) {
-                $company = Company::whereVat($attributes['company']['vat'])->first();
-                $vendor = Vendor::whereShortCode($attributes['vendor'])->first();
-                $currency = Currency::whereCode(Setting::get('base_currency'))->first();
-                $countries = Country::whereIn('iso_3166_2', $attributes['countries'])->get();
+        \DB::transaction(
+            fn () => collect($templates)->each(
+                fn ($attributes) => $this->createCompanyTemplates($attributes)
+            )
+        );
+    }
 
-                $designAttributes = $vendor->getLogoDimensionsAttribute(true) + $company->getLogoDimensionsAttribute(true);
-                $formData = $this->parseDesign($design, $designAttributes);
+    protected function createCompanyTemplates(array $attributes): void
+    {
+        $company = Company::whereVat($attributes['company']['vat'])->first();
+        $vendors = Vendor::whereIn('short_code', $attributes['vendors'])->get();
+        $countries = Country::whereIn('iso_3166_2', $attributes['countries'])->get();
 
-                $name = implode('-', [$attributes['company']['acronym'], $vendor->short_code, $attributes['language']]);
+        $vendors->each(fn ($vendor) => $this->createVendorTemplates($company, $vendor, $countries, $attributes));
+    }
 
-                $template = tap(ContractTemplate::make()->forceFill([
-                    'name'          => $name,
-                    'is_system'     => true,
-                    'form_data'     => $formData,
-                    'company_id'    => $company->id,
-                    'vendor_id'     => $vendor->id,
-                    'currency_id'   => $currency->id,
+    protected function createVendorTemplates(Company $company, Vendor $vendor, Collection $countries, array $attributes): void
+    {
+        $designAttributes = $vendor->getLogoDimensionsAttribute(true) + $company->getLogoDimensionsAttribute(true);
+        $formData = $this->parseDesign($this->design, $designAttributes);
 
-                ]))->save();
+        $name = implode('-', [$attributes['company']['acronym'], $vendor->short_code, $attributes['language']]);
 
-                $template->countries()->sync($countries);
-            });
-        });
+        $template = ContractTemplate::create([
+            'name'          => $name,
+            'is_system'     => true,
+            'form_data'     => $formData,
+            'company_id'    => $company->id,
+            'vendor_id'     => $vendor->id,
+            'currency_id'   => $this->currency->id
+        ]);
+
+        $template->countries()->sync($countries);
     }
 
     protected function parseDesign(string $design, array $attributes): array
     {
-        $design = preg_replace_callback('/{{(.*)}}/m', function ($item) use ($attributes) {
-            return $attributes[last($item)] ?? null;
-        }, $design);
+        $design = preg_replace_callback('/{{(.*)}}/m', fn ($item) => data_get($attributes, last($item)), $design);
 
         return json_decode($design, true);
     }

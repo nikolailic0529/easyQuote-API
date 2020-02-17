@@ -24,7 +24,7 @@ class NotificationRepository extends SearchableRepository implements Notificatio
     use ResolvesImplicitModel;
 
     /** @var \App\Models\System\Notification */
-    protected $notification;
+    protected Notification $notification;
 
     public function __construct(Notification $notification)
     {

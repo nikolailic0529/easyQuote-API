@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Console\Commands;
+
 use App\Models\{
     User,
     Company,
@@ -67,9 +68,8 @@ class SeedBulkQuotes extends Command
 
     protected function prepareData(): Collection
     {
-        $countries = collect(['US', 'GB', 'CA'])->transform(function ($code) {
-            return app('country.repository')->findIdByCode($code);
-        });
+        $countries = collect(['US', 'GB', 'CA'])
+            ->transform(fn ($code) => app('country.repository')->findIdByCode($code));
 
         $users = User::get();
         $companies = Company::get();

@@ -18,10 +18,10 @@ class RfqReceived implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets;
 
     /** @var \App\Models\Customer\Customer */
-    public $customer;
+    public Customer $customer;
 
     /** @var string */
-    public $service;
+    public string $service;
 
     /**
      * Create a new event instance.
@@ -41,9 +41,7 @@ class RfqReceived implements ShouldBroadcast
      */
     public function broadcastOn()
     {
-        return $this->loggedInUsers()->map(function ($user) {
-                return new PrivateChannel('user.'.$user->id);
-            })->toArray();
+        return $this->loggedInUsers()->map(fn ($user) => new PrivateChannel('user.'.$user->id))->toArray();
     }
 
     /**
@@ -68,8 +66,6 @@ class RfqReceived implements ShouldBroadcast
 
     private function loggedInUsers(): LazyCollection
     {
-        return app('user.repository')->cursor(function (Builder $query) {
-            $query->whereAlreadyLoggedIn(true);
-        });
+        return app('user.repository')->cursor(fn (Builder $query) => $query->whereAlreadyLoggedIn(true));
     }
 }

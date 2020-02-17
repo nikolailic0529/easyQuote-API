@@ -9,6 +9,6 @@ trait BelongsToVendor
 {
     public function vendor(): BelongsTo
     {
-        return $this->belongsTo(Vendor::class)->withDefault(Vendor::make());
+        return $this->belongsTo(Vendor::class)->withDefault();
     }
 }

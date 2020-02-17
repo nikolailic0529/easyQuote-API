@@ -2,8 +2,13 @@
 
 namespace App\Console\Commands;
 
-use App\Models\QuoteTemplate\QuoteTemplate;
+use App\Models\QuoteTemplate\{
+    QuoteTemplate,
+    ContractTemplate
+};
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
+use Str;
 
 class TemplatesDump extends Command
 {
@@ -38,19 +43,29 @@ class TemplatesDump extends Command
      */
     public function handle()
     {
-        $query = QuoteTemplate::nonSystem();
+        collect([QuoteTemplate::nonSystem(), ContractTemplate::nonSystem()])
+            ->each(fn (Builder $query) => $this->dumpTemplates($query));
+    }
 
-        $this->info('Backing up the user defined templates...');
+    protected function dumpTemplates(Builder $query)
+    {
+        $modelsName = Str::plural(class_basename($query->getModel()));
+        $subdir = Str::snake($modelsName);
+
+        $this->info(PHP_EOL . 'Backing up the user defined ' . $modelsName . '...');
         $this->info('Total Count: ' . $query->count());
 
         $templates = $query->with('templateFields', 'currency', 'user', 'company', 'vendor', 'countries')->get();
         $templates = serialize($templates);
 
-        $path = 'templates/' . now()->format('m-d-y_h-m');
-        storage_missing('templates') && storage_mkdir('templates');
+        $dir = 'templates' . DIRECTORY_SEPARATOR . $subdir;
+
+        $path = $dir . DIRECTORY_SEPARATOR . now()->format('m-d-y_h-m');
+
+        storage_missing($dir) && storage_mkdir($dir);
         storage_put($path, $templates);
 
-        $this->info('Backing up the user defined templates was completed!');
+        $this->info('Backing up the user defined ' . $modelsName . ' was completed!');
         $this->info('storage/app/' . $path);
     }
 }

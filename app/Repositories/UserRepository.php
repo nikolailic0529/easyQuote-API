@@ -36,17 +36,13 @@ use Illuminate\Support\LazyCollection;
 
 class UserRepository extends SearchableRepository implements UserRepositoryInterface
 {
-    protected $user;
+    protected User $user;
 
-    protected $role;
+    protected Role $role;
 
-    protected $invitation;
+    protected Invitation $invitation;
 
-    protected $passwordReset;
-
-    protected $country;
-
-    protected $timezone;
+    protected PasswordReset $passwordReset;
 
     public function __construct(
         User $user,
@@ -165,28 +161,22 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
 
     public function createAdministrator(array $attributes): User
     {
-        $user = $this->create($attributes);
-        $user->assignRole($this->role->administrator());
-
-        return $user;
+        return tap($this->create($attributes))->assignRole($this->role->administrator());
     }
 
     public function createCollaborator(array $attributes, Invitation $invitation): User
     {
         error_abort_if($invitation->isExpired, IE_01, 'IE_01', 406);
 
-        $user = $this->create(array_merge($attributes, $invitation->only('email')));
-        $user->interact($invitation);
+        $attributes = array_merge($attributes, $invitation->only('email'));
 
-        return $user;
+        return tap($this->create($attributes))->interact($invitation);
     }
 
     public function invite($request): Invitation
     {
         if ($request instanceof \Illuminate\Http\Request) {
-            $user = $request->user();
             $request = $request->validated();
-            data_set($request, 'user_id', $user->id);
         }
 
         throw_unless(is_array($request), new \InvalidArgumentException(INV_ARG_RA_01));
@@ -281,9 +271,7 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
 
         $password = Hash::make($request->password);
 
-        $passwordReset->user->notify(new PasswordResetSuccess);
-
-        $passwordReset->user->markAsLoggedOut();
+        tap($passwordReset->user)->notify(new PasswordResetSuccess)->markAsLoggedOut();
 
         return $passwordReset->user->update(compact('password')) && $passwordReset->delete();
     }

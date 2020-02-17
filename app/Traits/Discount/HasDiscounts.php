@@ -8,25 +8,26 @@ use App\Models\Quote\Discount\{
     PromotionalDiscount,
     SND
 };
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 trait HasDiscounts
 {
-    public function multiYearDiscounts()
+    public function multiYearDiscounts(): HasMany
     {
         return $this->hasMany(MultiYearDiscount::class);
     }
 
-    public function prePayDiscounts()
+    public function prePayDiscounts(): HasMany
     {
         return $this->hasMany(PrePayDiscount::class);
     }
 
-    public function promotionalDiscounts()
+    public function promotionalDiscounts(): HasMany
     {
         return $this->hasMany(PromotionalDiscount::class);
     }
 
-    public function SNDs()
+    public function SNDs(): HasMany
     {
         return $this->hasMany(SND::class);
     }

@@ -39,25 +39,23 @@ class QuoteStateRepository implements QuoteRepositoryInterface
 {
     use ResolvesImplicitModel, ResolvesQuoteVersion, ManagesGroupDescription;
 
-    protected $quote;
+    protected Quote $quote;
 
-    protected $quoteService;
+    protected QuoteService $quoteService;
 
-    protected $quoteFile;
+    protected QuoteFile $quoteFile;
 
-    protected $quoteFileRepository;
+    protected QuoteFileRepository $quoteFileRepository;
 
-    protected $margin;
+    protected MarginRepository $margin;
 
-    protected $quoteDiscount;
+    protected QuoteTemplateRepository $quoteTemplate;
 
-    protected $quoteTemplate;
+    protected TemplateField $templateField;
 
-    protected $templateField;
+    protected ImportableColumn $importableColumn;
 
-    protected $importableColumn;
-
-    protected $morphDiscount;
+    protected QuoteDiscount $morphDiscount;
 
     public function __construct(
         Quote $quote,
@@ -66,7 +64,6 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         QuoteTemplateRepository $quoteTemplate,
         QuoteFileRepository $quoteFileRepository,
         MarginRepository $margin,
-        QuoteDiscount $quoteDiscount,
         TemplateField $templateField,
         ImportableColumn $importableColumn,
         QuoteDiscount $morphDiscount
@@ -75,7 +72,6 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         $this->quoteFile = $quoteFile;
         $this->quoteFileRepository = $quoteFileRepository;
         $this->margin = $margin;
-        $this->quoteDiscount = $quoteDiscount;
         $this->quoteTemplate = $quoteTemplate;
         $this->templateField = $templateField;
         $this->importableColumn = $importableColumn;
@@ -184,9 +180,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
     {
         $quote = $this->findVersion($request->quote_id);
 
-        return cache()->sear($quote->mappingReviewCacheKey, function () use ($quote) {
-            return $quote->rowsDataByColumns()->get();
-        });
+        return cache()->sear($quote->mappingReviewCacheKey, fn () => $quote->rowsDataByColumns()->get());
     }
 
     public function discounts(string $id)
@@ -194,9 +188,8 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         $quote = $this->findVersion($id);
 
         $discounts = $this->morphDiscount
-            ->whereHasMorph('discountable', $quote->discountsOrder(), function ($query) use ($quote) {
-                $query->quoteAcceptable($quote)->activated();
-            })->get()->pluck('discountable');
+            ->whereHasMorph('discountable', $quote->discountsOrder(), fn ($query) => $query->quoteAcceptable($quote)->activated())
+            ->get()->pluck('discountable');
 
         $expectingDiscounts = ['multi_year' => [], 'pre_pay' => [], 'promotions' => [], 'snd' => []];
 

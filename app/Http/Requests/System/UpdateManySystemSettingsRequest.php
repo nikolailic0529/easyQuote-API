@@ -3,20 +3,17 @@
 namespace App\Http\Requests\System;
 
 use Illuminate\Foundation\Http\FormRequest;
-use App\Contracts\Repositories\System\SystemSettingRepositoryInterface as SystemSettingRepository;
+use App\Rules\{
+    SettingValue,
+    SettingValueType
+};
 use Illuminate\Validation\Rule;
 use Str;
 
 class UpdateManySystemSettingsRequest extends FormRequest
 {
-    protected $systemSetting;
-
-    protected static $presentSystemSettings;
-
-    public function __construct(SystemSettingRepository $systemSetting)
-    {
-        $this->systemSetting = $systemSetting;
-    }
+    /** @var \Illuminate\Database\Eloquent\Collection */
+    public $presentSystemSettings;
 
     /**
      * Determine if the user is authorized to make this request.
@@ -44,43 +41,18 @@ class UpdateManySystemSettingsRequest extends FormRequest
             ],
             '*.value' => [
                 'required',
-                function ($attribute, $value, $fail) {
-                    $key = Str::before($attribute, '.value');
-                    $id = $this->input("{$key}.id");
-                    $setting = $this->presentSystemSettings()->firstWhere('id', $id);
-
-                    if (is_null($setting)) {
-                        return;
-                    }
-
-                    if ($setting->is_read_only) {
-                        return $fail(SS_INV_02);
-                    }
-
-                    if (is_array($value)) {
-                        if (filled(array_diff($value, $setting->flattenPossibleValues))) {
-                            return $fail(SS_INV_01);
-                        }
-                        return;
-                    }
-
-                    if (!isset(array_flip($setting->flattenPossibleValues)[$value])) {
-                        return $fail(SS_INV_01);
-                    }
-                }
+                new SettingValue($this),
+                new SettingValueType($this)
             ]
         ];
     }
 
-    public function presentSystemSettings()
+    public function findPresentSetting(string $attribute)
     {
-        if (isset(static::$presentSystemSettings)) {
-            return static::$presentSystemSettings;
-        }
+        $key = Str::before($attribute, '.value');
+        $id = $this->input($key.'.id');
 
-        return static::$presentSystemSettings = $this->systemSetting->findMany(
-            data_get($this->toArray(), '*.id')
-        );
+        return $this->presentSystemSettings->firstWhere('id', $id);
     }
 
     public function messages()
@@ -88,5 +60,10 @@ class UpdateManySystemSettingsRequest extends FormRequest
         return [
             '*.value.required' => 'Values for the Settings must be present.'
         ];
+    }
+
+    protected function prepareForValidation()
+    {
+        $this->presentSystemSettings = setting()->findMany($this->input('*.id'));
     }
 }

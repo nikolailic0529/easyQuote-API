@@ -5,9 +5,85 @@
             "vat": "GB758501125",
             "acronym": "SWH"
         },
-        "vendor": "HPE",
+        "vendors": [
+            "HPE",
+            "LEN",
+            "IBM",
+            "CIS"
+        ],
         "countries": [
-            "GB", "US", "BE", "CA", "DK", "FR", "NL", "SE", "DE", "AT", "IE", "NO", "ZA", "CH"
+            "GB",
+            "US",
+            "BE",
+            "CA",
+            "DK",
+            "FR",
+            "NL",
+            "SE",
+            "DE",
+            "AT",
+            "IE",
+            "NO",
+            "ZA",
+            "CH"
+        ]
+    },
+    {
+        "language": "English",
+        "company": {
+            "vat": "GB847657576",
+            "acronym": "EPD"
+        },
+        "vendors": [
+            "HPE",
+            "LEN",
+            "IBM",
+            "CIS"
+        ],
+        "countries": [
+            "GB",
+            "US",
+            "BE",
+            "CA",
+            "DK",
+            "FR",
+            "NL",
+            "SE",
+            "DE",
+            "AT",
+            "IE",
+            "NO",
+            "ZA",
+            "CH"
+        ]
+    },
+    {
+        "language": "English",
+        "company": {
+            "vat": "CHE109482812",
+            "acronym": "THG"
+        },
+        "vendors": [
+            "HPE",
+            "LEN",
+            "IBM",
+            "CIS"
+        ],
+        "countries": [
+            "GB",
+            "US",
+            "BE",
+            "CA",
+            "DK",
+            "FR",
+            "NL",
+            "SE",
+            "DE",
+            "AT",
+            "IE",
+            "NO",
+            "ZA",
+            "CH"
         ]
     }
 ]

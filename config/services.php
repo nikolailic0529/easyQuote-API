@@ -40,7 +40,8 @@ return [
     ],
 
     'slack' => [
-        'enabled' => env('SLACK_ENABLED', false)
+        'enabled' => env('SLACK_ENABLED', false),
+        'endpoint' => env('SLACK_SERVICE_URL', SLACK_SERVICE_URL)
     ]
 
 ];

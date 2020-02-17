@@ -41,9 +41,7 @@ class CreateClientCredentials extends Command
         $this->call('config:cache');
 
         collect(config('auth.client_credentials'))
-            ->each(function ($credentials, $service) {
-                $this->createClientCredentials($credentials, $service);
-            });
+            ->each(fn (array $credentials, string $service) => $this->createClientCredentials($credentials, $service));
     }
 
     protected function createClientCredentials(array $credentials, string $service)
@@ -53,12 +51,12 @@ class CreateClientCredentials extends Command
         }
 
         $attributes = [
-            'id' => $credentials['client_id'],
-            'name' => $credentials['client_name'],
-            'secret' => $credentials['client_secret'],
-            'redirect' => url('/auth/callback'),
-            'created_at' => now(),
-            'updated_at' => now()
+            'id'            => $credentials['client_id'],
+            'name'          => $credentials['client_name'],
+            'secret'        => $credentials['client_secret'],
+            'redirect'      => url('/auth/callback'),
+            'created_at'    => now(),
+            'updated_at'    => now()
         ];
 
         \DB::table('oauth_clients')

@@ -26,9 +26,7 @@ abstract class SearchableRepository
 
         $query = $this->filterQuery(array_shift($filterableQuery), $scope);
 
-        collect($filterableQuery)->each(function ($union) use ($query, $scope) {
-            $query->unionAll($this->filterQuery($union, $scope));
-        });
+        collect($filterableQuery)->each(fn ($union) => $query->unionAll($this->filterQuery($union, $scope)));
 
         return $query->apiPaginate();
     }

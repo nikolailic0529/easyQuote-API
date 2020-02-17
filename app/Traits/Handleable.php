@@ -2,7 +2,6 @@
 
 namespace App\Traits;
 
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 
 trait Handleable
@@ -11,16 +10,12 @@ trait Handleable
 
     public function markAsHandled(): bool
     {
-        return $this->forceFill([
-            'handled_at' => Carbon::now()->toDateTimeString(),
-        ])->save();
+        return $this->forceFill(['handled_at' => now()])->save();
     }
 
     public function markAsUnHandled(): bool
     {
-        return $this->forceFill([
-            'handled_at' => null,
-        ])->save();
+        return $this->forceFill(['handled_at' => null])->save();
     }
 
     public function isHandled(): bool
@@ -62,16 +57,16 @@ trait Handleable
         return !$this->shouldBeHandled;
     }
 
-    public function getRowsCountAttribute()
+    public function getRowsCountAttribute(): int
     {
-        return (int) cache()->sear("rows-count:{$this->id}", function () {
+        return (int) cache()->sear($this->getRowsCountCacheKey(), function () {
             return $this->rowsData()->count();
         });
     }
 
-    public function setRowsCount(int $count)
+    public function setRowsCount(int $count): void
     {
-        return cache()->forever("rows-count:{$this->id}", $count);
+        cache()->forever($this->getRowsCountCacheKey(), $count);
     }
 
     public function getRowsProcessedCountAttribute()
@@ -112,5 +107,10 @@ trait Handleable
         }
 
         return floor($processedRowsCount / $rowsCount * 100);
+    }
+
+    protected function getRowsCountCacheKey(): string
+    {
+        return 'rows-count:' . $this->id;
     }
 }

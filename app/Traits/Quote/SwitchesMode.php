@@ -2,10 +2,12 @@
 
 namespace App\Traits\Quote;
 
+use App\Models\QuoteTemplate\BaseQuoteTemplate;
+
 trait SwitchesMode
 {
     /** @var string */
-    protected $mode = QT_TYPE_QUOTE;
+    protected string $mode = QT_TYPE_QUOTE;
 
     public function switchToQuote(): self
     {
@@ -30,7 +32,7 @@ trait SwitchesMode
         });
     }
 
-    public function getModeAttribute()
+    public function getModeAttribute(): string
     {
         return $this->mode;
     }
@@ -40,7 +42,7 @@ trait SwitchesMode
         return $this->mode === $type;
     }
 
-    public function getModeTemplateAttribute()
+    public function getModeTemplateAttribute(): BaseQuoteTemplate
     {
         return $this->{$this->mode.'Template'};
     }

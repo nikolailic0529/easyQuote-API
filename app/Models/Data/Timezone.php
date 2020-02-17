@@ -11,7 +11,7 @@ class Timezone extends BaseModel implements HasOrderedScope
 
     public function scopeOrdered($query)
     {
-        return $query->orderByRaw("field(`text`, '(UTC+01:00) Edinburgh, London', '(UTC) Edinburgh, London') desc")
+        return $query->orderByRaw("field(`text`, ?, ?) desc", [TZ_DEF_01, TZ_DEF_02])
             ->orderBy('offset');
     }
 

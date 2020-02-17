@@ -7,7 +7,8 @@ use App\Models\Data\Timezone;
 
 class TimezoneRepository implements TimezoneRepositoryInterface
 {
-    protected $timezone;
+    /** @var \App\Models\Data\Timezone */
+    protected Timezone $timezone;
 
     public function __construct(Timezone $timezone)
     {
@@ -16,9 +17,7 @@ class TimezoneRepository implements TimezoneRepositoryInterface
 
     public function all()
     {
-        return cache()->sear('all-timezones', function () {
-            return $this->timezone->ordered()->get(['id', 'text', 'value']);
-        });
+        return cache()->sear('all-timezones', fn () => $this->timezone->ordered()->get(['id', 'text', 'value']));
     }
 
     public function random(): Timezone

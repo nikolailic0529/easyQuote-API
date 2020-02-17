@@ -8,16 +8,12 @@ trait Selectable
 {
     public function markAsSelected(): bool
     {
-        return $this->forceFill([
-            'is_selected' => true,
-        ])->save();
+        return $this->forceFill(['is_selected' => true])->save();
     }
 
     public function markAsUnSelected(): bool
     {
-        return $this->forceFill([
-            'is_selected' => false,
-        ])->save();
+        return $this->forceFill(['is_selected' => false])->save();
     }
 
     public function isSelected(): bool

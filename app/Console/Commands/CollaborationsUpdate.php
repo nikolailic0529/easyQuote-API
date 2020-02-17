@@ -47,22 +47,10 @@ class CollaborationsUpdate extends Command
         User::whereIn('email', collect($users)->pluck('email')->toArray())
             ->nonAdministrators()
             ->get()
-            ->each(function ($user) {
-                $user->assignRole('Administrator');
-            });
+            ->each(fn (User $user) => $user->assignRole('Administrator'));
 
         activity()->enableLogging();
 
         $this->info("\nAdministrators roles for User were reassigned!");
-    }
-
-    /**
-     * ReAssign Administrator Role to Users which don't have Administrator Role yet
-     *
-     * @return void
-     */
-    protected function reAssignAdministrators()
-    {
-
     }
 }

@@ -83,25 +83,18 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
 
     public function summary(?string $subject_id = null): Collection
     {
-        $types = config('activitylog.types');
-        $expectedTypes = array_combine($types, array_fill(0, count($types), 0));
-
         $types = collect(config('activitylog.types'));
 
         $query = $this->filterQuery($this->query())
-            ->when(filled($subject_id), function ($query) use ($subject_id) {
-                $query->whereSubjectId($subject_id);
-            })
+            ->when(filled($subject_id), fn ($query) => $query->whereSubjectId($subject_id))
             ->selectRaw('count(*) as `total`');
 
-        $types->each(function ($type) use ($query) {
-            $query->selectRaw("count(case when `description` = '{$type}' then 1 end) as '{$type}'");
-        });
+        $types->each(fn ($type) => $query->selectRaw("count(case when `description` = '{$type}' then 1 end) as '{$type}'"));
 
         $totals = collect($query->toBase()->first());
 
         $totals = $totals->transform(function ($count, $type) {
-            $type = __('activitylog.totals.'.$type);
+            $type = __('activitylog.totals.' . $type);
             return compact('type', 'count');
         })->values();
 
@@ -154,7 +147,7 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
         });
 
         $types = collect(config('activitylog.types'))->transform(function ($value) {
-            $label = __('activitylog.types.'.$value);
+            $label = __('activitylog.types.' . $value);
             return compact('label', 'value');
         });
 
@@ -263,9 +256,7 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
          * Logs
          */
         $writer->insertAll($activityCollection->collectionHeader);
-        $activityCollection->collection->each(function ($activity) use ($writer) {
-            $writer->insertAll($activity);
-        });
+        $activityCollection->collection->each(fn ($activity) => $writer->insertAll($activity));
 
         unset($writer);
 

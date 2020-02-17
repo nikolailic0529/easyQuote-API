@@ -15,7 +15,8 @@ use Illuminate\Database\Eloquent\{
 
 class AddressRepository extends SearchableRepository implements AddressRepositoryInterface
 {
-    protected $address;
+    /** @var \App\Models\Address */
+    protected Address $address;
 
     public function __construct(Address $address)
     {
@@ -39,10 +40,7 @@ class AddressRepository extends SearchableRepository implements AddressRepositor
 
     public function update(UpdateAddressRequest $request, string $id): Address
     {
-        $address = $this->find($id);
-        $address->update($request->validated());
-
-        return $address;
+        return tap($this->find($id))->update($request->validated());
     }
 
     public function delete(string $id): bool
@@ -93,7 +91,7 @@ class AddressRepository extends SearchableRepository implements AddressRepositor
     {
         return [
             'city^5',
-            'country.name^5',
+            'country_name^5',
             'state^4',
             'address_type^4',
             'address_1^4',

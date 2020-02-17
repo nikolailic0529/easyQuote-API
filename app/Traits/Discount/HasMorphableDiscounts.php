@@ -9,7 +9,7 @@ use App\Models\Quote\{
     Discount\PromotionalDiscount,
     Discount\SND
 };
-use Arr, Str;
+use Arr;
 
 trait HasMorphableDiscounts
 {
@@ -20,9 +20,8 @@ trait HasMorphableDiscounts
         }
 
         return $this->discounts
-            ->reduce(function ($carry, $discount) {
-                return $carry + $discount->getValue($this->list_price);
-            }, 0) + $this->custom_discount;
+            ->reduce(fn ($carry, $discount) => $carry + $discount->getValue($this->list_price), 0)
+            + $this->custom_discount;
     }
 
     public function discounts()

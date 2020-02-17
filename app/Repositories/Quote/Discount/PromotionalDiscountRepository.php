@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\{
 
 class PromotionalDiscountRepository extends DiscountRepository implements PromotionalDiscountRepositoryInterface
 {
-    protected $promotionalDiscount;
+    protected PromotionalDiscount $promotionalDiscount;
 
     public function __construct(PromotionalDiscount $promotionalDiscount)
     {
@@ -47,11 +47,7 @@ class PromotionalDiscountRepository extends DiscountRepository implements Promot
 
     public function update(UpdatePromotionalDiscountRequest $request, string $id): PromotionalDiscount
     {
-        $discount = $this->find($id);
-
-        $discount->update($request->validated());
-
-        return $discount;
+        return tap($this->find($id))->update($request->validated());
     }
 
     public function delete(string $id): bool

@@ -94,19 +94,18 @@ class QuoteFile extends BaseModel implements HasOrderedScope
 
     public function isSchedule()
     {
-        return $this->file_type === __('quote_file.types.schedule');
+        return $this->file_type === QFT_PS;
     }
 
     public function isPrice()
     {
-        return $this->file_type === __('quote_file.types.price');
+        return $this->file_type === QFT_PL;
     }
 
     public function scopeIsNotHandledSchedule($query)
     {
-        return $query->where(function ($query) {
-            $query->where('file_type', __('quote_file.types.schedule'))->handled();
-        })->orWhere('file_type', __('quote_file.types.price'));
+        return $query->where(fn ($query) => $query->where('file_type', QFT_PS)->handled())
+            ->orWhere('file_type', QFT_PL);
     }
 
     public function setImportedPage(?int $imported_page)

@@ -9,28 +9,34 @@ use App\Models\{
 };
 use App\Contracts\Repositories\QuoteTemplate\TemplateFieldRepositoryInterface as Fields;
 use DB, Arr, Cache;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Support\Collection;
 
 trait HasMapping
 {
-    protected $computableRows;
+    protected ?Collection $computableRows = null;
 
-    protected $renderableRows;
+    protected ?Collection $renderableRows = null;
 
-    protected $totalPrice;
+    protected ?float $totalPrice = null;
 
     /**
      * Template Fields which will be displayed only for S4 Service.
      *
      * @var array
      */
-    protected $systemHiddenFields = ['service_level_description', 'pricing_document', 'system_handle'];
+    protected array $systemHiddenFields = ['service_level_description', 'pricing_document', 'system_handle'];
 
     /**
      * Template Fields which will be hidden when Quote Mode is Contract.
      *
      * @var array
      */
-    protected $contractHiddenFields = ['price', 'searchable'];
+    protected array $contractHiddenFields = ['price', 'searchable'];
 
     public function getComputableRowsAttribute()
     {
@@ -52,22 +58,22 @@ trait HasMapping
         $this->renderableRows = $value;
     }
 
-    public function fieldsColumns()
+    public function fieldsColumns(): HasMany
     {
         return $this->hasMany(FieldColumn::class)->with('templateField');
     }
 
-    public function templateFields()
+    public function templateFields(): BelongsToMany
     {
         return $this->belongsToMany(TemplateField::class, 'quote_field_column', 'quote_id');
     }
 
-    public function importableColumns()
+    public function importableColumns(): BelongsToMany
     {
         return $this->belongsToMany(ImportableColumn::class, 'quote_field_column', 'quote_id');
     }
 
-    public function defaultTemplateFields()
+    public function defaultTemplateFields(): Builder
     {
         return $this->templateFields()->with('systemImportableColumn')->where('is_default_enabled', true);
     }
@@ -106,9 +112,7 @@ trait HasMapping
         $query = DB::table('imported_rows')
             ->select('imported_rows.id', 'imported_rows.is_selected')
             ->join('quote_files', 'quote_files.id', '=', 'imported_rows.quote_file_id')
-            ->join('customers', function ($join) {
-                $join->where('customers.id', $this->customer_id);
-            });
+            ->join('customers', fn ($join) => $join->where('customers.id', $this->customer_id));
 
         $priceMultiplier = $this->convertExchangeRate(1);
 
@@ -231,7 +235,7 @@ trait HasMapping
         return $query;
     }
 
-    public function rowsDataByColumnsCalculated(?array $flags = null, bool $calculate = false)
+    public function rowsDataByColumnsCalculated(?array $flags = null, bool $calculate = false): QueryBuilder
     {
         $templateFields = $this->templateFieldsToArray();
 
@@ -252,18 +256,20 @@ trait HasMapping
         return DB::query()->fromSub($this->rowsDataByColumns($flags), 'rows_data')->select($columns);
     }
 
-    public function rowsDataByColumnsGroupable(string $query = '')
+    public function rowsDataByColumnsGroupable(string $query = ''): QueryBuilder
     {
         return $this->rowsDataByColumns(['default_selected'])
-            ->join('imported_columns as groupable', function ($join) use ($query) {
+            ->join(
+                'imported_columns as groupable',
+                fn ($join) =>
                 $join->on('groupable.imported_row_id', '=', 'imported_rows.id')
-                    ->whereRaw("match(`groupable`.`value`) against ('+\"{$query}\"' in boolean mode)");
-            })
+                    ->whereRaw("match(`groupable`.`value`) against ('+\"{$query}\"' in boolean mode)")
+            )
             ->whereNull('group_name')
             ->orderByRaw("match(`groupable`.`value`) against ('+\"{$query}\"' in boolean mode) desc");
     }
 
-    public function getFlattenOrGroupedRows(?array $flags = null, bool $calculate = false)
+    public function getFlattenOrGroupedRows(?array $flags = null, bool $calculate = false): Collection
     {
         if (!$this->has_group_description || !$this->use_groups) {
             return $this->rowsDataByColumnsCalculated($flags, $calculate)->get();
@@ -272,7 +278,7 @@ trait HasMapping
         return $this->groupedRows(null, $calculate)->get();
     }
 
-    public function groupedRows(?array $flags = null, bool $calculate = false, ?string $group_name = null)
+    public function groupedRows(?array $flags = null, bool $calculate = false, ?string $group_name = null): QueryBuilder
     {
         $selectable = array_merge(
             ['rows_data.id', DB::raw("true as `is_selected`"), 'groups.group_name'],
@@ -291,20 +297,21 @@ trait HasMapping
             ->orderBy('groups.group_name');
     }
 
-    public function groupedRowsMeta(?array $flags = null, bool $calculate = false, ?string $group_name = null)
+    public function groupedRowsMeta(?array $flags = null, bool $calculate = false, ?string $group_name = null): QueryBuilder
     {
         $query = DB::query()->fromSub($this->groupedRows($flags, $calculate, $group_name), 'rows_data')
             ->groupBy('group_name')
             ->select('group_name')
             ->selectRaw('count(`id`) as `total_count`')
-            ->when(isset(array_flip($this->templateFieldsToArray())['price']), function ($query) {
-                $query->selectRaw('cast(sum(`price`) as decimal(15,2)) as `total_price`');
-            });
+            ->when(
+                isset(array_flip($this->templateFieldsToArray())['price']),
+                fn (QueryBuilder $query) => $query->selectRaw('cast(sum(`price`) as decimal(15,2)) as `total_price`')
+            );
 
         return $query;
     }
 
-    public function getGroupDescriptionWithMeta(?array $flags = null, bool $calculate = false, ?string $group_name = null)
+    public function getGroupDescriptionWithMeta(?array $flags = null, bool $calculate = false, ?string $group_name = null): Collection
     {
         $groups_meta = collect(json_decode(json_encode($this->groupedRowsMeta($flags, $calculate, $group_name)->get()), true));
         $groups_description = collect($this->group_description);
@@ -314,12 +321,12 @@ trait HasMapping
         });
     }
 
-    public function getGroupDescriptionWithMetaAttribute()
+    public function getGroupDescriptionWithMetaAttribute(): Collection
     {
         return $this->getGroupDescriptionWithMeta();
     }
 
-    public function defaultGroupMeta(?string $group_name = null)
+    public function defaultGroupMeta(?string $group_name = null): array
     {
         return [
             'group_name' => $group_name,
@@ -328,7 +335,7 @@ trait HasMapping
         ];
     }
 
-    public function countTotalPrice()
+    public function countTotalPrice(): float
     {
         if (!$this->templateFields->contains('name', 'price')) {
             return 0.0;
@@ -354,12 +361,12 @@ trait HasMapping
         return $this->totalPrice = $this->countTotalPrice();
     }
 
-    public function setTotalPriceAttribute(float $value)
+    public function setTotalPriceAttribute(float $value): void
     {
         $this->totalPrice = $value;
     }
 
-    public function getFieldColumnAttribute()
+    public function getFieldColumnAttribute(): EloquentCollection
     {
         $templateFields = app(Fields::class)->allSystem()->loadMissing(['fieldColumn' => function ($query) {
             return $query->where('quote_id', $this->id)->withDefault();
@@ -374,7 +381,7 @@ trait HasMapping
         return $templateFields;
     }
 
-    public function templateFieldsToArray(...$except)
+    public function templateFieldsToArray(...$except): array
     {
         if (is_array(head($except))) {
             $except = head($except);
@@ -383,7 +390,7 @@ trait HasMapping
         return $this->templateFields->whereNotIn('name', $except)->sortBy('order')->pluck('name')->toArray();
     }
 
-    public function rowsHeaderToArray(...$except)
+    public function rowsHeaderToArray(...$except): array
     {
         if (is_array(head($except))) {
             $except = head($except);
@@ -399,17 +406,17 @@ trait HasMapping
             ->toArray();
     }
 
-    public function hiddenFieldsToArray()
+    public function hiddenFieldsToArray(): array
     {
         return $this->fieldsColumns->where('is_preview_visible', false)->pluck('templateField.name')->toArray();
     }
 
-    public function getHiddenFieldsAttribute()
+    public function getHiddenFieldsAttribute(): array
     {
         return $this->hiddenFieldsToArray();
     }
 
-    public function getSystemHiddenFieldsAttribute()
+    public function getSystemHiddenFieldsAttribute(): array
     {
         $systemHiddenFields = $this->systemHiddenFields;
 
@@ -420,7 +427,7 @@ trait HasMapping
         return $this->templateFields->whereIn('name', $systemHiddenFields)->pluck('name')->toArray();
     }
 
-    public function getSortFieldsAttribute()
+    public function getSortFieldsAttribute(): Collection
     {
         return $this->fieldsColumns->where('sort', '!==', null)->map(function ($fieldColumn) {
             return [
@@ -430,23 +437,23 @@ trait HasMapping
         })->values();
     }
 
-    public function getComputableRowsCacheKeyAttribute()
+    public function getComputableRowsCacheKeyAttribute(): string
     {
         return "quote-computable-rows:{$this->id}";
     }
 
-    public function forgetCachedComputableRows()
+    public function forgetCachedComputableRows(): void
     {
-        return Cache::forget($this->computableRowsCacheKey);
+        cache()->forget($this->computableRowsCacheKey);
     }
 
-    public function getMappingReviewCacheKeyAttribute()
+    public function getMappingReviewCacheKeyAttribute(): string
     {
         return "mapping-review-data:{$this->id}";
     }
 
-    public function forgetCachedMappingReview()
+    public function forgetCachedMappingReview(): void
     {
-        return Cache::forget($this->mappingReviewCacheKey);
+        cache()->forget($this->mappingReviewCacheKey);
     }
 }

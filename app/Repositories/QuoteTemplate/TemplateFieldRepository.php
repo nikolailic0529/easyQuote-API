@@ -23,9 +23,9 @@ class TemplateFieldRepository extends SearchableRepository implements TemplateFi
 {
     const SYSTEM_FIELDS_CACHE_KEY = 'system-template-fields';
 
-    protected $templateField;
+    protected TemplateField $templateField;
 
-    protected $templateFieldType;
+    protected TemplateFieldType $templateFieldType;
 
     public function __construct(TemplateField $templateField, TemplateFieldType $templateFieldType)
     {
@@ -48,9 +48,10 @@ class TemplateFieldRepository extends SearchableRepository implements TemplateFi
 
     public function allSystem(): Collection
     {
-        return cache()->sear(static::SYSTEM_FIELDS_CACHE_KEY, function () {
-            return $this->templateField->system()->with('templateFieldType')->ordered()->get();
-        });
+        return cache()->sear(
+            static::SYSTEM_FIELDS_CACHE_KEY,
+            fn () => $this->templateField->system()->with('templateFieldType')->ordered()->get()
+        );
     }
 
     public function find(string $id): TemplateField
@@ -66,10 +67,7 @@ class TemplateFieldRepository extends SearchableRepository implements TemplateFi
 
     public function update(UpdateTemplateFieldRequest $request, string $id): TemplateField
     {
-        $templateField = $this->find($id);
-        $templateField->update($request->validated());
-
-        return $templateField;
+        return tap($this->find($id))->update($request->validated());
     }
 
     public function delete(string $id): bool

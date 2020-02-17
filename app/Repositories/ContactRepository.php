@@ -15,7 +15,8 @@ use Illuminate\Database\Eloquent\{
 
 class ContactRepository extends SearchableRepository implements ContactRepositoryInterface
 {
-    protected $address;
+    /** @var \App\Models\Contact */
+    protected Contact $address;
 
     public function __construct(Contact $contact)
     {
@@ -34,19 +35,19 @@ class ContactRepository extends SearchableRepository implements ContactRepositor
 
     public function create(StoreContactRequest $request): Contact
     {
-        $contact = $this->contact->create($request->validated());
-        $contact->createImage($request->picture, $this->imageProperties());
-
-        return $contact->load('image')->withAppends();
+        return tap($this->contact->create($request->validated()), function (Contact $contact) use ($request) {
+            $contact->createImage($request->picture, $this->imageProperties());
+            $contact->load('image')->withAppends();
+        });
     }
 
     public function update(UpdateContactRequest $request, string $id): Contact
     {
-        $contact = $this->find($id);
-        $contact->update($request->validated());
-        $contact->createImage($request->picture, $this->imageProperties());
-
-        return $contact->load('image');
+        return tap($this->find($id), function (Contact $contact) use ($request) {
+            $contact->update($request->validated());
+            $contact->createImage($request->picture, $this->imageProperties());
+            $contact->load('image');
+        });
     }
 
     public function delete(string $id): bool

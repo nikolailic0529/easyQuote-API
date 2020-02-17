@@ -51,8 +51,8 @@ trait HasGroupDescriptionAttribute
     public function resetGroupDescription(): bool
     {
         return $this->forceFill([
-            'group_description' => null,
-            'sort_group_description' => null
+            'group_description'         => null,
+            'sort_group_description'    => null
         ])->save();
     }
 

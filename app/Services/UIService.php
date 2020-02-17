@@ -8,10 +8,10 @@ use Arr, Str;
 class UIService implements UIServiceInterface
 {
     /** @var string */
-    protected static $rootPath;
+    protected static string $rootPath;
 
     /** @var array */
-    protected static $config;
+    protected static array $config;
 
     public function __construct()
     {

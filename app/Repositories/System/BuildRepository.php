@@ -10,7 +10,7 @@ class BuildRepository implements BuildRepositoryInterface
     const CACHE_KEY_LATEST_BUILD = 'build-latest';
 
     /** @var \App\Models\System\Build */
-    protected $build;
+    protected Build $build;
 
     public function __construct(Build $build)
     {
@@ -29,32 +29,21 @@ class BuildRepository implements BuildRepositoryInterface
 
     public function create(array $attributes): Build
     {
-        return tap($this->build->create($attributes), function ($build) {
-            $this->cacheLatestBuild($build);
-        });
+        return tap($this->build->create($attributes), fn (Build $build) => $this->cacheLatestBuild($build));
     }
 
     public function firstOrCreate(array $attributes, array $values = [])
     {
-        return tap($this->build->firstOrCreate($attributes, $values), function ($build) {
-            $this->cacheLatestBuild($build);
-        });
+        return tap($this->build->firstOrCreate($attributes, $values), fn (Build $build) => $this->cacheLatestBuild($build));
     }
 
     public function latest()
     {
-        return cache()->sear(static::CACHE_KEY_LATEST_BUILD, function () {
-            return $this->build->latest()->first();
-        });
+        return cache()->sear(static::CACHE_KEY_LATEST_BUILD, fn () => $this->build->latest()->first());
     }
 
     private function cacheLatestBuild(Build $build)
     {
         cache()->forever(static::CACHE_KEY_LATEST_BUILD, $build);
-    }
-
-    private function flushLatestBuildCache(): void
-    {
-        cache()->forget(static::CACHE_KEY_LATEST_BUILD);
     }
 }

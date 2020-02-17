@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\{
 class ContractDraftedRepository extends SearchableRepository implements ContractDraftedRepositoryInterface
 {
     /** @var \App\Models\Quote\Contract */
-    protected $contract;
+    protected Contract $contract;
 
     public function __construct(Contract $contract)
     {
@@ -39,9 +39,10 @@ class ContractDraftedRepository extends SearchableRepository implements Contract
 
     public function delete(string $id): bool
     {
-        return tap($this->find($id), function ($contract) {
-            $contract->quote->update(['contract_template_id' => null]);
-        })->delete();
+        return tap(
+            $this->find($id),
+            fn (Contract $contract) => $contract->quote->update(['contract_template_id' => null])
+        )->delete();
     }
 
     public function activate(string $id): bool

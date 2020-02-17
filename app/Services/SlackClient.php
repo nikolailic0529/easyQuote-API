@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\Services\SlackInterface;
+use GuzzleHttp\Client as GuzzleClient;
 use App\Jobs\SendSlackNotification;
 use Psr\Http\Message\ResponseInterface;
 use Exception, Arr, Str;
@@ -10,14 +11,14 @@ use Exception, Arr, Str;
 class SlackClient implements SlackInterface
 {
     /** @var array */
-    protected $attributes = [];
+    protected array $attributes = [];
 
-    /** @var \GuzzleHttp\ClientInterface */
-    protected $guzzle;
+    /** @var \GuzzleHttp\Client */
+    protected GuzzleClient $guzzle;
 
     public function __construct()
     {
-        $this->guzzle = app(\GuzzleHttp\Client::class);
+        $this->guzzle = app(GuzzleClient::class);
     }
 
     public function send(?array $attributes = null)
@@ -51,6 +52,10 @@ class SlackClient implements SlackInterface
 
     public function queue(?array $attributes = null)
     {
+        if($this->disabled()) {
+            return;
+        }
+
         if (isset($attributes)) {
             $this->attributes = $attributes;
         }
@@ -135,7 +140,7 @@ class SlackClient implements SlackInterface
 
     protected function request(array $payload): ResponseInterface
     {
-        return $this->guzzle->request('POST', SLACK_SERVICE_URL, $payload);
+        return $this->guzzle->request('POST', config('services.slack.endpoint'), $payload);
     }
 
     protected function success()

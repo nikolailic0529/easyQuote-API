@@ -41,8 +41,8 @@ class CurrenciesUpdate extends Command
     {
         $currencies = json_decode(file_get_contents(database_path('seeds/models/currencies.json')), true);
 
-        collect($currencies)->each(function ($attributes) use ($repository) {
-            $repository->firstOrCreate(Arr::only($attributes, 'code'), $attributes);
-        });
+        collect($currencies)->each(
+            fn ($attributes) => $repository->firstOrCreate(Arr::only($attributes, 'code'), $attributes)
+        );
     }
 }

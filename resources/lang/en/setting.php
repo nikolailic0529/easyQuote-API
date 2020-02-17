@@ -12,6 +12,7 @@ return [
         'password_expiry_notification'  => 'Password Expiry Notification',
         'exchange_rate_update_schedule' => 'Update Rates Schedule',
         'exchange_rate_provider'        => 'Exchange Rate Provider',
+        'default_exchange_rate_margin'  => 'Default Exchange Rate Margin',
     ],
     'supported_file_types' => [
         'pdf' => [

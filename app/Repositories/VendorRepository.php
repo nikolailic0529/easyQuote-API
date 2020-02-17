@@ -13,7 +13,8 @@ use Illuminate\Database\Eloquent\{
 
 class VendorRepository extends SearchableRepository implements VendorRepositoryInterface
 {
-    protected $vendor;
+    /** @var \App\Models\Vendor */
+    protected Vendor $vendor;
 
     public function __construct(Vendor $vendor)
     {

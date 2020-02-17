@@ -62,9 +62,8 @@ class RolesUpdate extends Command
         collect($roles)->each(function ($attributes) {
             $role = Role::whereName($attributes['name'])->firstOrFail();
 
-            $privileges = collect($attributes['privileges'])->transform(function ($privilege, $module) {
-                return compact('module', 'privilege');
-            });
+            $privileges = collect($attributes['privileges'])
+                ->transform(fn ($privilege, $module) => compact('module', 'privilege'));
 
             $role->fill(compact('privileges'))->save();
 
@@ -80,8 +79,6 @@ class RolesUpdate extends Command
     protected function updateNonSystemRoles()
     {
         app('role.repository')->allNonSystem()
-            ->each(function ($role) {
-                $role->syncPrivileges();
-            });
+            ->each(fn (Role $role) => $role->syncPrivileges());
     }
 }

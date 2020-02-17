@@ -13,15 +13,13 @@ class CsvParser implements CsvParserInterface
 
     const GFNE_01 = 'The file has non-acceptable extension';
 
-    protected static $defaultDelimiter = 'tab';
+    protected static string $defaultDelimiter = 'tab';
 
-    protected static $delimiters = ['tab' => "\t", 'semicolon' => ";", 'comma' => ",", 'colon' => ":"];
+    protected static array $delimiters = ['tab' => "\t", 'semicolon' => ";", 'comma' => ",", 'colon' => ":"];
 
-    protected static $extenstions = ['csv', 'txt'];
+    protected static array $extenstions = ['csv', 'txt'];
 
-    protected static $readLines = 5;
-
-    protected static $regexp;
+    protected static int $readLines = 5;
 
     public function guessDelimiter(string $filepath): string
     {

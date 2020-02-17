@@ -10,7 +10,8 @@ use Throwable;
 
 class HttpService implements HttpInterface
 {
-    protected $invalidRequestExceptions = [
+    /** @var array */
+    protected array $invalidRequestExceptions = [
         \Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class,
         \Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException::class
     ];

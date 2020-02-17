@@ -17,7 +17,7 @@ class NotificationCreated implements ShouldBroadcastNow
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     /** @var \App\Models\System\Notification */
-    protected $notification;
+    protected Notification $notification;
 
     /**
      * Create a new event instance.

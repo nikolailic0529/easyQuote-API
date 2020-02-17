@@ -13,6 +13,6 @@ class Language extends BaseModel implements HasOrderedScope
 
     public function scopeOrdered($query)
     {
-        return $query->orderBy('name', 'asc');
+        return $query->orderBy('name');
     }
 }

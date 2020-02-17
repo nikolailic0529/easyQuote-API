@@ -44,6 +44,16 @@ class Address extends BaseModel
 
     public function toSearchArray()
     {
-        return Arr::except($this->load('country')->toArray(), ['country_id']);
+        return [
+            'city'          => $this->city,
+            'country_name'  => $this->country->name,
+            'state'         => $this->state,
+            'address_type'  => $this->address_type,
+            'address_1'     => $this->address_1,
+            'address_2'     => $this->address_2,
+            'state_code'    => $this->state_code,
+            'post_code'     => $this->post_code,
+            'created_at'    => $this->created_at
+        ];
     }
 }

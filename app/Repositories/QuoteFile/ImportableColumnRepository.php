@@ -16,7 +16,7 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
     const CACHE_KEY_SYSTEM_COLS = 'importable-columns:system';
 
     /** @var \App\Models\QuoteFile\ImportableColumn */
-    protected $importableColumn;
+    protected ImportableColumn $importableColumn;
 
     public function __construct(ImportableColumn $importableColumn)
     {
@@ -57,11 +57,10 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
 
     public function userColumns(array $alises = [])
     {
-        return $this->importableColumn->nonSystem()->whereHas('aliases', function ($query) use ($alises) {
-            $query->whereIn('alias', $alises);
-        })->with(['aliases' => function ($query) {
-            $query->groupBy('alias');
-        }])->get();
+        return $this->importableColumn->nonSystem()
+            ->whereHas('aliases', fn ($query) => $query->whereIn('alias', $alises))
+            ->with(['aliases' => fn ($query) => $query->groupBy('alias')])
+            ->get();
     }
 
     public function allNames()
@@ -146,9 +145,10 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
 
     public function delete(string $id): bool
     {
-        return tap($this->find($id), function ($importableColumn) {
-            $importableColumn->aliases()->delete();
-        })->delete();
+        return tap(
+            $this->find($id),
+            fn (ImportableColumn $importableColumn) => $importableColumn->aliases()->delete()
+        )->delete();
     }
 
     public function activate(string $id): bool
@@ -159,11 +159,6 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
     public function deactivate(string $id): bool
     {
         return $this->find($id)->deactivate();
-    }
-
-    protected function createWithoutEvents(array $attributes)
-    {
-        return tap($this->importableColumn->make($attributes)->forceFill(['id' => (string) Uuid::generate(4)]))->saveWithoutEvents();
     }
 
     protected function searchableModel(): Model
@@ -210,8 +205,6 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
             return [];
         }
 
-        return array_map(function ($alias) {
-            return compact('alias');
-        }, $aliases);
+        return array_map(fn ($alias) => compact('alias'), $aliases);
     }
 }

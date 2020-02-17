@@ -2,10 +2,7 @@
 
 namespace App\Services;
 
-use App\Contracts\{
-    Services\QuoteServiceInterface,
-    Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
-};
+use App\Contracts\Services\QuoteServiceInterface;
 use App\Http\Resources\QuoteResource;
 use App\Models\Quote\{
     BaseQuote as Quote,
@@ -14,20 +11,11 @@ use App\Models\Quote\{
 };
 use App\Models\QuoteTemplate\BaseQuoteTemplate;
 use Illuminate\Support\Collection;
-use Arr, Str;
-use Exception;
+use Str;
 
 class QuoteService implements QuoteServiceInterface
 {
     const QUOTE_EXPORT_VIEW = 'quotes.pdf';
-
-    /** @var \App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface */
-    protected $quoteFile;
-
-    public function __construct(QuoteFileRepository $quoteFile)
-    {
-        $this->quoteFile = $quoteFile;
-    }
 
     public function interact(Quote $quote, $interactable): void
     {
@@ -114,8 +102,8 @@ class QuoteService implements QuoteServiceInterface
         }
 
         if (is_numeric($discount)) {
-            if ($quote->bottomUpDivider === 0.0) {
-                $quote->totalPrice = 0.0;
+            if ($quote->bottomUpDivider == 0) {
+                $quote->totalPrice = 0;
                 return;
             }
 
@@ -143,9 +131,9 @@ class QuoteService implements QuoteServiceInterface
 
         $listPriceAfterDiscount = $quote->totalPrice - $quote->applicableDiscounts;
 
-        $discount->margin_percentage = (float) $listPriceAfterDiscount !== 0.0
+        $discount->margin_percentage = (float) $listPriceAfterDiscount != 0
             ? round((($listPriceAfterDiscount - $quote->buy_price) / $listPriceAfterDiscount) * 100, 2)
-            : 0.0;
+            : 0;
 
         return;
     }
@@ -156,9 +144,8 @@ class QuoteService implements QuoteServiceInterface
             return;
         }
 
-        if ((float) $quote->bottomUpDivider === 0.0) {
+        if ($quote->bottomUpDivider == 0) {
             data_set($quote->scheduleData->value, '*.price', 0.0);
-
             return;
         }
 
@@ -179,14 +166,13 @@ class QuoteService implements QuoteServiceInterface
             return $payment;
         });
 
-        $newTotalPayments = $quote->scheduleData->value->sum(function ($payment) {
-            return round((float) data_get($payment, 'price', 0.0), 2);
-        });
+        $newTotalPayments = $quote->scheduleData->value
+            ->sum(fn ($payment) => round((float) data_get($payment, 'price', 0.0), 2));
 
         $roundedTotalPayments = round($newTotalPayments, 2);
         $roundedFinalPrice = round($quote->finalPrice, 2);
 
-        if ((float) abs($roundedFinalPrice - $roundedTotalPayments) === 0.0) {
+        if (abs($roundedFinalPrice - $roundedTotalPayments) == 0) {
             return;
         }
 
@@ -200,9 +186,10 @@ class QuoteService implements QuoteServiceInterface
 
     public function assignComputableRows(Quote $quote): void
     {
-        $quote->computableRows = cache()->sear($quote->computableRowsCacheKey, function () use ($quote) {
-            return $quote->getFlattenOrGroupedRows(['where_selected'], $quote->calculate_list_price);
-        });
+        $quote->computableRows = cache()->sear(
+            $quote->computableRowsCacheKey,
+            fn () => $quote->getFlattenOrGroupedRows(['where_selected'], $quote->calculate_list_price)
+        );
 
         if (!isset($quote->computableRows->first()->price)) {
             data_fill($quote->computableRows, '*.price', 0.0);

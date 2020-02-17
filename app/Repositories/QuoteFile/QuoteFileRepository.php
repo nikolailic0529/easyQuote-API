@@ -15,20 +15,20 @@ use App\Models\{
     QuoteFile\ImportedRow
 };
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Eloquent\Collection;
 use Storage, Str, File, DB;
 
 class QuoteFileRepository implements QuoteFileRepositoryInterface
 {
-    protected $quoteFile;
+    protected QuoteFile $quoteFile;
 
-    protected $fileFormat;
+    protected FileFormatRepository $fileFormat;
 
-    protected $dataSelectSeparator;
+    protected DataSelectSeparator $dataSelectSeparator;
 
-    protected $importableColumn;
+    protected ImportableColumnRepository $importableColumn;
 
-    protected $systemImportableColumns;
+    protected Collection $systemImportableColumns;
 
     public function __construct(
         QuoteFile $quoteFile,
@@ -274,41 +274,44 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         });
         $new_quote_file_id = $quoteFileCopy->id;
 
-        $tempTable = 'temp_import_table_' . uniqid();
+        $tempRowsTable = 'temp_imported_rows_table_' . uniqid();
+        $tempColumnsTable = 'temp_imported_columns_table_' . uniqid();
         $importedRowColumn = 'temp_imported_row_id';
 
         /** Generating new Ids for Imported Columns and Rows in the temporary table. */
         DB::select(
-            "create temporary table `{$tempTable}`
-            select * from `imported_columns`
-            join (select uuid() as new_imported_row_id, imported_row_id as {$importedRowColumn}
-                from `imported_columns`
-                group by imported_row_id) as temp_imported_columns
-                on temp_imported_columns.{$importedRowColumn} = `imported_columns`.imported_row_id
-            join (select id as row_id, quote_file_id, page, is_selected, processed_at, group_name from imported_rows) as imported_rows
-                on imported_rows.row_id = `imported_columns`.imported_row_id
-                where imported_rows.quote_file_id = :quote_file_id",
+            "create temporary table `{$tempRowsTable}`
+            select uuid() as `id`, `id` as {$importedRowColumn}, `quote_file_id`, `page`, `is_selected`, `processed_at`, `group_name` from `imported_rows`
+                where `imported_rows`.`quote_file_id` = :quote_file_id",
             compact('quote_file_id')
         );
 
+        DB::select(
+            "create temporary table `{$tempColumnsTable}`
+            select uuid() as `id`, `temp_imported_rows`.`id` as `imported_row_id`, `importable_column_id`, `value`, `header` from `imported_columns`
+                inner join (select `id`, `{$importedRowColumn}` from `{$tempRowsTable}`) as `temp_imported_rows`
+                on `temp_imported_rows`.`{$importedRowColumn}` = `imported_columns`.`imported_row_id`
+            "
+        );
+
         /** We are marking temporary rows as selected if the related payload is present in the current request. */
-        $this->updateTempSelectedImportedRows($tempTable, $importedRowColumn);
+        $this->updateTempSelectedImportedRows($tempRowsTable, $importedRowColumn);
 
         /** We are updating temporary group description if the related payload is present in the current request. */
-        $this->updateTempGroupDescription($tempTable, $importedRowColumn);
+        $this->updateTempGroupDescription($tempRowsTable, $importedRowColumn);
 
         /** Inserting Imported Rows with new Ids. */
         DB::insert(
-            "insert into `imported_rows` (id, user_id, quote_file_id, page, is_selected, processed_at, group_name)
-            select new_imported_row_id, :user_id, :new_quote_file_id, page, is_selected, processed_at, group_name
-            from `{$tempTable}` group by new_imported_row_id",
+            "insert into `imported_rows` (`id`, `user_id`, `quote_file_id`, `page`, `is_selected`, `processed_at`, `group_name`)
+            select `id`, :user_id, :new_quote_file_id, `page`, `is_selected`, `processed_at`, `group_name`
+            from `{$tempRowsTable}`",
             compact('user_id', 'new_quote_file_id')
         );
 
         /** Inserting Imported Columns with new Ids and new assigned Imported Rows Ids. */
         DB::insert(
-            "insert into `imported_columns` (id, imported_row_id, importable_column_id, value, header)
-            select uuid(), new_imported_row_id, importable_column_id, value, header from `{$tempTable}`"
+            "insert into `imported_columns` (`id`, `imported_row_id`, `importable_column_id`, `value`, `header`)
+            select `id`, `imported_row_id`, `importable_column_id`, `value`, `header` from `{$tempColumnsTable}`"
         );
 
         return $quoteFileCopy;

@@ -77,12 +77,12 @@ class Country extends BaseModel implements HasOrderedScope, ActivatableInterface
     public function toSearchArray()
     {
         return [
-            'name' => $this->name,
-            'iso_3166_2' => $this->iso_3166_2,
-            'currency_code' => $this->currency_code,
-            'currency_name' => $this->currency_name,
-            'currency_symbol' => $this->currency_symbol,
-            'created_at' => $this->created_at
+            'name'              => $this->name,
+            'iso_3166_2'        => $this->iso_3166_2,
+            'currency_code'     => $this->currency_code,
+            'currency_name'     => $this->currency_name,
+            'currency_symbol'   => $this->currency_symbol,
+            'created_at'        => $this->created_at
         ];
     }
 }

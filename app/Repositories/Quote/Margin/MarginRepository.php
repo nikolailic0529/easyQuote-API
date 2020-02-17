@@ -16,7 +16,7 @@ use Closure;
 
 class MarginRepository extends SearchableRepository implements MarginRepositoryInterface
 {
-    protected $countryMargin;
+    protected CountryMargin $countryMargin;
 
     public function __construct(CountryMargin $countryMargin)
     {
@@ -40,9 +40,7 @@ class MarginRepository extends SearchableRepository implements MarginRepositoryI
     public function create($request): CountryMargin
     {
         if ($request instanceof \Illuminate\Http\Request) {
-            $user = $request->user();
             $request = $request->validated();
-            data_set($request, 'user_id', $user->id);
         }
 
         throw_unless(is_array($request), new \InvalidArgumentException(INV_ARG_RA_01));
@@ -70,22 +68,12 @@ class MarginRepository extends SearchableRepository implements MarginRepositoryI
             $quote->only('vendor_id', 'country_id')
         );
 
-        $countryMargin = $this->userQuery()->quoteAcceptable($quote)->firstOrNew($attributes);
-
-        if ($countryMargin->isDirty()) {
-            $countryMargin->user()->associate(request()->user());
-            $countryMargin->save();
-        }
-
-        return $countryMargin;
+        return $this->userQuery()->quoteAcceptable($quote)->firstOrCreate($attributes);
     }
 
     public function update(UpdateCountryMarginRequest $request, string $id): CountryMargin
     {
-        $countryMargin = $this->find($id);
-        $countryMargin->update($request->validated());
-
-        return $countryMargin;
+        return tap($this->find($id))->update($request->validated());
     }
 
     public function find(string $id)

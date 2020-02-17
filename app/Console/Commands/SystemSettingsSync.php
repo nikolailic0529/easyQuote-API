@@ -63,7 +63,8 @@ class SystemSettingsSync extends Command
                     'possible_values'   => $possibleValues,
                     'section'           => $setting['section'],
                     'is_read_only'      => $setting['is_read_only'] ?? false,
-                    'label_format'      => $setting['label_format'] ?? null
+                    'label_format'      => $setting['label_format'] ?? null,
+                    'order'             => $setting['order'] ?? 1
                 ];
 
                 $setting = setting()->firstOrCreate(

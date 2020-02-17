@@ -21,18 +21,14 @@ use Illuminate\Database\Eloquent\{
 class QuoteDraftedRepository extends SearchableRepository implements QuoteDraftedRepositoryInterface
 {
     /** @var \App\Models\Quote\Quote */
-    protected $quote;
+    protected Quote $quote;
 
     /** @var \App\Models\Quote\QuoteVersion */
-    protected $quoteVersion;
-
-    /** @var string */
-    protected $table;
+    protected QuoteVersion $quoteVersion;
 
     public function __construct(Quote $quote, QuoteVersion $quoteVersion)
     {
         $this->quote = $quote;
-        $this->table = $quote->getTable();
         $this->quoteVersion = $quoteVersion;
     }
 
@@ -50,7 +46,7 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
     {
         return $this->quote
             ->currentUserWhen(request()->user()->cant('view_quotes'))
-            ->with('versions:id,quotes.user_id,version_number,created_at,updated_at,drafted_at')
+            ->with('versions:id,quotes.user_id,version_number,completeness,created_at,updated_at,drafted_at')
             ->drafted();
     }
 

@@ -19,7 +19,7 @@ class ContractSubmittedRepository extends SearchableRepository implements Contra
     use ResolvesImplicitModel, ResolvesQuoteVersion;
 
     /** @var \App\Models\Quote\Contract */
-    protected $contract;
+    protected Contract $contract;
 
     public function __construct(Contract $contract)
     {

@@ -23,19 +23,19 @@ use Arr;
 abstract class ExchangeRateService implements ExchangeRateServiceInterface
 {
     /** @var \GuzzleHttp\Client */
-    protected $httpClient;
+    protected Client $httpClient;
 
     /** @var \App\Contracts\Repositories\ExchangeRateRepositoryInterface */
-    protected $repository;
+    protected Repository $repository;
 
     /** @var \App\Contracts\Repositories\CountryRepositoryInterface */
-    protected $countries;
+    protected Countries $countries;
 
     /** @var \App\Contracts\Repositories\CurrencyRepositoryInterface */
-    protected $currencies;
+    protected Currencies $currencies;
 
     /** @var \Carbon\Carbon */
-    protected $time;
+    protected Carbon $time;
 
     public function __construct(
         Client $httpClient,
@@ -74,14 +74,14 @@ abstract class ExchangeRateService implements ExchangeRateServiceInterface
         $created = \DB::transaction(function () use ($rates) {
             return $rates->reduce(function ($created, $rate) {
                 $created[] = $this->storeRate($rate);
-
                 return $created;
             }, []);
         }, 3);
 
-        return tap((bool) count(array_filter($created)), function ($updated) {
-            $updated && event(new ExchangeRatesUpdated);
-        });
+        return tap(
+            (bool) count(array_filter($created)),
+            fn ($updated) => $updated && event(new ExchangeRatesUpdated)
+        );
     }
 
     public function getTargetRate(Currency $source, Currency $target, ?int $precision = null): float

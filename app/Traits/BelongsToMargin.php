@@ -12,7 +12,7 @@ trait BelongsToMargin
         return $this->belongsTo(CountryMargin::class);
     }
 
-    public function getCountryMarginValueAttribute()
+    public function getCountryMarginValueAttribute(): float
     {
         return $this->countryMargin->value ?? 0;
     }

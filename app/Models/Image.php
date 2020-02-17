@@ -17,19 +17,15 @@ class Image extends BaseModel
         return $this->morphTo();
     }
 
-    public function getThumbnailsAttribute()
+    public function getThumbnailsAttribute($thumbnails)
     {
-        $thumbnails = $this->attributes['thumbnails'];
-
-        if (!isset($thumbnails)) {
-            return null;
+        if (is_null($thumbnails)) {
+            return $thumbnails;
         }
 
-        $thumbnails = collect(json_decode($thumbnails, true))->map(function ($value) {
-            return asset("storage/{$value}");
-        });
+        $thumbnails = array_map(fn ($value) => asset("storage/{$value}"), json_decode($thumbnails, true));
 
-        return $thumbnails->toArray();
+        return $thumbnails;
     }
 
     public function getOriginalImageAttribute()

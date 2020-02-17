@@ -62,9 +62,7 @@ class DBRearrangeTimestamps extends Command
         $tables->each(function ($table) use ($knownTimestamps) {
             $columns = collect(Schema::getColumnListing($table));
             $existingTimestamps = $columns->intersect($knownTimestamps)
-                ->sortBy(function ($column) use ($knownTimestamps) {
-                    return array_search($column, $knownTimestamps);
-                });
+                ->sortBy(fn ($column) => array_search($column, $knownTimestamps));
 
             if (blank($existingTimestamps)) {
                 return true;
