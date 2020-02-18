@@ -181,6 +181,10 @@
         "type": "float",
         "is_read_only": false,
         "section": "exchange_rates",
+        "validation": {
+            "required": true,
+            "decimal": true
+        },
         "order": 10
     },
     {
