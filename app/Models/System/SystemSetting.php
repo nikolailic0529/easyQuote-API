@@ -115,7 +115,7 @@ class SystemSetting extends BaseModel
         }
 
         if ($this->value instanceof \Carbon\Carbon) {
-            return $this->value->format(config('date.format_with_time'));
+            return $this->value->format(config('date.format_time'));
         }
 
         return $this->value;

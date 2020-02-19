@@ -73,17 +73,17 @@ class Customer extends BaseModel
 
     public function getSupportStartAttribute($value)
     {
-        return carbon_format($value, config('date.format_with_time'));
+        return carbon_format($value, config('date.format_time'));
     }
 
     public function getSupportEndAttribute($value)
     {
-        return carbon_format($value, config('date.format_with_time'));
+        return carbon_format($value, config('date.format_time'));
     }
 
     public function getValidUntilAttribute($value)
     {
-        return carbon_format($value, config('date.format_with_time'));
+        return carbon_format($value, config('date.format_time'));
     }
 
     public function getValidUntilAsDateAttribute()

@@ -37,6 +37,17 @@ class BuildRepository implements BuildRepositoryInterface
         return tap($this->build->firstOrCreate($attributes, $values), fn (Build $build) => $this->cacheLatestBuild($build));
     }
 
+    public function updateLatestOrCreate(array $attributes): Build
+    {
+        $latestBuild = $this->latest();
+
+        $build = !is_null($latestBuild)
+            ? tap($latestBuild)->update($attributes)
+            : $this->create($attributes);
+
+        return tap($build, fn (Build $updatedBuild) => $this->cacheLatestBuild($updatedBuild));
+    }
+
     public function latest()
     {
         return cache()->sear(static::CACHE_KEY_LATEST_BUILD, fn () => $this->build->latest()->first());

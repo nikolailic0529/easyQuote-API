@@ -65,6 +65,6 @@ trait Activatable
 
     public function getActivatedAtAttribute($value)
     {
-        return carbon_format($value, config('date.format_with_time'));
+        return carbon_format($value, config('date.format_time'));
     }
 }

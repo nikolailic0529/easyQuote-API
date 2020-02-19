@@ -10,6 +10,6 @@ class Build extends BaseModel
     use SoftDeletes;
 
     protected $fillable = [
-        'git_tag', 'build_number'
+        'git_tag', 'build_number', 'maintenance_message', 'start_time', 'end_time'
     ];
 }
