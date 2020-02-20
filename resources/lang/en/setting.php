@@ -13,6 +13,9 @@ return [
         'exchange_rate_update_schedule' => 'Update Rates Schedule',
         'exchange_rate_provider'        => 'Exchange Rate Provider',
         'default_exchange_rate_margin'  => 'Default Exchange Rate Margin',
+        'maintenance_start_time'        => 'Maintenance Start Time',
+        'maintenance_end_time'          => 'Maintenance End Time',
+        'maintenance_message'           => 'Maintenance Message',
     ],
     'supported_file_types' => [
         'pdf' => [

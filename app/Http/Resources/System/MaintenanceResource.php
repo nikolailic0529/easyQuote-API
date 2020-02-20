@@ -3,6 +3,7 @@
 namespace App\Http\Resources\System;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Queue;
 
 class MaintenanceResource extends JsonResource
 {
@@ -17,11 +18,12 @@ class MaintenanceResource extends JsonResource
         return [
             'build_number'          => $this->build_number,
             'git_tag'               => $this->git_tag,
-            'maintenance_message'   => $this->maintenance_message,
+            'maintenance_message'   => setting('maintenance_message'),
             'enabled'               => now()->lt($this->end_time),
-            'start_time'            => (string) $this->start_time,
-            'end_time'              => (string) $this->end_time,
-            'created_at'            => (string) $this->created_at
+            'start_time'            => (string) optional($this->start_time)->toISOString(),
+            'end_time'              => (string) optional($this->end_time)->toISOString(),
+            'pending_queues'        => Queue::size(),
+            'created_at'            => (string) $this->created_at->toISOString()
         ];
     }
 }

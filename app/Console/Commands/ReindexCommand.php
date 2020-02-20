@@ -27,6 +27,7 @@ use App\Models\{
 };
 use Illuminate\Database\Eloquent\Builder;
 use Str;
+use Throwable;
 
 class ReindexCommand extends Command
 {
@@ -67,7 +68,14 @@ class ReindexCommand extends Command
          * Perform deleting on all indices
          */
         $this->info("Deleting all indexes...");
-        $this->elasticsearch->indices()->delete(['index' => '_all']);
+
+        try {
+            $this->elasticsearch->indices()->delete(['index' => '_all']);
+        } catch (Throwable $exception) {
+            $this->error($exception->getMessage());
+            $this->error("Reindexing will be skipped.");
+            return;
+        }
 
         $this->handleModels(
             [
@@ -132,7 +140,7 @@ class ReindexCommand extends Command
 
                     $bar->advance();
                 }),
-                fn (\Throwable $exception) => $this->warn($exception->getMessage())
+                fn (Throwable $exception) => $this->error($exception->getMessage())
             );
 
             $bar->finish();

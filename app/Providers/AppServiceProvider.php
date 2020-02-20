@@ -227,9 +227,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->instance('path.storage', config('filesystems.disks.local.path'));
 
-        $this->app->bind(ElasticsearchClient::class, function () {
-            return ElasticsearchBuilder::create()->setHosts(app('config')->get('services.search.hosts'))->build();
-        });
+        $this->app->singleton(ElasticsearchClient::class, fn () => ElasticsearchBuilder::create()->setHosts(config('services.search.hosts'))->build());
 
         $this->app->when(\Spatie\PdfToText\Pdf::class)->needs('$binPath')->give(function () {
             if (windows_os()) {

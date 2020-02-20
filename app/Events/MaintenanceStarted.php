@@ -58,7 +58,7 @@ class MaintenanceStarted implements ShouldBroadcastNow
     public function broadcastWith()
     {
         return [
-            'time' => (string) $this->time
+            'time' => (string) $this->time->toISOString()
         ];
     }
 }

@@ -195,5 +195,31 @@
         "section": "exchange_rates",
         "order": 11,
         "label_format": "Last Update was done :value"
+    },
+    {
+        "key": "maintenance_start_time",
+        "value": 5,
+        "type": "integer",
+        "is_read_only": false,
+        "possible_values": "RANGE:1,30,in {value} minute(s) from now",
+        "section": "maintenance",
+        "order": 12
+    },
+    {
+        "key": "maintenance_end_time",
+        "value": 5,
+        "type": "integer",
+        "is_read_only": false,
+        "possible_values": "RANGE:1,120,5,{value} minutes",
+        "section": "maintenance",
+        "order": 13
+    },
+    {
+        "key": "maintenance_message",
+        "value": "We are running routine maintenance in 5 minutes, the server will not be available during maintenance. Thanks.",
+        "type": "string",
+        "is_read_only": false,
+        "section": "maintenance",
+        "order": 14
     }
 ]

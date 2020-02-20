@@ -41,12 +41,15 @@ class MaintenanceController extends Controller
      */
     public function start(StartMaintenanceRequest $request)
     {
-        $build = $this->builds->updateLatestOrCreate($request->validated());
+        $request->updateRelatedSettings();
 
-        UpMaintenance::dispatchAfterResponse($request->startTime(), $request->endTime());
+        if ($request->enable) {
+            $build = $this->builds->updateLatestOrCreate($request->validated());
+            UpMaintenance::dispatchAfterResponse($request->carbonStartTime, $request->carbonEndTime, true);
+        }
 
         return response()->json(
-            MaintenanceResource::make($build)
+            MaintenanceResource::make($this->builds->latest())
         );
     }
 

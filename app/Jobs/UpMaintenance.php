@@ -18,15 +18,19 @@ class UpMaintenance
     /** @var \Carbon\Carbon */
     protected Carbon $endTime;
 
+    /** @var boolean */
+    protected bool $autoComplete = false;
+
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct(Carbon $startTime, Carbon $endTime)
+    public function __construct(Carbon $startTime, Carbon $endTime, bool $autoComplete = false)
     {
         $this->startTime = $startTime;
         $this->endTime = $endTime;
+        $this->autoComplete = $autoComplete;
     }
 
     /**
@@ -36,8 +40,12 @@ class UpMaintenance
      */
     public function handle()
     {
-        ScheduleMaintenance::withChain([
-            (new StartMaintenance($this->endTime))->delay($this->startTime)
-        ])->dispatch($this->startTime);
+        $chain = [(new StartMaintenance($this->endTime))->delay($this->startTime)];
+
+        if ($this->autoComplete) {
+            $chain[] = (new StopMaintenance)->delay($this->endTime);
+        }
+
+        ScheduleMaintenance::withChain($chain)->dispatch($this->startTime);
     }
 }

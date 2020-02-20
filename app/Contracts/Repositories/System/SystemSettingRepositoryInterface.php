@@ -77,6 +77,14 @@ interface SystemSettingRepositoryInterface
     public function updateMany($attributes): bool;
 
     /**
+     * Update the specified setting by given key.
+     *
+     * @param array $map
+     * @return boolean
+     */
+    public function updateByKeys(array $map): bool;
+
+    /**
      * Retrieve all existing System Settings with current and possible values.
      *
      * @return IlluminateCollection

@@ -58,7 +58,7 @@ class MaintenanceScheduled implements ShouldBroadcastNow
     public function broadcastWith()
     {
         return [
-            'time' => (string) $this->schedule
+            'time' => (string) $this->schedule->toISOString()
         ];
     }
 }

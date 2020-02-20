@@ -75,8 +75,10 @@ class UpdateTemplatesAssets extends Command
 
         $assets = collect($template->vendor->logoSelectionWithKeys)->merge($template->company->logoSelectionWithKeys);
 
-        $controls = Arr::where(Arr::dot($template->form_data),
-            fn ($value, $key) => is_string($value) && preg_match('/\.id$/', $key) && preg_match('/^\w+_logo_x\d/', $value));
+        $controls = Arr::where(
+            Arr::dot($template->form_data),
+            fn ($value, $key) => is_string($value) && preg_match('/\.id$/', $key) && $assets->has($value)
+        );
 
         if (empty($controls)) {
             return;
@@ -84,14 +86,8 @@ class UpdateTemplatesAssets extends Command
 
         $form_data = $template->form_data;
 
-        collect($controls)->each(function ($name, $key) use ($form_data, $assets) {
-            $key = Str::beforeLast($key, '.id');
-
-            if (!Arr::has($form_data, $key)) {
-                return true;
-            }
-
-            $form_data = $assets[$name];
+        collect($controls)->each(function ($name, $key) use (&$form_data, $assets) {
+            data_set($form_data, Str::replaceLast('.id', '.src', $key), $assets[$name]);
         });
 
         /** We are preventing update with null form_data as it means that something went wrong when parsing. */

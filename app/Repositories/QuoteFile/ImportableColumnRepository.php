@@ -50,9 +50,10 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
 
     public function allSystem()
     {
-        return cache()->sear(self::CACHE_KEY_SYSTEM_COLS, function () {
-            return $this->importableColumn->ordered()->system()->with('aliases')->get();
-        });
+        return cache()->sear(
+            self::CACHE_KEY_SYSTEM_COLS,
+            fn () => $this->importableColumn->ordered()->system()->with('aliases')->get()
+        );
     }
 
     public function userColumns(array $alises = [])
@@ -124,9 +125,7 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
 
                 $existingAliases = $importableColumn->aliases()->whereIn('alias', $aliases)->pluck('alias')->flip();
 
-                $creatingAliases = Arr::where($aliases, function ($alias) use ($existingAliases) {
-                    return !$existingAliases->has($alias);
-                });
+                $creatingAliases = Arr::where($aliases, fn ($alias) => !$existingAliases->has($alias));
 
                 $importableColumn->aliases()->createMany(static::parseAliasesAttributes($creatingAliases));
 

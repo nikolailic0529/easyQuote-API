@@ -3,10 +3,25 @@
 namespace App\Http\Requests\Maintenance;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Contracts\Repositories\System\SystemSettingRepositoryInterface as Settings;
 use Illuminate\Support\Carbon;
 
 class StartMaintenanceRequest extends FormRequest
 {
+    /** @var \Carbon\Carbon */
+    public Carbon $carbonStartTime;
+
+    /** @var \Carbon\Carbon */
+    public Carbon $carbonEndTime;
+
+    /** @var \App\Contracts\Repositories\System\SystemSettingRepositoryInterface */
+    protected Settings $settings;
+
+    public function __construct(Settings $settings)
+    {
+        $this->settings = $settings;
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -16,18 +31,33 @@ class StartMaintenanceRequest extends FormRequest
     {
         return [
             'maintenance_message'   => 'nullable|string|max:20000',
-            'start_time'            => ['required', 'date_format:' . config('date.format_ui_time'), 'after:now'],
-            'end_time'              => ['required', 'date_format:' . config('date.format_ui_time'), 'after:start_time'],
+            'enable'                => 'nullable|boolean',
+            'start_time'            => 'required|integer|min:1|max:720',
+            'end_time'              => 'required|integer|min:1|max:720',
         ];
     }
 
-    public function startTime(): Carbon
+    protected function passedValidation()
     {
-        return Carbon::createFromFormat(config('date.format_ui_time'), $this->start_time);
+        $this->carbonStartTime = now()->addMinutes((int) $this->start_time);
+        $this->carbonEndTime = now()->addMinutes((int) $this->end_time + (int) $this->start_time);
     }
 
-    public function endTime(): Carbon
+    public function validated()
     {
-        return Carbon::createFromFormat(config('date.format_ui_time'), $this->end_time);
+        return [
+            'start_time'    => $this->carbonStartTime,
+            'end_time'      => $this->carbonEndTime,
+            'enable'        => (bool) $this->enable
+        ] + parent::validated();
+    }
+
+    public function updateRelatedSettings(): bool
+    {
+        return $this->settings->updateByKeys([
+            'maintenance_start_time' => $this->start_time,
+            'maintenance_end_time'   => $this->end_time,
+            'maintenance_message'    => $this->maintenance_message
+        ]);
     }
 }

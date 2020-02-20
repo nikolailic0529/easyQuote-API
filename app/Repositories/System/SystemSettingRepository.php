@@ -69,6 +69,17 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
         return $this->systemSetting->updateOrCreate($attributes, $values);
     }
 
+    public function updateByKeys(array $map): bool
+    {
+        DB::transaction(
+            fn () =>
+            $this->systemSetting->whereIn('key', array_keys($map))->get()
+                ->each(fn (SystemSetting $setting) => $setting->update(['value' => $map[$setting->key]]))
+        );
+
+        return true;
+    }
+
     public function updateMany($attributes): bool
     {
         if ($attributes instanceof Request) {
@@ -163,7 +174,7 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
     protected function hasGetMutator($key)
     {
         $key = Str::studly(str_replace('.', '_', $key));
-        return method_exists($this, 'get'.$key.'Setting');
+        return method_exists($this, 'get' . $key . 'Setting');
     }
 
     /**
@@ -175,6 +186,6 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
      */
     protected function mutateSetting($key)
     {
-        return $this->{'get'.Str::studly($key).'Setting'}();
+        return $this->{'get' . Str::studly($key) . 'Setting'}();
     }
 }
