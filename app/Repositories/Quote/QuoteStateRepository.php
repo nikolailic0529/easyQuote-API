@@ -28,16 +28,20 @@ use App\Jobs\RetrievePriceAttributes;
 use App\Models\Quote\QuoteVersion;
 use App\Repositories\Concerns\{
     ManagesGroupDescription,
+    ManagesSchemalessAttributes,
     ResolvesImplicitModel,
     ResolvesQuoteVersion
 };
+use Closure;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Builder;
 use DB, Arr, Str;
+use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Database\Query\JoinClause;
 
 class QuoteStateRepository implements QuoteRepositoryInterface
 {
-    use ResolvesImplicitModel, ResolvesQuoteVersion, ManagesGroupDescription;
+    use ResolvesImplicitModel, ResolvesQuoteVersion, ManagesGroupDescription, ManagesSchemalessAttributes;
 
     protected Quote $quote;
 
@@ -138,32 +142,18 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         return $this->userQuery()->whereId($id)->firstOrNew();
     }
 
-    public function find($quote): Quote
+    public function find(string $id): Quote
     {
-        if (is_string($quote)) {
-            return $this->userQuery()->whereId($quote)->withDefaultRelations()->firstOrFail()->withAppends();
-        }
-
-        if (!$quote instanceof Quote) {
-            throw new \InvalidArgumentException(INV_ARG_QPK_01);
-        }
-
-        return $quote->loadDefaultRelations()->withAppends();
+        return $this->quote->whereId($id)->firstOrFail();
     }
 
     public function findVersion($quote): BaseQuote
     {
-        if (is_string($quote)) {
-            $quote = $this->find($quote);
+        if ($quote instanceof QuoteVersion) {
+            return $quote;
         }
 
-        if (!$quote instanceof Quote) {
-            throw new \InvalidArgumentException(INV_ARG_QPK_01);
-        }
-
-        $quote->usingVersion->loadDefaultRelations();
-
-        return $quote->usingVersion;
+        return $this->resolveModel($quote)->usingVersion;
     }
 
     public function create(array $attributes): Quote
@@ -176,11 +166,45 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         return $this->quote->make($array);
     }
 
-    public function step2(MappingReviewRequest $request)
+    public function retrieveRows(BaseQuote $quote, $criteria = [])
     {
-        $quote = $this->findVersion($request->quote_id);
+        $subQuery = $this->mappedRowsQuery($quote);
+        $query = DB::query()->fromSub($subQuery, 'mapped_rows');
 
-        return cache()->sear($quote->mappingReviewCacheKey, fn () => $quote->rowsDataByColumns()->get());
+        $mapping = $quote->fieldsColumns;
+        $columns = $mapping->pluck('templateField.name');
+
+        $query->addSelect('id', 'is_selected', 'group_name', ...$columns);
+
+        /** Sorting by columns. */
+        $mapping->each(fn ($map) =>
+            /** Except the price column to be able calculate price. */
+            $query->when($map->templateField->name !== 'price', fn (QueryBuilder $query) => $query->addSelect($map->templateField->name))
+                ->when(filled($map->sort), fn (QueryBuilder $query) => $query->orderBy($map->templateField->name, $map->sort))
+        );
+
+        /** An optional criteria for query. */
+        if ($criteria instanceof Closure) {
+            call_user_func($criteria, $query);
+        }
+
+        if (is_array($criteria)) {
+            $query->where($criteria);
+        }
+
+        return $query->get();
+    }
+
+    public function calculateListPrice(BaseQuote $quote): float
+    {
+        return $this->mappedRowsQuery($quote)->sum('price');
+    }
+
+    public function calculateTotalPrice(BaseQuote $quote): float
+    {
+        return $this->mappedRowsQuery($quote)
+            ->when($quote->groupsReady(), fn (QueryBuilder $query) => $query->whereNotNull('group_name'), fn (QueryBuilder $query) => $query->whereIsSelected(true))
+            ->sum('price');
     }
 
     public function discounts(string $id)
@@ -233,7 +257,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
          */
         $quote->discounts = $providedDiscounts;
 
-        $this->quoteService->assignComputableRows($quote);
+        $this->setComputableRows($quote);
 
         /**
          * Possible Interactions with Margins and Discounts
@@ -254,30 +278,13 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         });
     }
 
-    public function review(string $quoteId)
+    public function review(string $quote)
     {
-        $quote = $this->findVersion($quoteId);
+        $quote = $this->findVersion($quote);
 
         $this->quoteService->prepareQuoteReview($quote);
 
         return QuoteReviewResource::make($quote->enableReview());
-    }
-
-    public function rows(string $id, string $query = '', ?string $group_id = null): Collection
-    {
-        $quote = $this->findVersion($id);
-
-        $foundRows = $quote->rowsDataByColumnsGroupable($query)->get();
-
-        if (isset($group_id) && null !== ($group = $quote->findGroupDescription($group_id))) {
-            $groupName = optional($group)['name'];
-
-            $existingRows = $quote->groupedRows(null, false, $groupName)->get();
-
-            $foundRows = $foundRows->merge($existingRows);
-        }
-
-        return $foundRows;
     }
 
     public function setVersion(string $version_id, $quote): bool
@@ -366,6 +373,90 @@ class QuoteStateRepository implements QuoteRepositoryInterface
             )
                 ->where('quote_id', $sourceId)
         );
+    }
+
+    protected function mappedRowsQuery(BaseQuote $quote): QueryBuilder
+    {
+        $query = DB::table('imported_rows')
+            ->join('quote_files', 'quote_files.id', '=', 'imported_rows.quote_file_id')
+            ->join('customers', fn (JoinClause $join) => $join->where('customers.id', $quote->customer_id))
+            ->whereNull('quote_files.deleted_at')
+            ->whereNull('imported_rows.deleted_at')
+            ->whereNotNull('imported_rows.columns_data')
+            ->where('quote_files.quote_id', $quote->id)
+            ->where('quote_files.file_type', QFT_PL)
+            ->whereColumn('imported_rows.page', '>=', 'quote_files.imported_page');
+
+        $mapping = $quote->fieldsColumns;
+
+        $exchangeRate = $quote->convertExchangeRate(1);
+
+        $customerAttributesMap = ['date_from' => 'customer_support_start', 'date_to' => 'customer_support_end'];
+
+        $query->select('imported_rows.id', 'imported_rows.is_selected', 'imported_rows.group_name', 'imported_rows.columns_data', 'customers.support_start as customer_support_start', 'customers.support_end as customer_support_end');
+
+        $mapping->each(function ($map) use ($query, $customerAttributesMap) {
+            if (!$map->is_default_enabled) {
+                $this->unpivotJsonColumn($query, 'columns_data', 'importable_column_id', $map->importable_column_id, 'value', $map->templateField->name);
+                return true;
+            }
+
+            switch ($map->templateField->name) {
+                case 'date_from':
+                case 'date_to':
+                    $defaultCustomerDate = optional($customerAttributesMap)[$map->templateField->name];
+                    $query->selectRaw("date_format(`{$defaultCustomerDate}`, '%d/%m/%Y') as {$map->templateField->name}");
+                    break;
+                case 'qty':
+                    $query->selectRaw("1 as {$map->templateField->name}");
+                    break;
+            }
+        });
+
+        $query = DB::query()->fromSub($query, 'imported_rows')->addSelect('id', 'is_selected', 'columns_data', 'group_name');
+
+        $mapping->each(function ($map) use ($query, $customerAttributesMap, $exchangeRate) {
+            if ($map->is_default_enabled) {
+                $query->addSelect($map->templateField->name);
+                return true;
+            }
+
+            switch ($map->templateField->name) {
+                case 'price':
+                    $query->selectRaw('CAST(ExtractDecimal(`price`) * ? AS DECIMAL(15,2)) as `price`', [$exchangeRate]);
+                    break;
+                case 'date_from':
+                case 'date_to':
+                    $defaultCustomerDate = optional($customerAttributesMap)[$map->templateField->name];
+                    $this->parseColumnDate($query, $map->templateField->name, "`{$defaultCustomerDate}`");
+                    break;
+                case 'qty':
+                    $query->selectRaw("GREATEST(CAST(`qty` AS UNSIGNED), 1) AS `qty`");
+                    break;
+                default:
+                    $query->addSelect($map->templateField->name);
+                    break;
+            }
+        });
+
+        /** Select default values when the related mapping doesn't exist. */
+        $defaults = collect(['price' => 0, 'date_from' => '`customer_support_start`', 'date_to' => '`customer_support_end`']);
+
+        $defaults->each(fn ($value, $column) =>
+            $query->unless($mapping->contains('templateField.name', $column), fn (QueryBuilder $query) => $query->selectRaw("{$value} AS `{$column}`"))
+        );
+
+        $query = DB::query()->fromSub($query, 'rows');
+
+        $columns = $mapping->pluck('templateField.name')->flip()->except('price')->flip();
+        $query->addSelect('id', 'is_selected', 'columns_data', 'group_name', ...$columns);
+
+        /** Calculating price based on date_from & date_to when related option is selected. */
+        $query->when($quote->calculate_list_price, fn (QueryBuilder $query) => $query->selectRaw("(`price` / 30 * GREATEST(DATEDIFF(STR_TO_DATE(`date_to`, '%d/%m/%Y'), STR_TO_DATE(`date_from`, '%d/%m/%Y')), 0)) as `price`"))
+            ->unless($quote->calculate_list_price, fn (QueryBuilder $query) => $query->addSelect('price'));
+
+
+        return $query;
     }
 
     protected function hideFields(Collection $state, BaseQuote $quote): void
@@ -687,6 +778,11 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         }
 
         $quote->quoteFiles()->paymentSchedules()->delete();
+    }
+
+    protected function setComputableRows(BaseQuote $quote): void
+    {
+        $quote->computableRows = $this->retrieveRows($quote, ['is_selected' => true]);
     }
 
     private function countVersionNumber(Quote $quote, QuoteVersion $version): int

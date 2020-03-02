@@ -15,7 +15,7 @@ class MaintenanceStart extends Command
      *
      * @var string
      */
-    protected $signature = 'eq:maintenance-start {start_time} {end_time} {build_number} {git_tag}';
+    protected $signature = 'eq:maintenance-start {start_time} {end_time} {build_number?} {git_tag?}';
 
     /**
      * The console command description.
@@ -39,20 +39,19 @@ class MaintenanceStart extends Command
      *
      * @return mixed
      */
-    public function handle(Builds $builds)
+    public function handle()
     {
         $scheduledMinutes = (int) $this->argument('start_time');
-        $start_time = now()->addMinutes($scheduledMinutes);
+        $startTime = now()->addMinutes($scheduledMinutes);
 
         $totalMinutes = (int) $this->argument('end_time');
-        $end_time = now()->addMinutes($totalMinutes + $scheduledMinutes);
+        $endTime = now()->addMinutes($totalMinutes + $scheduledMinutes);
 
-        $buildAttributes = Arr::only($this->arguments(), ['build_number', 'git_tag']);
-        $builds->create($buildAttributes + compact('start_time', 'end_time'));
+        $this->createBuild($startTime, $endTime);
 
-        UpMaintenance::dispatch($start_time, $end_time);
+        UpMaintenance::dispatch($startTime, $endTime);
 
-        $this->wait($start_time);
+        $this->wait($startTime);
 
         $this->maintenanceStartedMessage($totalMinutes);
     }
@@ -78,5 +77,14 @@ class MaintenanceStart extends Command
 
         $this->output->write("\n");
         $this->alert("Maintenance started! Estimated time is {$minutes} {$unit}.");
+    }
+
+    protected function createBuild(Carbon $start_time, Carbon $end_time): void
+    {
+        $attributes = array_filter(Arr::only($this->arguments(), ['build_number', 'git_tag']));
+
+        $attributes += optional(app(Builds::class)->latest())->only('build_number', 'git_tag') ?? [];
+
+        app(Builds::class)->create($attributes + compact('start_time', 'end_time'));
     }
 }

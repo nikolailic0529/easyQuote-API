@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\Services\UIServiceInterface;
+use Illuminate\Database\Eloquent\Model;
 use Arr, Str;
 
 class UIService implements UIServiceInterface
@@ -41,9 +42,9 @@ class UIService implements UIServiceInterface
         $replacement = [];
 
         foreach ($context as $k => $v) {
-            $replacement['{'.$k.'}'] = transform($v, function ($v) {
-                return $v instanceof \Illuminate\Database\Eloquent\Model ? $v->getRouteKey() : $v;
-            });
+            $replacement['{' . $k . '}'] = transform(
+                $v, fn ($v) => $v instanceof Model ? $v->getRouteKey() : $v
+            );
         }
 
         return $replacement;
@@ -51,6 +52,6 @@ class UIService implements UIServiceInterface
 
     protected static function resolveRoute(string $key)
     {
-        return Arr::get(static::$config, 'routes.'.$key);
+        return Arr::get(static::$config, 'routes.' . $key);
     }
 }

@@ -128,7 +128,8 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         $this->user = $quoteFile->user;
         $this->systemImportableColumns = $this->importRepository()->allSystem();
 
-        HeadingRowFormatter::default('none');
+        HeadingRowFormatter::
+            default('none');
     }
 
     public function onRow(Row $excelRow)
@@ -142,7 +143,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
         $importableRow = $this->fetchRow($row);
 
-        if (!$this->checkColumnsData($importableRow['imported_columns'])) {
+        if (!$this->checkColumnsData($importableRow['columns_data'])) {
             return;
         };
 
@@ -179,20 +180,16 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
     protected function performChunkInsert(): void
     {
-        if (count(Arr::pluck($this->importableSheetData, 'imported_columns'), true) < $this->chunkSize * $this->headersCount) {
+        if (count($this->importableSheetData) < $this->chunkSize) {
             return;
         }
 
         $this->performInsert(array_splice($this->importableSheetData, 0, $this->chunkSize));
     }
 
-    protected function performInsert(array $data): void
+    protected function performInsert(array $importableRows): void
     {
-        $importableRows = Arr::pluck($data, 'imported_row');
-        $importableColumns = Arr::collapse(Arr::pluck($data, 'imported_columns.*'));
-
         DB::table('imported_rows')->insert($importableRows);
-        DB::table('imported_columns')->insert($importableColumns);
     }
 
     protected function importSheetData(): void
@@ -253,15 +250,10 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
     protected function checkColumnsData(Collection $columnsData): bool
     {
-        $pass = $this->requiredHeadersMapping->reject(function ($header, $id) use ($columnsData) {
-            return $columnsData->contains(function ($column) use ($header) {
-                return trim($column['header']) === trim($header) && isset($column['value']);
-            }) || $columnsData->filter(function ($column) {
-                return isset($column['value']);
-            })->count() > 3;
+        return $this->requiredHeadersMapping->reject(function ($header, $id) use ($columnsData) {
+            return $columnsData->contains(fn ($column) => trim($column['header']) === trim($header) && isset($column['value']))
+                || $columnsData->filter(fn ($column) => isset($column['value']))->count() > 3;
         })->isEmpty();
-
-        return $pass;
     }
 
     protected function determineCoveragePeriod(Worksheet $worksheet): void
@@ -315,26 +307,12 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
     protected function makeRow(array $row): void
     {
-        $row['imported_columns'] = $row['imported_columns']->toArray();
-
         array_push($this->importableSheetData, $row);
     }
 
     protected function fetchRow(Collection $row): array
     {
-        $imported_row = $this->makeImportedRow();
-
-        $imported_columns = $row->map(function ($value, $header) use ($row, $imported_row) {
-            return $this->makeImportedColumn([
-                'value'             => $value,
-                'header'            => $header,
-                'imported_row_id'   => $imported_row['id']
-            ]);
-        })->filter(function ($column) {
-            return isset($column['importable_column_id']) && $column['header'] !== $column['value'];
-        })->values();
-
-        return compact('imported_row', 'imported_columns');
+        return $this->makeImportedRow() + ['columns_data' => $this->makeColumnsData($row)];
     }
 
     protected function setHeader(Worksheet $worksheet): void
@@ -382,28 +360,24 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
             'quote_file_id' => $this->quoteFile->id,
             'page'          => $this->activeSheetIndex,
             'created_at'    => $now,
-            'updated_at'    => $now,
-            'processed_at'  => $now
+            'updated_at'    => $now
         ];
     }
 
-    private function makeImportedColumn(array $attributes): array
+    private function makeColumnsData($attributes): Collection
     {
-        if (!Arr::has($attributes, ['header', 'value', 'imported_row_id'])) {
-            return [];
-        }
+        $attributes = Collection::wrap($attributes);
 
-        if (isset($attributes['value'])) {
-            $attributes['value'] = preg_replace('/(^[\h]+)|([\h]+$)/um', '', str_replace('_x000D_', '', $attributes['value']));
-        }
-
-        return [
-            'id'                    => Uuid::generate(4)->string,
-            'imported_row_id'       => $attributes['imported_row_id'],
-            'importable_column_id'  => $this->headersMapping->get($attributes['header']),
-            'header'                => $this->limitHeader($this->quoteFile, $attributes['header']),
-            'value'                 => $attributes['value']
-        ];
+        return $attributes->map(
+            fn ($value, $header) =>
+            [
+                'importable_column_id'  => $this->headersMapping->get($header),
+                'header'                => $this->limitHeader($this->quoteFile, $header),
+                'value'                 => static::sanitizeColumnValue($value)
+            ]
+        )
+            ->filter(fn ($column) => isset($column['importable_column_id']) && $column['header'] !== $column['value'])
+            ->values();
     }
 
     private function findRowAttribute(string $regexp, string $cellRegexp, Collection $row)
@@ -423,5 +397,14 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         }
 
         return null;
+    }
+
+    private static function sanitizeColumnValue(?string $value)
+    {
+        if (blank($value)) {
+            return $value;
+        }
+
+        return preg_replace('/(^[\h]+)|([\h]+$)/um', '', str_replace('_x000D_', '', $value));
     }
 }

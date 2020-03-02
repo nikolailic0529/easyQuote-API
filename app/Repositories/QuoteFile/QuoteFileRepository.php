@@ -16,6 +16,7 @@ use App\Models\{
 };
 use Illuminate\Http\UploadedFile;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use Storage, Str, File, DB;
 
 class QuoteFileRepository implements QuoteFileRepositoryInterface
@@ -28,7 +29,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     protected ImportableColumnRepository $importableColumn;
 
-    protected Collection $systemImportableColumns;
+    protected static ?Collection $importableColumnsCache = null;
 
     public function __construct(
         QuoteFile $quoteFile,
@@ -40,7 +41,6 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         $this->fileFormat = $fileFormat;
         $this->dataSelectSeparator = $dataSelectSeparator;
         $this->importableColumn = $importableColumn;
-        $this->systemImportableColumns = $importableColumn->allSystem();
     }
 
     public function all()
@@ -167,57 +167,6 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         return $scheduleData;
     }
 
-    protected function createImportedPages(array $array, QuoteFile $quoteFile)
-    {
-        $array = collect($array)->filter(function ($item) {
-            return isset($item['page']) && isset($item['rows']);
-        });
-
-        $importedRows = [];
-        foreach ($array as $pageData) {
-            ['page' => $page, 'rows' => $rows] = $pageData;
-            $pageRows = $this->createImportedRows($rows, $quoteFile, $page);
-            array_push($importedRows, ...$pageRows);
-        }
-
-        if (count($importedRows) < 1) {
-            $quoteFile->setException(QFNRF_01, 'QFNRF_01');
-            $quoteFile->markAsUnHandled();
-            $quoteFile->throwExceptionIfExists();
-        }
-
-        $quoteFile->rowsData()->saveMany($importedRows);
-    }
-
-    protected function createImportedRows(array $rows, QuoteFile $quoteFile, int $page)
-    {
-        $quote_file_id = $quoteFile->id;
-        $user_id = $quoteFile->user->id;
-        $attributes = compact('quote_file_id', 'user_id', 'page');
-
-        return collect($rows)
-            ->map(function ($row) use ($quoteFile, $attributes) {
-                $importedRow = ImportedRow::make($attributes);
-                $this->createRowData($row, $quoteFile, $importedRow);
-                return $importedRow;
-            });
-    }
-
-    protected function createRowData(array $row, QuoteFile $quoteFile, ImportedRow $importedRow, $formatHeader = true)
-    {
-        $user = $quoteFile->user;
-
-        $importedRow->columnsDataToCreate = collect($row)->map(function ($value, $columnName) use ($quoteFile, $user, $importedRow, $formatHeader) {
-            $importable_column_id = $this->systemImportableColumns->firstWhere('name', $columnName)->id ?? null;
-            $header = Str::header($columnName, QFUH_01, $formatHeader);
-
-            $columnDataItem = ImportedColumn::make(compact('value', 'header', 'importable_column_id'));
-            return $columnDataItem;
-        });
-
-        return $importedRow;
-    }
-
     public function getRowsData(QuoteFile $quoteFile)
     {
         return $quoteFile->rowsData()->with('columnsData')->where('page', '>=', $quoteFile->imported_page)->get();
@@ -270,28 +219,20 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
         $quoteFileCopy = tap($quoteFile->replicate(), function ($file) use ($quoteId) {
             $file->quote()->associate($quoteId);
-            $file->saveOrFail();
+            $file->save();
         });
+
         $new_quote_file_id = $quoteFileCopy->id;
 
         $tempRowsTable = 'temp_imported_rows_table_' . uniqid();
-        $tempColumnsTable = 'temp_imported_columns_table_' . uniqid();
         $importedRowColumn = 'temp_imported_row_id';
 
         /** Generating new Ids for Imported Columns and Rows in the temporary table. */
         DB::select(
             "create temporary table `{$tempRowsTable}`
-            select uuid() as `id`, `id` as {$importedRowColumn}, `quote_file_id`, `page`, `is_selected`, `processed_at`, `group_name` from `imported_rows`
+            select uuid() as `id`, `id` as {$importedRowColumn}, `quote_file_id`, `columns_data`, `page`, `is_selected`, `group_name` from `imported_rows`
                 where `imported_rows`.`quote_file_id` = :quote_file_id",
             compact('quote_file_id')
-        );
-
-        DB::select(
-            "create temporary table `{$tempColumnsTable}`
-            select uuid() as `id`, `temp_imported_rows`.`id` as `imported_row_id`, `importable_column_id`, `value`, `header` from `imported_columns`
-                inner join (select `id`, `{$importedRowColumn}` from `{$tempRowsTable}`) as `temp_imported_rows`
-                on `temp_imported_rows`.`{$importedRowColumn}` = `imported_columns`.`imported_row_id`
-            "
         );
 
         /** We are marking temporary rows as selected if the related payload is present in the current request. */
@@ -302,19 +243,66 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
         /** Inserting Imported Rows with new Ids. */
         DB::insert(
-            "insert into `imported_rows` (`id`, `user_id`, `quote_file_id`, `page`, `is_selected`, `processed_at`, `group_name`)
-            select `id`, :user_id, :new_quote_file_id, `page`, `is_selected`, `processed_at`, `group_name`
+            "insert into `imported_rows` (`id`, `user_id`, `quote_file_id`, `columns_data`, `page`, `is_selected`, `group_name`)
+            select `id`, :user_id, :new_quote_file_id, `columns_data`, `page`, `is_selected`, `group_name`
             from `{$tempRowsTable}`",
             compact('user_id', 'new_quote_file_id')
         );
 
-        /** Inserting Imported Columns with new Ids and new assigned Imported Rows Ids. */
-        DB::insert(
-            "insert into `imported_columns` (`id`, `imported_row_id`, `importable_column_id`, `value`, `header`)
-            select `id`, `imported_row_id`, `importable_column_id`, `value`, `header` from `{$tempColumnsTable}`"
-        );
-
         return $quoteFileCopy;
+    }
+
+    protected function createImportedPages(array $array, QuoteFile $quoteFile)
+    {
+        $pages = collect($array)->filter(fn ($item) => (isset($item['page']) && isset($item['rows'])));
+
+        $importedRows = [];
+
+        $pages->each(function ($data) use (&$importedRows, $quoteFile) {
+            ['page' => $page, 'rows' => $rows] = $data;
+
+            array_push($importedRows, ...$this->createImportedRows($rows, $quoteFile, $page));
+        });
+
+        if (count($importedRows) < 1) {
+            $quoteFile->setException(QFNRF_01, 'QFNRF_01');
+            $quoteFile->markAsUnHandled();
+            $quoteFile->throwExceptionIfExists();
+        }
+
+        $quoteFile->rowsData()->saveMany($importedRows);
+    }
+
+    protected function createImportedRows(array $rows, QuoteFile $quoteFile, int $page): SupportCollection
+    {
+        $quote_file_id = $quoteFile->id;
+        $user_id = $quoteFile->user->id;
+        $attributes = compact('quote_file_id', 'user_id', 'page');
+
+        return collect($rows)
+            ->map(fn ($row) => ImportedRow::make($attributes + ['columns_data' => $this->mapColumnsData($row)]));
+    }
+
+    protected function mapColumnsData(array $row): SupportCollection
+    {
+        $importableColumns = $this->getImportableColumns();
+
+        return SupportCollection::wrap($row)->map(
+            fn ($value, $name) => [
+                'header' => Str::header($name),
+                'value' => $value,
+                'importable_column_id' => optional($importableColumns->get($name))->id
+            ]
+        )->values();
+    }
+
+    protected function getImportableColumns(): Collection
+    {
+        if (isset(static::$importableColumnsCache)) {
+            return static::$importableColumnsCache;
+        }
+
+        return static::$importableColumnsCache = $this->importableColumn->allSystem()->keyBy('name');
     }
 
     private function updateTempSelectedImportedRows(string $table, string $column): void

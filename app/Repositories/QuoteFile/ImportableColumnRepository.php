@@ -38,6 +38,15 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
         return $this->query()->whereId($id)->firstOrFail();
     }
 
+    public function findByIds(iterable $ids)
+    {
+        if ($ids instanceof Arrayable) {
+            $ids = $ids->toArray();
+        }
+
+        return $this->query()->whereIn('id', $ids)->get();
+    }
+
     public function all()
     {
         return $this->importableColumn->ordered()->with('aliases')->get();

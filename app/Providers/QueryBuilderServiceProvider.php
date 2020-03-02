@@ -29,12 +29,12 @@ class QueryBuilderServiceProvider extends ServiceProvider
     protected function apiPaginateMacro()
     {
         return function (int $maxResults = null, int $defaultSize = null) {
-            $maxResults = $maxResults ?? config('api-paginate.max_results');
-            $defaultSize = $defaultSize ?? config('api-paginate.default_size');
-            $numberParameter = config('api-paginate.number_parameter');
-            $sizeParameter = config('api-paginate.size_parameter');
-            $size = max((int) request()->input($sizeParameter, $defaultSize), 1);
-            $size = $size > $maxResults ? $maxResults : $size;
+            $maxResults         = $maxResults ?? config('api-paginate.max_results');
+            $defaultSize        = $defaultSize ?? config('api-paginate.default_size');
+            $numberParameter    = config('api-paginate.number_parameter');
+            $sizeParameter      = config('api-paginate.size_parameter');
+            $size               = max((int) request()->input($sizeParameter, $defaultSize), 1);
+            $size               = $size > $maxResults ? $maxResults : $size;
 
             $page = Paginator::resolveCurrentPage($numberParameter);
 
@@ -45,8 +45,8 @@ class QueryBuilderServiceProvider extends ServiceProvider
             $results = $total ? $this->forPage($page, $size)->get(['*']) : collect();
 
             return $this->paginator($results, $total, $size, $page, [
-                'path' => Paginator::resolveCurrentPath(),
-                'pageName' => $numberParameter,
+                'path'      => Paginator::resolveCurrentPath(),
+                'pageName'  => $numberParameter,
             ])->appends(Arr::except(request()->input(), $numberParameter));
         };
     }
@@ -79,9 +79,7 @@ class QueryBuilderServiceProvider extends ServiceProvider
             $cacheKey = md5('query|' . $clonedQuery->toSql() . implode('', $clonedQuery->getBindings()));
 
             return cache()->tags($query->from.TABLE_COUNT_POSTFIX)
-                ->remember($cacheKey, config('api-paginate.count_cache_ttl'), function () use ($query) {
-                    return $query->get()->all();
-                });
+                ->remember($cacheKey, config('api-paginate.count_cache_ttl'), fn () => $query->get()->all());
         };
     }
 }

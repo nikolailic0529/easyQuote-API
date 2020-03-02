@@ -29,7 +29,7 @@ class SchedulesParsingTest extends ParsingTest
 
     protected function filesType(): string
     {
-        return __('quote_file.types.schedule');
+        return QFT_PS;
     }
 
     protected function filesDirPath(): string
@@ -39,8 +39,7 @@ class SchedulesParsingTest extends ParsingTest
 
     protected function performFileAssertions(QuoteFile $quoteFile): void
     {
-        $this->assertEquals('completed', $quoteFile->processing_status, $this->message($quoteFile));
-        $this->assertTrue(filled($quoteFile->scheduleData->value));
+        $this->assertTrue(filled($quoteFile->scheduleData->value), $this->message($quoteFile));
     }
 
     protected function mapping(): Collection

@@ -14,8 +14,20 @@ trait Automappable
         return $this->forceFill(['automapped_at' => null])->save();
     }
 
+    public function isMapped(): bool
+    {
+        return !is_null($this->automapped_at);
+    }
+
     public function isNotAutomapped(): bool
     {
-        return !isset($this->automapped_at);
+        return !$this->isMapped();
+    }
+
+    public function getProcessingStateAttribute(): array
+    {
+        return [
+            'status' => $this->isMapped() ? 'completed' : 'processing'
+        ];
     }
 }

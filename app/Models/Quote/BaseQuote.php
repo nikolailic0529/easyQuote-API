@@ -205,14 +205,14 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
     public function rowsData()
     {
         return $this->hasManyThrough(ImportedRow::class, QuoteFile::class)
-            ->where('quote_files.file_type', __('quote_file.types.price'))
+            ->where('quote_files.file_type', QFT_PL)
             ->whereColumn('imported_rows.page', '>=', 'quote_files.imported_page');
     }
 
     public function getRowsDataAttribute()
     {
         return ImportedRowResource::collection(
-            $this->rowsData()->with('columnsData')->processed()->oldest()->limit(1)->get()
+            $this->rowsData()->oldest()->limit(1)->get()
         );
     }
 

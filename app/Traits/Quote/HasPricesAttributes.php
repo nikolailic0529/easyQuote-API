@@ -1,12 +1,17 @@
 <?php
 
 namespace App\Traits\Quote;
+
+use App\Contracts\Repositories\Quote\QuoteRepositoryInterface as QuoteState;
 use Str;
 
 trait HasPricesAttributes
 {
     /** @var float */
     protected float $applicableDiscounts = 0;
+
+    /** @var float */
+    protected ?float $totalPrice = null;
 
     public function initializeHasPricesAttributes()
     {
@@ -16,6 +21,20 @@ trait HasPricesAttributes
     public function getBuyPriceAttribute($value): float
     {
         return $this->convertExchangeRate((float) $value);
+    }
+
+    public function getTotalPriceAttribute(): float
+    {
+        if (isset($this->totalPrice)) {
+            return $this->totalPrice;
+        }
+
+        return $this->totalPrice = app(QuoteState::class)->calculateTotalPrice($this);
+    }
+
+    public function setTotalPriceAttribute(float $value): void
+    {
+        $this->totalPrice = $value;
     }
 
     public function getListPriceAttribute(): string

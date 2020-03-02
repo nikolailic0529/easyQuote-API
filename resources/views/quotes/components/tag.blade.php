@@ -1,5 +1,5 @@
 @php
-    $tagValue = trim($data[$page_name][$id]) ?? str_repeat('-', 15);
+    $tagValue = trim(data_get($data, "{$page_name}.{$id}") ?? str_repeat('-', 15));
 @endphp
 <span
     class="{{ $class }}"

@@ -115,7 +115,7 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
     protected function filterQueryThrough(): array
     {
         return [
-            \App\Http\Query\DefaultOrderBy::class,
+            app(\App\Http\Query\DefaultOrderBy::class, ['column' => 'updated_at']),
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\Quote\OrderByName::class,
             \App\Http\Query\Quote\OrderByCompanyName::class,

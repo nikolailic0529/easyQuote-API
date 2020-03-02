@@ -7,6 +7,7 @@ use App\Contracts\{
     Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository,
     Services\QuoteServiceInterface
 };
+use App\Contracts\Repositories\Quote\QuoteRepositoryInterface;
 use App\Repositories\SearchableRepository;
 use App\Http\Resources\QuoteRepository\SubmittedCollection;
 use App\Models\Quote\{
@@ -132,6 +133,8 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     {
         $quote = $this->resolveModel($quote);
 
+
+
         return $this->retrieveCachedQuotePdf($quote->switchModeTo($type));
     }
 
@@ -249,7 +252,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     protected function filterQueryThrough(): array
     {
         return [
-            \App\Http\Query\DefaultOrderBy::class,
+            app(\App\Http\Query\DefaultOrderBy::class, ['column' => 'updated_at']),
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\Quote\OrderByName::class,
             \App\Http\Query\Quote\OrderByCompanyName::class,

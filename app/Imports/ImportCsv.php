@@ -6,6 +6,7 @@ use App\Imports\Concerns\{
     MapsHeaders,
     LimitsHeaders
 };
+use App\Models\QuoteFile\ImportedRow;
 use App\Models\QuoteFile\QuoteFile;
 use League\Csv\Reader;
 use DB, Storage;
@@ -130,23 +131,20 @@ class ImportCsv
         $user_id = $this->quoteFile->user_id;
         $quote_file_id = $this->quoteFile->id;
 
-        // Inserting Rows
-        $this->pdo->exec("
-            insert into `imported_rows` (id, created_at, updated_at, processed_at, quote_file_id, user_id, page)
-            select imported_row_id id, now() created_at, now() updated_at, now() processed_at, '{$quote_file_id}' quote_file_id, '{$user_id}' user_id, 1 page
-            from `{$this->dataTable}`
-        ");
+        $rows = DB::table($this->dataTable)->get();
 
-        // Inserting Columns by Each Header
-        $colsQuery = $this->headersMapping->map(function ($importable_column_id, $header) {
-            return "
-                insert into `imported_columns` (id, imported_row_id, importable_column_id, value, header)
-                select uuid() id, imported_row_id, '{$importable_column_id}', `{$header}` value, '{$header}'
-                from `{$this->dataTable}`
-            ";
-        })->implode(';');
+        DB::transaction(
+            fn () =>
+            $rows->each(function ($row) use ($user_id, $quote_file_id) {
+                ImportedRow::create([
+                    'quote_file_id' => $quote_file_id,
+                    'user_id'       => $user_id,
+                    'columns_data'  => $this->mapColumnsData($row),
+                    'page'          => 1
+                ]);
+            })
+        );
 
-        $this->pdo->exec($colsQuery);
 
         $this->afterImport();
     }
@@ -176,7 +174,7 @@ class ImportCsv
     {
         return collect($header)->map(function ($name, $key) {
             if (blank($name)) {
-                return 'Unknown Header '. ++$key;
+                return 'Unknown Header ' . ++$key;
             }
             return $name;
         })->toArray();
@@ -198,14 +196,6 @@ class ImportCsv
             optionally enclosed by '{$this->enclosure}'
             ignore 1 lines;
         ");
-
-        /**
-         * Assign Unique Ids to Rows
-         */
-        $this->pdo->exec("
-            alter table `{$this->dataTable}` add `imported_row_id` char(36) first;
-            update `{$this->dataTable}` set `imported_row_id` = uuid();
-        ");
     }
 
     protected function setImportableFilePath(QuoteFile $quoteFile, $filePath): void
@@ -219,5 +209,16 @@ class ImportCsv
         }
 
         $this->importableFilePath = $path;
+    }
+
+    protected function mapColumnsData(object $row): array
+    {
+        return array_map(function ($value, $header) {
+            return [
+                'header'                => $header,
+                'value'                 => $value,
+                'importable_column_id'  => $this->headersMapping->get($header)
+            ];
+        }, (array) $row, array_keys((array) $row));
     }
 }

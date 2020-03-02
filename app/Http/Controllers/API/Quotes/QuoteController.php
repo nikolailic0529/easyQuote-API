@@ -21,6 +21,7 @@ use App\Http\Requests\{
 };
 use App\Http\Requests\Quote\SetVersionRequest;
 use App\Http\Requests\Quote\TryDiscountsRequest;
+use App\Http\Resources\ImportedRow\MappedRow;
 use App\Http\Resources\QuoteVersionResource;
 use App\Http\Resources\TemplateRepository\TemplateResourceListing;
 use App\Models\Quote\Quote;
@@ -66,10 +67,8 @@ class QuoteController extends Controller
     {
         $this->authorize('view', $quote);
 
-        $resource = $this->quotes->find($quote);
-
         return response()->json(
-            filter(QuoteVersionResource::make($resource))
+            filter(QuoteVersionResource::make($quote))
         );
     }
 
@@ -109,17 +108,20 @@ class QuoteController extends Controller
 
     public function step2(MappingReviewRequest $request)
     {
-        $this->authorize('view', $this->quotes->find($request->quote_id));
+        $this->authorize('view', $quote = $this->quotes->find($request->quote_id));
 
         if ($request->has('search')) {
             return response()->json(
-                $this->quotes->rows($request->quote_id, $request->search, $request->group_id)
+                $this->quotes->searchRows($quote->usingVersion, $request->search, $request->group_id)
             );
         }
 
-        return response()->json(
-            $this->quotes->step2($request)
+        $rows = cache()->sear(
+            $quote->usingVersion->mappingReviewCacheKey,
+            fn () => $this->quotes->retrieveRows($quote->usingVersion)
         );
+
+        return response()->json(MappedRow::collection($rows));
     }
 
     /**
@@ -133,7 +135,7 @@ class QuoteController extends Controller
         $this->authorize('view', $quote);
 
         return response()->json(
-            $this->quotes->rowsGroups($quote->id)
+            $this->quotes->retrieveRowsGroups($quote->usingVersion)
         );
     }
 

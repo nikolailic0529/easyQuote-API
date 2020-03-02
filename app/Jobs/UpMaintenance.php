@@ -7,6 +7,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\File;
 
 class UpMaintenance
 {
@@ -40,12 +41,29 @@ class UpMaintenance
      */
     public function handle()
     {
-        $chain = [(new StartMaintenance($this->endTime))->delay($this->startTime)];
+        $this->putMaintenanceData();
+
+        ScheduleMaintenance::dispatchNow($this->startTime, $this->endTime);
+
+        $start = StartMaintenance::dispatch($this->endTime)->delay($this->startTime);
 
         if ($this->autoComplete) {
-            $chain[] = (new StopMaintenance)->delay($this->endTime);
+            $start->chain((new StopMaintenance)->delay($this->endTime));
         }
+    }
 
-        ScheduleMaintenance::withChain($chain)->dispatch($this->startTime);
+    protected function putMaintenanceData()
+    {
+        $content = [
+            'start_time'    => $this->startTime->toISOString(),
+            'end_time'      => $this->endTime->toISOString(),
+            'created_at'    => now()->toISOString()
+        ];
+
+        $path = ui_path('maintenance/maintenance_data.json');
+
+        File::ensureDirectoryExists(ui_path('maintenance'));
+
+        rescue(fn () => File::replace($path, json_encode($content, JSON_PRETTY_PRINT)));
     }
 }

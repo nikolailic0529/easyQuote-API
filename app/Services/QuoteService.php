@@ -10,6 +10,7 @@ use App\Models\Quote\{
     Margin\CountryMargin
 };
 use App\Models\QuoteTemplate\BaseQuoteTemplate;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Str;
 
@@ -23,14 +24,14 @@ class QuoteService implements QuoteServiceInterface
             $this->interactWithCountryMargin($quote, $interactable);
             return;
         }
+
         if ($interactable instanceof Discount || is_numeric($interactable)) {
             $this->interactWithDiscount($quote, $interactable);
             return;
         }
+
         if (is_iterable($interactable)) {
-            collect($interactable)->each(function ($entity) use ($quote) {
-                $this->interact($quote, $entity);
-            });
+            collect($interactable)->each(fn ($entity) => $this->interact($quote, $entity));
         }
     }
 
@@ -184,23 +185,20 @@ class QuoteService implements QuoteServiceInterface
         $quote->scheduleData->value = $quote->scheduleData->value->replace([0 => $firstPayment]);
     }
 
-    public function assignComputableRows(Quote $quote): void
-    {
-        $quote->computableRows = cache()->sear(
-            $quote->computableRowsCacheKey,
-            fn () => $quote->getFlattenOrGroupedRows(['where_selected'], $quote->calculate_list_price)
-        );
-
-        if (!isset($quote->computableRows->first()->price)) {
-            data_fill($quote->computableRows, '*.price', 0.0);
-        }
-    }
-
     public function prepareQuoteReview(Quote $quote): void
     {
         $quote->enableExchangeRateConversion();
 
-        $this->assignComputableRows($quote);
+        $quote->computableRows =
+            /** Set computable rows in the model. */
+            cache()->sear($quote->computableRowsCacheKey, fn () => $quote->getMappedRows(
+                fn (Builder $query) => $query->when($quote->groupsReady(),
+                    /** When quote has groups and proposed to use groups we are retrieving rows with group_name. */
+                    fn (Builder $query) => $query->whereNotNull('group_name'),
+                    /** Otherwise we are retrieving only selected rows. */
+                    fn (Builder $query) => $query->where('is_selected', true)
+                )
+            ));
 
         /**
          * Possible Interactions with Margins and Discounts

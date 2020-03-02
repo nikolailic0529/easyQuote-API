@@ -7,6 +7,7 @@ use App\Models\QuoteTemplate\ContractTemplate;
 use App\Models\QuoteTemplate\QuoteTemplate;
 use Illuminate\Console\Command;
 use Arr, Str;
+use Throwable;
 
 class UpdateTemplatesAssets extends Command
 {
@@ -69,16 +70,24 @@ class UpdateTemplatesAssets extends Command
 
     protected function updateTemplateAssets(BaseQuoteTemplate $template): void
     {
+        $templateClassname = class_basename($template);
+        $errorMessage = "{$templateClassname} {$template->name} was not updated because the data was corrupted!";
+
         if (is_null($template->form_data)) {
             return;
         }
 
         $assets = collect($template->vendor->logoSelectionWithKeys)->merge($template->company->logoSelectionWithKeys);
 
-        $controls = Arr::where(
-            Arr::dot($template->form_data),
-            fn ($value, $key) => is_string($value) && preg_match('/\.id$/', $key) && $assets->has($value)
-        );
+        try {
+            $controls = Arr::where(
+                Arr::dot($template->form_data),
+                fn ($value, $key) => is_string($value) && preg_match('/\.id$/', $key) && $assets->has($value)
+            );
+        } catch (Throwable $e) {
+            $this->error($errorMessage);
+            return;
+        }
 
         if (empty($controls)) {
             return;
@@ -92,6 +101,7 @@ class UpdateTemplatesAssets extends Command
 
         /** We are preventing update with null form_data as it means that something went wrong when parsing. */
         if (is_null(json_decode(json_encode($form_data), true))) {
+            $this->error($errorMessage);
             return;
         }
 

@@ -58,11 +58,6 @@ class QuoteFile extends BaseModel implements HasOrderedScope
         return $this->hasMany(ImportedRow::class);
     }
 
-    public function columnsData()
-    {
-        return $this->hasManyThrough(ImportedColumn::class, ImportedRow::class);
-    }
-
     public function importedRawData()
     {
         return $this->hasMany(ImportedRawData::class);
@@ -130,8 +125,7 @@ class QuoteFile extends BaseModel implements HasOrderedScope
 
     public function getImportedPageAttribute()
     {
-        return $this->attributes['imported_page']
-            ?? $this->default_imported_page;
+        return $this->attributes['imported_page'] ?? $this->default_imported_page;
     }
 
     public function isNewPage($page)

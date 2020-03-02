@@ -66,10 +66,10 @@ class ContractStateController extends Controller
      */
     public function review(Contract $contract, QuoteService $service)
     {
-        $service->prepareQuoteReview($contract);
+        $service->prepareQuoteReview($contract->usingVersion);
 
         return response()->json(
-            QuoteReviewResource::make($contract->enableReview())
+            QuoteReviewResource::make($contract->usingVersion->enableReview())
         );
     }
 

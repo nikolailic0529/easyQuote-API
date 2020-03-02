@@ -38,7 +38,7 @@ class MaintenanceStop extends Command
      */
     public function handle()
     {
-        StopMaintenance::dispatch();
+        StopMaintenance::dispatchNow();
 
         $this->info('Maintenance was completed.');
     }

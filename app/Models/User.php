@@ -65,7 +65,7 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
         Searchable,
         SoftDeletes,
         HasImage,
-        // LogsActivity,
+        LogsActivity,
         Loginable,
         PerformsActivity,
         EnforceableChangePassword;

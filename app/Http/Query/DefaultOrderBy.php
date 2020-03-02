@@ -5,6 +5,13 @@ use Illuminate\Database\Eloquent\Builder;
 
 class DefaultOrderBy
 {
+    protected string $column;
+
+    public function __construct(string $column = 'created_at')
+    {
+        $this->column = $column;
+    }
+
     public function handle($request, Closure $next)
     {
         $builder = $next($request);
@@ -17,6 +24,6 @@ class DefaultOrderBy
             return $builder;
         }
 
-        return $builder->orderBy('created_at', 'desc');
+        return $builder->orderBy($this->column, 'desc');
     }
 }

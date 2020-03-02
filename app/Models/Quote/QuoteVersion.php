@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class QuoteVersion extends BaseQuote
 {
+    protected $touches = ['quote'];
+
     protected $is_using_original = false;
 
     protected static function boot()

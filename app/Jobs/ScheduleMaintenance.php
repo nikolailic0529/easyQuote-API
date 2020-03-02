@@ -2,30 +2,35 @@
 
 namespace App\Jobs;
 
-use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use App\Events\MaintenanceScheduled as MaintenanceScheduledEvent;
+use App\Notifications\MaintenanceScheduled;
 use App\Contracts\Repositories\UserRepositoryInterface as Users;
-use App\Events\MaintenanceScheduled;
 use App\Models\User;
+use Carbon\Carbon;
 
 class ScheduleMaintenance implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable;
 
     /** @var \Carbon\Carbon */
-    protected Carbon $schedule;
+    protected Carbon $startTime;
+
+    /** @var \Carbon\Carbon */
+    protected Carbon $endTime;
 
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct(Carbon $schedule)
+    public function __construct(Carbon $startTime, Carbon $endTime)
     {
-        $this->schedule = $schedule;
+        $this->startTime = $startTime;
+        $this->endTime = $endTime;
     }
 
     /**
@@ -35,6 +40,11 @@ class ScheduleMaintenance implements ShouldQueue
      */
     public function handle(Users $users)
     {
-        $users->cursor()->each(fn (User $user) => MaintenanceScheduled::dispatch($user, $this->schedule));
+        $users->cursor()->each(
+            function (User $user) {
+                MaintenanceScheduledEvent::dispatch($user, $this->startTime);
+                $user->notify(new MaintenanceScheduled($this->startTime, $this->endTime));
+            }
+        );
     }
 }

@@ -11,7 +11,8 @@ use App\Contracts\{
     Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository,
     Repositories\QuoteFile\ImportableColumnRepositoryInterface as ImportableColumn,
     Repositories\QuoteFile\FileFormatRepositoryInterface as FileFormatRepository,
-    Repositories\QuoteFile\DataSelectSeparatorRepositoryInterface as DataSelectSeparatorRepository
+    Repositories\QuoteFile\DataSelectSeparatorRepositoryInterface as DataSelectSeparatorRepository,
+    Repositories\QuoteTemplate\TemplateFieldRepositoryInterface as TemplateFields
 };
 use App\Models\{
     Quote\Quote,
@@ -113,7 +114,7 @@ class ParserService implements ParserServiceInterface
 
         $quoteFile->throwExceptionIfExists();
 
-        if ($quoteFile->isPrice() && $quoteFile->isNotAutomapped() && $quoteFile->processing_percentage > 1) {
+        if ($quoteFile->isPrice() && $quoteFile->isNotAutomapped()) {
             $this->mapColumnsToFields($quote, $quoteFile);
             dispatch(new RetrievePriceAttributes($quote->usingVersion));
         }
@@ -123,34 +124,32 @@ class ParserService implements ParserServiceInterface
 
     public function mapColumnsToFields(Quote $quote, QuoteFile $quoteFile): void
     {
-        $templateFields = $quote->usingVersion->quoteTemplate->templateFields;
+        $templateFields = app(TemplateFields::class)->allSystem();
         $fieldsNames = $templateFields->pluck('name')->toArray();
 
-        $row = $quoteFile->rowsData()->with([
-            'columnsData' => fn ($query) => $query->whereHas(
-                'importableColumn',
-                fn ($relationQuery) => $relationQuery->whereIn('name', $fieldsNames)
-            ),
-            'columnsData.importableColumn'
-        ])->processed()->first();
+        $row = $quoteFile->rowsData()->first();
 
-        $columns = optional($row)->columnsData;
+        $columns = optional($row)->columns_data;
 
         if (blank($columns)) {
             $quote->usingVersion->detachColumnsFields();
+            $quote->usingVersion->forgetCachedMappingReview();
+            $quoteFile->markAsAutomapped();
+            return;
         }
 
         $defaultAttributes = FieldColumn::defaultAttributesToArray();
 
-        $mapping = $templateFields->pluck('id', 'name')
-            ->mergeRecursive($columns->pluck('importableColumn.id', 'importableColumn.name'))
-            ->filter(fn ($mapping) => is_array($mapping) && count($mapping) === 2)
-            ->mapWithKeys(function ($mapping) use ($defaultAttributes) {
-                $importable_column_id = $mapping[1];
-                return [$mapping[0] => compact('importable_column_id') + $defaultAttributes];
-            });
+        $importableColumns = $this->importableColumn->findByIds($columns->pluck('importable_column_id'))->pluck('id', 'name');
 
-        $quote->usingVersion->templateFields()->sync($mapping->toArray());
+        $map = $templateFields->pluck('id', 'name')
+            ->mergeRecursive($importableColumns)
+            ->filter(fn ($map) => is_array($map) && count($map) === 2)
+            ->mapWithKeys(fn ($map, $key) => [
+                $map[0] => ['importable_column_id' => $map[1]] + $defaultAttributes
+            ]);
+
+        $quote->usingVersion->templateFields()->sync($map->toArray());
 
         $quote->usingVersion->forgetCachedMappingReview();
 
