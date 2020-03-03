@@ -2,6 +2,7 @@
 
 namespace App\Repositories\Quote;
 
+use App\Collections\MappedRows;
 use App\Contracts\Repositories\{
     Quote\QuoteRepositoryInterface,
     Quote\Margin\MarginRepositoryInterface as MarginRepository,
@@ -192,7 +193,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
             $query->where($criteria);
         }
 
-        return $query->get();
+        return MappedRows::make($query->get());
     }
 
     public function calculateListPrice(BaseQuote $quote): float
@@ -395,9 +396,9 @@ class QuoteStateRepository implements QuoteRepositoryInterface
 
         $query->select('imported_rows.id', 'imported_rows.is_selected', 'imported_rows.group_name', 'imported_rows.columns_data', 'customers.support_start as customer_support_start', 'customers.support_end as customer_support_end');
 
-        $mapping->each(function ($map) use ($query, $customerAttributesMap) {
+        $mapping->each(function ($map) use ($query,$customerAttributesMap) {
             if (!$map->is_default_enabled) {
-                $this->unpivotJsonColumn($query, 'columns_data', 'importable_column_id', $map->importable_column_id, 'value', $map->templateField->name);
+                $this->unpivotJsonColumn($query, 'columns_data', "$.\"{$map->importable_column_id}\".value", $map->templateField->name);
                 return true;
             }
 

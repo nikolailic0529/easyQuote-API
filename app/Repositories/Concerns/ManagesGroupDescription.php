@@ -15,13 +15,15 @@ use Illuminate\Support\Facades\DB;
 
 trait ManagesGroupDescription
 {
+    use FetchesGroupDescription;
+
     public function retrieveRowsGroups($quote, ?string $groupName = null): Collection
     {
         if (!$quote instanceof QuoteVersion) {
             $quote = $this->findVersion($quote);
         }
 
-        $groupedRows = $this->retrieveRows($quote, function (Builder $builder) use ($groupName) {
+        $groupableRows = $this->retrieveRows($quote, function (Builder $builder) use ($groupName) {
             $builder
                 ->when(filled($groupName), fn (Builder $builder) => $builder->whereGroupName($groupName))
                 ->whereNotNull('group_name')
@@ -29,13 +31,7 @@ trait ManagesGroupDescription
                 ->orderBy('group_name');
         });
 
-        $groups = Collection::wrap($quote->group_description)->keyBy('name');
-
-        $groupedRows = $groupedRows->groupBy('group_name')->transform(
-            fn ($group, $name) => static::unionGroupRowsWithDescription(Collection::wrap($groups->get($name)), $group)
-        )->values();
-
-        return $groupedRows->sortByFields($quote->sort_group_description);
+        return static::mapGroupDescriptionWithRows($quote, $groupableRows);
     }
 
     public function searchRows($quote, string $search = '', ?string $groupId = null): Collection
@@ -52,9 +48,9 @@ trait ManagesGroupDescription
             $quote,
             fn (Builder $builder) =>
             $builder->where(fn (Builder $query) =>
-                $query->whereRaw('columns_data->"$[*].value" like ?', ['%' . $inputs->shift() . '%'])
+                $query->whereRaw("columns_data->'$.*.value' like ?", ['%' . $inputs->shift() . '%'])
                     ->tap(function (Builder $query) use ($inputs) {
-                        $inputs->each(fn ($input) => $query->orWhereRaw('columns_data->"$[*].value" like ?', ['%' . $input . '%']));
+                        $inputs->each(fn ($input) => $query->orWhereRaw("columns_data->'$.*.value' like ?", ['%' . $input . '%']));
                     })
                     ->when(filled($groupName), fn (Builder $query) => $query->orWhere('group_name', $groupName))
                     ->addSelect(DB::raw("TRUE AS `is_selected`")))
@@ -244,22 +240,5 @@ trait ManagesGroupDescription
             fn (Builder $builder) =>
             $builder->whereGroupName($groupName)->whereNotNull('group_name')->addSelect('group_name', 'price')
         );
-    }
-
-    private static function fetchRowsSearchInput(string $query): array
-    {
-        return (array) array_filter(array_map('trim', explode(',', $query)));
-    }
-
-    private static function unionGroupRowsWithDescription(iterable $group, iterable $rows): Collection
-    {
-        $group = Collection::wrap($group);
-        $rows = Collection::wrap($rows);
-
-        return $group->union([
-            'rows'          => $rows,
-            'total_count'   => $rows->count(),
-            'total_price'   => (float) $rows->sum('price')
-        ]);
     }
 }

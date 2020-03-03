@@ -75,7 +75,7 @@ class StrMixin
     public function name()
     {
         return function ($value) {
-            return self::snake(self::snake(preg_replace('/[^\w\h]/', ' ', $value)));
+            return static::snake(static::snake(preg_replace('/[^\w\h]/', ' ', $value)));
         };
     }
 

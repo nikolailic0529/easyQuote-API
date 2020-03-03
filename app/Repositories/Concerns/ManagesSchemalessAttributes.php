@@ -3,16 +3,30 @@
 namespace App\Repositories\Concerns;
 
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Collection;
 
 trait ManagesSchemalessAttributes
 {
-    protected function unpivotJsonColumn(Builder $builder, $jsonColumn, $first, $match, $target, $as)
+    protected function unpivotJsonColumn(Builder $builder, $jsonColumn, $path, $as)
     {
-        $jsonPath = static::jsonPathWhere($jsonColumn, $first, $match);
-
-        $select = "NULLIF(TRIM(JSON_UNQUOTE(JSON_EXTRACT(`$jsonColumn`, REPLACE({$jsonPath}, '{$first}', '{$target}')))), '') AS `{$as}`";
+        $select = "NULLIF(TRIM(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(`$jsonColumn`, '{$path}')), 'null')), '') AS `{$as}`";
 
         return $builder->selectRaw($select);
+    }
+
+    protected function mapJsonPath(Builder $builder, $jsonColumn, $key, $value, $map, $target, $as)
+    {
+        $map = Collection::wrap($map);
+
+        $index = $map->search(fn ($column) => data_get($column, $key) == $value);
+
+        if ($index === false) {
+            return $builder;
+        }
+
+        $path = "$[{$index}].{$target}";
+
+        return $this->unpivotJsonColumn($builder, $jsonColumn, $path, $as);
     }
 
     protected function parseColumnDate(Builder $builder, $column, $default = null)

@@ -21,6 +21,8 @@ use App\Traits\{
 };
 use App\Contracts\HasOrderedScope;
 use App\Traits\Auth\Multitenantable;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class QuoteFile extends BaseModel implements HasOrderedScope
@@ -53,19 +55,19 @@ class QuoteFile extends BaseModel implements HasOrderedScope
         return $query->orderByDesc('created_at');
     }
 
-    public function rowsData()
+    public function rowsData(): HasMany
     {
         return $this->hasMany(ImportedRow::class);
     }
 
-    public function importedRawData()
+    public function importedRawData(): HasMany
     {
         return $this->hasMany(ImportedRawData::class);
     }
 
-    public function dataSelectSeparator()
+    public function dataSelectSeparator(): BelongsTo
     {
-        return $this->belongsTo(DataSelectSeparator::class)->withDefault(DataSelectSeparator::make([]));
+        return $this->belongsTo(DataSelectSeparator::class)->withDefault();
     }
 
     public function scopePriceLists($query)
@@ -99,8 +101,7 @@ class QuoteFile extends BaseModel implements HasOrderedScope
 
     public function scopeIsNotHandledSchedule($query)
     {
-        return $query->where(fn ($query) => $query->where('file_type', QFT_PS)->handled())
-            ->orWhere('file_type', QFT_PL);
+        return $query->where(fn ($query) => $query->where('file_type', QFT_PS)->handled())->orWhere('file_type', QFT_PL);
     }
 
     public function setImportedPage(?int $imported_page)

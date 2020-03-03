@@ -377,7 +377,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
             ]
         )
             ->filter(fn ($column) => isset($column['importable_column_id']) && $column['header'] !== $column['value'])
-            ->values();
+            ->keyBy('importable_column_id');
     }
 
     private function findRowAttribute(string $regexp, string $cellRegexp, Collection $row)

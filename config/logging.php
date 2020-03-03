@@ -50,7 +50,7 @@ return [
 
         'daily' => [
             'driver' => 'daily',
-            'path' => env('STORAGE_PATH_LOGS', storage_path('logs/laravel.log')),
+            'path' => env('STORAGE_PATH_LOGS',storage_path().'/logs/laravel-'.get_current_user().'.log'),
             'level' => 'debug',
             'days' => 365,
             'permission' => 0775

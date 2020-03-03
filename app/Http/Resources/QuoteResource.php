@@ -2,7 +2,9 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Resources\ImportedRow\MappedRow;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Collection;
 
 class QuoteResource extends JsonResource
 {
@@ -59,7 +61,7 @@ class QuoteResource extends JsonResource
                     'coverage_period_from'  => $this->when($this->isReview, $this->customer->support_start_date, $this->customer->support_start),
                     'coverage_period_to'    => $this->when($this->isReview, $this->customer->support_end_date, $this->customer->support_end),
                     'rows_header'           => $this->when($this->isReview, $this->rowsHeaderToArray($this->systemHiddenFields), $this->rowsHeaderToArray()),
-                    'rows'                  => $this->when($this->isReview, $this->renderableRows, $this->computableRows)
+                    'rows'                  => MappedRow::collection(Collection::wrap($this->when($this->isReview, $this->renderableRows, $this->computableRows)))
                 ],
                 'last_page' => [
                     'additional_details'    => $this->additional_details

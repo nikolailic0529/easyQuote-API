@@ -46,4 +46,16 @@ class ImportedRow extends BaseModel
     {
         return collect(json_decode($value));
     }
+
+    public function setColumnsDataAttribute($value): void
+    {
+        if (is_string($value)) {
+            $this->attributes['columns_data'] = collect(json_decode($value, true))->keyBy('importable_column_id')->toJson();
+            return;
+        }
+
+        if (is_iterable($value)) {
+            $this->attributes['columns_data'] = Collection::wrap($value)->keyBy('importable_column_id')->toJson();
+        }
+    }
 }

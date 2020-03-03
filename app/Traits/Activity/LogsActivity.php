@@ -2,6 +2,7 @@
 
 namespace App\Traits\Activity;
 
+use App\Models\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Spatie\Activitylog\ActivityLogger;

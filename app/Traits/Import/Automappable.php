@@ -26,8 +26,8 @@ trait Automappable
 
     public function getProcessingStateAttribute(): array
     {
-        return [
-            'status' => $this->isMapped() ? 'completed' : 'processing'
-        ];
+        $status = $this->isMapped() || $this->isSchedule() ? 'completed' : 'processing';
+
+        return compact('status');
     }
 }

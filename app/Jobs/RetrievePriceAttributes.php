@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Repositories\Concerns\ManagesSchemalessAttributes;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -14,8 +13,9 @@ use Illuminate\Support\Facades\DB;
 use App\Models\{
     Quote\BaseQuote, QuoteFile\QuoteFile
 };
+use App\Repositories\Concerns\ManagesSchemalessAttributes;
 
-class RetrievePriceAttributes implements ShouldQueue
+class RetrievePriceAttributes
 {
     use Dispatchable, InteractsWithQueue, Queueable, ManagesSchemalessAttributes;
 
@@ -58,7 +58,7 @@ class RetrievePriceAttributes implements ShouldQueue
         $subQuery = $priceList->rowsData()->toBase()
             ->whereNotNull('columns_data')
             ->when(true, function (QueryBuilder $query) use ($mapping) {
-                $mapping->each(fn ($id, $column) => $this->unpivotJsonColumn($query, 'columns_data', 'importable_column_id', $id, 'value', $column));
+                $mapping->each(fn ($id, $column) => $this->unpivotJsonColumn($query, 'columns_data', "$.\"{$id}\".value", $column));
             });
 
         $importedColumns = DB::query()->fromSub($subQuery, 'columns')->groupBy(...$mapping->keys())->get();
@@ -66,11 +66,15 @@ class RetrievePriceAttributes implements ShouldQueue
         $attributes = [];
 
         $mapping->keys()->each(function ($column) use (&$attributes, $importedColumns) {
-            data_set($attributes, $column, $importedColumns->pluck($column)->toArray());
+            $attribute = data_get(array_flip(BaseQuote::PRICE_ATTRIBUTES_MAPPING), $column);
+            $values = $importedColumns->pluck($column)->reject(fn ($value) => blank($value) || $value === 'null')->toArray();
+
+            data_set($attributes, $attribute, $values);
         });
 
         $attributes = array_merge_recursive($priceList->meta_attributes, $attributes);
-        $attributes = array_map(fn ($attribute) => array_values(array_flip(array_flip($attribute))), $attributes);
+
+        $attributes = array_map(fn ($attribute) => array_values(array_flip(array_flip(array_filter($attribute)))), $attributes);
 
         $priceList->storeMetaAttributes($attributes);
 

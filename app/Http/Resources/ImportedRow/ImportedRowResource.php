@@ -3,6 +3,7 @@
 namespace App\Http\Resources\ImportedRow;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Collection;
 
 class ImportedRowResource extends JsonResource
 {
@@ -16,7 +17,7 @@ class ImportedRowResource extends JsonResource
     {
         return [
             'id'            => $this->id,
-            'columns_data'  => $this->columns_data
+            'columns_data'  => Collection::wrap($this->columns_data)->values()
         ];
     }
 }

@@ -62,7 +62,7 @@ class ArrMixin
     public function isDifferentAssoc()
     {
         return function (array $array, array $array2) {
-            return filled(self::udiffAssoc($array, $array2));
+            return filled(static::udiffAssoc($array, $array2));
         };
     }
 }

@@ -2,20 +2,21 @@
 
 namespace App\Services;
 
+use App\Collections\MappedRows;
 use App\Contracts\Services\QuoteServiceInterface;
 use App\Http\Resources\QuoteResource;
-use App\Models\Quote\{
-    BaseQuote as Quote,
-    Discount,
-    Margin\CountryMargin
+use App\Models\{
+    Quote\BaseQuote as Quote, Quote\Discount, Quote\Margin\CountryMargin, QuoteTemplate\BaseQuoteTemplate
 };
-use App\Models\QuoteTemplate\BaseQuoteTemplate;
+use App\Repositories\Concerns\FetchesGroupDescription;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Str;
 
 class QuoteService implements QuoteServiceInterface
 {
+    use FetchesGroupDescription;
+
     const QUOTE_EXPORT_VIEW = 'quotes.pdf';
 
     public function interact(Quote $quote, $interactable): void
@@ -31,7 +32,7 @@ class QuoteService implements QuoteServiceInterface
         }
 
         if (is_iterable($interactable)) {
-            collect($interactable)->each(fn ($entity) => $this->interact($quote, $entity));
+            Collection::wrap($interactable)->each(fn ($entity) => $this->interact($quote, $entity));
         }
     }
 
@@ -133,8 +134,7 @@ class QuoteService implements QuoteServiceInterface
         $listPriceAfterDiscount = $quote->totalPrice - $quote->applicableDiscounts;
 
         $discount->margin_percentage = (float) $listPriceAfterDiscount != 0
-            ? round((($listPriceAfterDiscount - $quote->buy_price) / $listPriceAfterDiscount) * 100, 2)
-            : 0;
+            ? round((($listPriceAfterDiscount - $quote->buy_price) / $listPriceAfterDiscount) * 100, 2) : 0;
 
         return;
     }
@@ -162,27 +162,8 @@ class QuoteService implements QuoteServiceInterface
 
         $quote->scheduleData->value = collect($quote->scheduleData->value)->map(function ($payment) use ($targetExchangeRate, $reverseMultiplier) {
             $price = data_get($payment, 'price', 0.0);
-            data_set($payment, 'price', Str::price($price) * $targetExchangeRate * $reverseMultiplier);
-
-            return $payment;
+            return data_set($payment, 'price', Str::price($price) * $targetExchangeRate * $reverseMultiplier);
         });
-
-        $newTotalPayments = $quote->scheduleData->value
-            ->sum(fn ($payment) => round((float) data_get($payment, 'price', 0.0), 2));
-
-        $roundedTotalPayments = round($newTotalPayments, 2);
-        $roundedFinalPrice = round($quote->finalPrice, 2);
-
-        if (abs($roundedFinalPrice - $roundedTotalPayments) == 0) {
-            return;
-        }
-
-        $diffWithFinalPrice = $roundedFinalPrice - $roundedTotalPayments;
-        $firstPayment = $quote->scheduleData->value->first();
-        $firstPaymentPrice = data_get($firstPayment, 'price', 0.0);
-        data_set($firstPayment, 'price', $firstPaymentPrice + $diffWithFinalPrice);
-
-        $quote->scheduleData->value = $quote->scheduleData->value->replace([0 => $firstPayment]);
     }
 
     public function prepareQuoteReview(Quote $quote): void
@@ -221,28 +202,15 @@ class QuoteService implements QuoteServiceInterface
 
         $filename = $this->makePdfFilename($quote);
 
-        return $this->pdfWrapper()
+        return app('snappy.pdf.wrapper')
             ->loadView(self::QUOTE_EXPORT_VIEW, $export)
             ->download($filename);
     }
 
     public function prepareRows(Quote $quote): void
     {
-        $keys = $quote->groupsReady()
-            ? array_merge($quote->rowsHeaderToArray(), array_flip(['group_name']))
-            : $quote->rowsHeaderToArray();
-
-        $quote->computableRows->sortKeysByKeys($keys);
-
-        $quote->computableRows = $quote->computableRows->exceptEach($quote->hiddenFields);
-        $quote->renderableRows = $quote->computableRows->exceptEach($quote->systemHiddenFields);
-
-        /**
-         * Preventing Empty Rows.
-         */
-        if (count($quote->computableRows->first() ?? []) === 0) {
-            $quote->computableRows = $quote->renderableRows = collect();
-        }
+        $quote->computableRows = $quote->computableRows->exceptHeaders($quote->hiddenFields);
+        $quote->renderableRows = $quote->computableRows->exceptHeaders($quote->systemHiddenFields);
 
         if ($quote->groupsReady()) {
             $this->formatGroupDescription($quote);
@@ -260,13 +228,7 @@ class QuoteService implements QuoteServiceInterface
             return;
         }
 
-        $quote->scheduleData->value = collect($quote->scheduleData->value)
-            ->transform(function ($payment) use ($quote) {
-                $price = data_get($payment, 'price', 0.0);
-                data_set($payment, 'price', Str::prepend(Str::decimal($price, 2), $quote->currencySymbol));
-
-                return $payment;
-            });
+        $quote->scheduleData->value = MappedRows::make($quote->scheduleData->value)->setCurrency($quote->currencySymbol);
     }
 
     protected function prepareQuoteExport(Quote $quote): array
@@ -301,34 +263,20 @@ class QuoteService implements QuoteServiceInterface
 
     protected function formatGroupDescription(Quote $quote): void
     {
-        $groups_meta = $quote->getGroupDescriptionWithMeta(null, $quote->calculate_list_price);
-        $quote->computableRows = $quote->computableRows
-            ->rowsToGroups('group_name', $groups_meta, true, $quote->currencySymbol)
-            ->exceptEach('group_name')
-            ->sortByFields($quote->sort_group_description);
+        $quote->computableRows = static::mapGroupDescriptionWithRows($quote, $quote->computableRows)
+            ->setHeadersCount()
+            ->exceptHeaders([...$quote->hiddenFields, ...['group_name']])
+            ->setCurrency($quote->currencySymbol);
 
-        $groupHiddenFields = $quote->isMode(QT_TYPE_CONTRACT) ? ['total_price'] : [];
+        $renderHiddenHeaders = $quote->isMode(QT_TYPE_CONTRACT) ? ['total_price'] : [];
 
-        $quote->renderableRows = $quote->computableRows->map(function ($group) use ($quote, $groupHiddenFields) {
-            $group->forget($groupHiddenFields);
+        $quote->renderableRows = $quote->computableRows->exceptHeaders([...$quote->systemHiddenFields, ...$renderHiddenHeaders]);
 
-            $rows = $group->get('rows')->exceptEach($quote->systemHiddenFields);
-            $group->put('rows', $rows);
-
-            $headers_count = $group->get('headers_count') - count($quote->systemHiddenFields);
-            $group->put('headers_count', $headers_count);
-
-            return $group;
-        });
     }
 
     protected function formatLinePrices(Quote $quote): void
     {
-        $quote->renderableRows->transform(function ($row) use ($quote) {
-            $price = data_get($row, 'price');
-            data_set($row, 'price', Str::prepend(Str::decimal($price), $quote->currencySymbol, true));
-            return $row;
-        });
+        $quote->renderableRows = $quote->renderableRows->setCurrency($quote->currencySymbol);
     }
 
     protected function interactableDiscounts(Quote $quote): Collection
@@ -355,16 +303,6 @@ class QuoteService implements QuoteServiceInterface
         }
 
         return 0.0;
-    }
-
-    /**
-     * Return PdfWrapper instance.
-     *
-     * @return \Barryvdh\Snappy\PdfWrapper
-     */
-    protected function pdfWrapper()
-    {
-        return app('snappy.pdf.wrapper');
     }
 
     private function makePdfFilename(Quote $quote): string

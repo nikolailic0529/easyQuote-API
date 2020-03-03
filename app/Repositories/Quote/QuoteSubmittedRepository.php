@@ -92,7 +92,11 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
             activity()->on($quote)->causedByService(request('client_name', 'Service'))->queue('retrieved');
         }
 
-        return $quote->usingVersion->disableReview();
+        $quote = $quote->usingVersion->disableReview();
+
+        $this->quoteService->prepareQuoteReview($quote);
+
+        return $quote;
     }
 
     public function price(string $rfq)
@@ -132,8 +136,6 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     public function exportPdf($quote, string $type = QT_TYPE_QUOTE)
     {
         $quote = $this->resolveModel($quote);
-
-
 
         return $this->retrieveCachedQuotePdf($quote->switchModeTo($type));
     }
@@ -237,9 +239,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     public function flushQuotePdfCache(Quote $quote): void
     {
-        collect(QT_TYPES)->each(function ($type) use ($quote) {
-            cache()->forget($this->quotePdfCacheKey($quote, $type));
-        });
+        collect(QT_TYPES)->each(fn ($type) => cache()->forget($this->quotePdfCacheKey($quote, $type)));
     }
 
     protected function resolveFilepath($path)
@@ -303,7 +303,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     private function retrieveCachedQuotePdf(Quote $quote)
     {
-        return cache()->remember($this->quotePdfCacheKey($quote), self::EXPORT_CACHE_TTL, function () use ($quote) {
+        return cache()->remember($this->quotePdfCacheKey($quote), static::EXPORT_CACHE_TTL, function () use ($quote) {
             return $this->quoteService->export(
                 tap($quote->usingVersion)->switchModeTo($quote->mode)
             );
@@ -312,6 +312,6 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     private function quotePdfCacheKey(Quote $quote): string
     {
-        return self::EXPORT_CACHE_PREFIX . '-' . $quote->mode . ':' . $quote->id;
+        return static::EXPORT_CACHE_PREFIX . '-' . $quote->mode . ':' . $quote->id;
     }
 }

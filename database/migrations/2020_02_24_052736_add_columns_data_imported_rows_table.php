@@ -24,7 +24,7 @@ class AddColumnsDataImportedRowsTable extends Migration
         $importedRows = $query->cursor();
 
         $importedRows->chunk(1000)->each->each(function ($row) {
-            $columns_data = DB::table('imported_columns')->where('imported_row_id', $row->id)->get(['header', 'value', 'importable_column_id'])->toJson();
+            $columns_data = DB::table('imported_columns')->where('imported_row_id', $row->id)->get(['header', 'value', 'importable_column_id'])->keyBy('importable_column_id')->toJson();
             DB::table('imported_rows')->where('id', $row->id)->update(compact('columns_data'));
         });
     }
