@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'path' => env('UI_PATH', '/var/www/easyQuote-UI'),
     'routes' => [
         'quotes' => [
             'submitted' => [

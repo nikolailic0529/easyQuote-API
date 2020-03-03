@@ -4,9 +4,10 @@ namespace App\Services;
 
 use App\Contracts\Services\WordParserInterface;
 use App\Contracts\Repositories\QuoteFile\{
-    ImportableColumnRepositoryInterface as ImportableColumnRepository,
-    DataSelectSeparatorRepositoryInterface as DataSelectSeparatorRepository
+    ImportableColumnRepositoryInterface as ImportableColumns,
+    DataSelectSeparatorRepositoryInterface as DataSelectSeparators
 };
+use App\Models\QuoteFile\DataSelectSeparator;
 use Devengine\PhpWord\{
     IOFactory,
     PhpWord,
@@ -20,25 +21,19 @@ use Storage, Setting;
 
 class WordParser implements WordParserInterface
 {
-    protected $importableColumn;
+    protected ImportableColumns $importableColumn;
 
-    protected $phpWord;
+    protected PhpWord $phpWord;
 
-    protected $dataSelectSeparator;
+    protected array $tables = [];
 
-    protected $tables;
+    protected int $minHeadersCount = 3;
 
-    protected $minHeadersCount;
+    protected static string $defaultSeparator = "\t";
 
-    protected $defaultSeparator;
-
-    public function __construct(ImportableColumnRepository $importableColumn, DataSelectSeparatorRepository $dataSelectSeparator)
+    public function __construct(ImportableColumns $importableColumns)
     {
-        $this->importableColumn = $importableColumn;
-        $this->tables = [];
-        $this->minHeadersCount = 3;
-        $this->dataSelectSeparator = $dataSelectSeparator;
-        $this->defaultSeparator = $dataSelectSeparator->findByName(Setting::get('parser.default_separator'))->separator;
+        $this->importableColumns = $importableColumns;
     }
 
     public function load(string $path, bool $storage = true)
@@ -52,7 +47,7 @@ class WordParser implements WordParserInterface
 
     public function getText(string $filePath, bool $storage = true)
     {
-        $columns = $this->importableColumn->allSystem();
+        $columns = $this->importableColumns->allSystem();
 
         $rows = $this->load($filePath, $storage)->getTables()->getRows($columns);
 
@@ -62,10 +57,10 @@ class WordParser implements WordParserInterface
         $content = null;
 
         $rowsLines = [];
-        $rowsLines[] = implode($this->defaultSeparator, $rows['header']);
+        $rowsLines[] = implode(static::$defaultSeparator, $rows['header']);
 
         foreach ($rows['rows'] as $row) {
-            $rowsLines[] = implode($this->defaultSeparator, $row['cells']);
+            $rowsLines[] = implode(static::$defaultSeparator, $row['cells']);
         }
 
         $content = implode(PHP_EOL, $rowsLines);

@@ -140,7 +140,8 @@
             "line item monthly list price",
             "line item total net price",
             "line item monthly net price",
-            "totalt nok"
+            "totalt nok",
+            "monthly cost/cad"
         ]
     },
     {

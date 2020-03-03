@@ -2,18 +2,22 @@
 
 namespace App\Jobs;
 
-use App\Models\Quote\BaseQuote;
-use App\Models\QuoteFile\QuoteFile;
+use App\Repositories\Concerns\ManagesSchemalessAttributes;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
-use DB;
+use Illuminate\Database\{
+    Query\Builder as QueryBuilder, Query\JoinClause
+};
+use Illuminate\Support\Facades\DB;
+use App\Models\{
+    Quote\BaseQuote, QuoteFile\QuoteFile
+};
 
 class RetrievePriceAttributes implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable;
+    use Dispatchable, InteractsWithQueue, Queueable, ManagesSchemalessAttributes;
 
     /** @var \App\Models\Quote\BaseQuote */
     protected $quote;
@@ -42,32 +46,31 @@ class RetrievePriceAttributes implements ShouldQueue
         }
 
         $mapping = $this->quote->fieldsColumns()
-            ->whereHas('templateField', function (Builder $query) {
-                $query->whereIn('name', BaseQuote::PRICE_ATTRIBUTES_MAPPING);
-            })
-            ->with('templateField')
-            ->get()
-            ->pluck('importable_column_id', 'templateField.name');
-
-        $importedColumns = $priceList->columnsData()->whereIn('importable_column_id', $mapping)
+            ->join(
+                'template_fields',
+                fn (JoinClause $join) =>
+                $join->on('template_fields.id', '=', 'quote_field_column.template_field_id')
+                    ->whereIn('template_fields.name', BaseQuote::PRICE_ATTRIBUTES_MAPPING)
+            )
             ->toBase()
-            ->select(['value', 'importable_column_id'])
-            ->get()
-            ->groupBy('importable_column_id');
+            ->pluck('importable_column_id', 'template_fields.name');
 
-        $attributes = $importedColumns->transform(function ($attributes) {
-                return $attributes->pluck('value')->values()->filter()->toArray();
-            })->keyBy(function ($attributes, $importableColumnId) use ($mapping) {
-                $name = $mapping->flip()->get($importableColumnId);
+        $subQuery = $priceList->rowsData()->toBase()
+            ->whereNotNull('columns_data')
+            ->when(true, function (QueryBuilder $query) use ($mapping) {
+                $mapping->each(fn ($id, $column) => $this->unpivotJsonColumn($query, 'columns_data', 'importable_column_id', $id, 'value', $column));
+            });
 
-                return array_flip(BaseQuote::PRICE_ATTRIBUTES_MAPPING)[$name];
-            })->toArray();
+        $importedColumns = DB::query()->fromSub($subQuery, 'columns')->groupBy(...$mapping->keys())->get();
+
+        $attributes = [];
+
+        $mapping->keys()->each(function ($column) use (&$attributes, $importedColumns) {
+            data_set($attributes, $column, $importedColumns->pluck($column)->toArray());
+        });
 
         $attributes = array_merge_recursive($priceList->meta_attributes, $attributes);
-
-        $attributes = array_map(function ($attribute) {
-            return array_values(array_flip(array_flip($attribute)));
-        }, $attributes);
+        $attributes = array_map(fn ($attribute) => array_values(array_flip(array_flip($attribute))), $attributes);
 
         $priceList->storeMetaAttributes($attributes);
 

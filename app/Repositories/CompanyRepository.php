@@ -3,10 +3,7 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\CompanyRepositoryInterface;
-use App\Http\Requests\Company\{
-    StoreCompanyRequest,
-    UpdateCompanyRequest
-};
+use App\Http\Requests\Company\UpdateCompanyRequest;
 use App\Http\Resources\CompanyRepositoryCollection;
 use App\Models\Company;
 use Illuminate\Database\Eloquent\{
@@ -15,12 +12,12 @@ use Illuminate\Database\Eloquent\{
     Collection
 };
 use Illuminate\Support\Collection as SupportCollection;
-use Arr;
 use Closure;
 
 class CompanyRepository extends SearchableRepository implements CompanyRepositoryInterface
 {
-    protected $company;
+    /** @var \App\Models\Company */
+    protected Company $company;
 
     public function __construct(Company $company)
     {
@@ -34,10 +31,8 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
         $data = collect(compact('types', 'categories'));
 
         if (!empty($additionalData)) {
-            collect($additionalData)->each(function ($array, $key) use ($data) {
-                $data->put($key, $array);
-            });
-        };
+            collect($additionalData)->each(fn ($array, $key) => $data->put($key, $array));
+        }
 
         return $data;
     }
@@ -50,9 +45,7 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
     public function allWithVendorsAndCountries(): Collection
     {
         $companies = $this->company->query()->with([
-            'vendors' => function ($query) {
-                $query->activated();
-            },
+            'vendors' => fn ($query) => $query->activated(),
             'vendors.countries.defaultCurrency',
         ])
             ->activated()->ordered()->get();
@@ -186,7 +179,7 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
     protected function searchableFields(): array
     {
         return [
-            'name^5', 'vat^4', 'category^3', 'type^3', 'email^3', 'phone^3', 'created_at^2'
+            'name^5', 'vat^4', 'type^3', 'email^3', 'phone^3', 'created_at^2'
         ];
     }
 

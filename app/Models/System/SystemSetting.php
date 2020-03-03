@@ -3,19 +3,22 @@
 namespace App\Models\System;
 
 use App\Models\BaseModel;
-use App\Traits\Activity\LogsActivity;
+use App\Traits\{
+    Activity\LogsActivity,
+    HasValidation
+};
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Str, Arr;
+use Str;
 
 class SystemSetting extends BaseModel
 {
-    use LogsActivity, SoftDeletes;
+    use LogsActivity, HasValidation, SoftDeletes;
 
     public $timestamps = false;
 
     protected $fillable = [
-        'possible_values', 'value', 'type', 'key', 'section'
+        'possible_values', 'value', 'type', 'key', 'section', 'order'
     ];
 
     protected $hidden = [
@@ -29,7 +32,7 @@ class SystemSetting extends BaseModel
     ];
 
     protected $types = [
-        'string', 'integer', 'array', 'datetime'
+        'string', 'integer', 'float', 'decimal', 'array', 'datetime'
     ];
 
     protected $appends = [
@@ -112,7 +115,7 @@ class SystemSetting extends BaseModel
         }
 
         if ($this->value instanceof \Carbon\Carbon) {
-            return $this->value->format(config('date.format_with_time'));
+            return $this->value->format(config('date.format_time'));
         }
 
         return $this->value;

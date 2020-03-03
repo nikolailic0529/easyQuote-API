@@ -15,9 +15,7 @@ class ClientCredentialsRepository implements ClientCredentialsInterface
             return $this->getCredentialsAttribute($credentials, $attribute);
         }
 
-        $credentials = Arr::where($this->all(), function ($credentials) use ($id) {
-            return data_get($credentials, 'client_id') === $id;
-        });
+        $credentials = Arr::where($this->all(), fn ($credentials) => data_get($credentials, 'client_id') === $id);
 
         $credentials = $this->setCredentialsKey($credentials);
 

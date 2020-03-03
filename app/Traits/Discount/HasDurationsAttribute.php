@@ -2,6 +2,7 @@
 
 namespace App\Traits\Discount;
 
+use Illuminate\Database\Eloquent\Builder;
 use DB, Arr;
 
 trait HasDurationsAttribute
@@ -17,10 +18,10 @@ trait HasDurationsAttribute
         $duration = (int) $duration;
         $where = $or ? 'orWhere' : 'where';
 
-        return $query->{$where}(function ($query) use ($duration) {
+        return $query->{$where}(fn (Builder $query) =>
             $query->whereJsonContains('durations', DB::raw("json_object('duration', '{$duration}')"))
-                ->orWhereJsonContains('durations->duration', DB::raw("json_object('duration', '{$duration}')"));
-        });
+                ->orWhereJsonContains('durations->duration', DB::raw("json_object('duration', '{$duration}')"))
+        );
     }
 
     public function scopeDurationIn($query, array $durations)
@@ -64,9 +65,7 @@ trait HasDurationsAttribute
 
         $duration = collect(data_get($this->durations, 'duration', []));
 
-        $duration->transform(function ($value) {
-            return strval($value);
-        });
+        $duration->transform(fn ($value) => strval($value));
 
         return array_merge($attributes, $duration->toArray());
     }

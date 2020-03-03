@@ -9,14 +9,14 @@ use Arr;
 class AccessAttemptRepository implements AccessAttemptRepositoryInterface
 {
     /** @var \App\Models\AccessAttempt */
-    protected $attempt;
+    protected AccessAttempt $attempt;
 
     /**
      * Time in seconds to determine if attempt was recently created with the same attributes.
      *
      * @var integer
      */
-    protected static $throttleTime = AT_THROTTLE_TIME;
+    protected static int $throttleTime = AT_THROTTLE_TIME;
 
     public function __construct(AccessAttempt $attempt)
     {
@@ -37,8 +37,8 @@ class AccessAttemptRepository implements AccessAttemptRepositoryInterface
     {
         $query = $this->attempt->query()
             ->where([
-                'email' => data_get($attributes, 'email'),
-                'ip_address' => data_get($attributes, 'local_ip'),
+                'email'         => data_get($attributes, 'email'),
+                'ip_address'    => data_get($attributes, 'local_ip'),
             ])
             ->latest()
             ->where('created_at', '>', now()->subSeconds(static::$throttleTime));

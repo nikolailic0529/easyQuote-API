@@ -3,8 +3,8 @@
 namespace App\Console\Commands\Routine\Notifications;
 
 use Illuminate\Console\Command;
-use App\Contracts\Repositories\UserRepositoryInterface as User;
-use App\Models\User as UserModel;
+use App\Contracts\Repositories\UserRepositoryInterface as Users;
+use App\Models\User;
 use App\Notifications\PasswordExpiration as PasswordExpirationNotification;
 use Illuminate\Database\Eloquent\Builder;
 use Closure;
@@ -26,18 +26,18 @@ class PasswordExpiration extends Command
     protected $description = 'Notify Users to change password';
 
     /** @var \App\Contracts\Repositories\UserRepositoryInterface */
-    protected $user;
+    protected Users $users;
 
     /**
      * Create a new command instance.
      *
      * @return void
      */
-    public function __construct(User $user)
+    public function __construct(Users $users)
     {
         parent::__construct();
 
-        $this->user = $user;
+        $this->users = $users;
     }
 
     /**
@@ -48,14 +48,12 @@ class PasswordExpiration extends Command
     public function handle()
     {
         \DB::transaction(function () {
-            $this->user->cursor($this->scope())
-                ->each(function ($user) {
-                    $this->serveUser($user);
-                });
+            $this->users->cursor($this->scope())
+                ->each(fn (User $user) => $this->serveUser($user));
         });
     }
 
-    protected function serveUser(UserModel $user): void
+    protected function serveUser(User $user): void
     {
         $expiresInDays = ENF_PWD_CHANGE_DAYS - optional($user->password_changed_at)->diffInDays(now()->startOfDay());
         $expirationDate = now()->startOfDay()->addDays($expiresInDays);

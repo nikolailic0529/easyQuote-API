@@ -3,9 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Contracts\Repositories\{
-    CountryRepositoryInterface as Country,
-    VendorRepositoryInterface as Vendor,
-    CompanyRepositoryInterface as Company
+    CountryRepositoryInterface as Countries,
+    VendorRepositoryInterface as Vendors,
+    CompanyRepositoryInterface as Companies
 };
 use Illuminate\Console\Command;
 use Arr;
@@ -27,26 +27,26 @@ class CompaniesUpdate extends Command
     protected $description = 'Update Companies Vendors';
 
     /** @var \App\Contracts\Repositories\CompanyRepositoryInterface */
-    protected $company;
+    protected Companies $companies;
 
     /** @var \App\Contracts\Repositories\VendorRepositoryInterface */
-    protected $vendor;
+    protected Vendors $vendors;
 
     /** @var \App\Contracts\Repositories\CountryRepositoryInterface */
-    protected $country;
+    protected Countries $countries;
 
     /**
      * Create a new command instance.
      *
      * @return void
      */
-    public function __construct(Company $company, Vendor $vendor, Country $country)
+    public function __construct(Companies $companies, Vendors $vendors, Countries $countries)
     {
         parent::__construct();
 
-        $this->company = $company;
-        $this->vendor = $vendor;
-        $this->country = $country;
+        $this->companies = $companies;
+        $this->vendors = $vendors;
+        $this->countries = $countries;
     }
 
     /**
@@ -64,21 +64,21 @@ class CompaniesUpdate extends Command
             $companies = json_decode(file_get_contents(database_path('seeds/models/companies.json')), true);
 
             collect($companies)->each(function ($companyData) {
-                $company = $this->company->findByVat($companyData['vat']);
+                $company = $this->companies->findByVat($companyData['vat']);
 
                 if (is_null($company)) {
                     $this->output('E');
                     return true;
                 }
 
-                $default_vendor_id = optional($this->vendor->findByCode($companyData['default_vendor']))->id;
+                $default_vendor_id = optional($this->vendors->findByCode($companyData['default_vendor']))->id;
                 $default_country_id = app('country.repository')->findIdByCode($companyData['default_country']);
 
                 $company->update(
                     array_merge(Arr::only($companyData, ['type', 'email', 'phone', 'website']), compact('default_vendor_id', 'default_country_id'))
                 );
 
-                $vendors = $this->vendor->findByCode($companyData['vendors']);
+                $vendors = $this->vendors->findByCode($companyData['vendors']);
                 $company->vendors()->sync($vendors);
 
                 $company->createLogo($companyData['logo'], true);

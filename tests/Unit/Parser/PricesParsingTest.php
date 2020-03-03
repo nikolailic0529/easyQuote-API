@@ -79,7 +79,7 @@ class PricesParsingTest extends ParsingTest
 
     protected function filesType(): string
     {
-        return __('quote_file.types.price');
+        return QFT_PL;
     }
 
     protected function filesDirPath(): string
@@ -89,10 +89,8 @@ class PricesParsingTest extends ParsingTest
 
     protected function performFileAssertions(QuoteFile $quoteFile): void
     {
-        $this->assertEquals('completed', $quoteFile->processing_status, $this->message($quoteFile));
-
         $expectedRowsCount = $this->getMappingAttribute('count', $quoteFile->original_file_name);
-        $this->assertEquals($quoteFile->rowsData()->count(), $expectedRowsCount);
+        $this->assertEquals($quoteFile->rowsData()->count(), $expectedRowsCount, $this->message($quoteFile));
     }
 
     protected function mapping(): Collection

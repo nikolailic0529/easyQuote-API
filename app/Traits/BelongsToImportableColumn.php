@@ -15,8 +15,6 @@ trait BelongsToImportableColumn
 
     public function scopeHasRegularColumn(Builder $query): Builder
     {
-        return $query->whereHas('importableColumn', function (Builder $query) {
-            $query->where('is_temp', false);
-        });
+        return $query->whereHas('importableColumn', fn (Builder $query) => $query->where('is_temp', false));
     }
 }

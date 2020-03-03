@@ -4,22 +4,30 @@ namespace App\Traits\Import;
 
 trait Automappable
 {
-    public function markAsAutomapped()
+    public function markAsAutomapped(): bool
     {
-        return $this->forceFill([
-            'automapped_at' => now()->toDateTimeString()
-        ])->save();
+        return $this->forceFill(['automapped_at' => now()])->save();
     }
 
-    public function markAsNotAutomapped()
+    public function markAsNotAutomapped(): bool
     {
-        return $this->forceFill([
-            'automapped_at' => null
-        ])->save();
+        return $this->forceFill(['automapped_at' => null])->save();
     }
 
-    public function isNotAutomapped()
+    public function isMapped(): bool
     {
-        return !isset($this->automapped_at);
+        return !is_null($this->automapped_at);
+    }
+
+    public function isNotAutomapped(): bool
+    {
+        return !$this->isMapped();
+    }
+
+    public function getProcessingStateAttribute(): array
+    {
+        return [
+            'status' => $this->isMapped() ? 'completed' : 'processing'
+        ];
     }
 }

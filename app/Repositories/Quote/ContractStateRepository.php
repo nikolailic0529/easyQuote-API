@@ -23,13 +23,13 @@ class ContractStateRepository implements ContractStateRepositoryInterface
     const QB_CUSTOMER_RFQ_PREFIX = 'CT';
 
     /** @var \App\Models\Quote\Contract */
-    protected $contract;
+    protected Contract $contract;
 
     /** @var \App\Contracts\Repositories\Quote\QuoteRepositoryInterface */
-    protected $quoteState;
+    protected QuoteState $quoteState;
 
     /** @var \App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface */
-    protected $quoteFiles;
+    protected QuoteFiles $quoteFiles;
 
     public function __construct(Contract $contract, QuoteState $quoteState, QuoteFiles $quoteFiles)
     {

@@ -63,7 +63,9 @@ class SystemSettingsSync extends Command
                     'possible_values'   => $possibleValues,
                     'section'           => $setting['section'],
                     'is_read_only'      => $setting['is_read_only'] ?? false,
-                    'label_format'      => $setting['label_format'] ?? null
+                    'label_format'      => $setting['label_format'] ?? null,
+                    'order'             => $setting['order'] ?? 1,
+                    'validation'        => $setting['validation'] ?? null
                 ];
 
                 $setting = setting()->firstOrCreate(
@@ -113,11 +115,22 @@ class SystemSettingsSync extends Command
 
             $from = (int) $parameters[0];
             $to = (int) $parameters[1];
-            $label = $parameters[2];
+
+            if (count($parameters) > 3) {
+                $each = (int) $parameters[2];
+                $label = $parameters[3];
+            } else {
+                $each = 1;
+                $label = $parameters[2];
+            }
 
             $values = [];
 
             for ($i = $from; $i <= $to; $i++) {
+                if ($i % $each !== 0) {
+                    continue;
+                }
+
                 array_push($values, [
                     'label' => str_replace('{value}', $i, $label),
                     'value' => $i

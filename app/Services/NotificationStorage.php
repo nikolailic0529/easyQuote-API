@@ -11,9 +11,10 @@ use Illuminate\Database\Eloquent\Model;
 class NotificationStorage implements NotificationInterface
 {
     /** @var \App\Models\System\Notification */
-    protected $notification;
+    protected Notification $notification;
 
-    protected static $fallbackRoute = UN_FALLBACK_ROUTE;
+    /** @var string */
+    protected static string $fallbackRoute = UN_FALLBACK_ROUTE;
 
     public function __construct(Notification $notification)
     {

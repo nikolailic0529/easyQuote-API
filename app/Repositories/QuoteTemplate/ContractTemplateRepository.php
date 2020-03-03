@@ -19,7 +19,7 @@ class ContractTemplateRepository extends SearchableRepository implements Contrac
     const DESIGN_ATTRIBUTES = ['form_data', 'complete_design'];
 
     /** @var \App\QuoteTemplate\ContractTemplate */
-    protected $template;
+    protected ContractTemplate $template;
 
     public function __construct(ContractTemplate $template)
     {
@@ -43,9 +43,10 @@ class ContractTemplateRepository extends SearchableRepository implements Contrac
 
     public function create(array $attributes): ContractTemplate
     {
-        return tap($this->template->create($attributes), function ($template) use ($attributes) {
-            $template->syncCountries(data_get($attributes, 'countries'));
-        });
+        return tap(
+            $this->template->create($attributes),
+            fn ($template) => $template->syncCountries(data_get($attributes, 'countries'))
+        );
     }
 
     public function findByCompanyVendorCountry($request): EloquentCollection
@@ -80,9 +81,7 @@ class ContractTemplateRepository extends SearchableRepository implements Contrac
     public function country(string $countryId): EloquentCollection
     {
         return $this->query()
-            ->whereHas('countries', function ($query) use ($countryId) {
-                $query->whereId($countryId);
-            })->get();
+            ->whereHas('countries', fn ($query) => $query->whereId($countryId))->get();
     }
 
     public function random(int $limit = 1, ?Closure $scope = null)

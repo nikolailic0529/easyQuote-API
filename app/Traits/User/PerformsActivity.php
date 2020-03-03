@@ -7,24 +7,25 @@ use Carbon\CarbonInterval;
 
 trait PerformsActivity
 {
-    static $activityExpiresIn;
+    protected static int $activityExpiresIn;
 
-    static $refreshActivityExpiresIn;
+    protected static int $refreshActivityExpiresIn;
+
+    protected static function bootPerformsActivity()
+    {
+        static::$activityExpiresIn = config('activity.expires_in', 60);
+        static::$refreshActivityExpiresIn = config('activity.refresh_expires_in', 50);
+    }
 
     public function initializePerformsActivity()
     {
         $this->fillable = array_merge($this->fillable, ['last_activity_at']);
         $this->dates = array_merge($this->dates, ['last_activity_at', 'logged_in_at']);
-
-        self::$activityExpiresIn = config('activity.expires_in', 60);
-        self::$refreshActivityExpiresIn = config('activity.refresh_expires_in', 50);
     }
 
     public function freshActivity(): bool
     {
-        /**
-         * Perform Activity only if the last User's activity expires earlier than the specified time in minutes.
-         */
+        /** Perform Activity only if the last User's activity expires earlier than the specified time in minutes. */
         if ($this->lastActivityExpiresIn()->minutes > self::$refreshActivityExpiresIn) {
             return false;
         }

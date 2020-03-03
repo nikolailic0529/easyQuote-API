@@ -3,7 +3,7 @@
 namespace App\Services\PdfParser;
 
 use App\Contracts\Services\PdfParserInterface;
-use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface as ImportableColumnRepository;
+use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface as ImportableColumns;
 use Illuminate\Support\Collection;
 use Smalot\PdfParser\Parser as SmalotPdfParser;
 use Spatie\PdfToText\Pdf as SpatiePdfParser;
@@ -12,24 +12,28 @@ use Storage, Str, Arr;
 
 class PdfParser implements PdfParserInterface
 {
+    const CONTENT_OPTIONS = ['layout', 'eol unix', 'table'];
+
+    const CONTENT_OPTIONS_FB = ['layout', 'eol unix'];
+
     /** @var \App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface */
-    protected $importableColumn;
+    protected ImportableColumns $importableColumns;
 
     /** @var \Smalot\PdfParser\Parser */
-    protected $smalotPdfParser;
+    protected SmalotPdfParser $smalotPdfParser;
 
     /** @var \Spatie\PdfToText\Pdf */
-    protected $spatiePdfParser;
+    protected SpatiePdfParser $spatiePdfParser;
 
     /** @var array|null */
-    protected static $columnNames;
+    protected static ?array $columnNames = null;
 
     public function __construct(
-        ImportableColumnRepository $importableColumn,
+        ImportableColumns $importableColumns,
         SmalotPdfParser $smalotPdfParser,
         SpatiePdfParser $spatiePdfParser
     ) {
-        $this->importableColumn = $importableColumn;
+        $this->importableColumns = $importableColumns;
         $this->smalotPdfParser = $smalotPdfParser;
         $this->spatiePdfParser = $spatiePdfParser;
     }
@@ -50,13 +54,15 @@ class PdfParser implements PdfParserInterface
 
     public function getPageContent(string $path, int $page)
     {
+        $pageOptions = ["f {$page}", "l {$page}"];
+
         try {
             return $this->spatiePdfParser->setPdf($path)
-                ->setOptions(['layout', 'eol unix', 'table', "f {$page}", "l {$page}"])
+                ->setOptions([...static::CONTENT_OPTIONS, ...$pageOptions])
                 ->text();
         } catch (\Exception $e) {
             return $this->spatiePdfParser->setPdf($path)
-                ->setOptions(['layout', 'eol unix', "f {$page}", "l {$page}"])
+                ->setOptions([...static::CONTENT_OPTIONS_FB, ...$pageOptions])
                 ->text();
         }
     }
@@ -140,7 +146,7 @@ class PdfParser implements PdfParserInterface
             return static::$columnNames;
         }
 
-        return static::$columnNames = $this->importableColumn->allNames();
+        return static::$columnNames = $this->importableColumns->allNames();
     }
 
     private function fetchPricePage(string $content): array
@@ -175,16 +181,14 @@ class PdfParser implements PdfParserInterface
         preg_match(PdfOptions::REGEXP_SAID, $content, $said, PREG_UNMATCHED_AS_NULL);
 
         $foundAttributes = [
-            'pricing_document'      => [Str::trim(last($pd))],
-            'system_handle'         => [Str::trim(last($sh))],
-            'service_agreement_id'  => [Str::trim(last($said))]
+            'pricing_document'      => (array) Str::trim(last($pd)),
+            'system_handle'         => (array) Str::trim(last($sh)),
+            'service_agreement_id'  => (array) Str::trim(last($said))
         ];
 
         $attributes = array_merge_recursive(array_filter($attributes), $foundAttributes);
 
-        $attributes = array_map(function ($attribute) {
-            return array_values(array_flip(array_flip(array_filter($attribute))));
-        }, $attributes);
+        $attributes = array_map(fn ($attribute) => array_values(array_flip(array_flip(array_filter($attribute)))), $attributes);
 
         return $attributes;
     }
@@ -218,19 +222,16 @@ class PdfParser implements PdfParserInterface
     private function filterScheduleMatches(array $matches): Collection
     {
         return collect($matches)->only(PdfOptions::SCHEDULE_MATCHES)
-            ->transform(function ($item) {
-                return array_filter($item);
-            })->reject(function ($item) {
-                return empty($item);
-            });
+            ->transform(fn ($item) => array_filter($item))
+            ->reject(fn ($item) => empty($item));
     }
 
     private function mapPayments(Collection $payments, array $paymentOptions): array
     {
         return $payments->map(function ($payment, $key) use ($paymentOptions) {
             return [
-                'from' => data_get($paymentOptions, "0.{$key}"),
-                'to' => data_get($paymentOptions, "1.{$key}"),
+                'from'  => data_get($paymentOptions, "0.{$key}"),
+                'to'    => data_get($paymentOptions, "1.{$key}"),
                 'price' => $payment
             ];
         })->toArray();
@@ -251,11 +252,10 @@ class PdfParser implements PdfParserInterface
 
     private function filterSchedulePayments(array $payments, array $colsMapping): Collection
     {
-        return collect($payments)->filter(function ($payment, $key) use ($colsMapping) {
-            return data_get($colsMapping, $key);
-        })->transform(function ($payment) {
-            return Str::price($payment, false, true);
-        })->values();
+        return collect($payments)
+            ->filter(fn ($payment, $key) => data_get($colsMapping, $key))
+            ->transform(fn ($payment) => Str::price($payment, false, true))
+            ->values();
     }
 
     private function filterScheduleDates(string $firstLine, array $optionsLine, array $colsMapping): array
@@ -271,12 +271,9 @@ class PdfParser implements PdfParserInterface
         $options = collect($optionsLine)
             ->transform(function ($option) {
                 preg_match_all(PdfOptions::REGEXP_SCHEDULE_DATE, $option, $matches);
-
                 return data_get($matches, 'date', []);
             })
-            ->filter(function ($dates) use ($colsCount) {
-                return count($dates) === $colsCount;
-            });
+            ->filter(fn ($dates) => count($dates) === $colsCount);
 
         return $dates->merge($options)->toArray();
     }
@@ -285,9 +282,8 @@ class PdfParser implements PdfParserInterface
     {
         preg_match_all(PdfOptions::REGEXP_SCHEDULE_COLUMNS, $firstLine, $matches, PREG_UNMATCHED_AS_NULL, 0);
 
-        return collect($matches['cols'])->filter()->transform(function ($value) {
-            return (bool) preg_match(PdfOptions::REGEXP_SCHEDULE_DATE, $value);
-        })
+        return collect($matches['cols'])->filter()
+            ->transform(fn ($value) => (bool) preg_match(PdfOptions::REGEXP_SCHEDULE_DATE, $value))
             ->values()->toArray();
     }
 

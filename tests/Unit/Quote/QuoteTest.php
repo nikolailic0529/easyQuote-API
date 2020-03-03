@@ -261,17 +261,26 @@ class QuoteTest extends TestCase
 
     protected function makeGenericGroupDescriptionAttributes(): array
     {
+        $groupName = $this->faker->unique()->sentence(3);
+
         $rows = collect()->times(2)
-            ->transform(function ($row) {
-                return ['id' => (string) Str::uuid(4), 'user_id' => $this->user->id, 'quote_file_id' => $this->quoteFile->id];
-            });
+            ->transform(fn () => [
+                'id'            => (string) Str::uuid(4),
+                'user_id'       => $this->user->id,
+                'quote_file_id' => $this->quoteFile->id,
+                'columns_data'  => collect(),
+                'group_name'    => $groupName,
+                'page'          => 1
+            ]);
 
         \DB::table('imported_rows')->insert($rows->toArray());
 
+        \DB::table('imported_rows')->whereGroupName($groupName)->get();
+
         return [
-            'name' => $this->faker->sentence(3),
-            'search_text' => $this->faker->sentence(3),
-            'rows' => $rows->pluck('id')->toArray()
+            'name'          => $groupName,
+            'search_text'   => $this->faker->sentence(3),
+            'rows'          => $rows->pluck('id')->toArray()
         ];
     }
 }

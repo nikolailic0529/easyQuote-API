@@ -4,12 +4,12 @@ namespace App\Console\Commands\Routine\Notifications;
 
 use Illuminate\Console\Command;
 use App\Contracts\Repositories\{
-    UserRepositoryInterface as User,
-    Quote\QuoteDraftedRepositoryInterface as Quote
+    UserRepositoryInterface as Users,
+    Quote\QuoteDraftedRepositoryInterface as Quotes
 };
 use App\Models\{
-    Quote\Quote as QuoteModel,
-    User as UserModel
+    Quote\Quote,
+    User
 };
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
@@ -31,22 +31,22 @@ class QuotesExpiration extends Command
     protected $description = 'Notify Users about Quotes Expiration';
 
     /** @var \App\Contracts\Repositories\UserRepositoryInterface */
-    protected $user;
+    protected Users $users;
 
     /** @var \App\Contracts\Repositories\Quote\QuoteDraftedRepositoryInterface */
-    protected $quote;
+    protected Quotes $quotes;
 
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct(User $user, Quote $quote)
+    public function __construct(Users $users, Quotes $quotes)
     {
         parent::__construct();
 
-        $this->user = $user;
-        $this->quote = $quote;
+        $this->users = $users;
+        $this->quotes = $quotes;
     }
 
     /**
@@ -57,16 +57,16 @@ class QuotesExpiration extends Command
     public function handle()
     {
         \DB::transaction(function () {
-            $this->user->cursor()
+            $this->users->cursor()
                 ->each(function ($user) {
                     $this->serveUser($user);
                 });
         });
     }
 
-    protected function serveUser(UserModel $user): void
+    protected function serveUser(User $user): void
     {
-        $this->quote->getExpiring(setting('notification_time'), $user, $this->scope())
+        $this->quotes->getExpiring(setting('notification_time'), $user, $this->scope())
             ->each(function ($quote) {
                 notification()
                     ->for($quote->user)
@@ -78,7 +78,7 @@ class QuotesExpiration extends Command
             });
     }
 
-    protected function formatMessage(QuoteModel $quote): string
+    protected function formatMessage(Quote $quote): string
     {
         $expires_at = optional($quote->customer->validUntilAsDate)->format('d M');
         $rfq_number = $quote->rfq_number;

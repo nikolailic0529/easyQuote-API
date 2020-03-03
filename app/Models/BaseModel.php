@@ -48,17 +48,17 @@ class BaseModel extends Model
 
     public function getCreatedAtAttribute($value)
     {
-        return carbon_format($value, config('date.format_with_time'));
+        return carbon_format($value, config('date.format_time'));
     }
 
     public function getUpdatedAtAttribute($value)
     {
-        return carbon_format($value, config('date.format_with_time'));
+        return carbon_format($value, config('date.format_time'));
     }
 
     public function getDeletedAtAttribute($value)
     {
-        return carbon_format($value, config('date.format_with_time'));
+        return carbon_format($value, config('date.format_time'));
     }
 
     /**
@@ -81,8 +81,6 @@ class BaseModel extends Model
 
     public function saveWithoutEvents(array $options = [])
     {
-        return static::withoutEvents(function () use ($options) {
-            return $this->save($options);
-        });
+        return static::withoutEvents(fn () => $this->save($options));
     }
 }

@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\{
     BelongsToMany
 };
 use Illuminate\Support\Collection;
+use Arr;
 
 class Permission extends BaseModel implements PermissionContract
 {
@@ -24,9 +25,7 @@ class Permission extends BaseModel implements PermissionContract
 
     protected $guarded = ['id'];
 
-    protected $hidden = [
-        'pivot'
-    ];
+    protected $hidden = ['pivot'];
 
     public function __construct(array $attributes = [])
     {
@@ -39,16 +38,12 @@ class Permission extends BaseModel implements PermissionContract
 
     public static function create(array $attributes = [])
     {
-        $attributes['guard_name'] = $attributes['guard_name'] ?? Guard::getDefaultName(static::class);
+        $attributes['guard_name'] ??= Guard::getDefaultName(static::class);
 
-        $permission = static::getPermissions(['name' => $attributes['name'], 'guard_name' => $attributes['guard_name']])->first();
+        $permission = static::getPermissions(Arr::only($attributes, ['name', 'guard_name']))->first();
 
         if ($permission) {
             throw PermissionAlreadyExists::create($attributes['name'], $attributes['guard_name']);
-        }
-
-        if (isNotLumen() && app()::VERSION < '5.4') {
-            return parent::create($attributes);
         }
 
         return static::query()->create($attributes);
@@ -91,12 +86,14 @@ class Permission extends BaseModel implements PermissionContract
      *
      * @return \Spatie\Permission\Contracts\Permission
      */
-    public static function findByName(string $name, $guardName = null): PermissionContract
+    public static function findByName(string $name, $guard_name = null): PermissionContract
     {
-        $guardName = $guardName ?? Guard::getDefaultName(static::class);
-        $permission = static::getPermissions(['name' => $name, 'guard_name' => $guardName])->first();
+        $guard_name ??= Guard::getDefaultName(static::class);
+
+        $permission = static::getPermissions(compact('name', 'guard_name'))->first();
+
         if (!$permission) {
-            throw PermissionDoesNotExist::create($name, $guardName);
+            throw PermissionDoesNotExist::create($name, $guard_name);
         }
 
         return $permission;
@@ -112,13 +109,14 @@ class Permission extends BaseModel implements PermissionContract
      *
      * @return \Spatie\Permission\Contracts\Permission
      */
-    public static function findById(int $id, $guardName = null): PermissionContract
+    public static function findById(int $id, $guard_name = null): PermissionContract
     {
-        $guardName = $guardName ?? Guard::getDefaultName(static::class);
-        $permission = static::getPermissions(['id' => $id, 'guard_name' => $guardName])->first();
+        $guard_name ??= Guard::getDefaultName(static::class);
+
+        $permission = static::getPermissions(compact('id', 'guard_name'))->first();
 
         if (!$permission) {
-            throw PermissionDoesNotExist::withId($id, $guardName);
+            throw PermissionDoesNotExist::withId($id, $guard_name);
         }
 
         return $permission;
@@ -132,13 +130,13 @@ class Permission extends BaseModel implements PermissionContract
      *
      * @return \Spatie\Permission\Contracts\Permission
      */
-    public static function findOrCreate(string $name, $guardName = null): PermissionContract
+    public static function findOrCreate(string $name, $guard_name = null): PermissionContract
     {
-        $guardName = $guardName ?? Guard::getDefaultName(static::class);
-        $permission = static::getPermissions(['name' => $name, 'guard_name' => $guardName])->first();
+        $guard_name ??= Guard::getDefaultName(static::class);
+        $permission = static::getPermissions(compact('name', 'guard_name'))->first();
 
         if (!$permission) {
-            return static::query()->create(['name' => $name, 'guard_name' => $guardName]);
+            return static::query()->create(compact('name', 'guard_name'));
         }
 
         return $permission;

@@ -64,9 +64,8 @@ class TemplateFieldsUpdate extends Command
                 return $templateField->id;
             });
 
-            QuoteTemplate::all()->each(function ($template) use ($templateFields) {
-                $template->templateFields()->syncWithoutDetaching($templateFields);
-            });
+            QuoteTemplate::all()
+                ->each(fn (QuoteTemplate $template) => $template->templateFields()->syncWithoutDetaching($templateFields));
         });
 
         activity()->enableLogging();

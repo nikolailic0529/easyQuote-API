@@ -48,9 +48,9 @@ class ImportableColumnsUpdate extends Command
 
                 $importableColumn->update($attributes);
 
-                collect($attributes['aliases'])->unique()->each(function ($alias) use ($importableColumn) {
-                    $importableColumn->aliases()->firstOrCreate(compact('alias'));
-                });
+                collect($attributes['aliases'])->unique()->each(
+                    fn ($alias) => $importableColumn->aliases()->firstOrCreate(compact('alias'))
+                );
 
                 $this->deleteDuplicatedAliases($importableColumn);
 
@@ -69,9 +69,9 @@ class ImportableColumnsUpdate extends Command
 
         $duplicates = $aliases->duplicates('alias');
 
-        $duplicatedIds = $aliases->filter(function ($alias, $key) use ($duplicates) {
-            return $duplicates->get($key, false);
-        })->pluck('id');
+        $duplicatedIds = $aliases
+            ->filter(fn ($alias, $key) => $duplicates->get($key, false))
+            ->pluck('id');
 
         $importableColumn->aliases()->whereIn('id', $duplicatedIds)->forceDelete();
     }

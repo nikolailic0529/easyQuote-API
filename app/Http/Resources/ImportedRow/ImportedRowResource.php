@@ -16,7 +16,7 @@ class ImportedRowResource extends JsonResource
     {
         return [
             'id'            => $this->id,
-            'columns_data'  => ImportedColumnResource::collection($this->whenLoaded('columnsData'))
+            'columns_data'  => $this->columns_data
         ];
     }
 }

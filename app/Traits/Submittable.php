@@ -3,7 +3,6 @@
 namespace App\Traits;
 
 use Illuminate\Database\Eloquent\Builder;
-use Arr;
 
 trait Submittable
 {
@@ -63,6 +62,6 @@ trait Submittable
 
     public function getSubmittedAtAttribute($value)
     {
-        return carbon_format($value, config('date.format_with_time'));
+        return carbon_format($value, config('date.format_time'));
     }
 }

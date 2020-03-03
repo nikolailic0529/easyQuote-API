@@ -63,14 +63,6 @@ interface QuoteServiceInterface
     public function interactWithDiscount(Quote $quote, $discount): void;
 
     /**
-     * Assign Computable Rows for next operations.
-     *
-     * @param Quote $quote
-     * @return void
-     */
-    public function assignComputableRows(Quote $quote): void;
-
-    /**
      * Performing all necessary operations with Quote instance.
      * Retrieving Selected Rows Data, Interactions with Margins, Discounts, Calculation Total List Price.
      *

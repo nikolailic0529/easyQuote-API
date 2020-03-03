@@ -51,10 +51,8 @@ class PasswordReset extends BaseModel
         return 'token';
     }
 
-    public function cancel()
+    public function cancel(): bool
     {
-        return $this->forceFill([
-            'expires_at' => null
-        ])->save();
+        return $this->forceFill(['expires_at' => null])->save();
     }
 }

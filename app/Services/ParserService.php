@@ -7,11 +7,12 @@ use App\Contracts\{
     Services\WordParserInterface as WordParser,
     Services\PdfParserInterface as PdfParser,
     Services\CsvParserInterface as CsvParser,
-    Repositories\Quote\QuoteRepositoryInterface as QuoteRepository,
+    Repositories\Quote\QuoteRepositoryInterface as QuoteState,
     Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository,
     Repositories\QuoteFile\ImportableColumnRepositoryInterface as ImportableColumn,
     Repositories\QuoteFile\FileFormatRepositoryInterface as FileFormatRepository,
-    Repositories\QuoteFile\DataSelectSeparatorRepositoryInterface as DataSelectSeparatorRepository
+    Repositories\QuoteFile\DataSelectSeparatorRepositoryInterface as DataSelectSeparatorRepository,
+    Repositories\QuoteTemplate\TemplateFieldRepositoryInterface as TemplateFields
 };
 use App\Models\{
     Quote\Quote,
@@ -35,28 +36,24 @@ use Illuminate\Pipeline\Pipeline;
 
 class ParserService implements ParserServiceInterface
 {
-    protected $quote;
+    protected QuoteState $quote;
 
-    protected $quoteFile;
+    protected QuoteFileRepository $quoteFile;
 
-    protected $importableColumn;
+    protected ImportableColumn $importableColumn;
 
-    protected $fileFormat;
+    protected FileFormatRepository $fileFormat;
 
-    protected $dataSelectSeparator;
+    protected DataSelectSeparatorRepository $dataSelectSeparator;
 
-    protected $pdfParser;
+    protected PdfParser $pdfParser;
 
-    protected $wordParser;
+    protected WordParser $wordParser;
 
-    protected $csvParser;
-
-    protected $defaultPage;
-
-    protected $defaultSeparator;
+    protected CsvParser $csvParser;
 
     public function __construct(
-        QuoteRepository $quote,
+        QuoteState $quote,
         QuoteFileRepository $quoteFile,
         ImportableColumn $importableColumn,
         FileFormatRepository $fileFormat,
@@ -73,8 +70,6 @@ class ParserService implements ParserServiceInterface
         $this->pdfParser = $pdfParser;
         $this->wordParser = $wordParser;
         $this->csvParser = $csvParser;
-        $this->defaultPage = Setting::get('parser.default_page');
-        $this->defaultSeparator = Setting::get('parser.default_separator');
     }
 
     public function preHandle(StoreQuoteFileRequest $request): array
@@ -119,7 +114,7 @@ class ParserService implements ParserServiceInterface
 
         $quoteFile->throwExceptionIfExists();
 
-        if ($quoteFile->isPrice() && $quoteFile->isNotAutomapped() && $quoteFile->processing_percentage > 1) {
+        if ($quoteFile->isPrice() && $quoteFile->isNotAutomapped()) {
             $this->mapColumnsToFields($quote, $quoteFile);
             dispatch(new RetrievePriceAttributes($quote->usingVersion));
         }
@@ -129,37 +124,32 @@ class ParserService implements ParserServiceInterface
 
     public function mapColumnsToFields(Quote $quote, QuoteFile $quoteFile): void
     {
-        $templateFields = $quote->usingVersion->quoteTemplate->templateFields;
-        $templateFieldsNames = $templateFields->pluck('name')->toArray();
+        $templateFields = app(TemplateFields::class)->allSystem();
+        $fieldsNames = $templateFields->pluck('name')->toArray();
 
-        $row = $quoteFile->rowsData()->with([
-            'columnsData' => function ($query) use ($templateFieldsNames) {
-                return $query->whereHas('importableColumn', function ($query) use ($templateFieldsNames) {
-                    $query->whereIn('name', $templateFieldsNames);
-                });
-            },
-            'columnsData.importableColumn'
-        ])->processed()->first();
+        $row = $quoteFile->rowsData()->first();
 
-        $columns = optional($row)->columnsData;
+        $columns = optional($row)->columns_data;
 
         if (blank($columns)) {
             $quote->usingVersion->detachColumnsFields();
+            $quote->usingVersion->forgetCachedMappingReview();
+            $quoteFile->markAsAutomapped();
+            return;
         }
 
         $defaultAttributes = FieldColumn::defaultAttributesToArray();
 
-        $mapping = $templateFields->pluck('id', 'name')
-            ->mergeRecursive($columns->pluck('importableColumn.id', 'importableColumn.name'))
-            ->filter(function ($mapping) {
-                return is_array($mapping) && count($mapping) === 2;
-            })
-            ->mapWithKeys(function ($mapping) use ($defaultAttributes) {
-                $importable_column_id = $mapping[1];
-                return [$mapping[0] => compact('importable_column_id') + $defaultAttributes];
-            });
+        $importableColumns = $this->importableColumn->findByIds($columns->pluck('importable_column_id'))->pluck('id', 'name');
 
-        $quote->usingVersion->templateFields()->sync($mapping->toArray());
+        $map = $templateFields->pluck('id', 'name')
+            ->mergeRecursive($importableColumns)
+            ->filter(fn ($map) => is_array($map) && count($map) === 2)
+            ->mapWithKeys(fn ($map, $key) => [
+                $map[0] => ['importable_column_id' => $map[1]] + $defaultAttributes
+            ]);
+
+        $quote->usingVersion->templateFields()->sync($map->toArray());
 
         $quote->usingVersion->forgetCachedMappingReview();
 
@@ -247,14 +237,9 @@ class ParserService implements ParserServiceInterface
 
     protected function handleExcel(QuoteFile $quoteFile): void
     {
-        DB::transaction(function () use ($quoteFile) {
-            if ($quoteFile->isSchedule()) {
-                $this->importExcelSchedule($quoteFile);
-                return;
-            }
+        $method = $quoteFile->isSchedule() ? 'importExcelSchedule' : 'importExcel';
 
-            $this->importExcel($quoteFile);
-        }, 3);
+        DB::transaction(fn () => $this->{$method}($quoteFile), 3);
     }
 
     protected function handleCsv(QuoteFile $quoteFile): void
@@ -263,19 +248,15 @@ class ParserService implements ParserServiceInterface
             $quoteFile->dataSelectSeparator()->associate(request()->data_select_separator_id)->save();
         }
 
-        DB::transaction(function () use ($quoteFile) {
-            $this->importCsv($quoteFile);
-        }, 3);
+        DB::transaction(fn () => $this->importCsv($quoteFile), 3);
     }
 
     protected function handleWord(QuoteFile $quoteFile): void
     {
-        $separator = $this->dataSelectSeparator->findByName($this->defaultSeparator);
+        $separator = $this->dataSelectSeparator->findByName(Setting::get('parser.default_separator'));
         $quoteFile->dataSelectSeparator()->associate($separator)->save();
 
-        DB::transaction(function () use ($quoteFile) {
-            $this->importWord($quoteFile);
-        }, 3);
+        DB::transaction(fn () => $this->importWord($quoteFile), 3);
     }
 
     protected function importExcel(QuoteFile $quoteFile): void
@@ -315,11 +296,7 @@ class ParserService implements ParserServiceInterface
 
         $quoteFile->rowsData()->forceDelete();
 
-        $rawData->each(function ($file) use ($quoteFile) {
-            $filePath = $file->file_path;
-
-            (new ImportCsv($quoteFile, $filePath))->import();
-        });
+        $rawData->each(fn ($file) => (new ImportCsv($quoteFile, $file->file_path))->import());
 
         $quoteFile->markAsHandled();
     }

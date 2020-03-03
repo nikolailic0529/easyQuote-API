@@ -14,7 +14,7 @@ trait LogsActivity
 {
     use DetectsChanges;
 
-    protected $enableLoggingModelsEvents = true;
+    protected bool $enableLoggingModelsEvents = true;
 
     protected static function bootLogsActivity()
     {

@@ -12,7 +12,7 @@ class UniqueAliases implements Rule
     use IgnoresModel;
 
     /** @var array */
-    protected $nonUniqueAliases = [];
+    protected array $nonUniqueAliases = [];
 
     /**
      * Determine if the validation rule passes.

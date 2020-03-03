@@ -6,38 +6,70 @@ use App\Models\Quote\BaseQuote;
 use Illuminate\Support\Collection;
 use App\Http\Requests\{
     Quote\MoveGroupDescriptionRowsRequest,
-    Quote\StoreGroupDescriptionRequest,
     Quote\UpdateGroupDescriptionRequest
 };
+use App\Models\Quote\QuoteVersion;
+use Illuminate\Database\Query\Builder;
 use Webpatser\Uuid\Uuid;
+use Illuminate\Support\Facades\DB;
 
 trait ManagesGroupDescription
 {
-    public function rowsGroups(string $id): Collection
+    public function retrieveRowsGroups($quote, ?string $groupName = null): Collection
     {
-        $quote = $this->findVersion($id);
-        $grouped_rows = $quote->groupedRows()->get();
-        $groups_meta = $quote->getGroupDescriptionWithMeta();
+        if (!$quote instanceof QuoteVersion) {
+            $quote = $this->findVersion($quote);
+        }
 
-        return $grouped_rows->rowsToGroups('group_name', $groups_meta)
-            ->exceptEach('group_name')
-            ->sortByFields($quote->sort_group_description);
+        $groupedRows = $this->retrieveRows($quote, function (Builder $builder) use ($groupName) {
+            $builder
+                ->when(filled($groupName), fn (Builder $builder) => $builder->whereGroupName($groupName))
+                ->whereNotNull('group_name')
+                ->addSelect('group_name', 'price')
+                ->orderBy('group_name');
+        });
+
+        $groups = Collection::wrap($quote->group_description)->keyBy('name');
+
+        $groupedRows = $groupedRows->groupBy('group_name')->transform(
+            fn ($group, $name) => static::unionGroupRowsWithDescription(Collection::wrap($groups->get($name)), $group)
+        )->values();
+
+        return $groupedRows->sortByFields($quote->sort_group_description);
+    }
+
+    public function searchRows($quote, string $search = '', ?string $groupId = null): Collection
+    {
+        if (!$quote instanceof QuoteVersion) {
+            $quote = $this->findVersion($quote);
+        }
+
+        $inputs = collect(static::fetchRowsSearchInput($search));
+
+        $groupName = !is_null($groupId) ? data_get($quote->findGroupDescription($groupId), 'name') : null;
+
+        return $this->retrieveRows(
+            $quote,
+            fn (Builder $builder) =>
+            $builder->where(fn (Builder $query) =>
+                $query->whereRaw('columns_data->"$[*].value" like ?', ['%' . $inputs->shift() . '%'])
+                    ->tap(function (Builder $query) use ($inputs) {
+                        $inputs->each(fn ($input) => $query->orWhereRaw('columns_data->"$[*].value" like ?', ['%' . $input . '%']));
+                    })
+                    ->when(filled($groupName), fn (Builder $query) => $query->orWhere('group_name', $groupName))
+                    ->addSelect(DB::raw("TRUE AS `is_selected`")))
+        );
     }
 
     public function findGroupDescription(string $id, string $quote_id): Collection
     {
         $quote = $this->findVersion($quote_id);
 
-        $group_key = $this->findGroupDescriptionKey($id, $quote);
+        $group = $quote->findGroupDescription($id);
 
-        $group = collect($quote->group_description)->get($group_key);
-        $groups_meta = $quote->getGroupDescriptionWithMeta(null, false, $group['name']);
+        $groupRows = $this->getGroupDescriptionRows($quote, data_get($group, 'name'));
 
-        $group = $quote->groupedRows(null, false, $group['name'])->get()
-            ->rowsToGroups('group_name', $groups_meta)->exceptEach('group_name')
-            ->first();
-
-        return $group;
+        return static::unionGroupRowsWithDescription($group, $groupRows);
     }
 
     public function createGroupDescription($attributes, string $quote_id): Collection
@@ -51,7 +83,7 @@ trait ManagesGroupDescription
         $quote = $this->find($quote_id);
         $version = $this->createNewVersionIfNonCreator($quote);
 
-        $old_group_description_with_meta = $version->group_description_with_meta;
+        $initialGroupDescription = $this->retrieveRowsGroups($version);
 
         $data = collect($attributes);
         $group = $data->only(['name', 'search_text'])->prepend(Uuid::generate(4)->string, 'id');
@@ -62,16 +94,18 @@ trait ManagesGroupDescription
             $version->rowsData()->whereIn('imported_rows.id', $rows)->update(['group_name' => $group->get('name')]);
         }
 
-        $version->group_description = collect($version->group_description)->push($group)->values();
+        $version->group_description = Collection::wrap($version->group_description)->push($group)->values();
 
         $version->save();
+
+        $newGroupDescription = $this->retrieveRowsGroups($version);
 
         activity()
             ->on($version)
             ->withAttribute(
                 'group_description',
-                $version->group_description_with_meta->toString('name', 'total_count'),
-                $old_group_description_with_meta->toString('name', 'total_count')
+                $newGroupDescription->toString('name', 'total_count'),
+                $initialGroupDescription->toString('name', 'total_count')
             )
             ->queue('updated');
 
@@ -85,7 +119,7 @@ trait ManagesGroupDescription
         $quote = $this->find($quote_id);
         $version = $this->createNewVersionIfNonCreator($quote);
 
-        $old_group_description_with_meta = $version->group_description_with_meta;
+        $initialGroupDescription = $this->retrieveRowsGroups($version);
 
         $data = collect($request->validated());
         $group = $data->only(['name', 'search_text'])->toArray();
@@ -107,12 +141,14 @@ trait ManagesGroupDescription
 
         $saved = $version->save();
 
+        $newGroupDescription = $this->retrieveRowsGroups($version);
+
         activity()
             ->on($version)
             ->withAttribute(
                 'group_description',
-                $version->group_description_with_meta->toString('name', 'total_count'),
-                $old_group_description_with_meta->toString('name', 'total_count')
+                $newGroupDescription->toString('name', 'total_count'),
+                $initialGroupDescription->toString('name', 'total_count')
             )
             ->queue('updated');
 
@@ -126,7 +162,7 @@ trait ManagesGroupDescription
         $quote = $this->find($quote_id);
         $version = $this->createNewVersionIfNonCreator($quote);
 
-        $old_group_description_with_meta = $version->group_description_with_meta;
+        $initialGroupDescription = $this->retrieveRowsGroups($version);
 
         $fromGroupName = $request->fromGroupName();
         $toGroupName = $request->fromGroupName();
@@ -140,12 +176,14 @@ trait ManagesGroupDescription
                 ->update(['group_name' => $toGroupName]);
         }
 
+        $newGroupDescription = $this->retrieveRowsGroups($version);
+
         activity()
             ->on($version)
             ->withAttribute(
                 'group_description',
-                $version->group_description_with_meta->toString('name', 'total_count'),
-                $old_group_description_with_meta->toString('name', 'total_count')
+                $newGroupDescription->toString('name', 'total_count'),
+                $initialGroupDescription->toString('name', 'total_count')
             )
             ->queue('updated');
 
@@ -158,8 +196,9 @@ trait ManagesGroupDescription
     {
         $quote = $this->createNewVersionIfNonCreator($this->find($quote_id));
 
-        $group_description = collect($quote->group_description);
-        $old_group_description_with_meta = $quote->group_description_with_meta;
+        $initialGroupDescription = $this->retrieveRowsGroups($quote);
+
+        $group_description = Collection::wrap($quote->group_description);
 
         $group_key = $this->findGroupDescriptionKey($id, $quote);
 
@@ -177,12 +216,14 @@ trait ManagesGroupDescription
 
         $saved = $quote->save();
 
+        $newGroupDescription = $this->retrieveRowsGroups($quote);
+
         activity()
             ->on($quote)
             ->withAttribute(
                 'group_description',
-                $quote->group_description_with_meta->toString('name', 'total_count'),
-                $old_group_description_with_meta->toString('name', 'total_count')
+                $newGroupDescription->toString('name', 'total_count'),
+                $initialGroupDescription->toString('name', 'total_count')
             )
             ->queue('updated');
 
@@ -193,8 +234,32 @@ trait ManagesGroupDescription
 
     protected function findGroupDescriptionKey(string $id, BaseQuote $quote)
     {
-        return tap($quote->findGroupDescriptionKey($id), function ($key) {
-            abort_if($key === false, 404, QG_NF_01);
-        });
+        return tap($quote->findGroupDescriptionKey($id), fn ($key) => abort_if($key === false, 404, QG_NF_01));
+    }
+
+    protected function getGroupDescriptionRows(BaseQuote $quote, ?string $groupName)
+    {
+        return $this->retrieveRows(
+            $quote,
+            fn (Builder $builder) =>
+            $builder->whereGroupName($groupName)->whereNotNull('group_name')->addSelect('group_name', 'price')
+        );
+    }
+
+    private static function fetchRowsSearchInput(string $query): array
+    {
+        return (array) array_filter(array_map('trim', explode(',', $query)));
+    }
+
+    private static function unionGroupRowsWithDescription(iterable $group, iterable $rows): Collection
+    {
+        $group = Collection::wrap($group);
+        $rows = Collection::wrap($rows);
+
+        return $group->union([
+            'rows'          => $rows,
+            'total_count'   => $rows->count(),
+            'total_price'   => (float) $rows->sum('price')
+        ]);
     }
 }

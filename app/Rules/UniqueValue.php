@@ -2,17 +2,16 @@
 
 namespace App\Rules;
 
+use App\Rules\Concerns\IgnoresModel;
 use Illuminate\Contracts\Validation\Rule;
-use Illuminate\Database\Eloquent\Model;
 use DB;
 
 class UniqueValue implements Rule
 {
-    /** @var string */
-    protected $table;
+    use IgnoresModel;
 
-    /** @var string|null */
-    protected $ignore;
+    /** @var string */
+    protected string $table;
 
     /**
      * Create a new rule instance.
@@ -34,34 +33,13 @@ class UniqueValue implements Rule
     public function passes($attribute, $value)
     {
         return DB::table($this->table)
-            ->when($this->ignore, function ($query) {
-                $query->where('id', '!=', $this->ignore);
-            })
+            ->when($this->ignore, fn ($query) => $query->where('id', '!=', $this->ignore))
             ->where('name', request('name'))
             ->where('vendor_id', request('vendor_id'))
             ->where('country_id', request('country_id'))
             ->where('value', $value)
             ->whereNull('deleted_at')
             ->doesntExist();
-    }
-
-    /**
-     * Sets a key to ignore in existence query.
-     *
-     * @param \Illuminate\Database\Eloquent\Model|string $model
-     * @return self
-     */
-    public function ignore($model): self
-    {
-        if (is_string($model)) {
-            $this->ignore = $model;
-        }
-
-        if ($model instanceof Model) {
-            $this->ignore = $model->getKey();
-        }
-
-        return $this;
     }
 
     /**

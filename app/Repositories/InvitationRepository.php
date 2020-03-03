@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\{
 
 class InvitationRepository extends SearchableRepository implements InvitationRepositoryInterface
 {
-    protected $invitation;
+    protected Invitation $invitation;
 
     public function __construct(Invitation $invitation)
     {

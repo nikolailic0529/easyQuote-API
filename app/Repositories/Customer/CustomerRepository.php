@@ -19,10 +19,10 @@ class CustomerRepository implements CustomerRepositoryInterface
     use ResolvesImplicitModel;
 
     /** @var \App\Models\Customer\Customer */
-    protected $customer;
+    protected Customer $customer;
 
     /** @var string */
-    protected $listingCacheKey = 'customers-listing';
+    protected string $listingCacheKey = 'customers-listing';
 
     public function __construct(Customer $customer)
     {
@@ -41,9 +41,7 @@ class CustomerRepository implements CustomerRepositoryInterface
 
     public function list()
     {
-        return cache()->sear($this->listingCacheKey, function () {
-            return $this->listingQuery()->get();
-        });
+        return cache()->sear($this->listingCacheKey, fn () => $this->listingQuery()->get());
     }
 
     public function flushListingCache(): void

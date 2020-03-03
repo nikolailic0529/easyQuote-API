@@ -7,7 +7,7 @@ use App\Models\QuoteFile\QuoteFileFormat;
 
 class FileFormatRepository implements FileFormatRepositoryInterface
 {
-    protected $quoteFileFormat;
+    protected QuoteFileFormat $quoteFileFormat;
 
     public function __construct(QuoteFileFormat $quoteFileFormat)
     {

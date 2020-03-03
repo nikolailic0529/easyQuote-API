@@ -5,17 +5,16 @@ namespace App\Contracts\Repositories\Quote;
 use App\Models\Quote\{
     Quote, QuoteVersion, BaseQuote
 };
-use App\Http\Requests\{
-    Quote\StoreQuoteStateRequest,
-    GetQuoteTemplatesRequest,
-    MappingReviewRequest,
-    Quote\MoveGroupDescriptionRowsRequest,
-    Quote\StoreGroupDescriptionRequest,
-    Quote\UpdateGroupDescriptionRequest
+use App\Http\Requests\Quote\{
+    StoreQuoteStateRequest,
+    MoveGroupDescriptionRowsRequest,
+    StoreGroupDescriptionRequest,
+    UpdateGroupDescriptionRequest,
+    TryDiscountsRequest
 };
-use App\Http\Requests\Quote\TryDiscountsRequest;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 interface QuoteRepositoryInterface
 {
@@ -36,12 +35,39 @@ interface QuoteRepositoryInterface
     public function create(array $attributes): Quote;
 
     /**
-     * Get Rows Data by Attached Columns.
+     * Retrieve mapped imported rows.
      *
-     * @param MappingReviewRequest $request
+     * @param \App\Models\Quote\BaseQuote $quote
+     * @param array|Closuse $criteria
+     * @return mixed
+     */
+    public function retrieveRows(BaseQuote $quote, $criteria = []);
+
+    /**
+     * Find Rows by query.
+     *
+     * @param \App\Models\Quote\QuoteVersion|string $quote
+     * @param string $query
+     * @param string|null $groupId
      * @return \Illuminate\Support\Collection
      */
-    public function step2(MappingReviewRequest $request);
+    public function searchRows($quote, string $query = '', ?string $groupId = null): Collection;
+
+    /**
+     * Calculate list price based on current mapping.
+     *
+     * @param \App\Models\Quote\BaseQuote $quote
+     * @return float
+     */
+    public function calculateListPrice(BaseQuote $quote): float;
+
+    /**
+     * Calculate list price based on current mapping and selected rows & groups.
+     *
+     * @param \App\Models\Quote\BaseQuote $quote
+     * @return float
+     */
+    public function calculateTotalPrice(BaseQuote $quote): float;
 
     /**
      * Get User's Quotes Query.
@@ -53,10 +79,11 @@ interface QuoteRepositoryInterface
     /**
      * Find a specified Quote.
      *
-     * @param \App\Models\Quote\Quote|string $quote
+     * @param string $id
      * @return \App\Models\Quote\Quote
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
-    public function find($quote);
+    public function find(string $id);
 
     /**
      * Retrieve an using version for a specified Quote.
@@ -102,21 +129,12 @@ interface QuoteRepositoryInterface
     public function review(string $quoteId);
 
     /**
-     * Find Rows by query.
-     *
-     * @param string $id
-     * @param string $query
-     * @return \Illuminate\Support\Collection
-     */
-    public function rows(string $id, string $query = ''): Collection;
-
-    /**
      * Retrieve Groups of Imported Rows.
      *
-     * @param string $id
+     * @param string|QuoteVersion $quote
      * @return Collection
      */
-    public function rowsGroups(string $id): Collection;
+    public function retrieveRowsGroups($quote): Collection;
 
     /**
      * Retrieve specified Rows Group from specified Quote.

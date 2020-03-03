@@ -2,10 +2,7 @@
 
 namespace App\Services;
 
-use App\Contracts\{
-    Services\QuoteServiceInterface,
-    Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
-};
+use App\Contracts\Services\QuoteServiceInterface;
 use App\Http\Resources\QuoteResource;
 use App\Models\Quote\{
     BaseQuote as Quote,
@@ -13,21 +10,13 @@ use App\Models\Quote\{
     Margin\CountryMargin
 };
 use App\Models\QuoteTemplate\BaseQuoteTemplate;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
-use Arr, Str;
-use Exception;
+use Str;
 
 class QuoteService implements QuoteServiceInterface
 {
     const QUOTE_EXPORT_VIEW = 'quotes.pdf';
-
-    /** @var \App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface */
-    protected $quoteFile;
-
-    public function __construct(QuoteFileRepository $quoteFile)
-    {
-        $this->quoteFile = $quoteFile;
-    }
 
     public function interact(Quote $quote, $interactable): void
     {
@@ -35,14 +24,14 @@ class QuoteService implements QuoteServiceInterface
             $this->interactWithCountryMargin($quote, $interactable);
             return;
         }
+
         if ($interactable instanceof Discount || is_numeric($interactable)) {
             $this->interactWithDiscount($quote, $interactable);
             return;
         }
+
         if (is_iterable($interactable)) {
-            collect($interactable)->each(function ($entity) use ($quote) {
-                $this->interact($quote, $entity);
-            });
+            collect($interactable)->each(fn ($entity) => $this->interact($quote, $entity));
         }
     }
 
@@ -114,8 +103,8 @@ class QuoteService implements QuoteServiceInterface
         }
 
         if (is_numeric($discount)) {
-            if ($quote->bottomUpDivider === 0.0) {
-                $quote->totalPrice = 0.0;
+            if ($quote->bottomUpDivider == 0) {
+                $quote->totalPrice = 0;
                 return;
             }
 
@@ -143,9 +132,9 @@ class QuoteService implements QuoteServiceInterface
 
         $listPriceAfterDiscount = $quote->totalPrice - $quote->applicableDiscounts;
 
-        $discount->margin_percentage = (float) $listPriceAfterDiscount !== 0.0
+        $discount->margin_percentage = (float) $listPriceAfterDiscount != 0
             ? round((($listPriceAfterDiscount - $quote->buy_price) / $listPriceAfterDiscount) * 100, 2)
-            : 0.0;
+            : 0;
 
         return;
     }
@@ -156,9 +145,8 @@ class QuoteService implements QuoteServiceInterface
             return;
         }
 
-        if ((float) $quote->bottomUpDivider === 0.0) {
+        if ($quote->bottomUpDivider == 0) {
             data_set($quote->scheduleData->value, '*.price', 0.0);
-
             return;
         }
 
@@ -179,14 +167,13 @@ class QuoteService implements QuoteServiceInterface
             return $payment;
         });
 
-        $newTotalPayments = $quote->scheduleData->value->sum(function ($payment) {
-            return round((float) data_get($payment, 'price', 0.0), 2);
-        });
+        $newTotalPayments = $quote->scheduleData->value
+            ->sum(fn ($payment) => round((float) data_get($payment, 'price', 0.0), 2));
 
         $roundedTotalPayments = round($newTotalPayments, 2);
         $roundedFinalPrice = round($quote->finalPrice, 2);
 
-        if ((float) abs($roundedFinalPrice - $roundedTotalPayments) === 0.0) {
+        if (abs($roundedFinalPrice - $roundedTotalPayments) == 0) {
             return;
         }
 
@@ -198,22 +185,20 @@ class QuoteService implements QuoteServiceInterface
         $quote->scheduleData->value = $quote->scheduleData->value->replace([0 => $firstPayment]);
     }
 
-    public function assignComputableRows(Quote $quote): void
-    {
-        $quote->computableRows = cache()->sear($quote->computableRowsCacheKey, function () use ($quote) {
-            return $quote->getFlattenOrGroupedRows(['where_selected'], $quote->calculate_list_price);
-        });
-
-        if (!isset($quote->computableRows->first()->price)) {
-            data_fill($quote->computableRows, '*.price', 0.0);
-        }
-    }
-
     public function prepareQuoteReview(Quote $quote): void
     {
         $quote->enableExchangeRateConversion();
 
-        $this->assignComputableRows($quote);
+        $quote->computableRows =
+            /** Set computable rows in the model. */
+            cache()->sear($quote->computableRowsCacheKey, fn () => $quote->getMappedRows(
+                fn (Builder $query) => $query->when($quote->groupsReady(),
+                    /** When quote has groups and proposed to use groups we are retrieving rows with group_name. */
+                    fn (Builder $query) => $query->whereNotNull('group_name'),
+                    /** Otherwise we are retrieving only selected rows. */
+                    fn (Builder $query) => $query->where('is_selected', true)
+                )
+            ));
 
         /**
          * Possible Interactions with Margins and Discounts

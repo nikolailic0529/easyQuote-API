@@ -17,11 +17,11 @@ use Illuminate\Support\Collection;
 
 trait HasVersions
 {
-    protected $originalVersion;
+    protected ?QuoteVersion $originalVersion = null;
 
-    protected $versionsSelection;
+    protected ?Collection $versionsSelection = null;
 
-    protected $wasCreatedNewVersion = false;
+    protected bool $wasCreatedNewVersion = false;
 
     public function usingVersion(): HasOneThrough
     {
@@ -100,12 +100,12 @@ trait HasVersions
             ?? $this->getAttribute('originalVersion');
     }
 
-    public function setVersionsSelectionAttribute(Collection $value)
+    public function setVersionsSelectionAttribute(Collection $value): void
     {
         $this->versionsSelection = $value;
     }
 
-    public function getParentIdAttribute()
+    public function getParentIdAttribute(): string
     {
         return $this->id;
     }

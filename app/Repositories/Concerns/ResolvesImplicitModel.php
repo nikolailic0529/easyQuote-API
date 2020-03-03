@@ -19,7 +19,7 @@ trait ResolvesImplicitModel
         }
 
         throw_unless($model instanceof $class, new \InvalidArgumentException(
-            sprintf(INV_ARG_SC_01, __METHOD__, $class)
+            sprintf(INV_ARG_SC_01, __METHOD__, $class) . ' ' . get_class($model) . ' given'
         ));
 
         return $model;

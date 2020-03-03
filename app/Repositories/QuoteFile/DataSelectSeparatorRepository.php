@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Collection;
 
 class DataSelectSeparatorRepository implements DataSelectSeparatorRepositoryInterface
 {
-    protected $dataSelectSeparator;
+    protected DataSelectSeparator $dataSelectSeparator;
 
     public function __construct(DataSelectSeparator $dataSelectSeparator)
     {
@@ -27,8 +27,6 @@ class DataSelectSeparatorRepository implements DataSelectSeparatorRepositoryInte
 
     public function all(): Collection
     {
-        return cache()->sear('all-data-select-separators', function () {
-            return $this->dataSelectSeparator->get();
-        });
+        return cache()->sear('all-data-select-separators', fn () => $this->dataSelectSeparator->get());
     }
 }

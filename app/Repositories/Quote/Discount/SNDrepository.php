@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\{
 
 class SNDrepository extends DiscountRepository implements SNDrepositoryInterface
 {
-    protected $snd;
+    protected SND $snd;
 
     public function __construct(SND $snd)
     {
@@ -47,11 +47,7 @@ class SNDrepository extends DiscountRepository implements SNDrepositoryInterface
 
     public function update(UpdateSNDrequest $request, string $id): SND
     {
-        $discount = $this->find($id);
-
-        $discount->update($request->validated());
-
-        return $discount;
+        return tap($this->find($id))->update($request->validated());
     }
 
     public function delete(string $id): bool

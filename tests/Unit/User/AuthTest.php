@@ -46,7 +46,7 @@ class AuthTest extends TestCase
 
         $response = $this->postJson(url('/api/auth/signin'), $attributes);
 
-        $response->assertUnauthorized();
+        $response->assertStatus(403);
     }
 
     /**

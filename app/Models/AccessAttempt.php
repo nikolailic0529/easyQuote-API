@@ -11,7 +11,7 @@ use Str;
 class AccessAttempt extends BaseModel
 {
     /** @var boolean */
-    public $previouslyKnown = false;
+    public bool $previouslyKnown = false;
 
     protected $fillable = [
         'email', 'ip_address', 'local_ip'
@@ -26,19 +26,17 @@ class AccessAttempt extends BaseModel
         });
     }
 
-    public function markAsSuccessful(PersonalAccessTokenResult $token)
+    public function markAsSuccessful(?PersonalAccessTokenResult $token = null)
     {
         return $this->forceFill([
             'is_success' => true,
-            'token' => $token->accessToken
+            'token' => optional($token)->accessToken
         ])->save();
     }
 
     public function setDetails(): void
     {
-        $this->forceFill([
-            'user_agent' => request()->userAgent()
-        ]);
+        $this->forceFill(['user_agent' => request()->userAgent()]);
     }
 
     public function markAsPreviouslyKnown(): void

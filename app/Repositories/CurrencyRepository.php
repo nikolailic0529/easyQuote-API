@@ -13,7 +13,7 @@ class CurrencyRepository implements CurrencyRepositoryInterface
     const CACHE_PREFIX_CODE = 'currency-id-code:';
 
     /** @var \App\Models\Data\Currency */
-    protected $currency;
+    protected Currency $currency;
 
     public function __construct(Currency $currency)
     {
@@ -24,9 +24,7 @@ class CurrencyRepository implements CurrencyRepositoryInterface
     {
         $base_currency = Setting::get('base_currency');
 
-        return cache()->sear(self::CACHE_PREFIX_ALL . $base_currency, function () {
-            return $this->currency->ordered()->get();
-        });
+        return cache()->sear(self::CACHE_PREFIX_ALL . $base_currency, fn () => $this->currency->ordered()->get());
     }
 
     public function allHaveExrate()
@@ -50,23 +48,32 @@ class CurrencyRepository implements CurrencyRepositoryInterface
 
     public function findIdByCode($code)
     {
+        $codeKey = implode(',', (array) $code);
+
         if (is_array($code)) {
-            return cache()->sear(self::CACHE_PREFIX_CODE . implode(',', $code), function () use ($code) {
-                return $this->currency->whereIn('code', $code)->pluck('id', 'code');
-            });
+            return cache()->sear(
+                static::getCurrencyCodeCacheKey($codeKey),
+                fn () => $this->currency->whereIn('code', $code)->pluck('id', 'code')
+            );
         }
 
         throw_unless(is_string($code), new \InvalidArgumentException(
             sprintf('%s %s given.', INV_ARG_SA_01, gettype($code))
         ));
 
-        return cache()->sear(self::CACHE_PREFIX_CODE . $code, function () use ($code) {
-            return $this->currency->whereCode($code)->value('id');
-        });
+        return cache()->sear(
+            static::getCurrencyCodeCacheKey($codeKey),
+            fn () => $this->currency->whereCode($code)->value('id')
+        );
     }
 
     public function firstOrCreate(array $attributes, array $values = []): Currency
     {
         return $this->currency->firstOrCreate($attributes, $values);
+    }
+
+    protected static function getCurrencyCodeCacheKey(string $code): string
+    {
+        return self::CACHE_PREFIX_CODE . $code;
     }
 }

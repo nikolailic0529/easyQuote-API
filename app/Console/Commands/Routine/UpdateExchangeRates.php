@@ -7,9 +7,6 @@ use Illuminate\Console\Command;
 
 class UpdateExchangeRates extends Command
 {
-    /** @var \App\Contracts\Services\ExchangeRateServiceInterface */
-    protected $service;
-
     /**
      * The name and signature of the console command.
      *

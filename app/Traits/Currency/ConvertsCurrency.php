@@ -9,13 +9,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 trait ConvertsCurrency
 {
     /** @var boolean */
-    protected $exchangeRateConversion = false;
+    protected bool $exchangeRateConversion = false;
 
     /** @var array */
-    protected static $currenciesAttributes = ['target_currency_id', 'source_currency_id', 'exchange_rate_margin'];
+    protected static array $currenciesAttributes = ['target_currency_id', 'source_currency_id', 'exchange_rate_margin'];
 
     /** @var string */
-    protected static $actualExchangeRateCachePrefix = 'actual-exchange-rate';
+    protected static string $actualExchangeRateCachePrefix = 'actual-exchange-rate';
 
     protected static function bootConvertsCurrency()
     {
@@ -68,7 +68,7 @@ trait ConvertsCurrency
 
     public function getExchangeRateMarginAttribute($value): float
     {
-        return $value ?? ER_MARGIN_DEFAULT;
+        return $value ?? setting('default_exchange_rate_margin') ?? ER_MARGIN_DEFAULT;
     }
 
     public function enableExchangeRateConversion(): self

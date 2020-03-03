@@ -40,23 +40,22 @@ trait Activatable
             return false;
         }
 
-        return tap($this->forceFill(['activated_at' => now()])->save(), function ($activated) {
-            activity()->on($this)->queueWhen('activated', $activated);
-        });
+        return tap(
+            $this->forceFill(['activated_at' => now()])->save(),
+            fn ($activated) => activity()->on($this)->queueWhen('activated', $activated)
+        );
     }
 
     public function scopeActivated(Builder $query): Builder
     {
-        return $query->where(function ($query) {
-            $query->whereNotNull("{$this->getTable()}.activated_at");
-        })->limit(999999999);
+        return $query->where(fn (Builder $query) => $query->whereNotNull("{$this->getTable()}.activated_at"))
+            ->limit(999999999);
     }
 
     public function scopeDeactivated(Builder $query): Builder
     {
-        return $query->where(function ($query) {
-            $query->whereNull("{$this->getTable()}.activated_at");
-        })->limit(999999999);
+        return $query->where(fn (Builder $query) => $query->whereNull("{$this->getTable()}.activated_at"))
+            ->limit(999999999);
     }
 
     public function scopeActivatedFirst(Builder $query): Builder
@@ -66,6 +65,6 @@ trait Activatable
 
     public function getActivatedAtAttribute($value)
     {
-        return carbon_format($value, config('date.format_with_time'));
+        return carbon_format($value, config('date.format_time'));
     }
 }

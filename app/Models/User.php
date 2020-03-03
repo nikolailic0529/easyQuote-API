@@ -119,9 +119,7 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
 
     public function scopeNonAdministrators(Builder $query): Builder
     {
-        return $query->whereDoesntHave('roles', function ($query) {
-            $query->whereName('Administrator');
-        });
+        return $query->whereDoesntHave('roles', fn ($query) => $query->whereName('Administrator'));
     }
 
     public function scopeEmail(Builder $query, string $email): Builder
@@ -129,11 +127,11 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
         return $query->whereEmail($email);
     }
 
-    public function interact($model)
+    public function interact($model): void
     {
         if ($model instanceof Invitation) {
             $this->assignRole($model->role);
-            return $this->save() && $model->delete();
+            $model->delete();
         }
     }
 

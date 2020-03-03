@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\{
 
 class MultiYearDiscountRepository extends DiscountRepository implements MultiYearDiscountRepositoryInterface
 {
-    protected $multiYearDiscount;
+    protected MultiYearDiscount $multiYearDiscount;
 
     public function __construct(MultiYearDiscount $multiYearDiscount)
     {
@@ -47,11 +47,7 @@ class MultiYearDiscountRepository extends DiscountRepository implements MultiYea
 
     public function update(UpdateMultiYearDiscountRequest $request, string $id): MultiYearDiscount
     {
-        $discount = $this->find($id);
-
-        $discount->update($request->validated());
-
-        return $discount;
+        return tap($this->find($id))->update($request->validated());
     }
 
     public function delete(string $id): bool

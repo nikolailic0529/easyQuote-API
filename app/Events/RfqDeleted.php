@@ -18,7 +18,7 @@ class RfqDeleted implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets;
 
     /** @var \App\Models\Customer\Customer */
-    public $customer;
+    public Customer $customer;
 
     /**
      * Create a new event instance.

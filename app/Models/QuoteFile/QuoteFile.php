@@ -58,11 +58,6 @@ class QuoteFile extends BaseModel implements HasOrderedScope
         return $this->hasMany(ImportedRow::class);
     }
 
-    public function columnsData()
-    {
-        return $this->hasManyThrough(ImportedColumn::class, ImportedRow::class);
-    }
-
     public function importedRawData()
     {
         return $this->hasMany(ImportedRawData::class);
@@ -94,19 +89,18 @@ class QuoteFile extends BaseModel implements HasOrderedScope
 
     public function isSchedule()
     {
-        return $this->file_type === __('quote_file.types.schedule');
+        return $this->file_type === QFT_PS;
     }
 
     public function isPrice()
     {
-        return $this->file_type === __('quote_file.types.price');
+        return $this->file_type === QFT_PL;
     }
 
     public function scopeIsNotHandledSchedule($query)
     {
-        return $query->where(function ($query) {
-            $query->where('file_type', __('quote_file.types.schedule'))->handled();
-        })->orWhere('file_type', __('quote_file.types.price'));
+        return $query->where(fn ($query) => $query->where('file_type', QFT_PS)->handled())
+            ->orWhere('file_type', QFT_PL);
     }
 
     public function setImportedPage(?int $imported_page)
@@ -131,8 +125,7 @@ class QuoteFile extends BaseModel implements HasOrderedScope
 
     public function getImportedPageAttribute()
     {
-        return $this->attributes['imported_page']
-            ?? $this->default_imported_page;
+        return $this->attributes['imported_page'] ?? $this->default_imported_page;
     }
 
     public function isNewPage($page)

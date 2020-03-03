@@ -19,7 +19,7 @@ trait SavesPreviousState
         return json_decode($value, true) ?? [];
     }
 
-    protected function getCurrentState()
+    protected function getCurrentState(): array
     {
         $state = $this->getOriginal();
 

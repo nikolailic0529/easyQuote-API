@@ -27,6 +27,7 @@ use App\Models\{
 };
 use Illuminate\Database\Eloquent\Builder;
 use Str;
+use Throwable;
 
 class ReindexCommand extends Command
 {
@@ -67,7 +68,14 @@ class ReindexCommand extends Command
          * Perform deleting on all indices
          */
         $this->info("Deleting all indexes...");
-        $this->elasticsearch->indices()->delete(['index' => '_all']);
+
+        try {
+            $this->elasticsearch->indices()->delete(['index' => '_all']);
+        } catch (Throwable $exception) {
+            $this->error($exception->getMessage());
+            $this->error("Reindexing will be skipped.");
+            return;
+        }
 
         $this->handleModels(
             [
@@ -114,15 +122,26 @@ class ReindexCommand extends Command
 
             $bar = $this->output->createProgressBar($query->count());
 
-            $query->cursor()->each(function ($entry) use ($bar) {
-                $this->elasticsearch->index([
-                    'index' => $entry->getSearchIndex(),
-                    'id' => $entry->getKey(),
-                    'body' => $entry->toSearchArray(),
-                ]);
+            $cursor = $query->cursor();
 
-                $bar->advance();
-            });
+            /** Limited indexing for testing environment. */
+            if (app()->runningUnitTests()) {
+                $cursor = $cursor->take(10);
+            }
+
+            rescue(
+                fn () =>
+                $cursor->each(function ($entry) use ($bar) {
+                    $this->elasticsearch->index([
+                        'id'    => $entry->getKey(),
+                        'index' => $entry->getSearchIndex(),
+                        'body'  => $entry->toSearchArray()
+                    ]);
+
+                    $bar->advance();
+                }),
+                fn (Throwable $exception) => $this->error($exception->getMessage())
+            );
 
             $bar->finish();
 

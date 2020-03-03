@@ -40,8 +40,8 @@ class AuthenticatedUserResource extends JsonResource
             ],
             'created_at'                    => $this->created_at,
             'activated_at'                  => $this->activated_at,
-            'last_activity_at'              => optional($this->last_activity_at)->format(config('date.format_with_time')),
-            'password_changed_at'           => optional($this->password_changed_at)->format(config('date.format_with_time'))
+            'last_activity_at'              => optional($this->last_activity_at)->format(config('date.format_time')),
+            'password_changed_at'           => optional($this->password_changed_at)->format(config('date.format_time'))
         ];
     }
 }

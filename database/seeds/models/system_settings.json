@@ -19,6 +19,7 @@
         "type": "string",
         "is_read_only": false,
         "section": "global",
+        "order": 1,
         "possible_values": [
             {
                 "label": "GBP (British Pound Sterling)",
@@ -43,50 +44,13 @@
         ]
     },
     {
-        "key": "file_upload_size",
-        "value": 2,
+        "key": "password_expiry_notification",
+        "value": "CONST:UN_PWD_EXP",
+        "possible_values": "RANGE:7,30,{value} Days Before Expiration",
         "type": "integer",
         "is_read_only": false,
         "section": "global",
-        "possible_values": [
-            {
-                "label": "2 MB",
-                "value": 2
-            },
-            {
-                "label": "5 MB",
-                "value": 5
-            },
-            {
-                "label": "10 MB",
-                "value": 10
-            }
-        ]
-    },
-    {
-        "key": "price_calculation_duration",
-        "value": "day",
-        "type": "string",
-        "is_read_only": false,
-        "section": "global",
-        "possible_values": [
-            {
-                "label": "Day",
-                "value": "day"
-            },
-            {
-                "label": "Month",
-                "value": "month"
-            },
-            {
-                "label": "Quaterly",
-                "value": "quaterly"
-            },
-            {
-                "label": "Yearly",
-                "value": "yearly"
-            }
-        ]
+        "order": 2
     },
     {
         "key": "notification_time",
@@ -94,6 +58,7 @@
         "type": "integer",
         "is_read_only": false,
         "section": "global",
+        "order": 3,
         "possible_values": [
             {
                 "label": "1 Week Before Closing Date",
@@ -115,30 +80,64 @@
         "possible_values": "\\App\\Models\\User:email as label,id as value",
         "type": "array",
         "is_read_only": false,
-        "section": "global"
+        "section": "global",
+        "order": 4
     },
     {
-        "key": "password_expiry_notification",
-        "value": "CONST:UN_PWD_EXP",
-        "possible_values": "RANGE:7,30,{value} Days Before Expiration",
+        "key": "price_calculation_duration",
+        "value": "day",
+        "type": "string",
+        "is_read_only": false,
+        "section": "global",
+        "order": 5,
+        "possible_values": [
+            {
+                "label": "Day",
+                "value": "day"
+            },
+            {
+                "label": "Month",
+                "value": "month"
+            },
+            {
+                "label": "Quaterly",
+                "value": "quaterly"
+            },
+            {
+                "label": "Yearly",
+                "value": "yearly"
+            }
+        ]
+    },
+    {
+        "key": "file_upload_size",
+        "value": 2,
         "type": "integer",
         "is_read_only": false,
-        "section": "global"
+        "section": "global",
+        "order": 6,
+        "possible_values": [
+            {
+                "label": "2 MB",
+                "value": 2
+            },
+            {
+                "label": "5 MB",
+                "value": 5
+            },
+            {
+                "label": "10 MB",
+                "value": 10
+            }
+        ]
     },
     {
         "key": "supported_file_types",
         "value": ["CSV", "PDF", "XLSX", "DOCX"],
         "type": "array",
         "is_read_only": true,
-        "section": "global"
-    },
-    {
-        "key": "exchange_rates_update",
-        "value": "2019-11-17 09:28:19",
-        "type": "datetime",
-        "is_read_only": true,
-        "section": "exchange_rates",
-        "label_format": "Last Update was done :value"
+        "section": "global",
+        "order": 7
     },
     {
         "key": "exchange_rate_provider",
@@ -146,6 +145,7 @@
         "type": "string",
         "is_read_only": false,
         "section": "exchange_rates",
+        "order": 8,
         "possible_values": [
             {
                 "label": "HMRC",
@@ -159,6 +159,7 @@
         "type": "string",
         "is_read_only": false,
         "section": "exchange_rates",
+        "order": 9,
         "possible_values": [
             {
                 "label": "Monthly",
@@ -173,5 +174,52 @@
                 "value": "daily"
             }
         ]
+    },
+    {
+        "key": "default_exchange_rate_margin",
+        "value": 7,
+        "type": "float",
+        "is_read_only": false,
+        "section": "exchange_rates",
+        "validation": {
+            "required": true,
+            "decimal": true
+        },
+        "order": 10
+    },
+    {
+        "key": "exchange_rates_update",
+        "value": "2019-11-17 09:28:19",
+        "type": "datetime",
+        "is_read_only": true,
+        "section": "exchange_rates",
+        "order": 11,
+        "label_format": "Last Update was done :value"
+    },
+    {
+        "key": "maintenance_start_time",
+        "value": 5,
+        "type": "integer",
+        "is_read_only": false,
+        "possible_values": "RANGE:1,30,in {value} minute(s) from now",
+        "section": "maintenance",
+        "order": 12
+    },
+    {
+        "key": "maintenance_end_time",
+        "value": 5,
+        "type": "integer",
+        "is_read_only": false,
+        "possible_values": "RANGE:1,120,5,{value} minutes",
+        "section": "maintenance",
+        "order": 13
+    },
+    {
+        "key": "maintenance_message",
+        "value": "We are running routine maintenance in 5 minutes, the server will not be available during maintenance. Thanks.",
+        "type": "string",
+        "is_read_only": false,
+        "section": "maintenance",
+        "order": 14
     }
 ]

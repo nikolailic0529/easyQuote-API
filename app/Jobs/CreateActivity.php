@@ -32,10 +32,9 @@ class CreateActivity implements ShouldQueue
      */
     public function handle()
     {
-        rescue(function () {
-            $this->activity->saveOrFail();
-        }, function () {
-            $this->release();
-        });
+        rescue(
+            fn () => $this->activity->save(),
+            fn () => $this->release()
+        );
     }
 }

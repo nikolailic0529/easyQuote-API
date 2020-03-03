@@ -6,8 +6,6 @@ use App\Observers\PasswordObserver;
 
 trait EnforceableChangePassword
 {
-    protected $oldPassword;
-
     protected static function bootEnforceableChangePassword()
     {
         static::observe(PasswordObserver::class);

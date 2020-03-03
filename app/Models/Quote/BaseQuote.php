@@ -179,9 +179,7 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
 
     public function scopeRfq($query, ?string $rfq)
     {
-        return $query->whereHas('customer', function ($query) use ($rfq) {
-            $query->whereRfq($rfq);
-        });
+        return $query->whereHas('customer', fn (Builder $query) => $query->whereRfq($rfq));
     }
 
     public function scheduleData()
@@ -207,14 +205,14 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
     public function rowsData()
     {
         return $this->hasManyThrough(ImportedRow::class, QuoteFile::class)
-            ->where('quote_files.file_type', __('quote_file.types.price'))
+            ->where('quote_files.file_type', QFT_PL)
             ->whereColumn('imported_rows.page', '>=', 'quote_files.imported_page');
     }
 
     public function getRowsDataAttribute()
     {
         return ImportedRowResource::collection(
-            $this->rowsData()->with('columnsData')->processed()->oldest()->limit(1)->get()
+            $this->rowsData()->oldest()->limit(1)->get()
         );
     }
 
@@ -229,9 +227,9 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
             'company_name'              => optional($this->company)->name,
             'customer_name'             => optional($this->customer)->name,
             'customer_rfq'              => optional($this->customer)->rfq,
-            'customer_valid_until'      => optional($this->customer)->valid_until,
-            'customer_support_start'    => optional($this->customer)->support_start,
-            'customer_support_end'      => optional($this->customer)->support_end,
+            'customer_valid_until'      => optional($this->customer)->quotation_valid_until,
+            'customer_support_start'    => optional($this->customer)->support_start_date,
+            'customer_support_end'      => optional($this->customer)->support_end_date,
             'user_fullname'             => optional($this->user)->fullname,
             'created_at'                => $this->created_at
         ];
@@ -294,9 +292,7 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
     protected function defaultRelationships(): array
     {
         return [
-            'quoteFiles' => function ($query) {
-                return $query->isNotHandledSchedule();
-            },
+            'quoteFiles' => fn ($query) => $query->isNotHandledSchedule(),
             'quoteTemplate',
             'countryMargin',
             'discounts',

@@ -64,14 +64,16 @@ class AuthService implements AuthServiceInterface
 
     public function checkCredentials(array $credentials)
     {
-        Auth::attempt($credentials) || abort(401, __('auth.failed'));
+        abort_unless(Auth::attempt($credentials), 403, __('auth.failed'));
 
         $user = request()->user();
 
         /**
          * If the User has expired tokens the System will mark the User as Logged Out.
          */
-        $user->doesntHaveNonExpiredTokens() && $user->markAsLoggedOut();
+        if ($user->doesntHaveNonExpiredTokens()) {
+            $user->markAsLoggedOut();
+        }
 
         /**
          * Throw an exception if the User Already Logged In.
@@ -97,7 +99,7 @@ class AuthService implements AuthServiceInterface
 
     public function logout(?User $user = null)
     {
-        $user = $user instanceof User ? $user : auth()->user();
+        $user ??= auth()->user();
 
         /**
          * When Logout the System is revoking all the existing User's Personal Access Tokens.

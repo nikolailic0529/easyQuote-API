@@ -14,8 +14,10 @@ class SettingCollection extends ResourceCollection
      */
     public function toArray($request)
     {
-        return $this->collection->groupBy('section')->map(function ($section) {
-            return SettingResource::collection($section);
-        });
+        $collection = $this->collection->groupBy('section')->map(fn ($section) => SettingResource::collection($section));
+
+        $collection = $collection->replace(['maintenance' => $collection->get('maintenance')->keyBy('key')]);
+
+        return $collection;
     }
 }

@@ -7,9 +7,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class ReportLogger implements ReportLoggerInterface
 {
-    static protected $infoKeys = ['message'];
+    protected static array $infoKeys = ['message'];
 
-    static protected $errorKeys = ['ErrorCode', 'error'];
+    protected static array $errorKeys = ['ErrorCode', 'error'];
 
     public function log(): void
     {
@@ -37,9 +37,11 @@ class ReportLogger implements ReportLoggerInterface
         $message = $argument[$key];
 
         if (isset($response)) {
-            $message = preg_replace_callback('/\B\:([\w\.]+)\b/', function ($key) use ($response) {
-                return data_get($response, $key[1]) ?? $key[1];
-            }, $message);
+            $message = preg_replace_callback(
+                '/\B\:([\w\.]+)\b/',
+                fn ($key) => data_get($response, $key[1], $key[1]),
+                $message
+            );
         }
 
         logger()->{$method}($message);
@@ -53,8 +55,6 @@ class ReportLogger implements ReportLoggerInterface
     {
         $logKeys = array_flip(array_merge(static::$infoKeys, static::$errorKeys));
 
-        return collect($argument)->search(function ($value, $key) use ($logKeys) {
-            return isset($logKeys[$key]);
-        });
+        return collect($argument)->search(fn ($value, $key) => isset($logKeys[$key]));
     }
 }

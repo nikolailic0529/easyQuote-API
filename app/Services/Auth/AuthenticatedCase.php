@@ -7,6 +7,7 @@ use App\Models\{
     AccessAttempt
 };
 use App\Notifications\AccessAttempt as AccessAttemptNotification;
+use App\Contracts\Repositories\UserRepositoryInterface as Users;
 
 class AuthenticatedCase
 {
@@ -15,27 +16,27 @@ class AuthenticatedCase
      *
      * @var \App\Models\User
      */
-    public $user;
+    public User $user;
 
     /**
      * AccessAttempt instance.
      *
      * @var \App\Models\AccessAttempt
      */
-    public $attempt;
+    public AccessAttempt $attempt;
 
     /**
      * User Repository.
      *
      * @var \App\Contracts\Repositories\UserRepositoryInterface
      */
-    public $userRepository;
+    public Users $userRepository;
 
     public function __construct(User $user, AccessAttempt $attempt)
     {
         $this->user = $user;
         $this->attempt = $attempt;
-        $this->userRepository = app('user.repository');
+        $this->userRepository = app(Users::class);
     }
 
     public function notifyUser(): void

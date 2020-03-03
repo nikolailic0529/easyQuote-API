@@ -16,6 +16,15 @@ Route::group(['namespace' => 'API'], function () {
         });
     });
 
+    /** Maintenance. */
+    Route::group(['namespace' => 'System'], function () {
+        Route::get('maintenance', 'MaintenanceController@show');
+        Route::group(['middleware' => ['auth:api', 'role:Administrator']], function () {
+            Route::post('maintenance', 'MaintenanceController@start');
+            Route::put('maintenance', 'MaintenanceController@stop');
+        });
+    });
+
     Route::group(['prefix' => 'data', 'namespace' => 'Data'], function () {
         Route::group(['middleware' => THROTTLE_RATE_01], function () {
             Route::get('timezones', 'TimezonesController');

@@ -16,7 +16,7 @@ class NotificationReadAll implements ShouldBroadcastNow
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     /** @var \App\Models\User */
-    protected $user;
+    protected User $user;
 
     /**
      * Create a new event instance.

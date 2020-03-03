@@ -11,15 +11,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 trait BelongsToUser
 {
-    public function initializeBelongsToUser()
+    protected static function bootBelongsToUser()
     {
-        $this->fillable = array_merge($this->fillable, ['user_id']);
-
         if (!app()->runningInConsole()) {
             static::replicating(function (Model $model) {
                 $model->user_id = auth()->id();
             });
         }
+    }
+
+    public function initializeBelongsToUser()
+    {
+        $this->fillable = array_merge($this->fillable, ['user_id']);
     }
 
     public function user(): BelongsTo
@@ -29,13 +32,11 @@ trait BelongsToUser
 
     public function scopeCurrentUser(Builder $query): Builder
     {
-        return $query->where("{$this->getTable()}.user_id", request()->user()->id);
+        return $query->where("{$this->getTable()}.user_id", auth()->id());
     }
 
     public function scopeCurrentUserWhen(Builder $query, $when): Builder
     {
-        return $query->when($when, function ($query) {
-            $query->currentUser();
-        });
+        return $query->when($when, fn (Builder $query) => $query->currentUser());
     }
 }

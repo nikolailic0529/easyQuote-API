@@ -39,6 +39,14 @@ interface ImportableColumnRepositoryInterface
     public function all();
 
     /**
+     * Find importable columns by their ids.
+     *
+     * @param iterable $ids
+     * @return void
+     */
+    public function findByIds(iterable $ids);
+
+    /**
      * Paginate existing importable columns.
      *
      * @return mixed

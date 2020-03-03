@@ -15,13 +15,13 @@ class CustomerRepositoryResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'rfq' => $this->rfq,
-            'valid_until' => $this->valid_until_date,
+            'id'            => $this->id,
+            'name'          => $this->name,
+            'rfq'           => $this->rfq,
+            'valid_until'   => $this->valid_until_date,
             'support_start' => $this->support_start_date,
-            'support_end' => $this->support_end_date,
-            'created_at' => $this->created_at
+            'support_end'   => $this->support_end_date,
+            'created_at'    => $this->created_at
         ];
     }
 }

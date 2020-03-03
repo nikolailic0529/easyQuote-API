@@ -104,6 +104,7 @@ class StoreQuoteStateRequest extends FormRequest
                 'boolean'
             ],
             'quote_data.field_column.*.template_field_id' => [
+                'required_with:quote_data.field_column.*.importable_column_id',
                 'uuid',
                 'exists:template_fields,id'
             ],

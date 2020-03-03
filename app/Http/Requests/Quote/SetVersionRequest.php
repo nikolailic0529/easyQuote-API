@@ -19,10 +19,7 @@ class SetVersionRequest extends FormRequest
                 'required',
                 'string',
                 'uuid',
-                Rule::exists('quotes', 'id')->where(function ($query) {
-                    $query->where('is_version', true)
-                        ->orWhere('id', $this->quote->id);
-                })
+                Rule::exists('quotes', 'id')->where(fn ($query) => $query->where('is_version', true)->orWhere('id', $this->quote->id))
             ]
         ];
     }

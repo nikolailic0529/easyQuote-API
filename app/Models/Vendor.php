@@ -59,8 +59,11 @@ class Vendor extends BaseModel implements WithImage, WithLogo, ActivatableInterf
 
     public function toSearchArray()
     {
-        $this->makeHidden('logo');
-        return $this->toArray();
+        return [
+            'name'          => $this->name,
+            'short_code'    => $this->short_code,
+            'created_at'    => $this->created_at
+        ];
     }
 
     public function inUse()

@@ -16,14 +16,14 @@ trait Expirable
     public function scopeExpired(Builder $query): Builder
     {
         return $query->whereNull('expires_at')
-            ->orWhere('expires_at', '<', now()->toDateTimeString())
+            ->orWhere('expires_at', '<', now())
             ->limit(999999999);
     }
 
     public function scopeNonExpired(Builder $query): Builder
     {
         return $query->whereNotNull('expires_at')
-            ->where('expires_at', '>', now()->toDateTimeString())
+            ->where('expires_at', '>', now())
             ->limit(999999999);
     }
 

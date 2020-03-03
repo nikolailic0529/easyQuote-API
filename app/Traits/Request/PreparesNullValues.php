@@ -20,11 +20,8 @@ trait PreparesNullValues
             return;
         }
 
-        $prepared = collect($this->only($this->nullValues()))
-            ->transform(function ($value) {
-                return $value === 'null' ? null : $value;
-            })->toArray();
+        $nullValues = array_map(fn ($value) => ($value === 'null') ? null : $value, $this->only($this->nullValues()));
 
-        $this->merge($prepared);
+        $this->merge($nullValues);
     }
 }

@@ -6,19 +6,18 @@ use App\Models\BaseModel;
 use App\Traits\{
     BelongsToUser,
     BelongsToQuoteFile,
-    HasColumnsData,
     Draftable,
-    Selectable,
-    Import\Proccessable
+    Selectable
 };
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 
 class ImportedRow extends BaseModel
 {
-    use Proccessable, HasColumnsData, BelongsToUser, BelongsToQuoteFile, Draftable, Selectable, SoftDeletes;
+    use BelongsToUser, BelongsToQuoteFile, Draftable, Selectable, SoftDeletes;
 
     protected $fillable = [
-        'page', 'quote_file_id', 'user_id'
+        'page', 'quote_file_id', 'user_id', 'columns_data'
     ];
 
     protected $hidden = [
@@ -35,32 +34,16 @@ class ImportedRow extends BaseModel
     ];
 
     protected $casts = [
-        'is_selected' => 'boolean'
+        'is_selected'   => 'boolean',
+        'columns_data'  => 'collection'
     ];
 
     protected $attributes = [
         'is_selected' => false
     ];
 
-    /**
-     * Save the model to the database.
-     *
-     * @param  array  $options
-     * @return bool
-     */
-    public function save(array $options = [])
+    public function getColumnsDataAttribute($value): Collection
     {
-        if (!isset($this->columnsDataToCreate)) {
-            return parent::save($options);
-        }
-
-        $columnsDataToCreate = $this->columnsDataToCreate;
-        unset($this->columnsDataToCreate);
-
-        $save = parent::save($options);
-        $this->columnsData()->saveMany($columnsDataToCreate);
-        $this->markAsProcessed();
-
-        return $save;
+        return collect(json_decode($value));
     }
 }

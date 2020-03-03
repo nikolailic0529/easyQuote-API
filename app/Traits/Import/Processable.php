@@ -2,28 +2,26 @@
 
 namespace App\Traits\Import;
 
+use Illuminate\Database\Eloquent\Builder;
+
 trait Proccessable
 {
-    public function markAsProcessed()
+    public function markAsProcessed(): bool
     {
-        return $this->forceFill([
-            'processed_at' => now()->toDateTimeString()
-        ])->save();
+        return $this->forceFill(['processed_at' => now()])->save();
     }
 
-    public function markAsNotProcessed()
+    public function markAsNotProcessed(): bool
     {
-        return $this->forceFill([
-            'processed_at' => null
-        ])->save();
+        return $this->forceFill(['processed_at' => null])->save();
     }
 
-    public function scopeProcessed($query)
+    public function scopeProcessed(Builder $query): Builder
     {
         return $query->whereNotNull('processed_at');
     }
 
-    public function scopeNotProcessed($query)
+    public function scopeNotProcessed(Builder $query): Builder
     {
         return $query->whereNull('processed_at');
     }

@@ -13,7 +13,7 @@ use Closure;
 class CountryRepository extends SearchableRepository implements CountryRepositoryInterface
 {
     /** @var \App\Models\Data\Country */
-    protected $country;
+    protected Country $country;
 
     public function __construct(Country $country)
     {
@@ -27,9 +27,7 @@ class CountryRepository extends SearchableRepository implements CountryRepositor
 
     public function all()
     {
-        return cache()->sear('all-countries', function () {
-            return $this->country->ordered()->get(['id', 'name']);
-        });
+        return cache()->sear('all-countries', fn () => $this->country->ordered()->get(['id', 'name']));
     }
 
     public function paginate()
@@ -49,20 +47,23 @@ class CountryRepository extends SearchableRepository implements CountryRepositor
 
     public function findIdByCode($code)
     {
+        $iso = implode(',', (array) $code);
+
         if (is_array($code)) {
-            $iso = implode(',', $code);
-            return cache()->sear("country-id-iso:{$iso}", function () use ($code) {
-                return $this->country->whereIn('iso_3166_2', $code)->pluck('id', 'iso_3166_2');
-            });
+            return cache()->sear(
+                static::getCountryIdCacheKey($iso),
+                fn () => $this->country->whereIn('iso_3166_2', $code)->pluck('id', 'iso_3166_2')
+            );
         }
 
         throw_unless(is_string($code), new \InvalidArgumentException(
             sprintf('%s %s given.', INV_ARG_SA_01, gettype($code))
         ));
 
-        return cache()->sear("country-id-iso:{$code}", function () use ($code) {
-            return $this->country->where('iso_3166_2', $code)->value('id');
-        });
+        return cache()->sear(
+            static::getCountryIdCacheKey($iso),
+            fn () => $this->country->where('iso_3166_2', $code)->value('id')
+        );
     }
 
     public function random(int $limit = 1, ?Closure $scope = null)
@@ -135,5 +136,10 @@ class CountryRepository extends SearchableRepository implements CountryRepositor
         return [
             'name^5', 'iso_3166_2^4', 'currency_code^3', 'currency_name^3', 'currency_symbol^3', 'created_at^2'
         ];
+    }
+
+    protected static function getCountryIdCacheKey(string $iso): string
+    {
+        return 'country-id-iso:' . $iso;
     }
 }

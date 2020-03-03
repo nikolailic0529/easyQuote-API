@@ -19,9 +19,10 @@ class SettingResource extends JsonResource
             'value'             => $this->value,
             'possible_values'   => $this->possible_values,
             'is_read_only'      => (bool) $this->is_read_only,
+            'validation'        => $this->validation,
             'label'             => $this->label,
             'field_title'       => $this->field_title,
-            'field_type'        => $this->field_type
+            'field_type'        => $this->field_type,
         ];
     }
 }

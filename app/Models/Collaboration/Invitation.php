@@ -93,18 +93,14 @@ class Invitation extends BaseModel
     {
         $this->fireModelEvent('resended', false);
 
-        return $this->forceFill([
-            'expires_at' => now()->addDay()->toDateTimeString()
-        ])->save();
+        return $this->forceFill(['expires_at' => now()->addDay()])->save();
     }
 
     public function cancel()
     {
         $this->fireModelEvent('canceled', false);
 
-        return $this->forceFill([
-            'expires_at' => null
-        ])->save();
+        return $this->forceFill(['expires_at' => null])->save();
     }
 
     public function getItemNameAttribute()

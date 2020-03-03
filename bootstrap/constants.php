@@ -109,6 +109,7 @@ define('DNF_01', 'No Discount Defined for your selection, please contact adminis
 define('CPE_01', 'The company with the same Name or VAT already exists.');
 define('CPUD_01', 'You could not delete this Company because it is already in use.');
 define('CPSD_01', 'You could not delete the system defined Company.');
+define('CP_DEF_VAT', 'GB758501125');
 
 /**
  * Vendor.
@@ -151,10 +152,17 @@ define('ICSU_01', 'You could not update the system defined Importable Column.');
 define('ICSD_01', 'You could not delete the system defined Importable Column.');
 
 /**
- * Countries.
+ * Country.
  */
 define('CSU_01', 'You could not update the system defined Country.');
 define('CSD_01', 'You could not delete the system defined Country.');
+
+
+/**
+ * Timezone.
+ */
+define('TZ_DEF_01', '(UTC+01:00) Edinburgh, London');
+define('TZ_DEF_02', '(UTC) Edinburgh, London');
 
 /**
  * Misc.

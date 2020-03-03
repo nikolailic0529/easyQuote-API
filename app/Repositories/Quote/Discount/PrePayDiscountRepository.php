@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\{
 
 class PrePayDiscountRepository extends DiscountRepository implements PrePayDiscountRepositoryInterface
 {
-    protected $prePayDiscount;
+    protected PrePayDiscount $prePayDiscount;
 
     public function __construct(PrePayDiscount $prePayDiscount)
     {
@@ -47,11 +47,7 @@ class PrePayDiscountRepository extends DiscountRepository implements PrePayDisco
 
     public function update(UpdatePrePayDiscountRequest $request, string $id): PrePayDiscount
     {
-        $discount = $this->find($id);
-
-        $discount->update($request->validated());
-
-        return $discount;
+        return tap($this->find($id))->update($request->validated());
     }
 
     public function delete(string $id): bool
