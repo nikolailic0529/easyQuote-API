@@ -17,17 +17,20 @@ use Devengine\PhpWord\{
     Element\Cell
 };
 use Illuminate\Database\Eloquent\Collection;
-use Storage, Setting;
+use Illuminate\Support\Collection as SupportCollection;
+use Storage, Setting, Arr;
 
 class WordParser implements WordParserInterface
 {
+    public const MIN_HEADERS_COUNT = 3;
+
+    public const MAX_MISSING_CELLS = 3;
+
     protected ImportableColumns $importableColumn;
 
     protected PhpWord $phpWord;
 
     protected array $tables = [];
-
-    protected int $minHeadersCount = 3;
 
     protected static string $defaultSeparator = "\t";
 
@@ -72,9 +75,7 @@ class WordParser implements WordParserInterface
 
     public function getTables(PhpWord $phpWord = null)
     {
-        if (is_null($phpWord)) {
-            $phpWord = $this->phpWord;
-        }
+        $phpWord ??= $this->phpWord;
 
         foreach ($phpWord->getSections() as $section) {
             $this->extractTables($section);
@@ -87,9 +88,7 @@ class WordParser implements WordParserInterface
 
     public function getRows(Collection $columns, WordParser $wordParser = null)
     {
-        if (is_null($wordParser)) {
-            $wordParser = $this;
-        }
+        $wordParser ??= $this;
 
         $rows = [];
 
@@ -130,7 +129,7 @@ class WordParser implements WordParserInterface
 
         $header = $this->normalizeHeader($tables, $cellPath);
 
-        if (count($header) < $this->minHeadersCount) {
+        if (count($header) < static::MIN_HEADERS_COUNT) {
             return [];
         }
 
@@ -367,25 +366,19 @@ class WordParser implements WordParserInterface
 
     private function filterRows(array $rows, array $header)
     {
-        $columnsCount = count($header);
+        $columnsCount = count($header) - static::MAX_MISSING_CELLS;
 
-        $mappedRows = array_map(function ($row) {
-            $cells = array_filter($row['cells'], function ($cell) {
-                return isset($cell['text']);
-            });
-
-            $cells = array_map(function ($cell) {
-                return $cell['text'];
-            }, $cells);
-
-            return compact('cells');
+        $rows = array_map(function ($row) {
+            return ['cells' => array_filter(array_map(fn ($cell) => Arr::get($cell, 'text'), Arr::get($row, 'cells')))];
         }, $rows);
 
-        $filteredRows = array_filter($mappedRows, function ($row) use ($columnsCount) {
-            return isset($row['cells']) && count($row['cells']) >= $columnsCount;
-        });
+        $filteredRows = array_filter($rows, fn ($row) => isset($row['cells']) && count($row['cells']) >= $columnsCount);
 
-        return array_values($filteredRows);
+        $keys = collect($header)->keys();
+
+        return collect($filteredRows)->map(
+            fn ($row) => data_set($row, 'cells', $keys->map(fn ($key) => Arr::get($row, 'cells.' . $key))->toArray())
+        )->values()->toArray();
     }
 
     private function isTableInstance($element)
