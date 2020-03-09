@@ -169,7 +169,7 @@ class WordParser implements WordParserInterface
 
     private function findCoverage(array $row)
     {
-        $coverageSearch = preg_grep('/^Coverage period/i', $row);
+        $coverageSearch = preg_grep('/^coverage period|fakturering/i', $row);
 
         if (empty($coverageSearch)) {
             return $row;
