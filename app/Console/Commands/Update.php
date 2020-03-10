@@ -42,7 +42,8 @@ class Update extends Command
         ]);
 
         $this->call('db:seed', [
-            '--class' => 'MySQLSeeder'
+            '--class' => 'MySQLSeeder',
+            '--force' => true
         ]);
 
         $this->call('eq:db-rearrange-timestamps');

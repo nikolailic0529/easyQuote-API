@@ -64,6 +64,6 @@ class UpMaintenance
 
         File::ensureDirectoryExists(ui_path('maintenance'));
 
-        rescue(fn () => File::replace($path, json_encode($content, JSON_PRETTY_PRINT)));
+        rescue(fn () => File::put($path, json_encode($content, JSON_PRETTY_PRINT)));
     }
 }
