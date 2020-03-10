@@ -392,11 +392,11 @@ class QuoteStateRepository implements QuoteRepositoryInterface
 
         $exchangeRate = $quote->convertExchangeRate(1);
 
-        $customerAttributesMap = ['date_from' => 'customer_support_start', 'date_to' => 'customer_support_end'];
+        $customerAttributesMap = ['date_from' => 'customers.support_start', 'date_to' => 'customers.support_end'];
 
-        $query->select('imported_rows.id', 'imported_rows.is_selected', 'imported_rows.group_name', 'imported_rows.columns_data', 'customers.support_start as customer_support_start', 'customers.support_end as customer_support_end');
+        $query->select('imported_rows.id', 'imported_rows.is_selected', 'imported_rows.is_one_pay', 'imported_rows.group_name', 'imported_rows.columns_data', 'customers.support_start as customer_support_start', 'customers.support_end as customer_support_end');
 
-        $mapping->each(function ($map) use ($query,$customerAttributesMap) {
+        $mapping->each(function ($map) use ($query, $customerAttributesMap) {
             if (!$map->is_default_enabled) {
                 $this->unpivotJsonColumn($query, 'columns_data', "$.\"{$map->importable_column_id}\".value", $map->templateField->name);
                 return true;
@@ -406,7 +406,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
                 case 'date_from':
                 case 'date_to':
                     $defaultCustomerDate = optional($customerAttributesMap)[$map->templateField->name];
-                    $query->selectRaw("date_format(`{$defaultCustomerDate}`, '%d/%m/%Y') as {$map->templateField->name}");
+                    $query->selectRaw("DATE_FORMAT({$defaultCustomerDate}, '%d/%m/%Y') as {$map->templateField->name}");
                     break;
                 case 'qty':
                     $query->selectRaw("1 as {$map->templateField->name}");
@@ -414,9 +414,11 @@ class QuoteStateRepository implements QuoteRepositoryInterface
             }
         });
 
-        $query = DB::query()->fromSub($query, 'imported_rows')->addSelect('id', 'is_selected', 'columns_data', 'group_name');
+        $query = DB::query()->fromSub($query, 'imported_rows')->addSelect('id', 'is_selected', 'is_one_pay', 'columns_data', 'group_name');
 
-        $mapping->each(function ($map) use ($query, $customerAttributesMap, $exchangeRate) {
+        $defaults = collect(['price' => 0, 'date_from' => '`customer_support_start`', 'date_to' => '`customer_support_end`']);
+
+        $mapping->each(function ($map) use ($query, $defaults, $exchangeRate) {
             if ($map->is_default_enabled) {
                 $query->addSelect($map->templateField->name);
                 return true;
@@ -428,8 +430,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
                     break;
                 case 'date_from':
                 case 'date_to':
-                    $defaultCustomerDate = optional($customerAttributesMap)[$map->templateField->name];
-                    $this->parseColumnDate($query, $map->templateField->name, "`{$defaultCustomerDate}`");
+                    $this->parseColumnDate($query, $map->templateField->name, $defaults->get($map->templateField->name));
                     break;
                 case 'qty':
                     $query->selectRaw("GREATEST(CAST(`qty` AS UNSIGNED), 1) AS `qty`");
@@ -441,8 +442,6 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         });
 
         /** Select default values when the related mapping doesn't exist. */
-        $defaults = collect(['price' => 0, 'date_from' => '`customer_support_start`', 'date_to' => '`customer_support_end`']);
-
         $defaults->each(fn ($value, $column) =>
             $query->unless($mapping->contains('templateField.name', $column), fn (QueryBuilder $query) => $query->selectRaw("{$value} AS `{$column}`"))
         );
@@ -453,7 +452,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         $query->addSelect('id', 'is_selected', 'columns_data', 'group_name', ...$columns);
 
         /** Calculating price based on date_from & date_to when related option is selected. */
-        $query->when($quote->calculate_list_price, fn (QueryBuilder $query) => $query->selectRaw("(`price` / 30 * GREATEST(DATEDIFF(STR_TO_DATE(`date_to`, '%d/%m/%Y'), STR_TO_DATE(`date_from`, '%d/%m/%Y')), 0)) as `price`"))
+        $query->when($quote->calculate_list_price, fn (QueryBuilder $query) => $query->selectRaw("(CAST(IF(`is_one_pay`, `price`, `price` / 30 * GREATEST(DATEDIFF(STR_TO_DATE(`date_to`, '%d/%m/%Y'), STR_TO_DATE(`date_from`, '%d/%m/%Y')), 0)) AS DECIMAL(15,2))) as `price`"))
             ->unless($quote->calculate_list_price, fn (QueryBuilder $query) => $query->addSelect('price'));
 
 

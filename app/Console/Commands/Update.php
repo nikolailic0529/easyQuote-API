@@ -40,6 +40,11 @@ class Update extends Command
         $this->call('migrate', [
             '--force' => true
         ]);
+
+        $this->call('db:seed', [
+            '--class' => 'MySQLSeeder'
+        ]);
+
         $this->call('eq:db-rearrange-timestamps');
         $this->call('eq:parser-update');
         $this->call('eq:collaborations-update');

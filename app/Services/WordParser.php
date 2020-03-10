@@ -18,13 +18,17 @@ use Devengine\PhpWord\{
 };
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Collection as SupportCollection;
-use Storage, Setting, Arr;
+use Storage, Arr;
 
 class WordParser implements WordParserInterface
 {
     public const MIN_HEADERS_COUNT = 3;
 
-    public const MAX_MISSING_CELLS = 3;
+    public const MAX_MISSING_CELLS = 4;
+
+    public const SYSTEM_HEADER_ONE_PAY = '_one_pay';
+
+    public const REGEXP_ONE_PAY = '/return to/i';
 
     protected ImportableColumns $importableColumn;
 
@@ -132,6 +136,9 @@ class WordParser implements WordParserInterface
         if (count($header) < static::MIN_HEADERS_COUNT) {
             return [];
         }
+
+        /** We are appending system _one_pay header to determine case when a row is one off pay. */
+        $header[] = static::SYSTEM_HEADER_ONE_PAY;
 
         $rowsPath = array_splice($cellPath, 0, -3);
 
@@ -368,17 +375,31 @@ class WordParser implements WordParserInterface
     {
         $columnsCount = count($header) - static::MAX_MISSING_CELLS;
 
-        $rows = array_map(function ($row) {
-            return ['cells' => array_filter(array_map(fn ($cell) => Arr::get($cell, 'text'), Arr::get($row, 'cells')))];
-        }, $rows);
-
-        $filteredRows = array_filter($rows, fn ($row) => isset($row['cells']) && count($row['cells']) >= $columnsCount);
-
         $keys = collect($header)->keys();
 
-        return collect($filteredRows)->map(
-            fn ($row) => data_set($row, 'cells', $keys->map(fn ($key) => Arr::get($row, 'cells.' . $key))->toArray())
-        )->values()->toArray();
+        $rows = collect($rows)
+            ->transform(function ($row) {
+                $cells = collect(Arr::get($row, 'cells', []))->transform(fn ($cell) => data_get($cell, 'text'))
+                    ->filter(fn ($cell) => filled($cell));
+                return collect(Arr::set($row, 'cells', $cells));
+            })
+            ->reject(fn (SupportCollection $row) => $row->get('cells')->count() < $columnsCount - 1)
+            ->transform(function (SupportCollection $row) use ($keys) {
+                $cells = $keys->map(fn ($key) => data_get($row, 'cells.' . $key));
+
+                /** One off pay header is last, so we are using last header key. */
+                $cells->put($keys->count(), static::seekColumnsForOnePay($cells));
+
+                return $row->put('cells', $cells->toArray())->toArray();
+            })
+            ->toArray();
+
+        return $rows;
+    }
+
+    private static function seekColumnsForOnePay(iterable $cells)
+    {
+        return SupportCollection::wrap($cells)->contains(fn ($cell) => preg_match(static::REGEXP_ONE_PAY, $cell));
     }
 
     private function isTableInstance($element)

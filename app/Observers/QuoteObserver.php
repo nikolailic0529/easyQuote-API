@@ -25,6 +25,8 @@ class QuoteObserver
      */
     public function deleted(Quote $quote)
     {
+        app('customer.repository')->flushListingCache();
+
         $rfq_number = $quote->rfq_number;
 
         notification()

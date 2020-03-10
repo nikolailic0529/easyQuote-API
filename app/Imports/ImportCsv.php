@@ -140,7 +140,8 @@ class ImportCsv
                     'quote_file_id' => $quote_file_id,
                     'user_id'       => $user_id,
                     'columns_data'  => $this->mapColumnsData($row),
-                    'page'          => 1
+                    'page'          => 1,
+                    'is_one_pay'    => (bool) data_get($row, '_one_pay', false)
                 ]);
             })
         );
@@ -213,6 +214,8 @@ class ImportCsv
 
     protected function mapColumnsData(object $row): array
     {
+        unset($row->{'_one_pay'});
+
         return array_map(function ($value, $header) {
             return [
                 'header'                => $header,

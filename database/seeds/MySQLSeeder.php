@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class MySQLSeeder extends Seeder
 {
@@ -19,9 +20,7 @@ class MySQLSeeder extends Seeder
      */
     public function run()
     {
-        collect($this->queries())->each(function ($query) {
-            $this->pdo->exec($query);
-        });
+        collect($this->queries())->each(fn ($query) => $this->pdo->exec($query));
     }
 
     public function queries(): array
@@ -43,7 +42,7 @@ class MySQLSeeder extends Seeder
                     DECLARE digitSequenceStarted boolean DEFAULT false;
                     DECLARE negativeNumber boolean DEFAULT false;
 
-                    SET in_string_parsed = replace(in_string,',','.');
+                    SET in_string_parsed = REPLACE(REPLACE(in_string, ',','.'), ' ', '');
 
                     IF LENGTH(in_string_parsed) > 0 THEN
                         WHILE(inti <= LENGTH(in_string_parsed)) DO

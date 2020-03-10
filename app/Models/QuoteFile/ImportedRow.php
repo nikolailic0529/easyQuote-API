@@ -17,7 +17,7 @@ class ImportedRow extends BaseModel
     use BelongsToUser, BelongsToQuoteFile, Draftable, Selectable, SoftDeletes;
 
     protected $fillable = [
-        'page', 'quote_file_id', 'user_id', 'columns_data'
+        'page', 'quote_file_id', 'user_id', 'columns_data', 'is_one_pay'
     ];
 
     protected $hidden = [
