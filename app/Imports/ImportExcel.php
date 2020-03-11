@@ -113,7 +113,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
      *
      * @var integer
      */
-    protected $chunkSize = 500;
+    protected $chunkSize = 100;
 
     /**
      * Price Meta Attributes.
