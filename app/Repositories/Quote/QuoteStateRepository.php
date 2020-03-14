@@ -203,7 +203,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
 
     public function calculateTotalPrice(BaseQuote $quote): float
     {
-        return $this->mappedRowsQuery($quote)
+        return DB::query()->fromSub($this->mappedRowsQuery($quote), 'mapped_rows')
             ->when($quote->groupsReady(), fn (QueryBuilder $query) => $query->whereNotNull('group_name'), fn (QueryBuilder $query) => $query->whereIsSelected(true))
             ->sum('price');
     }
@@ -454,7 +454,6 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         /** Calculating price based on date_from & date_to when related option is selected. */
         $query->when($quote->calculate_list_price, fn (QueryBuilder $query) => $query->selectRaw("(CAST(IF(`is_one_pay`, `price`, `price` / 30 * GREATEST(DATEDIFF(STR_TO_DATE(`date_to`, '%d/%m/%Y'), STR_TO_DATE(`date_from`, '%d/%m/%Y')), 0)) AS DECIMAL(15,2))) as `price`"))
             ->unless($quote->calculate_list_price, fn (QueryBuilder $query) => $query->addSelect('price'));
-
 
         return $query;
     }

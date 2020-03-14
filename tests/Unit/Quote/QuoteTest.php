@@ -2,6 +2,9 @@
 
 namespace Tests\Unit\Quote;
 
+use App\Models\QuoteFile\ImportableColumn;
+use App\Models\QuoteFile\ImportedRow;
+use App\Models\QuoteTemplate\TemplateField;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Collection;
 use Tests\TestCase;
@@ -251,6 +254,50 @@ class QuoteTest extends TestCase
             ->assertHeader('content-type', 'application/pdf');
     }
 
+    /**
+     * Test quote retrieving with enabled default template fields.
+     *
+     * @return void
+     */
+    public function testQuoteRetrievingWithEnabledDefaultTemplateFields()
+    {
+        $rows = factory(ImportedRow::class, 200)->create(['quote_file_id' => $this->quoteFile->id, 'user_id' => $this->user->id]);
+
+        $templateFields = TemplateField::where('is_system', true)->pluck('id', 'name');
+        $importableColumns = ImportableColumn::where('is_system', true)->pluck('id', 'name');
+
+        $defaults = ['date_from' => true, 'date_to' => true];
+
+        $map = $templateFields->flip()->map(fn ($name, $id) => ['importable_column_id' => $importableColumns->get($name), 'is_default_enabled' => Arr::get($defaults, $name, false)]);
+
+        $this->quote->templateFields()->sync($map->toArray());
+
+        $response = $this->putJson('/api/quotes/get/'.$this->quote->id)->assertOk();
+
+        $response = $this->getJson('api/quotes/review/'.$this->quote->id)->assertOk();
+    }
+
+    /**
+     * Test quote retrieving with full mapped columns.
+     *
+     * @return void
+     */
+    public function testQuoteRetrievingWithFullMappedColumns()
+    {
+        $rows = factory(ImportedRow::class, 200)->create(['quote_file_id' => $this->quoteFile->id, 'user_id' => $this->user->id]);
+
+        $templateFields = TemplateField::where('is_system', true)->pluck('id', 'name');
+        $importableColumns = ImportableColumn::where('is_system', true)->pluck('id', 'name');
+
+        $map = $templateFields->flip()->map(fn ($name, $id) => ['importable_column_id' => $importableColumns->get($name)]);
+
+        $this->quote->templateFields()->sync($map->toArray());
+
+        $response = $this->putJson('/api/quotes/get/'.$this->quote->id)->assertOk();
+
+        $response = $this->getJson('api/quotes/review/'.$this->quote->id)->assertOk();
+    }
+
     protected function createFakeGroupDescription(): Collection
     {
         $attributes = $this->makeGenericGroupDescriptionAttributes();
@@ -261,26 +308,19 @@ class QuoteTest extends TestCase
 
     protected function makeGenericGroupDescriptionAttributes(): array
     {
-        $groupName = $this->faker->unique()->sentence(3);
+        $group_name = $this->faker->unique()->sentence(3);
 
-        $rows = collect()->times(2)
-            ->transform(fn () => [
-                'id'            => (string) Str::uuid(4),
-                'user_id'       => $this->user->id,
-                'quote_file_id' => $this->quoteFile->id,
-                'columns_data'  => collect(),
-                'group_name'    => $groupName,
-                'page'          => 1
-            ]);
-
-        \DB::table('imported_rows')->insert($rows->toArray());
-
-        \DB::table('imported_rows')->whereGroupName($groupName)->get();
+        $rows = factory(ImportedRow::class, 4)->create(compact('group_name') + ['quote_file_id' => $this->quoteFile->id, 'user_id' => $this->user->id]);
 
         return [
-            'name'          => $groupName,
+            'name'          => $group_name,
             'search_text'   => $this->faker->sentence(3),
             'rows'          => $rows->pluck('id')->toArray()
         ];
+    }
+
+    protected function seedImportedRows()
+    {
+
     }
 }
