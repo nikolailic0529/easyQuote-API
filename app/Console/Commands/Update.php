@@ -46,6 +46,11 @@ class Update extends Command
             '--force' => true
         ]);
 
+        $this->call('db:seed', [
+            '--class' => 'TimezonesSeeder',
+            '--force' => true
+        ]);
+
         $this->call('eq:parser-update');
         $this->call('eq:collaborations-update');
         $this->call('eq:companies-update');
