@@ -8,6 +8,7 @@ use App\Models\{
 };
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Carbon;
 
 class UpdateTaskRequest extends FormRequest
 {
@@ -28,5 +29,13 @@ class UpdateTaskRequest extends FormRequest
             'attachments'   => ['nullable', 'array'],
             'attachments.*' => ['present', 'uuid', 'distinct', Rule::exists(Attachment::class, 'id')->whereNull('deleted_at')]
         ];
+    }
+
+    public function validated()
+    {
+        $expiry_date = Carbon::createFromFormat('Y-m-d H:i:s', $this->input('expiry_date'), auth()->user()->tz)
+            ->tz(config('app.timezone'));
+
+        return compact('expiry_date') + parent::validated();
     }
 }
