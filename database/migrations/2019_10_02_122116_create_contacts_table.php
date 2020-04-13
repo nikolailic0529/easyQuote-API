@@ -15,13 +15,28 @@ class CreateContactsTable extends Migration
     {
         Schema::create('contacts', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('contactable_id');
-            $table->string('contactable_type');
-            $table->string('contact_type');
-            $table->string('contact_name');
+
+            $table->uuid('image_id')->nullable();
+            $table->foreign('image_id')->references('id')->on('images')->onDelete('set null');
+
+            $table->string('contact_type')->nullable();
+            $table->string('contact_name')->nullable();
+
+            $table->string('email')->nullable();
+
+            $table->string('first_name')->nullable();
+            $table->string('last_name')->nullable();
+
             $table->string('phone')->nullable();
+            $table->string('mobile')->nullable();
+
+            $table->string('job_title')->nullable();
+
+            $table->boolean('is_verified')->default(false);
+
             $table->timestamps();
-            $table->softDeletes();
+            $table->timestamp('activated_at')->index()->nullable();
+            $table->softDeletes()->index();
         });
     }
 

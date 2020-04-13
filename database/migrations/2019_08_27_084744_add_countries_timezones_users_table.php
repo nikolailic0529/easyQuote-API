@@ -14,10 +14,10 @@ class AddCountriesTimezonesUsersTable extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->uuid('country_id');
-            $table->foreign('country_id')->references('id')->on('countries');
-            $table->uuid('timezone_id');
-            $table->foreign('timezone_id')->references('id')->on('timezones');
+            $table->uuid('country_id')->nullable();
+            $table->foreign('country_id')->references('id')->on('countries')->onUpdate('cascade')->onDelete('set null');
+            $table->uuid('timezone_id')->nullable();
+            $table->foreign('timezone_id')->references('id')->on('timezones')->onDelete('set null');
         });
     }
 

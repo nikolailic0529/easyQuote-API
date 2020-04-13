@@ -8,8 +8,7 @@ use App\Contracts\Repositories\Customer\CustomerRepositoryInterface as Customers
 
 class CustomerObserver
 {
-    /** @var \App\Contracts\Repositories\Customer\CustomerRepositoryInterface */
-    protected $customers;
+    protected Customers $customers;
 
     public function __construct(Customers $customers)
     {

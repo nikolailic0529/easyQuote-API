@@ -35,10 +35,10 @@ interface AuthServiceInterface
      * Authenticate User and generate the Personal Access Token.
      * Mark User as Logged In.
      *
-     * @param UserSignInRequest|array $request
+     * @param array $request
      * @return mixed
      */
-    public function authenticate($request);
+    public function authenticate(array $request);
 
     /**
      * Revoke the Personal Access Token of the Current Authenticated User.

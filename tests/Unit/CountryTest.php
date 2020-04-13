@@ -7,6 +7,7 @@ use App\Models\Data\Country;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\WithFakeUser;
 use Arr;
+use Illuminate\Database\Eloquent\Builder;
 
 class CountryTest extends TestCase
 {
@@ -25,9 +26,8 @@ class CountryTest extends TestCase
     {
         $attributes = factory(Country::class)->raw();
 
-        $response = $this->postJson(url('api/countries'), $attributes);
-
-        $response->assertOk()
+        $this->postJson(url('api/countries'), $attributes)
+            ->assertOk()
             ->assertJsonStructure(static::$assertableAttributes);
     }
 
@@ -42,9 +42,8 @@ class CountryTest extends TestCase
 
         $attributes = factory(Country::class)->raw();
 
-        $response = $this->patchJson(url("api/countries/{$country->id}"), $attributes);
-
-        $response->assertOk()
+        $this->patchJson(url("api/countries/{$country->id}"), $attributes)
+            ->assertOk()
             ->assertJsonStructure(static::$assertableAttributes)
             ->assertJsonFragment(Arr::only($attributes, static::$assertableAttributes));
     }
@@ -56,15 +55,11 @@ class CountryTest extends TestCase
      */
     public function testSystemCountryUpdating()
     {
-        $country = app('country.repository')->random(1, function ($query) {
-            $query->system();
-        });
+        $country = app('country.repository')->random(1, fn (Builder $query) => $query->system());
 
         $attributes = factory(Country::class)->raw();
 
-        $response = $this->patchJson(url("api/countries/{$country->id}"), $attributes);
-
-        $response->assertForbidden();
+        $this->patchJson(url("api/countries/{$country->id}"), $attributes)->assertForbidden();
     }
 
     /**
@@ -76,9 +71,8 @@ class CountryTest extends TestCase
     {
         $country = factory(Country::class)->create();
 
-        $response = $this->deleteJson(url("api/countries/{$country->id}"));
-
-        $response->assertOk()
+        $this->deleteJson(url("api/countries/{$country->id}"))
+            ->assertOk()
             ->assertExactJson([true]);
 
         $this->assertSoftDeleted($country);
@@ -93,9 +87,8 @@ class CountryTest extends TestCase
     {
         $country = tap(factory(Country::class)->create())->deactivate();
 
-        $response = $this->putJson(url("api/countries/activate/{$country->id}"));
-
-        $response->assertOk()->assertExactJson([true]);
+        $this->putJson(url("api/countries/activate/{$country->id}"))
+            ->assertOk()->assertExactJson([true]);
 
         $this->assertNotNull($country->refresh()->activated_at);
     }
@@ -109,9 +102,8 @@ class CountryTest extends TestCase
     {
         $country = factory(Country::class)->create();
 
-        $response = $this->putJson(url("api/countries/deactivate/{$country->id}"));
-
-        $response->assertOk()
+        $this->putJson(url("api/countries/deactivate/{$country->id}"))
+            ->assertOk()
             ->assertExactJson([true]);
 
         $this->assertNull($country->refresh()->activated_at);

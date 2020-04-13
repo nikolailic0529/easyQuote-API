@@ -31,7 +31,7 @@ class SubmittedResource extends JsonResource
                 'rfq'           => $this->contract_number
             ],
             'quote_customer'    => QuoteCustomerResource::make($this),
-            'created_at'        => $this->created_at,
+            'created_at'        => optional($this->created_at)->format(config('date.format_time')),
             'activated_at'      => $this->activated_at,
         ];
     }

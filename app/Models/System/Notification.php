@@ -2,14 +2,19 @@
 
 namespace App\Models\System;
 
-use App\Models\BaseModel;
-use App\Traits\BelongsToUser;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\{
+    Uuid,
+    BelongsToUser,
+};
+use Illuminate\Database\Eloquent\{
+    Model,
+    SoftDeletes,
+    Relations\MorphTo,
+};
 
-class Notification extends BaseModel
+class Notification extends Model
 {
-    use BelongsToUser, SoftDeletes;
+    use Uuid, BelongsToUser, SoftDeletes;
 
     protected $fillable = [
         'user_id', 'url', 'message', 'subject_type', 'subject_id', 'read_at'
@@ -47,7 +52,7 @@ class Notification extends BaseModel
      */
     public function markAsUnread(): bool
     {
-        if (! is_null($this->read_at)) {
+        if (!is_null($this->read_at)) {
             return $this->forceFill(['read_at' => null])->save();
         }
 

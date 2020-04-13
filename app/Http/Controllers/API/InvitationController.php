@@ -3,15 +3,18 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Contracts\Repositories\InvitationRepositoryInterface as InvitationRepository;
-use App\Http\Requests\Collaboration\InviteUserRequest;
+use App\Contracts\Repositories\InvitationRepositoryInterface as Invitations;
+use App\Http\Resources\{
+    Invitation\InvitationCollection,
+    Invitation\InvitationResource,
+};
 use App\Models\Collaboration\Invitation;
 
 class InvitationController extends Controller
 {
-    protected $invitation;
+    protected Invitations $invitation;
 
-    public function __construct(InvitationRepository $invitation)
+    public function __construct(Invitations $invitation)
     {
         $this->invitation = $invitation;
     }
@@ -23,23 +26,12 @@ class InvitationController extends Controller
      */
     public function index()
     {
-        return response()->json(
-            request()->filled('search')
-                ? $this->invitation->search(request('search'))
-                : $this->invitation->all()
-        );
-    }
+        $resource = request()->filled('search')
+            ? $this->invitation->search(request('search'))
+            : $this->invitation->all();
 
-    /**
-     * Store a newly created invitation in storage.
-     *
-     * @param  \App\Http\Requests\Collaboration\InviteUserRequest  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(InviteUserRequest $request)
-    {
         return response()->json(
-            $this->invitation->create($request)
+            InvitationCollection::make($resource)
         );
     }
 
@@ -52,7 +44,7 @@ class InvitationController extends Controller
     public function show(Invitation $invitation)
     {
         return response()->json(
-            $this->invitation->find($invitation->invitation_token)
+            InvitationResource::make($invitation)
         );
     }
 

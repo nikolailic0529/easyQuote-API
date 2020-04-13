@@ -6,12 +6,22 @@ use App\Collections\MappedRows;
 use App\Contracts\Services\QuoteServiceInterface;
 use App\Http\Resources\QuoteResource;
 use App\Models\{
-    Quote\BaseQuote as Quote, Quote\Discount, Quote\Margin\CountryMargin, QuoteTemplate\BaseQuoteTemplate
+    Quote\BaseQuote,
+    Quote\Quote,
+    Quote\Discount,
+    Quote\QuoteVersion,
+    Quote\Margin\CountryMargin,
+    QuoteTemplate\BaseQuoteTemplate,
+    User
+};
+use App\Notifications\{
+    GrantedQuoteAccess,
+    RevokedQuoteAccess,
 };
 use App\Repositories\Concerns\FetchesGroupDescription;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
-use Str;
+use Arr, Str;
 
 class QuoteService implements QuoteServiceInterface
 {
@@ -19,7 +29,7 @@ class QuoteService implements QuoteServiceInterface
 
     const QUOTE_EXPORT_VIEW = 'quotes.pdf';
 
-    public function interact(Quote $quote, $interactable): void
+    public function interact(BaseQuote $quote, $interactable): void
     {
         if ($interactable instanceof CountryMargin) {
             $this->interactWithCountryMargin($quote, $interactable);
@@ -36,7 +46,7 @@ class QuoteService implements QuoteServiceInterface
         }
     }
 
-    public function interactWithModels(Quote $quote): void
+    public function interactWithModels(BaseQuote $quote): void
     {
         /**
          * Possible interaction with Margin percentage.
@@ -51,7 +61,7 @@ class QuoteService implements QuoteServiceInterface
         $this->interact($quote, $this->interactableDiscounts($quote));
     }
 
-    public function interactWithCountryMargin(Quote $quote, CountryMargin $countryMargin): void
+    public function interactWithCountryMargin(BaseQuote $quote, CountryMargin $countryMargin): void
     {
         if (!isset($quote->computableRows)) {
             return;
@@ -69,7 +79,7 @@ class QuoteService implements QuoteServiceInterface
         }
     }
 
-    public function interactWithMargin(Quote $quote): void
+    public function interactWithMargin(BaseQuote $quote): void
     {
         if (!isset($quote->computableRows) || !isset($quote->countryMargin)) {
             return;
@@ -97,7 +107,7 @@ class QuoteService implements QuoteServiceInterface
         });
     }
 
-    public function interactWithDiscount(Quote $quote, $discount): void
+    public function interactWithDiscount(BaseQuote $quote, $discount): void
     {
         if (!isset($quote->computableRows) || $discount === 0.0) {
             return;
@@ -139,7 +149,7 @@ class QuoteService implements QuoteServiceInterface
         return;
     }
 
-    public function calculateSchedulePrices(Quote $quote): void
+    public function calculateSchedulePrices(BaseQuote $quote): void
     {
         if (!isset($quote->scheduleData->value)) {
             return;
@@ -166,16 +176,17 @@ class QuoteService implements QuoteServiceInterface
         });
     }
 
-    public function prepareQuoteReview(Quote $quote): void
+    public function prepareQuoteReview(BaseQuote $quote): void
     {
         $quote->enableExchangeRateConversion();
 
         $quote->computableRows =
             /** Set computable rows in the model. */
             cache()->sear($quote->computableRowsCacheKey, fn () => $quote->getMappedRows(
-                fn (Builder $query) => $query->when($quote->groupsReady(),
+                fn (Builder $query) => $query->when(
+                    $quote->groupsReady(),
                     /** When quote has groups and proposed to use groups we are retrieving rows with group_name. */
-                    fn (Builder $query) => $query->whereNotNull('group_name'),
+                    fn (Builder $query) => $query->whereIn('group_name', $quote->selected_group_description_names),
                     /** Otherwise we are retrieving only selected rows. */
                     fn (Builder $query) => $query->where('is_selected', true)
                 )
@@ -196,7 +207,7 @@ class QuoteService implements QuoteServiceInterface
         $this->prepareSchedule($quote);
     }
 
-    public function export(Quote $quote)
+    public function export(BaseQuote $quote)
     {
         $export = $this->prepareQuoteExport($quote);
 
@@ -207,7 +218,7 @@ class QuoteService implements QuoteServiceInterface
             ->download($filename);
     }
 
-    public function prepareRows(Quote $quote): void
+    public function prepareRows(BaseQuote $quote): void
     {
         $quote->computableRows = $quote->computableRows->exceptHeaders($quote->hiddenFields);
         $quote->renderableRows = $quote->computableRows->exceptHeaders($quote->systemHiddenFields);
@@ -222,7 +233,7 @@ class QuoteService implements QuoteServiceInterface
         }
     }
 
-    public function prepareSchedule(Quote $quote): void
+    public function prepareSchedule(BaseQuote $quote): void
     {
         if (!isset($quote->scheduleData->value)) {
             return;
@@ -231,14 +242,66 @@ class QuoteService implements QuoteServiceInterface
         $quote->scheduleData->value = MappedRows::make($quote->scheduleData->value)->setCurrency($quote->currencySymbol);
     }
 
-    protected function prepareQuoteExport(Quote $quote): array
+    public function handleQuoteGrantedUsers(Quote $quote, array $users)
     {
-        $this->prepareQuoteReview($quote);
+        $granted = Collection::wrap(Arr::get($users, 'granted'))->whereInstanceOf(User::class);
+        $revoked = Collection::wrap(Arr::get($users, 'revoked'))->whereInstanceOf(User::class);
 
-        $resource = QuoteResource::make($quote->enableReview())->resolve();
+        $causer = auth()->user();
+        $grantedMessage = sprintf(
+            'User %s has granted you access to Quote RFQ %s',
+            optional($causer)->email,
+            optional($quote->customer)->rfq
+        );
+        $revokedMessage = sprintf(
+            'User %s has revoked your access to Quote RFQ %s',
+            optional($causer)->email,
+            optional($quote->customer)->rfq
+        );
+
+        $granted->each(
+            fn (User $user) =>
+            tap(notification()
+                ->for($user)
+                ->message($grantedMessage)
+                ->subject($user)
+                ->url(ui_route('quotes.status', ['quote' => $quote]))
+                ->priority(2)
+                ->store(), fn () => $user->notify(new GrantedQuoteAccess($causer, $quote)))
+        );
+
+        $revoked->each(
+            fn (User $user) =>
+            tap(notification()
+                ->for($user)
+                ->message($revokedMessage)
+                ->subject($user)
+                ->priority(2)
+                ->store(), fn () => $user->notify(new RevokedQuoteAccess($causer, $quote)))
+        );
+
+        return true;
+    }
+
+    protected function prepareQuoteExport(BaseQuote $baseQuote): array
+    {
+        $this->prepareQuoteReview($baseQuote);
+
+        $resource = QuoteResource::make($baseQuote->enableReview())->resolve();
         $data = to_array_recursive(data_get($resource, 'quote_data', []));
 
-        $template = $quote->{$quote->mode . 'Template'};
+        $template = $baseQuote->mode === 'contract'
+            && $baseQuote instanceof QuoteVersion
+            && $baseQuote->quote->exists
+            /**
+             * Resolve parent quote instance when mode is 'contract' and passed instance of QuoteVersion
+             * as we are storing contract_template_id in the parent quote instance.
+             */
+            ? $baseQuote->quote->{$baseQuote->mode . 'Template'}
+            /**
+             * Otherwise we are retrieving template based on the given instance mode.
+             */
+            : $baseQuote->{$baseQuote->mode . 'Template'};
 
         $assets = $this->getTemplateAssets($template);
 
@@ -261,7 +324,7 @@ class QuoteService implements QuoteServiceInterface
         return compact('design', 'images');
     }
 
-    protected function formatGroupDescription(Quote $quote): void
+    protected function formatGroupDescription(BaseQuote $quote): void
     {
         $quote->computableRows = static::mapGroupDescriptionWithRows($quote, $quote->computableRows)
             ->setHeadersCount()
@@ -271,15 +334,14 @@ class QuoteService implements QuoteServiceInterface
         $renderHiddenHeaders = $quote->isMode(QT_TYPE_CONTRACT) ? ['total_price'] : [];
 
         $quote->renderableRows = $quote->computableRows->exceptHeaders([...$quote->systemHiddenFields, ...$renderHiddenHeaders]);
-
     }
 
-    protected function formatLinePrices(Quote $quote): void
+    protected function formatLinePrices(BaseQuote $quote): void
     {
         $quote->renderableRows = $quote->renderableRows->setCurrency($quote->currencySymbol);
     }
 
-    protected function interactableDiscounts(Quote $quote): Collection
+    protected function interactableDiscounts(BaseQuote $quote): Collection
     {
         if (filled($quote->discounts)) {
             return collect($quote->discounts);
@@ -305,7 +367,7 @@ class QuoteService implements QuoteServiceInterface
         return 0.0;
     }
 
-    private function makePdfFilename(Quote $quote): string
+    private function makePdfFilename(BaseQuote $quote): string
     {
         $hash = md5($quote->customer->rfq . time());
 

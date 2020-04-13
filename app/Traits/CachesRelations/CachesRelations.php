@@ -7,6 +7,7 @@ use App\Models\CachedRelation\{
     CachedRelationWrapper,
     CachedRelation
 };
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection;
 
 trait CachesRelations
@@ -65,24 +66,24 @@ trait CachesRelations
      */
     protected static function getRelationsToCache(Model $model): Collection
     {
-        return collect(static::$cacheRelations)->filter(function ($relation) use ($model) {
-            return method_exists($model, $relation)
-                && $model->{$relation}() instanceof \Illuminate\Database\Eloquent\Relations\BelongsTo;
-        });
+        return collect(static::$cacheRelations)->filter(
+            fn ($relation) =>
+            method_exists($model, $relation)
+                && $model->{$relation}() instanceof BelongsTo
+        );
     }
 
     protected function interceptRelations(Collection $dirtyRelations): Collection
     {
         $previousCachedRelations = $this->getCachedRelationsAsCollection();
 
-        $dirtyRelations = $dirtyRelations->filter(function ($relation) {
-            return isset($this->{$relation})
-                && $this->getOriginal($relation . '_id') !== $this->getAttribute($relation . '_id');
-        });
+        $dirtyRelations = $dirtyRelations->filter(
+            fn ($relation) =>
+            isset($this->{$relation})
+                && $this->getOriginal($relation . '_id') !== $this->getAttribute($relation . '_id')
+        );
 
-        $newlyCachedRelations = $this->getRelationsCache($dirtyRelations);
-
-        return $previousCachedRelations->merge($newlyCachedRelations);
+        return $previousCachedRelations->merge($this->getRelationsCache($dirtyRelations));
     }
 
     protected function fillCachedRelations(Collection $cachedRelations, bool $save = false): void
@@ -102,10 +103,12 @@ trait CachesRelations
             ? collect(func_get_arg(0))
             : collect(static::$cacheRelations ?? []);
 
-        return $cacheRelations->mapWithKeys(function ($relation) {
-            $method = method_exists($this->{$relation}, 'toCacheableArray') ? 'toCacheableArray' : 'toArray';
+        return $cacheRelations
+            ->filter(fn ($relation) => $this->getRelation($relation) instanceof Model)
+            ->mapWithKeys(function ($relation) {
+                $method = method_exists($this->{$relation}, 'toCacheableArray') ? 'toCacheableArray' : 'toArray';
 
-            return [$relation => $this->{$relation}->{$method}()];
-        });
+                return [$relation => $this->{$relation}->{$method}()];
+            });
     }
 }

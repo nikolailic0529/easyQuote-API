@@ -106,8 +106,8 @@ class ImportExcelScheduleSheet implements OnEachRow, WithEvents, WithChunkReadin
         $prices = $this->filterPrices($this->matched['price']);
 
         $schedule = $fromDates->map(function ($from, $key) use ($toDates, $prices) {
-            $to = $toDates[$key];
-            $price = $prices[$key];
+            $to = data_get($toDates, $key);
+            $price = data_get($prices, $key, 0);
 
             return compact('from', 'to', 'price');
         })->toArray();

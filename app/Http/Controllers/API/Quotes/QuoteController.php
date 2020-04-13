@@ -9,8 +9,11 @@ use App\Contracts\Repositories\{
     CompanyRepositoryInterface as CompanyRepository,
     CurrencyRepositoryInterface as CurrencyRepository,
     QuoteTemplate\QuoteTemplateRepositoryInterface as QuoteTemplateRepository,
-    QuoteFile\DataSelectSeparatorRepositoryInterface as DataSelectRepository
+    QuoteFile\DataSelectSeparatorRepositoryInterface as DataSelectRepository,
+    QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository,
+    UserRepositoryInterface as Users
 };
+use App\Contracts\Services\QuoteServiceInterface as QuoteService;
 use App\Http\Requests\{
     Quote\StoreQuoteStateRequest,
     GetQuoteTemplatesRequest,
@@ -19,37 +22,40 @@ use App\Http\Requests\{
     Quote\StoreGroupDescriptionRequest,
     Quote\UpdateGroupDescriptionRequest
 };
-use App\Http\Requests\Quote\SetVersionRequest;
-use App\Http\Requests\Quote\TryDiscountsRequest;
-use App\Http\Resources\ImportedRow\MappedRow;
-use App\Http\Resources\QuoteVersionResource;
-use App\Http\Resources\TemplateRepository\TemplateResourceListing;
+use App\Http\Requests\Quote\{
+    GivePermissionRequest,
+    SelectGroupDescriptionRequest,
+    SetVersionRequest,
+    TryDiscountsRequest,
+};
+use App\Http\Resources\{
+    QuoteVersionResource,
+    ImportedRow\MappedRow,
+    TemplateRepository\TemplateResourceListing,
+};
 use App\Models\Quote\Quote;
 use Setting;
 
 class QuoteController extends Controller
 {
-    /** @var \App\Contracts\Repositories\Quote\QuoteRepositoryInterface */
-    protected $quotes;
+    protected QuoteRepository $quotes;
 
-    /** @var \App\Contracts\Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface */
-    protected $quoteTemplates;
+    protected QuoteTemplateRepository $quoteTemplates;
 
-    /** @var \App\Contracts\Repositories\Quote\Margin\MarginRepositoryInterface */
-    protected $margins;
+    protected QuoteFileRepository $quoteFiles;
 
-    /** @var \App\Contracts\Repositories\CompanyRepositoryInterface */
-    protected $companies;
+    protected MarginRepository $margins;
 
-    /** @var \App\Contracts\Repositories\CurrencyRepositoryInterface */
-    protected $currencies;
+    protected CompanyRepository $companies;
 
-    /** @var \App\Contracts\Repositories\QuoteFile\DataSelectSeparatorRepositoryInterface */
-    protected $dataSelects;
+    protected CurrencyRepository $currencies;
+
+    protected DataSelectRepository $dataSelects;
 
     public function __construct(
         QuoteRepository $quotes,
         QuoteTemplateRepository $quoteTemplates,
+        QuoteFileRepository $quoteFiles,
         MarginRepository $margins,
         CompanyRepository $companies,
         DataSelectRepository $dataSelects,
@@ -57,6 +63,7 @@ class QuoteController extends Controller
     ) {
         $this->quotes = $quotes;
         $this->quoteTemplates = $quoteTemplates;
+        $this->quoteFiles = $quoteFiles;
         $this->margins = $margins;
         $this->companies = $companies;
         $this->dataSelects = $dataSelects;
@@ -233,6 +240,23 @@ class QuoteController extends Controller
     }
 
     /**
+     * Mark as selected specific groups descriptions.
+     * Non-passed groups ids will be marked as unselected.
+     *
+     * @param SelectGroupDescriptionRequest $request
+     * @param Quote $quote
+     * @return \Illuminate\Http\Response
+     */
+    public function selectGroupDescription(SelectGroupDescriptionRequest $request, Quote $quote)
+    {
+        $this->authorize('update', $quote);
+
+        return response()->json(
+            $this->quotes->selectGroupDescription($request->validated(), $quote->id)
+        );
+    }
+
+    /**
      * Store Rows Group Description for specified Quote.
      *
      * @param UpdateGroupDescriptionRequest $request
@@ -279,5 +303,65 @@ class QuoteController extends Controller
         return response()->json(
             $this->quotes->deleteGroupDescription($group, $quote->id)
         );
+    }
+
+    /**
+     * Download specific existing Quote file.
+     *
+     * @param Quote $quote
+     * @param string $fileType
+     * @return \Illuminate\Http\Response
+     */
+    public function downloadQuoteFile(Quote $quote, string $fileType)
+    {
+        $this->authorize('downloadFile', [$quote, $fileType]);
+
+        $quoteFile = $this->quoteFiles->findByClause([
+            'quote_id' => $quote->usingVersion->id,
+            'file_type' => $this->quoteFiles->resolveFileType($fileType)
+        ]);
+
+        $filepath = $this->quoteFiles->resolveFilepath($quoteFile);
+
+        return response()->download($filepath, $quoteFile->original_file_name);
+    }
+
+    /**
+     * Display a listing of the quote authorized users.
+     *
+     * @param Quote $quote
+     * @param Users $users User repository
+     * @return \Illuminate\Http\Response
+     */
+    public function showAuthorizedQuoteUsers(Quote $quote, Users $users)
+    {
+        $this->authorize('grantPermission', $quote);
+
+        $permission = $this->quotes->getQuotePermission($quote, ['read', 'update']);
+
+        return response()->json(
+            $users->getUsersWithPermission($permission)
+        );
+    }
+
+    /**
+     * Give read/update permission to specific quote resource.
+     *
+     * @param GivePermissionRequest $request
+     * @param Quote $quote
+     * @param Users $users User repository
+     * @return \Illuminate\Http\Response
+     */
+    public function givePermissionToQuote(GivePermissionRequest $request, QuoteService $service, Quote $quote, Users $users)
+    {
+        $this->authorize('grantPermission', $quote);
+
+        $permission = $this->quotes->getQuotePermission($quote, ['read', 'update']);
+
+        $authorized = $users->syncUsersPermission($request->users, $permission);
+
+        $service->handleQuoteGrantedUsers($quote, $authorized);
+
+        return response()->json(true);
     }
 }

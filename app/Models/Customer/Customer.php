@@ -2,7 +2,6 @@
 
 namespace App\Models\Customer;
 
-use App\Models\BaseModel;
 use App\Traits\{
     BelongsToAddresses,
     BelongsToContacts,
@@ -11,13 +10,18 @@ use App\Traits\{
     HasContactTypes,
     Submittable,
     Quote\HasQuotes,
-    Activity\LogsActivity
+    Activity\LogsActivity,
+    Uuid
 };
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\{
+    Model,
+    SoftDeletes,
+};
 
-class Customer extends BaseModel
+class Customer extends Model
 {
-    use BelongsToAddresses,
+    use Uuid,
+        BelongsToAddresses,
         HasAddressTypes,
         BelongsToContacts,
         BelongsToCountry,
@@ -89,6 +93,7 @@ class Customer extends BaseModel
     public function getValidUntilAsDateAttribute()
     {
         $value = $this->getAttributeFromArray('valid_until');
+        
         return $value ? $this->asDate($value) : null;
     }
 

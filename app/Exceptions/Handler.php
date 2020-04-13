@@ -2,16 +2,11 @@
 
 namespace App\Exceptions;
 
-use App\Mail\FailureReportMail;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
-use App\Facades\Failure;
-use Illuminate\Support\{
-    Arr,
-    Facades\Mail
-};
 use Illuminate\Validation\ValidationException;
 use Illuminate\Auth\AuthenticationException;
-use Exception;
+use Illuminate\Support\Arr;
+use Throwable;
 
 class Handler extends ExceptionHandler
 {
@@ -44,10 +39,10 @@ class Handler extends ExceptionHandler
     /**
      * Report or log an exception.
      *
-     * @param  \Exception  $exception
+     * @param  \Throwable  $exception
      * @return void
      */
-    public function report(Exception $exception)
+    public function report(Throwable $exception)
     {
         parent::report($exception);
 
@@ -60,10 +55,10 @@ class Handler extends ExceptionHandler
      * Render an exception into an HTTP response.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  \Exception  $exception
+     * @param  \Throwable  $exception
      * @return \Illuminate\Http\Response
      */
-    public function render($request, Exception $exception)
+    public function render($request, Throwable $exception)
     {
         return parent::render($request, $exception);
     }
@@ -71,25 +66,23 @@ class Handler extends ExceptionHandler
     /**
      * Determine if the exception is in the "do not report mail" list.
      *
-     * @param  \Exception  $e
+     * @param  \Throwable  $e
      * @return bool
      */
-    protected function shouldntReportMail(Exception $e)
+    protected function shouldntReportMail(Throwable $e)
     {
         $dontReport = array_merge($this->dontReportMail, $this->dontReport, $this->internalDontReport);
 
-        return !is_null(Arr::first($dontReport, function ($type) use ($e) {
-            return $e instanceof $type;
-        }));
+        return !is_null(Arr::first($dontReport, fn ($type) => $e instanceof $type));
     }
 
     /**
      * Determine if the exception should be reported by mail.
      *
-     * @param  \Exception  $e
+     * @param  \Throwable  $e
      * @return bool
      */
-    public function shouldReportMail(Exception $e)
+    public function shouldReportMail(Throwable $e)
     {
         return !$this->shouldntReportMail($e);
     }
@@ -127,10 +120,10 @@ class Handler extends ExceptionHandler
     /**
      * Convert the given exception to an array.
      *
-     * @param  \Exception  $e
+     * @param  \Throwable  $e
      * @return array
      */
-    protected function convertExceptionToArray(Exception $exception)
+    protected function convertExceptionToArray(Throwable $exception)
     {
         $http = $this->container->make('http.service');
 

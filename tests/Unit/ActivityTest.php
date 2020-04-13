@@ -87,9 +87,7 @@ class ActivityTest extends TestCase
      */
     public function testActivityListingByPeriods()
     {
-        $periods = config('activitylog.periods');
-
-        collect($periods)->each(function ($period) {
+        collect(config('activitylog.periods'))->each(function ($period) {
             $response = $this->postJson(url('api/activities'), compact('period'));
             $this->assertListing($response);
         });
@@ -102,9 +100,8 @@ class ActivityTest extends TestCase
      */
     public function testActivityExportPdf()
     {
-        $response = $this->post(url('api/activities/export/pdf'));
-
-        $response->assertOk()
+        $this->post(url('api/activities/export/pdf'))
+            ->assertOk()
             ->assertHeader('content-type', 'application/pdf');
     }
 
@@ -115,9 +112,8 @@ class ActivityTest extends TestCase
      */
     public function testActivityExportCsv()
     {
-        $response = $this->post(url('api/activities/export/csv'));
-
-        $response->assertOk()
+        $this->post(url('api/activities/export/csv'))
+            ->assertOk()
             ->assertHeader('content-type', 'text/plain');
     }
 }

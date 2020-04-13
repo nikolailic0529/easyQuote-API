@@ -2,15 +2,19 @@
 
 namespace App\Models\QuoteFile;
 
-use App\Models\BaseModel;
 use App\Traits\{
     BelongsToUser,
-    BelongsToQuoteFile
+    BelongsToQuoteFile,
+    Uuid
+};
+use Illuminate\Database\Eloquent\{
+    Model,
+    SoftDeletes,
 };
 
-class ScheduleData extends BaseModel
+class ScheduleData extends Model
 {
-    use BelongsToUser, BelongsToQuoteFile;
+    use Uuid, BelongsToUser, BelongsToQuoteFile, SoftDeletes;
 
     protected $fillable = [
         'value', 'user_id', 'quote_file_id'
@@ -33,7 +37,7 @@ class ScheduleData extends BaseModel
         ];
     }
 
-    public function getValueAttribute()
+    public function getValueAttribute($value)
     {
         if (!isset($this->attributes['value'])) {
             return null;

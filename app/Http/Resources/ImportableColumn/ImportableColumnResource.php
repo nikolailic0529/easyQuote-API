@@ -26,7 +26,7 @@ class ImportableColumnResource extends JsonResource
             'country_id'    => $this->country_id,
             'country'       => $this->whenLoaded('country', $this->country->only('name')),
             'aliases'       => AliasResource::collection($this->whenLoaded('aliases')),
-            'created_at'    => $this->created_at,
+            'created_at'    => optional($this->created_at)->format(config('date.format_time')),
             'activated_at'  => $this->activated_at
         ];
     }

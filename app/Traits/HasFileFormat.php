@@ -12,35 +12,35 @@ trait HasFileFormat
         return $this->belongsTo(QuoteFileFormat::class, 'quote_file_format_id');
     }
 
-    public function isExcel()
+    public function isExcel(): bool
     {
         return $this->isFormat(['xls', 'xlsx']);
     }
 
-    public function isWord()
+    public function isWord(): bool
     {
         return $this->isFormat(['doc', 'docx']);
     }
 
-    public function isPdf()
+    public function isPdf(): bool
     {
         return $this->isFormat('pdf');
     }
 
-    public function isCsv()
+    public function isCsv(): bool
     {
         return $this->isFormat('csv');
     }
 
-    protected function isFormat($ext)
+    protected function isFormat($ext): bool
     {
-        if (!$this->propertyExists('format')) {
+        if (!isset($this->format)) {
             return false;
         }
 
         $extension = $this->format->extension;
 
-        if (gettype($ext) === 'array') {
+        if (is_array($ext)) {
             return in_array($extension, $ext);
         }
 

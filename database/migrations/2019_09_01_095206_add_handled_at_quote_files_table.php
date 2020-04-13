@@ -15,6 +15,8 @@ class AddHandledAtQuoteFilesTable extends Migration
     {
         Schema::table('quote_files', function (Blueprint $table) {
             $table->timestamp('handled_at')->nullable()->default(null);
+
+            $table->index(['handled_at', 'deleted_at']);
         });
     }
 
@@ -26,6 +28,7 @@ class AddHandledAtQuoteFilesTable extends Migration
     public function down()
     {
         Schema::table('quote_files', function (Blueprint $table) {
+            $table->dropIndex(['handled_at', 'deleted_at']);
             $table->dropColumn('handled_at');
         });
     }

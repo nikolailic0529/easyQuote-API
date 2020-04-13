@@ -3,22 +3,21 @@
 namespace App\Http\Controllers\API\System;
 
 use App\Http\Controllers\Controller;
-use App\Contracts\Repositories\{
-    System\ActivityRepositoryInterface as ActivityRepository,
-    UserRepositoryInterface as UserRepository
-};
 use App\Http\Requests\System\GetActivitiesRequest;
-use App\Models\System\Activity;
 use App\Http\Resources\UserListResource;
-use App\Models\User;
+use App\Contracts\Repositories\{
+    System\ActivityRepositoryInterface as Activities,
+    UserRepositoryInterface as Users
+};
+use App\Models\System\Activity;
 
 class ActivityController extends Controller
 {
-    protected $activity;
+    protected Activities $activity;
 
-    protected $user;
+    protected Users $user;
 
-    public function __construct(ActivityRepository $activity, UserRepository $user)
+    public function __construct(Activities $activity, Users $user)
     {
         $this->activity = $activity;
         $this->user = $user;

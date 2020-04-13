@@ -73,13 +73,24 @@ interface UserRepositoryInterface
     public function createCollaborator(array $attributes, Invitation $invitation): User;
 
     /**
-     * Update Collaboration User.
+     * Update the specific user.
      *
-     * @param \App\Http\Requests\Collaboration\UpdateUserRequest $request
      * @param string $id
+     * @param array $attributes
+     * @param array $options
      * @return bool
      */
-    public function update(UpdateUserRequest $request, string $id): bool;
+    public function update(string $id, array $attributes, array $options = []): bool;
+
+    /**
+     * Increment the given user attribute.
+     *
+     * @param string $id
+     * @param string $attribute
+     * @param array $options
+     * @return boolean
+     */
+    public function increment(string $id, string $attribute, array $options = []): bool;
 
     /**
      * Update Current Authenticated User's Profile.
@@ -104,6 +115,14 @@ interface UserRepositoryInterface
      * @return \App\Models\User|\Illuminate\Database\Eloquent\Collection|null
      */
     public function findByEmail($email);
+
+    /**
+     * Find user by email like given needle.
+     *
+     * @param string $email
+     * @return void
+     */
+    public function findByEmailLike(string $email);
 
     /**
      * Retrieve many users by specified ids.
@@ -154,11 +173,13 @@ interface UserRepositoryInterface
     public function list(array $columns = ['*']);
 
     /**
-     * Retrieve a list of existing users with trashed.
+     * Retrieve a list of the existing users excluding given user id.
      *
-     * @return void
+     * @param string $id
+     * @param array $columns
+     * @return mixed
      */
-    public function listWithTrashed();
+    public function exclusiveList(string $id, array $columns = ['*']);
 
     /**
      * Iterate throw the existing users using a cursor.
@@ -247,6 +268,42 @@ interface UserRepositoryInterface
      * @return bool
      */
     public function verifyPasswordReset(string $token): bool;
+
+    /**
+     * Get users have specific permission.
+     *
+     * @param string $permission
+     * @return mixed
+     */
+    public function getUsersWithPermission(string $permission);
+
+    /**
+     * Sync users permissions with the given.
+     * Given permission will be granted to passed users and revoked from users which are not passed.
+     *
+     * @param array $ids
+     * @param string $permission
+     * @return array
+     */
+    public function syncUsersPermission(array $ids, string $permission): array;
+
+    /**
+     * Give specific permission to user.
+     *
+     * @param string $permissionName
+     * @param User $user
+     * @return boolean
+     */
+    public function givePermissionTo(string $permissionName, User $user): bool;
+
+    /**
+     * Revoke specific permission from user.
+     *
+     * @param string $permissionName
+     * @param User $user
+     * @return boolean
+     */
+    public function revokePermissionTo(string $permissionName, User $user): bool;
 
     /**
      * Map Resource into UserRepositoryCollection.

@@ -1,5 +1,9 @@
 <?php namespace App\Http\Requests;
 
+use App\Rules\{
+    Recaptcha,
+    UserNotDeactivated,
+};
 use Illuminate\Foundation\Http\FormRequest;
 
 class UserSignInRequest extends FormRequest
@@ -12,10 +16,11 @@ class UserSignInRequest extends FormRequest
     public function rules()
     {
         return [
-            'email' => 'required|string|email',
-            'password' => 'required|string',
-            'remember_me' => 'boolean',
-            'local_ip' => 'required|string|ip'
+            'email'         => ['required', 'string', 'email', new UserNotDeactivated],
+            'password'      => 'required|string',
+            'remember_me'   => 'boolean',
+            'local_ip'      => 'required|string|ip',
+            'g_recaptcha'   => ['required', 'string', new Recaptcha]
         ];
     }
 }

@@ -33,6 +33,7 @@ class SystemSettingsSeeder extends Seeder
                 'key' => $key,
                 'value' => $this->formatValue($key, $value),
                 'type' => $setting['type'] ?? 'string',
+                'section' => $setting['section'],
                 'possible_values' => $possibleValues,
                 'is_read_only' => $setting['is_read_only'] ?? false,
                 'label_format' => $setting['label_format'] ?? null

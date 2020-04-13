@@ -11,6 +11,7 @@ use App\Contracts\{
     Repositories\QuoteFile\QuoteFileRepositoryInterface,
     Services\ParserServiceInterface
 };
+use App\Models\Quote\Quote;
 use App\Models\QuoteFile\QuoteFile;
 
 class QuoteFilesController extends Controller
@@ -23,6 +24,7 @@ class QuoteFilesController extends Controller
     {
         $this->quoteFile = $quoteFile;
         $this->parserService = $parserService;
+
         $this->authorizeResource(QuoteFile::class, 'file');
     }
 

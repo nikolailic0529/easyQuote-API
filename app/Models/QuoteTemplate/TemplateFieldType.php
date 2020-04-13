@@ -2,10 +2,13 @@
 
 namespace App\Models\QuoteTemplate;
 
-use App\Models\BaseModel;
-use App\Traits\BelongsToTemplateFields;
+use App\Traits\{
+    Uuid,
+    BelongsToTemplateFields,
+};
+use Illuminate\Database\Eloquent\Model;
 
-class TemplateFieldType extends BaseModel
+class TemplateFieldType extends Model
 {
-    use BelongsToTemplateFields;
+    use Uuid, BelongsToTemplateFields;
 }

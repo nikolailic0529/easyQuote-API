@@ -2,10 +2,16 @@
 
 namespace App\Models\Data;
 
-use App\Models\BaseModel;
+use App\Traits\Uuid;
+use Illuminate\Database\Eloquent\{
+    Model,
+    SoftDeletes,
+};
 
-class ExchangeRate extends BaseModel
+class ExchangeRate extends Model
 {
+    use Uuid, SoftDeletes;
+
     protected $fillable = [
         'country_id', 'currency_id', 'currency_code', 'exchange_rate', 'date', 'base_currency'
     ];

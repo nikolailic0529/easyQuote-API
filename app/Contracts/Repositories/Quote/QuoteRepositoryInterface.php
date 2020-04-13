@@ -174,6 +174,15 @@ interface QuoteRepositoryInterface
     public function moveGroupDescriptionRows(MoveGroupDescriptionRowsRequest $request, string $quote_id): bool;
 
     /**
+     * Mark as selected specific Rows Group Descriptions.
+     *
+     * @param array $ids
+     * @param string $quote
+     * @return boolean
+     */
+    public function selectGroupDescription(array $ids, string $quote): bool;
+
+    /**
      * Delete specified Rows Group Description from specified Quote.
      *
      * @param string $id
@@ -207,4 +216,13 @@ interface QuoteRepositoryInterface
      * @return void
      */
     public function replicateMapping(string $sourceId, string $targetId): void;
+
+    /**
+     * Get wildcard quote permission.
+     *
+     * @param Quote $quote
+     * @param array $permissions
+     * @return string
+     */
+    public function getQuotePermission(Quote $quote, array $permissions = ['*']): string;
 }

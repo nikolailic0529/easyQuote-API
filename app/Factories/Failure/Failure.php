@@ -33,12 +33,12 @@ class Failure implements FailureInterface
         return $this->{$method}();
     }
 
-    public function helpFor(\Exception $exception): FailureHelp
+    public function helpFor(\Throwable $exception): FailureHelp
     {
         return FailureHelp::create($exception, $this->reasonsFor($exception), $this->resolvingFor($exception));
     }
 
-    public function reasonsFor(\Exception $exception): Collection
+    public function reasonsFor(\Throwable $exception): Collection
     {
         $class = get_class($exception);
         $found = $this->reasons->firstWhere('exception', '===', $class);
@@ -48,7 +48,7 @@ class Failure implements FailureInterface
         return $reasons;
     }
 
-    public function resolvingFor(\Exception $exception): Collection
+    public function resolvingFor(\Throwable $exception): Collection
     {
         $class = get_class($exception);
         $found = $this->resolving->firstWhere('exception', '===', $class);

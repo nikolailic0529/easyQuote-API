@@ -4,8 +4,8 @@ use Arr;
 
 trait CanGenerateToken
 {
-    public function generateToken(array $attributes = ['id', 'email']): string
+    public function generateToken(): string
     {
-        return substr(md5(implode('', Arr::only($this->getAttributes(), $attributes)). time()), 0, 32);
+        return substr(md5(implode('|', $this->getAttributes()). time()), 0, 32);
     }
 }

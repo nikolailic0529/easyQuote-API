@@ -7,7 +7,6 @@ use App\Contracts\{
     HasOrderedScope
 };
 use App\Models\{
-    BaseModel,
     QuoteFile\ImportableColumn,
     Quote\FieldColumn
 };
@@ -16,14 +15,21 @@ use App\Traits\{
     BelongsToUser,
     BelongsToTemplateFieldType,
     Systemable,
-    Search\Searchable
+    Search\Searchable,
+    Uuid
 };
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\{
+    Model,
+    SoftDeletes,
+    Relations\BelongsToMany,
+    Relations\HasOne,
+};
 use Str;
 
-class TemplateField extends BaseModel implements HasOrderedScope, ActivatableInterface
+class TemplateField extends Model implements HasOrderedScope, ActivatableInterface
 {
-    use BelongsToUser,
+    use Uuid,
+        BelongsToUser,
         BelongsToTemplateFieldType,
         Systemable,
         Activatable,
@@ -67,22 +73,22 @@ class TemplateField extends BaseModel implements HasOrderedScope, ActivatableInt
         'is_column' => 'boolean'
     ];
 
-    public function fieldColumn()
+    public function fieldColumn(): HasOne
     {
         return $this->hasOne(FieldColumn::class, 'template_field_id');
     }
 
-    public function systemImportableColumn()
+    public function systemImportableColumn(): HasOne
     {
         return $this->hasOne(ImportableColumn::class, 'name', 'name')->system();
     }
 
-    public function quoteTemplates()
+    public function quoteTemplates(): BelongsToMany
     {
         return $this->belongsToMany(QuoteTemplate::class);
     }
 
-    public function userQuoteTemplates()
+    public function userQuoteTemplates(): BelongsToMany
     {
         return $this->belongsToMany(QuoteTemplate::class)
             ->currentUser();

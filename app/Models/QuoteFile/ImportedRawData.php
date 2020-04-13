@@ -2,17 +2,17 @@
 
 namespace App\Models\QuoteFile;
 
-use App\Models\BaseModel;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Traits\{
-    Draftable,
     BelongsToQuoteFile,
-    BelongsToUser
+    BelongsToUser,
+    Uuid
 };
+use Illuminate\Database\Eloquent\Model;
 
-class ImportedRawData extends BaseModel
+class ImportedRawData extends Model
 {
-    use BelongsToUser, BelongsToQuoteFile, SoftDeletes;
+    use Uuid, BelongsToUser, BelongsToQuoteFile, SoftDeletes;
 
     protected $fillable = [
         'page', 'file_path'

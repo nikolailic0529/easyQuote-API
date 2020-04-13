@@ -9,95 +9,24 @@ use App\Imports\Concerns\{
 use App\Models\QuoteFile\ImportedRow;
 use App\Models\QuoteFile\QuoteFile;
 use League\Csv\Reader;
-use DB, Storage;
+use DB, Storage, Str;
+use Throwable;
 
 class ImportCsv
 {
     use MapsHeaders, LimitsHeaders;
 
-    /**
-     * Csv Reader Instance
-     *
-     * @var \League\Csv\Reader
-     */
-    protected $csv;
+    protected Reader $csv;
 
-    /**
-     * QuoteFile Model
-     *
-     * @var QuoteFile
-     */
-    protected $quoteFile;
+    protected QuoteFile $quoteFile;
 
-    /**
-     * Delimiter
-     *
-     * @var string
-     */
-    protected $delimiter = ',';
+    protected string $delimiter = ',';
 
-    /**
-     * Rows Count
-     *
-     * @var integer
-     */
-    protected $rowsCount;
+    protected int $headerOffset;
 
-    /**
-     * Heading Row Offset
-     *
-     * @var integer
-     */
-    protected $headerOffset;
+    protected array $header = [];
 
-    /**
-     * Header
-     *
-     * @var array
-     */
-    protected $header;
-
-    /**
-     * Current Offset for chunk
-     *
-     * @var integer
-     */
-    protected $offset = 0;
-
-    /**
-     * Limit for chunk
-     *
-     * @var integer
-     */
-    protected $limit = 1000;
-
-    /**
-     * Enclosure character
-     *
-     * @var string
-     */
-    protected $enclosure;
-
-    /**
-     * Temporary Data Table Name
-     *
-     * @var string
-     */
-    protected $dataTable;
-
-    /**
-     * PDO driver instance
-     *
-     * @var \PDO
-     */
-    protected $pdo;
-
-    /**
-     * Importable File Path
-     *
-     * @var string
-     */
-    protected $importableFilePath;
+    protected ?string $importableFilePath;
 
     public function __construct(QuoteFile $quoteFile, $filePath = null, int $headerOffset = 0)
     {
@@ -115,37 +44,38 @@ class ImportCsv
             ->setDelimiter($this->delimiter)
             ->setHeaderOffset($this->headerOffset);
 
-        $this->enclosure = $this->csv->getEnclosure();
-
         $this->header = $this->filterHeader($this->csv->getHeader());
-
-        $this->dataTable = uniqid();
-
-        $this->pdo = DB::connection()->getPdo();
     }
 
     public function import(): void
     {
         $this->beforeImport();
 
-        $user_id = $this->quoteFile->user_id;
-        $quote_file_id = $this->quoteFile->id;
+        $this->csv->setHeaderOffset(null)
+            ->setOutputBOM(Reader::BOM_UTF8)
+            ->addStreamFilter('convert.iconv.ISO-8859-15/UTF-8');
 
-        $rows = DB::table($this->dataTable)->get();
+        $rows = $this->csv->getRecords();
 
-        DB::transaction(
-            fn () =>
-            $rows->each(function ($row) use ($user_id, $quote_file_id) {
-                ImportedRow::create([
-                    'quote_file_id' => $quote_file_id,
-                    'user_id'       => $user_id,
-                    'columns_data'  => $this->mapColumnsData($row),
-                    'page'          => 1,
-                    'is_one_pay'    => (bool) data_get($row, '_one_pay', false)
-                ]);
-            })
-        );
+        $importedRows = collect();
 
+        DB::transaction(function () use ($rows, &$importedRows) {
+            foreach ($rows as $offset => $row) {
+                if ($offset === 0) {
+                    continue;
+                }
+
+                $row = array_combine($this->header, $row);
+
+                $importedRows->push($this->makeRow($row));
+
+                if ($importedRows->count() > 100) {
+                    ImportedRow::insert($importedRows->splice(0, 100)->toArray());
+                }
+            }
+
+            ImportedRow::insert($importedRows->toArray());
+        });
 
         $this->afterImport();
     }
@@ -153,7 +83,6 @@ class ImportCsv
     protected function beforeImport(): void
     {
         $this->checkHeader();
-        $this->loadIntoTempTable();
         $this->mapHeaders();
     }
 
@@ -173,30 +102,11 @@ class ImportCsv
 
     protected function filterHeader(array $header): array
     {
-        return collect($header)->map(function ($name, $key) {
-            if (blank($name)) {
-                return 'Unknown Header ' . ++$key;
-            }
-            return $name;
-        })->toArray();
-    }
+        $header = collect($header)->map(fn ($name, $key) => blank($name) ? 'Unknown Header ' . ++$key : $name);
 
-    protected function loadIntoTempTable(): void
-    {
-        $columns = collect($this->header)->map(function ($column) {
-            return "`{$column}` text";
-        })->implode(',');
+        $header->duplicates()->each(fn ($name, $key) => $header->put($key, $name . ' ' . $key));
 
-        $path = str_replace('\\', '/', $this->importableFilePath);
-
-        $this->pdo->exec("
-            create temporary table `{$this->dataTable}` ({$columns});
-            load data local infile '{$path}'
-            into table `{$this->dataTable}`
-            fields terminated by '{$this->delimiter}'
-            optionally enclosed by '{$this->enclosure}'
-            ignore 1 lines;
-        ");
+        return $header->toArray();
     }
 
     protected function setImportableFilePath(QuoteFile $quoteFile, $filePath): void
@@ -212,16 +122,38 @@ class ImportCsv
         $this->importableFilePath = $path;
     }
 
-    protected function mapColumnsData(object $row): array
+    protected function makeRow(array $row): array
     {
-        unset($row->{'_one_pay'});
+        $importedRow = [
+            'id'            => (string) Str::uuid(),
+            'quote_file_id' => $this->quoteFile->id,
+            'user_id'       => $this->quoteFile->user_id,
+            'columns_data'  => [],
+            'page'          => 1,
+            'is_one_pay'    => (bool) data_get($row, '_one_pay', false),
+            'created_at'    => (string) now()
+        ];
 
-        return array_map(function ($value, $header) {
-            return [
-                'header'                => $header,
-                'value'                 => $value,
-                'importable_column_id'  => $this->headersMapping->get($header)
-            ];
-        }, (array) $row, array_keys((array) $row));
+        try {
+            $columns_data = json_encode($this->mapColumnsData($row), JSON_THROW_ON_ERROR);
+
+            return compact('columns_data') + $importedRow;
+        } catch (Throwable $e) {
+            logger(implode(' - ', [IMPR_ERR_01, $e->getMessage()]), $row);
+
+            return $importedRow;
+        }
+    }
+
+    protected function mapColumnsData(array $row): array
+    {
+        unset($row['_one_pay']);
+
+        return collect($row)->map(
+            fn ($value, $header) =>
+            ['header' => $header, 'value' => $value, 'importable_column_id' => $this->headersMapping->get($header)]
+        )
+            ->keyBy('importable_column_id')
+            ->toArray();
     }
 }

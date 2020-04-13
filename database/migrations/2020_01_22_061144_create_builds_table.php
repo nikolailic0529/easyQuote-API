@@ -15,12 +15,19 @@ class CreateBuildsTable extends Migration
     {
         Schema::create('builds', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('git_tag');
-            $table->unsignedBigInteger('build_number');
-            $table->timestamps();
-            $table->softDeletes();
 
-            $table->index(['id', 'git_tag', 'build_number']);
+            $table->string('git_tag')->nullable();
+            $table->unsignedBigInteger('build_number')->nullable();
+
+            $table->text('maintenance_message')->nullable();
+
+            $table->timestamp('start_time')->nullable();
+            $table->timestamp('end_time')->nullable();
+
+            $table->timestamps();
+            $table->softDeletes()->index();
+
+            $table->index(['git_tag', 'build_number']);
         });
     }
 

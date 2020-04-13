@@ -3,12 +3,12 @@
 namespace App\Models\QuoteFile;
 
 use App\Models\{
-    BaseModel,
     QuoteFile\ImportedRawData,
     QuoteFile\ImportedRow,
     QuoteFile\DataSelectSeparator
 };
 use App\Traits\{
+    Auth\Multitenantable,
     BelongsToUser,
     BelongsToQuote,
     HasFileFormat,
@@ -17,17 +17,22 @@ use App\Traits\{
     HasMetaAttributes,
     HasScheduleData,
     Import\Automappable,
-    Misc\GeneratesException
+    Misc\GeneratesException,
+    Uuid
 };
 use App\Contracts\HasOrderedScope;
-use App\Traits\Auth\Multitenantable;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\{
+    Model,
+    Builder,
+    SoftDeletes,
+    Relations\BelongsTo,
+    Relations\HasMany,
+};
 
-class QuoteFile extends BaseModel implements HasOrderedScope
+class QuoteFile extends Model implements HasOrderedScope
 {
-    use Multitenantable,
+    use Uuid,
+        Multitenantable,
         Automappable,
         HasScheduleData,
         BelongsToQuote,
@@ -70,36 +75,36 @@ class QuoteFile extends BaseModel implements HasOrderedScope
         return $this->belongsTo(DataSelectSeparator::class)->withDefault();
     }
 
-    public function scopePriceLists($query)
+    public function scopePriceLists($query): Builder
     {
         return $query->where('file_type', QFT_PL);
     }
 
-    public function scopePaymentSchedules($query)
+    public function scopePaymentSchedules($query): Builder
     {
         return $query->where('file_type', QFT_PS);
     }
 
-    public function isNewSeparator($id)
+    public function isNewSeparator($id): bool
     {
-        if (!$this->propertyExists('dataSelectSeparator') || !isset($id)) {
+        if (!isset($this->dataSelectSeparator) || !isset($id)) {
             return false;
         }
 
         return $this->dataSelectSeparator->id !== $id;
     }
 
-    public function isSchedule()
+    public function isSchedule(): bool
     {
         return $this->file_type === QFT_PS;
     }
 
-    public function isPrice()
+    public function isPrice(): bool
     {
         return $this->file_type === QFT_PL;
     }
 
-    public function scopeIsNotHandledSchedule($query)
+    public function scopeIsNotHandledSchedule($query): Builder
     {
         return $query->where(fn ($query) => $query->where('file_type', QFT_PS)->handled())->orWhere('file_type', QFT_PL);
     }
@@ -129,7 +134,7 @@ class QuoteFile extends BaseModel implements HasOrderedScope
         return $this->attributes['imported_page'] ?? $this->default_imported_page;
     }
 
-    public function isNewPage($page)
+    public function isNewPage($page): bool
     {
         if (!isset($page)) {
             return false;

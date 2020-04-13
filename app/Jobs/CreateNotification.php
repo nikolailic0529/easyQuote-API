@@ -12,8 +12,7 @@ class CreateNotification implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable;
 
-    /** @var \App\Models\System\Notification */
-    protected $notification;
+    protected Notification $notification;
 
     /**
      * Create a new job instance.
@@ -32,10 +31,9 @@ class CreateNotification implements ShouldQueue
      */
     public function handle()
     {
-        rescue(function () {
-            $this->notification->saveOrFail();
-        }, function () {
-            $this->release();
-        });
+        rescue(
+            fn () => $this->notification->saveOrFail(),
+            fn () => $this->release()
+        );
     }
 }

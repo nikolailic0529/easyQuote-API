@@ -25,7 +25,6 @@ class PasswordExpiration extends Command
      */
     protected $description = 'Notify Users to change password';
 
-    /** @var \App\Contracts\Repositories\UserRepositoryInterface */
     protected Users $users;
 
     /**
@@ -47,10 +46,11 @@ class PasswordExpiration extends Command
      */
     public function handle()
     {
-        \DB::transaction(function () {
-            $this->users->cursor($this->scope())
-                ->each(fn (User $user) => $this->serveUser($user));
-        });
+        \DB::transaction(
+            fn () =>
+            $this->users->cursor(static::scope())
+                ->each(fn (User $user) => $this->serveUser($user))
+        );
     }
 
     protected function serveUser(User $user): void
@@ -70,16 +70,16 @@ class PasswordExpiration extends Command
         $user->notify(new PasswordExpirationNotification($expirationDate));
     }
 
-    protected function scope(): Closure
+    protected static function scope(): Closure
     {
-        return function (Builder $query) {
-            $beforeDays = ENF_PWD_CHANGE_DAYS - setting('password_expiry_notification');
+        $beforeDays = ENF_PWD_CHANGE_DAYS - setting('password_expiry_notification');
 
-            $query->whereNull('password_changed_at')
-                ->orWhere(function (Builder $query) use ($beforeDays) {
-                    $query->whereRaw('datediff(now(), `password_changed_at`) >= ?', [$beforeDays])
-                        ->whereRaw('datediff(now(), `password_changed_at`) < ?', ENF_PWD_CHANGE_DAYS);
-                });
-        };
+        return fn (Builder $query) =>
+        $query->whereNull('password_changed_at')
+            ->orWhere(
+                fn (Builder $query) =>
+                $query->whereRaw('datediff(now(), `password_changed_at`) >= ?', [$beforeDays])
+                    ->whereRaw('datediff(now(), `password_changed_at`) < ?', ENF_PWD_CHANGE_DAYS)
+            );
     }
 }

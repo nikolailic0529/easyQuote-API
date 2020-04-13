@@ -14,10 +14,9 @@ class CreateAccessAttemptsTable extends Migration
     public function up()
     {
         Schema::create('access_attempts', function (Blueprint $table) {
-            $table->uuid('id');
-            $table->primary('id');
-            $table->string('email')->nullable();
-            $table->string('token')->nullable();
+            $table->uuid('id')->primary();
+            $table->string('email')->index()->nullable();
+            $table->text('token')->nullable();
             $table->string('ip_address')->nullable();
             $table->string('user_agent')->nullable();
             $table->boolean('is_success')->default(false);

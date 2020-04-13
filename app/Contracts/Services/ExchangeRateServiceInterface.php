@@ -3,17 +3,28 @@
 namespace App\Contracts\Services;
 
 use App\Models\Data\Currency;
+use Carbon\Carbon;
 use SimpleXMLElement;
 
 interface ExchangeRateServiceInterface
 {
     /**
-     * Parse Exchange Rates from an external source.
+     * Receive Exchange Rates data from an external source.
      *
-     * @return SimpleXMLElement
+     * @return mixed
      * @throws \Exception
      */
-    public function parseRates(): SimpleXMLElement;
+    public function receiveRates();
+    
+    /**
+     * Fetch Exchange Rates data received from an external source.
+     * Returns attributes for exchange rates.
+     *
+     * @param $data
+     * @return array
+     * @throws \Exception
+     */
+    public function fetchRates($data): array;
 
     /**
      * Update Exchange Rates in storage.
@@ -21,6 +32,23 @@ interface ExchangeRateServiceInterface
      * @return boolean
      */
     public function updateRates(): bool;
+
+    /**
+     * Update Exchange Rates using data from given file.
+     *
+     * @param string $filepath
+     * @param Carbon $date
+     * @return boolean
+     */
+    public function updateRatesFromFile(string $filepath, Carbon $date): bool;
+
+    /**
+     * Retrieve rates date from given file.
+     *
+     * @param string $filepath
+     * @return Carbon
+     */
+    public function retrieveDateFromFile(string $filepath): Carbon;
 
     /**
      * Calculate target exchange rate based on source & target currencies.

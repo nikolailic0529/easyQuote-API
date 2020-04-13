@@ -2,19 +2,22 @@
 
 namespace App\Models\QuoteFile;
 
-use App\Models\BaseModel;
+use App\Casts\SchemalessColumns;
 use App\Traits\{
     BelongsToUser,
     BelongsToQuoteFile,
     Draftable,
-    Selectable
+    Selectable,
+    Uuid
 };
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\{
+    Model,
+    SoftDeletes,
+};
 
-class ImportedRow extends BaseModel
+class ImportedRow extends Model
 {
-    use BelongsToUser, BelongsToQuoteFile, Draftable, Selectable, SoftDeletes;
+    use Uuid, BelongsToUser, BelongsToQuoteFile, Draftable, Selectable, SoftDeletes;
 
     protected $fillable = [
         'page', 'quote_file_id', 'user_id', 'columns_data', 'is_one_pay'
@@ -35,27 +38,11 @@ class ImportedRow extends BaseModel
 
     protected $casts = [
         'is_selected'   => 'boolean',
-        'columns_data'  => 'collection'
+        'is_one_pay'    => 'boolean',
+        'columns_data'  => SchemalessColumns::class
     ];
 
     protected $attributes = [
         'is_selected' => false
     ];
-
-    public function getColumnsDataAttribute($value): Collection
-    {
-        return collect(json_decode($value));
-    }
-
-    public function setColumnsDataAttribute($value): void
-    {
-        if (is_string($value)) {
-            $this->attributes['columns_data'] = collect(json_decode($value, true))->keyBy('importable_column_id')->toJson();
-            return;
-        }
-
-        if (is_iterable($value)) {
-            $this->attributes['columns_data'] = Collection::wrap($value)->keyBy('importable_column_id')->toJson();
-        }
-    }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Repositories\Quote;
 
-use App\Contracts\Repositories\Quote\ContractSubmittedRepositoryInterface;
+use App\Contracts\Repositories\Contract\ContractSubmittedRepositoryInterface;
 use App\Repositories\SearchableRepository;
 use App\Models\Quote\Contract;
 use App\Repositories\Concerns\{

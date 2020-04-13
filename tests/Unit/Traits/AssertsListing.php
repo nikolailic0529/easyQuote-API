@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Traits;
 
-use Illuminate\Foundation\Testing\TestResponse;
+use Illuminate\Testing\TestResponse;
 
 trait AssertsListing
 {

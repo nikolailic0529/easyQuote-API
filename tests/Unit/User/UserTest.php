@@ -38,9 +38,7 @@ class UserTest extends TestCase
             'order_by_lastname' => 'asc'
         ]);
 
-        $response = $this->getJson(url('api/users?' . $query));
-
-        $response->assertOk();
+        $this->getJson(url('api/users?' . $query))->assertOk();
     }
 
     /**
@@ -52,9 +50,8 @@ class UserTest extends TestCase
     {
         $user = app('user.repository')->random();
 
-        $response = $this->getJson(url("api/users/{$user->id}"), $this->authorizationHeader);
-
-        $response->assertOk()
+        $this->getJson(url("api/users/{$user->id}"), $this->authorizationHeader)
+            ->assertOk()
             ->assertJsonStructure([
                 'id',
                 'email',
@@ -80,9 +77,8 @@ class UserTest extends TestCase
     {
         $attributes = factory(User::class)->make()->only('first_name', 'last_name', 'timezone_id');
 
-        $response = $this->patchJson(url("api/users/{$this->user->id}"), $attributes, $this->authorizationHeader);
-
-        $response->assertOk()->assertExactJson([true]);
+        $this->patchJson(url("api/users/{$this->user->id}"), $attributes)
+            ->assertOk()->assertExactJson([true]);
 
 
         /**
@@ -102,9 +98,8 @@ class UserTest extends TestCase
      */
     public function testAdministratorEmailUpdating()
     {
-        $response = $this->patchJson(url("api/users/{$this->user->id}"), ['email' => $this->faker->unique()->safeEmail]);
-
-        $response->assertForbidden();
+        $this->patchJson(url("api/users/{$this->user->id}"), ['email' => $this->faker->unique()->safeEmail])
+            ->assertForbidden();
     }
 
     /**
@@ -116,13 +111,9 @@ class UserTest extends TestCase
     {
         $this->user->deactivate();
 
-        $response = $this->putJson(url("api/users/activate/{$this->user->id}"));
+        $this->putJson(url("api/users/activate/{$this->user->id}"))->assertOk()->assertExactJson([true]);
 
-        $response->assertOk()->assertExactJson([true]);
-
-        $this->user->refresh();
-
-        $this->assertNotNull($this->user->activated_at);
+        $this->assertNotNull($this->user->refresh()->activated_at);
     }
 
     /**
@@ -134,13 +125,9 @@ class UserTest extends TestCase
     {
         $this->user->activate();
 
-        $response = $this->putJson(url("api/users/deactivate/{$this->user->id}"));
+        $this->putJson(url("api/users/deactivate/{$this->user->id}"))->assertOk()->assertExactJson([true]);
 
-        $response->assertOk()->assertExactJson([true]);
-
-        $this->user->refresh();
-
-        $this->assertNull($this->user->activated_at);
+        $this->assertNull($this->user->refresh()->activated_at);
     }
 
     /**
@@ -150,9 +137,7 @@ class UserTest extends TestCase
      */
     public function testSelfDeleting()
     {
-        $response = $this->deleteJson(url("api/users/{$this->user->id}"));
-
-        $response->assertForbidden();
+        $this->deleteJson(url("api/users/{$this->user->id}"))->assertForbidden();
     }
 
     /**
@@ -164,9 +149,7 @@ class UserTest extends TestCase
     {
         $user = $this->createUser();
 
-        $response = $this->deleteJson(url("api/users/{$user->id}"));
-
-        $response->assertOk()->assertExactJson([true]);
+        $this->deleteJson(url("api/users/{$user->id}"))->assertOk()->assertExactJson([true]);
 
         $this->assertSoftDeleted($user);
     }

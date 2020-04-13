@@ -14,7 +14,7 @@ class AddDefaultTemplateIdCompaniesTable extends Migration
     public function up()
     {
         Schema::table('companies', function (Blueprint $table) {
-            $table->uuid('default_template_id')->nullable();
+            $table->uuid('default_template_id')->nullable()->after('default_country_id');
             $table->foreign('default_template_id')->references('id')->on('quote_templates')->onDelete('set null');
         });
     }

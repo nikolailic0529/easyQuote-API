@@ -42,9 +42,7 @@ class RoleTest extends TestCase
             'order_by_name' => 'asc'
         ]);
 
-        $response = $this->getJson(url('api/roles?' . $query));
-
-        $response->assertOk();
+        $this->getJson(url('api/roles?' . $query))->assertOk();
     }
 
     /**
@@ -56,9 +54,8 @@ class RoleTest extends TestCase
     {
         $attributes = factory(Role::class)->raw();
 
-        $response = $this->postJson(url('api/roles'), $attributes);
-
-        $response->assertOk()
+        $this->postJson(url('api/roles'), $attributes)
+            ->assertOk()
             ->assertJsonStructure([
                 'id', 'privileges', 'created_at', 'activated_at'
             ]);
@@ -75,11 +72,10 @@ class RoleTest extends TestCase
 
         data_set($attributes, 'privileges.0', Str::random(20));
 
-        $response = $this->postJson(url('api/roles'), $attributes);
-
-        $response->assertJsonStructure([
-            'Error' => ['original' => ['privileges.0.privilege']]
-        ]);
+        $this->postJson(url('api/roles'), $attributes)
+            ->assertJsonStructure([
+                'Error' => ['original' => ['privileges.0.privilege']]
+            ]);
     }
 
     /**
@@ -91,15 +87,14 @@ class RoleTest extends TestCase
     {
         $role = factory(Role::class)->create();
 
-        $newAttributes = factory(Role::class)->raw();
+        $attributes = factory(Role::class)->raw();
 
-        $response = $this->patchJson(url("api/roles/{$role->id}"), $newAttributes);
-
-        $response->assertOk()
+        $this->patchJson(url("api/roles/{$role->id}"), $attributes)
+            ->assertOk()
             ->assertJsonStructure([
                 'id', 'name', 'privileges', 'user_id', 'is_system', 'created_at', 'activated_at'
             ])
-            ->assertJsonFragment(Arr::only($newAttributes, ['name', 'privileges']));
+            ->assertJsonFragment(Arr::only($attributes, ['name', 'privileges']));
     }
 
     /**
@@ -113,9 +108,7 @@ class RoleTest extends TestCase
 
         $attributes = factory(Role::class)->raw();
 
-        $response = $this->patchJson(url("api/roles/{$role->id}"), $attributes);
-
-        $response->assertForbidden();
+        $response = $this->patchJson(url("api/roles/{$role->id}"), $attributes)->assertForbidden();
 
         $this->assertEquals(RSU_01, $response->json('message'));
     }
@@ -129,9 +122,8 @@ class RoleTest extends TestCase
     {
         $role = factory(Role::class)->create();
 
-        $response = $this->deleteJson(url("api/roles/{$role->id}"));
-
-        $response->assertOk()
+        $this->deleteJson(url("api/roles/{$role->id}"))
+            ->assertOk()
             ->assertExactJson([true]);
     }
 
@@ -144,9 +136,7 @@ class RoleTest extends TestCase
     {
         $role = $this->roles->findByName('Administrator');
 
-        $response = $this->deleteJson(url("api/roles/{$role->id}"));
-
-        $response->assertForbidden();
+        $response = $this->deleteJson(url("api/roles/{$role->id}"))->assertForbidden();
 
         $this->assertEquals(RSD_01, $response->json('message'));
     }
@@ -160,9 +150,8 @@ class RoleTest extends TestCase
     {
         $role = tap(factory(Role::class)->create())->deactivate();
 
-        $response = $this->putJson(url("api/roles/activate/{$role->id}"));
-
-        $response->assertOk()
+        $this->putJson(url("api/roles/activate/{$role->id}"))
+            ->assertOk()
             ->assertExactJson([true]);
     }
 
@@ -175,9 +164,8 @@ class RoleTest extends TestCase
     {
         $role = tap(factory(Role::class)->create())->activate();
 
-        $response = $this->putJson(url("api/roles/deactivate/{$role->id}"));
-
-        $response->assertOk()
+        $this->putJson(url("api/roles/deactivate/{$role->id}"))
+            ->assertOk()
             ->assertExactJson([true]);
     }
 }

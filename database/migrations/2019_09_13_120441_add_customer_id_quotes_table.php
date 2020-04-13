@@ -14,8 +14,8 @@ class AddCustomerIdQuotesTable extends Migration
     public function up()
     {
         Schema::table('quotes', function (Blueprint $table) {
-            $table->uuid('customer_id')->nullable();
-            $table->foreign('customer_id')->references('id')->on('customers');
+            $table->uuid('customer_id')->nullable()->after('user_id');
+            $table->foreign('customer_id')->references('id')->on('customers')->onUpdate('cascade')->onDelete('set null');
         });
     }
 

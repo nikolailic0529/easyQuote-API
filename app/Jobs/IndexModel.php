@@ -14,8 +14,7 @@ class IndexModel implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable;
 
-    /** @var \Illuminate\Database\Eloquent\Model */
-    protected $model;
+    protected Model $model;
 
     /**
      * Create a new job instance.
@@ -34,12 +33,14 @@ class IndexModel implements ShouldQueue
      */
     public function handle(Elasticsearch $elasticsearch)
     {
-        rescue(function () use ($elasticsearch) {
+        logger($this->model);
+        rescue(
+            fn () =>
             $elasticsearch->index([
                 'index' => $this->model->getSearchIndex(),
                 'id'    => $this->model->getKey(),
                 'body'  => $this->model->toSearchArray(),
-            ]);
-        });
+            ])
+        );
     }
 }

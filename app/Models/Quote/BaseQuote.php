@@ -2,7 +2,6 @@
 
 namespace App\Models\Quote;
 
-use App\Models\BaseModel;
 use App\Contracts\{
     ActivatableInterface,
     HasOrderedScope
@@ -41,18 +40,21 @@ use App\Traits\{
     Activity\LogsActivity,
     Currency\ConvertsCurrency,
     Auth\Multitenantable,
-    SavesPreviousState
+    SavesPreviousState,
+    Uuid
 };
 use Illuminate\Database\Eloquent\{
     SoftDeletes,
-    Builder
+    Builder,
+    Model
 };
 use Illuminate\Support\Traits\Tappable;
 use Str;
 
-abstract class BaseQuote extends BaseModel implements HasOrderedScope, ActivatableInterface
+abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableInterface
 {
-    use Multitenantable,
+    use Uuid,
+        Multitenantable,
         Searchable,
         HasQuoteFiles,
         BelongsToUser,
@@ -115,8 +117,7 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
     ];
 
     protected $appends = [
-        'last_drafted_step',
-        'closing_date'
+        'last_drafted_step'
     ];
 
     protected $casts = [
@@ -131,6 +132,8 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
     ];
 
     protected $table = 'quotes';
+
+    protected $dates = ['closing_date'];
 
     protected static $logAttributes = [
         'type',
@@ -238,11 +241,6 @@ abstract class BaseQuote extends BaseModel implements HasOrderedScope, Activatab
     public static function getCompletenessDictionary()
     {
         return __('quote.stages');
-    }
-
-    public function getClosingDateAttribute($value)
-    {
-        return carbon_format($value, config('date.format_ui'));
     }
 
     public function getItemNameAttribute()

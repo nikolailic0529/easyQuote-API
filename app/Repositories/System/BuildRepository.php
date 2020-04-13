@@ -7,9 +7,8 @@ use App\Models\System\Build;
 
 class BuildRepository implements BuildRepositoryInterface
 {
-    const CACHE_KEY_LATEST_BUILD = 'build-latest';
+    const CACHE_KEY_LAST_BUILD = 'build-last';
 
-    /** @var \App\Models\System\Build */
     protected Build $build;
 
     public function __construct(Build $build)
@@ -29,32 +28,28 @@ class BuildRepository implements BuildRepositoryInterface
 
     public function create(array $attributes): Build
     {
-        return tap($this->build->create($attributes), fn (Build $build) => $this->cacheLatestBuild($build));
+        return tap($this->build->create($attributes), fn (Build $build) => $this->cacheLastBuild($build));
     }
 
     public function firstOrCreate(array $attributes, array $values = [])
     {
-        return tap($this->build->firstOrCreate($attributes, $values), fn (Build $build) => $this->cacheLatestBuild($build));
+        return tap($this->build->firstOrCreate($attributes, $values), fn (Build $build) => $this->cacheLastBuild($build));
     }
 
-    public function updateLatestOrCreate(array $attributes): Build
+    public function updateLastOrCreate(array $attributes): Build
     {
-        $latestBuild = $this->latest();
+        $build = tap($this->last()->fill($attributes))->saveOrFail();
 
-        $build = !is_null($latestBuild)
-            ? tap($latestBuild)->update($attributes)
-            : $this->create($attributes);
-
-        return tap($build, fn (Build $updatedBuild) => $this->cacheLatestBuild($updatedBuild));
+        return tap($build, fn (Build $updatedBuild) => $this->cacheLastBuild($updatedBuild));
     }
 
-    public function latest()
+    public function last()
     {
-        return cache()->sear(static::CACHE_KEY_LATEST_BUILD, fn () => $this->build->latest()->first());
+        return cache()->sear(static::CACHE_KEY_LAST_BUILD, fn () => $this->build->latest()->firstOrNew([]));
     }
 
-    private function cacheLatestBuild(Build $build)
+    private function cacheLastBuild(Build $build)
     {
-        cache()->forever(static::CACHE_KEY_LATEST_BUILD, $build);
+        cache()->forever(static::CACHE_KEY_LAST_BUILD, $build);
     }
 }

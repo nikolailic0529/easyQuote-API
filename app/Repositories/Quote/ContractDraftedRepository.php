@@ -2,7 +2,7 @@
 
 namespace App\Repositories\Quote;
 
-use App\Contracts\Repositories\Quote\ContractDraftedRepositoryInterface;
+use App\Contracts\Repositories\Contract\ContractDraftedRepositoryInterface;
 use App\Repositories\SearchableRepository;
 use App\Models\Quote\Contract;
 use Illuminate\Database\Eloquent\{

@@ -12,14 +12,14 @@ use App\Http\Requests\{
     UpdateProfileRequest
 };
 use App\Http\Resources\{
-    UserListResource,
     UserRepositoryCollection
 };
 use App\Models\{
     User,
     Role,
     Collaboration\Invitation,
-    PasswordReset
+    PasswordReset,
+    Permission
 };
 use App\Notifications\{
     PasswordResetRequest,
@@ -32,6 +32,7 @@ use Illuminate\Database\Eloquent\{
 };
 use Arr, Hash;
 use Closure;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\LazyCollection;
 
 class UserRepository extends SearchableRepository implements UserRepositoryInterface
@@ -40,6 +41,8 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
 
     protected Role $role;
 
+    protected Permission $permission;
+
     protected Invitation $invitation;
 
     protected PasswordReset $passwordReset;
@@ -47,11 +50,13 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
     public function __construct(
         User $user,
         Role $role,
+        Permission $permission,
         Invitation $invitation,
         PasswordReset $passwordReset
     ) {
         $this->user = $user;
         $this->role = $role;
+        $this->permission = $permission;
         $this->invitation = $invitation;
         $this->passwordReset = $passwordReset;
     }
@@ -71,23 +76,14 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         return $this->toCollection(parent::search($query));
     }
 
-    public function listWithTrashed()
-    {
-        $users = $this->userQuery()
-            ->where([
-                ['first_name', '!=', ''],
-                ['last_name', '!=', ''],
-                ['email', '!=', ''],
-            ])
-            ->withTrashed()
-            ->get();
-
-        return UserListResource::collection($users);
-    }
-
     public function list(array $columns = ['*'])
     {
-        return $this->user->newQueryWithoutRelationships()->get($columns);
+        return $this->user->get($columns);
+    }
+
+    public function exclusiveList(string $id, array $columns = ['*'])
+    {
+        return $this->user->query()->whereKeyNot($id)->get($columns);
     }
 
     public function cursor(?Closure $scope = null): LazyCollection
@@ -116,7 +112,7 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         $query = $this->user->query();
 
         if (is_string($email)) {
-            return $query->where('email', 'like', "%{$email}%")->first();
+            return $query->where('email', $email)->first();
         }
 
         if (is_array($email)) {
@@ -124,6 +120,11 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         }
 
         throw new \InvalidArgumentException(INV_ARG_SA_01);
+    }
+
+    public function findByEmailLike(string $email)
+    {
+        return $this->user->where('email', 'like', '%' . $email . '%')->first();
     }
 
     public function findMany(array $ids): Collection
@@ -190,14 +191,51 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
 
         error_abort_if(is_null($invitation) || $invitation->isExpired, IE_01, 'IE_01', 404);
 
-        $invitation->makeHiddenExcept(['email', 'role_name']);
-
         return $invitation;
     }
 
-    public function update(UpdateUserRequest $request, string $id): bool
+    public function update(string $id, array $attributes, array $options = []): bool
     {
-        return $this->find($id)->update($request->validated());
+        $user = $this->find($id);
+        $usesTimestamps = $user->usesTimestamps();
+
+        if (!($options['timestamps'] ?? true)) {
+            $user->timestamps = false;
+        }
+
+        if (!($options['events'] ?? true)) {
+            $result = $user->withoutEvents(fn () => $user->update($attributes));
+        } else {
+            $result = $user->update($attributes);
+        }
+
+        return tap($result, function () use ($user, $usesTimestamps, $options) {
+            if (!($options['timestamps'] ?? true)) {
+                $user->timestamps = $usesTimestamps;
+            }
+        });
+    }
+
+    public function increment(string $id, string $attribute, array $options = []): bool
+    {
+        $user = $this->find($id);
+        $usesTimestamps = $user->usesTimestamps();
+
+        if (!($options['timestamps'] ?? true)) {
+            $user->timestamps = false;
+        }
+
+        if (!($options['events'] ?? true)) {
+            $result = $user->withoutEvents(fn () => $user->increment($attribute));
+        } else {
+            $result = $user->increment($attribute);
+        }
+
+        return tap($result, function () use ($user, $usesTimestamps, $options) {
+            if (!($options['timestamps'] ?? true)) {
+                $user->timestamps = $usesTimestamps;
+            }
+        });
     }
 
     public function updateOwnProfile(UpdateProfileRequest $request): User
@@ -226,7 +264,9 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
 
     public function activate(string $id): bool
     {
-        return $this->find($id)->activate();
+        return $this->find($id)
+            ->forceFill(['activated_at' => now(), 'failed_attempts' => 0])
+            ->saveOrFail();
     }
 
     public function deactivate(string $id): bool
@@ -281,6 +321,48 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         $passwordReset = $this->passwordReset->whereToken($token)->first();
 
         return isset($passwordReset) && !$passwordReset->isExpired;
+    }
+
+    public function getUsersWithPermission(string $permission)
+    {
+        return $this->user->query()->whereHas('permissions', fn (Builder $query) => $query->whereName($permission)->whereGuardName('web'))->get();
+    }
+
+    public function syncUsersPermission(array $ids, string $permission): array
+    {
+        return DB::transaction(function () use ($ids, $permission) {
+            /** Grant permission to passed users. */
+            $granted = $this->user->query()->whereIn('id', $ids)
+                ->whereDoesntHave('permissions', fn (Builder $query) => $query->whereName($permission)->whereGuardName('web'))->get()
+                ->map(
+                    fn (User $user) => tap($user, fn () => $this->givePermissionTo($permission, $user))
+                );
+
+            /** Revoke permission from non-passed users. */
+            $revoked = $this->user->query()->whereNotIn('id', $ids)
+                ->whereHas('permissions', fn (Builder $query) => $query->whereName($permission)->whereGuardName('web'))->get()
+                ->map(
+                    fn (User $user) => tap($user, fn () => $this->revokePermissionTo($permission, $user))
+                );
+
+            return compact('granted', 'revoked');
+        });
+    }
+
+    public function givePermissionTo(string $permissionName, User $user): bool
+    {
+        $permission = $this->permission->firstOrCreate(['name' => $permissionName, 'guard_name' => 'web']);
+
+        $user->givePermissionTo($permission);
+
+        return true;
+    }
+
+    public function revokePermissionTo(string $permissionName, User $user): bool
+    {
+        $user->revokePermissionTo($permissionName);
+
+        return true;
     }
 
     protected function filterQueryThrough(): array

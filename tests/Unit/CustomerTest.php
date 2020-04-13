@@ -20,13 +20,9 @@ class CustomerTest extends TestCase
      */
     public function testCustomerListing()
     {
-        $response = $this->getJson(url('api/quotes/customers'));
+        $response = $this->getJson(url('api/quotes/customers'))->assertOk();
 
-        $response->assertOk();
-
-        $responseItemHasFields = Arr::has($response->json('0'), static::$assertableAttributes);
-
-        $this->assertTrue($responseItemHasFields);
+        $this->assertTrue(Arr::has($response->json('0'), static::$assertableAttributes));
     }
 
     /**
@@ -38,9 +34,8 @@ class CustomerTest extends TestCase
     {
         $customer = app('customer.repository')->random();
 
-        $response = $this->getJson(url("api/quotes/customers/{$customer->id}"));
-
-        $response->assertOk()
+        $this->getJson(url("api/quotes/customers/{$customer->id}"))
+            ->assertOk()
             ->assertJsonStructure(static::$assertableAttributes);
     }
 }

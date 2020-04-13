@@ -10,15 +10,17 @@ use App\Contracts\Repositories\{
 };
 use App\Events\ExchangeRatesUpdated;
 use App\Models\Data\Currency;
-use App\Models\Data\ExchangeRate;
 use GuzzleHttp\{
     Client,
     RequestOptions
 };
+use Illuminate\Support\{
+    Collection,
+    Facades\Validator,
+};
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Validator;
-use SimpleXMLElement;
-use Arr;
+use RuntimeException;
+use Arr, DB, File;
 
 abstract class ExchangeRateService implements ExchangeRateServiceInterface
 {
@@ -49,39 +51,45 @@ abstract class ExchangeRateService implements ExchangeRateServiceInterface
         $this->currencies = $currencies;
     }
 
-    public function parseRates(): SimpleXMLElement
+    public function receiveRates(?Carbon $date = null)
     {
-        $this->time = $this->requestTime();
-        $requestUrl = $this->requestUrl();
+        $date ??= $this->requestTime();
 
-        try {
-            $response = $this->httpClient->get($requestUrl, [RequestOptions::IDN_CONVERSION => false]);
-            $content = $response->getBody()->getContents();
+        $this->time = $date;
 
-            return \simplexml_load_string($content);
-        } catch (\Throwable $exception) {
-            throw new \Exception(
-                sprintf(ER_PARSE_ERROR_01, $requestUrl)
-            );
-        }
+        return $this->requestRatesByTime($date);
     }
 
-    public function updateRates(): bool
+    public function updateRatesFromFile(string $filepath, Carbon $date): bool
     {
-        $rates = $this->parseRates();
-        $rates = collect(iterator_to_array($rates, false));
+        throw_unless(File::exists($filepath), RuntimeException::class, ER_FNE_01);
 
-        $created = \DB::transaction(function () use ($rates) {
-            return $rates->reduce(function ($created, $rate) {
-                $created[] = $this->storeRate($rate);
-                return $created;
-            }, []);
-        }, 3);
+        $this->time = $date;
 
-        return tap(
-            (bool) count(array_filter($created)),
-            fn ($updated) => $updated && event(new ExchangeRatesUpdated)
-        );
+        $data = $this->fetchRates(File::get($filepath, true));
+
+        $this->createRates($data);
+
+        event(new ExchangeRatesUpdated);
+
+        return true;
+    }
+
+    public function updateRates(array $parameters = []): bool
+    {
+        if (empty($parameters)) {
+            $data = $this->fetchRates($this->receiveRates());
+        } else {
+            $data = static::parseDates($parameters)
+                ->map(fn (Carbon $date) => $this->fetchRates($this->receiveRates($date)))
+                ->collapse()->toArray();
+        }
+
+        $this->createRates($data);
+
+        event(new ExchangeRatesUpdated);
+
+        return true;
     }
 
     public function getTargetRate(Currency $source, Currency $target, ?int $precision = null): float
@@ -103,17 +111,25 @@ abstract class ExchangeRateService implements ExchangeRateServiceInterface
         return $rate;
     }
 
-    protected function storeRate(SimpleXMLElement $rate)
+    protected function createRates($data)
     {
-        $attributes = $values = $this->prepareAttributes($rate);
+        return DB::transaction(
+            fn () =>
+            Collection::wrap($data)->map(fn ($attributes) => $this->storeRate($attributes))
+        );
+    }
+
+    protected function storeRate($attributes)
+    {
+        $values = $attributes;
 
         if (!$this->validateRateAttributes($attributes)) {
             return;
         }
 
-        $attributes = Arr::only($attributes, ['currency_code', 'date']);
+        $attributes = Arr::only($attributes, ['currency_code', 'date']) + ['base_currency' => $this->baseCurrency()];
 
-        $values = ['base_currency' => $this->baseCurrency()] + $values;
+        $values = $attributes + $values;
 
         return $this->repository->firstOrCreate($attributes, $values);
     }
@@ -127,7 +143,51 @@ abstract class ExchangeRateService implements ExchangeRateServiceInterface
         return !$validator->fails();
     }
 
-    abstract protected function prepareAttributes(SimpleXMLElement $rate): array;
+    protected function requestRatesByTime(Carbon $time)
+    {
+        $this->time = $time;
+        $requestUrl = $this->requestUrl();
+
+        try {
+            $response = $this->httpClient->get($requestUrl, [RequestOptions::IDN_CONVERSION => false]);
+            $content = $response->getBody()->getContents();
+
+            return $content;
+        } catch (\Throwable $e) {
+            static::requestError($requestUrl);
+        }
+    }
+
+    abstract public function retrieveDateFromFile(string $filepath): Carbon;
 
     abstract protected function requestTime(): Carbon;
+
+    protected static function parseDates(array $dates): Collection
+    {
+        return collect($dates)->map(fn ($date) => Carbon::parse($date));
+    }
+
+    /**
+     * @throws \RuntimeException
+     */
+    protected static function requestError(string $url)
+    {
+        throw new RuntimeException(sprintf(ER_RECEIVE_ERR_01, $url));
+    }
+
+    /**
+     * @throws \RuntimeException
+     */
+    protected function fetchRatesError()
+    {
+        throw new RuntimeException(ER_PARSE_ERR_01);
+    }
+
+    /**
+     * @throws \RuntimeException
+     */
+    protected static function fetchDateError(string $filepath)
+    {
+        throw new RuntimeException(sprintf("%s Filepath: '%s'.", ER_DT_ERR_01, $filepath));
+    }
 }

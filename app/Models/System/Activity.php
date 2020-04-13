@@ -3,8 +3,10 @@
 namespace App\Models\System;
 
 use App\Models\User;
-use App\Models\BaseModel;
-use App\Traits\Search\Searchable;
+use App\Traits\{
+    Uuid,
+    Search\Searchable,
+};
 use Illuminate\Support\{
     Arr,
     Collection
@@ -17,9 +19,9 @@ use Illuminate\Database\Eloquent\{
 use Spatie\Activitylog\Contracts\Activity as ActivityContract;
 use Str;
 
-class Activity extends BaseModel implements ActivityContract
+class Activity extends Model implements ActivityContract
 {
-    use Searchable;
+    use Uuid, Searchable;
 
     public $guarded = [];
 

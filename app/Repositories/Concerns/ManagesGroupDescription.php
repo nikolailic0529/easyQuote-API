@@ -12,6 +12,7 @@ use App\Models\Quote\QuoteVersion;
 use Illuminate\Database\Query\Builder;
 use Webpatser\Uuid\Uuid;
 use Illuminate\Support\Facades\DB;
+use Arr;
 
 trait ManagesGroupDescription
 {
@@ -108,6 +109,18 @@ trait ManagesGroupDescription
         $version->forgetCachedComputableRows();
 
         return $group;
+    }
+
+    public function selectGroupDescription(array $ids, string $quote): bool
+    {
+        $quote = $this->createNewVersionIfNonCreator($this->find($quote));
+
+        $groups = Collection::wrap($quote->group_description)
+            ->transform(fn ($group) => Arr::set($group, 'is_selected', in_array(Arr::get($group, 'id'), $ids)));
+
+        $quote->group_description = $groups->values();
+
+        return tap($quote)->forgetCachedComputableRows()->save();
     }
 
     public function updateGroupDescription(UpdateGroupDescriptionRequest $request, string $id, string $quote_id): bool

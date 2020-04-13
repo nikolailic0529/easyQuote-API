@@ -20,13 +20,11 @@ class CachedRelationWrapper extends Model
      */
     public function __construct(array $relations = [])
     {
-        $relations = array_map(function ($relation) {
-            return CachedRelation::make($relation);
-        }, $relations);
+        $relations = array_map(fn ($relation) => new CachedRelation($relation), $relations);
+        
+        $this->fill($relations);
 
         $this->syncOriginal();
-
-        $this->fill($relations);
     }
 
     public function __get($key)

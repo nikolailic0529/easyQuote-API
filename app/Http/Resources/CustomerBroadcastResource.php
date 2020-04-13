@@ -21,7 +21,7 @@ class CustomerBroadcastResource extends JsonResource
             'valid_until' => $this->valid_until_date,
             'support_start' => $this->support_start_date,
             'support_end' => $this->support_end_date,
-            'created_at' => $this->created_at,
+            'created_at' => optional($this->created_at)->format(config('date.format_time')),
             'recently_created' => true
         ];
     }

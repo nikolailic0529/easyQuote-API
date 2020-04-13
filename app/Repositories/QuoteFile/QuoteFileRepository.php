@@ -182,6 +182,11 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         return $this->quoteFile->query()->whereId($id)->firstOrFail();
     }
 
+    public function findByClause(array $clause)
+    {
+        return $this->quoteFile->query()->where($clause)->first();
+    }
+
     public function exists(string $id)
     {
         return $this->quoteFile->whereId($id)->exists();
@@ -250,6 +255,27 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         );
 
         return $quoteFileCopy;
+    }
+
+    public function resolveFileType(string $needle): ?string
+    {
+        switch ($needle) {
+            case 'price':
+                return QFT_PL;
+                break;
+            case 'schedule':
+                return QFT_PS;
+                break;
+        }
+    }
+
+    public function resolveFilepath(?QuoteFile $quoteFile): string
+    {
+        error_abort_if(is_null($quoteFile), QFNF_01, 'QFNF_01', 404);
+
+        error_abort_if(Storage::missing($quoteFile->original_file_path), QFNF_02, 'QFNF_02', 404);
+
+        return Storage::path($quoteFile->original_file_path);
     }
 
     protected function createImportedPages(array $array, QuoteFile $quoteFile)

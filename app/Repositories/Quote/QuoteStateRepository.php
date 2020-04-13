@@ -33,12 +33,12 @@ use App\Repositories\Concerns\{
     ResolvesImplicitModel,
     ResolvesQuoteVersion
 };
-use Closure;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Builder;
-use DB, Arr, Str;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Database\Query\JoinClause;
+use DB, Arr, Str;
+use Closure;
 
 class QuoteStateRepository implements QuoteRepositoryInterface
 {
@@ -178,7 +178,8 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         $query->addSelect('id', 'is_selected', 'group_name', ...$columns);
 
         /** Sorting by columns. */
-        $mapping->each(fn ($map) =>
+        $mapping->each(
+            fn ($map) =>
             /** Except the price column to be able calculate price. */
             $query->when($map->templateField->name !== 'price', fn (QueryBuilder $query) => $query->addSelect($map->templateField->name))
                 ->when(filled($map->sort), fn (QueryBuilder $query) => $query->orderBy($map->templateField->name, $map->sort))
@@ -204,7 +205,11 @@ class QuoteStateRepository implements QuoteRepositoryInterface
     public function calculateTotalPrice(BaseQuote $quote): float
     {
         return DB::query()->fromSub($this->mappedRowsQuery($quote), 'mapped_rows')
-            ->when($quote->groupsReady(), fn (QueryBuilder $query) => $query->whereNotNull('group_name'), fn (QueryBuilder $query) => $query->whereIsSelected(true))
+            ->when(
+                $quote->groupsReady(),
+                fn (QueryBuilder $query) => $query->whereIn('group_name', $quote->selected_group_description_names),
+                fn (QueryBuilder $query) => $query->whereIsSelected(true)
+            )
             ->sum('price');
     }
 
@@ -376,6 +381,15 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         );
     }
 
+    public function getQuotePermission(Quote $quote, array $permissions = ['*']): string
+    {
+        $base = Str::lower(Str::plural(class_basename(Quote::class)));
+
+        $access = implode(',', array_map('trim', $permissions));
+
+        return implode('.', [$base, $access, $quote->id]);
+    }
+
     protected function mappedRowsQuery(BaseQuote $quote): QueryBuilder
     {
         $query = DB::table('imported_rows')
@@ -442,7 +456,8 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         });
 
         /** Select default values when the related mapping doesn't exist. */
-        $defaults->each(fn ($value, $column) =>
+        $defaults->each(
+            fn ($value, $column) =>
             $query->unless($mapping->contains('templateField.name', $column), fn (QueryBuilder $query) => $query->selectRaw("{$value} AS `{$column}`"))
         );
 

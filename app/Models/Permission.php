@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\BaseModel;
+use App\Traits\Uuid;
 use Spatie\Permission\{
     Guard,
     PermissionRegistrar,
@@ -12,16 +12,17 @@ use Spatie\Permission\{
     Exceptions\PermissionDoesNotExist,
     Contracts\Permission as PermissionContract,
 };
-use Illuminate\Database\Eloquent\Relations\{
-    MorphToMany,
-    BelongsToMany
+use Illuminate\Database\Eloquent\{
+    Model,
+    Relations\MorphToMany,
+    Relations\BelongsToMany
 };
 use Illuminate\Support\Collection;
 use Arr;
 
-class Permission extends BaseModel implements PermissionContract
+class Permission extends Model implements PermissionContract
 {
-    use HasRoles, RefreshesPermissionCache;
+    use Uuid, HasRoles, RefreshesPermissionCache;
 
     protected $guarded = ['id'];
 

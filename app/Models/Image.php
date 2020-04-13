@@ -2,8 +2,17 @@
 
 namespace App\Models;
 
-class Image extends BaseModel
+use App\Traits\Uuid;
+use Illuminate\Database\Eloquent\{
+    Model,
+    SoftDeletes,
+    Relations\MorphTo,
+};
+
+class Image extends Model
 {
+    use Uuid, SoftDeletes;
+
     protected $fillable = [
         'original', 'thumbnails'
     ];
@@ -12,20 +21,17 @@ class Image extends BaseModel
         'thumbnails' => 'array'
     ];
 
-    public function imageable()
+    public function imageable(): MorphTo
     {
         return $this->morphTo();
     }
 
-    public function getThumbnailsAttribute($thumbnails)
+    public function getThumbnailsAttribute($value)
     {
-        if (is_null($thumbnails)) {
-            return $thumbnails;
-        }
-
-        $thumbnails = array_map(fn ($value) => asset("storage/{$value}"), json_decode($thumbnails, true));
-
-        return $thumbnails;
+        return optional(
+            $value,
+            fn ($thumbnails) => array_map(fn ($value) => asset("storage/{$value}"), json_decode($thumbnails, true))
+        );
     }
 
     public function getOriginalImageAttribute()

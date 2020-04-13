@@ -3,7 +3,7 @@
 namespace App\Repositories\Quote;
 
 use App\Contracts\Repositories\{
-    Quote\ContractStateRepositoryInterface,
+    Contract\ContractStateRepositoryInterface,
     QuoteFile\QuoteFileRepositoryInterface as QuoteFiles,
     Quote\QuoteRepositoryInterface as QuoteState
 };

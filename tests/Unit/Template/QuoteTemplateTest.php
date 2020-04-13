@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Template;
 
+use Illuminate\Database\Eloquent\Builder;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\{
@@ -35,9 +36,7 @@ class QuoteTemplateTest extends TestCase
             'order_by_vendor_name' => 'asc',
         ]);
 
-        $response = $this->getJson(url("api/templates?{$query}"));
-
-        $response->assertOk();
+        $this->getJson(url("api/templates?{$query}"))->assertOk();
     }
 
     /**
@@ -49,9 +48,8 @@ class QuoteTemplateTest extends TestCase
     {
         $attributes = $this->makeGenericTemplateAttributes();
 
-        $response = $this->postJson(url("api/templates"), $attributes);
-
-        $response->assertOk()
+        $this->postJson(url("api/templates"), $attributes)
+            ->assertOk()
             ->assertJsonStructure(static::$assertableAttributes)
             ->assertJsonFragment(Arr::only($attributes, static::$assertableAttributes));
     }
@@ -67,9 +65,8 @@ class QuoteTemplateTest extends TestCase
 
         $attributes = $this->makeGenericTemplateAttributes();
 
-        $response = $this->patchJson(url("api/templates/{$template->id}"), $attributes);
-
-        $response->assertOk()
+        $this->patchJson(url("api/templates/{$template->id}"), $attributes)
+            ->assertOk()
             ->assertJsonStructure(static::$assertableAttributes)
             ->assertJsonFragment(Arr::only($attributes, static::$assertableAttributes));
     }
@@ -81,15 +78,12 @@ class QuoteTemplateTest extends TestCase
      */
     public function testMasterTemplateUpdating()
     {
-        $template = app('template.repository')->random(1, function ($query) {
-            $query->system();
-        });
+        $template = app('template.repository')->random(1, fn (Builder $query) => $query->system());
 
         $attributes = $this->makeGenericTemplateAttributes();
 
-        $response = $this->patchJson(url("api/templates/{$template->id}"), $attributes);
-
-        $response->assertForbidden()
+        $this->patchJson(url("api/templates/{$template->id}"), $attributes)
+            ->assertForbidden()
             ->assertJsonFragment(['message' => QTSU_01]);
     }
 
@@ -100,21 +94,17 @@ class QuoteTemplateTest extends TestCase
      */
     public function testTemplateCopying()
     {
-        $template = app('template.repository')->random(1, function ($query) {
-            $query->system();
-        });
+        $template = app('template.repository')->random(1, fn (Builder $query) => $query->system());
 
-        $response = $this->putJson(url("api/templates/copy/{$template->id}"), []);
-
-        $response->assertOk();
+        $response = $this->putJson(url("api/templates/copy/{$template->id}"), [])->assertOk();
 
         /**
          * Test that a newly copied Template existing.
          */
         $id = $response->json('id');
-        $response = $this->getJson(url("api/templates/{$id}"));
 
-        $response->assertOk()
+        $this->getJson(url("api/templates/{$id}"))
+            ->assertOk()
             ->assertJsonStructure(static::$assertableAttributes);
     }
 
@@ -127,14 +117,11 @@ class QuoteTemplateTest extends TestCase
     {
         $template = app('template.repository')->create($this->makeGenericTemplateAttributes());
 
-        $response = $this->deleteJson(url("api/templates/{$template->id}"), []);
-
-        $response->assertOk()
+        $this->deleteJson(url("api/templates/{$template->id}"), [])
+            ->assertOk()
             ->assertExactJson([true]);
 
-        $template->refresh();
-
-        $this->assertNotNull($template->deleted_at);
+        $this->assertSoftDeleted($template);
     }
 
     /**
@@ -144,18 +131,11 @@ class QuoteTemplateTest extends TestCase
      */
     public function testMasterTemplateDeleting()
     {
-        $template = app('template.repository')->random(1, function ($query) {
-            $query->system();
-        });
+        $template = app('template.repository')->random(1, fn (Builder $query) => $query->system());
 
-        $response = $this->deleteJson(url("api/templates/{$template->id}"), []);
-
-        $response->assertForbidden()
+        $this->deleteJson(url("api/templates/{$template->id}"), [])
+            ->assertForbidden()
             ->assertJsonFragment(['message' => QTSD_01]);
-
-        $template->refresh();
-
-        $this->assertNull($template->deleted_at);
     }
 
     /**
@@ -167,14 +147,11 @@ class QuoteTemplateTest extends TestCase
     {
         $template = tap(app('template.repository')->create($this->makeGenericTemplateAttributes()))->deactivate();
 
-        $response = $this->putJson(url("api/templates/activate/{$template->id}"), []);
-
-        $response->assertOk()
+        $this->putJson(url("api/templates/activate/{$template->id}"), [])
+            ->assertOk()
             ->assertExactJson([true]);
 
-        $template->refresh();
-
-        $this->assertNotNull($template->activated_at);
+        $this->assertNotNull($template->refresh()->activated_at);
     }
 
     /**
@@ -186,14 +163,11 @@ class QuoteTemplateTest extends TestCase
     {
         $template = tap(app('template.repository')->create($this->makeGenericTemplateAttributes()))->activate();
 
-        $response = $this->putJson(url("api/templates/deactivate/{$template->id}"), []);
-
-        $response->assertOk()
+        $this->putJson(url("api/templates/deactivate/{$template->id}"), [])
+            ->assertOk()
             ->assertExactJson([true]);
 
-        $template->refresh();
-
-        $this->assertNull($template->activated_at);
+        $this->assertNull($template->refresh()->activated_at);
     }
 
     /**
@@ -205,9 +179,8 @@ class QuoteTemplateTest extends TestCase
     {
         $template = app('template.repository')->random();
 
-        $response = $this->getJson(url("api/templates/designer/{$template->id}"));
-
-        $response->assertOk()
+        $this->getJson(url("api/templates/designer/{$template->id}"))
+            ->assertOk()
             ->assertJsonStructure([
                 'first_page',
                 'data_pages',

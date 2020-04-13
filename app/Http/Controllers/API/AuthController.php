@@ -16,7 +16,12 @@ use App\Contracts\{
     Services\AuthServiceInterface
 };
 use App\Contracts\Repositories\System\BuildRepositoryInterface;
-use App\Http\Resources\AuthenticatedUserResource;
+use App\Http\Resources\{
+    AuthenticatedUserResource,
+    User\AttemptsResource,
+};
+use App\Http\Resources\Invitation\InvitationPublicResource;
+use App\Http\Resources\User\AuthResource;
 use App\Models\{
     Collaboration\Invitation,
     PasswordReset
@@ -45,7 +50,7 @@ class AuthController extends Controller
         $this->user->createAdministrator($request->validated());
 
         return response()->json(
-            $this->auth->authenticate($request)
+            $this->auth->authenticate($request->validated())
         );
     }
 
@@ -58,7 +63,7 @@ class AuthController extends Controller
     public function showInvitation(string $invitation)
     {
         return response()->json(
-            $this->user->invitation($invitation)
+            InvitationPublicResource::make($this->user->invitation($invitation))
         );
     }
 
@@ -84,8 +89,12 @@ class AuthController extends Controller
      */
     public function signin(UserSignInRequest $request)
     {
+        $response = $this->auth->authenticate($request->validated());
+
         return response()->json(
-            $this->auth->authenticate($request)
+            AuthResource::make($response)->additional([
+                'recaptcha_response' => request('recaptcha_response')
+            ])
         );
     }
 
@@ -110,7 +119,20 @@ class AuthController extends Controller
     {
         return response()->json(
             AuthenticatedUserResource::make(auth()->user())
-                ->additional(['build' => $build->latest()])
+                ->additional(['build' => $build->last()])
+        );
+    }
+
+    /**
+     * Show failed access attempts by specific user.
+     *
+     * @param string $email
+     * @return \Illuminate\Http\Response
+     */
+    public function showAttempts(string $email)
+    {
+        return response()->json(
+            AttemptsResource::make($this->user->findByEmail($email))
         );
     }
 
@@ -124,7 +146,7 @@ class AuthController extends Controller
     {
         return response()->json(
             AuthenticatedUserResource::make($this->user->updateOwnProfile($request))
-                ->additional(['build' => $build->latest()])
+                ->additional(['build' => $build->last()])
         );
     }
 

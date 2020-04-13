@@ -34,8 +34,6 @@ class VendorObserver
         }
 
         cache()->tags('vendors')->flush();
-
-        error_abort_if($this->exists($vendor), VUD_01, 'VUD_01', 409);
     }
 
     private function exists(Vendor $vendor)

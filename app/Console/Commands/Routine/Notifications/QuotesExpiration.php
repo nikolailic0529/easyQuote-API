@@ -11,11 +11,13 @@ use App\Models\{
     Quote\Quote,
     User
 };
-use Closure;
 use Illuminate\Database\Eloquent\Builder;
+use DB, Closure;
 
 class QuotesExpiration extends Command
 {
+    public const NOTIFICATION_KEY = 'expired';
+
     /**
      * The name and signature of the console command.
      *
@@ -30,10 +32,8 @@ class QuotesExpiration extends Command
      */
     protected $description = 'Notify Users about Quotes Expiration';
 
-    /** @var \App\Contracts\Repositories\UserRepositoryInterface */
     protected Users $users;
 
-    /** @var \App\Contracts\Repositories\Quote\QuoteDraftedRepositoryInterface */
     protected Quotes $quotes;
 
     /**
@@ -56,18 +56,15 @@ class QuotesExpiration extends Command
      */
     public function handle()
     {
-        \DB::transaction(function () {
-            $this->users->cursor()
-                ->each(function ($user) {
-                    $this->serveUser($user);
-                });
-        });
+        DB::transaction(
+            fn () => $this->users->cursor()->each(fn (User $user) => $this->serveUser($user))
+        );
     }
 
     protected function serveUser(User $user): void
     {
-        $this->quotes->getExpiring(setting('notification_time'), $user, $this->scope())
-            ->each(function ($quote) {
+        $this->quotes->getExpiring(setting('notification_time'), $user, static::scope())
+            ->each(function (Quote $quote) {
                 notification()
                     ->for($quote->user)
                     ->message($this->formatMessage($quote))
@@ -75,6 +72,8 @@ class QuotesExpiration extends Command
                     ->url(ui_route('quotes.status', compact('quote')))
                     ->priority(2)
                     ->store();
+
+                $quote->notifications()->create(['notification_key' => static::NOTIFICATION_KEY]);
             });
     }
 
@@ -86,10 +85,12 @@ class QuotesExpiration extends Command
         return __(QE_01, compact('rfq_number', 'expires_at'));
     }
 
-    protected function scope(): Closure
+    protected static function scope(): Closure
     {
-        return function (Builder $query) {
-            $query->doesntHave('notifications');
-        };
+        return fn (Builder $query) =>
+        $query->whereDoesntHave(
+            'notifications',
+            fn (Builder $query) => $query->whereNotificationKey(static::NOTIFICATION_KEY)
+        );
     }
 }

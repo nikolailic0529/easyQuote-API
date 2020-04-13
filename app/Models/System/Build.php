@@ -2,13 +2,16 @@
 
 namespace App\Models\System;
 
-use App\Models\BaseModel;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\Uuid;
+use Illuminate\Database\Eloquent\{
+    Model,
+    SoftDeletes,
+};
 use Illuminate\Support\Carbon;
 
-class Build extends BaseModel
+class Build extends Model
 {
-    use SoftDeletes;
+    use Uuid, SoftDeletes;
 
     protected $fillable = [
         'git_tag', 'build_number', 'maintenance_message', 'start_time', 'end_time'
@@ -17,9 +20,4 @@ class Build extends BaseModel
     protected $dates = [
         'start_time', 'end_time'
     ];
-
-    public function getCreatedAtAttribute($value)
-    {
-        return Carbon::parse($value);
-    }
 }

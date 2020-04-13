@@ -61,19 +61,4 @@ class MaintenanceScheduled implements ShouldBroadcastNow
             'time' => (string) $this->schedule->toISOString()
         ];
     }
-
-    /**
-     * Get the mail representation of the notification.
-     *
-     * @param  mixed  $notifiable
-     * @return \Illuminate\Notifications\Messages\MailMessage
-     */
-    public function toMail($notifiable)
-    {
-        return (new MailMessage)
-            ->greeting('Hello!')
-            ->line('One of your invoices has been paid!')
-            ->action('View Invoice', $url)
-            ->line('Thank you for using our application!');
-    }
 }

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\API\Contracts;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Contracts\Repositories\Quote\ContractStateRepositoryInterface as Contracts;
+use App\Contracts\Repositories\Contract\ContractStateRepositoryInterface as Contracts;
 use App\Contracts\Services\QuoteServiceInterface as QuoteService;
 use App\Http\Requests\Quote\StoreContractStateRequest;
 use App\Models\Quote\Contract;
@@ -13,8 +13,7 @@ use App\Http\Resources\QuoteReviewResource;
 
 class ContractStateController extends Controller
 {
-    /** @var \App\Contracts\Repositories\Quote\ContractStateRepositoryInterface */
-    protected $contracts;
+    protected Contracts $contracts;
 
     public function __construct(Contracts $contracts)
     {

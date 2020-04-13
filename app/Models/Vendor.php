@@ -18,13 +18,18 @@ use App\Traits\{
     Quote\HasQuotes,
     QuoteTemplate\HasQuoteTemplates,
     Activity\LogsActivity,
-    Auth\Multitenantable
+    Auth\Multitenantable,
+    Uuid
 };
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\{
+    Model,
+    SoftDeletes,
+};
 
-class Vendor extends BaseModel implements WithImage, WithLogo, ActivatableInterface
+class Vendor extends Model implements WithImage, WithLogo, ActivatableInterface
 {
-    use Multitenantable,
+    use Uuid,
+        Multitenantable,
         HasLogo,
         HasImage,
         BelongsToCountries,

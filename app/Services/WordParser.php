@@ -388,7 +388,7 @@ class WordParser implements WordParserInterface
                 $cells = $keys->map(fn ($key) => data_get($row, 'cells.' . $key));
 
                 /** One off pay header is last, so we are using last header key. */
-                $cells->put($keys->count(), static::seekColumnsForOnePay($cells));
+                $cells->put($keys->count() - 1, static::seekColumnsForOnePay($cells));
 
                 return $row->put('cells', $cells->toArray())->toArray();
             })

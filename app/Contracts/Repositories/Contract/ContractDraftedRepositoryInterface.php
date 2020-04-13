@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Contracts\Repositories\Quote;
+namespace App\Contracts\Repositories\Contract;
 
 use App\Models\Quote\Contract;
 use Illuminate\Database\Eloquent\Builder;

@@ -36,12 +36,24 @@ return [
 
     'search' => [
         'enabled' => env('ELASTICSEARCH_ENABLED', false),
-        'hosts' => explode(',', env('ELASTICSEARCH_HOSTS'))
+        'hosts' => explode(',', env('ELASTICSEARCH_HOSTS')),
     ],
 
     'slack' => [
         'enabled' => env('SLACK_ENABLED', false),
-        'endpoint' => env('SLACK_SERVICE_URL', SLACK_SERVICE_URL)
-    ]
+        'endpoint' => env('SLACK_SERVICE_URL', SLACK_SERVICE_URL),
+    ],
+
+    'recaptcha_v3' => [
+        'url' => env('RECAPTCHA_V3_URL', 'https://www.google.com/recaptcha/api/siteverify'),
+        'key' => env('RECAPTCHA_V3_KEY'),
+        'secret' => env('RECAPTCHA_V3_SECRET'),
+    ],
+
+    'recaptcha_v2' => [
+        'url' => env('RECAPTCHA_V2_URL', 'https://www.google.com/recaptcha/api/siteverify'),
+        'key' => env('RECAPTCHA_V2_KEY'),
+        'secret' => env('RECAPTCHA_V2_SECRET'),
+    ],
 
 ];

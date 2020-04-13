@@ -6,25 +6,25 @@ use App\Contracts\{
     ActivatableInterface,
     HasOrderedScope
 };
-use App\Models\{
-    BaseModel,
-    Quote\BaseQuote as Quote
-};
+use App\Models\Quote\BaseQuote as Quote;
 use App\Traits\{
     BelongsToUser,
     BelongsToVendor,
     Activatable,
-    Auth\Multitenantable
+    Auth\Multitenantable,
+    Uuid
 };
+use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
 use Illuminate\Database\Eloquent\{
     Builder,
+    Model,
     SoftDeletes
 };
 use Str;
 
-abstract class Margin extends BaseModel implements HasOrderedScope, ActivatableInterface
+abstract class Margin extends Model implements HasOrderedScope, ActivatableInterface
 {
-    use Multitenantable, BelongsToUser, BelongsToVendor, SoftDeletes, Activatable;
+    use Uuid, EloquentJoin, Multitenantable, BelongsToUser, BelongsToVendor, SoftDeletes, Activatable;
 
     protected $perPage = 8;
 

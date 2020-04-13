@@ -16,9 +16,13 @@ class CreateQuoteVersionTable extends Migration
         Schema::create('quote_version', function (Blueprint $table) {
             $table->uuid('quote_id');
             $table->foreign('quote_id')->references('id')->on('quotes')->onDelete('cascade');
+
             $table->uuid('version_id');
             $table->foreign('version_id')->references('id')->on('quotes')->onDelete('cascade');
+
             $table->boolean('is_using')->default(false);
+
+            $table->primary(['quote_id', 'version_id']);
         });
     }
 

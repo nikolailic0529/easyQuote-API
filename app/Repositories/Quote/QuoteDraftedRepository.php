@@ -5,18 +5,18 @@ namespace App\Repositories\Quote;
 use App\Contracts\Repositories\Quote\QuoteDraftedRepositoryInterface;
 use App\Http\Resources\QuoteRepository\DraftedCollection;
 use App\Repositories\SearchableRepository;
-use App\Models\Quote\{
-    Quote,
-    QuoteVersion
-};
-use App\Models\User;
-use Carbon\CarbonInterval;
-use Closure;
 use Illuminate\Database\Eloquent\{
     Model,
     Builder,
     Collection
 };
+use App\Models\{
+    User,
+    Quote\Quote,
+    Quote\QuoteVersion
+};
+use Carbon\CarbonInterval;
+use Closure;
 
 class QuoteDraftedRepository extends SearchableRepository implements QuoteDraftedRepositoryInterface
 {
@@ -45,8 +45,15 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
     public function userQuery(): Builder
     {
         return $this->quote
-            ->currentUserWhen(request()->user()->cant('view_quotes'))
-            ->with('versions:id,quotes.user_id,version_number,completeness,created_at,updated_at,drafted_at')
+            ->query()
+            ->when(
+                /** If user is not super-admin we are retrieving the user's own quotes */
+                request()->user()->cant('view_quotes'),
+                fn (Builder $query) => $query->currentUser()
+                    /** Adding quotes that have been granted access to */
+                    ->orWhereIn('id', request()->user()->getPermissionTargets('quotes.read')),
+            )
+            ->with('versions:id,quotes.user_id,version_number,completeness,created_at,updated_at,drafted_at', 'usingVersion.quoteFiles')
             ->drafted();
     }
 
@@ -65,14 +72,14 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
 
         $query = $this->quote->query()
             ->drafted()
-            ->when(filled($user), function ($query) use ($user) {
-                $query->where('quotes.user_id', $user);
-            })
-            ->whereHas('customer', function ($query) use ($interval) {
+            ->when(filled($user), fn ($query) => $query->where('quotes.user_id', $user))
+            ->whereHas(
+                'customer',
+                fn (Builder $query) =>
                 $query->whereNotNull('customers.valid_until')
                     ->whereDate('customers.valid_until', '>', now())
-                    ->whereRaw("datediff(`customers`.`valid_until`, now()) <= ?", [$interval->d]);
-            })
+                    ->whereRaw("datediff(`customers`.`valid_until`, now()) <= ?", [$interval->d])
+            )
             ->with('customer');
 
         if ($scope instanceof Closure) {

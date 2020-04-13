@@ -6,7 +6,6 @@ use App\Observers\SearchObserver;
 
 trait Searchable
 {
-    /** @var boolean */
     protected bool $reindexEnabled = true;
 
     public static function bootSearchable()

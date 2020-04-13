@@ -2,11 +2,12 @@
 
 /** @var \Illuminate\Database\Eloquent\Factory $factory */
 
-use App\Models\QuoteFile\ImportableColumn;
-use App\Models\QuoteFile\ImportedRow;
-use App\Models\QuoteTemplate\TemplateField;
+use App\Models\{
+    QuoteFile\ImportableColumn,
+    QuoteFile\ImportedRow,
+    QuoteTemplate\TemplateField,
+};
 use Faker\Generator as Faker;
-use Webpatser\Uuid\Uuid;
 
 $factory->define(ImportedRow::class, function (Faker $faker) {
     $templateFields = TemplateField::where('is_system', true)->pluck('id', 'name');

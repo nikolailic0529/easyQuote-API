@@ -3,7 +3,6 @@
 namespace App\Models\QuoteTemplate;
 
 use App\Scopes\ContractTemplateScope;
-use Arr;
 
 class ContractTemplate extends BaseQuoteTemplate
 {

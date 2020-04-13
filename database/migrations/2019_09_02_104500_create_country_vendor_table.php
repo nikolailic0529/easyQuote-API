@@ -18,6 +18,8 @@ class CreateCountryVendorTable extends Migration
             $table->foreign('vendor_id')->references('id')->on('vendors')->onDelete('cascade');
             $table->uuid('country_id');
             $table->foreign('country_id')->references('id')->on('countries')->onDelete('cascade');
+
+            $table->primary(['vendor_id', 'country_id']);
         });
     }
 

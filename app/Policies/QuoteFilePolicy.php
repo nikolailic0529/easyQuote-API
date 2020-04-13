@@ -37,6 +37,8 @@ class QuoteFilePolicy
         if ($user->can('view_quote_files')) {
             return true;
         }
+
+        return $this->deny('You have not any permission to this module.');
     }
 
     /**
@@ -50,6 +52,12 @@ class QuoteFilePolicy
         if ($user->can('create_quote_files')) {
             return true;
         }
+
+        $readonly = $user->can('view_quote_files')
+            ? 'You have readonly access.'
+            : 'You have not any permission to this module.';
+
+        return $this->deny('You can not upload quote files. ' . $readonly);
     }
 
     /**
@@ -92,5 +100,11 @@ class QuoteFilePolicy
         if ($user->can('handle_quote_files')) {
             return true;
         }
+
+        $readonly = $user->can('view_quote_files')
+            ? 'You have readonly access.'
+            : 'You have not any permission to this module.';
+
+        return $this->deny('You can not import quote files. ' . $readonly);
     }
 }

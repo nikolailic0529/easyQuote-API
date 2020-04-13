@@ -14,8 +14,8 @@ class AddCountryMarginIdQuotesTable extends Migration
     public function up()
     {
         Schema::table('quotes', function (Blueprint $table) {
-            $table->uuid('country_margin_id')->nullable();
-            $table->foreign('country_margin_id')->references('id')->on('country_margins');
+            $table->uuid('country_margin_id')->nullable()->after('country_id');
+            $table->foreign('country_margin_id')->references('id')->on('country_margins')->onDelete('set null');
         });
     }
 

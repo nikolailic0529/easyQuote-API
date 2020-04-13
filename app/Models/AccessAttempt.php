@@ -2,14 +2,18 @@
 
 namespace App\Models;
 
-use App\Models\BaseModel;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
+use App\Traits\Uuid;
+use Illuminate\Database\Eloquent\{
+    Model,
+    Builder,
+};
 use Laravel\Passport\PersonalAccessTokenResult;
 use Str;
 
-class AccessAttempt extends BaseModel
+class AccessAttempt extends Model
 {
+    use Uuid;
+
     /** @var boolean */
     public bool $previouslyKnown = false;
 

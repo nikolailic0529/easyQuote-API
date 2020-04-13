@@ -1,0 +1,13 @@
+<?php
+
+namespace {{ namespace }};
+
+use Illuminate\Database\Eloquent\Model;
+use App\Traits\Uuid;
+
+class {{ class }} extends Model
+{
+    use Uuid;
+
+    protected $fillable = [];
+}

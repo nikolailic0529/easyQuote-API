@@ -32,6 +32,7 @@ class MaintenanceFinished extends Notification
     {
 
         return (new MailMessage)
+                    ->success()
                     ->line("Hi {$notifiable->fullname}")
                     ->line("We have finished app maintenance.")
                     ->line("You can continue using easyQuote.")

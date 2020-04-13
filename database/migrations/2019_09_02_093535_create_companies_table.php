@@ -14,14 +14,32 @@ class CreateCompaniesTable extends Migration
     public function up()
     {
         Schema::create('companies', function (Blueprint $table) {
-            $table->uuid('id');
-            $table->primary('id');
+            $table->uuid('id')->primary();
+            
+            $table->uuid('user_id')->nullable();
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
+
+            $table->uuid('default_vendor_id')->nullable();
+            $table->foreign('default_vendor_id')->references('id')->on('vendors')->onDelete('set null');
+
+            $table->uuid('default_country_id')->nullable();
+            $table->foreign('default_country_id')->references('id')->on('countries')->onDelete('set null');
+
             $table->string('name');
             $table->string('vat');
             $table->boolean('is_system')->default(false);
+
+            $table->string('type');
+            $table->string('category')->nullable();
+            $table->string('email');
+            $table->string('phone')->nullable();
+            $table->string('website')->nullable();
+
             $table->timestamps();
-            $table->timestamp('drafted_at')->nullable()->default(null);
-            $table->softDeletes();
+            $table->timestamp('activated_at')->index()->nullable();
+            $table->softDeletes()->index();
+
+            $table->unique(['vat', 'deleted_at']);
         });
     }
 

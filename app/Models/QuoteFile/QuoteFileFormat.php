@@ -2,9 +2,10 @@
 
 namespace App\Models\QuoteFile;
 
-use App\Models\BaseModel;
+use App\Traits\Uuid;
+use Illuminate\Database\Eloquent\Model;
 
-class QuoteFileFormat extends BaseModel
+class QuoteFileFormat extends Model
 {
-    //
+    use Uuid;
 }

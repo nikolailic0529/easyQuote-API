@@ -4,13 +4,13 @@ namespace App\Factories\Failure;
 
 use Illuminate\Contracts\Support\Arrayable;
 use ArrayAccess, Arr;
-use Exception;
+use Throwable;
 
 class FailureHelp implements ArrayAccess, Arrayable
 {
     protected $attributes;
 
-    public function __construct(Exception $exception, iterable $reasons, iterable $resolving)
+    public function __construct(Throwable $exception, iterable $reasons, iterable $resolving)
     {
         $this->attributes = [
             'exception' => $exception,
@@ -26,7 +26,7 @@ class FailureHelp implements ArrayAccess, Arrayable
         return $this->attributes[$key] ?? null;
     }
 
-    public static function create(Exception $exception, iterable $reasons, iterable $resolving)
+    public static function create(Throwable $exception, iterable $reasons, iterable $resolving)
     {
         return new static($exception, $reasons, $resolving);
     }

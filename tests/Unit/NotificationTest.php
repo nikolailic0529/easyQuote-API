@@ -41,9 +41,8 @@ class NotificationTest extends TestCase
      */
     public function testLatestNotificationListing()
     {
-        $response = $this->getJson(url('api/notifications/latest'));
-
-        $response->assertOk()
+        $this->getJson(url('api/notifications/latest'))
+            ->assertOk()
             ->assertJsonStructure(['data', 'total']);
     }
 
@@ -56,9 +55,8 @@ class NotificationTest extends TestCase
     {
         $notification = $this->createFakeNotification();
 
-        $response = $this->deleteJson(url("api/notifications/{$notification->id}"));
-
-        $response->assertOk()
+        $this->deleteJson(url("api/notifications/{$notification->id}"))
+            ->assertOk()
             ->assertExactJson([true]);
 
         $this->assertSoftDeleted($notification);
@@ -73,14 +71,12 @@ class NotificationTest extends TestCase
     {
         $this->createFakeNotification();
 
-        $response = $this->deleteJson(url('api/notifications'));
-
-        $response->assertOk()
+        $this->deleteJson(url('api/notifications'))
+            ->assertOk()
             ->assertExactJson([true]);
 
-        $response = $this->getJson(url('api/notifications/latest'));
-
-        $response->assertOk()
+        $this->getJson(url('api/notifications/latest'))
+            ->assertOk()
             ->assertExactJson([
                 'data' => [],
                 'total' => 0,
@@ -98,9 +94,8 @@ class NotificationTest extends TestCase
     {
         $notification = $this->createFakeNotification();
 
-        $response = $this->putJson(url("api/notifications/{$notification->id}"));
-
-        $response->assertOk()
+        $this->putJson(url("api/notifications/{$notification->id}"))
+            ->assertOk()
             ->assertExactJson([true]);
 
         $this->assertNotNull($notification->refresh()->read_at);
@@ -110,14 +105,11 @@ class NotificationTest extends TestCase
     {
         $this->createFakeNotification();
 
-        $response = $this->putJson(url('api/notifications'));
-
-        $response->assertOk()
+        $this->putJson(url('api/notifications'))
+            ->assertOk()
             ->assertExactJson([true]);
 
-        $response = $this->getJson(url('api/notifications/latest'));
-
-        $response->assertOk();
+        $response = $this->getJson(url('api/notifications/latest'))->assertOk();
 
         $notifications = collect($response->json('data'));
 

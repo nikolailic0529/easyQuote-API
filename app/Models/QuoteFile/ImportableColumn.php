@@ -2,10 +2,7 @@
 
 namespace App\Models\QuoteFile;
 
-use App\Models\{
-    BaseModel,
-    QuoteFile\ImportableColumnAlias
-};
+use App\Models\QuoteFile\ImportableColumnAlias;
 use App\Contracts\HasOrderedScope;
 use App\Models\Quote\FieldColumn;
 use App\Traits\{
@@ -16,17 +13,22 @@ use App\Traits\{
     Activity\LogsActivity,
     Search\Searchable,
     Auth\Multitenantable,
-    BelongsToCountry
+    BelongsToCountry,
+    Uuid
 };
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\{
+    Model,
+    Builder,
+    SoftDeletes,
+    Relations\BelongsTo,
+    Relations\HasMany,
+};
 use Str;
 
-class ImportableColumn extends BaseModel implements HasOrderedScope
+class ImportableColumn extends Model implements HasOrderedScope
 {
-    use BelongsToUser,
+    use Uuid,
+        BelongsToUser,
         BelongsToCountry,
         Multitenantable,
         HasColumnsData,

@@ -4,17 +4,15 @@ namespace App\Http\Requests\Maintenance;
 
 use Illuminate\Foundation\Http\FormRequest;
 use App\Contracts\Repositories\System\SystemSettingRepositoryInterface as Settings;
+use App\Rules\MaintenanceStopped;
 use Illuminate\Support\Carbon;
 
 class StartMaintenanceRequest extends FormRequest
 {
-    /** @var \Carbon\Carbon */
     public Carbon $carbonStartTime;
 
-    /** @var \Carbon\Carbon */
     public Carbon $carbonEndTime;
 
-    /** @var \App\Contracts\Repositories\System\SystemSettingRepositoryInterface */
     protected Settings $settings;
 
     public function __construct(Settings $settings)
@@ -31,7 +29,7 @@ class StartMaintenanceRequest extends FormRequest
     {
         return [
             'maintenance_message'   => 'nullable|string|max:20000',
-            'enable'                => 'nullable|boolean',
+            'enable'                => ['nullable', 'boolean', new MaintenanceStopped],
             'start_time'            => 'required|integer|min:1|max:720',
             'end_time'              => 'required|integer|min:1|max:720',
         ];

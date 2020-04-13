@@ -2,6 +2,8 @@
 
 namespace App\Traits\Quote;
 
+use Illuminate\Support\Collection;
+
 trait HasGroupDescriptionAttribute
 {
     public function initializeHasGroupDescriptionAttribute()
@@ -43,16 +45,14 @@ trait HasGroupDescriptionAttribute
 
     public function findGroupDescriptionKey(string $id)
     {
-        return collect($this->group_description)->search(function ($group) use ($id) {
-            return isset($group['id']) && $group['id'] === $id;
-        });
+        return collect($this->group_description)->search(fn ($group) => isset($group['id']) && $group['id'] === $id);
     }
 
     public function resetGroupDescription(): bool
     {
         return $this->forceFill([
-            'group_description'         => null,
-            'sort_group_description'    => null
+            'group_description' => null,
+            'sort_group_description' => null
         ])->save();
     }
 
@@ -70,5 +70,10 @@ trait HasGroupDescriptionAttribute
     public function groupsReady(): bool
     {
         return $this->use_groups && $this->has_group_description;
+    }
+
+    public function getSelectedGroupDescriptionNamesAttribute(): array
+    {
+        return Collection::wrap($this->group_description)->where('is_selected', true)->pluck('name')->toArray();
     }
 }

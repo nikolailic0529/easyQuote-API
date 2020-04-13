@@ -31,9 +31,9 @@ class DraftedResource extends JsonResource
                 'rfq'           => $this->contract_number,
             ],
             'quote_customer'    => QuoteCustomerResource::make($this),
-            'created_at'        => $this->created_at,
+            'created_at'        => optional($this->created_at)->format(config('date.format_time')),
+            'updated_at'        => optional($this->usingVersionFromSelection->updated_at)->format(config('date.format_time')),
             'activated_at'      => $this->activated_at,
-            'updated_at'        => $this->usingVersionFromSelection->updated_at
         ];
     }
 }

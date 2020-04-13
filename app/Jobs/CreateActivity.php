@@ -12,8 +12,7 @@ class CreateActivity implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable;
 
-    /** @var \App\Models\System\Activity */
-    protected $activity;
+    protected Activity $activity;
 
     /**
      * Create a new job instance.
@@ -33,7 +32,7 @@ class CreateActivity implements ShouldQueue
     public function handle()
     {
         rescue(
-            fn () => $this->activity->save(),
+            fn () => $this->activity->saveOrFail(),
             fn () => $this->release()
         );
     }

@@ -6,10 +6,8 @@ use App\Contracts\{
     ActivatableInterface,
     WithImage
 };
-use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Models\{
     Role,
-    AuthenticableUser,
     Collaboration\Invitation
 };
 use App\Traits\{
@@ -35,16 +33,43 @@ use App\Traits\{
     User\EnforceableChangePassword,
     User\PerformsActivity,
     Activity\LogsActivity,
-    Notifiable
+    Permission\HasPermissionTargets,
+    Notifiable,
+    Uuid,
 };
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\{
+    Builder,
+    Model,
+    SoftDeletes,
+};
 use Spatie\Permission\Traits\HasRoles;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Foundation\Auth\Access\Authorizable;
+use Illuminate\Contracts\Auth\{
+    Authenticatable as AuthenticatableContract,
+    Access\Authorizable as AuthorizableContract,
+    CanResetPassword as CanResetPasswordContract
+};
+use Illuminate\Auth\{
+    Authenticatable,
+    MustVerifyEmail,
+    Passwords\CanResetPassword
+};
 use Arr;
 
-class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInterface, WithImage
+class User extends Model implements
+    ActivatableInterface,
+    AuthenticatableContract,
+    AuthorizableContract,
+    CanResetPasswordContract,
+    WithImage
 {
-    use HasRoles,
+    use Uuid,
+        Authenticatable,
+        Authorizable,
+        MustVerifyEmail,
+        CanResetPassword,
+        HasRoles,
+        HasPermissionTargets,
         HasImportableColumns,
         HasQuotes,
         HasQuoteFiles,
@@ -76,7 +101,7 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
      * @var array
      */
     protected $fillable = [
-        'first_name', 'middle_name', 'last_name', 'timezone_id', 'email', 'password', 'role_id', 'phone', 'default_route', 'recent_notifications_limit'
+        'first_name', 'middle_name', 'last_name', 'timezone_id', 'email', 'password', 'role_id', 'phone', 'default_route', 'recent_notifications_limit', 'failed_attempts'
     ];
 
     /**
@@ -187,6 +212,7 @@ class User extends AuthenticableUser implements MustVerifyEmail, ActivatableInte
     public function withAppends(...$attributes)
     {
         $appends = ['role_id', 'role_name', 'picture', 'privileges', 'role_properties', 'must_change_password'];
+        
         return $this->append(array_merge($appends, $attributes));
     }
 }

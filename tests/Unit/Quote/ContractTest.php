@@ -95,9 +95,8 @@ class ContractTest extends TestCase
 
         $contractTemplate = app('contract_template.repository')->random();
 
-        $response = $this->postJson(url('api/quotes/submitted/contract/' . $quote->id), ['contract_template_id' => $contractTemplate->id]);
-
-        $response->assertOk()
+        $this->postJson(url('api/quotes/submitted/contract/' . $quote->id), ['contract_template_id' => $contractTemplate->id])
+            ->assertOk()
             ->assertJsonStructure(static::$assertableAttributes);
     }
 
@@ -110,9 +109,8 @@ class ContractTest extends TestCase
     {
         $contract = $this->createFakeContract();
 
-        $response = $this->getJson(url('api/contracts/state/' . $contract->id));
-
-        $response->assertOk()
+        $this->getJson(url('api/contracts/state/' . $contract->id))
+            ->assertOk()
             ->assertJsonStructure(static::$assertableAttributes);
     }
 
@@ -125,9 +123,8 @@ class ContractTest extends TestCase
     {
         $contract = $this->createFakeContract();
 
-        $response = $this->getJson(url('api/contracts/state/review/' . $contract->id));
-
-        $response->assertOk()
+        $this->getJson(url('api/contracts/state/review/' . $contract->id))
+            ->assertOk()
             ->assertJsonStructure(['first_page', 'data_pages', 'last_page', 'payment_schedule']);
     }
 
@@ -142,9 +139,8 @@ class ContractTest extends TestCase
 
         $attributes = ['additional_notes' => $this->faker->text];
 
-        $response = $this->patchJson(url('api/contracts/state/' . $contract->id), $attributes);
-
-        $response->assertOk()
+        $this->patchJson(url('api/contracts/state/' . $contract->id), $attributes)
+            ->assertOk()
             ->assertJsonStructure(static::$assertableAttributes);
     }
 
@@ -157,9 +153,8 @@ class ContractTest extends TestCase
     {
         $contract = $this->createFakeContract();
 
-        $response = $this->postJson(url('api/contracts/drafted/submit/' . $contract->id));
-
-        $response->assertOk()->assertExactJson([true]);
+        $this->postJson(url('api/contracts/drafted/submit/' . $contract->id))
+            ->assertOk()->assertExactJson([true]);
 
         $this->assertNotNull($contract->refresh()->submitted_at);
     }
@@ -173,9 +168,8 @@ class ContractTest extends TestCase
     {
         $contract = tap($this->createFakeContract())->submit();
 
-        $response = $this->postJson(url('api/contracts/submitted/unsubmit/' . $contract->id));
-
-        $response->assertOk()->assertExactJson([true]);
+        $this->postJson(url('api/contracts/submitted/unsubmit/' . $contract->id))
+            ->assertOk()->assertExactJson([true]);
 
         $this->assertNull($contract->refresh()->submitted_at);
     }
@@ -189,9 +183,8 @@ class ContractTest extends TestCase
     {
         $contract = tap($this->createFakeContract())->submit();
 
-        $response = $this->deleteJson(url('api/contracts/submitted/' . $contract->id));
-
-        $response->assertOk()->assertExactJson([true]);
+        $this->deleteJson(url('api/contracts/submitted/' . $contract->id))
+            ->assertOk()->assertExactJson([true]);
 
         $this->assertSoftDeleted($contract);
     }
@@ -205,9 +198,8 @@ class ContractTest extends TestCase
     {
         $contract = tap($this->createFakeContract())->unsubmit();
 
-        $response = $this->deleteJson(url('api/contracts/drafted/' . $contract->id));
-
-        $response->assertOk()->assertExactJson([true]);
+        $this->deleteJson(url('api/contracts/drafted/' . $contract->id))
+            ->assertOk()->assertExactJson([true]);
 
         $this->assertSoftDeleted($contract);
     }

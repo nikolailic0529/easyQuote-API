@@ -3,12 +3,12 @@
 namespace Tests\Unit;
 
 use Tests\TestCase;
-use \App\Contracts\Services\ExchangeRateServiceInterface as Service;
+use App\Contracts\Services\ExchangeRateServiceInterface as Service;
+use App\Repositories\RateFileRepository as RateFiles;
 
 class ExchangeRateTest extends TestCase
 {
-    /** @var \App\Contracts\Services\ExchangeRateServiceInterface */
-    protected $service;
+    protected ?Service $service = null;
 
     protected function setUp(): void
     {
@@ -34,5 +34,23 @@ class ExchangeRateTest extends TestCase
         $this->assertTrue($result);
 
         $this->assertTrue($erUpdatedAfter->gt($erUpdatedBefore));
+    }
+
+    /**
+     * Test Exchange Rates update artisan command.
+     *
+     * @return void
+     */
+    public function testExchangeRatesUpdateCommand()
+    {
+        $this->artisan('eq:update-exchange-rates')->assertExitCode(1);
+
+        $rateFiles = app(RateFiles::class);
+        $files = $rateFiles->getAllNames();
+
+        $this->artisan('eq:update-exchange-rates --file')
+            ->expectsChoice('Which file?', head($files), $files)
+            ->expectsOutput('Exchange Rates were successfully updated!')
+            ->assertExitCode(1);
     }
 }

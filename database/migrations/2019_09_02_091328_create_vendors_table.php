@@ -14,14 +14,20 @@ class CreateVendorsTable extends Migration
     public function up()
     {
         Schema::create('vendors', function (Blueprint $table) {
-            $table->uuid('id');
-            $table->primary('id');
+            $table->uuid('id')->primary();
+
+            $table->uuid('user_id')->nullable();
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
+
             $table->string('name');
             $table->string('short_code');
             $table->boolean('is_system')->default(false);
+            
             $table->timestamps();
-            $table->timestamp('drafted_at')->nullable()->default(null);
-            $table->softDeletes();
+            $table->timestamp('activated_at')->index()->nullable();
+            $table->softDeletes()->index();
+
+            $table->unique(['short_code', 'deleted_at']);
         });
     }
 

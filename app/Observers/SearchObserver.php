@@ -8,8 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class SearchObserver
 {
-    /** @var \Elasticsearch\Client */
-    private $elasticsearch;
+    private Client $elasticsearch;
 
     public function __construct(Client $elasticsearch)
     {
@@ -18,11 +17,7 @@ class SearchObserver
 
     public function saved(Model $model)
     {
-        if (app()->runningInConsole()) {
-            return;
-        }
-
-        if ($model->reindexDisabled()) {
+        if (app()->runningInConsole() || $model->reindexDisabled()) {
             return;
         }
 

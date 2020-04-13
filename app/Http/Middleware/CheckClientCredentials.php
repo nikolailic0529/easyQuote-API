@@ -11,21 +11,20 @@ use League\OAuth2\{
     Server\ResourceServer,
     Server\Exception\OAuthServerException
 };
-use Zend\Diactoros\{
+use Laminas\Diactoros\{
     ResponseFactory,
     ServerRequestFactory,
     StreamFactory,
-    UploadedFileFactory
+    UploadedFileFactory,
 };
 use Symfony\Bridge\PsrHttpMessage\Factory\PsrHttpFactory;
 use Illuminate\Auth\AuthenticationException;
-use Closure;
 use Psr\Http\Message\ServerRequestInterface;
+use Closure;
 
 class CheckClientCredentials extends PassportClientCredentials
 {
-    /** @var \App\Contracts\Repositories\System\ClientCredentialsInterface */
-    protected $credentials;
+    protected ClientCredentialsInterface $credentials;
 
     public function __construct(ResourceServer $server, TokenRepository $repository, ClientCredentialsInterface $credentials)
     {
@@ -63,7 +62,7 @@ class CheckClientCredentials extends PassportClientCredentials
             throw new AuthenticationException;
         }
 
-        $this->validateScopes($psr, $scopes);
+        $this->validate($psr, $scopes);
 
         return $next($request);
     }

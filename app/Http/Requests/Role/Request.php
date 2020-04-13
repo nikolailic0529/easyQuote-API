@@ -10,7 +10,7 @@ use Str;
 abstract class Request extends FormRequest
 {
     /**
-     * Available Privileges
+     * Available Privileges.
      *
      * @var array
      */
@@ -24,7 +24,7 @@ abstract class Request extends FormRequest
     protected static $privilegesMapping;
 
     /**
-     * Available Modules
+     * Available Modules.
      *
      * @var array
      */

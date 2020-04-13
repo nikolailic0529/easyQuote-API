@@ -16,6 +16,8 @@ use App\Contracts\{
     Services\UIServiceInterface,
     Services\HttpInterface,
     Services\ExchangeRateServiceInterface,
+    Services\MaintenanceServiceInterface,
+
     Repositories\TimezoneRepositoryInterface,
     Repositories\CountryRepositoryInterface,
     Repositories\UserRepositoryInterface,
@@ -51,9 +53,11 @@ use App\Contracts\{
     Repositories\System\ClientCredentialsInterface,
     Repositories\System\BuildRepositoryInterface,
     Repositories\ExchangeRateRepositoryInterface,
-    Repositories\Quote\ContractStateRepositoryInterface,
-    Repositories\Quote\ContractDraftedRepositoryInterface,
-    Repositories\Quote\ContractSubmittedRepositoryInterface,
+    Repositories\Contract\ContractStateRepositoryInterface,
+    Repositories\Contract\ContractDraftedRepositoryInterface,
+    Repositories\Contract\ContractSubmittedRepositoryInterface,
+    Repositories\Quote\QuoteNoteRepositoryInterface,
+    Repositories\TaskRepositoryInterface,
 };
 use App\Repositories\{
     TimezoneRepository,
@@ -87,12 +91,16 @@ use App\Repositories\{
     Quote\ContractStateRepository,
     Quote\ContractDraftedRepository,
     Quote\ContractSubmittedRepository,
+    Quote\QuoteNoteRepository,
     VendorRepository,
     CompanyRepository,
     ContactRepository,
     ExchangeRateRepository,
     InvitationRepository,
-    RoleRepository
+    RoleRepository,
+    TaskRepository,
+    TaskTemplate\QuoteTaskTemplateStore,
+    TaskTemplate\TaskTemplateManager,
 };
 use App\Services\{
     ActivityLogger,
@@ -106,6 +114,7 @@ use App\Services\{
     PdfParser\PdfParser,
     ReportLogger,
     HttpService,
+    MaintenanceService,
     SlackClient,
     UIService
 };
@@ -165,10 +174,13 @@ class AppServiceProvider extends ServiceProvider
         HttpInterface::class                            => HttpService::class,
         ClientCredentialsInterface::class               => ClientCredentialsRepository::class,
         BuildRepositoryInterface::class                 => BuildRepository::class,
+        MaintenanceServiceInterface::class              => MaintenanceService::class,
         ExchangeRateRepositoryInterface::class          => ExchangeRateRepository::class,
         ExchangeRateServiceInterface::class             => ER_SERVICE_CLASS,
         'request.filter'                                => RequestQueryFilter::class,
-        ContractStateRepositoryInterface::class         => ContractStateRepository::class
+        ContractStateRepositoryInterface::class         => ContractStateRepository::class,
+        QuoteNoteRepositoryInterface::class             => QuoteNoteRepository::class,
+        TaskRepositoryInterface::class                  => TaskRepository::class,
     ];
 
     public $bindings = [
@@ -209,7 +221,8 @@ class AppServiceProvider extends ServiceProvider
         HttpInterface::class                            => 'http.service',
         ClientCredentialsInterface::class               => 'client.repository',
         BuildRepositoryInterface::class                 => 'build.repository',
-        ExchangeRateServiceInterface::class             => 'exchange.service'
+        ExchangeRateServiceInterface::class             => 'exchange.service',
+        TaskRepositoryInterface::class                  => 'task.repository',
     ];
 
     /**
@@ -229,15 +242,13 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(ElasticsearchClient::class, fn () => ElasticsearchBuilder::create()->setHosts(config('services.search.hosts'))->build());
 
-        $this->app->when(\Spatie\PdfToText\Pdf::class)->needs('$binPath')->give(function () {
-            if (windows_os()) {
-                return app_path(config('pdfparser.pdftotext.win'));
-            }
+        $this->app->singleton(QuoteTaskTemplateStore::class, fn () => QuoteTaskTemplateStore::make(storage_path('valuestore/quote.task.template.json')));
 
-            if (!windows_os() && !config('pdfparser.pdftotext.default_bin')) {
-                return config('pdfparser.pdftotext.linux');
-            }
-        });
+        $this->app->when(\Spatie\PdfToText\Pdf::class)->needs('$binPath')->give(config('pdfparser.pdftotext.bin_path'));
+
+        $this->app->tag([QuoteTaskTemplateStore::class], 'task_templates');
+
+        $this->app->bind('task_template.manager', fn ($app) => new TaskTemplateManager($app->tagged('task_templates')));
     }
 
     /**

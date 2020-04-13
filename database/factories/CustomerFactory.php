@@ -21,7 +21,11 @@ $factory->define(Customer::class, function (Faker $faker) {
     ];
 });
 
-$factory->defineAs(Customer::class, 'request', function (Faker $faker) {
+$factory->state(Customer::class, 'expired', [
+    'valid_until' => now()->addDays(setting('notification_time')->d)
+]);
+
+$factory->state(Customer::class, 'request', function (Faker $faker) {
     $country = Country::inRandomOrder()->first();
 
     return [

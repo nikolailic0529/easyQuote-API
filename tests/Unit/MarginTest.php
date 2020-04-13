@@ -16,7 +16,7 @@ class MarginTest extends TestCase
 {
     use TruncatesDatabaseTables, DatabaseTransactions, WithFakeUser, AssertsListing;
 
-    protected $truncatableTables = [
+    protected array $truncatableTables = [
         'country_margins'
     ];
 
@@ -38,9 +38,7 @@ class MarginTest extends TestCase
             'order_by_country' => 'asc'
         ]);
 
-        $response = $this->getJson(url('api/margins?' . $query));
-
-        $response->assertOk();
+        $this->getJson(url('api/margins?' . $query))->assertOk();
     }
 
     /**
@@ -52,27 +50,27 @@ class MarginTest extends TestCase
     {
         $attributes = factory(CountryMargin::class)->raw();
 
-        $response = $this->postJson(url('api/margins'), $attributes);
-
         $keys = array_diff(array_keys($attributes), ['user_id']);
 
-        $response->assertOk()
+        $this->postJson(url('api/margins'), $attributes)
+            ->assertOk()
             ->assertJsonStructure(array_merge($keys, ['created_at']));
     }
 
     /**
-     * Test Margin creating with percentage value greater then 100.
+     * Test Margin creating with percentage value greater than 100.
      *
      * @return void
      */
-    public function testMarginCreatingWithValueGreaterThen100()
+    public function testMarginCreatingWithValueGreaterThan100()
     {
         $attributes = factory(CountryMargin::class)->raw(['value' => 150]);
 
-        $response = $this->postJson(url('api/margins'), $attributes);
-
-        $response->assertStatus(422)
-            ->assertJsonStructure(['Error' => ['original' => ['value']]]);
+        $this->postJson(url('api/margins'), $attributes)
+            ->assertStatus(422)
+            ->assertJsonStructure([
+                'Error' => ['original' => ['value']]
+            ]);
     }
 
     /**
@@ -88,9 +86,8 @@ class MarginTest extends TestCase
 
         $attributes = factory(CountryMargin::class)->raw(['vendor_id' => $vendor->id, 'country_id' => $country->id]);
 
-        $response = $this->postJson(url('api/margins'), $attributes);
-
-        $response->assertStatus(422)
+        $this->postJson(url('api/margins'), $attributes)
+            ->assertStatus(422)
             ->assertJsonStructure(['Error' => ['original' => ['vendor_id']]]);
     }
 
@@ -103,14 +100,13 @@ class MarginTest extends TestCase
     {
         $margin = factory(CountryMargin::class)->create();
 
-        $newAttributes = factory(CountryMargin::class)->raw();
+        $attributes = factory(CountryMargin::class)->raw();
 
-        $keys = array_keys($newAttributes);
+        $keys = array_keys($attributes);
 
-        $response = $this->patchJson(url("api/margins/{$margin->id}"), $newAttributes);
-
-        $response->assertOk()
-            ->assertJsonFragment(array_intersect_key($newAttributes, array_flip($keys)));
+        $this->patchJson(url("api/margins/{$margin->id}"), $attributes)
+            ->assertOk()
+            ->assertJsonFragment(array_intersect_key($attributes, array_flip($keys)));
     }
 
     /**
@@ -122,13 +118,10 @@ class MarginTest extends TestCase
     {
         $margin = tap(factory(CountryMargin::class)->create())->deactivate();
 
-        $response = $this->putJson(url("api/margins/activate/{$margin->id}"));
+        $this->putJson(url("api/margins/activate/{$margin->id}"))
+            ->assertOk()->assertExactJson([true]);
 
-        $response->assertOk()->assertExactJson([true]);
-
-        $margin->refresh();
-
-        $this->assertNotNull($margin->activated_at);
+        $this->assertNotNull($margin->refresh()->activated_at);
     }
 
     /**
@@ -140,14 +133,11 @@ class MarginTest extends TestCase
     {
         $margin = tap(factory(CountryMargin::class)->create())->activate();
 
-        $response = $this->putJson(url("api/margins/deactivate/{$margin->id}"));
-
-        $response->assertOk()
+        $this->putJson(url("api/margins/deactivate/{$margin->id}"))
+            ->assertOk()
             ->assertExactJson([true]);
 
-        $margin->refresh();
-
-        $this->assertNull($margin->activated_at);
+        $this->assertNull($margin->refresh()->activated_at);
     }
 
     /**
@@ -159,9 +149,8 @@ class MarginTest extends TestCase
     {
         $margin = factory(CountryMargin::class)->create();
 
-        $response = $this->deleteJson(url("api/margins/{$margin->id}"));
-
-        $response->assertOk()
+        $this->deleteJson(url("api/margins/{$margin->id}"))
+            ->assertOk()
             ->assertExactJson([true]);
 
         $this->assertSoftDeleted($margin);

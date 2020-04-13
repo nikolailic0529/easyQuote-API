@@ -15,8 +15,9 @@ class CreateDiscountsTable extends Migration
     {
         Schema::create('discounts', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('discountable_id');
-            $table->string('discountable_type');
+
+            $table->uuidMorphs('discountable');
+
             $table->timestamps();
         });
     }

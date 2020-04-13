@@ -2,14 +2,17 @@
 
 namespace App\Models\Data;
 
-use App\Models\BaseModel;
 use App\Contracts\HasOrderedScope;
-use App\Traits\Currency\HasExchangeRate;
+use App\Traits\{
+    Uuid,
+    Currency\HasExchangeRate,
+};
+use Illuminate\Database\Eloquent\Model;
 use Setting;
 
-class Currency extends BaseModel implements HasOrderedScope
+class Currency extends Model implements HasOrderedScope
 {
-    use HasExchangeRate;
+    use Uuid, HasExchangeRate;
 
     public $timestamps = false;
 

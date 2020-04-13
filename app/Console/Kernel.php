@@ -24,9 +24,10 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('eq:notify-quotes-expiration')->everyMinute();
-        $schedule->command('eq:notify-password-expiration')->daily();
-        $schedule->command('eq:update-exchange-rates')->{setting('exchange_rate_update_schedule')}();
+        $schedule->command('eq:notify-tasks-expiration')->runInBackground()->everyMinute();
+        $schedule->command('eq:notify-quotes-expiration')->runInBackground()->everyMinute();
+        $schedule->command('eq:notify-password-expiration')->runInBackground()->daily();
+        $schedule->command('eq:update-exchange-rates', ['--force' => true])->runInBackground()->{setting('exchange_rate_update_schedule')}();
     }
 
     /**

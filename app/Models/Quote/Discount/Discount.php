@@ -4,7 +4,6 @@ namespace App\Models\Quote\Discount;
 
 use App\Contracts\ActivatableInterface;
 use App\Models\{
-    BaseModel,
     Quote\BaseQuote,
     Quote\Discount as QuoteDiscount
 };
@@ -13,15 +12,28 @@ use App\Traits\{
     BelongsToCountry,
     BelongsToUser,
     BelongsToVendor,
-    Search\Searchable
+    Search\Searchable,
+    Auth\Multitenantable,
+    Uuid
 };
-use App\Traits\Auth\Multitenantable;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
+use Illuminate\Database\Eloquent\{
+    Model,
+    SoftDeletes,
+};
 use Arr;
 
-abstract class Discount extends BaseModel implements ActivatableInterface
+abstract class Discount extends Model implements ActivatableInterface
 {
-    use Multitenantable, Activatable, Searchable, BelongsToCountry, BelongsToVendor, BelongsToUser, SoftDeletes;
+    use Uuid,
+        Multitenantable,
+        EloquentJoin,
+        Activatable,
+        Searchable,
+        BelongsToCountry,
+        BelongsToVendor,
+        BelongsToUser,
+        SoftDeletes;
 
     protected $perPage = 8;
 
@@ -55,12 +67,9 @@ abstract class Discount extends BaseModel implements ActivatableInterface
 
     public function scopeQuoteAcceptable($query, BaseQuote $quote)
     {
-        return $query->whereHas('country', function ($query) use ($quote) {
-            $query->whereId($quote->country_id);
-        })
-            ->whereHas('vendor', function ($query) use ($quote) {
-                $query->whereId($quote->vendor_id);
-            });
+        return $query
+            ->whereHas('country', fn ($query) => $query->whereId($quote->country_id))
+            ->whereHas('vendor', fn ($query) => $query->whereId($quote->vendor_id));
     }
 
     public function getDiscountTypeAttribute()

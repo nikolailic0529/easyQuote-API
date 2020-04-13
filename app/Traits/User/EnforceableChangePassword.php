@@ -20,7 +20,7 @@ trait EnforceableChangePassword
     public function mustChangePassword(): bool
     {
         return is_null($this->password_changed_at) ||
-            now()->startOfDay()->diffInDays($this->password_changed_at) >= ENF_PWD_CHANGE_DAYS;
+            now()->endOfDay()->diffInDays($this->password_changed_at) >= ENF_PWD_CHANGE_DAYS;
     }
 
     public function getMustChangePasswordAttribute(): bool

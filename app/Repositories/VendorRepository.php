@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\{
 
 class VendorRepository extends SearchableRepository implements VendorRepositoryInterface
 {
-    /** @var \App\Models\Vendor */
     protected Vendor $vendor;
 
     public function __construct(Vendor $vendor)
@@ -23,7 +22,7 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
 
     public function allFlatten(): Collection
     {
-        return $this->userQuery()->activated()->get()->each->makeHiddenExcept(['id', 'name']);
+        return $this->userQuery()->activated()->get(['id', 'name']);
     }
 
     public function userQuery(): Builder

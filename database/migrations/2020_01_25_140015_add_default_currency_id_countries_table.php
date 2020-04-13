@@ -14,7 +14,7 @@ class AddDefaultCurrencyIdCountriesTable extends Migration
     public function up()
     {
         Schema::table('countries', function (Blueprint $table) {
-            $table->uuid('default_currency_id')->nullable();
+            $table->uuid('default_currency_id')->nullable()->after('id');
             $table->foreign('default_currency_id')->references('id')->on('currencies')->onDelete('set null');
         });
     }

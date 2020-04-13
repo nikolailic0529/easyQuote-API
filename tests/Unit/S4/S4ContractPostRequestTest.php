@@ -2,11 +2,13 @@
 
 namespace Tests\Unit\S4;
 
-use App\Models\Customer\Customer;
 use Tests\TestCase;
+use App\Models\Customer\Customer;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Tests\Unit\Traits\WithFakeUser;
-use Tests\Unit\Traits\WithClientCredentials;
+use Tests\Unit\Traits\{
+    WithFakeUser,
+    WithClientCredentials,
+};
 use Str, DB;
 
 class S4ContractPostRequestTest extends TestCase
@@ -20,10 +22,10 @@ class S4ContractPostRequestTest extends TestCase
      */
     public function testRequestWithValidAttributes(): void
     {
-        $contract = factory(Customer::class, 'request')->state('addresses')->raw();
-        $response = $this->postContract($contract);
+        $contract = factory(Customer::class)->states(['request', 'addresses'])->raw();
 
-        $response->assertSuccessful()
+        $this->postContract($contract)
+            ->assertSuccessful()
             ->assertJsonStructure(array_keys($contract));
 
         $this->assertCustomerExistsInDataBase($contract);
@@ -36,11 +38,10 @@ class S4ContractPostRequestTest extends TestCase
      */
     public function testRequestWithoutAddresses(): void
     {
-        $contract = factory(Customer::class, 'request')->raw();
+        $contract = factory(Customer::class)->state('request')->raw();
 
-        $response = $this->postContract($contract);
-
-        $response->assertSuccessful()
+        $this->postContract($contract)
+            ->assertSuccessful()
             ->assertJsonStructure(array_keys($contract));
 
         $this->assertCustomerExistsInDataBase($contract);
@@ -53,11 +54,9 @@ class S4ContractPostRequestTest extends TestCase
      */
     public function testRequestWithInvalidRfqNumber(): void
     {
-        $contract = factory(Customer::class, 'request')->raw(['rfq_number' => Str::random(40)]);
+        $contract = factory(Customer::class)->state('request')->raw(['rfq_number' => Str::random(40)]);
 
-        $response = $this->postContract($contract);
-
-        $response->assertStatus(422);
+        $this->postContract($contract)->assertStatus(422);
     }
 
     /**
@@ -69,11 +68,9 @@ class S4ContractPostRequestTest extends TestCase
     {
         $rfq_number = DB::table('customers')->whereNull('deleted_at')->value('rfq');
 
-        $contract = factory(Customer::class, 'request')->raw(compact('rfq_number'));
+        $contract = factory(Customer::class)->state('request')->raw(compact('rfq_number'));
 
-        $response = $this->postContract($contract);
-
-        $response->assertStatus(422);
+        $this->postContract($contract)->assertStatus(422);
     }
 
     /**
@@ -87,11 +84,10 @@ class S4ContractPostRequestTest extends TestCase
 
         $this->assertSoftDeleted($customer);
 
-        $attributes = factory(Customer::class, 'request')->raw(['rfq_number' => $customer->rfq]);
+        $attributes = factory(Customer::class)->state('request')->raw(['rfq_number' => $customer->rfq]);
 
-        $response = $this->postContract($attributes);
-
-        $response->assertOk()
+        $this->postContract($attributes)
+            ->assertOk()
             ->assertJsonStructure(array_keys($attributes));
 
         $this->assertCustomerExistsInDataBase($attributes);

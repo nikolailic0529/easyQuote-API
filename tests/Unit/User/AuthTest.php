@@ -2,8 +2,8 @@
 
 namespace Tests\Unit\User;
 
-use App\Models\User;
 use Tests\TestCase;
+use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\WithFakeUser;
 use Str, Arr;
@@ -12,11 +12,9 @@ class AuthTest extends TestCase
 {
     use DatabaseTransactions, WithFakeUser;
 
-    /** @var boolean */
-    protected $dontAuthenticate = true;
+    protected bool $dontAuthenticate = true;
 
-    /** @var array */
-    protected static $assertableAttributes = ['email', 'password', 'local_ip'];
+    protected static array $assertableAttributes = ['email', 'password', 'local_ip'];
 
     /**
      * Test Authentication of the existing user.
@@ -25,7 +23,7 @@ class AuthTest extends TestCase
      */
     public function testAuthExistingUser()
     {
-        $attributes = factory(User::class, 'authentication')->raw();
+        $attributes = factory(User::class)->state('authentication')->raw();
 
         $response = $this->postJson(url('/api/auth/signin'), $attributes);
 
@@ -40,13 +38,27 @@ class AuthTest extends TestCase
      */
     public function testFailingAuthExistingUser()
     {
-        $attributes = factory(User::class, 'authentication')->raw();
+        $attributes = factory(User::class)->state('authentication')->raw([
+            'password' => Str::random(20)
+        ]);
 
-        data_set($attributes, 'password', Str::random(20));
+        $this->postJson(url('/api/auth/signin'), $attributes)->assertStatus(403);
+    }
 
-        $response = $this->postJson(url('/api/auth/signin'), $attributes);
+    /**
+     * Test authentication of deactivated user.
+     *
+     * @return void
+     */
+    public function testAuthDeactivatedUser()
+    {
+        $user = tap(factory(User::class)->create())->deactivate();
 
-        $response->assertStatus(403);
+        $credentials = ['email' => $user->email, 'password' => 'password', 'local_ip' => '192.168.99.99', 'g_recaptcha' => Str::random()];
+
+        $response = $this->postJson(url('/api/auth/signin'), $credentials)->assertStatus(422);
+
+        $this->assertTrue(Str::contains($response->json('message'), 'user is blocked'));
     }
 
     /**
@@ -56,11 +68,10 @@ class AuthTest extends TestCase
      */
     public function testAuthUserWithoutLocalIp()
     {
-        $attributes = factory(User::class, 'authentication')->raw();
+        $attributes = factory(User::class)->state('authentication')->raw();
 
-        $response = $this->postJson(url('/api/auth/signin'), Arr::only($attributes, ['email', 'password']));
-
-        $response->assertStatus(422)
+        $this->postJson(url('/api/auth/signin'), Arr::only($attributes, ['email', 'password']))
+            ->assertStatus(422)
             ->assertJsonStructure([
                 'Error' => ['original' => ['local_ip']]
             ]);
@@ -73,11 +84,10 @@ class AuthTest extends TestCase
      */
     public function testSignupUser()
     {
-        $attributes = factory(User::class, 'registration')->raw();
+        $attributes = factory(User::class)->state('registration')->raw();
 
-        $response = $this->postJson(url('/api/auth/signup'), $attributes);
-
-        $response->assertOk()
+        $this->postJson(url('/api/auth/signup'), $attributes)
+            ->assertOk()
             ->assertJsonStructure(['access_token', 'token_type', 'expires_at']);
     }
 
@@ -90,18 +100,17 @@ class AuthTest extends TestCase
     {
         $this->user->setLastActivityAt(now()->subHour());
 
-        $response = $this->authenticate()->getJson(url('api/auth/user'));
-
-        $this->assertFalse(
-            $this->user->tokens()->where('revoked', false)->exists()
-        );
-
-        $response->assertUnauthorized()
+        $this->authenticate()->getJson(url('api/auth/user'))
+            ->assertUnauthorized()
             ->assertExactJson([
                 'ErrorCode' => 'LO_00',
                 'ErrorDetails' => LO_00,
                 'message' => LO_00
             ]);
+
+        $this->assertFalse(
+            $this->user->tokens()->where('revoked', false)->exists()
+        );
     }
 
     /**
@@ -111,9 +120,8 @@ class AuthTest extends TestCase
      */
     public function testCurrentUserRetrieving()
     {
-        $response = $this->authenticate()->getJson(url('api/auth/user'));
-
-        $response->assertOk()
+        $this->authenticate()->getJson(url('api/auth/user'))
+            ->assertOk()
             ->assertJsonStructure([
                 'id', 'email', 'first_name', 'middle_name', 'last_name', 'default_route', 'already_logged_in', 'role_id', 'role_name', 'privileges'
             ]);

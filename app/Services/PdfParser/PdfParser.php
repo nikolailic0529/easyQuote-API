@@ -8,7 +8,8 @@ use Illuminate\Support\Collection;
 use Smalot\PdfParser\Parser as SmalotPdfParser;
 use Spatie\PdfToText\Pdf as SpatiePdfParser;
 use Illuminate\Support\LazyCollection;
-use Storage, Str, Arr;
+use Storage, Str;
+use Illuminate\Support\Arr;
 
 class PdfParser implements PdfParserInterface
 {
@@ -16,17 +17,17 @@ class PdfParser implements PdfParserInterface
 
     const CONTENT_OPTIONS_FB = ['layout', 'eol unix'];
 
-    /** @var \App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface */
+    const DT_FROM = 'date_from', DT_TO = 'date_to';
+
     protected ImportableColumns $importableColumns;
 
-    /** @var \Smalot\PdfParser\Parser */
     protected SmalotPdfParser $smalotPdfParser;
 
-    /** @var \Spatie\PdfToText\Pdf */
     protected SpatiePdfParser $spatiePdfParser;
 
-    /** @var array|null */
     protected static ?array $columnNames = null;
+
+    protected static array $exactDatesMatchesCache = [];
 
     public function __construct(
         ImportableColumns $importableColumns,
@@ -88,6 +89,8 @@ class PdfParser implements PdfParserInterface
                 return compact('page', 'rows');
             }
 
+            static::cacheExactDatesMatches($matches);
+
             /**
              * Resetting Coverage Periods for rows with the same Product Number
              */
@@ -98,7 +101,9 @@ class PdfParser implements PdfParserInterface
             return compact('page', 'rows');
         });
 
-        $pages = $pages->toArray();
+        $pages = collect($pages->all())
+            ->map(fn ($page) => Arr::set($page, 'rows', static::setExactDatesMatches($page['rows'])))
+            ->toArray();
 
         return compact('pages', 'attributes');
     }
@@ -297,30 +302,74 @@ class PdfParser implements PdfParserInterface
     private function resetCoveragePeriods(array $array): array
     {
         $productNo = $array['product_no'];
-        $periodFrom = $array['date_from'];
-        $periodTo = $array['date_to'];
+        $periodFrom = $array[static::DT_FROM];
+        $periodTo = $array[static::DT_TO];
 
+        /** Find line-breaked periods. */
         foreach ($periodFrom as $key => $row) {
             $nextKey = $key + 1;
 
-            if (!(isset($periodFrom[$key]) &&
-                isset($periodFrom[$nextKey]) &&
-                !isset($periodTo[$key]) &&
-                !isset($periodTo[$nextKey]) &&
+            if (!(!isset($periodFrom[$key]) &&
+                !isset($periodFrom[$nextKey]) &&
+                isset($periodTo[$key]) &&
+                isset($periodTo[$nextKey]) &&
                 $productNo[$key] === $productNo[$nextKey] &&
-                $periodFrom[$key] !== $periodFrom[$nextKey])) {
+                $periodTo[$key] !== $periodTo[$nextKey])) {
                 continue;
             }
 
-            $periodTo[$key] = $periodFrom[$key];
-            $periodFrom[$key] = null;
+            $periodFrom[$nextKey] = $periodTo[$nextKey];
+            $periodTo[$nextKey] = null;
         }
 
         $resettedPeriods = [
-            'date_from' => $periodFrom,
-            'date_to' => $periodTo
+            static::DT_FROM => $periodFrom,
+            static::DT_TO => $periodTo
         ];
 
         return array_merge($array, $resettedPeriods);
+    }
+
+    private static function cacheExactDatesMatches(array $matches): void
+    {
+        $exactDates = [];
+
+        $from = array_filter(Arr::get($matches, static::DT_FROM));
+        $to = array_filter(Arr::get($matches, static::DT_TO));
+
+        foreach ($from as $key => $value) {
+            if (!isset($to[$key])) {
+                continue;
+            }
+
+            $exactDates[$value] = static::DT_FROM;
+            $exactDates[$to[$key]] = static::DT_TO;
+        }
+
+        static::$exactDatesMatchesCache = array_merge(static::$exactDatesMatchesCache, $exactDates);
+    }
+
+    private static function setExactDatesMatches(array $rows): array
+    {
+        return collect($rows)->map(function ($row) {
+            $from = Arr::get($row, static::DT_FROM);
+            $to = Arr::get($row, static::DT_TO);
+
+            if (filled($from) && filled($to)) {
+                return $row;
+            }
+
+            if (Arr::get(static::$exactDatesMatchesCache, $from) === static::DT_TO) {
+                Arr::set($row, static::DT_TO, $from);
+                Arr::set($row, static::DT_FROM, null);
+            }
+
+            if (Arr::get(static::$exactDatesMatchesCache, $to) === static::DT_FROM) {
+                Arr::set($row, static::DT_FROM, $to);
+                Arr::set($row, static::DT_TO, null);
+            }
+
+            return $row;
+        })->toArray();
     }
 }

@@ -25,9 +25,20 @@ class CreatePermissionTables extends Migration
 
         Schema::create($tableNames['roles'], function (Blueprint $table) {
             $table->uuid('id')->primary();
+
+            $table->uuid('user_id')->nullable();
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
+            
             $table->string('name');
             $table->string('guard_name');
+
+            $table->json('privileges')->nullable();
+
+            $table->boolean('is_system')->default(false);
+            
             $table->timestamps();
+            $table->timestamp('activated_at')->index()->nullable();
+            $table->softDeletes()->index();
         });
 
         Schema::create($tableNames['model_has_permissions'], function (Blueprint $table) use ($tableNames, $columnNames) {

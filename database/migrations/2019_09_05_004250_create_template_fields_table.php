@@ -14,21 +14,24 @@ class CreateTemplateFieldsTable extends Migration
     public function up()
     {
         Schema::create('template_fields', function (Blueprint $table) {
-            $table->uuid('id');
-            $table->primary('id');
+            $table->uuid('id')->primary();
+
             $table->uuid('user_id')->nullable();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+
             $table->string('header', 50);
-            $table->string('name', 20);
+            $table->string('name')->index();
+
             $table->tinyInteger('order');
-            $table->tinyInteger('cols')->default(12);
+
+            $table->text('default_value')->nullable();
+
             $table->boolean('is_required')->default(false);
             $table->boolean('is_system')->default(false);
             $table->boolean('is_column')->default(false);
+
             $table->timestamps();
-            $table->timestamp('drafted_at')->nullable();
-            $table->timestamp('activated_at')->nullable();
-            $table->softDeletes();
+            $table->softDeletes()->index();
         });
     }
 

@@ -37,23 +37,25 @@ $factory->afterCreating(User::class, function (User $user, Faker $faker) {
     $user->syncRoles('Administrator');
 });
 
-$factory->defineAs(User::class, 'authentication', function () use ($factory) {
+$factory->state(User::class, 'authentication', function () use ($factory) {
     $user = $factory->create(User::class);
 
     return [
-        'email'     => $user->email,
-        'local_ip'  => $user->ip_address,
-        'password'  => 'password'
+        'email'         => $user->email,
+        'local_ip'      => $user->ip_address,
+        'password'      => 'password',
+        'g_recaptcha'   => Str::random(),
     ];
 });
 
-$factory->defineAs(User::class, 'registration', function () use ($factory) {
+$factory->state(User::class, 'registration', function () use ($factory) {
     $user = $factory->raw(User::class);
 
     $attributes = [
         'local_ip'              => $user['ip_address'],
         'password'              => 'password',
         'password_confirmation' => 'password',
+        'g_recaptcha'           => Str::random(),
     ];
 
     return array_merge($user, $attributes);

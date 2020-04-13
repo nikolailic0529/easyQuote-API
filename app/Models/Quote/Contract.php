@@ -8,7 +8,7 @@ use App\Scopes\{
 };
 use App\Traits\{
     BelongsToQuote,
-    NotifiableSubject,
+    NotifiableModel,
     Quote\HasVersions
 };
 use Str;
@@ -19,7 +19,7 @@ class Contract extends BaseQuote
 
     const QB_CUSTOMER_RFQ_PREFIX = 'CT';
 
-    use HasVersions, BelongsToQuote, NotifiableSubject;
+    use HasVersions, BelongsToQuote, NotifiableModel;
 
     protected static function boot()
     {

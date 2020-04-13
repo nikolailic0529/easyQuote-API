@@ -16,7 +16,7 @@ class CreateTemplateFieldTypesTable extends Migration
         Schema::create('template_field_types', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('title', 40);
-            $table->string('name', 20);
+            $table->string('name', 20)->index();
         });
     }
 

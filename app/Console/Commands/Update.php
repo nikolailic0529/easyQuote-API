@@ -46,7 +46,6 @@ class Update extends Command
             '--force' => true
         ]);
 
-        $this->call('eq:db-rearrange-timestamps');
         $this->call('eq:parser-update');
         $this->call('eq:collaborations-update');
         $this->call('eq:companies-update');
@@ -59,10 +58,11 @@ class Update extends Command
         $this->call('eq:update-templates-assets');
         $this->call('eq:currencies-update');
         $this->call('eq:countries-update');
+        $this->call('eq:reset-task-templates');
         $this->call('eq:create-personal-access-client');
         $this->call('eq:create-client-credentials');
         $this->call('eq:search-reindex');
         $this->call('cache:clear');
-        $this->call('optimize');
+        $this->call('optimize:clear');
     }
 }

@@ -19,12 +19,22 @@ trait Loginable
             $attributes['ip_address'] = $ip;
         }
 
-        return $this->forceFill($attributes)->save();
+        return $this->withoutEvents(function () use ($attributes) {
+            $usesTimestamps = $this->usesTimestamps();
+            $this->timestamps = false;
+
+            return tap($this->forceFill($attributes)->saveOrFail(), fn () => $this->timestamps = $usesTimestamps);
+        });
     }
 
     public function markAsLoggedOut(): bool
     {
-        return $this->forceFill(['already_logged_in' => false])->save();
+        return $this->withoutEvents(function () {
+            $usesTimestamps = $this->usesTimestamps();
+            $this->timestamps = false;
+
+            return tap($this->forceFill(['already_logged_in' => false])->saveOrFail(), fn () => $this->timestamps = $usesTimestamps);
+        });
     }
 
     public function isAlreadyLoggedIn(): bool

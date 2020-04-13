@@ -14,11 +14,12 @@ class CreateCurrenciesTable extends Migration
     public function up()
     {
         Schema::create('currencies', function (Blueprint $table) {
-            $table->uuid('id');
-            $table->primary('id');
+            $table->uuid('id')->primary();
             $table->string('name');
             $table->string('code');
             $table->string('symbol');
+
+            $table->unique('code');
         });
     }
 

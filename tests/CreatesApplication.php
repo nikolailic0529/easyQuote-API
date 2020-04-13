@@ -16,7 +16,7 @@ trait CreatesApplication
     {
         $app = $this->makeApp();
 
-        if ($app->environment() !== 'testing') {
+        if (!$app->environment('testing')) {
             $this->clearCache();
             $app = $this->makeApp();
         }
@@ -27,7 +27,7 @@ trait CreatesApplication
     /**
      * Create a new Application instance.
      *
-     * @return void
+     * @return \Illuminate\Foundation\Application
      */
     protected function makeApp()
     {

@@ -2,9 +2,6 @@
 
 namespace Tests\Unit\Quote;
 
-use App\Models\QuoteFile\ImportableColumn;
-use App\Models\QuoteFile\ImportedRow;
-use App\Models\QuoteTemplate\TemplateField;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Collection;
 use Tests\TestCase;
@@ -12,7 +9,13 @@ use Tests\Unit\Traits\{
     TruncatesDatabaseTables,
     WithFakeQuote,
     WithFakeQuoteFile,
-    WithFakeUser
+    WithFakeUser,
+};
+use App\Models\{
+    QuoteFile\QuoteFile,
+    QuoteFile\ImportableColumn,
+    QuoteFile\ImportedRow,
+    QuoteTemplate\TemplateField,
 };
 use Str, Arr;
 
@@ -20,13 +23,11 @@ class QuoteTest extends TestCase
 {
     use DatabaseTransactions, WithFakeUser, WithFakeQuote, WithFakeQuoteFile, TruncatesDatabaseTables;
 
-    /** @var \App\Models\QuoteFile\QuoteFile */
-    protected $quoteFile;
+    protected ?QuoteFile $quoteFile = null;
 
-    /** @var array */
-    protected static $assertableGroupDescriptionAttributes = ['id', 'name', 'search_text', 'total_count', 'total_price', 'rows'];
+    protected static array $assertableGroupDescriptionAttributes = ['id', 'name', 'search_text', 'total_count', 'total_price', 'rows'];
 
-    protected $truncatableTables = [
+    protected array $truncatableTables = [
         'quotes'
     ];
 
@@ -46,13 +47,10 @@ class QuoteTest extends TestCase
     {
         $this->quote->submit();
 
-        $state = [
-            'quote_id' => $this->quote->id
-        ];
+        $state = ['quote_id' => $this->quote->id];
 
-        $response = $this->postJson(url('api/quotes/state'), $state);
-
-        $response->assertForbidden()
+        $this->postJson(url('api/quotes/state'), $state)
+            ->assertForbidden()
             ->assertJsonFragment([
                 'message' => QSU_01
             ]);
@@ -67,13 +65,10 @@ class QuoteTest extends TestCase
     {
         $this->quote->unSubmit();
 
-        $state = [
-            'quote_id' => $this->quote->id
-        ];
+        $state = ['quote_id' => $this->quote->id];
 
-        $response = $this->postJson(url('api/quotes/state'), $state);
-
-        $response->assertOk()
+        $this->postJson(url('api/quotes/state'), $state)
+            ->assertOk()
             ->assertExactJson(['id' => $this->quote->id]);
     }
 
@@ -86,14 +81,11 @@ class QuoteTest extends TestCase
     {
         $this->quote->submit();
 
-        $response = $this->putJson(url("api/quotes/submitted/unsubmit/{$this->quote->id}"), []);
-
-        $response->assertOk()
+        $this->putJson(url("api/quotes/submitted/unsubmit/{$this->quote->id}"), [])
+            ->assertOk()
             ->assertExactJson([true]);
 
-        $this->quote->refresh();
-
-        $this->assertNull($this->quote->submitted_at);
+        $this->assertNull($this->quote->refresh()->submitted_at);
     }
 
     /**
@@ -105,15 +97,12 @@ class QuoteTest extends TestCase
     {
         $this->quote->submit();
 
-        $response = $this->putJson(url("api/quotes/submitted/copy/{$this->quote->id}"), []);
-
-        $response->assertOk()
+        $this->putJson(url("api/quotes/submitted/copy/{$this->quote->id}"), [])
+            ->assertOk()
             ->assertExactJson([true]);
 
-        $this->quote->refresh();
-
         // The copied original Quote should be deactivated after copying.
-        $this->assertNull($this->quote->activated_at);
+        $this->assertNull($this->quote->refresh()->activated_at);
     }
 
 
@@ -126,9 +115,8 @@ class QuoteTest extends TestCase
     {
         $attributes = $this->makeGenericGroupDescriptionAttributes();
 
-        $response = $this->postJson(url("api/quotes/groups/{$this->quote->id}"), $attributes);
-
-        $response->assertOk()
+        $this->postJson(url("api/quotes/groups/{$this->quote->id}"), $attributes)
+            ->assertOk()
             ->assertJsonStructure([
                 'id', 'name', 'search_text'
             ]);
@@ -146,9 +134,8 @@ class QuoteTest extends TestCase
 
         $attributes = $this->makeGenericGroupDescriptionAttributes();
 
-        $response = $this->patchJson(url("api/quotes/groups/{$this->quote->id}/{$id}"), $attributes);
-
-        $response->assertOk()
+        $this->patchJson(url("api/quotes/groups/{$this->quote->id}/{$id}"), $attributes)
+            ->assertOk()
             ->assertExactJson([true]);
     }
 
@@ -162,9 +149,8 @@ class QuoteTest extends TestCase
         $group = $this->createFakeGroupDescription();
         $id = $group->get('id');
 
-        $response = $this->deleteJson(url("api/quotes/groups/{$this->quote->id}/{$id}"), []);
-
-        $response->assertOk()
+        $this->deleteJson(url("api/quotes/groups/{$this->quote->id}/{$id}"), [])
+            ->assertOk()
             ->assertExactJson([true]);
     }
 
@@ -175,9 +161,7 @@ class QuoteTest extends TestCase
      */
     public function testGroupDescriptionMovingRows()
     {
-        $groups = collect()->times(2)->transform(function ($group) {
-            return $this->createFakeGroupDescription();
-        });
+        $groups = collect()->times(2)->transform(fn () => $this->createFakeGroupDescription());
 
         $fromGroup = $groups->shift();
         $toGroup = $groups->shift();
@@ -188,9 +172,7 @@ class QuoteTest extends TestCase
             'rows' => data_get($fromGroup, 'rows.*')
         ];
 
-        $response = $this->putJson(url("api/quotes/groups/{$this->quote->id}"), $attributes);
-
-        $response->assertOk();
+        $response = $this->putJson(url("api/quotes/groups/{$this->quote->id}"), $attributes)->assertOk();
 
         $this->assertIsBool(json_decode($response->getContent(), true));
     }
@@ -205,9 +187,8 @@ class QuoteTest extends TestCase
         $group = $this->createFakeGroupDescription();
         $id = $group->get('id');
 
-        $response = $this->getJson(url("api/quotes/groups/{$this->quote->id}/{$id}"));
-
-        $response->assertOk()
+        $this->getJson(url("api/quotes/groups/{$this->quote->id}/{$id}"))
+            ->assertOk()
             ->assertJsonStructure([
                 'id', 'name', 'search_text', 'total_count', 'total_price', 'rows'
             ]);
@@ -222,21 +203,54 @@ class QuoteTest extends TestCase
     {
         $count = 10;
 
-        collect()->times($count)->each(function ($group) {
-            $this->createFakeGroupDescription();
-        });
+        collect()->times($count)->each(fn () => $this->createFakeGroupDescription());
 
-        $response = $this->getJson(url("api/quotes/groups/{$this->quote->id}"));
-
-        $response->assertOk();
+        $response = $this->getJson(url("api/quotes/groups/{$this->quote->id}"))->assertOk();
 
         $collection = collect($response->json());
 
-        $this->assertEquals($count, $collection->count());
+        $this->assertCount($count, $collection);
 
         $this->assertTrue(
             Arr::has($collection->first(), static::$assertableGroupDescriptionAttributes)
         );
+    }
+
+    /**
+     * Test Group Description selecting.
+     *
+     * @return void
+     */
+    public function testGroupDescriptionSelecting()
+    {
+        $count = 10;
+
+        $groups = collect()->times($count)->map(fn ($group) => $this->createFakeGroupDescription());
+
+        $selected = $groups->random(mt_rand(1, $count))->keyBy('id');
+
+        $this->putJson(url("api/quotes/groups/{$this->quote->id}/select"), $selected->pluck('id')->toArray())
+            ->assertOk();
+
+        $groups = Collection::wrap($this->quote->refresh()->group_description);
+
+        /**
+         * Assert that groups actual is_selected attribute is matching to selected groups.
+         */
+        $groups->each(fn ($group) => $this->assertEquals($selected->has($group['id']), $group['is_selected']));
+
+        /**
+         * Assert that quote review endpoint is displaying selected groups.
+         */
+        $this->quote->update(['use_groups' => true]);
+
+        $response = $this->get(url("api/quotes/review/{$this->quote->id}"));
+
+        $reviewData = $response->json();
+
+        $reviewGroupsIds = data_get($reviewData, 'data_pages.rows.*.id');
+
+        $selected->each(fn ($group) => $this->assertTrue(in_array($group['id'], $reviewGroupsIds)));
     }
 
     /**
@@ -272,9 +286,9 @@ class QuoteTest extends TestCase
 
         $this->quote->templateFields()->sync($map->toArray());
 
-        $response = $this->putJson('/api/quotes/get/'.$this->quote->id)->assertOk();
+        $this->putJson('/api/quotes/get/' . $this->quote->id)->assertOk();
 
-        $response = $this->getJson('api/quotes/review/'.$this->quote->id)->assertOk();
+        $this->getJson('api/quotes/review/' . $this->quote->id)->assertOk();
     }
 
     /**
@@ -293,9 +307,9 @@ class QuoteTest extends TestCase
 
         $this->quote->templateFields()->sync($map->toArray());
 
-        $response = $this->putJson('/api/quotes/get/'.$this->quote->id)->assertOk();
+        $response = $this->putJson('/api/quotes/get/' . $this->quote->id)->assertOk();
 
-        $response = $this->getJson('api/quotes/review/'.$this->quote->id)->assertOk();
+        $response = $this->getJson('api/quotes/review/' . $this->quote->id)->assertOk();
     }
 
     protected function createFakeGroupDescription(): Collection
@@ -317,10 +331,5 @@ class QuoteTest extends TestCase
             'search_text'   => $this->faker->sentence(3),
             'rows'          => $rows->pluck('id')->toArray()
         ];
-    }
-
-    protected function seedImportedRows()
-    {
-
     }
 }

@@ -3,9 +3,8 @@
 namespace App\Models\QuoteTemplate;
 
 use App\Contracts\ActivatableInterface;
-use App\Models\BaseModel;
 use App\Models\Data\Country;
-use App\Traits \ {
+use App\Traits\{
     Activatable,
     BelongsToCompany,
     BelongsToCountries,
@@ -19,15 +18,22 @@ use App\Traits \ {
     HasQuotes,
     Activity\LogsActivity,
     QuoteTemplate\HasDataHeaders,
-    Auth\Multitenantable
+    Auth\Multitenantable,
+    Uuid
 };
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
+use Illuminate\Database\Eloquent\{
+    Model,
+    SoftDeletes,
+    Relations\BelongsToMany,
+};
 use Str;
 
-abstract class BaseQuoteTemplate extends BaseModel implements ActivatableInterface
+abstract class BaseQuoteTemplate extends Model implements ActivatableInterface
 {
-    use Multitenantable,
+    use Uuid,
+        EloquentJoin,
+        Multitenantable,
         BelongsToUser,
         BelongsToTemplateFields,
         BelongsToCompany,
@@ -66,7 +72,7 @@ abstract class BaseQuoteTemplate extends BaseModel implements ActivatableInterfa
 
     public function getForeignKey()
     {
-        return Str::snake(Str::after(class_basename(self::class), 'Base')).'_'.$this->getKeyName();
+        return Str::snake(Str::after(class_basename(self::class), 'Base')) . '_' . $this->getKeyName();
     }
 
     public function countries(): BelongsToMany

@@ -8,11 +8,19 @@ use App\Models\Quote\Discount\{
     PromotionalDiscount,
     SND
 };
-use App\Models\BaseModel;
+use App\Traits\Uuid;
+use Illuminate\Database\Eloquent\{
+    Model,
+    Relations\BelongsToMany,
+    Relations\MorphTo,
+};
+use Illuminate\Support\Collection;
 use Str;
 
-class Discount extends BaseModel
+class Discount extends Model
 {
+    use Uuid;
+
     protected $hidden = [
         'pivot', 'discountable_type', 'discountable_id'
     ];
@@ -21,12 +29,12 @@ class Discount extends BaseModel
         'discount_type', 'duration', 'margin_percentage'
     ];
 
-    public function discountable()
+    public function discountable(): MorphTo
     {
         return $this->morphTo();
     }
 
-    public function quotes()
+    public function quotes(): BelongsToMany
     {
         return $this->belongsToMany(Quote::class);
     }
@@ -53,7 +61,7 @@ class Discount extends BaseModel
         $discount = $this->discountable;
 
         if ($discount instanceof MultiYearDiscount || $discount instanceof PrePayDiscount) {
-            $durations = collect()->wrap($discount->durations);
+            $durations = Collection::wrap($discount->durations);
             $percentage = (float) data_get($durations, 'duration.value');
 
             return $percentage;

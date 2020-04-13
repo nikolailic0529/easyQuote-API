@@ -15,6 +15,7 @@ use App\Http\Requests\Collaboration\{
     UpdateUserRequest
 };
 use App\Http\Requests\StoreResetPasswordRequest;
+use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
@@ -44,12 +45,28 @@ class UserController extends Controller
         );
     }
 
+    /**
+     * Display a list of users.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function list()
     {
-        $this->authorize('viewAny', User::class);
-
         return response()->json(
             $this->user->list()
+        );
+    }
+
+    /**
+     * Display an exclusive listing of users.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\Response
+     */
+    public function exclusiveList(Request $request)
+    {
+        return response()->json(
+            $this->user->exclusiveList(auth()->id())
         );
     }
 
@@ -112,7 +129,7 @@ class UserController extends Controller
         $this->authorize('updateProfile', [$user, $request]);
 
         return response()->json(
-            $this->user->update($request, $user->id)
+            $this->user->update($user->id, $request->validated())
         );
     }
 

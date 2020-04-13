@@ -41,9 +41,8 @@ abstract class DiscountTest extends TestCase
     {
         $attributes = factory($this->model())->raw();
 
-        $response = $this->postJson(url("api/discounts/{$this->resource()}"), $attributes);
-
-        $response->assertOk()
+        $this->postJson(url("api/discounts/{$this->resource()}"), $attributes)
+            ->assertOk()
             ->assertJsonStructure(array_keys($attributes));
     }
 
@@ -58,9 +57,8 @@ abstract class DiscountTest extends TestCase
 
         $attributes = factory($this->model())->raw();
 
-        $response = $this->patchJson(url("api/discounts/{$this->resource()}/{$discount->id}"), $attributes);
-
-        $response->assertOk()
+        $this->patchJson(url("api/discounts/{$this->resource()}/{$discount->id}"), $attributes)
+            ->assertOk()
             ->assertJsonStructure(array_keys(Arr::except($attributes, ['user_id'])))
             ->assertJsonFragment(Arr::except($attributes, ['user_id']));
     }
@@ -74,9 +72,8 @@ abstract class DiscountTest extends TestCase
     {
         $discount = factory($this->model())->create();
 
-        $response = $this->deleteJson(url("api/discounts/{$this->resource()}/{$discount->id}"));
-
-        $response->assertOk()
+        $this->deleteJson(url("api/discounts/{$this->resource()}/{$discount->id}"))
+            ->assertOk()
             ->assertExactJson([true]);
 
         $this->assertSoftDeleted($discount);
@@ -92,21 +89,17 @@ abstract class DiscountTest extends TestCase
         $attributes = ['country_id' => $this->quote->country_id, 'vendor_id' => $this->quote->vendor_id];
         $discount = tap(factory($this->model())->create($attributes))->deactivate();
 
-        $response = $this->putJson(url("api/discounts/{$this->resource()}/activate/{$discount->id}"));
-
-        $response->assertOk()
+        $this->putJson(url("api/discounts/{$this->resource()}/activate/{$discount->id}"))
+            ->assertOk()
             ->assertExactJson([true]);
 
-        $discount->refresh();
-
-        $this->assertNotNull($discount->activated_at);
+        $this->assertNotNull($discount->refresh()->activated_at);
 
         /**
          * Test availability at the acceptable discounts endpoint.
          */
-        $response = $this->getJson(url("api/quotes/discounts/{$this->quote->id}"));
-
-        $response->assertOk()
+        $this->getJson(url("api/quotes/discounts/{$this->quote->id}"))
+            ->assertOk()
             ->assertJsonFragment(['id' => $discount->id]);
     }
 
@@ -119,21 +112,17 @@ abstract class DiscountTest extends TestCase
     {
         $discount = factory($this->model())->create();
 
-        $response = $this->putJson(url("api/discounts/{$this->resource()}/deactivate/{$discount->id}"));
-
-        $response->assertOk()
+        $this->putJson(url("api/discounts/{$this->resource()}/deactivate/{$discount->id}"))
+            ->assertOk()
             ->assertExactJson([true]);
 
-        $discount->refresh();
-
-        $this->assertNull($discount->activated_at);
+        $this->assertNull($discount->refresh()->activated_at);
 
         /**
          * Test no availability at the acceptable discounts endpoint.
          */
-        $response = $this->getJson(url("api/quotes/discounts/{$this->quote->id}"));
-
-        $response->assertOk()
+        $this->getJson(url("api/quotes/discounts/{$this->quote->id}"))
+            ->assertOk()
             ->assertJsonMissing(['id' => $discount->id]);
     }
 

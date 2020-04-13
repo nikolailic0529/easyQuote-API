@@ -68,6 +68,18 @@ return [
         'snapshots' => [
             'driver' => 'local',
             'root' => env('STORAGE_PATH_SNAPSHOTS', storage_path('app/snapshots'))
+        ],
+
+        'exchange-rates' => [
+            'driver' => 'local',
+            'root' => storage_path('rates')
+        ],
+
+        'attachments' => [
+            'driver' => 'local',
+            'root' => env('STORAGE_PATH_ATTACHMENTS', storage_path('app/public/attachments')),
+            'url' => env('APP_URL').'/storage/attachments',
+            'visibility' => 'public',
         ]
 
     ],

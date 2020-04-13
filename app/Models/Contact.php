@@ -7,17 +7,20 @@ use App\Traits\{
     Activatable,
     Image\HasImage,
     Image\HasPictureAttribute,
-    Search\Searchable
+    Search\Searchable,
+    Uuid
 };
 use Illuminate\Database\Eloquent\{
     Builder,
+    Model,
     SoftDeletes
 };
 use Arr;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
-class Contact extends BaseModel implements WithImage
+class Contact extends Model implements WithImage
 {
-    use SoftDeletes, HasImage, HasPictureAttribute, Searchable, Activatable;
+    use Uuid, SoftDeletes, HasImage, HasPictureAttribute, Searchable, Activatable;
 
     protected $fillable = [
         'contact_type', 'contact_name', 'job_title', 'first_name', 'last_name', 'mobile', 'phone', 'email', 'is_verified'
@@ -31,7 +34,7 @@ class Contact extends BaseModel implements WithImage
         'deleted_at', 'contact_type', 'contact_name', 'pivot'
     ];
 
-    public function contactable()
+    public function contactable(): MorphTo
     {
         return $this->morphTo();
     }

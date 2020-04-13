@@ -7,16 +7,15 @@ use App\Contracts\{
     Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository,
     Services\QuoteServiceInterface
 };
-use App\Contracts\Repositories\Quote\QuoteRepositoryInterface;
-use App\Repositories\SearchableRepository;
+use App\Repositories\{
+    SearchableRepository,
+    Concerns\ResolvesImplicitModel,
+    Concerns\ResolvesQuoteVersion,
+};
 use App\Http\Resources\QuoteRepository\SubmittedCollection;
 use App\Models\Quote\{
     Quote,
     BaseQuote
-};
-use App\Repositories\Concerns\{
-    ResolvesImplicitModel,
-    ResolvesQuoteVersion
 };
 use Illuminate\Database\Eloquent\{
     Model,
@@ -61,7 +60,14 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     public function userQuery(): Builder
     {
         return $this->quote
-            ->currentUserWhen(request()->user()->cant('view_quotes'))
+            ->when(
+                /** If user is not super-admin we are retrieving the user's own quotes */
+                request()->user()->cant('view_quotes'),
+                fn (Builder $query) => $query->currentUser()
+                    /** Adding quotes that have been granted access to */
+                    ->orWhereIn('id', request()->user()->getPermissionTargets('quotes.read')),
+            )
+            ->with('usingVersion.quoteFiles')
             ->submitted();
     }
 
@@ -303,11 +309,13 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     private function retrieveCachedQuotePdf(Quote $quote)
     {
-        return cache()->remember($this->quotePdfCacheKey($quote), static::EXPORT_CACHE_TTL, function () use ($quote) {
-            return $this->quoteService->export(
+        return cache()->remember(
+            $this->quotePdfCacheKey($quote),
+            static::EXPORT_CACHE_TTL,
+            fn () => $this->quoteService->export(
                 tap($quote->usingVersion)->switchModeTo($quote->mode)
-            );
-        });
+            )
+        );
     }
 
     private function quotePdfCacheKey(Quote $quote): string

@@ -20,9 +20,7 @@ class CustomerTest extends TestCase
      */
     public function testCustomerListing()
     {
-        $response = $this->getJson(url('api/quotes/customers'));
-
-        $response->assertOk();
+        $response = $this->getJson(url('api/quotes/customers'))->assertOk();
 
         $customer = head($response->json());
 
@@ -38,9 +36,8 @@ class CustomerTest extends TestCase
     {
         $customer = app('customer.repository')->list()->random();
 
-        $response = $this->deleteJson(url("api/quotes/customers/{$customer->id}"));
-
-        $response->assertOk()
+        $this->deleteJson(url("api/quotes/customers/{$customer->id}"))
+            ->assertOk()
             ->assertExactJson([true]);
 
         $this->assertSoftDeleted($customer);

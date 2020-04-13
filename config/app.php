@@ -185,7 +185,8 @@ return [
         Webpatser\Countries\CountriesServiceProvider::class,
         Maatwebsite\Excel\ExcelServiceProvider::class,
         Intervention\Image\ImageServiceProvider::class,
-        Barryvdh\Snappy\ServiceProvider::class
+        Barryvdh\Snappy\ServiceProvider::class,
+        App\Providers\ExchangeRatesServiceProvider::class,
     ],
 
     /*
@@ -241,7 +242,8 @@ return [
         'Excel' => Maatwebsite\Excel\Facades\Excel::class,
         'Setting' => App\Facades\Setting::class,
         'Failure' => App\Facades\Failure::class,
-        'ImageIntervention' => Intervention\Image\Facades\Image::class
+        'ImageIntervention' => Intervention\Image\Facades\Image::class,
+        'Maintenance' => App\Facades\Maintenance::class,
     ],
 
 ];

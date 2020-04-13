@@ -3,95 +3,106 @@
 namespace App\Contracts\Services;
 
 use App\Models\Quote\{
-    BaseQuote as Quote,
-    Margin\CountryMargin
+    BaseQuote,
+    Margin\CountryMargin,
+    Quote
 };
 use Closure;
+use Illuminate\Support\Collection;
 
 interface QuoteServiceInterface
 {
 
     /**
-     * Route interaction Quote model with other Model
+     * Route interaction BaseQuote model with other Model
      *
-     * @param \App\Models\Quote\Quote $quote
+     * @param BaseQuote $quote
      * @param mixed $model
-     * @return \App\Models\Quote\Quote
+     * @return BaseQuote
      */
-    public function interact(Quote $quote, $model): void;
+    public function interact(BaseQuote $quote, $model): void;
 
     /**
-     * Interact with all posible Quote Models
+     * Interact with all posible BaseQuote Models
      *
-     * @param Quote $quote
+     * @param BaseQuote $quote
      * @return void
      */
-    public function interactWithModels(Quote $quote): void;
+    public function interactWithModels(BaseQuote $quote): void;
 
     /**
-     * Interact Quote model with Country Margin
+     * Interact BaseQuote model with Country Margin
      *
-     * @param \App\Models\Quote\Quote $quote
-     * @param \App\Models\Quote\Margin\CountryMargin $countryMargin
-     * @return \App\Models\Quote\Quote
+     * @param BaseQuote $quote
+     * @param CountryMargin $countryMargin
+     * @return BaseQuote
      */
-    public function interactWithCountryMargin(Quote $quote, CountryMargin $countryMargin): void;
+    public function interactWithCountryMargin(BaseQuote $quote, CountryMargin $countryMargin): void;
 
     /**
      * Interact with User's Margin and Possible Country Margin
      *
-     * @param Quote $quote
-     * @return Quote
+     * @param BaseQuote $quote
+     * @return BaseQuote
      */
-    public function interactWithMargin(Quote $quote): void;
+    public function interactWithMargin(BaseQuote $quote): void;
 
     /**
      * Calculate Schedule Prices based on Margin Percentage
      *
-     * @param Quote $quote
-     * @return Quote
+     * @param BaseQuote $quote
+     * @return BaseQuote
      */
-    public function calculateSchedulePrices(Quote $quote): void;
+    public function calculateSchedulePrices(BaseQuote $quote): void;
 
     /**
-     * Interact Quote model with Discount
+     * Interact BaseQuote model with Discount
      *
-     * @param Quote $quote
+     * @param BaseQuote $quote
      * @param mixed $discount
-     * @return \App\Models\Quote\Quote
+     * @return BaseQuote
      */
-    public function interactWithDiscount(Quote $quote, $discount): void;
+    public function interactWithDiscount(BaseQuote $quote, $discount): void;
 
     /**
-     * Performing all necessary operations with Quote instance.
+     * Performing all necessary operations with BaseQuote instance.
      * Retrieving Selected Rows Data, Interactions with Margins, Discounts, Calculation Total List Price.
      *
-     * @param Quote $quote
+     * @param BaseQuote $quote
      * @return void
      */
-    public function prepareQuoteReview(Quote $quote): void;
+    public function prepareQuoteReview(BaseQuote $quote): void;
 
     /**
      * Format Computable Rows.
      *
-     * @param Quote $quote
+     * @param BaseQuote $quote
      * @return void
      */
-    public function prepareRows(Quote $quote): void;
+    public function prepareRows(BaseQuote $quote): void;
 
     /**
      * Format Payment Schedule.
      *
-     * @param Quote $quote
+     * @param BaseQuote $quote
      * @return void
      */
-    public function prepareSchedule(Quote $quote): void;
+    public function prepareSchedule(BaseQuote $quote): void;
 
     /**
-     * Export Quote in PDF format.
+     * Export BaseQuote in PDF format.
      *
-     * @param Quote $quote
+     * @param BaseQuote $quote
      * @return array
      */
-    public function export(Quote $quote);
+    public function export(BaseQuote $quote);
+
+    /**
+     * Handle quote granted users.
+     *
+     * @param Quote $quote
+     * @param array $users
+     * @return mixed
+     */
+    public function handleQuoteGrantedUsers(Quote $quote, array $users);
 }

@@ -27,6 +27,7 @@ class PasswordChanged extends Notification
     public function toMail($user)
     {
         return (new MailMessage)
+                    ->success()
                     ->greeting("Hi {$user->fullname}")
                     ->line(PWDC_01)
                     ->action('Profile', ui_route('users.profile'));

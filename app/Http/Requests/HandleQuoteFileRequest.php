@@ -34,7 +34,7 @@ class HandleQuoteFileRequest extends FormRequest
             'quote_id' => 'required|exists:quotes,id',
             'quote_file_id' => 'required|exists:quote_files,id',
             'data_select_separator_id' => $this->requiredIfCsv(),
-            'page' => 'integer'
+            'page' => 'integer|min:1'
         ];
     }
 

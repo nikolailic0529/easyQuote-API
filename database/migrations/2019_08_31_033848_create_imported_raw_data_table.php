@@ -14,17 +14,18 @@ class CreateImportedRawDataTable extends Migration
     public function up()
     {
         Schema::create('imported_raw_data', function (Blueprint $table) {
-            $table->uuid('id');
-            $table->primary('id');
+            $table->uuid('id')->primary();
+
             $table->uuid('user_id');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->uuid('quote_file_id');
             $table->foreign('quote_file_id')->references('id')->on('quote_files')->onDelete('cascade');
+
             $table->integer('page')->nullable();
             $table->string('file_path');
+
             $table->timestamps();
-            $table->timestamp('drafted_at')->nullable()->default(null);
-            $table->softDeletes();
+            $table->softDeletes()->index();
         });
     }
 

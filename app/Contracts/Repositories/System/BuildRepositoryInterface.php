@@ -39,17 +39,17 @@ interface BuildRepositoryInterface
     public function firstOrCreate(array $attributes, array $values = []);
 
     /**
-     * Update latest build or create new one.
+     * Update last build or create new one.
      *
      * @param array $attributes
      * @return \App\Models\System\Build
      */
-    public function updateLatestOrCreate(array $attributes): Build;
+    public function updateLastOrCreate(array $attributes): Build;
 
     /**
-     * Retrieve latest Build from storage.
+     * Retrieve last Build from storage.
      *
      * @return \App\Models\System|null
      */
-    public function latest();
+    public function last();
 }

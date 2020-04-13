@@ -52,7 +52,7 @@ class MaintenanceScheduled extends Notification
 
         $pluralMinute = Str::plural('minute', $startInMinutes);
 
-        $maintenanceMessage = optional(app(Builds::class)->latest())->maintenance_message;
+        $maintenanceMessage = optional(app(Builds::class)->last())->maintenance_message;
 
         $maintenanceMessage ??= "We are starting maintenance in {$startInMinutes} {$pluralMinute}.\nThe app will be unavailable for {$unavailableMinutes} minutes.";
 

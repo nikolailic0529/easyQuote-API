@@ -40,7 +40,7 @@ class ContractVersionResource extends JsonResource
             'system_handle'                             => $this->usingVersion->system_handle,
             'additional_details'                        => $this->usingVersion->additional_details,
             'checkbox_status'                           => $this->usingVersion->checkbox_status,
-            'closing_date'                              => $this->usingVersion->closing_date,
+            'closing_date'                              => optional($this->usingVersion->closing_date)->format(config('date.format_ui')),
             'additional_notes'                          => $this->usingVersion->additional_notes,
             'list_price'                                => $this->usingVersion->list_price,
             'calculate_list_price'                      => $this->usingVersion->calculate_list_price,

@@ -3,17 +3,15 @@
 namespace App\Models;
 
 use App\Contracts\ActivatableInterface;
-use App\Models\{
-    BaseModel,
-    Permission
-};
+use App\Models\Permission;
 use App\Traits\{
     Activatable,
     BelongsToUser,
     Search\Searchable,
     Systemable,
     Activity\LogsActivity,
-    Auth\Multitenantable
+    Auth\Multitenantable,
+    Uuid
 };
 use Spatie\Permission\{
     Guard,
@@ -25,17 +23,19 @@ use Spatie\Permission\{
     Contracts\Role as RoleContract
 };
 use Illuminate\Database\Eloquent\{
+    Model,
     Collection as EloquentCollection,
     SoftDeletes,
     Relations\MorphToMany,
-    Relations\BelongsToMany
+    Relations\BelongsToMany,
 };
-use Arr;
 use Illuminate\Support\Collection;
+use Arr;
 
-class Role extends BaseModel implements RoleContract, ActivatableInterface
+class Role extends Model implements RoleContract, ActivatableInterface
 {
-    use Multitenantable,
+    use Uuid,
+        Multitenantable,
         HasPermissions,
         RefreshesPermissionCache,
         BelongsToUser,

@@ -5,15 +5,18 @@ namespace App\Models;
 use App\Traits\{
     Activatable,
     BelongsToCountry,
-    Search\Searchable
+    Search\Searchable,
+    Uuid
 };
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Builder;
-use Arr;
+use Illuminate\Database\Eloquent\{
+    Model,
+    Builder,
+    SoftDeletes,
+};
 
-class Address extends BaseModel
+class Address extends Model
 {
-    use SoftDeletes, Activatable, BelongsToCountry, Searchable;
+    use Uuid, SoftDeletes, Activatable, BelongsToCountry, Searchable;
 
     protected $fillable = [
         'address_type',

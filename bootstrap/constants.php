@@ -95,6 +95,8 @@ define('QFNC_01', 'The given file hasn\'t required columns');
 define('QFNE_01', 'Sorry, no files found.');
 define('QFT_PL', 'Distributor Price List');
 define('QFT_PS', 'Payment Schedule');
+define('QFNF_01', 'Quote File not found.');
+define('QFNF_02', 'Unable resolve filepath for given QuoteFile instance.');
 
 /**
  * Discount.
@@ -110,6 +112,7 @@ define('CPE_01', 'The company with the same Name or VAT already exists.');
 define('CPUD_01', 'You could not delete this Company because it is already in use.');
 define('CPSD_01', 'You could not delete the system defined Company.');
 define('CP_DEF_VAT', 'GB758501125');
+define('CP_DEF_NAME', 'Support Warehouse Ltd');
 
 /**
  * Vendor.
@@ -150,6 +153,11 @@ define('SS_INV_02', 'You could not to update this setting as it is read only.');
  */
 define('ICSU_01', 'You could not update the system defined Importable Column.');
 define('ICSD_01', 'You could not delete the system defined Importable Column.');
+
+/**
+ * Imported rows.
+ */
+define('IMPR_ERR_01', 'Something went wrong when making row. Row will be imported without columns data.');
 
 /**
  * Country.
@@ -200,10 +208,14 @@ define('SN_IMG_S4RDF', 'img/slack/s4rdf.gif');
  * Exchange Rates.
  */
 // Exchange Rate Service implementation.
-define('ER_SERVICE_CLASS', \App\Services\ExchangeRate\HMRCRates::class);
+define('ER_SERVICE_CLASS', App\Services\ExchangeRate\HMRCRates::class);
 // Exchange Rates update frequency. daily, weekly, monthly.
 define('ER_UPD_DEFAULT_SCHEDULE', 'monthly');
-define('ER_PARSE_ERROR_01', 'An error occured when trying to parse exchange rates from %s.');
+define('ER_PARSE_ERR_01', 'An error occured when trying to parse exchange rates.');
+define('ER_RECEIVE_ERR_01', 'An error occured when trying to receive exchange rates from %s.');
+define('ER_FNE_01', 'File does not exist.');
+define('ER_DT_01', '%s will be used as date for exchange rates.');
+define('ER_DT_ERR_01', 'Unable parse date from the given file.');
 define('ER_SETTING_UPDATE_KEY', 'exchange_rates_update');
 define('ER_MARGIN_DEFAULT', 6);
 
@@ -216,3 +228,8 @@ define('ROUTE_CR', ['index', 'show', 'store']);
 define('ROUTE_RD', ['index', 'show', 'destroy']);
 define('ROUTE_RU', ['index', 'show', 'update']);
 define('ROUTE_R', ['index', 'show']);
+
+/**
+ * Recaptcha.
+ */
+define('GRC_ERR_01', 'A server error occured while sending request to Google Recaptcha.');

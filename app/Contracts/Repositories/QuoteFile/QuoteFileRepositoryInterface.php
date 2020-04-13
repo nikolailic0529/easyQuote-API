@@ -6,6 +6,7 @@ use App\Models\{
     Quote\BaseQuote as Quote,
     QuoteFile\QuoteFile
 };
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 interface QuoteFileRepositoryInterface
 {
@@ -99,6 +100,31 @@ interface QuoteFileRepositoryInterface
      * @return QuoteFile
      */
     public function find(string $id);
+
+    /**
+     * Retrieve Quote file by specific clause.
+     *
+     * @param array $clause
+     * @return QuoteFile|null
+     */
+    public function findByClause(array $clause);
+
+    /**
+     * Resolve filepath for the given quote file.
+     *
+     * @param QuoteFile|null $quoteFile
+     * @return string
+     * @throws NotFoundHttpException
+     */
+    public function resolveFilepath(?QuoteFile $quoteFile): string;
+
+    /**
+     * Resolve file type by given needle.
+     *
+     * @param string $needle
+     * @return string|null
+     */
+    public function resolveFileType(string $needle): ?string;
 
     /**
      * Check for existing

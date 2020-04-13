@@ -33,9 +33,7 @@ class VendorTest extends TestCase
             'order_by_short_code' => 'asc'
         ]);
 
-        $response = $this->getJson(url('api/vendors?' . $query));
-
-        $response->assertOk();
+        $this->getJson(url('api/vendors?' . $query))->assertOk();
     }
 
     /**
@@ -47,10 +45,11 @@ class VendorTest extends TestCase
     {
         $attributes = factory(Vendor::class)->state('countries')->raw();
 
-        $response = $this->postJson(url('api/vendors'), $attributes);
-
-        $response->assertOk()
-            ->assertJsonStructure(array_keys(Arr::except($attributes, ['user_id', 'countries'])));
+        $this->postJson(url('api/vendors'), $attributes)
+            ->assertOk()
+            ->assertJsonStructure(
+                array_keys(Arr::except($attributes, ['user_id', 'countries']))
+            );
     }
 
     /**
@@ -62,13 +61,16 @@ class VendorTest extends TestCase
     {
         $vendor = factory(Vendor::class)->create();
 
-        $newAttributes = factory(Vendor::class)->state('countries')->raw();
+        $attributes = factory(Vendor::class)->state('countries')->raw();
 
-        $response = $this->patchJson(url("api/vendors/{$vendor->id}"), $newAttributes);
-
-        $response->assertOk()
-            ->assertJsonStructure(array_keys(Arr::except($newAttributes, ['user_id', 'countries'])))
-            ->assertJsonFragment(Arr::except($newAttributes, ['user_id', 'countries']));
+        $this->patchJson(url("api/vendors/{$vendor->id}"), $attributes)
+            ->assertOk()
+            ->assertJsonStructure(
+                array_keys(Arr::except($attributes, ['user_id', 'countries']))
+            )
+            ->assertJsonFragment(
+                Arr::except($attributes, ['user_id', 'countries'])
+            );
     }
 
     /**
@@ -80,14 +82,11 @@ class VendorTest extends TestCase
     {
         $vendor = tap(factory(Vendor::class)->create())->deactivate();
 
-        $response = $this->putJson(url("api/vendors/activate/{$vendor->id}"));
-
-        $response->assertOk()
+        $this->putJson(url("api/vendors/activate/{$vendor->id}"))
+            ->assertOk()
             ->assertExactJson([true]);
 
-        $vendor->refresh();
-
-        $this->assertNotNull($vendor->activated_at);
+        $this->assertNotNull($vendor->refresh()->activated_at);
     }
 
     /**
@@ -99,14 +98,11 @@ class VendorTest extends TestCase
     {
         $vendor = tap(factory(Vendor::class)->create())->activate();
 
-        $response = $this->putJson(url("api/vendors/deactivate/{$vendor->id}"));
-
-        $response->assertOk()
+        $this->putJson(url("api/vendors/deactivate/{$vendor->id}"))
+            ->assertOk()
             ->assertExactJson([true]);
 
-        $vendor->refresh();
-
-        $this->assertNull($vendor->activated_at);
+        $this->assertNull($vendor->refresh()->activated_at);
     }
 
     /**
@@ -118,13 +114,10 @@ class VendorTest extends TestCase
     {
         $vendor = factory(Vendor::class)->create();
 
-        $response = $this->deleteJson(url("api/vendors/{$vendor->id}"));
-
-        $response->assertOk()
+        $this->deleteJson(url("api/vendors/{$vendor->id}"))
+            ->assertOk()
             ->assertExactJson([true]);
 
-        $vendor->refresh();
-
-        $this->assertNotNull($vendor->deleted_at);
+        $this->assertSoftDeleted($vendor);
     }
 }

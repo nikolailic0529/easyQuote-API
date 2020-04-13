@@ -2,15 +2,16 @@
 
 namespace App\Models;
 
-use App\Models\BaseModel;
 use App\Contracts\{
     WithImage,
     ActivatableInterface,
     HasOrderedScope,
     WithLogo
 };
-use App\Models\Data\Country;
-use App\Models\QuoteTemplate\QuoteTemplate;
+use App\Models\{
+    Data\Country,
+    QuoteTemplate\QuoteTemplate,
+};
 use App\Traits\{
     Activatable,
     BelongsToAddresses,
@@ -24,13 +25,18 @@ use App\Traits\{
     Quote\HasQuotes,
     QuoteTemplate\HasQuoteTemplates,
     Activity\LogsActivity,
-    Auth\Multitenantable
+    Auth\Multitenantable,
+    Uuid
 };
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\{
+    Model,
+    SoftDeletes,
+};
 
-class Company extends BaseModel implements WithImage, WithLogo, ActivatableInterface, HasOrderedScope
+class Company extends Model implements WithImage, WithLogo, ActivatableInterface, HasOrderedScope
 {
-    use Multitenantable,
+    use Uuid,
+        Multitenantable,
         HasLogo,
         HasImage,
         BelongsToUser,
@@ -109,7 +115,7 @@ class Company extends BaseModel implements WithImage, WithLogo, ActivatableInter
         return $query->orderByRaw("field(`vat`, ?, null) desc", [CP_DEF_VAT]);
     }
 
-    public function inUse()
+    public function inUse(): bool
     {
         return $this->quotes()->exists() || $this->quoteTemplates()->exists();
     }

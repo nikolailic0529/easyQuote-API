@@ -14,15 +14,28 @@ class CreateImportedRowsTable extends Migration
     public function up()
     {
         Schema::create('imported_rows', function (Blueprint $table) {
-            $table->uuid('id');
-            $table->primary('id');
+            $table->uuid('id')->primary();
+
             $table->uuid('user_id');
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('users')->onUpdate('cascade')->onDelete('cascade');
+
             $table->uuid('quote_file_id');
-            $table->foreign('quote_file_id')->references('id')->on('quote_files')->onDelete('cascade');
+            $table->foreign('quote_file_id')->references('id')->on('quote_files')->onUpdate('cascade')->onDelete('cascade');
+
+            $table->json('columns_data')->nullable()->comment('Columns data');
+
+            $table->string('group_name')->nullable()->comment('Belonging to the specific group');
+            $table->boolean('is_selected')->default(false)->comment('Determine whether row is selected');
+            $table->boolean('is_one_pay')->default(false)->comment('Determine whether row is one off pay');
+
+            $table->unsignedSmallInteger('page')->nullable();
+
             $table->timestamps();
-            $table->timestamp('drafted_at')->nullable()->default(null);
-            $table->softDeletes();
+            $table->timestamp('processed_at')->nullable();
+            $table->softDeletes()->index();
+
+            $table->index(['group_name', 'deleted_at']);
+            $table->index(['is_selected', 'deleted_at']);
         });
     }
 

@@ -16,8 +16,11 @@ class CreateQuoteTemplateTemplateFieldTable extends Migration
         Schema::create('quote_template_template_field', function (Blueprint $table) {
             $table->uuid('quote_template_id');
             $table->foreign('quote_template_id')->references('id')->on('quote_templates')->onDelete('cascade');
+
             $table->uuid('template_field_id');
             $table->foreign('template_field_id')->references('id')->on('template_fields')->onDelete('cascade');
+
+            $table->primary(['quote_template_id', 'template_field_id'], 'quote_template_template_field_primary');
         });
     }
 

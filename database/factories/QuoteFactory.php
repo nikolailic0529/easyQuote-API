@@ -8,25 +8,35 @@ use App\Contracts\Repositories\{
     CurrencyRepositoryInterface as Currencies,
     Customer\CustomerRepositoryInterface as Customers
 };
-use App\Models\Quote\Margin\CountryMargin;
+use App\Models\User;
 use App\Models\Quote\Quote;
+use App\Models\Quote\Margin\CountryMargin;
 use Faker\Generator as Faker;
 use Illuminate\Support\Arr;
 
 $factory->define(Quote::class, function (Faker $faker) {
     $company = app(Companies::class)->allWithVendorsAndCountries()->random();
+    
     $vendor = $company->vendors->random();
+
     $country = $vendor->countries->random();
+
     $template = app(Templates::class)->findByCompanyVendorCountry([
         'company_id'    => $company->id,
         'vendor_id'     => $vendor->id,
         'country_id'    => $country->id,
     ])->random();
+
     $sourceCurrency = app(Currencies::class)->all()->random();
+
     $targetCurrency = app(Currencies::class)->all()->random();
+
     $customer = app(Customers::class)->list()->random();
 
+    $user = User::firstOr(fn () => factory(User::class)->create());
+
     return [
+        'user_id'               => $user->id,
         'company_id'            => $company->id,
         'vendor_id'             => $vendor->id,
         'country_id'            => $country->id,
@@ -48,7 +58,7 @@ $factory->define(Quote::class, function (Faker $faker) {
     ];
 });
 
-$factory->defineAs(Quote::class, 'state', function () use ($factory) {
+$factory->state(Quote::class, 'state', function () use ($factory) {
     $quote_data = Arr::except($factory->raw(Quote::class), 'customer_id');
     $margin = $factory->raw(CountryMargin::class, Arr::only($quote_data, ['country_id', 'vendor_id']));
 

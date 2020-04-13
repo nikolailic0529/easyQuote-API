@@ -15,14 +15,23 @@ class CreateNotificationsTable extends Migration
     {
         Schema::create('notifications', function (Blueprint $table) {
             $table->uuid('id')->primary();
+
             $table->uuid('user_id');
-            $table->foreign('user_id')->references('id')->on('users');
-            $table->string('subject_type')->nullable();
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+
             $table->uuid('subject_id')->nullable();
+            $table->string('subject_type')->nullable();
+
             $table->string('message');
             $table->string('url')->nullable();
+
+            $table->tinyInteger('priority')->default(1);
+
             $table->timestamps();
-            $table->softDeletes();
+            $table->timestamp('read_at')->index()->nullable();
+            $table->softDeletes()->index();
+
+            $table->index(['subject_id', 'subject_type']);
         });
     }
 

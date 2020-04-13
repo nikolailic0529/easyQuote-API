@@ -2,6 +2,7 @@
 
 Route::group(['namespace' => 'API'], function () {
     Route::group(['prefix' => 'auth', 'middleware' => THROTTLE_RATE_01], function () {
+        Route::get('attempts/{email}', 'AuthController@showAttempts');
         Route::post('signin', 'AuthController@signin')->name('signin');
         Route::post('signup', 'AuthController@signup')->name('signup');
         Route::get('signup/{invitation}', 'AuthController@showInvitation');
@@ -44,6 +45,10 @@ Route::group(['namespace' => 'API'], function () {
     });
 
     Route::group(['middleware' => 'auth:api'], function () {
+        Route::group(['middleware' => THROTTLE_RATE_01], function () {
+            Route::post('attachments', 'AttachmentController');
+        });
+
         Route::group(['middleware' => THROTTLE_RATE_01, 'namespace' => 'Data'], function () {
             Route::apiResource('countries', 'CountryController');
             Route::put('countries/activate/{country}', 'CountryController@activate');
@@ -87,6 +92,7 @@ Route::group(['namespace' => 'API'], function () {
 
         Route::group(['middleware' => THROTTLE_RATE_01], function () {
             Route::get('users/list', 'UserController@list');
+            Route::get('users/exlist', 'UserController@exclusiveList');
             Route::resource('users', 'UserController', ['only' => ROUTE_CRUD]);
             Route::put('users/activate/{user}', 'UserController@activate');
             Route::put('users/deactivate/{user}', 'UserController@deactivate');
@@ -161,8 +167,7 @@ Route::group(['namespace' => 'API'], function () {
             Route::put('snd/deactivate/{snd}', 'SNDcontroller@deactivate');
         });
 
-        Route::group(['prefix' => 'contracts', 'namespace' => 'Contracts'], function () {
-
+        Route::group(['prefix' => 'contracts', 'namespace' => 'Contracts', 'as' => 'contracts.'], function () {
             /**
              * Contract State.
              */
@@ -188,15 +193,35 @@ Route::group(['namespace' => 'API'], function () {
             Route::post('submitted/unsubmit/{submitted}', 'ContractSubmittedController@unsubmit');
         });
 
-        Route::group(['prefix' => 'quotes', 'namespace' => 'Quotes'], function () {
+        Route::group(['prefix' => 'quotes', 'namespace' => 'Quotes', 'as' => 'quotes.'], function () {
             Route::post('handle', 'QuoteFilesController@handle'); // exclusive high throttle rate
             Route::put('/get/{quote}', 'QuoteController@quote'); // exclusive high throttle rate
+            Route::get('/get/{quote}/quote-files/{file_type}', 'QuoteController@downloadQuoteFile')->where('file_type', 'price|schedule'); // exclusive high throttle rate
             Route::get('/groups/{quote}', 'QuoteController@rowsGroups'); // exclusive high throttle rate
             Route::get('/groups/{quote}/{group}', 'QuoteController@showGroupDescription'); // exclusive high throttle rate
             Route::post('/groups/{quote}', 'QuoteController@storeGroupDescription'); // exclusive high throttle rate
             Route::patch('/groups/{quote}/{group}', 'QuoteController@updateGroupDescription'); // exclusive high throttle rate
             Route::put('/groups/{quote}', 'QuoteController@moveGroupDescriptionRows'); // exclusive high throttle rate
             Route::delete('/groups/{quote}/{group}', 'QuoteController@destroyGroupDescription'); // exclusive high throttle rate
+            Route::put('/groups/{quote}/select', 'QuoteController@selectGroupDescription');
+
+            Route::get('permissions/{quote}', 'QuoteController@showAuthorizedQuoteUsers');
+            Route::put('permissions/{quote}', 'QuoteController@givePermissionToQuote');
+
+            Route::get('notes/{quote}', 'QuoteNoteController@index');
+            Route::get('notes/{quote}/{quote_note}', 'QuoteNoteController@show');
+            Route::post('notes/{quote}', 'QuoteNoteController@store');
+            Route::patch('notes/{quote}/{quote_note}', 'QuoteNoteController@update');
+            Route::delete('notes/{quote}/{quote_note}', 'QuoteNoteController@destroy');
+
+            Route::get('tasks/create', 'QuoteTaskController@create');
+            Route::put('tasks/template', 'QuoteTaskController@updateTemplate');
+            Route::patch('tasks/template', 'QuoteTaskController@resetTemplate');
+            Route::get('tasks/{quote}', 'QuoteTaskController@index');
+            Route::get('tasks/{quote}/{task}', 'QuoteTaskController@show');
+            Route::post('tasks/{quote}', 'QuoteTaskController@store');
+            Route::patch('tasks/{quote}/{task}', 'QuoteTaskController@update');
+            Route::delete('tasks/{quote}/{task}', 'QuoteTaskController@destroy');
 
             Route::group(['middleware' => THROTTLE_RATE_01], function () {
                 Route::get('/discounts/{quote}', 'QuoteController@discounts');

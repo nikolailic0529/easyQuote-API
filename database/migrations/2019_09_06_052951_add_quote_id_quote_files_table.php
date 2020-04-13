@@ -14,8 +14,8 @@ class AddQuoteIdQuoteFilesTable extends Migration
     public function up()
     {
         Schema::table('quote_files', function (Blueprint $table) {
-            $table->uuid('quote_id')->nullable();
-            $table->foreign('quote_id')->references('id')->on('quotes')->onDelete('cascade');
+            $table->uuid('quote_id')->nullable()->after('user_id');
+            $table->foreign('quote_id')->references('id')->on('quotes')->onUpdate('cascade')->onDelete('cascade');
         });
     }
 
@@ -28,6 +28,7 @@ class AddQuoteIdQuoteFilesTable extends Migration
     {
         Schema::table('quote_files', function (Blueprint $table) {
             $table->dropForeign(['quote_id']);
+            $table->dropColumn('quote_id');
         });
     }
 }

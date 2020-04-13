@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 trait BelongsToUsers
 {
-    public function user(): BelongsToMany
+    public array $syncedUsers = [];
+
+    public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class);
     }

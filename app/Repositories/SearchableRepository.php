@@ -3,17 +3,18 @@
 namespace App\Repositories;
 
 use App\Contracts\ActivatableInterface;
+use App\Repositories\Concerns\FiltersQuery;
 use Illuminate\Database\Eloquent\{
     Builder,
     Model
 };
-use Illuminate\Database\Query\Builder as DatabaseBuilder;
 use Elasticsearch\Client as Elasticsearch;
-use Illuminate\Pipeline\Pipeline;
 use Closure;
 
 abstract class SearchableRepository
 {
+    use FiltersQuery;
+
     public function all()
     {
         $scope = filled(func_get_args()) && func_get_arg(0) instanceof Closure ? func_get_arg(0) : null;
@@ -110,21 +111,6 @@ abstract class SearchableRepository
         return $items;
     }
 
-    protected function filterQuery($query, ?Closure $scope = null)
-    {
-        if (!$query instanceof Builder && !$query instanceof DatabaseBuilder) {
-            throw new \Exception('Argument passed to filterQuery method must be an instance of Illuminate\Database\Query\Builder or Illuminate\Database\Eloquent\Builder');
-        }
-
-        return app(Pipeline::class)
-            ->send($query)
-            ->through($this->filterQueryThrough())
-            ->then(function ($passable) use ($scope) {
-                isset($scope) && $scope($passable);
-                return $passable;
-            });
-    }
-
     /**
      * Searchable Scope which will be applied for Query Builder.
      *
@@ -166,11 +152,4 @@ abstract class SearchableRepository
      * @return Builder|array
      */
     abstract protected function filterableQuery();
-
-    /**
-     * Filter Query over Classes Array.
-     *
-     * @return array
-     */
-    abstract protected function filterQueryThrough(): array;
 }

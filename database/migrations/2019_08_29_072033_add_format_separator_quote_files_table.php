@@ -17,7 +17,7 @@ class AddFormatSeparatorQuoteFilesTable extends Migration
             $table->uuid('quote_file_format_id');
             $table->foreign('quote_file_format_id')->references('id')->on('quote_file_formats')->onDelete('cascade');
             $table->uuid('data_select_separator_id')->nullable();
-            $table->foreign('data_select_separator_id')->references('id')->on('data_select_separators')->onDelete('cascade');
+            $table->foreign('data_select_separator_id')->references('id')->on('data_select_separators')->onDelete('set null');
         });
     }
 

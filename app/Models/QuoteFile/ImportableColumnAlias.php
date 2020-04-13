@@ -2,18 +2,17 @@
 
 namespace App\Models\QuoteFile;
 
-use App\Models\BaseModel;
 use App\Traits\{
-    BelongsToImportableColumn
+    BelongsToImportableColumn,
+    Uuid
 };
+use Illuminate\Database\Eloquent\Model;
 
-class ImportableColumnAlias extends BaseModel
+class ImportableColumnAlias extends Model
 {
-    use BelongsToImportableColumn;
+    use Uuid, BelongsToImportableColumn;
 
     public $timestamps = false;
 
-    protected $fillable = [
-        'alias'
-    ];
+    protected $fillable = ['alias'];
 }

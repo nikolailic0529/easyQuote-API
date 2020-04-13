@@ -23,10 +23,12 @@ class UniqueCustomer implements Rule
     {
         return Customer::whereId($value)
             ->whereHas('quotes', function (Builder $query) {
-                $query->when($this->ignore, function (Builder $query) {
-                    $query->where('quotes.id', '!=', $this->ignore);
-                })
-                    ->whereNull('submitted_at');
+                $query->when($this->ignore, fn (Builder $query) =>
+                    $query->where('quotes.id', '!=', $this->ignore)
+                )
+                    ->whereNotNull('submitted_at')
+                    ->whereNotNull('activated_at')
+                    ->where('is_version', false);
             })
             ->doesntExist();
     }

@@ -10,8 +10,7 @@ use Illuminate\Notifications\Notification;
 
 class PasswordExpiration extends Notification
 {
-    /** @var \Carbon\Carbon */
-    protected $expirationDate;
+    protected Carbon $expirationDate;
 
     /**
      * Create a new notification instance.

@@ -18,6 +18,8 @@ class CreateCompanyVendorTable extends Migration
             $table->foreign('company_id')->references('id')->on('companies')->onDelete('cascade');
             $table->uuid('vendor_id');
             $table->foreign('vendor_id')->references('id')->on('vendors')->onDelete('cascade');
+
+            $table->primary(['company_id', 'vendor_id']);
         });
     }
 

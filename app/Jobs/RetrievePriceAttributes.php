@@ -7,20 +7,21 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Database\{
-    Query\Builder as QueryBuilder, Query\JoinClause
+    Query\Builder as QueryBuilder,
+    Query\JoinClause
 };
 use Illuminate\Support\Facades\DB;
 use App\Models\{
-    Quote\BaseQuote, QuoteFile\QuoteFile
+    Quote\BaseQuote,
+    QuoteFile\QuoteFile
 };
 use App\Repositories\Concerns\ManagesSchemalessAttributes;
 
-class RetrievePriceAttributes
+class RetrievePriceAttributes implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, ManagesSchemalessAttributes;
 
-    /** @var \App\Models\Quote\BaseQuote */
-    protected $quote;
+    protected BaseQuote $quote;
 
     /**
      * Create a new job instance.
@@ -72,12 +73,16 @@ class RetrievePriceAttributes
             data_set($attributes, $attribute, $values);
         });
 
-        $attributes = array_merge_recursive($priceList->meta_attributes, $attributes);
+        $attributes = array_filter(array_merge_recursive($priceList->meta_attributes, $attributes), fn ($value) => is_array($value));
 
-        $attributes = array_map(fn ($attribute) => array_values(array_flip(array_flip(array_filter($attribute)))), $attributes);
+        $attributes = array_map(fn ($attribute) => array_values(
+            array_flip(
+                array_flip(array_filter($attribute))
+            )
+        ), $attributes);
 
         $priceList->storeMetaAttributes($attributes);
 
-        $this->quote->fill($priceList->formatted_meta_attributes)->saveWithoutEvents();
+        $this->quote->withoutEvents(fn () => $this->quote->fill($priceList->formatted_meta_attributes)->saveOrFail());
     }
 }

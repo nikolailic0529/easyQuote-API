@@ -38,22 +38,22 @@ return [
             'driver' => 'stack',
             'channels' => ['daily'],
             'ignore_exceptions' => false,
-            'permission' => 0775
+            'permission' => 0777
         ],
 
         'single' => [
             'driver' => 'single',
-            'path' => env('STORAGE_PATH_LOGS', storage_path('logs/laravel.log')),
+            'path' => env('STORAGE_PATH', storage_path()) . '/logs/laravel.log',
             'level' => 'debug',
-            'permission' => 0775
+            'permission' => 0777
         ],
 
         'daily' => [
             'driver' => 'daily',
-            'path' => env('STORAGE_PATH_LOGS',storage_path().'/logs/laravel-'.get_current_user().'.log'),
+            'path' => env('STORAGE_PATH', storage_path()) . '/logs/laravel-' . get_current_user() . '.log',
             'level' => 'debug',
             'days' => 365,
-            'permission' => 0775
+            'permission' => 0777
         ],
 
         'slack' => [

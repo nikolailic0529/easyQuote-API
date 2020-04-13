@@ -18,6 +18,8 @@ trait WithClientCredentials
 
         $response = $this->withoutMiddleware()->postJson(url('oauth/token'), $attributes);
 
+        $this->withMiddleware();
+
         $accessToken = $response->json('access_token');
 
         $this->clientAuthHeader = ['Authorization' => 'Bearer ' . $accessToken];

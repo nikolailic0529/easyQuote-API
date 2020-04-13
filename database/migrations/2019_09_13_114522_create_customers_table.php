@@ -15,13 +15,23 @@ class CreateCustomersTable extends Migration
     {
         Schema::create('customers', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('name', 40);
-            $table->string('rfq', 20);
+
+            $table->string('name');
+            $table->string('rfq', 40);
+            
+            $table->json('service_levels')->nullable();
+            $table->string('payment_terms')->nullable();
+            $table->string('invoicing_terms')->nullable();
+            
             $table->dateTime('valid_until');
             $table->dateTime('support_start');
             $table->dateTime('support_end');
+            
             $table->timestamps();
-            $table->softDeletes();
+            $table->timestamp('submitted_at')->index()->nullable();
+            $table->softDeletes()->index();
+
+            $table->unique(['rfq', 'deleted_at']);
         });
     }
 

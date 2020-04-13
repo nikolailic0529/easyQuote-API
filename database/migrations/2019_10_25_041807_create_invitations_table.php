@@ -15,14 +15,22 @@ class CreateInvitationsTable extends Migration
     {
         Schema::create('invitations', function (Blueprint $table) {
             $table->uuid('id')->primary();
+
             $table->uuid('user_id');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+
             $table->uuid('role_id');
             $table->foreign('role_id')->references('id')->on('roles');
+
             $table->string('email');
             $table->string('invitation_token');
+            $table->string('host')->nullable();
+
             $table->timestamps();
-            $table->softDeletes();
+            $table->timestamp('expires_at')->nullable();
+            $table->softDeletes()->index();
+
+            $table->unique(['email', 'invitation_token']);
         });
     }
 

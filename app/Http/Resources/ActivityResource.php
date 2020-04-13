@@ -15,15 +15,15 @@ class ActivityResource extends JsonResource
     public function toArray($request)
     {
         return [
-            'id' => $this->id,
-            'log_name' => $this->log_name,
-            'description' => $this->description,
-            'subject_id' => $this->subject_id,
-            'subject_name' => $this->subject_name,
-            'subject_type' => $this->subject_type_base,
-            'causer_name' => $this->causer_name,
-            'changes' => $this->readable_changes,
-            'created_at' => $this->created_at
+            'id'            => $this->id,
+            'log_name'      => $this->log_name,
+            'description'   => $this->description,
+            'subject_id'    => $this->subject_id,
+            'subject_name'  => $this->subject_name,
+            'subject_type'  => $this->subject_type_base,
+            'causer_name'   => $this->causer_name,
+            'changes'       => $this->readable_changes,
+            'created_at'    => optional($this->created_at)->format(config('date.format_time')),
         ];
     }
 }

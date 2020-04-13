@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Contracts\Repositories\UserRepositoryInterface as User;
 use Str, Arr;
 
 class SystemSettingsSync extends Command
@@ -21,21 +20,6 @@ class SystemSettingsSync extends Command
      * @var string
      */
     protected $description = 'Synchronize the System Settings';
-
-    /** @var \App\Contracts\Repositories\UserRepositoryInterface */
-    protected $user;
-
-    /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct(User $user)
-    {
-        parent::__construct();
-
-        $this->user = $user;
-    }
 
     /**
      * Execute the console command.

@@ -21,6 +21,7 @@ class CustomerResponseResource extends JsonResource
             'support_start_date' => $this->support_start_date,
             'support_end_date' => $this->support_end_date,
             'country' => $this->country_code,
+            'country_id' => $this->country_id,
             'service_levels' => isset($this->service_levels) ? $this->service_levels->toArray() : [],
             'invoicing_terms'  => $this->invoicing_terms,
             'addresses' => $this->addresses->map(function ($address) {

@@ -13,7 +13,6 @@ use App\Http\Resources\System\MaintenanceResource;
 
 class MaintenanceController extends Controller
 {
-    /** @var \App\Contracts\Repositories\System\BuildRepositoryInterface */
     protected Builds $builds;
 
     public function __construct(Builds $builds)
@@ -29,7 +28,7 @@ class MaintenanceController extends Controller
     public function show()
     {
         return response()->json(
-            MaintenanceResource::make($this->builds->latest())
+            MaintenanceResource::make($this->builds->last())
         );
     }
 
@@ -44,12 +43,12 @@ class MaintenanceController extends Controller
         $request->updateRelatedSettings();
 
         if ($request->enable) {
-            $this->builds->updateLatestOrCreate($request->validated());
+            $this->builds->updateLastOrCreate($request->validated());
             UpMaintenance::dispatchAfterResponse($request->carbonStartTime, $request->carbonEndTime, true);
         }
 
         return response()->json(
-            MaintenanceResource::make($this->builds->latest())
+            MaintenanceResource::make($this->builds->last())
         );
     }
 

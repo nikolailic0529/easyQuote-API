@@ -20,12 +20,13 @@ class InvitationRepository extends SearchableRepository implements InvitationRep
 
     public function userQuery(): Builder
     {
-        return $this->invitation->query();
+        return $this->invitation->query()->with('role');
     }
 
     public function find(string $token): Invitation
     {
-        return $this->userQuery()->whereInvitationToken($token)->firstOrFail();
+        return $this->invitation->query()
+            ->whereInvitationToken($token)->firstOrFail();
     }
 
     public function resend(string $token): bool
@@ -76,6 +77,6 @@ class InvitationRepository extends SearchableRepository implements InvitationRep
 
     protected function searchableScope($query)
     {
-        return $query;
+        return $query->with('role');
     }
 }

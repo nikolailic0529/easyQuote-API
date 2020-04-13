@@ -2,7 +2,6 @@
 
 namespace App\Models\Collaboration;
 
-use App\Models\BaseModel;
 use App\Traits\{
     BelongsToUser,
     BelongsToRole,
@@ -10,13 +9,19 @@ use App\Traits\{
     Expirable,
     Search\Searchable,
     Activity\LogsActivity,
-    Auth\Multitenantable
+    Auth\Multitenantable,
+    Uuid
 };
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\{
+    Model,
+    SoftDeletes,
+};
+use Illuminate\Support\Str;
 
-class Invitation extends BaseModel
+class Invitation extends Model
 {
-    use Multitenantable,
+    use Uuid,
+        Multitenantable,
         BelongsToUser,
         BelongsToRole,
         SoftDeletes,
@@ -52,14 +57,8 @@ class Invitation extends BaseModel
     {
         parent::boot();
 
-        static::creating(function ($model) {
+        static::creating(function (Model $model) {
             $model->attributes['expires_at'] = now()->addDay()->toDateTimeString();
-        });
-
-        /**
-         * Generating a new Invitation Token.
-         */
-        static::generated(function ($model) {
             $model->attributes['invitation_token'] = $model->generateToken();
         });
     }
@@ -71,7 +70,9 @@ class Invitation extends BaseModel
      */
     public function getUrlAttribute(): string
     {
-        return "{$this->host}/signup/{$this->attributes['invitation_token']}";
+        $baseUrl = (string) Str::of($this->host)->finish('/')->finish('signup/');
+
+        return "{$baseUrl}{$this->invitation_token}";
     }
 
     public function getUserEmailAttribute()

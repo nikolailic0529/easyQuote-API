@@ -16,7 +16,7 @@ class SettingCollection extends ResourceCollection
     {
         $collection = $this->collection->groupBy('section')->map(fn ($section) => SettingResource::collection($section));
 
-        $collection = $collection->replace(['maintenance' => $collection->get('maintenance')->keyBy('key')]);
+        $collection = $collection->replace(['maintenance' => optional($collection->get('maintenance'))->keyBy('key')]);
 
         return $collection;
     }

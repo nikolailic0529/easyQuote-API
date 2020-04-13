@@ -2,18 +2,22 @@
 
 namespace App\Models\System;
 
-use App\Models\BaseModel;
+use App\Casts\ConditionalCast;
 use App\Traits\{
     Activity\LogsActivity,
-    HasValidation
+    HasValidation,
+    Uuid
 };
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\{
+    Model,
+    Collection,
+    SoftDeletes,
+};
 use Str;
 
-class SystemSetting extends BaseModel
+class SystemSetting extends Model
 {
-    use LogsActivity, HasValidation, SoftDeletes;
+    use Uuid, LogsActivity, HasValidation, SoftDeletes;
 
     public $timestamps = false;
 
@@ -26,7 +30,7 @@ class SystemSetting extends BaseModel
     ];
 
     protected $casts = [
-        'value' => '',
+        'value' => ConditionalCast::class,
         'possible_values' => 'array',
         'is_read_only' => 'boolean'
     ];
@@ -51,43 +55,11 @@ class SystemSetting extends BaseModel
 
     protected static $recordEvents = ['updated'];
 
-    protected function getCastType($key)
-    {
-        if ($key === 'value') {
-            return $this->type;
-        }
-
-        return parent::getCastType($key);
-    }
-
-    public function setTypeAttribute($value): void
-    {
-        if (isset(array_flip($this->types)[$value])) {
-            $this->attributes['type'] = $value;
-            return;
-        }
-
-        $this->attributes['type'] = head($this->types);
-    }
-
-    public function setPossibleValuesAttribute($value): void
-    {
-        $this->attributes['possible_values'] = isset($value) ? json_encode($value) : null;
-    }
-
-    public function setValueAttribute($value): void
-    {
-        $this->attributes['value'] = is_array($value) ? json_encode($value) : $value;
-    }
-
-    public function getValueAttribute($value)
-    {
-        return $this->castAttribute('value', $value);
-    }
-
     public function getPossibleValuesAttribute($value)
     {
-        $value = json_decode($value, true);
+        if (!is_array($value)) {
+            $value = json_decode($value, true);
+        }
 
         if (is_string($value)) {
             if (isset(static::$cachedValues[$value])) {

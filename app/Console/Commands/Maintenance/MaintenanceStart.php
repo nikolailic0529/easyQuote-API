@@ -83,7 +83,7 @@ class MaintenanceStart extends Command
     {
         $attributes = array_filter(Arr::only($this->arguments(), ['build_number', 'git_tag']));
 
-        $attributes += optional(app(Builds::class)->latest())->only('build_number', 'git_tag') ?? [];
+        $attributes += optional(app(Builds::class)->last())->only('build_number', 'git_tag') ?? [];
 
         app(Builds::class)->create($attributes + compact('start_time', 'end_time'));
     }

@@ -9,7 +9,10 @@ use Tests\Unit\Traits\{
     WithFakeUser
 };
 use App\Models\Quote\Quote;
+use App\Http\Resources\QuoteVersionResource;
+use App\Models\Quote\Margin\CountryMargin;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Arr;
 
 class QuoteVersionTest extends TestCase
 {
@@ -100,33 +103,27 @@ class QuoteVersionTest extends TestCase
         $this->assertSoftDeleted($version);
     }
 
+    /**
+     * Test versions updating with valid attributes.
+     *
+     * @return void
+     */
     public function testVersionUpdatingWithNewAttributes()
     {
         $user = tap($this->createUser(), fn ($user) => $this->actingAs($user, 'api'));
 
-        $state = factory(Quote::class, 'state')->raw(['quote_id' => $this->quote->id]);
+        $state = transform(static::makeState(), fn ($state) =>
+            Arr::set($state, 'quote_id', $this->quote->id)
+        );
 
-        $response = $this->postJson(url('api/quotes/state'), $state);
+        $this->postJson(url('api/quotes/state'), $state)->assertOk()->assertExactJson(['id' => $this->quote->id]);
 
-        $response->assertOk()
-            ->assertExactJson(['id' => $this->quote->id]);
+        Arr::set($state, 'quote_data.closing_date', Carbon::createFromFormat('Y-m-d', Arr::get($state, 'quote_data.closing_date'))->format('d/m/Y'));
 
-        $this->quote->usingVersion->refresh();
+        $resource = QuoteVersionResource::make($this->quote->refresh())->resolve();
 
-        $expectedQuoteAttributes = $state['quote_data'];
-        $expectedQuoteAttributes['closing_date'] = Carbon::createFromFormat('Y-m-d', $expectedQuoteAttributes['closing_date'])->format('d/m/Y');
-
-        $assertableAttributes = array_keys($expectedQuoteAttributes);
-        $actualQuoteAttributes = $this->quote->usingVersion->only($assertableAttributes);
-
-        $this->assertEquals($actualQuoteAttributes, $expectedQuoteAttributes);
-
-        $expectedMarginAttributes = $state['margin'];
-
-        $actualMarginAttributes = $this->quote->usingVersion
-            ->countryMargin->only(array_keys($expectedMarginAttributes));
-
-        $this->assertEquals($actualMarginAttributes, $expectedMarginAttributes);
+        collect($state['quote_data'])->each(fn ($value, $attribute) => $this->assertEquals($value, Arr::get($resource, $attribute)));
+        collect($state['margin'])->each(fn ($value, $attribute) => $this->assertEquals($value, Arr::get($resource, 'country_margin.'.$attribute)));
     }
 
     protected function updateQuoteStateFromNewUser(): void
@@ -139,5 +136,34 @@ class QuoteVersionTest extends TestCase
         $this->postJson(url('api/quotes/state'), $state);
 
         $this->be($this->user);
+    }
+
+    protected static function makeState(): array
+    {
+        $quote = factory(Quote::class)->raw();
+        $margin = factory(CountryMargin::class)->raw(Arr::only($quote, ['country_id', 'vendor_id']));
+
+        return [
+            'quote_data' => [
+                'company_id'            => Arr::get($quote, 'company_id'),
+                'vendor_id'             => Arr::get($quote, 'vendor_id'),
+                'country_id'            => Arr::get($quote, 'country_id'),
+                'quote_template_id'     => Arr::get($quote, 'quote_template_id'),
+                'source_currency_id'    => Arr::get($quote, 'source_currency_id'),
+                'target_currency_id'    => Arr::get($quote, 'target_currency_id'),
+                'exchange_rate_margin'  => Arr::get($quote, 'exchange_rate_margin'),
+                'last_drafted_step'     => Arr::get($quote, 'last_drafted_step'),
+                'pricing_document'      => Arr::get($quote, 'pricing_document'),
+                'service_agreement_id'  => Arr::get($quote, 'service_agreement_id'),
+                'system_handle'         => Arr::get($quote, 'system_handle'),
+                'additional_details'    => Arr::get($quote, 'additional_details'),
+                'additional_notes'      => Arr::get($quote, 'additional_notes'),
+                'closing_date'          => Arr::get($quote, 'closing_date'),
+                'calculate_list_price'  => Arr::get($quote, 'calculate_list_price'),
+                'buy_price'             => Arr::get($quote, 'buy_price'),
+                'custom_discount'       => Arr::get($quote, 'custom_discount'),
+            ],
+            'margin' => $margin,
+        ];
     }
 }

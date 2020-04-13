@@ -11,8 +11,7 @@ class SendSlackNotification implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable;
 
-    /** @var array */
-    protected $attributes;
+    protected array $attributes;
 
     /**
      * Create a new job instance.

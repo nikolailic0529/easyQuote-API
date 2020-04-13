@@ -10,7 +10,7 @@ use Tests\Unit\Traits\{
     WithFakeQuote,
     WithFakeQuoteFile
 };
-use Illuminate\Foundation\Testing\TestResponse;
+use Illuminate\Testing\TestResponse;
 use App\Models\Quote\Quote;
 
 class S4QuoteGetRequestTest extends TestCase
@@ -28,18 +28,17 @@ class S4QuoteGetRequestTest extends TestCase
         $this->submitQuote($this->quote);
         $this->activateQuote($this->quote);
 
-        $response = $this->requestQuoteByRfq($this->quote);
-
-        $response->assertJsonStructure([
-            'price_list_file',
-            'pdf_file',
-            'quote_data' => [
-                'first_page',
-                'data_pages',
-                'last_page',
-                'payment_schedule'
-            ]
-        ]);
+        $this->requestQuoteByRfq($this->quote)
+            ->assertJsonStructure([
+                'price_list_file',
+                'pdf_file',
+                'quote_data' => [
+                    'first_page',
+                    'data_pages',
+                    'last_page',
+                    'payment_schedule'
+                ]
+            ]);
     }
 
     public function testRequestWithSubmittedActivatedDeletedQuote(): void

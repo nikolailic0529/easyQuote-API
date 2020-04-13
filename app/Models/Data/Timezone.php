@@ -2,11 +2,14 @@
 
 namespace App\Models\Data;
 
-use App\Models\BaseModel;
 use App\Contracts\HasOrderedScope;
+use App\Traits\Uuid;
+use Illuminate\Database\Eloquent\Model;
 
-class Timezone extends BaseModel implements HasOrderedScope
+class Timezone extends Model implements HasOrderedScope
 {
+    use Uuid;
+
     public $timestamps = false;
 
     public function scopeOrdered($query)

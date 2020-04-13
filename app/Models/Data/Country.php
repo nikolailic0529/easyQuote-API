@@ -2,7 +2,6 @@
 
 namespace App\Models\Data;
 
-use App\Models\BaseModel;
 use App\Contracts\{
     ActivatableInterface,
     HasOrderedScope
@@ -12,17 +11,19 @@ use App\Traits\{
     Systemable,
     Auth\Multitenantable,
     Search\Searchable,
-    Activity\LogsActivity
+    Activity\LogsActivity,
+    Uuid
 };
 use Illuminate\Database\Eloquent\{
     Builder,
+    Model,
     Relations\BelongsTo,
     SoftDeletes
 };
 
-class Country extends BaseModel implements HasOrderedScope, ActivatableInterface
+class Country extends Model implements HasOrderedScope, ActivatableInterface
 {
-    use Multitenantable, Activatable, Systemable, Searchable, LogsActivity, SoftDeletes;
+    use Uuid, Multitenantable, Activatable, Systemable, Searchable, LogsActivity, SoftDeletes;
 
     const FLAGS_DIRECTORY = 'img/countries';
 

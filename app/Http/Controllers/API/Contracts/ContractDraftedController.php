@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\API\Contracts;
 
 use App\Http\Controllers\Controller;
-use App\Contracts\Repositories\Quote\ContractDraftedRepositoryInterface as Contracts;
+use App\Contracts\Repositories\Contract\ContractDraftedRepositoryInterface as Contracts;
 use App\Http\Requests\Quote\SubmitContractRequest;
 use App\Http\Resources\Contract\DraftedCollection;
 use App\Models\{

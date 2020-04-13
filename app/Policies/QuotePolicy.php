@@ -37,6 +37,10 @@ class QuotePolicy
             return true;
         }
 
+        if ($user->can("quotes.read.{$quote->id}")) {
+            return true;
+        }
+
         if ($user->can('view_own_quotes')) {
             return $user->id === $quote->user_id;
         }
@@ -70,6 +74,10 @@ class QuotePolicy
             return true;
         }
 
+        if ($user->can("quotes.update.{$quote->id}")) {
+            return true;
+        }
+
         if ($user->can('update_own_quotes')) {
             return $user->id === $quote->user_id;
         }
@@ -88,9 +96,51 @@ class QuotePolicy
             return true;
         }
 
+        if ($user->can("quotes.update.{$quote->id}")) {
+            return true;
+        }
+
         if ($user->can('update_own_quotes')) {
             return $user->id === $quote->user_id;
         }
+    }
+
+    /**
+     * Determine whether the user can grant permission to the quote.
+     *
+     * @param User $user
+     * @param Quote $quote
+     * @return mixed
+     */
+    public function grantPermission(User $user, Quote $quote)
+    {
+        if ($user->hasRole('Administrator')) {
+            return true;
+        }
+
+        /**
+         * @todo If user is not super-administrator check owner id. We are checking only parent quote (not any its version)
+         * return $user->id === $quote->user_id
+         */
+    }
+
+    /**
+     * Determine whether the user can revoke permission to the quote.
+     *
+     * @param User $user
+     * @param Quote $quote
+     * @return void
+     */
+    public function revokePermission(User $user, Quote $quote)
+    {
+        if ($user->hasRole('Administrator')) {
+            return true;
+        }
+
+        /**
+         * @todo If user is not super-administrator check owner id. We are checking only parent quote (not any its version)
+         * return $user->id === $quote->user_id
+         */
     }
 
     /**
@@ -216,6 +266,23 @@ class QuotePolicy
     public function downloadPdf(User $user, Quote $quote)
     {
         return $user->can('download_quote_pdf') && $this->view($user, $quote);
+    }
+
+    /**
+     * Determine whether the user can download quote file.
+     *
+     * @param User $user
+     * @param Quote $quote
+     * @param string $fileType
+     * @return void
+     */
+    public function downloadFile(User $user, Quote $quote, string $fileType)
+    {
+        if ($user->can('download_quote_'.$fileType)) {
+            return true;
+        }
+
+        return $this->deny(sprintf('You can not download %s files', $fileType));
     }
 
     /**

@@ -2,28 +2,36 @@
 
 namespace Tests\Unit\User;
 
-use App\Models\Collaboration\Invitation;
-use App\Models\User;
 use Tests\TestCase;
+use Tests\Unit\Traits\{
+    WithFakeUser,
+    AssertsListing,
+};
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Tests\Unit\Traits\WithFakeUser;
-use Tests\Unit\Traits\AssertsListing;
+use App\Models\{
+    User,
+    Collaboration\Invitation,
+};
+use App\Contracts\Repositories\{
+    RoleRepositoryInterface as Roles,
+    UserRepositoryInterface as Users,
+};
 use Arr, Str;
 
 class InvitationTest extends TestCase
 {
     use DatabaseTransactions, WithFakeUser, AssertsListing;
 
-    protected $roleRepository;
+    protected ?Roles $roleRepository = null;
 
-    protected $userRepository;
+    protected ?Users $userRepository = null;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->roleRepository = app('role.repository');
-        $this->userRepository = app('user.repository');
+        $this->roleRepository = app(Roles::class);
+        $this->userRepository = app(Users::class);
     }
 
     /**
@@ -42,9 +50,7 @@ class InvitationTest extends TestCase
 
         $query = http_build_query(['search' => Str::random(10), 'order_by_created_at' => 'asc', 'order_by_name' => 'desc']);
 
-        $response = $this->getJson(url('api/invitations?' . $query));
-
-        $response->assertOk();
+        $this->getJson(url('api/invitations?' . $query))->assertOk();
     }
 
     /**
@@ -56,9 +62,8 @@ class InvitationTest extends TestCase
     {
         $attributes = $this->makeGenericInvitationAttributes();
 
-        $response = $this->postJson(url('api/users'), $attributes);
-
-        $response->assertOk()
+        $this->postJson(url('api/users'), $attributes)
+            ->assertOk()
             ->assertJsonStructure([
                 'id', 'email', 'host', 'role_id', 'user_id', 'invitation_token', 'expires_at', 'created_at', 'role_name', 'url'
             ]);
@@ -75,23 +80,19 @@ class InvitationTest extends TestCase
 
         $invitation = $this->userRepository->invite($attributes);
 
-        $this->assertInstanceOf(\App\Models\Collaboration\Invitation::class, $invitation);
+        $this->assertInstanceOf(Invitation::class, $invitation);
 
         $invitationUrl = url("/api/auth/signup/{$invitation->invitation_token}");
 
-        $response = $this->getJson($invitationUrl);
-
-        $response->assertOk()
+        $this->getJson($invitationUrl)
+            ->assertOk()
             ->assertExactJson([
                 'email' => $attributes['email'],
                 'role_name' => 'Administrator'
             ]);
 
-        $password = $this->faker->password;
-
-        $response = $this->postJson($invitationUrl, factory(User::class, 'registration')->raw());
-
-        $response->assertOk()
+        $this->postJson($invitationUrl, factory(User::class)->state('registration')->raw())
+            ->assertOk()
             ->assertJsonStructure([
                 'id',
                 'first_name',
@@ -111,18 +112,16 @@ class InvitationTest extends TestCase
     {
         $invitation = $this->userRepository->invite($this->makeGenericInvitationAttributes());
 
-        $response = $this->putJson(url("api/invitations/cancel/{$invitation->invitation_token}"));
-
-        $response->assertOk()
+        $this->putJson(url("api/invitations/cancel/{$invitation->invitation_token}"))
+            ->assertOk()
             ->assertExactJson([true]);
 
         $invitation->refresh();
 
         $this->assertTrue($invitation->isExpired);
 
-        $response = $this->getJson(url("/api/auth/signup/{$invitation->invitation_token}"));
-
-        $response->assertNotFound()
+        $this->getJson(url("/api/auth/signup/{$invitation->invitation_token}"))
+            ->assertNotFound()
             ->assertExactJson([
                 'ErrorCode' => 'IE_01',
                 'ErrorDetails' => IE_01,
@@ -139,20 +138,13 @@ class InvitationTest extends TestCase
     {
         $invitation = $this->userRepository->invite($this->makeGenericInvitationAttributes());
 
-        $response = $this->deleteJson(
-            url("api/invitations/{$invitation->invitation_token}")
-        );
-
-        $response->assertOk()
+        $this->deleteJson(url("api/invitations/{$invitation->invitation_token}"))
+            ->assertOk()
             ->assertExactJson([true]);
 
-        $invitation->refresh();
+        $this->assertSoftDeleted($invitation);
 
-        $this->assertNotNull($invitation->deleted_at);
-
-        $response = $this->getJson(url("/api/auth/signup/{$invitation->invitation_token}"));
-
-        $response->assertNotFound();
+        $this->getJson(url("/api/auth/signup/{$invitation->invitation_token}"))->assertNotFound();
     }
 
     protected function makeGenericInvitationAttributes(): array

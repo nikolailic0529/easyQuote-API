@@ -46,7 +46,7 @@ class CreateClientCredentials extends Command
 
     protected function createClientCredentials(array $credentials, string $service)
     {
-        if ($this->checkClientCredentials($credentials)) {
+        if (!static::checkClientCredentials($credentials)) {
             return $this->warn("Client Credentials for {$service} are not defined.");
         }
 
@@ -68,10 +68,8 @@ class CreateClientCredentials extends Command
         $this->line('<comment>Client secret:</comment> ' . $attributes['secret']);
     }
 
-    protected function checkClientCredentials(array $credentials): bool
+    private static function checkClientCredentials(array $credentials): bool
     {
-        return is_null(Arr::first($credentials, function ($parameter) {
-            return filled($parameter);
-        }));
+        return !collect($credentials)->contains(fn ($value) => blank($value));
     }
 }

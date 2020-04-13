@@ -2,8 +2,8 @@
 
 namespace App\Traits;
 
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 
 trait Activatable
 {
@@ -61,10 +61,5 @@ trait Activatable
     public function scopeActivatedFirst(Builder $query): Builder
     {
         return $query->orderBy("{$this->getTable()}.activated_at", 'desc');
-    }
-
-    public function getActivatedAtAttribute($value)
-    {
-        return carbon_format($value, config('date.format_time'));
     }
 }

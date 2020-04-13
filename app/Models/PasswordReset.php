@@ -5,12 +5,14 @@ namespace App\Models;
 use App\Traits\{
     BelongsToUser,
     Expirable,
-    CanGenerateToken
+    CanGenerateToken,
+    Uuid
 };
+use Illuminate\Database\Eloquent\Model;
 
-class PasswordReset extends BaseModel
+class PasswordReset extends Model
 {
-    use CanGenerateToken, Expirable, BelongsToUser;
+    use Uuid, CanGenerateToken, Expirable, BelongsToUser;
 
     protected $fillable = [
         'user_id', 'email', 'token', 'host', 'expires_at'
@@ -26,12 +28,6 @@ class PasswordReset extends BaseModel
 
         static::creating(function ($model) {
             $model->attributes['expires_at'] = now()->addHours(12)->toDateTimeString();
-        });
-
-        /**
-         * Generating a new Invitation Token.
-         */
-        static::generated(function ($model) {
             $model->attributes['token'] = $model->generateToken();
         });
     }
@@ -53,6 +49,6 @@ class PasswordReset extends BaseModel
 
     public function cancel(): bool
     {
-        return $this->forceFill(['expires_at' => null])->save();
+        return $this->forceFill(['expires_at' => null])->saveOrFail();
     }
 }

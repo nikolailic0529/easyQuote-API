@@ -3,7 +3,10 @@
 namespace App\Events;
 
 use App\Http\Resources\CustomerRepositoryResource;
-use App\Models\Customer\Customer;
+use App\Models\{
+    User,
+    Customer\Customer,
+};
 use Illuminate\Broadcasting\{
     InteractsWithSockets,
     PrivateChannel
@@ -17,7 +20,6 @@ class RfqDeleted implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets;
 
-    /** @var \App\Models\Customer\Customer */
     public Customer $customer;
 
     /**
@@ -37,9 +39,9 @@ class RfqDeleted implements ShouldBroadcast
      */
     public function broadcastOn()
     {
-        return $this->loggedInUsers()->map(function ($user) {
-                return new PrivateChannel('user.'.$user->id);
-            })->toArray();
+        return $this->loggedInUsers()
+            ->map(fn (User $user) => new PrivateChannel('user.' . $user->getKey()))
+            ->toArray();
     }
 
     /**
@@ -64,8 +66,6 @@ class RfqDeleted implements ShouldBroadcast
 
     private function loggedInUsers(): LazyCollection
     {
-        return app('user.repository')->cursor(function (Builder $query) {
-            $query->whereAlreadyLoggedIn(true);
-        });
+        return app('user.repository')->cursor(fn (Builder $query) => $query->whereAlreadyLoggedIn(true));
     }
 }

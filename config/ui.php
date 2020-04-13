@@ -2,6 +2,7 @@
 
 return [
     'path' => env('UI_PATH', '/var/www/easyQuote-UI'),
+    'maintenance_data_path' => 'maintenance/maintenance_data.json',
     'routes' => [
         'quotes' => [
             'submitted' => [

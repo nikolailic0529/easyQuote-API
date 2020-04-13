@@ -55,6 +55,8 @@ return [
             \App\Models\Quote\Quote::class,
             \App\Models\Quote\QuoteVersion::class
         ],
+        'quote_note' => \App\Models\Quote\QuoteNote::class,
+        'task' => \App\Models\Task::class,
         'contract' => \App\Models\Quote\Contract::class,
         'customer' => \App\Models\Customer\Customer::class,
         'discount' => [

@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Elasticsearch\Client as ElasticsearchClient;
 use App\Models\{
+    Task,
     Address,
     User,
     Role,
@@ -23,7 +24,7 @@ use App\Models\{
     Collaboration\Invitation,
     System\Activity,
     Data\Country,
-    QuoteFile\ImportableColumn
+    QuoteFile\ImportableColumn,
 };
 use Illuminate\Database\Eloquent\Builder;
 use Str;
@@ -97,7 +98,7 @@ class ReindexCommand extends Command
                 Address::class,
                 Contact::class,
                 Country::class,
-                ImportableColumn::regular()
+                ImportableColumn::regular(),
             ]
         );
     }

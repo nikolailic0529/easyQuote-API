@@ -4,29 +4,35 @@ namespace App\Services\Auth;
 
 use App\Contracts\{
     Services\AuthServiceInterface,
-    Repositories\AccessAttemptRepositoryInterface as AccessAttemptRepository
+    Repositories\AccessAttemptRepositoryInterface as Attempts,
+    Repositories\UserRepositoryInterface as Users,
 };
-use App\Models\User;
+use App\Models\{
+    AccessAttempt,
+    User,
+};
+use App\Notifications\AttemptsExceeded;
 use Laravel\Passport\PersonalAccessTokenResult;
 use Illuminate\Pipeline\Pipeline;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
 use Auth, Arr;
 
 class AuthService implements AuthServiceInterface
 {
-    /** @var boolean */
-    public $checkIp = true;
+    public int $maxAttempts = 15;
 
-    /** @var \App\Contracts\Repositories\AccessAttemptRepositoryInterface */
-    protected $attempt;
+    public bool $checkIp = true;
 
-    /** @var \App\Models\AccessAttempt */
-    protected $currentAttempt;
+    protected Attempts $attempts;
 
-    public function __construct(AccessAttemptRepository $attempt)
+    protected ?AccessAttempt $currentAttempt = null;
+
+    protected Users $users;
+
+    public function __construct(Attempts $attempts, Users $users)
     {
-        $this->attempt = $attempt;
+        $this->attempts = $attempts;
+        $this->users = $users;
     }
 
     public function disableCheckIp(): AuthServiceInterface
@@ -36,13 +42,9 @@ class AuthService implements AuthServiceInterface
         return $this;
     }
 
-    public function authenticate($request)
+    public function authenticate(array $request)
     {
-        if ($request instanceof Request) {
-            $request = $request->validated();
-        }
-
-        $this->currentAttempt = $this->attempt->retrieveOrCreate($request);
+        $this->currentAttempt = $this->attempts->retrieveOrCreate($request);
 
         $this->checkCredentials(Arr::only($request, ['email', 'password']));
 
@@ -64,28 +66,12 @@ class AuthService implements AuthServiceInterface
 
     public function checkCredentials(array $credentials)
     {
-        abort_unless(Auth::attempt($credentials), 403, __('auth.failed'));
-
-        $user = request()->user();
-
-        /**
-         * If the User has expired tokens the System will mark the User as Logged Out.
-         */
-        if ($user->doesntHaveNonExpiredTokens()) {
-            $user->markAsLoggedOut();
+        if (!Auth::attempt($credentials)) {
+            $this->handleFailedAttempt($credentials);
+            return;
         }
 
-        /**
-         * Throw an exception if the User Already Logged In.
-         */
-        $this->checkAlreadyAuthenticatedCase($user);
-
-        /**
-         * Once user logged in we are freshing the last activity timestamp and writing the related activity.
-         */
-        $user->markAsLoggedIn($this->currentAttempt->ip) && $user->freshActivity();
-
-        activity()->on($user)->by($user)->queue('authenticated');
+        $this->handleSuccessfulAttempt($credentials);
     }
 
     public function generateToken(array $attributes): PersonalAccessTokenResult
@@ -105,11 +91,13 @@ class AuthService implements AuthServiceInterface
          * When Logout the System is revoking all the existing User's Personal Access Tokens.
          * Also the User will be marked as Logged Out.
          */
-        $pass = $user->revokeTokens() && $user->markAsLoggedOut();
+        tap($user)
+            ->revokeTokens()
+            ->markAsLoggedOut();
 
         activity()->on($user)->by($user)->queue('deauthenticated');
 
-        return $pass;
+        return true;
     }
 
     protected function checkAlreadyAuthenticatedCase(User $user): void
@@ -121,5 +109,87 @@ class AuthService implements AuthServiceInterface
                 \App\Services\Auth\AuthenticatedCases\LoggedInDifferentAccount::class
             ])
             ->thenReturn();
+    }
+
+    protected function handleFailedAttempt(array $credentials)
+    {
+        $user = $this->retrieveUserFromCredentials($credentials);
+
+        $this->incrementUserFailedAttempts($user);
+
+        $this->deactivateUserWhenAttemptsExceeded($user);
+
+        abort(403, __('auth.failed'));
+    }
+
+    protected function handleSuccessfulAttempt()
+    {
+        $user = request()->user();
+
+        /**
+         * If the User has expired tokens the System will mark the User as Logged Out.
+         */
+        if ($user->doesntHaveNonExpiredTokens()) {
+            $user->markAsLoggedOut();
+        }
+
+        /**
+         * Throw an exception if the User Already Logged In.
+         */
+        $this->checkAlreadyAuthenticatedCase($user);
+
+        /**
+         * Once user logged in we are freshing the last activity timestamp and writing the related activity.
+         */
+        tap($user)
+            ->markAsLoggedIn($this->currentAttempt->ip)
+            ->freshActivity();
+
+        /**
+         * Finally we are resetting user's failed attempts.
+         */
+        $this->resetUserFailedAttempts($user);
+
+        activity()->on($user)->by($user)->queue('authenticated');
+    }
+
+    protected function retrieveUserFromCredentials(array $credentials): ?User
+    {
+        $email = Arr::get($credentials, 'email');
+
+        return $this->users->findByEmail($email);
+    }
+
+    protected function incrementUserFailedAttempts(?User $user): void
+    {
+        if (!$user instanceof User) {
+            return;
+        }
+
+        $this->users->increment($user->id, 'failed_attempts', ['events' => false, 'timestamps' => false]);
+        $user->refresh();
+    }
+
+    protected function resetUserFailedAttempts(?User $user): void
+    {
+        if (!$user instanceof User) {
+            return;
+        }
+
+        $this->users->update($user->id, ['failed_attempts' => 0], ['events' => false, 'timestamps' => false]);
+    }
+
+    protected function deactivateUserWhenAttemptsExceeded(?User $user): void
+    {
+        if (!$user instanceof User) {
+            return;
+        }
+
+        if ($user->failed_attempts < $this->maxAttempts) {
+            return;
+        }
+
+        $this->users->deactivate($user->id);
+        $user->notify(new AttemptsExceeded);
     }
 }

@@ -3,14 +3,16 @@
 namespace App\Jobs;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
-use App\Events\MaintenanceCompleted;
-use App\Contracts\Repositories\System\BuildRepositoryInterface as Builds;
-use App\Contracts\Repositories\UserRepositoryInterface as Users;
-use App\Models\User;
-use App\Notifications\MaintenanceFinished;
+use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use App\Contracts\Repositories\{
+    UserRepositoryInterface as Users,
+    System\BuildRepositoryInterface as Builds
+};
+use App\Models\User;
+use App\Events\MaintenanceCompleted;
+use App\Notifications\MaintenanceFinished;
 
 class StopMaintenance implements ShouldQueue
 {
@@ -23,7 +25,7 @@ class StopMaintenance implements ShouldQueue
      */
     public function handle(Builds $builds)
     {
-        $builds->updateLatestOrCreate(['end_time' => now()]);
+        $builds->updateLastOrCreate(['end_time' => now()]);
 
         MaintenanceCompleted::dispatch();
 

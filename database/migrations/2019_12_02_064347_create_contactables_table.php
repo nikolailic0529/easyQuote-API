@@ -16,8 +16,8 @@ class CreateContactablesTable extends Migration
         Schema::create('contactables', function (Blueprint $table) {
             $table->uuid('contact_id');
             $table->foreign('contact_id')->references('id')->on('contacts')->onDelete('cascade');
-            $table->uuid('contactable_id');
-            $table->string('contactable_type');
+
+            $table->uuidMorphs('contactable');
         });
     }
 

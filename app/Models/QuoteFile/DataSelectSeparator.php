@@ -2,9 +2,10 @@
 
 namespace App\Models\QuoteFile;
 
-use App\Models\BaseModel;
+use App\Traits\Uuid;
+use Illuminate\Database\Eloquent\Model;
 
-class DataSelectSeparator extends BaseModel
+class DataSelectSeparator extends Model
 {
-    //
+    use Uuid;
 }

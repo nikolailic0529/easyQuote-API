@@ -15,17 +15,24 @@ class CreateAddressesTable extends Migration
     {
         Schema::create('addresses', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('addressable_id');
-            $table->string('addressable_type');
+
+            $table->uuid('country_id')->nullable();
+            $table->foreign('country_id')->references('id')->on('countries')->onDelete('set null');
+
+            $table->string('contact_name')->nullable();
+            $table->string('contact_number')->nullable();
+
             $table->string('address_type');
             $table->string('address_1');
-            $table->string('city');
+            $table->string('address_2')->nullable();
+            $table->string('city')->nullable();
             $table->string('state')->nullable();
             $table->string('state_code')->nullable();
-            $table->string('post_code');
-            $table->string('country_code');
+            $table->string('post_code')->nullable();
+
             $table->timestamps();
-            $table->softDeletes();
+            $table->timestamp('activated_at')->index()->nullable();
+            $table->softDeletes()->index();
         });
     }
 

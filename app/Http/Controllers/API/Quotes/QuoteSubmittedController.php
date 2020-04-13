@@ -4,7 +4,7 @@ namespace App\Http\Controllers\API\Quotes;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\{
-    Quote\ContractStateRepositoryInterface as Contracts,
+    Contract\ContractStateRepositoryInterface as Contracts,
     Quote\QuoteSubmittedRepositoryInterface as Repository
 };
 use App\Http\Requests\Quote\CreateQuoteContractRequest;
@@ -16,11 +16,9 @@ use App\Models\{
 
 class QuoteSubmittedController extends Controller
 {
-    /** @var \App\Contracts\Repositories\Quote\QuoteSubmittedRepositoryInterface */
-    protected $repository;
+    protected Repository $repository;
 
-    /** @var \App\Contracts\Repositories\Quote\ContractStateRepositoryInterface */
-    protected $contracts;
+    protected Contracts $contracts;
 
     public function __construct(Repository $repository, Contracts $contracts)
     {

@@ -73,7 +73,7 @@ abstract class ParsingTest extends TestCase
 
     protected function getMappingAttribute(string $attribute, string $filename)
     {
-        return data_get($this->mapping()->collapse()->firstWhere('filename', '===', $filename), $attribute);
+        return data_get($this->mapping()->collapse()->keyBy('filename')->get($filename), $attribute);
     }
 
     /**
