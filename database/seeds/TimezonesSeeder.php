@@ -2,6 +2,8 @@
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Arr;
+use App\Models\Data\Timezone;
 
 class TimezonesSeeder extends Seeder
 {
@@ -12,22 +14,21 @@ class TimezonesSeeder extends Seeder
      */
     public function run()
     {
-        //Empty the timezones table
-        Schema::disableForeignKeyConstraints();
+        $timezones = json_decode(file_get_contents(database_path('seeds/models/timezones.json')), true);
 
-        DB::table('timezones')->delete();
-
-        Schema::enableForeignKeyConstraints();
-
-        $timezones = json_decode(file_get_contents(__DIR__ . '/models/timezones.json'), true);
-
-        collect($timezones)->each(function ($timezone) {
-            DB::table('timezones')->insert([
-                'id' => (string) Uuid::generate(4),
-                'text' => $timezone['text'],
-                'value' => $timezone['value'],
-                'offset' => $timezone['offset'],
-            ]);
-        });
+        DB::transaction(
+            fn () =>
+            collect($timezones)
+                ->each(fn ($timezone) => Timezone::updateOrCreate(
+                    Arr::only($timezone, 'text'),
+                    [
+                        'abbr' => $timezone['abbr'],
+                        'utc' => head($timezone['utc']),
+                        'text' => $timezone['text'],
+                        'value' => $timezone['value'],
+                        'offset' => $timezone['offset']
+                    ]
+                ))
+        );
     }
 }

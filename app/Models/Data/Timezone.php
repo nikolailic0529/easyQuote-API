@@ -12,6 +12,10 @@ class Timezone extends Model implements HasOrderedScope
 
     public $timestamps = false;
 
+    protected $fillable = [
+        'abbr', 'utc', 'text', 'value', 'offset'
+    ];
+
     public function scopeOrdered($query)
     {
         return $query->orderByRaw("field(`text`, ?, ?) desc", [TZ_DEF_01, TZ_DEF_02])

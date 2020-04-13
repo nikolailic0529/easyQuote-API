@@ -16,6 +16,8 @@ class TaskListResource extends JsonResource
      */
     public function toArray($request)
     {
+        $tz = auth()->user()->tz;
+
         return [
             'id'            => $this->id,
             'user_id'       => $this->user_id,
@@ -23,12 +25,12 @@ class TaskListResource extends JsonResource
             'taskable_id'   => $this->taskable_id,
             'name'          => $this->name,
             'content'       => $this->content,
-            'expiry_date'   => optional($this->expiry_date)->format(config('date.format_time')),
+            'expiry_date'   => optional($this->expiry_date)->tz($tz)->format(config('date.format_time')),
             'priority'      => (int) $this->priority,
             'users'         => UserRelationResource::collection($this->whenLoaded('users')),
             'attachments'   => AttachmentResource::collection($this->whenLoaded('attachments')),
-            'created_at'    => optional($this->created_at)->format(config('date.format_time')),
-            'updated_at'    => optional($this->updated_at)->format(config('date.format_time')),
+            'created_at'    => optional($this->created_at)->tz($tz)->format(config('date.format_time')),
+            'updated_at'    => optional($this->updated_at)->tz($tz)->format(config('date.format_time')),
         ];
     }
 }
