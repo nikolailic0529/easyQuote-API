@@ -41,8 +41,12 @@ class QuotePolicy
             return true;
         }
 
-        if ($user->can('view_own_quotes')) {
-            return $user->id === $quote->user_id;
+        if ($user->can("quotes.read.user.{$quote->user_id}")) {
+            return true;
+        }
+
+        if ($user->can('view_own_quotes') && $user->id === $quote->user_id) {
+            return true;
         }
     }
 
@@ -78,8 +82,12 @@ class QuotePolicy
             return true;
         }
 
-        if ($user->can('update_own_quotes')) {
-            return $user->id === $quote->user_id;
+        if ($user->can("quotes.update.user.{$quote->user_id}")) {
+            return true;
+        }
+
+        if ($user->can('update_own_quotes') && $user->id === $quote->user_id) {
+            return true;
         }
     }
 
@@ -100,8 +108,12 @@ class QuotePolicy
             return true;
         }
 
-        if ($user->can('update_own_quotes')) {
-            return $user->id === $quote->user_id;
+        if ($user->can("quotes.update.user.{$quote->user_id}")) {
+            return true;
+        }
+
+        if ($user->can('update_own_quotes') && $user->id === $quote->user_id) {
+            return true;
         }
     }
 
@@ -204,8 +216,12 @@ class QuotePolicy
             return true;
         }
 
-        if ($user->can('delete_own_quotes')) {
-            return $user->id === $quote->user_id;
+        if ($user->can("quotes.delete.user.{$quote->user_id}")) {
+            return true;
+        }
+
+        if ($user->can('delete_own_quotes') && $user->id === $quote->user_id) {
+            return true;
         }
     }
 
@@ -227,8 +243,12 @@ class QuotePolicy
             return true;
         }
 
-        if ($user->can('delete_own_quotes')) {
-            return $user->id === $version->user_id;
+        if ($user->can("quotes.delete.user.{$quote->user_id}")) {
+            return true;
+        }
+
+        if ($user->can('delete_own_quotes') && $user->id === $version->user_id) {
+            return true;
         }
     }
 

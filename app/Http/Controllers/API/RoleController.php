@@ -2,21 +2,23 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Contracts\Repositories\RoleRepositoryInterface as RoleRepository;
+use App\Contracts\Repositories\RoleRepositoryInterface as Roles;
 use App\Models\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Role\{
     StoreRoleRequest,
     UpdateRoleRequest
 };
+use App\Http\Resources\Role\RoleResource;
+use Illuminate\Database\Eloquent\Builder;
 
 class RoleController extends Controller
 {
-    protected $role;
+    protected Roles $role;
 
-    public function __construct(RoleRepository $role)
+    public function __construct(Roles $roles)
     {
-        $this->role = $role;
+        $this->roles = $roles;
         $this->authorizeResource(Role::class, 'role');
     }
 
@@ -29,8 +31,23 @@ class RoleController extends Controller
     {
         return response()->json(
             request()->filled('search')
-                ? $this->role->search(request('search'))
-                : $this->role->all()
+                ? $this->roles->search(request('search'))
+                : $this->roles->all()
+        );
+    }
+
+    /**
+     * Display the roles having minimal access to the module.
+     *
+     * @param string $module
+     * @return void
+     */
+    public function module(string $module)
+    {
+        $resource = $this->roles->findByModule($module, fn (Builder $builder) => $builder->withCount('users'));
+
+        return response()->json(
+            RoleResource::collection($resource)
         );
     }
 
@@ -42,7 +59,7 @@ class RoleController extends Controller
     public function create()
     {
         return response()->json(
-            $this->role->data()
+            $this->roles->data()
         );
     }
 
@@ -55,7 +72,7 @@ class RoleController extends Controller
     public function store(StoreRoleRequest $request)
     {
         return response()->json(
-            $this->role->create($request)
+            $this->roles->create($request)
         );
     }
 
@@ -68,7 +85,7 @@ class RoleController extends Controller
     public function show(Role $role)
     {
         return response()->json(
-            $this->role->find($role->id)
+            $this->roles->find($role->id)
         );
     }
 
@@ -82,7 +99,7 @@ class RoleController extends Controller
     public function update(UpdateRoleRequest $request, Role $role)
     {
         return response()->json(
-            $this->role->update($request, $role->id)
+            $this->roles->update($request, $role->id)
         );
     }
 
@@ -95,7 +112,7 @@ class RoleController extends Controller
     public function destroy(Role $role)
     {
         return response()->json(
-            $this->role->delete($role->id)
+            $this->roles->delete($role->id)
         );
     }
 
@@ -110,7 +127,7 @@ class RoleController extends Controller
         $this->authorize('update', $role);
 
         return response()->json(
-            $this->role->activate($role->id)
+            $this->roles->activate($role->id)
         );
     }
 
@@ -125,7 +142,7 @@ class RoleController extends Controller
         $this->authorize('update', $role);
 
         return response()->json(
-            $this->role->deactivate($role->id)
+            $this->roles->deactivate($role->id)
         );
     }
 }

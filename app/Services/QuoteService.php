@@ -46,7 +46,7 @@ class QuoteService implements QuoteServiceInterface
         }
     }
 
-    public function interactWithModels(BaseQuote $quote): void
+    public function interactWithModels(BaseQuote $quote)
     {
         /**
          * Possible interaction with Margin percentage.
@@ -59,12 +59,14 @@ class QuoteService implements QuoteServiceInterface
         $quote->applicableDiscounts = 0;
 
         $this->interact($quote, $this->interactableDiscounts($quote));
+
+        return $this;
     }
 
-    public function interactWithCountryMargin(BaseQuote $quote, CountryMargin $countryMargin): void
+    public function interactWithCountryMargin(BaseQuote $quote, CountryMargin $countryMargin)
     {
         if (!isset($quote->computableRows)) {
-            return;
+            return $this;
         }
 
         if ($countryMargin->isPercentage() && $countryMargin->isNoMargin()) {
@@ -77,26 +79,17 @@ class QuoteService implements QuoteServiceInterface
         if ($countryMargin->isFixed() && $countryMargin->isNoMargin()) {
             $quote->totalPrice = $countryMargin->calculate($quote->totalPrice);
         }
+
+        return $this;
     }
 
-    public function interactWithMargin(BaseQuote $quote): void
+    public function interactWithMargin(BaseQuote $quote)
     {
         if (!isset($quote->computableRows) || !isset($quote->countryMargin)) {
-            return;
+            return $this;
         }
 
-        $targetMargin = ($quote->countryMargin->value - $quote->custom_discount) / 100;
-
-        $divider = $targetMargin >= 1
-            /**
-             * When target margin is greater than or equal to 100% we are reversing bottom up rule.
-             * It will be increasing total price and line prices accordingly.
-             */
-            ? 1 / ($targetMargin + 1)
-            /**
-             * When target margin is less than 100% we are using default bottom up rule
-             * */
-            : 1 - $targetMargin;
+        $divider = $quote->margin_divider;
 
         $quote->totalPrice = 0.0;
 
@@ -105,24 +98,26 @@ class QuoteService implements QuoteServiceInterface
             $quote->totalPrice += $row->price;
             return $row;
         });
+
+        return $this;
     }
 
-    public function interactWithDiscount(BaseQuote $quote, $discount): void
+    public function interactWithDiscount(BaseQuote $quote, $discount)
     {
-        if (!isset($quote->computableRows) || $discount === 0.0) {
-            return;
+        if (!isset($quote->computableRows) || (is_numeric($discount) && $discount == 0)) {
+            return $this;
         }
 
         if (is_numeric($discount)) {
             if ($quote->bottomUpDivider == 0) {
                 $quote->totalPrice = 0;
-                return;
+                return $this;
             }
 
             $buyPriceAfterDiscount = $quote->buy_price / $quote->bottomUpDivider;
             $quote->applicableDiscounts += $quote->totalPrice - $buyPriceAfterDiscount;
 
-            return;
+            return $this;
         }
 
         $quote->computableRows->transform(function ($row) use ($discount, $quote) {
@@ -138,7 +133,7 @@ class QuoteService implements QuoteServiceInterface
         });
 
         if (!$discount instanceof Discount) {
-            return;
+            return $this;
         }
 
         $listPriceAfterDiscount = $quote->totalPrice - $quote->applicableDiscounts;
@@ -146,18 +141,18 @@ class QuoteService implements QuoteServiceInterface
         $discount->margin_percentage = (float) $listPriceAfterDiscount != 0
             ? round((($listPriceAfterDiscount - $quote->buy_price) / $listPriceAfterDiscount) * 100, 2) : 0;
 
-        return;
+        return $this;
     }
 
-    public function calculateSchedulePrices(BaseQuote $quote): void
+    public function calculateSchedulePrices(BaseQuote $quote)
     {
         if (!isset($quote->scheduleData->value)) {
-            return;
+            return $this;
         }
 
         if ($quote->bottomUpDivider == 0) {
             data_set($quote->scheduleData->value, '*.price', 0.0);
-            return;
+            return $this;
         }
 
         $targetExchangeRate = $quote->targetExchangeRate;
@@ -165,7 +160,7 @@ class QuoteService implements QuoteServiceInterface
         $initialTotalPayments = $quote->scheduleData->value->sum('price') * $targetExchangeRate;
 
         if ($initialTotalPayments == 0) {
-            return;
+            return $this;
         }
 
         $reverseMultiplier = $quote->finalPrice / $initialTotalPayments;
@@ -174,12 +169,12 @@ class QuoteService implements QuoteServiceInterface
             $price = data_get($payment, 'price', 0.0);
             return data_set($payment, 'price', Str::price($price) * $targetExchangeRate * $reverseMultiplier);
         });
+
+        return $this;
     }
 
-    public function prepareQuoteReview(BaseQuote $quote): void
+    public function setComputableRows(BaseQuote $quote)
     {
-        $quote->enableExchangeRateConversion();
-
         $quote->computableRows =
             /** Set computable rows in the model. */
             cache()->sear($quote->computableRowsCacheKey, fn () => $quote->getMappedRows(
@@ -191,6 +186,15 @@ class QuoteService implements QuoteServiceInterface
                     fn (Builder $query) => $query->where('is_selected', true)
                 )
             ));
+
+        return $this;
+    }
+
+    public function prepareQuoteReview(BaseQuote $quote)
+    {
+        $quote->enableExchangeRateConversion();
+
+        $this->setComputableRows($quote);
 
         /**
          * Possible Interactions with Margins and Discounts
@@ -205,6 +209,8 @@ class QuoteService implements QuoteServiceInterface
         $this->prepareRows($quote);
 
         $this->prepareSchedule($quote);
+
+        return $this;
     }
 
     public function export(BaseQuote $quote)
@@ -218,28 +224,32 @@ class QuoteService implements QuoteServiceInterface
             ->download($filename);
     }
 
-    public function prepareRows(BaseQuote $quote): void
+    public function prepareRows(BaseQuote $quote)
     {
         $quote->computableRows = $quote->computableRows->exceptHeaders($quote->hiddenFields);
         $quote->renderableRows = $quote->computableRows->exceptHeaders($quote->systemHiddenFields);
 
         if ($quote->groupsReady()) {
             $this->formatGroupDescription($quote);
-            return;
+            return $this;
         }
 
         if ($quote->isMode(QT_TYPE_QUOTE)) {
             $this->formatLinePrices($quote);
         }
+
+        return $this;
     }
 
-    public function prepareSchedule(BaseQuote $quote): void
+    public function prepareSchedule(BaseQuote $quote)
     {
         if (!isset($quote->scheduleData->value)) {
-            return;
+            return $this;
         }
 
         $quote->scheduleData->value = MappedRows::make($quote->scheduleData->value)->setCurrency($quote->currencySymbol);
+
+        return $this;
     }
 
     public function handleQuoteGrantedUsers(Quote $quote, array $users)
@@ -324,7 +334,7 @@ class QuoteService implements QuoteServiceInterface
         return compact('design', 'images');
     }
 
-    protected function formatGroupDescription(BaseQuote $quote): void
+    protected function formatGroupDescription(BaseQuote $quote)
     {
         $quote->computableRows = static::mapGroupDescriptionWithRows($quote, $quote->computableRows)
             ->setHeadersCount()
@@ -334,11 +344,15 @@ class QuoteService implements QuoteServiceInterface
         $renderHiddenHeaders = $quote->isMode(QT_TYPE_CONTRACT) ? ['total_price'] : [];
 
         $quote->renderableRows = $quote->computableRows->exceptHeaders([...$quote->systemHiddenFields, ...$renderHiddenHeaders]);
+        
+        return $this;
     }
 
-    protected function formatLinePrices(BaseQuote $quote): void
+    protected function formatLinePrices(BaseQuote $quote)
     {
         $quote->renderableRows = $quote->renderableRows->setCurrency($quote->currencySymbol);
+
+        return $this;
     }
 
     protected function interactableDiscounts(BaseQuote $quote): Collection

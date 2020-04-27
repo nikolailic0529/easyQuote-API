@@ -43,6 +43,8 @@ class CountriesUpdate extends Command
     {
         activity()->disableLogging();
 
+        $currencies->disableCache();
+
         $countriesList = json_decode(file_get_contents(database_path('seeds/models/countries.json')), true);
 
         \DB::transaction(function () use ($countriesList, $countries, $currencies) {
@@ -54,6 +56,8 @@ class CountriesUpdate extends Command
                 $countries->updateOrCreate(Arr::only($attributes, 'iso_3166_2'), $attributes);
             });
         });
+
+        $currencies->enableCache();
 
         activity()->enableLogging();
     }

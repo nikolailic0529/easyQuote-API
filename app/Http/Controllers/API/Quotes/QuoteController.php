@@ -11,7 +11,8 @@ use App\Contracts\Repositories\{
     QuoteTemplate\QuoteTemplateRepositoryInterface as QuoteTemplateRepository,
     QuoteFile\DataSelectSeparatorRepositoryInterface as DataSelectRepository,
     QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository,
-    UserRepositoryInterface as Users
+    UserRepositoryInterface as Users,
+    RoleRepositoryInterface as Roles,
 };
 use App\Contracts\Services\QuoteServiceInterface as QuoteService;
 use App\Http\Requests\{
@@ -23,6 +24,7 @@ use App\Http\Requests\{
     Quote\UpdateGroupDescriptionRequest
 };
 use App\Http\Requests\Quote\{
+    GiveModulePermission,
     GivePermissionRequest,
     SelectGroupDescriptionRequest,
     SetVersionRequest,
@@ -342,6 +344,17 @@ class QuoteController extends Controller
         return response()->json(
             $users->getUsersWithPermission($permission)
         );
+    }
+
+    /**
+     * Give module permissions to specific roles.
+     *
+     * @param  GiveModulePermission $request
+     * @return \Illuminate\Http\Response
+     */
+    public function giveModulePermission(GiveModulePermission $request, Roles $roles)
+    {
+        // 
     }
 
     /**

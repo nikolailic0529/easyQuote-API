@@ -61,7 +61,7 @@ class QuoteDraftedController extends Controller
      */
     public function destroyVersion(QuoteVersion $version, Quote $quote)
     {
-        $this->authorize('deleteVersion', [$quote, $version]);
+        $this->authorize('deleteVersion', [$version->quote, $version]);
 
         return response()->json(
             $this->quote->deleteVersion($version->id)

@@ -17,11 +17,13 @@ use App\Models\Quote\{
     Quote,
     BaseQuote
 };
+use Closure;
 use Illuminate\Database\Eloquent\{
     Model,
     Builder
 };
 use File, DB, Storage;
+use Illuminate\Support\LazyCollection;
 
 class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubmittedRepositoryInterface
 {
@@ -57,15 +59,32 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         return $this->toCollection(parent::search($query));
     }
 
+    public function cursor(?Closure $scope = null): LazyCollection
+    {
+        return $this->quote
+            ->on('mysql_unbuffered')
+            ->submitted()
+            ->when($scope, $scope)
+            ->cursor();
+    }
+
+    public function count(array $where = []): int
+    {
+        return $this->quote->submitted()->where($where)->count();
+    }
+
     public function userQuery(): Builder
     {
+        $user = auth()->user();
+
         return $this->quote
             ->when(
                 /** If user is not super-admin we are retrieving the user's own quotes */
-                request()->user()->cant('view_quotes'),
+                $user->cant('view_quotes'),
                 fn (Builder $query) => $query->currentUser()
                     /** Adding quotes that have been granted access to */
-                    ->orWhereIn('id', request()->user()->getPermissionTargets('quotes.read')),
+                    ->orWhereIn('id', $user->getPermissionTargets('quotes.read'))
+                    ->orWhereIn('user_id', $user->getModulePermissionProviders('quotes.read'))
             )
             ->with('usingVersion.quoteFiles')
             ->submitted();

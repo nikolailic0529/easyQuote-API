@@ -6,6 +6,7 @@ use App\Contracts\{
     ActivatableInterface,
     WithImage
 };
+use App\Facades\Permission;
 use App\Models\{
     Role,
     Collaboration\Invitation
@@ -34,11 +35,13 @@ use App\Traits\{
     User\PerformsActivity,
     Activity\LogsActivity,
     Permission\HasPermissionTargets,
+    Permission\HasModulePermissions,
     Notifiable,
     Uuid,
 };
 use Illuminate\Database\Eloquent\{
     Builder,
+    Collection,
     Model,
     SoftDeletes,
 };
@@ -70,6 +73,7 @@ class User extends Model implements
         CanResetPassword,
         HasRoles,
         HasPermissionTargets,
+        HasModulePermissions,
         HasImportableColumns,
         HasQuotes,
         HasQuoteFiles,
@@ -162,7 +166,7 @@ class User extends Model implements
 
     public function getRoleAttribute()
     {
-        return $this->roles->first(null, Role::make([]));
+        return $this->roles->first(null, Role::make());
     }
 
     public function getRoleIdAttribute()
@@ -209,10 +213,15 @@ class User extends Model implements
         return $this->email;
     }
 
+    public function grantedModuleLevel(string $module)
+    {
+        return Permission::grantedModuleLevel($module, $this);
+    }
+
     public function withAppends(...$attributes)
     {
         $appends = ['role_id', 'role_name', 'picture', 'privileges', 'role_properties', 'must_change_password'];
-        
+
         return $this->append(array_merge($appends, $attributes));
     }
 }

@@ -4,27 +4,41 @@ namespace App\Repositories;
 
 use App\Contracts\Repositories\CurrencyRepositoryInterface;
 use App\Models\Data\Currency;
+use Illuminate\Support\Facades\Cache;
 use Setting;
 
 class CurrencyRepository implements CurrencyRepositoryInterface
 {
     const CACHE_PREFIX_ALL = 'all-currencies:';
 
-    const CACHE_PREFIX_CODE = 'currency-id-code:';
+    const CURRENCY_ID_CACHE_KEY = 'currency.id';
 
-    /** @var \App\Models\Data\Currency */
+    const CURRENCY_CODE_CACHE_KEY = 'currency.code';
+
     protected Currency $currency;
+
+    protected bool $cacheEnabled = true;
 
     public function __construct(Currency $currency)
     {
         $this->currency = $currency;
     }
 
+    public function disableCache(): void
+    {
+        $this->cacheEnabled = false;
+    }
+
+    public function enableCache(): void
+    {
+        $this->cacheEnabled = true;
+    }
+
     public function all()
     {
         $base_currency = Setting::get('base_currency');
 
-        return cache()->sear(self::CACHE_PREFIX_ALL . $base_currency, fn () => $this->currency->ordered()->get());
+        return $this->remember(static::CACHE_PREFIX_ALL . $base_currency, fn () => $this->currency->ordered()->get());
     }
 
     public function allHaveExrate()
@@ -43,7 +57,10 @@ class CurrencyRepository implements CurrencyRepositoryInterface
 
     public function findByCode(?string $code)
     {
-        return $this->currency->query()->whereCode($code)->first();
+        return $this->remember(
+            static::currencyCodeCacheKey($code),
+            fn () => $this->currency->query()->whereCode($code)->first()
+        );
     }
 
     public function findIdByCode($code)
@@ -51,8 +68,8 @@ class CurrencyRepository implements CurrencyRepositoryInterface
         $codeKey = implode(',', (array) $code);
 
         if (is_array($code)) {
-            return cache()->sear(
-                static::getCurrencyCodeCacheKey($codeKey),
+            return $this->remember(
+                static::currencyIdCacheKey($codeKey),
                 fn () => $this->currency->whereIn('code', $code)->pluck('id', 'code')
             );
         }
@@ -61,8 +78,8 @@ class CurrencyRepository implements CurrencyRepositoryInterface
             sprintf('%s %s given.', INV_ARG_SA_01, gettype($code))
         ));
 
-        return cache()->sear(
-            static::getCurrencyCodeCacheKey($codeKey),
+        return $this->remember(
+            static::currencyIdCacheKey($codeKey),
             fn () => $this->currency->whereCode($code)->value('id')
         );
     }
@@ -72,8 +89,26 @@ class CurrencyRepository implements CurrencyRepositoryInterface
         return $this->currency->firstOrCreate($attributes, $values);
     }
 
-    protected static function getCurrencyCodeCacheKey(string $code): string
+    protected function remember($key, $value, $ttl = null)
     {
-        return self::CACHE_PREFIX_CODE . $code;
+        if (!$this->cacheEnabled) {
+            return value($value);
+        }
+
+        if ($cache = Cache::get($key)) {
+            return $cache;
+        }
+
+        return tap(value($value), fn ($value) => Cache::put($key, $value, $ttl));
+    }
+
+    protected static function currencyIdCacheKey(?string $code): string
+    {
+        return static::CURRENCY_ID_CACHE_KEY . ':' . $code ?: 'null';
+    }
+
+    protected static function currencyCodeCacheKey(?string $code): string
+    {
+        return static::CURRENCY_CODE_CACHE_KEY . ':' . $code ?: 'null';
     }
 }

@@ -33,8 +33,18 @@ class ContractSubmittedRepository extends SearchableRepository implements Contra
 
     public function userQuery(): Builder
     {
+        $user = auth()->user();
+
         return $this->contract
-            ->currentUserWhen(request()->user()->cant('view_contracts'))
+            ->query()
+            ->when(
+                /** If user is not super-admin we are retrieving the user's own contracts */
+                $user->cant('view_contracts'),
+                fn (Builder $query) => $query->currentUser()
+                    /** Adding contracts that have been granted access to */
+                    ->orWhereIn('quote_id', $user->getPermissionTargets('quotes.read'))
+                    ->orWhereIn('user_id', $user->getModulePermissionProviders('quotes.read'))
+            )
             ->submitted();
     }
 

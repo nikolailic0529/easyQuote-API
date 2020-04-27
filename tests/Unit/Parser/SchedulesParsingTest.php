@@ -9,11 +9,21 @@ use Arr;
 class SchedulesParsingTest extends ParsingTest
 {
     /**
+     * Test Austria Payment Schedules Processing.
+     *
+     * @return void
+     */
+    public function testAustriaSchedulesProcessing()
+    {
+        $this->processFilesByCountry('Austria');
+    }
+
+    /**
      * Test France Payment Schedules Processing.
      *
      * @return void
      */
-    public function testFranceSchedulesParsing()
+    public function testFranceSchedulesProcessing()
     {
         $this->processFilesByCountry('France');
     }

@@ -134,17 +134,23 @@ trait DetectsChanges
                     static::getModelAttributeJsonValue($model, $attribute)
                 );
             } else {
-                $attributeName = Str::contains($attribute, ':') ? Str::before($attribute, ':') : $attribute;
-                $attributeContainsValue = Str::contains($attribute, ':') ? Str::after($attribute, ':') : $attribute;
+                if (Str::contains($attribute, ':')) {
+                    $name = Str::before($attribute, ':');
+                    $value = Str::after($attribute, ':');
 
-                $changes[$attributeName] = $model->getAttribute($attributeContainsValue);
+                    $changes[$name] = $model->getAttribute($value);
+
+                    continue;
+                }
+
+                $changes[$attribute] = $model->getAttribute($attribute);
 
                 if (
-                    in_array($attributeName, $model->getDates())
-                    && ! is_null($changes[$attributeName])
+                    in_array($attribute, $model->getDates())
+                    && ! is_null($changes[$attribute])
                 ) {
-                    $changes[$attributeName] = $model->serializeDate(
-                        $model->asDateTime($changes[$attributeContainsValue])
+                    $changes[$attribute] = $model->serializeDate(
+                        $model->asDateTime($changes[$attribute])
                     );
                 }
             }

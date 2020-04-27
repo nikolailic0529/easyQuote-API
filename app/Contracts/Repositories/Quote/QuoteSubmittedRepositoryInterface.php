@@ -7,8 +7,10 @@ use App\Models\Quote\{
     Quote
 };
 use App\Http\Resources\QuoteRepository\SubmittedCollection;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as DatabaseBuilder;
+use Illuminate\Support\LazyCollection;
 
 interface QuoteSubmittedRepositoryInterface
 {
@@ -33,6 +35,22 @@ interface QuoteSubmittedRepositoryInterface
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function userQuery(): Builder;
+
+    /**
+     * Iterate throw the existing submitted quotes using a cursor.
+     *
+     * @param \Closure $scope
+     * @return \Illuminate\Support\LazyCollection
+     */
+    public function cursor(?Closure $scope = null): LazyCollection;
+
+    /**
+     * Count all submitted quotes.
+     *
+     * @param array $where
+     * @return integer
+     */
+    public function count(array $where = []): int;
 
     /**
      * Find Submitted Quote.

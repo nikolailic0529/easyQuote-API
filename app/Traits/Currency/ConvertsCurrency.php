@@ -3,6 +3,7 @@
 namespace App\Traits\Currency;
 
 use App\Models\Data\Currency;
+use App\Models\Data\ExchangeRate;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -50,6 +51,11 @@ trait ConvertsCurrency
         return app('exchange.service')->getTargetRate($this->sourceCurrency, $this->targetCurrency);
     }
 
+    public function getBaseExchangeRateAttribute(): float
+    {
+        return app('exchange.service')->getBaseRate($this->sourceCurrency);
+    }
+
     public function getTargetExchangeRateAttribute(): float
     {
         if (is_null($this->target_currency_id)) {
@@ -61,9 +67,7 @@ trait ConvertsCurrency
 
     public function getActualExchangeRateAttribute(): float
     {
-        return cache()->sear($this->getActualExchangeRateCacheKey(), function () {
-            return $this->getActualExchangeRate();
-        });
+        return cache()->sear($this->getActualExchangeRateCacheKey(), fn () => $this->getActualExchangeRate());
     }
 
     public function getExchangeRateMarginAttribute($value): float

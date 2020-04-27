@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Casts\UserGrantedPermission;
 use App\Contracts\Repositories\{
     UserRepositoryInterface as UserRepository,
     RoleRepositoryInterface as RoleRepository,
@@ -10,11 +11,15 @@ use App\Contracts\Repositories\{
 };
 use App\Models\User;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Collaboration\{
-    InviteUserRequest,
-    UpdateUserRequest
+use App\Http\Requests\{
+    Collaboration\InviteUserRequest,
+    Collaboration\UpdateUserRequest,
+
+    StoreResetPasswordRequest,
+    User\ListByRoles,
 };
-use App\Http\Requests\StoreResetPasswordRequest;
+use App\Http\Resources\User\UserByRoleCollection;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
 class UserController extends Controller
@@ -67,6 +72,24 @@ class UserController extends Controller
     {
         return response()->json(
             $this->user->exclusiveList(auth()->id())
+        );
+    }
+
+    /**
+     * Display a listing of users with specific roles.
+     *
+     * @param ListByRoles $request
+     * @return \Illuminate\Http\Response
+     */
+    public function listByRoles(ListByRoles $request)
+    {
+        $resource = $this->user->findByRoles(
+            $request->roles,
+            fn (Builder $q) => $q->withCasts(['granted_level' => UserGrantedPermission::class.':'.$request->granted_module])
+        );
+
+        return response()->json(
+            UserByRoleCollection::make($resource)
         );
     }
 

@@ -20,6 +20,26 @@ trait HasMarginPercentageAttribute
         return 1 - (($this->userMarginPercentage - $this->custom_discount) / 100);
     }
 
+    public function getMarginDividerAttribute(): float
+    {
+        if (!isset($this->countryMargin)) {
+            return 1;
+        }
+
+        $targetMargin = ($this->countryMargin->value - $this->custom_discount) / 100;
+
+        return $targetMargin >= 1
+            /**
+             * When target margin is greater than or equal to 100% we are reversing bottom up rule.
+             * It will be increasing total price and line prices accordingly.
+             */
+            ? 1 / ($targetMargin + 1)
+            /**
+             * When target margin is less than 100% we are using default bottom up rule
+             * */
+            : 1 - $targetMargin;
+    }
+
     public function getReverseMultiplierAttribute(): float
     {
         if ($this->getAttribute('totalPrice') === 0.0) {
