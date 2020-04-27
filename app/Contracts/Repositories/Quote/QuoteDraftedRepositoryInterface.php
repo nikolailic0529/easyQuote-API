@@ -10,6 +10,7 @@ use Carbon\CarbonInterval;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\LazyCollection;
 use Closure;
 
 interface QuoteDraftedRepositoryInterface
@@ -20,6 +21,14 @@ interface QuoteDraftedRepositoryInterface
      * @return mixed
      */
     public function all();
+
+    /**
+     * Iterate throw the existing drafted quotes using a cursor.
+     *
+     * @param \Closure $scope
+     * @return \Illuminate\Support\LazyCollection
+     */
+    public function cursor(?Closure $scope = null): LazyCollection;
 
     /**
      * Search by Drafted Quotes.
@@ -45,6 +54,31 @@ interface QuoteDraftedRepositoryInterface
      * @return Collection
      */
     public function getExpiring(CarbonInterval $interval, $user = null, ?Closure $scope = null): Collection;
+
+    /**
+     * Begin querying the expiring quotes.
+     *
+     * @param \Carbon\CarbonInterval $interval
+     * @return Builder
+     */
+    public function expiringQuery(CarbonInterval $interval): Builder;
+
+    /**
+     * Count all expiring quotes.
+     *
+     * @param CarbonInterval $interval
+     * @param array $where
+     * @return integer
+     */
+    public function countExpiring(CarbonInterval $interval, array $where = []): int;
+
+    /**
+     * Count all drafted quotes.
+     *
+     * @param array $where
+     * @return integer
+     */
+    public function count(array $where = []): int;
 
     /**
      * Find Drafted Quote.

@@ -10,12 +10,13 @@ use App\Contracts\Repositories\QuoteFile\{
 use App\Models\{
     Quote\BaseQuote as Quote,
     QuoteFile\QuoteFile,
-    QuoteFile\ImportedColumn,
     QuoteFile\DataSelectSeparator,
     QuoteFile\ImportedRow
 };
+use App\Services\PdfParser\PdfOptions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection as SupportCollection;
 use Storage, Str, File, DB;
 
@@ -306,12 +307,19 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         $attributes = compact('quote_file_id', 'user_id', 'page');
 
         return collect($rows)
-            ->map(fn ($row) => ImportedRow::make($attributes + ['columns_data' => $this->mapColumnsData($row)]));
+            ->map(fn ($row) => ImportedRow::make(
+                $attributes + [
+                    'columns_data' => $this->mapColumnsData($row),
+                    'is_one_pay' => (bool) Arr::get($row, PdfOptions::SYSTEM_HEADER_ONE_PAY)
+                ]
+            ));
     }
 
     protected function mapColumnsData(array $row): SupportCollection
     {
         $importableColumns = $this->getImportableColumns();
+
+        Arr::forget($row, PdfOptions::SYSTEM_HEADER_ONE_PAY);
 
         return SupportCollection::wrap($row)->map(
             fn ($value, $name) => [

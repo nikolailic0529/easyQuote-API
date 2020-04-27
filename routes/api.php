@@ -46,6 +46,8 @@ Route::group(['namespace' => 'API'], function () {
 
     Route::group(['middleware' => 'auth:api'], function () {
         Route::group(['middleware' => THROTTLE_RATE_01], function () {
+            Route::match(['get', 'post'], 'stats', 'StatsController');
+
             Route::post('attachments', 'AttachmentController');
         });
 
@@ -93,6 +95,7 @@ Route::group(['namespace' => 'API'], function () {
         Route::group(['middleware' => THROTTLE_RATE_01], function () {
             Route::get('users/list', 'UserController@list');
             Route::get('users/exlist', 'UserController@exclusiveList');
+            Route::post('users/roles', 'UserController@listByRoles');
             Route::resource('users', 'UserController', ['only' => ROUTE_CRUD]);
             Route::put('users/activate/{user}', 'UserController@activate');
             Route::put('users/deactivate/{user}', 'UserController@deactivate');
@@ -102,12 +105,14 @@ Route::group(['namespace' => 'API'], function () {
             Route::apiResource('invitations', 'InvitationController', ['only' => ROUTE_RD]);
             Route::put('invitations/resend/{invitation}', 'InvitationController@resend');
             Route::put('invitations/cancel/{invitation}', 'InvitationController@cancel');
-        });
 
-        Route::group(['middleware' => THROTTLE_RATE_01], function () {
             Route::resource('roles', 'RoleController', ['only' => ROUTE_CRUD]);
             Route::put('roles/activate/{role}', 'RoleController@activate');
             Route::put('roles/deactivate/{role}', 'RoleController@deactivate');
+            Route::get('roles/module/{module}', 'RoleController@module');
+
+            Route::put('permissions/module', 'PermissionController@grantModulePermission');
+            Route::get('permissions/module/{module}', 'PermissionController@showModulePermissionForm');
         });
 
         Route::group(['namespace' => 'Templates', 'middleware' => THROTTLE_RATE_01], function () {

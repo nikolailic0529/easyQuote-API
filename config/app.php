@@ -244,6 +244,8 @@ return [
         'Failure' => App\Facades\Failure::class,
         'ImageIntervention' => Intervention\Image\Facades\Image::class,
         'Maintenance' => App\Facades\Maintenance::class,
+        'Permission' => App\Facades\Permission::class,
+        'UserForm' => App\Facades\UserForm::class,
     ],
 
 ];

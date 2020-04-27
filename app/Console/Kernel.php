@@ -24,6 +24,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+        $schedule->command('eq:calculate-quotes')->runInBackground()->everyFifteenMinutes();
         $schedule->command('eq:notify-tasks-expiration')->runInBackground()->everyMinute();
         $schedule->command('eq:notify-quotes-expiration')->runInBackground()->everyMinute();
         $schedule->command('eq:notify-password-expiration')->runInBackground()->daily();

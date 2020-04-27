@@ -133,6 +133,15 @@ interface UserRepositoryInterface
     public function findMany(array $ids): IlluminateCollection;
 
     /**
+     * Retrieve users by specific roles.
+     *
+     * @param array $roles
+     * @param Closure|null $closure
+     * @return mixed
+     */
+    public function findByRoles(array $roles, ?Closure $closure = null);
+
+    /**
      * Retrieve a random user.
      *
      * @return \App\Models\User

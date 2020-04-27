@@ -17,6 +17,7 @@ use App\Contracts\{
     Services\HttpInterface,
     Services\ExchangeRateServiceInterface,
     Services\MaintenanceServiceInterface,
+    Services\PermissionBroker as PermissionBrokerContract,
 
     Repositories\TimezoneRepositoryInterface,
     Repositories\CountryRepositoryInterface,
@@ -58,6 +59,7 @@ use App\Contracts\{
     Repositories\Contract\ContractSubmittedRepositoryInterface,
     Repositories\Quote\QuoteNoteRepositoryInterface,
     Repositories\TaskRepositoryInterface,
+    Repositories\UserForm as UserFormContract,
 };
 use App\Repositories\{
     TimezoneRepository,
@@ -101,6 +103,7 @@ use App\Repositories\{
     TaskRepository,
     TaskTemplate\QuoteTaskTemplateStore,
     TaskTemplate\TaskTemplateManager,
+    UserForm,
 };
 use App\Services\{
     ActivityLogger,
@@ -115,6 +118,7 @@ use App\Services\{
     ReportLogger,
     HttpService,
     MaintenanceService,
+    PermissionBroker,
     SlackClient,
     UIService
 };
@@ -124,6 +128,9 @@ use Elasticsearch\{
 };
 use App\Factories\Failure\Failure;
 use App\Http\Resources\RequestQueryFilter;
+use DateTime;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Schema;
 
 class AppServiceProvider extends ServiceProvider
@@ -181,6 +188,8 @@ class AppServiceProvider extends ServiceProvider
         ContractStateRepositoryInterface::class         => ContractStateRepository::class,
         QuoteNoteRepositoryInterface::class             => QuoteNoteRepository::class,
         TaskRepositoryInterface::class                  => TaskRepository::class,
+        PermissionBrokerContract::class                 => PermissionBroker::class,
+        UserFormContract::class                         => UserForm::class,
     ];
 
     public $bindings = [
@@ -259,5 +268,15 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         Schema::defaultStringLength(191);
+
+        if (env('APP_DEBUG') && app()->environment('local')) {
+
+            DB::listen(function ($query) {
+                File::append(
+                    storage_path('/logs/query.log'),
+                    sprintf("[time: %s] %s\n", $query->time, $query->sql)
+                );
+            });
+        }
     }
 }

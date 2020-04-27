@@ -1,4 +1,37 @@
 {
+    "Austria": [
+        {
+            "filename": "Billing summary (with partner discount) 71-C745583(2).pdf",
+            "page": 1,
+            "data": [
+                {
+                    "from": "01.05.20",
+                    "to": "30.04.21",
+                    "price": 1636.84
+                },
+                {
+                    "from": "01.05.21",
+                    "to": "30.04.22",
+                    "price": 672.84
+                },
+                {
+                    "from": "01.05.22",
+                    "to": "30.04.23",
+                    "price": 672.84
+                },
+                {
+                    "from": "01.05.23",
+                    "to": "30.04.24",
+                    "price": 672.84
+                },
+                {
+                    "from": "01.05.24",
+                    "to": "30.04.25",
+                    "price": 672.84
+                }
+            ]
+        }
+    ],
     "France": [
         {
             "filename": "Billing summary (with partner discount) 81-T31870 Nb offre 21.01.2020 - 31.03.2022  [Purchase].pdf",

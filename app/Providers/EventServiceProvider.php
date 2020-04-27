@@ -23,7 +23,10 @@ class EventServiceProvider extends ServiceProvider
         ],
         \App\Events\ExchangeRatesUpdated::class => [
             \App\Listeners\ExchangeRatesListener::class
-        ]
+        ],
+        \App\Events\Permission\GrantedModulePermission::class => [
+            \App\Listeners\ModulePermissionListener::class
+        ],
     ];
 
     /**

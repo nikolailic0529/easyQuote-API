@@ -11,6 +11,7 @@ use App\Traits\{
     Systemable,
     Activity\LogsActivity,
     Auth\Multitenantable,
+    HasUsers,
     Uuid
 };
 use Spatie\Permission\{
@@ -39,6 +40,7 @@ class Role extends Model implements RoleContract, ActivatableInterface
         HasPermissions,
         RefreshesPermissionCache,
         BelongsToUser,
+        HasUsers,
         Searchable,
         SoftDeletes,
         Activatable,

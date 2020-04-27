@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Casts\UserGrantedPermission;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Models\{
     Role,
@@ -16,15 +17,15 @@ use Illuminate\Database\Eloquent\{
     Builder,
     Collection as IlluminateCollection
 };
+use Illuminate\Database\Query\Builder as DbBuilder;
 use Illuminate\Support\Collection;
-use Arr;
+use Closure;
+use Illuminate\Support\Facades\DB;
 
 class RoleRepository extends SearchableRepository implements RoleRepositoryInterface
 {
-    /** @var \App\Models\Role */
     protected Role $role;
 
-    /** @var \App\Models\Permission */
     protected Permission $permission;
 
     public function __construct(Role $role, Permission $permission)
@@ -61,6 +62,15 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
     {
         return $this->userQuery()
             ->whereId($id)->firstOrFail()->append('properties');
+    }
+
+    public function findByModule(string $module, ?Closure $scope = null)
+    {
+        return $this->role->query()
+            ->when($scope, $scope)
+            ->orderBy('name')
+            ->whereHas('permissions', fn (Builder $query) => $query->where('name', 'regexp', '^view(.*)_'.$module.'$'))
+            ->get();
     }
 
     public function findByName(string $name): Role

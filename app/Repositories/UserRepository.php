@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Casts\UserGrantedPermission;
 use App\Contracts\Repositories\{
     UserRepositoryInterface
 };
@@ -130,6 +131,16 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
     public function findMany(array $ids): Collection
     {
         return $this->user->query()->whereIn('id', $ids)->get();
+    }
+
+    public function findByRoles(array $roles, ?Closure $closure = null)
+    {
+        return $this->user->query()
+            ->select('users.id', 'users.email', 'users.first_name', 'users.last_name')
+            ->with('roles:id,name', 'permissions')
+            ->whereHas('roles', fn (Builder $query) => $query->whereKey($roles))
+            ->when($closure, $closure)
+            ->get();
     }
 
     public function random(): User

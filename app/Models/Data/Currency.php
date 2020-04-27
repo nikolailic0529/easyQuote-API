@@ -30,13 +30,23 @@ class Currency extends Model implements HasOrderedScope
         return "{$this->symbol} ({$this->code})";
     }
 
-    public function isBaseCurrency(): bool
+    public function isServiceBaseCurrency(): bool
     {
         return app('exchange.service')->baseCurrency() === $this->code;
     }
 
-    public function isNotBaseCurrency(): bool
+    public function isNotServiceBaseCurrency(): bool
     {
-        return !$this->isBaseCurrency();
+        return !$this->isServiceBaseCurrency();
+    }
+
+    public function isSettingBaseCurrency(): bool
+    {
+        return $this->code === setting('base_currency');
+    }
+
+    public function isNotSettingBaseCurrency(): bool
+    {
+        return !$this->isServiceBaseCurrency();
     }
 }

@@ -8,8 +8,9 @@ use Illuminate\Support\Collection;
 use Smalot\PdfParser\Parser as SmalotPdfParser;
 use Spatie\PdfToText\Pdf as SpatiePdfParser;
 use Illuminate\Support\LazyCollection;
-use Storage, Str;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
+use Storage;
 
 class PdfParser implements PdfParserInterface
 {
@@ -102,7 +103,13 @@ class PdfParser implements PdfParserInterface
         });
 
         $pages = collect($pages->all())
-            ->map(fn ($page) => Arr::set($page, 'rows', static::setExactDatesMatches($page['rows'])))
+            ->map(function ($page) {
+                $rows = collect(static::setExactDatesMatches($page['rows']))
+                    ->map(fn ($row) => Arr::set($row, PdfOptions::SYSTEM_HEADER_ONE_PAY, static::seekColumnsForOnePay($row)))
+                    ->toArray();
+
+                return Arr::set($page, 'rows', $rows);
+            })
             ->toArray();
 
         return compact('pages', 'attributes');
@@ -156,27 +163,26 @@ class PdfParser implements PdfParserInterface
 
     private function fetchPricePage(string $content): array
     {
-        $lines = [];
+        $matches = collect([PdfOptions::REGEXP_PRICE_LINES_01, PdfOptions::REGEXP_PRICE_LINES_02, PdfOptions::REGEXP_PRICE_LINES_03])
+            ->reduce(function (Collection $matches, $regexp) use ($content) {
+                preg_match_all($regexp, $content, $lines, PREG_UNMATCHED_AS_NULL, 0);
+                return $matches->mergeRecursive(Arr::only($lines, $this->getColumnNames()));
+            }, collect());
 
-        $matches = collect([PdfOptions::REGEXP_PRICE_LINES_01, PdfOptions::REGEXP_PRICE_LINES_02])
-            ->contains(function ($regexp) use ($content, &$lines) {
-                return preg_match_all($regexp, $content, $lines, PREG_UNMATCHED_AS_NULL, 0) > 0;
-            });
-
-        if (!$matches) {
+        if ($matches->isEmpty()) {
             return [];
         }
 
         /**
          * We are finding Service Agreement ID on each page and assign it to all rows on the page.
          */
-        $count = count(head($lines));
+        $count = count($matches->first());
         $said = $this->findSAID($content);
 
         $searchable = array_fill(0, $count, $said);
-        $lines += compact('searchable');
+        $matches->put('searchable', $searchable);
 
-        return Arr::only($lines, $this->getColumnNames());
+        return $matches->toArray();
     }
 
     private function findPriceAttributes(string $content, array $attributes): array
@@ -347,6 +353,11 @@ class PdfParser implements PdfParserInterface
         }
 
         static::$exactDatesMatchesCache = array_merge(static::$exactDatesMatchesCache, $exactDates);
+    }
+
+    private static function seekColumnsForOnePay(iterable $cells)
+    {
+        return Collection::wrap($cells)->contains(fn ($cell) => preg_match(PdfOptions::REGEXP_ONE_PAY, $cell));
     }
 
     private static function setExactDatesMatches(array $rows): array

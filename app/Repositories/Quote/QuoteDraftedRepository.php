@@ -17,6 +17,7 @@ use App\Models\{
 };
 use Carbon\CarbonInterval;
 use Closure;
+use Illuminate\Support\LazyCollection;
 
 class QuoteDraftedRepository extends SearchableRepository implements QuoteDraftedRepositoryInterface
 {
@@ -42,18 +43,33 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
         return $this->toCollection(parent::search($query));
     }
 
+    public function cursor(?Closure $scope = null): LazyCollection
+    {
+        return $this->quote
+            ->on('mysql_unbuffered')
+            ->drafted()
+            ->when($scope, $scope)
+            ->cursor();
+    }
+
     public function userQuery(): Builder
     {
+        $user = auth()->user();
+
         return $this->quote
             ->query()
             ->when(
                 /** If user is not super-admin we are retrieving the user's own quotes */
-                request()->user()->cant('view_quotes'),
+                $user->cant('view_quotes'),
                 fn (Builder $query) => $query->currentUser()
                     /** Adding quotes that have been granted access to */
-                    ->orWhereIn('id', request()->user()->getPermissionTargets('quotes.read')),
+                    ->orWhereIn('id', $user->getPermissionTargets('quotes.read'))
+                    ->orWhereIn('user_id', $user->getModulePermissionProviders('quotes.read'))
             )
-            ->with('versions:id,quotes.user_id,version_number,completeness,created_at,updated_at,drafted_at', 'usingVersion.quoteFiles')
+            ->with(
+                'versions:id,quotes.user_id,version_number,completeness,created_at,updated_at,drafted_at',
+                'usingVersion.quoteFiles'
+            )
             ->drafted();
     }
 
@@ -70,16 +86,8 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
 
         throw_unless(is_null($user) || is_string($user), new \InvalidArgumentException(INV_ARG_UPK_01));
 
-        $query = $this->quote->query()
-            ->drafted()
-            ->when(filled($user), fn ($query) => $query->where('quotes.user_id', $user))
-            ->whereHas(
-                'customer',
-                fn (Builder $query) =>
-                $query->whereNotNull('customers.valid_until')
-                    ->whereDate('customers.valid_until', '>', now())
-                    ->whereRaw("datediff(`customers`.`valid_until`, now()) <= ?", [$interval->d])
-            )
+        $query = $this->expiringQuery($interval)
+            ->when($user, fn ($query) => $query->where('quotes.user_id', $user))
             ->with('customer');
 
         if ($scope instanceof Closure) {
@@ -87,6 +95,29 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
         }
 
         return $query->get();
+    }
+
+    public function expiringQuery(CarbonInterval $interval): Builder
+    {
+        return $this->quote->query()
+            ->drafted()
+            ->whereHas(
+                'customer',
+                fn (Builder $query) =>
+                $query->whereNotNull('customers.valid_until')
+                    ->whereDate('customers.valid_until', '>', now())
+                    ->whereRaw("datediff(`customers`.`valid_until`, now()) <= ?", [$interval->d])
+            );
+    }
+
+    public function count(array $where = []): int
+    {
+        return $this->quote->drafted()->where($where)->count();
+    }
+
+    public function countExpiring(CarbonInterval $interval, array $where = []): int
+    {
+        return $this->expiringQuery($interval)->where($where)->count();
     }
 
     public function find(string $id): Quote

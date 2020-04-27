@@ -44,7 +44,7 @@ class Task extends Model
     ];
 
     protected static $logAttributes = [
-        'name', 'priority', 'expiry_date'
+        'name', 'priority', 'expiry_date:expiry_date_formatted'
     ];
 
     protected static $logOnlyDirty = true;
@@ -54,5 +54,15 @@ class Task extends Model
     public function taskable(): MorphTo
     {
         return $this->morphTo('taskable');
+    }
+
+    public function getItemNameAttribute()
+    {
+        return "Task ({$this->name})";
+    }
+
+    public function getExpiryDateFormattedAttribute()
+    {
+        return optional($this->expiry_date)->format(config('date.format_12h'));
     }
 }

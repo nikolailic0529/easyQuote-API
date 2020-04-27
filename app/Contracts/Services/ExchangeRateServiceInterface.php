@@ -61,6 +61,14 @@ interface ExchangeRateServiceInterface
     public function getTargetRate(Currency $source, Currency $target, ?int $precision = null): float;
 
     /**
+     * Calculate base exchange rate based on source currency and base_currency setting.
+     *
+     * @param Currency $source
+     * @return float
+     */
+    public function getBaseRate(Currency $source): float;
+
+    /**
      * Format the request url with the given period.
      *
      * @return string

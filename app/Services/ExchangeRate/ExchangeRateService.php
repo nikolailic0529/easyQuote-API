@@ -92,13 +92,22 @@ abstract class ExchangeRateService implements ExchangeRateServiceInterface
         return true;
     }
 
+    public function getBaseRate(Currency $source): float
+    {
+        if ($source->isServiceBaseCurrency()) {
+            return 1;
+        }
+
+        return 1 / $source->exchangeRate->exchange_rate;
+    }
+
     public function getTargetRate(Currency $source, Currency $target, ?int $precision = null): float
     {
-        if ($source->isBaseCurrency()) {
+        if ($source->isServiceBaseCurrency()) {
             return $target->exchangeRate->exchange_rate;
         }
 
-        if ($target->isNotBaseCurrency() && !$target->exchangeRate->exists) {
+        if ($target->isNotServiceBaseCurrency() && !$target->exchangeRate->exists) {
             return 1;
         }
 

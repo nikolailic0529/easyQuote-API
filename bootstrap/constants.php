@@ -133,6 +133,11 @@ define('MNF_01', 'No Margin Defined for your selection, please contact administr
  */
 define('RSU_01', 'You could not update the system defined Role.');
 define('RSD_01', 'You could not delete the system defined Role.');
+define('R_SUPER', 'Administrator');
+define('R_RUD', 'read,update,delete');
+define('PL_R', 'read');
+define('PL_RU', 'read,update');
+define('PL_RUD', 'read,update,delete');
 
 /**
  * S4.

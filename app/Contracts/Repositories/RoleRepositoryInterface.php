@@ -4,6 +4,7 @@ namespace App\Contracts\Repositories;
 
 use App\Models\Role;
 use App\Http\Requests\Role\UpdateRoleRequest;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as IlluminateCollection;
 use Illuminate\Support\Collection;
@@ -57,12 +58,21 @@ interface RoleRepositoryInterface
     public function userQuery(): Builder;
 
     /**
-     * Find Collaboration Role.
+     * Find role.
      *
      * @param string $id
      * @return Role
      */
     public function find(string $id): Role;
+
+    /**
+     * Find roles having minimal access to the specific module.
+     *
+     * @param string $module
+     * @param Closure|null $scope
+     * @return mixed
+     */
+    public function findByModule(string $module, ?Closure $scope = null);
 
     /**
      * Find Role by specified name.

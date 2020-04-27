@@ -8,6 +8,20 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 interface CurrencyRepositoryInterface
 {
     /**
+     * Disable using cache in the repository.
+     *
+     * @return void
+     */
+    public function disableCache(): void;
+
+    /**
+     * Enable using cache in the repository.
+     *
+     * @return void
+     */
+    public function enableCache(): void;
+
+    /**
      * Get all currencies
      *
      * @return \Illuminate\Database\Eloquent\Collection
