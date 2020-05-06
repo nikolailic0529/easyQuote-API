@@ -67,7 +67,7 @@ class CompaniesUpdate extends Command
                 $company = $this->companies->findByVat($companyData['vat']);
 
                 if (is_null($company)) {
-                    $this->output('E');
+                    $this->line('E');
                     return true;
                 }
 

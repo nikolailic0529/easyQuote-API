@@ -30,6 +30,8 @@ class ImportableColumnsUpdate extends Command
     {
         $this->info("Updating System Defined Importable Columns...");
 
+        $this->call('cache:clear');
+
         activity()->disableLogging();
 
         $importableColumns = json_decode(file_get_contents(database_path('seeds/models/importable_columns.json')), true);

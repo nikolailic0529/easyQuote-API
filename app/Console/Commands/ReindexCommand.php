@@ -7,6 +7,7 @@ use Elasticsearch\Client as ElasticsearchClient;
 use App\Models\{
     Task,
     Address,
+    Asset,
     User,
     Role,
     Company,
@@ -98,6 +99,7 @@ class ReindexCommand extends Command
                 Address::class,
                 Contact::class,
                 Country::class,
+                Asset::class,
                 ImportableColumn::regular(),
             ]
         );

@@ -18,9 +18,11 @@
             "view_vendors", "create_vendors", "update_vendors", "delete_vendors",
             "view_discounts", "create_discounts", "update_discounts", "delete_discounts",
             "view_margins", "create_margins", "update_margins", "delete_margins",
-            "delete_customers"
+            "delete_customers",
+            "view_assets", "create_assets", "update_assets", "delete_assets"
         ],
         "privileges": {
+            "Assets": "Read, Write and Delete",
             "Settings": "Read & Write",
             "Countries": "Read, Write and Delete",
             "Audit": "Read Only",
@@ -45,9 +47,11 @@
             "view_companies", "create_companies", "update_companies", "delete_companies",
             "view_vendors", "create_vendors", "update_vendors", "delete_vendors",
             "view_discounts", "create_discounts", "update_discounts", "delete_discounts",
-            "view_margins", "create_margins", "update_margins", "delete_margins"
+            "view_margins", "create_margins", "update_margins", "delete_margins",
+            "view_assets", "create_assets", "update_assets"
         ],
         "privileges": {
+            "Assets": "Read & Write",
             "Quotes": "Read, Write and Delete",
             "Contracts": "Read, Write and Delete",
             "Templates": "Read, Write and Delete",

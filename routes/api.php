@@ -46,9 +46,16 @@ Route::group(['namespace' => 'API'], function () {
 
     Route::group(['middleware' => 'auth:api'], function () {
         Route::group(['middleware' => THROTTLE_RATE_01], function () {
-            Route::match(['get', 'post'], 'stats', 'StatsController');
+            Route::match(['get', 'post'], 'stats', 'StatsController@quotesSummary');
+            Route::match(['get', 'post'], 'stats/customers', 'StatsController@customersSummary');
+            Route::post('stats/customers/map', 'StatsController@mapCustomers');
+            Route::post('stats/assets/map', 'StatsController@mapAssets');
+            Route::post('stats/quotes/map', 'StatsController@mapQuotes');
+            Route::get('stats/locations/{location}/quotes', 'StatsController@quotesByLocation');
 
             Route::post('attachments', 'AttachmentController');
+
+            Route::resource('assets', 'AssetController')->only(ROUTE_CRUD);
         });
 
         Route::group(['middleware' => THROTTLE_RATE_01, 'namespace' => 'Data'], function () {

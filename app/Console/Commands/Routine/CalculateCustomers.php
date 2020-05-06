@@ -7,21 +7,21 @@ use App\Services\StatsAggregator;
 use Illuminate\Console\Command;
 use Throwable;
 
-class CalculateQuotes extends Command
+class CalculateCustomers extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'eq:calculate-quotes {--clear-cache}';
+    protected $signature = 'eq:calculate-customers {--clear-cache}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Calculate quotes totals';
+    protected $description = 'Calculate customers totals';
 
     /**
      * Create a new command instance.
@@ -40,25 +40,25 @@ class CalculateQuotes extends Command
      */
     public function handle(Stats $service, StatsAggregator $aggregator)
     {
-        $this->warn(QTC_S_01);
-        report_logger(['message' => QTC_S_01]);
+        $this->warn(CUSTC_S_01);
+        report_logger(['message' => CUSTC_S_01]);
 
         try {
-            $service->calculateQuoteTotals($this->output->createProgressBar());
+            $service->calculateCustomerTotals($this->output->createProgressBar());
 
             if ($this->option('clear-cache')) {
                 $aggregator->flushSummaryCache();
                 $this->info("\nSummary cache has been cleared!");
             }
         } catch (Throwable $e) {
-            $this->error(QTC_ERR_01);
-            report_logger(['ErrorCode' => 'QTC_ERR_01'], report_logger()->formatError(QTC_ERR_01, $e));
+            $this->error(CUSTC_ERR_01);
+            report_logger(['ErrorCode' => 'QTC_ERR_01'], report_logger()->formatError(CUSTC_ERR_01, $e));
 
             return false;
         }
 
-        $this->info("\n".QTC_F_01);
-        report_logger(['message' => QTC_F_01]);
+        $this->info("\n".CUSTC_F_01);
+        report_logger(['message' => CUSTC_F_01]);
 
         return true;
     }

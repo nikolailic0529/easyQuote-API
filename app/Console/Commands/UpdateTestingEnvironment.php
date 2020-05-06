@@ -52,7 +52,6 @@ class UpdateTestingEnvironment extends Command
             '--force' => true
         ]);
 
-        $this->call('eq:db-rearrange-timestamps');
         $this->call('eq:parser-update');
         $this->call('eq:collaborations-update');
         $this->call('eq:companies-update');
