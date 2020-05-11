@@ -5,9 +5,11 @@ namespace App\Repositories;
 use App\Contracts\Repositories\AssetRepository as Contract;
 use App\Repositories\Exceptions\InvalidModel;
 use App\Models\Asset;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Query\JoinClause;
+use Illuminate\Database\{
+    Eloquent\Builder,
+    Eloquent\Model,
+    Query\JoinClause,
+};
 use Illuminate\Support\Facades\DB;
 
 class AssetRepository extends SearchableRepository implements Contract
@@ -17,6 +19,12 @@ class AssetRepository extends SearchableRepository implements Contract
     public function __construct(Asset $asset)
     {
         $this->asset = $asset;
+    }
+
+    public function userQuery(): Builder
+    {
+        return $this->asset->query()
+            ->unless(auth()->user()->hasRole(R_SUPER), fn (Builder $q) => $q->whereUserId(auth()->id()));
     }
 
     public function chunk(int $count, callable $callback, array $with = [], ?callable $clause = null): bool
@@ -146,7 +154,7 @@ class AssetRepository extends SearchableRepository implements Contract
 
     protected function filterableQuery()
     {
-        return $this->asset->query()->with('assetCategory');
+        return $this->userQuery()->with('assetCategory');
     }
 
     protected function searchableScope($query)

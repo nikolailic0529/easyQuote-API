@@ -11,6 +11,13 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 interface AssetRepository
 {
     /**
+     * Begin a new query for authenticated user.
+     *
+     * @return Builder
+     */
+    public function userQuery(): Builder;
+
+    /**
      * Paginate existing assets.
      *
      * @return mixed
