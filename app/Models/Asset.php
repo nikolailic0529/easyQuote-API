@@ -6,7 +6,6 @@ use App\Traits\{
     Uuid,
     BelongsToAddress,
     BelongsToAssetCategory,
-    BelongsToCountry,
     BelongsToUser,
     BelongsToVendor,
 };
@@ -16,7 +15,6 @@ use App\Traits\{
 };
 use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Staudenmeir\EloquentHasManyDeep\HasOneDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
@@ -63,6 +61,7 @@ class Asset extends Model
     {
         return [
             'vendor_short_code'             => $this->vendor_short_code,
+            'category_name'                 => $this->assetCategory->name,
             'product_number'                => $this->product_number,
             'serial_number'                 => $this->serial_number,
             'sku'                           => $this->sku,
@@ -71,10 +70,10 @@ class Asset extends Model
             'pricing_document'              => $this->pricing_document,
             'system_handle'                 => $this->system_handle,
             'service_agreement_id'          => $this->service_agreement_id,
-            'base_warranty_start_date'      => optional($this->warranty_start_date)->toDateString(),
-            'base_warranty_end_date'        => optional($this->warranty_end_date)->toDateString(),
-            'active_warranty_start_date'    => optional($this->warranty_start_date)->toDateString(),
-            'active_warranty_end_date'      => optional($this->warranty_end_date)->toDateString(),
+            'base_warranty_start_date'      => optional($this->base_warranty_start_date)->format(config('date.format')),
+            'base_warranty_end_date'        => optional($this->base_warranty_end_date)->format(config('date.format')),
+            'active_warranty_start_date'    => optional($this->active_warranty_start_date)->format(config('date.format')),
+            'active_warranty_end_date'      => optional($this->active_warranty_end_date)->format(config('date.format')),
             'unit_price'                    => $this->unit_price,
             'buy_price'                     => $this->buy_price
         ];

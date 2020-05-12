@@ -62,15 +62,6 @@ class StoreQuoteStateRequest extends FormRequest
                 (new UniqueCustomer)->ignore($this->quote())
             ],
 
-            /*
-            'quote_data.eq_customer_id' => [
-                $this->customerRequired(),
-                'uuid',
-                Rule::exists(EqCustomer::class, 'id')->whereNotNull('deleted_at'),
-                Rule::unique('quotes', 'eq_customer_id')->whereNotNull('deleted_at')->ignore($this->quote())
-            ],
-            */
-
             'quote_data.company_id' => [
                 'required_with:quote_data.vendor_id,quote_data.country_id,quote_data.language_id',
                 'uuid',
@@ -256,9 +247,7 @@ class StoreQuoteStateRequest extends FormRequest
     protected function customerRequired()
     {
         return is_null($this->quote()->customer_id)
-            && is_null($this->quote()->eq_customer_id)
             && $this->missing('customer_id')
-            && $this->missing('eq_customer_id')
             ? 'required' : null;
     }
 

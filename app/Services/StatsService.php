@@ -174,7 +174,7 @@ class StatsService implements Stats
 
         $attributes = (array) $attributes + [
             'location_id' => $location->id,
-            'country_id' => $location->country_id,
+            'country_id' => $location->country->getKey(),
             'location_coordinates' => $location->coordinates,
             'location_address' => $location->formatted_address
         ];
@@ -192,7 +192,7 @@ class StatsService implements Stats
 
         $attributes = [
             'location_id' => $location->id,
-            'country_id' => $location->country_id,
+            'country_id' => $location->country->getKey(),
             'location_coordinates' => $location->coordinates,
             'location_address' => $location->formatted_address,
             'total_count' => $totalCount,
@@ -225,7 +225,7 @@ class StatsService implements Stats
                 'customer_id'           => $quote->customer_id,
                 'company_id'            => $company->id,
                 'location_id'           => $quote->customer->equipmentLocation->id,
-                'country_id'            => $quote->customer->equipmentLocation->country_id,
+                'country_id'            => $quote->customer->equipmentLocation->country->getKey(),
                 'location_address'      => $quote->customer->equipmentLocation->formatted_address,
                 'location_coordinates'  => $quote->customer->equipmentLocation->coordinates,
                 'total_price'           => $totalPrice,
@@ -283,7 +283,7 @@ class StatsService implements Stats
                     [
                         'customer_name' => $company->name,
                         'location_id' => $address->location_id,
-                        'country_id' => $address->location->country_id,
+                        'country_id' => $address->location->country->getKey(),
                         'address_id' => $address->id,
                         'company_id' => $company->id
                     ],

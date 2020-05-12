@@ -12,6 +12,32 @@ return [
         'Read, Write and Delete'
     ],
     'modules' => [
+        'Addresses' => [
+            'Read Only' => [
+                'view_addresses'
+            ],
+            'Read & Write' => [
+                'view_addresses',
+                'create_addresses', 'update_addresses'
+            ],
+            'Read, Write and Delete' => [
+                'view_addresses',
+                'create_addresses', 'update_addresses', 'delete_addresses'
+            ]
+        ],
+        'Contacts' => [
+            'Read Only' => [
+                'view_contacts'
+            ],
+            'Read & Write' => [
+                'view_contacts',
+                'create_contacts', 'update_contacts'
+            ],
+            'Read, Write and Delete' => [
+                'view_contacts',
+                'create_contacts', 'update_contacts', 'delete_contacts'
+            ]
+        ],
         'Assets' => [
             'Read Only' => [
                 'view_assets'

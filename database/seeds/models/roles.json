@@ -4,8 +4,10 @@
         "permissions": [
             "view_system_settings", "update_system_settings",
             "view_activities",
+
             "view_addresses", "create_addresses", "update_addresses", "delete_addresses",
             "view_contacts", "create_contacts", "update_contacts", "delete_contacts",
+            
             "view_users", "invite_collaboration_users", "update_users", "delete_users", "reset_users_password",
             "view_roles", "create_roles", "update_roles", "delete_roles",
             "view_quotes", "create_quotes", "update_quotes", "delete_quotes", "submit_quotes",
@@ -22,6 +24,8 @@
             "view_assets", "create_assets", "update_assets", "delete_assets"
         ],
         "privileges": {
+            "Addresses": "Read, Write and Delete",
+            "Contacts": "Read, Write and Delete",
             "Assets": "Read, Write and Delete",
             "Settings": "Read & Write",
             "Countries": "Read, Write and Delete",
@@ -48,9 +52,14 @@
             "view_vendors", "create_vendors", "update_vendors", "delete_vendors",
             "view_discounts", "create_discounts", "update_discounts", "delete_discounts",
             "view_margins", "create_margins", "update_margins", "delete_margins",
-            "view_assets", "create_assets", "update_assets"
+            "view_assets", "create_assets", "update_assets",
+
+            "view_addresses", "create_addresses", "update_addresses",
+            "view_contacts", "create_contacts", "update_contacts"
         ],
         "privileges": {
+            "Addresses": "Read & Write",
+            "Contacts": "Read & Write",
             "Assets": "Read & Write",
             "Quotes": "Read, Write and Delete",
             "Contracts": "Read, Write and Delete",

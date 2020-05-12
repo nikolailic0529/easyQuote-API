@@ -29,7 +29,7 @@ class UseRowGroups implements Rule
     public function passes($attribute, $value)
     {
         if (request()->missing('quote_id') || !$value) {
-            return;
+            return true;
         }
 
         return !empty($this->quote->usingVersion->selected_group_description_names);

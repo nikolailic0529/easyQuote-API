@@ -29,10 +29,13 @@ use App\Imports\{
     ImportExcelSchedule,
     CountPages
 };
-use App\Jobs\RetrievePriceAttributes;
+use App\Jobs\{
+    MigrateQuoteAssets,
+    RetrievePriceAttributes,
+};
 use App\Models\QuoteFile\QuoteFileFormat;
-use Excel, Storage, File, Setting, DB;
 use Illuminate\Pipeline\Pipeline;
+use Excel, Storage, File, Setting, DB;
 
 class ParserService implements ParserServiceInterface
 {
@@ -117,6 +120,7 @@ class ParserService implements ParserServiceInterface
         if ($quoteFile->isPrice() && $quoteFile->isNotAutomapped()) {
             $this->mapColumnsToFields($quote, $quoteFile);
             dispatch(new RetrievePriceAttributes($quote->usingVersion));
+            dispatch(new MigrateQuoteAssets($quote));
         }
 
         return $quoteFile->processing_state;

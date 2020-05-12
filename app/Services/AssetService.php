@@ -66,12 +66,7 @@ class AssetService
         try {
             /** @var \App\Collections\MappedRows */
             $rows = $this->quoteState->retrieveRows(
-                $quote->usingVersion,
-                fn (DbBuilder $query) => $query->when(
-                    $quote->groupsReady(),
-                    fn (DbBuilder $query) => $query->whereIn('group_name', $quote->usingVersion->selected_group_description_names),
-                    fn (DbBuilder $query) => $query->where('is_selected', true)
-                )
+                $quote->usingVersion
             );
 
             DB::transaction(function () use ($quote, $rows) {
@@ -109,6 +104,7 @@ class AssetService
 
         $asset = $this->asset->firstOrCreate(
             $quoteAsset->only(
+                'user_id',
                 'asset_category_id',
                 'vendor_id',
                 'address_id',

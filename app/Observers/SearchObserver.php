@@ -17,19 +17,15 @@ class SearchObserver
 
     public function saved(Model $model)
     {
-        if (app()->runningInConsole() || $model->reindexDisabled()) {
+        if ($model->reindexDisabled()) {
             return;
         }
 
         dispatch(new IndexModel($model));
     }
 
-    public function deleted($model)
+    public function deleted(Model $model)
     {
-        if (app()->runningInConsole()) {
-            return;
-        }
-
         rescue(function () use ($model) {
             $this->elasticsearch->delete([
                 'index' => $model->getSearchIndex(),

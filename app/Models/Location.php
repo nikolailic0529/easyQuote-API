@@ -2,14 +2,17 @@
 
 namespace App\Models;
 
-use App\Traits\Uuid;
+use App\Traits\{
+    Uuid,
+    BelongsToCountry,
+};
 use Grimzy\LaravelMysqlSpatial\Eloquent\SpatialTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Location extends Model
 {
-    use Uuid, SoftDeletes, SpatialTrait;
+    use Uuid, SoftDeletes, BelongsToCountry, SpatialTrait;
 
     protected $fillable = [
         'place_id',

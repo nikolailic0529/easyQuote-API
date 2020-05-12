@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\{
 };
 use Elasticsearch\Client as Elasticsearch;
 use Closure;
+use Throwable;
 
 abstract class SearchableRepository
 {
@@ -17,7 +18,7 @@ abstract class SearchableRepository
 
     public function all()
     {
-        $scope = filled(func_get_args()) && func_get_arg(0) instanceof Closure ? func_get_arg(0) : null;
+        $scope = head(func_get_args()) instanceof Closure ? head(func_get_args()) : null;
 
         $filterableQuery = $this->filterableQuery();
 
@@ -34,7 +35,7 @@ abstract class SearchableRepository
 
     public function search(string $query = '')
     {
-        $scope = count(func_get_args()) > 1 && func_get_arg(1) instanceof Closure ? func_get_arg(1) : null;
+        $scope = last(func_get_args()) instanceof Closure ? last(func_get_args()) : null;
 
         return $this->searchBuilder($query, $scope)->apiPaginate();
     }
@@ -42,7 +43,6 @@ abstract class SearchableRepository
     public function searchBuilder(string $search = '', ?Closure $scope = null)
     {
         $model = $this->searchableModel();
-        $query = $this->searchableQuery();
 
         $items = $this->searchOnElasticsearch($model, $this->searchableFields(), $search);
 
@@ -104,7 +104,7 @@ abstract class SearchableRepository
                 'index' => $model->getSearchIndex(),
                 'body' => $body
             ]);
-        } catch (\Exception $e) {
+        } catch (Throwable $e) {
             $items = [];
         }
 

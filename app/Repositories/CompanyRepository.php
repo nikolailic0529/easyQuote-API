@@ -182,6 +182,11 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
         ];
     }
 
+    protected function searchableQuery()
+    {
+        return $this->userQuery()->with('image');
+    }
+
     protected function searchableModel(): Model
     {
         return $this->company;

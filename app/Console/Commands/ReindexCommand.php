@@ -27,6 +27,7 @@ use App\Models\{
     Data\Country,
     QuoteFile\ImportableColumn,
 };
+use App\Models\QuoteTemplate\ContractTemplate;
 use Illuminate\Database\Eloquent\Builder;
 use Str;
 use Throwable;
@@ -86,6 +87,7 @@ class ReindexCommand extends Command
                 Quote::class,
                 Contract::class,
                 QuoteTemplate::class,
+                ContractTemplate::class,
                 TemplateField::class,
                 CountryMargin::class,
                 MultiYearDiscount::class,

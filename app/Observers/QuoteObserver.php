@@ -2,7 +2,6 @@
 
 namespace App\Observers;
 
-use App\Jobs\MigrateQuoteAssets;
 use App\Models\Quote\Quote;
 
 class QuoteObserver
@@ -47,8 +46,6 @@ class QuoteObserver
      */
     public function submitted(Quote $quote)
     {
-        dispatch(new MigrateQuoteAssets($quote));
-
         $rfq_number = $quote->rfq_number;
         $url = ui_route('quotes.submitted.review', compact('quote'));
 

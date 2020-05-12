@@ -235,12 +235,6 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
             'customer_support_start'    => $this->customer->support_start_date,
             'customer_support_end'      => $this->customer->support_end_date,
 
-            'eq_customer_name'          => $this->eqCustomer->customer_name,
-            'eq_customer_rfq'           => $this->eqCustomer->rfq_number,
-            'eq_customer_valid_until'   => $this->eqCustomer->quotation_valid_until_date,
-            'eq_customer_support_start' => $this->eqCustomer->support_start_date,
-            'eq_customer_support_end'   => $this->eqCustomer->support_end_date,
-
             'user_fullname'             => optional($this->user)->fullname,
             'created_at'                => $this->created_at
         ];

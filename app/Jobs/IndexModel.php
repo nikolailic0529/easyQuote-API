@@ -33,7 +33,6 @@ class IndexModel implements ShouldQueue
      */
     public function handle(Elasticsearch $elasticsearch)
     {
-        logger($this->model);
         rescue(
             fn () =>
             $elasticsearch->index([

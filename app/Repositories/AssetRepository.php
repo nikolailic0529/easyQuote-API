@@ -130,9 +130,15 @@ class AssetRepository extends SearchableRepository implements Contract
         return $this->asset;
     }
 
+    protected function searchableQuery()
+    {
+        return $this->userQuery()->with('assetCategory');
+    }
+
     protected function searchableFields(): array
     {
         return [
+            'category_name',
             'vendor_short_code',
             'country_code',
             'product_number',
