@@ -3,8 +3,9 @@
 namespace App\Listeners;
 
 use App\Events\RfqReceived;
-use App\Http\Resources\CustomerResponseResource;
+use App\Facades\CustomerFlow;
 use App\Models\Customer\Customer;
+use App\Http\Resources\CustomerResponseResource;
 
 class RfqReceivedListener
 {
@@ -17,6 +18,8 @@ class RfqReceivedListener
     public function handle(RfqReceived $event)
     {
         report_logger(['message' => S4_CS_01], CustomerResponseResource::make($event->customer));
+
+        CustomerFlow::migrateCustomer($event->customer);
 
         slack()
             ->title('Receiving RFQ / Data from S4')

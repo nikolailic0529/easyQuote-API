@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use App\Contracts\{
+    Services\CustomerFlow as CustomerFlowContract,
     Services\AuthServiceInterface,
     Services\ParserServiceInterface,
     Services\WordParserInterface,
@@ -18,6 +19,8 @@ use App\Contracts\{
     Services\ExchangeRateServiceInterface,
     Services\MaintenanceServiceInterface,
     Services\PermissionBroker as PermissionBrokerContract,
+    Services\Stats,
+    Services\LocationService as LocationServiceContract,
 
     Repositories\TimezoneRepositoryInterface,
     Repositories\CountryRepositoryInterface,
@@ -35,6 +38,7 @@ use App\Contracts\{
     Repositories\QuoteTemplate\ContractTemplateRepositoryInterface,
     Repositories\QuoteTemplate\TemplateFieldRepositoryInterface,
     Repositories\Customer\CustomerRepositoryInterface,
+    Repositories\Customer\EqCustomerRepository as EqCustomerRepositoryContract,
     Repositories\System\SystemSettingRepositoryInterface,
     Repositories\System\ActivityRepositoryInterface,
     Repositories\Quote\Discount\MultiYearDiscountRepositoryInterface,
@@ -60,6 +64,8 @@ use App\Contracts\{
     Repositories\Quote\QuoteNoteRepositoryInterface,
     Repositories\TaskRepositoryInterface,
     Repositories\UserForm as UserFormContract,
+    Repositories\AssetRepository as AssetRepositoryContract,
+    Repositories\AssetCategoryRepository as AssetCategoryRepositoryContract,
 };
 use App\Repositories\{
     TimezoneRepository,
@@ -67,6 +73,8 @@ use App\Repositories\{
     UserRepository,
     AccessAttemptRepository,
     AddressRepository,
+    AssetCategoryRepository,
+    AssetRepository,
     LanguageRepository,
     CurrencyRepository,
     QuoteFile\QuoteFileRepository,
@@ -79,6 +87,7 @@ use App\Repositories\{
     QuoteTemplate\ContractTemplateRepository,
     QuoteTemplate\TemplateFieldRepository,
     Customer\CustomerRepository,
+    Customer\EqCustomerRepository,
     System\SystemSettingRepository,
     System\ActivityRepository,
     System\NotificationRepository,
@@ -110,6 +119,7 @@ use App\Services\{
     Auth\AuthService,
     Auth\AuthenticatedCase,
     CsvParser,
+    CustomerFlow,
     NotificationStorage,
     ParserService,
     WordParser,
@@ -120,7 +130,10 @@ use App\Services\{
     MaintenanceService,
     PermissionBroker,
     SlackClient,
-    UIService
+    StatsAggregator,
+    StatsService,
+    UIService,
+    LocationService,
 };
 use Elasticsearch\{
     Client as ElasticsearchClient,
@@ -128,9 +141,6 @@ use Elasticsearch\{
 };
 use App\Factories\Failure\Failure;
 use App\Http\Resources\RequestQueryFilter;
-use DateTime;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
 use Schema;
 
 class AppServiceProvider extends ServiceProvider
@@ -190,6 +200,12 @@ class AppServiceProvider extends ServiceProvider
         TaskRepositoryInterface::class                  => TaskRepository::class,
         PermissionBrokerContract::class                 => PermissionBroker::class,
         UserFormContract::class                         => UserForm::class,
+        CustomerFlowContract::class                     => CustomerFlow::class,
+        Stats::class                                    => StatsService::class,
+        AssetRepositoryContract::class                  => AssetRepository::class,
+        AssetCategoryRepositoryContract::class          => AssetCategoryRepository::class,
+        EqCustomerRepositoryContract::class             => EqCustomerRepository::class,
+        LocationServiceContract::class                  => LocationService::class,
     ];
 
     public $bindings = [
@@ -216,6 +232,7 @@ class AppServiceProvider extends ServiceProvider
         UserRepositoryInterface::class                  => 'user.repository',
         RoleRepositoryInterface::class                  => 'role.repository',
         CustomerRepositoryInterface::class              => 'customer.repository',
+        EqCustomerRepositoryContract::class             => 'eq_customer.repository',
         MarginRepositoryInterface::class                => 'margin.repository',
         QuoteTemplateRepositoryInterface::class         => 'template.repository',
         ContractTemplateRepositoryInterface::class      => 'contract_template.repository',
@@ -232,6 +249,7 @@ class AppServiceProvider extends ServiceProvider
         BuildRepositoryInterface::class                 => 'build.repository',
         ExchangeRateServiceInterface::class             => 'exchange.service',
         TaskRepositoryInterface::class                  => 'task.repository',
+        Stats::class                                    => 'stats.service',
     ];
 
     /**
@@ -268,15 +286,5 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         Schema::defaultStringLength(191);
-
-        if (env('APP_DEBUG') && app()->environment('local')) {
-
-            DB::listen(function ($query) {
-                File::append(
-                    storage_path('/logs/query.log'),
-                    sprintf("[time: %s] %s\n", $query->time, $query->sql)
-                );
-            });
-        }
     }
 }

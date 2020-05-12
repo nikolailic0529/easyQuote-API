@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Company;
 
+use App\Models\Company;
 use App\Traits\Request\PreparesNullValues;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -9,36 +10,6 @@ use Illuminate\Validation\Rule;
 class StoreCompanyRequest extends FormRequest
 {
     use PreparesNullValues;
-
-    /**
-     * Company types
-     *
-     * @var string
-     */
-    protected $types;
-
-    /**
-     * Company categories
-     *
-     * @var string
-     */
-    protected $categories;
-
-    public function __construct()
-    {
-        $this->types = collect(__('company.types'))->implode(',');
-        $this->categories = collect(__('company.categories'))->implode(',');
-    }
-
-    /**
-     * Determine if the user is authorized to make this request.
-     *
-     * @return bool
-     */
-    public function authorize()
-    {
-        return true;
-    }
 
     /**
      * Get the validation rules that apply to the request.
@@ -51,21 +22,27 @@ class StoreCompanyRequest extends FormRequest
             'name' => [
                 'required',
                 'string',
-                'max:60',
+                'max:191',
                 'min:2',
-                Rule::unique('companies')->whereNull('deleted_at')
+                Rule::unique(Company::class)->whereNull('deleted_at')
             ],
             'vat' => [
                 'required',
                 'string',
-                'max:60',
+                'max:191',
                 'min:2',
-                Rule::unique('companies')->whereNull('deleted_at')
+                Rule::unique(Company::class)->whereNull('deleted_at')
+            ],
+            'short_code' => [
+                Rule::requiredIf(fn () => $this->type === Company::INT_TYPE),
+                'string',
+                'size:3',
+                Rule::unique(Company::class)->whereNull('deleted_at')
             ],
             'type' => [
                 'required',
                 'string',
-                'in:' . $this->types
+                Rule::in(Company::TYPES)
             ],
             'logo' => [
                 'image',
@@ -73,9 +50,9 @@ class StoreCompanyRequest extends FormRequest
             ],
             'category' => [
                 'nullable',
-                'required_if:type,External',
+                Rule::requiredIf(fn () => $this->type === Company::EXT_TYPE),
                 'string',
-                'in:' . $this->categories
+                Rule::in(Company::CATEGORIES)
             ],
             'email' => 'required|email',
             'phone' => 'nullable|string|min:4|phone',

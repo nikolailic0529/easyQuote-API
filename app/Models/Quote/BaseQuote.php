@@ -96,6 +96,7 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
     protected $fillable = [
         'type',
         'customer_id',
+        'eq_customer_id',
         'company_id',
         'vendor_id',
         'country_id',
@@ -228,11 +229,18 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
     {
         return [
             'company_name'              => optional($this->company)->name,
-            'customer_name'             => optional($this->customer)->name,
-            'customer_rfq'              => optional($this->customer)->rfq,
-            'customer_valid_until'      => optional($this->customer)->quotation_valid_until,
-            'customer_support_start'    => optional($this->customer)->support_start_date,
-            'customer_support_end'      => optional($this->customer)->support_end_date,
+            'customer_name'             => $this->customer->name,
+            'customer_rfq'              => $this->customer->rfq,
+            'customer_valid_until'      => $this->customer->quotation_valid_until,
+            'customer_support_start'    => $this->customer->support_start_date,
+            'customer_support_end'      => $this->customer->support_end_date,
+
+            'eq_customer_name'          => $this->eqCustomer->customer_name,
+            'eq_customer_rfq'           => $this->eqCustomer->rfq_number,
+            'eq_customer_valid_until'   => $this->eqCustomer->quotation_valid_until_date,
+            'eq_customer_support_start' => $this->eqCustomer->support_start_date,
+            'eq_customer_support_end'   => $this->eqCustomer->support_end_date,
+
             'user_fullname'             => optional($this->user)->fullname,
             'created_at'                => $this->created_at
         ];

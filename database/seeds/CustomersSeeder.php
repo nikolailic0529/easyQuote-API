@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\Customer\Customer;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Arr;
 
 class CustomersSeeder extends Seeder
 {
@@ -11,31 +13,13 @@ class CustomersSeeder extends Seeder
      */
     public function run()
     {
-        //Empty the customers table
-        Schema::disableForeignKeyConstraints();
-
-        DB::table('customers')->delete();
-
-        Schema::enableForeignKeyConstraints();
-
         $customers = json_decode(file_get_contents(__DIR__ . '/models/customers.json'), true);
 
-        collect($customers)->each(function ($customer) {
-            collect()->times(8)->each(function ($time) use ($customer) {
-                $rfq = "CQ00" . mb_strtoupper(uniqid());
-                DB::table('customers')->insert([
-                    'id' => (string) Uuid::generate(4),
-                    'name' => $customer['name'],
-                    'rfq' => $rfq,
-                    'valid_until' => now()->create($customer['valid_until'])->addDays(rand(101, 300))->toDateTimeString(),
-                    'support_start' => now()->create($customer['support_start'])->addDays(rand(1, 100))->toDateTimeString(),
-                    'support_end' => now()->create($customer['support_end'])->addDays(rand(101, 300))->toDateTimeString(),
-                    'payment_terms' => $customer['payment_terms'],
-                    'invoicing_terms' => $customer['invoicing_terms'],
-                    'service_levels' => json_encode($customer['service_level']),
-                    'created_at' => now()->toDateTimeString()
-                ]);
-            });
-        });
+        DB::transaction(
+            fn () =>
+            collect($customers)->each(
+                fn ($customer) => Customer::firstOrCreate(Arr::only($customer, 'rfq'), Arr::except($customer, 'country_code'))
+            )
+        );
     }
 }

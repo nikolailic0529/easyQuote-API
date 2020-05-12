@@ -3,7 +3,10 @@
 namespace App\Contracts\Repositories\Customer;
 
 use App\Models\Customer\Customer;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\LazyCollection;
+use Closure;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 interface CustomerRepositoryInterface
 {
@@ -20,6 +23,14 @@ interface CustomerRepositoryInterface
      * @return void
      */
     public function list();
+
+    /**
+     * Begin cursor query for the existing customers.
+     *
+     * @param Closure|null $closure
+     * @return LazyCollection
+     */
+    public function cursor(?Closure $closure): LazyCollection;
 
     /**
      * Flush Customers listing cache.
@@ -55,9 +66,9 @@ interface CustomerRepositoryInterface
      * Create a new Customer.
      *
      * @param mixed $attributes
-     * @return \App\Models\Customer\Customer|null
+     * @return \App\Models\Customer\Customer
      */
-    public function create($attributes);
+    public function create($attributes): Customer;
 
     /**
      * Delete a specified Customer.

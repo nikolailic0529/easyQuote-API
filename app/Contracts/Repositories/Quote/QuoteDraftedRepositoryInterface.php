@@ -23,7 +23,7 @@ interface QuoteDraftedRepositoryInterface
     public function all();
 
     /**
-     * Iterate throw the existing drafted quotes using a cursor.
+     * Iterate the existing drafted quotes using a cursor.
      *
      * @param \Closure $scope
      * @return \Illuminate\Support\LazyCollection

@@ -107,7 +107,7 @@ class QuoteController extends Controller
     {
         return response()->json(
             [
-                'companies'                 => $this->companies->allWithVendorsAndCountries(),
+                'companies'                 => $this->companies->allInternalWithVendorsAndCountries(),
                 'data_select_separators'    => $this->dataSelects->all(),
                 'supported_file_types'      => Setting::get('supported_file_types_ui'),
                 'currencies'                => $this->currencies->allHaveExrate()

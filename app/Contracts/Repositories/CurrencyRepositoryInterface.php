@@ -48,7 +48,7 @@ interface CurrencyRepositoryInterface
      * Retrieve Currency passed Currency code.
      *
      * @param string|null $code
-     * @return string|null
+     * @return Currency|null
      */
     public function findByCode(?string $code);
 

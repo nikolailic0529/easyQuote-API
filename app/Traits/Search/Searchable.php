@@ -10,7 +10,7 @@ trait Searchable
 
     public static function bootSearchable()
     {
-        if (config('services.search.enabled')) {
+        if (!app()->runningUnitTests() && config('services.search.enabled')) {
             static::observe(SearchObserver::class);
         }
     }

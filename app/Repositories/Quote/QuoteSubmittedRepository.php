@@ -109,6 +109,11 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         return $this->userQuery()->whereId($id)->firstOrFail();
     }
 
+    public function batchUpdate(array $values, array $where = []): bool
+    {
+        return $this->quote->whereNotNull('submitted_at')->where($where)->update($values);
+    }
+
     public function rfq(string $rfq, bool $serviceCaused = false): BaseQuote
     {
         $quote = $this->findByRfq($rfq);

@@ -145,7 +145,10 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         /**
          * Delete early imported data
          */
-        $quoteFile->rowsData()->forceDelete();
+        DB::transaction(
+            fn () => $quoteFile->rowsData()->forceDelete(),
+            5
+        );
 
         $this->createImportedPages($array, $quoteFile);
     }

@@ -5,6 +5,11 @@ use App\Mail\FailureReportMail;
 use Illuminate\Support\Facades\Mail;
 
 if (!function_exists('report_logger')) {
+    /**
+     * Resolve report logger instance.
+     *
+     * @return \App\Contracts\Services\ReportLoggerInterface
+     */
     function report_logger()
     {
         if (func_num_args() > 0) {

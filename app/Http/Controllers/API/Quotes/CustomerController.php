@@ -3,19 +3,30 @@
 namespace App\Http\Controllers\API\Quotes;
 
 use App\Http\Controllers\Controller;
-use App\Contracts\Repositories\Customer\CustomerRepositoryInterface as CustomerRepository;
-use App\Models\Customer\Customer;
+use App\Contracts\Repositories\{
+    Customer\CustomerRepositoryInterface as Customers,
+};
+use App\Http\Requests\Customer\CreateEqCustomer;
+use App\Http\Resources\Customer\EqCustomer as EqCustomerResource;
+use App\Models\{
+    InternalCompany,
+    Customer\Customer,
+};
+use App\Services\EqCustomerService;
+use App\Facades\CustomerFlow;
+use Illuminate\Http\Response;
 
 class CustomerController extends Controller
 {
-    /** @var \App\Contracts\Repositories\Customer\CustomerRepositoryInterface */
-    protected $customer;
+    protected Customers $customers;
 
-    public function __construct(CustomerRepository $customer)
+    public function __construct(Customers $customers)
     {
-        $this->customer = $customer;
+        $this->customers = $customers;
 
-        $this->authorizeResource(Customer::class, 'customer');
+        $this->authorizeResource(Customer::class, 'customer', [
+            'except' => 'store'
+        ]);
     }
 
     /**
@@ -26,10 +37,26 @@ class CustomerController extends Controller
     public function index()
     {
         return response()->json(
-            $this->customer->toCollection(
-                $this->customer->list()
+            $this->customers->toCollection(
+                $this->customers->list()
             )
         );
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  CreateEqCustomer  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function store(CreateEqCustomer $request)
+    {
+        $resource = tap(
+            $this->customers->create($request->validated()),
+            fn (Customer $customer) => CustomerFlow::migrateCustomer($customer)
+        );
+
+        return response()->json(EqCustomerResource::make($resource), Response::HTTP_CREATED);
     }
 
     /**
@@ -41,7 +68,7 @@ class CustomerController extends Controller
     public function show(Customer $customer)
     {
         return response()->json(
-            $this->customer->find($customer->id)
+            $this->customers->find($customer->id)
         );
     }
 
@@ -54,7 +81,21 @@ class CustomerController extends Controller
     public function destroy(Customer $customer)
     {
         return response()->json(
-            $this->customer->delete($customer)
+            $this->customers->delete($customer)
         );
+    }
+
+    /**
+     * Display a new easyQuote customer RFQ number.
+     *
+     * @param InternalCompany $company
+     * @param EqCustomerService $service
+     * @return \Illuminate\Http\Response
+     */
+    public function giveCustomerNumber(InternalCompany $company, EqCustomerService $service)
+    {
+        return response()->json([
+            'rfq_number' => $service->giveNumber($company)
+        ]);
     }
 }

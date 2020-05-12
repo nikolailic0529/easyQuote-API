@@ -18,20 +18,18 @@ class CreateCustomersTable extends Migration
 
             $table->string('name');
             $table->string('rfq', 40);
-            
-            $table->json('service_levels')->nullable();
-            $table->string('payment_terms')->nullable();
-            $table->string('invoicing_terms')->nullable();
-            
+
             $table->dateTime('valid_until');
             $table->dateTime('support_start');
             $table->dateTime('support_end');
+
+            $table->string('payment_terms')->nullable();
+            $table->string('invoicing_terms')->nullable();
+            $table->json('service_levels')->nullable();
             
             $table->timestamps();
-            $table->timestamp('submitted_at')->index()->nullable();
             $table->softDeletes()->index();
-
-            $table->unique(['rfq', 'deleted_at']);
+            $table->timestamp('submitted_at')->index()->nullable();
         });
     }
 

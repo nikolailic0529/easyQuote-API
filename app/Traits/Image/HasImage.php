@@ -11,7 +11,7 @@ trait HasImage
 {
     public function image()
     {
-        return $this->morphOne(Image::class, 'imageable');
+        return $this->morphOne(Image::class, 'imageable')->cacheForever();
     }
 
     public function createImage($file, array $properties = [])
@@ -38,14 +38,17 @@ trait HasImage
         $image->save(Storage::path("public/{$original}"));
 
         $this->image()->delete();
-        $image = $this->image()->create(compact('original'));
+
+        $this->image()->create(compact('original'));
+
+        $this->image()->flushQueryCache();
 
         return $this->load('image');
     }
 
     public function deleteImage()
     {
-        $this->image()->delete();
+        $this->image()->flushQueryCache()->delete();
     }
 
     public function deleteImageWhen($value)
@@ -54,6 +57,6 @@ trait HasImage
             return;
         }
 
-        $this->image()->delete();
+        $this->image()->flushQueryCache()->delete();
     }
 }

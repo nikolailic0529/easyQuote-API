@@ -27,6 +27,13 @@ interface VendorRepositoryInterface
     public function allFlatten(): Collection;
 
     /**
+     * Retrieve all vendors from cache.
+     *
+     * @return mixed
+     */
+    public function allCached();
+
+    /**
      * Search over Vendors.
      *
      * @param string $query
@@ -48,6 +55,14 @@ interface VendorRepositoryInterface
      * @return \App\Models\Vendor
      */
     public function find(string $id): Vendor;
+
+    /**
+     * Retrieve the specific vendor from cache by id.
+     *
+     * @param string $id
+     * @return Vendor|null
+     */
+    public function findCached(string $id): ?Vendor;
 
     /**
      * Retrieve a vendor by specified short code.

@@ -60,6 +60,15 @@ define('Q_TYPE_CONTRACT', 'contract');
 define('QCE_01', 'Contract for the given Quote already exists.');
 define('QCE_UN_01', 'A contract exists for this quote, please delete the contract first to undo this quote');
 define('QCE_D_01', 'A contract exists for this quote, please delete the contract first to delete this quote');
+define('QSC_01', 'Quote RFQ %s has been calculated. Total price %s');
+define('QSC_ERR_01', 'An error occured when Quote calculation');
+define('QTC_S_01', '*** Quote totals calculation started ***');
+define('QTC_F_01', '*** Quote totals calculation successfully finished ***');
+define('QTC_ERR_01', 'An error occured when quote totals calculation');
+
+define('QLTC_S_01', '*** Quote location totals calculation started ***');
+define('QLTC_F_01', '*** Quote location totals calculation successfully finished ***');
+define('QLTC_ERR_01', 'An error occured when quote location totals calculation');
 
 /**
  * Contracts.
@@ -115,6 +124,23 @@ define('CP_DEF_VAT', 'GB758501125');
 define('CP_DEF_NAME', 'Support Warehouse Ltd');
 
 /**
+ * Customer.
+ */
+define('CUS_M_01', 'Customer successfully migrated in the external companies.');
+define('CUS_ECNE_01', 'External company does not exist. A new company will be saved in database.');
+define('CUS_ECE_01', 'External company already exists in database. The attributes will not be updated.');
+define('CUS_ECS_01', 'External company successfully saved in database.');
+define('CUS_ECAC_01', "Customer's addresses and contacts has been attached to external company.");
+
+define('CUSTC_S_01', '*** Customer totals calculation started ***');
+define('CUSTC_F_01', '*** Customer totals calculation successfully finished ***');
+define('CUSTC_ERR_01', 'An error occured when customer totals calculation');
+
+define('CUSMG_S_01', '*** Customers migration started ***');
+define('CUSMG_F_01', '*** Customers migration successfully finished ***');
+define('CUSMG_ERR_01', 'An error occured when customers migration');
+
+/**
  * Vendor.
  */
 define('VE_01', 'The vendor with the same Short Code or Name already exists.');
@@ -142,7 +168,7 @@ define('PL_RUD', 'read,update,delete');
 /**
  * S4.
  */
-define('S4_CS_01', 'S4 contract with RFQ :rfq was successfully stored.');
+define('S4_CS_01', 'S4 contract with RFQ :rfq_number was successfully stored.');
 define('S4_CS_02', 'Request for S4 contract storing.');
 define('S4_CSS_01', 'S4 data has been successfully received.');
 define('S4_CSF_01', 'Failed to receive S4 data.');
@@ -178,6 +204,38 @@ define('TZ_DEF_01', '(UTC+01:00) Edinburgh, London');
 define('TZ_DEF_02', '(UTC) Edinburgh, London');
 
 /**
+ * Location.
+ */
+define('LC_NF_01', 'Location for provided address not found');
+define('LC_FE_01', 'Location already exists in database');
+define('LC_FC_01', 'Location found and saved in database');
+define('LC_AA_01', 'Location associated with address instance');
+define('LC_AUC_01', 'Address locations update completed');
+
+/**
+ * Address.
+ */
+define('ADDR_LCU_S_01', '*** Addresses location update started ***');
+define('ADDR_LCU_F_01', '*** Addresses location update successfully finished ***');
+define('ADDR_LCU_ERR_01', 'An error occured when addresses location update');
+
+/**
+ * Assets.
+ */
+define('ASSET_MGERR_01', 'Unable migrate quote assets. Assets transaction rolled back.');
+define('ASSET_MGSS_01', 'Asset successfully stored in database.');
+define('ASSET_MGAE_01', 'Asset already exists in database.');
+define('ASSET_MGQF_01', 'Quote assets successfully migrated. Quote marked as assets migrated.');
+
+define('ASSET_MGS_01', '*** Quote assets migration started ***');
+define('ASSET_MGF_01', '*** Quote assets migration successfully finished ***');
+define('ASSET_MGERR_02', 'An error occured when quote assets migration');
+
+define('ASSET_TCS_01', '*** Asset totals calculation started ***');
+define('ASSET_TCF_01', '*** Asset totals calculation successfully finished ***');
+define('ASSET_TCERR_01', 'An error occured when asset totals calculation');
+
+/**
  * Misc.
  */
 define('THROTTLE_RATE_01', 'throttle:240,1');
@@ -196,6 +254,8 @@ define('MLFQ_01', 'Malformed request.');
 define('FFTC_01', 'Failed when flushing Eloquent tagged cache.');
 define('TABLE_COUNT_POSTFIX', '_count');
 define('ND_01', 'N/A');
+// MySQL unbuffered connection used for cursors.
+define('MYSQL_UNBUFFERED', 'mysql_unbuffered');
 
 /**
  * Slack.

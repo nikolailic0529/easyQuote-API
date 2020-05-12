@@ -8,6 +8,7 @@ use App\Http\Requests\Address\{
 };
 use Illuminate\Database\Eloquent\Builder;
 use App\Models\Address;
+use Illuminate\Database\Eloquent\Collection;
 
 interface AddressRepositoryInterface
 {
@@ -40,6 +41,23 @@ interface AddressRepositoryInterface
      * @return Address
      */
     public function find(string $id): Address;
+
+    /**
+     * Find or create addresses with specific values & attributes.
+     *
+     * @param array $attributes
+     * @param array $values
+     * @return Address
+     */
+    public function firstOrCreate(array $attributes, array $values = []): Address;
+
+    /**
+     * Find or create many addresses.
+     *
+     * @param array $attributes
+     * @return Collection
+     */
+    public function findOrCreateMany(array $attributes): Collection;
 
     /**
      * Store a new Address.

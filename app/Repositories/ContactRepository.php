@@ -15,7 +15,6 @@ use Illuminate\Database\Eloquent\{
 
 class ContactRepository extends SearchableRepository implements ContactRepositoryInterface
 {
-    /** @var \App\Models\Contact */
     protected Contact $address;
 
     public function __construct(Contact $contact)
@@ -25,7 +24,7 @@ class ContactRepository extends SearchableRepository implements ContactRepositor
 
     public function query(): Builder
     {
-        return $this->contact->query()->withoutType();
+        return $this->contact->query();
     }
 
     public function find(string $id): Contact

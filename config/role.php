@@ -12,6 +12,19 @@ return [
         'Read, Write and Delete'
     ],
     'modules' => [
+        'Assets' => [
+            'Read Only' => [
+                'view_assets'
+            ],
+            'Read & Write' => [
+                'view_assets',
+                'create_assets', 'update_assets'
+            ],
+            'Read, Write and Delete' => [
+                'view_assets',
+                'create_assets', 'update_assets', 'delete_assets'
+            ]
+        ],
         'Settings' => [
             'Read Only' => [
                 'view_system_settings'

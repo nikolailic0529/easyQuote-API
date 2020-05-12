@@ -203,7 +203,9 @@ class CompanyTest extends TestCase
 
         $country = $company->defaultVendor->countries->random();
 
-        $response = $this->patchJson(url("api/companies/{$company->id}"), ['default_country_id' => $country->id])->assertOk();
+        $this->patchJson(url("api/companies/{$company->id}"), ['default_country_id' => $country->id])->assertOk();
+
+        $response = $this->getJson(url("api/companies/{$company->id}"))->assertOk();
 
         $this->assertEquals($country->id, $response->json('vendors.0.countries.0.id'));
 

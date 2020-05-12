@@ -10,14 +10,14 @@ use App\Http\Requests\Country\{
 };
 use App\Http\Resources\Country\{
     CountryCollection,
+    CountryList,
     CountryResource
 };
 use App\Models\Data\Country;
 
 class CountryController extends Controller
 {
-    /** @var \App\Contracts\Repositories\CountryRepositoryInterface */
-    protected $country;
+    protected $countries;
 
     public function __construct(CountryRepositoryInterface $countries)
     {
@@ -29,7 +29,7 @@ class CountryController extends Controller
     public function __invoke()
     {
         return response()->json(
-            $this->countries->all()
+          CountryList::collection($this->countries->allCached())
         );
     }
 

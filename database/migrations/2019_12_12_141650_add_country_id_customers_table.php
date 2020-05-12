@@ -14,7 +14,7 @@ class AddCountryIdCustomersTable extends Migration
     public function up()
     {
         Schema::table('customers', function (Blueprint $table) {
-            $table->uuid('country_id')->nullable();
+            $table->uuid('country_id')->nullable()->after('service_levels');
             $table->foreign('country_id')->references('id')->on('countries')->onDelete('set null');
         });
     }

@@ -2,6 +2,7 @@
 
 namespace App\Models\Customer;
 
+use App\Models\Address;
 use App\Traits\{
     BelongsToAddresses,
     BelongsToContacts,
@@ -11,15 +12,24 @@ use App\Traits\{
     Submittable,
     Quote\HasQuotes,
     Activity\LogsActivity,
+    Migratable,
     Uuid
 };
 use Illuminate\Database\Eloquent\{
     Model,
     SoftDeletes,
 };
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Staudenmeir\EloquentHasManyDeep\{
+    HasManyDeep,
+    HasOneDeep,
+    HasRelationships,
+};
 
 class Customer extends Model
 {
+    public const S4_SOURCE = 'S4', EQ_SOURCE = 'easyQuote';
+
     use Uuid,
         BelongsToAddresses,
         HasAddressTypes,
@@ -29,7 +39,9 @@ class Customer extends Model
         Submittable,
         HasQuotes,
         SoftDeletes,
-        LogsActivity;
+        LogsActivity,
+        Migratable,
+        HasRelationships;
 
     protected $attributes = [
         'support_start' => null,
@@ -46,6 +58,8 @@ class Customer extends Model
         'support_end_date',
         'rfq',
         'rfq_number',
+        'sequence_number',
+        'source',
         'valid_until',
         'quotation_valid_until',
         'payment_terms',
@@ -74,6 +88,21 @@ class Customer extends Model
     ];
 
     protected static $recordEvents = ['deleted'];
+
+    public function addresses(): MorphToMany
+    {
+        return $this->morphToMany(Address::class, 'addressable')->withTrashed();
+    }
+
+    public function locations(): HasManyDeep
+    {
+        return $this->hasManyDeepFromRelations($this->addresses(), (new Address)->location());
+    }
+
+    public function equipmentLocation(): HasOneDeep
+    {
+        return $this->hasOneDeepFromRelations($this->addresses(), (new Address)->location())->where('addresses.address_type', 'Equipment')->withDefault();
+    }
 
     public function getSupportStartAttribute($value)
     {
@@ -206,6 +235,7 @@ class Customer extends Model
         return [
             'name'          => $this->name,
             'rfq'           => $this->rfq,
+            'source'        => $this->source,
             'valid_until'   => $this->valid_until_date,
             'support_start' => $this->support_start_date,
             'support_end'   => $this->support_end_date

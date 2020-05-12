@@ -83,6 +83,15 @@ interface UserRepositoryInterface
     public function update(string $id, array $attributes, array $options = []): bool;
 
     /**
+     * Update the users by specific scope.
+     *
+     * @param array $attributes
+     * @param array $where
+     * @return integer
+     */
+    public function updateWhere(array $attributes, array $where = []): int;
+
+    /**
      * Increment the given user attribute.
      *
      * @param string $id

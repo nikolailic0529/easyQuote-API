@@ -1,6 +1,7 @@
 [
     {
         "name": "Support Warehouse Ltd",
+        "short_code": "SWH",
         "vat": "GB758501125",
         "type": "Internal",
         "default_vendor": "HPE",
@@ -15,6 +16,7 @@
     },
     {
         "name": "Europlus Direct",
+        "short_code": "EPD",
         "vat": "GB847657576",
         "type": "Internal",
         "default_vendor": "LEN",
@@ -29,6 +31,7 @@
     },
     {
         "name": "Tesedi Holding Gmbh",
+        "short_code": "THG",
         "vat": "CHE109482812",
         "type": "Internal",
         "default_vendor": "HPE",

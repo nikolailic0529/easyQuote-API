@@ -6,7 +6,6 @@ use Illuminate\Contracts\Validation\Rule;
 use App\Models\Customer\Customer;
 use App\Rules\Concerns\IgnoresModel;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 
 class UniqueCustomer implements Rule
 {
@@ -21,15 +20,15 @@ class UniqueCustomer implements Rule
      */
     public function passes($attribute, $value)
     {
-        return Customer::whereId($value)
-            ->whereHas('quotes', function (Builder $query) {
+        return Customer::whereKey($value)
+            ->whereHas('quotes', fn (Builder $query) =>
                 $query->when($this->ignore, fn (Builder $query) =>
                     $query->where('quotes.id', '!=', $this->ignore)
                 )
                     ->whereNotNull('submitted_at')
                     ->whereNotNull('activated_at')
-                    ->where('is_version', false);
-            })
+                    ->where('is_version', false)
+            )
             ->doesntExist();
     }
 

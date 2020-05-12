@@ -44,6 +44,11 @@ return [
         'endpoint' => env('SLACK_SERVICE_URL', SLACK_SERVICE_URL),
     ],
 
+    'recaptcha' => [
+        'skip_key' => env('RECAPTCHA_SKIP_KEY'),
+        'skip_enabled' => env('RECAPTCHA_SKIP_ENABLED', false)
+    ],
+
     'recaptcha_v3' => [
         'url' => env('RECAPTCHA_V3_URL', 'https://www.google.com/recaptcha/api/siteverify'),
         'key' => env('RECAPTCHA_V3_KEY'),

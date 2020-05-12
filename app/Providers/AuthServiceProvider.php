@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use App\Models\{
     Address,
+    Asset,
     User,
     Role,
     Company,
@@ -30,6 +31,7 @@ use App\Models\{
 use App\Policies\{
     ActivityPolicy,
     AddressPolicy,
+    AssetPolicy,
     CompanyPolicy,
     ContactPolicy,
     ContractPolicy,
@@ -87,7 +89,8 @@ class AuthServiceProvider extends ServiceProvider
         Notification::class         => NotificationPolicy::class,
         Customer::class             => CustomerPolicy::class,
         Country::class              => CountryPolicy::class,
-        ImportableColumn::class     => ImportableColumnPolicy::class
+        ImportableColumn::class     => ImportableColumnPolicy::class,
+        Asset::class                => AssetPolicy::class,
     ];
 
     public function register()

@@ -182,11 +182,13 @@ return [
         App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
+        App\Providers\CacheServiceProvider::class,
         Webpatser\Countries\CountriesServiceProvider::class,
         Maatwebsite\Excel\ExcelServiceProvider::class,
         Intervention\Image\ImageServiceProvider::class,
         Barryvdh\Snappy\ServiceProvider::class,
         App\Providers\ExchangeRatesServiceProvider::class,
+        Spatie\Geocoder\GeocoderServiceProvider::class,
     ],
 
     /*
@@ -246,6 +248,8 @@ return [
         'Maintenance' => App\Facades\Maintenance::class,
         'Permission' => App\Facades\Permission::class,
         'UserForm' => App\Facades\UserForm::class,
+        'Geocoder' => Spatie\Geocoder\Facades\Geocoder::class,
+        'CustomerFlow' => App\Facades\CustomerFlow::class,
     ],
 
 ];

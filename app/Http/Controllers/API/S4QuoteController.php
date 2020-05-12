@@ -6,9 +6,12 @@ use App\Contracts\Repositories\{
     Quote\QuoteSubmittedRepositoryInterface as QuoteSubmittedRepository,
     Customer\CustomerRepositoryInterface as CustomerRepository
 };
+use App\Events\RfqReceived;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\S4\StoreContractRequest;
+use App\Http\Resources\CustomerResponseResource;
 use App\Http\Resources\QuoteResource;
+use App\Models\Customer\Customer;
 
 class S4QuoteController extends Controller
 {
@@ -82,8 +85,15 @@ class S4QuoteController extends Controller
      */
     public function store(StoreContractRequest $request)
     {
+        $resource = tap(
+            $this->customer->create($request->validated()),
+            fn (Customer $customer) => dispatch(
+                fn () => event(new RfqReceived($customer, $request->get('client_name', 'service')))
+            )->afterResponse()
+        );
+
         return response()->json(
-            $this->customer->create($request)
+            CustomerResponseResource::make($resource)
         );
     }
 }

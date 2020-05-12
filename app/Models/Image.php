@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\{
     SoftDeletes,
     Relations\MorphTo,
 };
+use Rennokki\QueryCache\Traits\QueryCacheable;
 
 class Image extends Model
 {
-    use Uuid, SoftDeletes;
+    use Uuid, SoftDeletes, QueryCacheable;
 
     protected $fillable = [
         'original', 'thumbnails'

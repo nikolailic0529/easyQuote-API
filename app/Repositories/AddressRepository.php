@@ -10,12 +10,14 @@ use App\Http\Requests\Address\{
 use App\Models\Address;
 use Illuminate\Database\Eloquent\{
     Builder,
+    Collection,
     Model
 };
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 
 class AddressRepository extends SearchableRepository implements AddressRepositoryInterface
 {
-    /** @var \App\Models\Address */
     protected Address $address;
 
     public function __construct(Address $address)
@@ -25,7 +27,7 @@ class AddressRepository extends SearchableRepository implements AddressRepositor
 
     public function query(): Builder
     {
-        return $this->address->query()->commonTypes()->with('country');
+        return $this->address->query()->with('country');
     }
 
     public function find(string $id): Address
@@ -36,6 +38,31 @@ class AddressRepository extends SearchableRepository implements AddressRepositor
     public function create(StoreAddressRequest $request): Address
     {
         return $this->address->create($request->validated());
+    }
+
+    public function firstOrCreate(array $attributes, array $values = []): Address
+    {
+        return $this->address->firstOrCreate($attributes, $values);
+    }
+
+    public function findOrCreateMany(array $addresses): Collection
+    {
+        return DB::transaction(
+            fn () => Collection::wrap($addresses)->map(fn (array $attributes) => $this->firstOrCreate(
+                Arr::only($attributes, [
+                    'address_type',
+                    'address_1',
+                    'address_2',
+                    'city',
+                    'state',
+                    'post_code',
+                    'contact_name',
+                    'contact_number',
+                    'contact_email',
+                    'country_id'
+                ]), $attributes
+            ))
+        );
     }
 
     public function update(UpdateAddressRequest $request, string $id): Address
@@ -79,7 +106,7 @@ class AddressRepository extends SearchableRepository implements AddressRepositor
 
     protected function searchableScope($query)
     {
-        return $query->commonTypes()->with('country');
+        return $query->with('country');
     }
 
     protected function searchableModel(): Model

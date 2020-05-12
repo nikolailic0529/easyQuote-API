@@ -8,6 +8,7 @@ use App\Scopes\{
     NonVersionScope
 };
 use App\Traits\{
+    Migratable,
     NotifiableModel,
     Quote\HasVersions,
     Quote\HasContract
@@ -15,7 +16,7 @@ use App\Traits\{
 
 class Quote extends BaseQuote implements Multitenantable
 {
-    use HasVersions, HasContract, NotifiableModel;
+    use HasVersions, HasContract, NotifiableModel, Migratable;
 
     protected static function boot()
     {

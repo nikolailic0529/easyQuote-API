@@ -144,6 +144,8 @@ Route::group(['namespace' => 'API'], function () {
             Route::resource('companies', 'CompanyController', ['only' => ROUTE_CRUD]);
             Route::put('companies/activate/{company}', 'CompanyController@activate');
             Route::put('companies/deactivate/{company}', 'CompanyController@deactivate');
+
+            Route::get('companies/external/{query}', 'CompanyController@searchExternal');
         });
 
         Route::group([], function () {
@@ -266,9 +268,10 @@ Route::group(['namespace' => 'API'], function () {
                 Route::apiResource('file', 'QuoteFilesController', ['only' => ROUTE_CR]);
 
                 /**
-                 * S4 Customers
+                 * Customers
                  */
-                Route::apiResource('customers', 'CustomerController', ['only' => ROUTE_RD]);
+                Route::apiResource('customers', 'CustomerController', ['only' => ROUTE_CRD]);
+                Route::get('customers/number/{company}', 'CustomerController@giveCustomerNumber');
 
                 Route::group(['prefix' => 'step'], function () {
                     Route::get('1', 'QuoteController@step1');

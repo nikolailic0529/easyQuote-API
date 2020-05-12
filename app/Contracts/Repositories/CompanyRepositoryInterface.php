@@ -37,6 +37,13 @@ interface CompanyRepositoryInterface
     public function allWithVendorsAndCountries(): IlluminateCollection;
 
     /**
+     * Retrieve all Internal type Companies with associated Vendors and Countries.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function allInternalWithVendorsAndCountries(): IlluminateCollection;
+
+    /**
      * Search over Companies.
      *
      * @param string $query
@@ -45,11 +52,28 @@ interface CompanyRepositoryInterface
     public function search(string $query = '');
 
     /**
+     * Search external companies by given part of name.
+     *
+     * @param string|null $query
+     * @param int $limit
+     * @return mixed
+     */
+    public function searchExternal(?string $query, int $limit = 15);
+
+    /**
      * Companies query.
      *
      * @return Builder
      */
     public function userQuery(): Builder;
+
+    /**
+     * Count companies by specific clause.
+     *
+     * @param array $where
+     * @return integer
+     */
+    public function count(array $where = []): int;
 
     /**
      * Find Company.
@@ -79,19 +103,19 @@ interface CompanyRepositoryInterface
     /**
      * Create Company.
      *
-     * @param \App\Http\Requests\Company\StoreCompanyRequest|array $request
+     * @param  array $attributes
      * @return \App\Models\Company
      */
-    public function create($request): Company;
+    public function create(array $attributes): Company;
 
     /**
      * Update Company.
      *
-     * @param \App\Http\Requests\Company\UpdateCompanyRequest $request
      * @param string $id
+     * @param array $attributes
      * @return \App\Models\Company
      */
-    public function update(UpdateCompanyRequest $request, string $id): Company;
+    public function update(string $id, array $attributes): Company;
 
     /**
      * Delete Company.

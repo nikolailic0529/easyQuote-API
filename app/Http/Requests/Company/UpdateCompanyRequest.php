@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Company;
 
+use App\Models\Company;
 use App\Traits\Request\PreparesNullValues;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -9,36 +10,6 @@ use Illuminate\Validation\Rule;
 class UpdateCompanyRequest extends FormRequest
 {
     use PreparesNullValues;
-
-    /**
-     * Company types
-     *
-     * @var string
-     */
-    protected $types;
-
-    /**
-     * Company categories
-     *
-     * @var string
-     */
-    protected $categories;
-
-    public function __construct()
-    {
-        $this->types = collect(__('company.types'))->implode(',');
-        $this->categories = collect(__('company.categories'))->implode(',');
-    }
-
-    /**
-     * Determine if the user is authorized to make this request.
-     *
-     * @return bool
-     */
-    public function authorize()
-    {
-        return true;
-    }
 
     /**
      * Get the validation rules that apply to the request.
@@ -50,19 +21,25 @@ class UpdateCompanyRequest extends FormRequest
         return [
             'name' => [
                 'string',
-                'max:60',
+                'max:191',
                 'min:2',
-                Rule::unique('companies')->whereNull('deleted_at')->ignore($this->company)
+                Rule::unique(Company::class)->whereNull('deleted_at')->ignore($this->company)
             ],
             'vat' => [
                 'string',
-                'max:60',
+                'max:191',
                 'min:2',
-                Rule::unique('companies')->whereNull('deleted_at')->ignore($this->company)
+                Rule::unique(Company::class)->whereNull('deleted_at')->ignore($this->company)
             ],
             'type' => [
                 'string',
-                'in:' . $this->types
+                Rule::in(Company::TYPES)
+            ],
+            'short_code' => [
+                Rule::requiredIf(fn () => $this->type === Company::INT_TYPE),
+                'string',
+                'size:3',
+                Rule::unique(Company::class)->whereNull('deleted_at')
             ],
             'logo' => [
                 'image',
@@ -70,9 +47,9 @@ class UpdateCompanyRequest extends FormRequest
             ],
             'category' => [
                 'nullable',
-                'required_if:type,External',
+                Rule::requiredIf(fn () => $this->type === Company::EXT_TYPE),
                 'string',
-                'in:' . $this->categories
+                Rule::in(Company::CATEGORIES)
             ],
             'email' => 'email',
             'phone' => 'nullable|string|min:4|phone',
@@ -100,6 +77,7 @@ class UpdateCompanyRequest extends FormRequest
             'addresses_attach.*' => 'required|string|uuid|exists:addresses,id',
             'addresses_detach' => 'nullable|array',
             'addresses_detach.*' => 'required|string|uuid|exists:addresses,id',
+
             'contacts_attach' => 'nullable|array',
             'contacts_attach.*' => 'required|string|uuid|exists:contacts,id',
             'contacts_detach' => 'nullable|array',

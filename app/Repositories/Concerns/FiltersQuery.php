@@ -16,9 +16,8 @@ trait FiltersQuery
         if (!$query instanceof Builder && !$query instanceof EloquentBuilder) {
             throw new \Exception(
                 sprintf(
-                    'Argument passed to %s::%s() method must be an instance of %s or %s',
-                    __CLASS__,
-                    __FUNCTION__,
+                    'Argument passed to %s method must be an instance of %s or %s',
+                    __METHOD__,
                     Builder::class,
                     EloquentBuilder::class
                 )

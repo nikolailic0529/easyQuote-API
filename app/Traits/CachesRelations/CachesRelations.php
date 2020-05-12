@@ -8,7 +8,9 @@ use App\Models\CachedRelation\{
     CachedRelation
 };
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 trait CachesRelations
 {
@@ -66,7 +68,7 @@ trait CachesRelations
      */
     protected static function getRelationsToCache(Model $model): Collection
     {
-        return collect(static::$cacheRelations)->filter(
+        return collect(static::$cacheRelations ?? [])->filter(
             fn ($relation) =>
             method_exists($model, $relation)
                 && $model->{$relation}() instanceof BelongsTo
@@ -80,7 +82,7 @@ trait CachesRelations
         $dirtyRelations = $dirtyRelations->filter(
             fn ($relation) =>
             isset($this->{$relation})
-                && $this->getOriginal($relation . '_id') !== $this->getAttribute($relation . '_id')
+                && $this->getOriginal($this->{$relation}()->getForeignKeyName()) !== $this->getAttribute($this->{$relation}()->getForeignKeyName())
         );
 
         return $previousCachedRelations->merge($this->getRelationsCache($dirtyRelations));
@@ -104,7 +106,14 @@ trait CachesRelations
             : collect(static::$cacheRelations ?? []);
 
         return $cacheRelations
-            ->filter(fn ($relation) => $this->getRelation($relation) instanceof Model)
+            /**
+             * If attribute exists as a method of the model, we will ensure that it is the eloquent relationship.
+             */
+            ->filter(fn ($relation) => method_exists($this, $relation) && is_a($this->{$relation}(), Relation::class))
+            /**
+             * Then we will load the relationship and ensure that result exists and it is an instance of the eloquent model.
+             */
+            ->filter(fn ($relation) => $this->{$relation} instanceof Model)
             ->mapWithKeys(function ($relation) {
                 $method = method_exists($this->{$relation}, 'toCacheableArray') ? 'toCacheableArray' : 'toArray';
 

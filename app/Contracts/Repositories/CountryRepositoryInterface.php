@@ -4,16 +4,24 @@ namespace App\Contracts\Repositories;
 
 use App\Models\Data\Country;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Closure;
 
 interface CountryRepositoryInterface
 {
     /**
-     * Get all timezones
+     * Get all countries.
      *
      * @return \Illuminate\Database\Eloquent\Collection
      */
-    public function all();
+    public function all(): Collection;
+
+    /**
+     * Get all cached countries.
+     *
+     * @return Collection
+     */
+    public function allCached(): Collection;
 
     /**
      * Make a new Eloquent Query Builder instance.
@@ -21,6 +29,14 @@ interface CountryRepositoryInterface
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function query(): Builder;
+
+    /**
+     * Retrieve cached country from repository.
+     *
+     * @param string $id
+     * @return Country|null
+     */
+    public function findCached(string $id): ?Country;
 
     /**
      * Retrieve Country by passed Country ISO code.

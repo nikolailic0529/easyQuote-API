@@ -1,5 +1,8 @@
 <div class="{{ $class }}">
     @foreach ($controls as $control)
-        @includeFirst (["quotes.components.{$control['type']}", "quotes.components.text"], $control)
+        @php
+            $controlType = $control['type'] ?? 'text';
+        @endphp
+        @includeFirst (["quotes.components.{$controlType}", "quotes.components.text"], $control)
     @endforeach
 </div>

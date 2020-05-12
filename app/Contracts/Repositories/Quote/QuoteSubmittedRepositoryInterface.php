@@ -37,7 +37,16 @@ interface QuoteSubmittedRepositoryInterface
     public function userQuery(): Builder;
 
     /**
-     * Iterate throw the existing submitted quotes using a cursor.
+     * Perform batch update.
+     *
+     * @param array $values
+     * @param array $where
+     * @return boolean
+     */
+    public function batchUpdate(array $values, array $where = []): bool;
+
+    /**
+     * Iterate the existing submitted quotes using a cursor.
      *
      * @param \Closure $scope
      * @return \Illuminate\Support\LazyCollection

@@ -3,25 +3,29 @@
 namespace App\Repositories\Customer;
 
 use App\Contracts\Repositories\Customer\CustomerRepositoryInterface;
-use App\Events\RfqReceived;
-use Illuminate\Foundation\Http\FormRequest;
-use App\Models\Customer\Customer;
 use Illuminate\Database\Eloquent\Builder;
-use App\Http\Resources\{
-    CustomerRepositoryResource,
-    CustomerResponseResource
+use App\Http\Resources\CustomerRepositoryResource;
+use App\Models\{
+    Address,
+    Contact,
+    Customer\Customer,
 };
 use App\Repositories\Concerns\ResolvesImplicitModel;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\{
+    Arr,
+    Str,
+    LazyCollection,
+    Facades\DB,
+};
+use Closure;
 
 class CustomerRepository implements CustomerRepositoryInterface
 {
     use ResolvesImplicitModel;
 
-    /** @var \App\Models\Customer\Customer */
     protected Customer $customer;
 
-    /** @var string */
     protected string $listingCacheKey = 'customers-listing';
 
     public function __construct(Customer $customer)
@@ -32,6 +36,13 @@ class CustomerRepository implements CustomerRepositoryInterface
     public function query(): Builder
     {
         return $this->customer->query()->latest();
+    }
+
+    public function cursor(?Closure $closure): LazyCollection
+    {
+        return $this->customer->on(MYSQL_UNBUFFERED)
+            ->when($closure, $closure)
+            ->cursor();
     }
 
     public function all()
@@ -64,24 +75,18 @@ class CustomerRepository implements CustomerRepositoryInterface
         return $this->customer->query()->inRandomOrder()->firstOrFail();
     }
 
-    public function create($attributes)
+    public function create($attributes): Customer
     {
-        if ($attributes instanceof FormRequest) {
-            $attributes = $attributes->validated();
-        }
+        return DB::transaction(
+            fn () => tap($this->customer->make($attributes), function (Customer $customer) use ($attributes) {
+                $customer->save();
 
-        throw_unless(is_array($attributes), new \InvalidArgumentException(INV_ARG_RA_01));
+                $customer->addresses()->sync(Arr::get($attributes, 'addresses', []));
+                $customer->contacts()->sync(Arr::get($attributes, 'contacts', []));
 
-        $customer = $this->customer->create($attributes);
-        $customer->addresses()->createMany($attributes['addresses']);
-
-        $customer->load('country', 'addresses');
-
-        $customerResponse = CustomerResponseResource::make($customer);
-
-        event(new RfqReceived($customer, request('client_name', 'service')));
-
-        return $customerResponse;
+                $customer->load('country', 'addresses');
+            })
+        );
     }
 
     public function delete($customer): bool

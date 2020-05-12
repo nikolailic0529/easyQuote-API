@@ -2,6 +2,8 @@
 
 namespace App\Contracts\Services;
 
+use Throwable;
+
 interface ReportLoggerInterface
 {
     /**
@@ -10,4 +12,13 @@ interface ReportLoggerInterface
      * @return void
      */
     public function log(): void;
+
+    /**
+     * Format an error with exception.
+     *
+     * @param string $message
+     * @param Throwable $e
+     * @return string
+     */
+    public function formatError(string $message, Throwable $e): string;
 }

@@ -6,18 +6,31 @@ use App\Contracts\Repositories\CountryRepositoryInterface;
 use App\Models\Data\Country;
 use Illuminate\Database\Eloquent\{
     Builder,
+    Collection,
     Model
 };
+use Illuminate\Contracts\Cache\Repository;
+use Illuminate\Support\Str;
 use Closure;
 
 class CountryRepository extends SearchableRepository implements CountryRepositoryInterface
 {
-    /** @var \App\Models\Data\Country */
+    public const CACHE_TAG = 'countries';
+
+    protected const COUNTRIES_CACHE_KEY = 'all-countries';
+
+    protected const COUNTRY_ID_CACHE_KEY = 'country-id-iso';
+
+    protected const COUNTRY_CACHE_KEY = 'country';
+
     protected Country $country;
 
-    public function __construct(Country $country)
+    protected Repository $cache;
+
+    public function __construct(Country $country, Repository $cache)
     {
         $this->country = $country;
+        $this->cache = $cache;
     }
 
     public function query(): Builder
@@ -25,9 +38,17 @@ class CountryRepository extends SearchableRepository implements CountryRepositor
         return $this->country->query();
     }
 
-    public function all()
+    public function all(): Collection
     {
-        return cache()->sear('all-countries', fn () => $this->country->ordered()->get(['id', 'name']));
+        return $this->country->ordered()->get();
+    }
+
+    public function allCached(): Collection
+    {
+        return $this->cache->sear(
+            static::COUNTRIES_CACHE_KEY,
+            fn () => $this->all()
+        );
     }
 
     public function paginate()
@@ -40,6 +61,17 @@ class CountryRepository extends SearchableRepository implements CountryRepositor
         return $this->query()->whereId($id)->firstOrFail();
     }
 
+    public function findCached(string $id): ?Country
+    {
+        if (Str::isUuid($id)) {
+            return $this->allCached()->find($id);
+        }
+
+        $id = Str::upper($id);
+
+        return $this->allCached()->firstWhere('iso_3166_2', $id);
+    }
+
     public function findByCode(?string $code)
     {
         return $this->query()->where('iso_3166_2', $code)->first();
@@ -47,23 +79,15 @@ class CountryRepository extends SearchableRepository implements CountryRepositor
 
     public function findIdByCode($code)
     {
-        $iso = implode(',', (array) $code);
-
-        if (is_array($code)) {
-            return cache()->sear(
-                static::getCountryIdCacheKey($iso),
-                fn () => $this->country->whereIn('iso_3166_2', $code)->pluck('id', 'iso_3166_2')
-            );
+        if (is_iterable($code)) {
+            return $this->allCached()->whereIn('iso_3166_2', $code)->pluck('id', 'iso_3166_2');
         }
 
-        throw_unless(is_string($code), new \InvalidArgumentException(
-            sprintf('%s %s given.', INV_ARG_SA_01, gettype($code))
-        ));
+        if (is_string($code)) {
+            $code = Str::upper($code);
 
-        return cache()->sear(
-            static::getCountryIdCacheKey($iso),
-            fn () => $this->country->where('iso_3166_2', $code)->value('id')
-        );
+            return optional($this->allCached()->firstWhere('iso_3166_2', $code))->getKey();
+        }
     }
 
     public function random(int $limit = 1, ?Closure $scope = null)
@@ -138,8 +162,13 @@ class CountryRepository extends SearchableRepository implements CountryRepositor
         ];
     }
 
-    protected static function getCountryIdCacheKey(string $iso): string
+    protected static function countryIdCacheKey(string $iso): string
     {
-        return 'country-id-iso:' . $iso;
+        return sprintf('%s.%s', static::COUNTRY_ID_CACHE_KEY, $iso);
+    }
+
+    protected static function countryCacheKey(string $id): string
+    {
+        return sprintf('%s.%s', static::COUNTRY_CACHE_KEY, $id);
     }
 }

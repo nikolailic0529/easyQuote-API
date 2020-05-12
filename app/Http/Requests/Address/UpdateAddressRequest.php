@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Address;
 
+use App\Models\Address;
 use App\Traits\Request\PreparesNullValues;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -11,16 +12,6 @@ class UpdateAddressRequest extends FormRequest
     use PreparesNullValues;
 
     /**
-     * Determine if the user is authorized to make this request.
-     *
-     * @return bool
-     */
-    public function authorize()
-    {
-        return true;
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      *
      * @return array
@@ -28,11 +19,7 @@ class UpdateAddressRequest extends FormRequest
     public function rules()
     {
         return [
-            'address_type' => [
-                'required',
-                'string',
-                Rule::in(__('address.types'))
-            ],
+            'address_type' => ['required', 'string', Rule::in(Address::TYPES)],
             'address_1' => 'required|string|min:2',
             'address_2' => 'nullable|string|min:2',
             'city' => 'string|min:2',

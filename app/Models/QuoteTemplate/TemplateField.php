@@ -32,7 +32,6 @@ class TemplateField extends Model implements HasOrderedScope, ActivatableInterfa
         BelongsToUser,
         BelongsToTemplateFieldType,
         Systemable,
-        Activatable,
         Searchable,
         SoftDeletes;
 

@@ -5,9 +5,11 @@ namespace App\Models;
 use App\Traits\{
     Activatable,
     BelongsToCountry,
+    BelongsToLocation,
     Search\Searchable,
     Uuid
 };
+use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
 use Illuminate\Database\Eloquent\{
     Model,
     Builder,
@@ -16,7 +18,9 @@ use Illuminate\Database\Eloquent\{
 
 class Address extends Model
 {
-    use Uuid, SoftDeletes, Activatable, BelongsToCountry, Searchable;
+    use Uuid, SoftDeletes, Activatable, BelongsToCountry, BelongsToLocation, Searchable, EloquentJoin;
+
+    public const TYPES = ['Invoice', 'Client', 'Equipment', 'Software'];
 
     protected $fillable = [
         'address_type',
@@ -28,6 +32,7 @@ class Address extends Model
         'post_code',
         'contact_name',
         'contact_number',
+        'contact_email',
         'country_id'
     ];
 

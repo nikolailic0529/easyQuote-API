@@ -58,8 +58,7 @@ class PermissionBroker implements BrokerContract
         $targetUsers = User::whereKey($users)
             ->with([
                 'permissions' => fn ($q) =>
-                $q->where('name', 'like', $pattern->before('*')->append('%'))
-                    ->where('name', 'like', $pattern->after('*')->prepend('%'))
+                $q->where('name', 'like', $pattern->replace('*', '%'))
                     ->whereKeyNot($permission->id)
             ])
             ->whereDoesntHave('permissions', fn ($q) => $q->whereKey($permission->id))

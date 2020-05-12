@@ -2,17 +2,47 @@
 
 namespace App\Services;
 
-use App\Contracts\Repositories\Quote\QuoteDraftedRepositoryInterface as DraftedQuotes;
-use App\Contracts\Repositories\Quote\QuoteSubmittedRepositoryInterface as SubmittedQuotes;
-use App\Contracts\Services\QuoteServiceInterface as QuoteService;
-use App\Models\Quote\Quote;
-use App\Models\Quote\QuoteTotal;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Arr;
+use App\Contracts\{
+    Services\Stats,
+    Services\QuoteServiceInterface as QuoteService,
+    Repositories\Customer\CustomerRepositoryInterface as Customers,
+    Repositories\Quote\QuoteDraftedRepositoryInterface as DraftedQuotes,
+    Repositories\Quote\QuoteSubmittedRepositoryInterface as SubmittedQuotes,
+    Repositories\AssetRepository as Assets,
+};
+use App\Models\{
+    Address,
+    Asset,
+    AssetTotal,
+    Company,
+    Quote\Quote,
+    Quote\QuoteTotal,
+    Customer\CustomerTotal,
+    Location,
+};
+use App\Models\Quote\QuoteLocationTotal;
+use App\Services\Concerns\WithProgress;
+use Illuminate\Database\{
+    Eloquent\Builder,
+    Eloquent\Collection as DbCollection,
+};
+use Illuminate\Support\{
+    Collection,
+    Facades\DB,
+};
+use Throwable;
 
-class StatsService
+class StatsService implements Stats
 {
-    protected QuoteTotal $total;
+    use WithProgress;
+
+    protected QuoteTotal $quoteTotal;
+
+    protected QuoteLocationTotal $quoteLocationTotal;
+
+    protected CustomerTotal $customerTotal;
+
+    protected AssetTotal $assetTotal;
 
     protected QuoteService $quoteService;
 
@@ -20,52 +50,261 @@ class StatsService
 
     protected SubmittedQuotes $submittedQuotes;
 
+    protected Assets $assets;
+
+    protected Customers $customers;
+
     public function __construct(
-        QuoteTotal $total,
+        QuoteTotal $quoteTotal,
+        QuoteLocationTotal $quoteLocationTotal,
+        CustomerTotal $customerTotal,
+        AssetTotal $assetTotal,
         QuoteService $quoteService,
         DraftedQuotes $draftedQuotes,
-        SubmittedQuotes $submittedQuotes
+        SubmittedQuotes $submittedQuotes,
+        Assets $assets,
+        Customers $customers
     ) {
-        $this->total = $total;
+        $this->quoteTotal = $quoteTotal;
+        $this->quoteLocationTotal = $quoteLocationTotal;
+        $this->customerTotal = $customerTotal;
+        $this->assetTotal = $assetTotal;
+        $this->assets = $assets;
         $this->quoteService = $quoteService;
         $this->draftedQuotes = $draftedQuotes;
         $this->submittedQuotes = $submittedQuotes;
+        $this->customers = $customers;
     }
 
-    public function calculateQuotesTotals()
+    public function calculateQuoteTotals(): void
     {
-        $this->draftedQuotes->cursor(
-            fn (Builder $q) => $q->with('countryMargin', 'usingVersion')
-        )
-            ->each(fn (Quote $quote) => $this->handleQuote($quote));
+        $this->setProgressBar(head(func_get_args()), fn () => $this->draftedQuotes->count() + $this->submittedQuotes->count());
 
-        $this->submittedQuotes->cursor(
-            fn (Builder $q) => $q->with('countryMargin', 'usingVersion')
-        )
-            ->each(fn (Quote $quote) => $this->handleQuote($quote));
+        DB::transaction(function () {
+            /**
+             * Truncate quote totals.
+             */
+            $this->quoteTotal->query()->delete();
+
+            $this->draftedQuotes->cursor(
+                fn (Builder $q) => $q->with('countryMargin', 'usingVersion')
+                    ->has('customer.equipmentLocation')
+            )
+                ->each(fn (Quote $quote) => $this->handleQuote($quote));
+
+            $this->submittedQuotes->cursor(
+                fn (Builder $q) => $q->with('countryMargin', 'usingVersion')
+                    ->has('customer.equipmentLocation')
+            )
+                ->each(fn (Quote $quote) => $this->handleQuote($quote));
+        });
+
+        $this->finishProgress();
     }
 
-    protected function handleQuote(Quote $quote): void
+    public function calculateCustomerTotals(): void
     {
-        $version = $quote->usingVersion;
+        $this->setProgressBar(head(func_get_args()), fn () => $this->quoteTotal->query()->distinct('customer_name')->count());
 
-        $totalPrice = $version->totalPrice / $version->margin_divider * $version->base_exchange_rate;
+        DB::transaction(function () {
+            /**
+             * Truncate customer totals.
+             */
+            $this->customerTotal->query()->delete();
 
-        $attributes = [
-            'quote_id'              => $quote->id,
-            'total_price'           => $totalPrice,
-            'rfq_number'            => $quote->customer->rfq,
-            'quote_created_at'      => $quote->getRawOriginal('created_at'),
-            'quote_submitted_at'    => $quote->getRawOriginal('submitted_at'),
-            'valid_until_date'      => $quote->customer->getRawOriginal('valid_until'),
+            $this->quoteTotal->query()
+                ->toBase()
+                ->selectRaw('SUM(`total_price`) as `total_value`')
+                ->selectRaw('COUNT(*) AS `total_count`')
+                ->addSelect('company_id', 'customer_name')
+                ->groupBy('company_id')
+                ->orderBy('company_id')
+                ->chunk(100, fn (Collection $chunk) => $chunk->each(fn (object $total) => $this->handleCustomerTotal($total)));
+        });
+
+        $this->finishProgress();
+    }
+
+    public function calculateQuoteLocationTotals(): void
+    {
+        $this->setProgressBar(last(func_get_args()), fn () => $this->quoteTotal->query()->distinct('location_id')->count());
+
+        DB::transaction(function () {
+            /**
+             * Truncate quote location totals.
+             */
+            $this->quoteLocationTotal->query()->delete();
+
+            $this->quoteTotal->on(MYSQL_UNBUFFERED)
+                ->with('location')
+                ->groupByRaw('location_id')
+                ->cursor()
+                ->each(fn (QuoteTotal $quoteTotal) => $this->handleQuoteLocation($quoteTotal->location));
+        });
+    }
+
+    public function calculateAssetTotals(): void
+    {
+        $this->setProgressBar(head(func_get_args()), fn () => $this->assets->count());
+
+        DB::transaction(function () {
+            /**
+             * Truncate asset totals.
+             */
+            $this->assetTotal->query()->delete();
+
+            $this->assets->locationsQuery()
+                ->orderBy('locations.id')
+                ->chunk(20, fn (DbCollection $chunk) => $chunk->each(fn (Asset $asset) => $this->handleAssetLocation($asset->location)));
+        });
+
+        $this->finishProgress();
+    }
+
+    protected function handleQuoteLocation(Location $location): QuoteLocationTotal
+    {
+        $attributes = $this->quoteTotal->query()
+            ->toBase()
+            ->selectRaw('SUM(CASE WHEN ISNULL(`quote_submitted_at`) THEN `total_price` ELSE 0 END) AS `total_drafted_value`')
+            ->selectRaw('COUNT(ISNULL(`quote_submitted_at`) OR NULL) AS `total_drafted_count`')
+            ->selectRaw('SUM(CASE WHEN `quote_submitted_at` IS NOT NULL THEN `total_price` ELSE 0 END) AS `total_submitted_value`')
+            ->selectRaw('COUNT(`quote_submitted_at` IS NOT NULL OR NULL) AS `total_submitted_count`')
+            ->whereLocationId($location->getKey())
+            ->first();
+
+        $attributes = (array) $attributes + [
+            'location_id' => $location->id,
+            'country_id' => $location->country_id,
+            'location_coordinates' => $location->coordinates,
+            'location_address' => $location->formatted_address
         ];
 
-        $this->total->query()->updateOrCreate(Arr::only($attributes, 'quote_id'), $attributes);
+        return tap($this->quoteLocationTotal->make($attributes), function (QuoteLocationTotal $quoteLocationTotal) {
+            $quoteLocationTotal->save();
+            $this->advanceProgress();
+        });
+    }
 
-        report_logger(['message' => sprintf(
-            'Quote RFQ %s has been calculated. Total price %s',
-            $quote->customer->rfq,
-            $totalPrice
-        )]);
+    protected function handleAssetLocation(Location $location): AssetTotal
+    {
+        $totalCount = $this->assets->countByLocation($location->id);
+        $totalValue = $this->assets->sumByLocation($location->id);
+
+        $attributes = [
+            'location_id' => $location->id,
+            'country_id' => $location->country_id,
+            'location_coordinates' => $location->coordinates,
+            'location_address' => $location->formatted_address,
+            'total_count' => $totalCount,
+            'total_value' => $totalValue
+        ];
+
+        return tap($this->assetTotal->make($attributes), function (AssetTotal $assetTotal) {
+            $assetTotal->save();
+            $this->advanceProgress($assetTotal->total_count);
+        });
+    }
+
+    protected function handleQuote(Quote $quote): bool
+    {
+        try {
+            $company = Company::whereName($quote->customer->name)->where(['type' => 'External', 'category' => 'End User'])->first();
+
+            if (!$company instanceof Company) {
+                report_logger(['message' => 'External Company does not exist']);
+    
+                return false;
+            }
+
+            $version = $quote->usingVersion;
+
+            $totalPrice = $version->totalPrice / $version->margin_divider * $version->base_exchange_rate;
+
+            $attributes = [
+                'quote_id'              => $quote->id,
+                'customer_id'           => $quote->customer_id,
+                'company_id'            => $company->id,
+                'location_id'           => $quote->customer->equipmentLocation->id,
+                'country_id'            => $quote->customer->equipmentLocation->country_id,
+                'location_address'      => $quote->customer->equipmentLocation->formatted_address,
+                'location_coordinates'  => $quote->customer->equipmentLocation->coordinates,
+                'total_price'           => $totalPrice,
+                'customer_name'         => $quote->customer->name,
+                'rfq_number'            => $quote->customer->rfq,
+                'quote_created_at'      => $quote->getRawOriginal('created_at'),
+                'quote_submitted_at'    => $quote->getRawOriginal('submitted_at'),
+                'valid_until_date'      => $quote->customer->getRawOriginal('valid_until'),
+            ];
+
+            $this->quoteTotal->query()->make($attributes)->save();
+
+            report_logger(['message' => sprintf(QSC_01, $quote->customer->rfq, $totalPrice)]);
+
+            $this->advanceProgress();
+
+            return true;
+        } catch (Throwable $e) {
+            report_logger(['ErrorCode' => 'QSC_ERR_01'], sprintf('%s. Details: %s', QSC_ERR_01, $e->getMessage()));
+
+            return false;
+        }
+    }
+
+    /**
+     * Find external company with exact name.
+     * Retrieve company locations.
+     * Create or Update customer totals for each location.
+     *
+     * @param object $total
+     * @return void
+     */
+    protected function handleCustomerTotal(object $total): void
+    {
+        $company = Company::whereKey($total->company_id)->where(['type' => 'External', 'category' => 'End User'])->with('locations')->first();
+
+        if (!$company instanceof Company) {
+            report_logger(['message' => 'External Company does not exist']);
+
+            return;
+        }
+
+        /** Eager load addresses having location */
+        $company->load(['addresses' => fn ($q) => $q->has('location'), 'addresses.location']);
+
+        if ($company->addresses->isEmpty()) {
+            report_logger(['message' => 'External Company does not have any location']);
+            return;
+        }
+
+        DB::transaction(
+            fn () =>
+            $company->addresses->each(function (Address $address) use ($company, $total) {
+                $customerTotal = $this->customerTotal->query()->updateOrCreate(
+                    [
+                        'customer_name' => $company->name,
+                        'location_id' => $address->location_id,
+                        'country_id' => $address->location->country_id,
+                        'address_id' => $address->id,
+                        'company_id' => $company->id
+                    ],
+                    [
+                        'total_count' => $total->total_count,
+                        'total_value' => $total->total_value,
+                        'location_address' => $address->location->formatted_address,
+                        'location_coordinates' => $address->location->coordinates,
+                    ]
+                );
+
+                if ($customerTotal->wasRecentlyCreated) {
+                    report_logger(['message' => 'A new customer total created with new location']);
+                    return;
+                }
+
+                report_logger(['message' => 'Customer total has been updated'], $customerTotal->toArray());
+            }),
+            5
+        );
+
+        $this->advanceProgress();
     }
 }

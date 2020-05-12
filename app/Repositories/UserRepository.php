@@ -2,12 +2,10 @@
 
 namespace App\Repositories;
 
-use App\Casts\UserGrantedPermission;
 use App\Contracts\Repositories\{
     UserRepositoryInterface
 };
 use App\Http\Requests\{
-    Collaboration\UpdateUserRequest,
     PasswordResetRequest as AppPasswordResetRequest,
     StoreResetPasswordRequest,
     UpdateProfileRequest
@@ -225,6 +223,11 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
                 $user->timestamps = $usesTimestamps;
             }
         });
+    }
+
+    public function updateWhere(array $attributes, array $where = []): int
+    {
+        return $this->user->query()->where($where)->update($attributes);
     }
 
     public function increment(string $id, string $attribute, array $options = []): bool

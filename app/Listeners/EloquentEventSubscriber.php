@@ -32,14 +32,23 @@ class EloquentEventSubscriber
             return;
         }
 
-        $model = $this->resolveModel($event);
+        if (!($model = $this->resolveModel($event)) instanceof Model) {
+            return;
+        }
+
         $table = $model->getTable();
 
         cache()->tags($table.TABLE_COUNT_POSTFIX)->flush();
     }
 
-    private function resolveModel(string $event): Model
+    private function resolveModel(string $event): ?Model
     {
-        return app(Str::after($event, ': '));
+        $class = Str::after($event, ': ');
+
+        if (!class_exists($class)) {
+            return null;
+        }
+        
+        return app($class);
     }
 }

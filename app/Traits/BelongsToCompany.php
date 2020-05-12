@@ -9,6 +9,6 @@ trait BelongsToCompany
 {
     public function company(): BelongsTo
     {
-        return $this->belongsTo(Company::class)->withDefault(Company::make());
+        return $this->belongsTo(Company::class)->withDefault();
     }
 }

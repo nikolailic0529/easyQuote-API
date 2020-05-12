@@ -24,6 +24,11 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+        /**
+         * Logout the users with expired activity.
+         */
+        $schedule->command('eq:logout-inactive-users')->runInBackground()->everyMinute();
+
         /** 
          * Update address locations.
          */

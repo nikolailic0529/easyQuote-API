@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\{
 
 class VendorRepository extends SearchableRepository implements VendorRepositoryInterface
 {
+    protected const VENDORS_CACHE_KEY = 'vendors';
+
     protected Vendor $vendor;
 
     public function __construct(Vendor $vendor)
@@ -25,6 +27,14 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
         return $this->userQuery()->activated()->get(['id', 'name']);
     }
 
+    public function allCached()
+    {
+        return cache()->sear(
+            static::VENDORS_CACHE_KEY.'.all',
+            fn () => $this->vendor->query()->get(['id', 'name'])->each->setAppends([])
+        );
+    }
+
     public function userQuery(): Builder
     {
         return $this->vendor->query()->with('image', 'countries');
@@ -33,6 +43,14 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
     public function find(string $id): Vendor
     {
         return $this->userQuery()->whereId($id)->firstOrFail()->appendLogo();
+    }
+
+    public function findCached(string $id): ?Vendor
+    {
+        return cache()->sear(
+            static::VENDORS_CACHE_KEY . '.' . $id,
+            fn () => $this->vendor->whereKey($id)->first()
+        );
     }
 
     public function findByCode($code)

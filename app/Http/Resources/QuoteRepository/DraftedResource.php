@@ -31,6 +31,7 @@ class DraftedResource extends JsonResource
                 'id'                    => $this->customer_id,
                 'name'                  => $this->cached_relations->customer->name,
                 'rfq'                   => $this->cached_relations->customer->rfq,
+                'source'                => $this->cached_relations->customer->source,
                 'valid_until'           => $this->cached_relations->customer->valid_until,
                 'support_start'         => $this->cached_relations->customer->support_start,
                 'support_end'           => $this->cached_relations->customer->support_end

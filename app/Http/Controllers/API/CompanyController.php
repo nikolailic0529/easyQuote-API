@@ -11,6 +11,10 @@ use App\Http\Requests\Company\{
     StoreCompanyRequest,
     UpdateCompanyRequest
 };
+use App\Http\Resources\{
+    Company\Company as CompanyResource,
+    Company\CompanyCollection,
+};
 use App\Models\Company;
 
 class CompanyController extends Controller
@@ -31,11 +35,11 @@ class CompanyController extends Controller
      */
     public function index()
     {
-        return response()->json(
-            request()->filled('search')
-                ? $this->company->search(request('search'))
-                : $this->company->all()
-        );
+        $resource = request()->filled('search')
+            ? $this->company->search(request('search'))
+            : $this->company->all();
+
+        return CompanyCollection::make($resource);
     }
 
     /**
@@ -53,6 +57,19 @@ class CompanyController extends Controller
     }
 
     /**
+     * Search external companies by partial name.
+     *
+     * @param string $query
+     * @return \Illuminate\Http\Response
+     */
+    public function searchExternal(string $query)
+    {
+        return response()->json(
+            $this->company->searchExternal($query)
+        );
+    }
+
+    /**
      * Store a newly created Company in storage.
      *
      * @param  StoreCompanyRequest  $request
@@ -60,8 +77,11 @@ class CompanyController extends Controller
      */
     public function store(StoreCompanyRequest $request)
     {
+        $resource = $this->company->create($request->validated())
+            ->loadMissing(Company::REGULAR_RELATIONSHIPS);
+
         return response()->json(
-            $this->company->create($request)
+            CompanyResource::make($resource)
         );
     }
 
@@ -73,8 +93,10 @@ class CompanyController extends Controller
      */
     public function show(Company $company)
     {
+        $company->loadMissing(Company::REGULAR_RELATIONSHIPS);
+
         return response()->json(
-            $this->company->find($company->id)
+            CompanyResource::make($company)
         );
     }
 
@@ -87,8 +109,11 @@ class CompanyController extends Controller
      */
     public function update(UpdateCompanyRequest $request, Company $company)
     {
+        $resource = $this->company->update($company->id, $request->validated())
+            ->loadMissing(Company::REGULAR_RELATIONSHIPS);
+
         return response()->json(
-            $this->company->update($request, $company->id)
+            CompanyResource::make($resource)
         );
     }
 

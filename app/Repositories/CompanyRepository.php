@@ -3,20 +3,22 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\CompanyRepositoryInterface;
-use App\Http\Requests\Company\UpdateCompanyRequest;
-use App\Http\Resources\CompanyRepositoryCollection;
 use App\Models\Company;
 use Illuminate\Database\Eloquent\{
     Model,
     Builder,
     Collection
 };
-use Illuminate\Support\Collection as SupportCollection;
+use Illuminate\Support\{
+    Str,
+    Arr,
+    Collection as SupportCollection,
+    Facades\DB,
+};
 use Closure;
 
 class CompanyRepository extends SearchableRepository implements CompanyRepositoryInterface
 {
-    /** @var \App\Models\Company */
     protected Company $company;
 
     public function __construct(Company $company)
@@ -24,22 +26,13 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
         $this->company = $company;
     }
 
-    public function data($additionalData = []): SupportCollection
+    public function data($additional = []): SupportCollection
     {
-        $types = __('company.types');
-        $categories = __('company.categories');
-        $data = collect(compact('types', 'categories'));
-
-        if (!empty($additionalData)) {
-            collect($additionalData)->each(fn ($array, $key) => $data->put($key, $array));
-        }
-
-        return $data;
-    }
-
-    public function all()
-    {
-        return $this->toCollection(parent::all());
+        return collect([
+            'types' => Company::TYPES,
+            'categories' => Company::CATEGORIES
+        ])
+            ->union($additional);
     }
 
     public function allWithVendorsAndCountries(): Collection
@@ -55,21 +48,45 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
         return $companies;
     }
 
-    public function search(string $query = '')
+    public function allInternalWithVendorsAndCountries(): Collection
     {
-        return $this->toCollection(parent::search($query));
+        $companies = $this->company
+            ->query()
+            ->whereType('Internal')
+            ->with([
+                'vendors' => fn ($query) => $query->activated(),
+                'vendors.countries.defaultCurrency',
+            ])
+            ->activated()->ordered()->get();
+
+        $companies->map->sortVendorsCountries();
+
+        return $companies;
+    }
+
+    public function searchExternal(?string $query, int $limit = 15)
+    {
+        if (blank($query)) {
+            return Collection::make();
+        }
+
+        return $this->company->query()->where('name', 'like', Str::of($query)->append('%'))->get(['id', 'name']);
     }
 
     public function userQuery(): Builder
     {
-        return $this->company->query()->with('image');
+        return $this->company->query()
+            ->unless(auth()->user()->hasRole(R_SUPER), fn (Builder $q) => $q->whereUserId(auth()->id()));
+    }
+
+    public function count(array $where = []): int
+    {
+        return $this->company->query()->where($where)->count();
     }
 
     public function find(string $id): Company
     {
-        return $this->userQuery()->whereId($id)
-            ->with('vendors', 'addresses.country', 'contacts', 'vendors.countries', 'addresses.country', 'contacts')
-            ->firstOrFail()->withAppends();
+        return $this->company->whereKey($id)->firstOrFail();
     }
 
     public function findByVat(string $vat)
@@ -90,37 +107,36 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
         return $query->{$method}();
     }
 
-    public function create($request): Company
+    public function create(array $attributes): Company
     {
-        if ($request instanceof \Illuminate\Http\Request) {
-            $request = $request->validated();
-        }
+        return DB::transaction(
+            fn () => tap($this->company->make($attributes), function (Company $company) use ($attributes) {
+                $company->save();
 
-        throw_unless(is_array($request), new \InvalidArgumentException(INV_ARG_RA_01));
-
-        return tap($this->company->create($request), function ($company) use ($request) {
-            $company->createLogo(data_get($request, 'logo'));
-            $company->syncVendors(data_get($request, 'vendors'));
-            $company->load('vendors.countries')->appendLogo()->sortVendorsCountries();
-        });
+                $company->createLogo(Arr::get($attributes, 'logo'));
+                $company->syncVendors(Arr::get($attributes, 'vendors'));
+            })
+        );
     }
 
-    public function update(UpdateCompanyRequest $request, string $id): Company
+    public function update(string $id, array $attributes): Company
     {
-        $company = $this->find($id);
+        return DB::transaction(
+            fn () =>
+            tap($this->find($id), function (Company $company) use ($attributes) {
+                $company->update($attributes);
 
-        $company->update($request->validated());
-        $company->createLogo($request->logo);
+                $company->createLogo(Arr::get($attributes, 'logo'));
 
-        $company->syncVendors($request->vendors);
-        $company->syncAddresses($request->addresses_attach);
-        $company->detachAddresses($request->addresses_detach);
-        $company->syncContacts($request->contacts_attach);
-        $company->detachContacts($request->contacts_detach);
+                $company->syncVendors(Arr::get($attributes, 'vendors'));
 
-        $company->load('vendors.countries', 'addresses', 'contacts')->appendLogo()->sortVendorsCountries();
+                $company->syncAddresses(Arr::get($attributes, 'addresses_attach'));
+                $company->detachAddresses(Arr::get($attributes, 'addresses_detach'));
 
-        return $company;
+                $company->syncContacts(Arr::get($attributes, 'contacts_attach'));
+                $company->detachContacts(Arr::get($attributes, 'contacts_detach'));
+            })
+        );
     }
 
     public function delete(string $id): bool
@@ -140,12 +156,7 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
 
     public function country(string $id): Collection
     {
-        return $this->userQuery()->country($id)->activated()->get();
-    }
-
-    protected function toCollection($resource)
-    {
-        return new CompanyRepositoryCollection($resource);
+        return $this->company->query()->with('image')->country($id)->activated()->get();
     }
 
     protected function filterQueryThrough(): array
@@ -166,8 +177,8 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
     protected function filterableQuery()
     {
         return [
-            $this->userQuery()->activated(),
-            $this->userQuery()->deactivated()
+            $this->userQuery()->with('image')->activated(),
+            $this->userQuery()->with('image')->deactivated()
         ];
     }
 
@@ -185,6 +196,6 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
 
     protected function searchableScope($query)
     {
-        return $query->with('image', 'vendors');
+        return $query->with('image');
     }
 }
