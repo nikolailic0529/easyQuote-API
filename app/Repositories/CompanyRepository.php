@@ -64,13 +64,18 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
         return $companies;
     }
 
+    public function allExternal(): Collection
+    {
+        return $this->userQuery()->whereType('External')->get(['id', 'name']);
+    }
+
     public function searchExternal(?string $query, int $limit = 15)
     {
         if (blank($query)) {
             return Collection::make();
         }
 
-        return $this->company->query()->where('name', 'like', Str::of($query)->append('%'))->get(['id', 'name']);
+        return $this->company->query()->whereType('External')->where('name', 'like', Str::of($query)->append('%'))->get(['id', 'name']);
     }
 
     public function userQuery(): Builder
@@ -115,6 +120,12 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
 
                 $company->createLogo(Arr::get($attributes, 'logo'));
                 $company->syncVendors(Arr::get($attributes, 'vendors'));
+
+                $company->syncAddresses(Arr::get($attributes, 'addresses_attach'));
+                $company->detachAddresses(Arr::get($attributes, 'addresses_detach'));
+
+                $company->syncContacts(Arr::get($attributes, 'contacts_attach'));
+                $company->detachContacts(Arr::get($attributes, 'contacts_detach'));
             })
         );
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\QuoteRepository;
 
+use Carbon\Carbon;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class DraftedResource extends JsonResource
@@ -32,9 +33,10 @@ class DraftedResource extends JsonResource
                 'name'                  => $this->cached_relations->customer->name,
                 'rfq'                   => $this->cached_relations->customer->rfq,
                 'source'                => $this->cached_relations->customer->source,
-                'valid_until'           => $this->cached_relations->customer->valid_until,
-                'support_start'         => $this->cached_relations->customer->support_start,
-                'support_end'           => $this->cached_relations->customer->support_end
+
+                'valid_until'           => optional($this->cached_relations->customer->valid_until_date, fn ($date) => Carbon::parse($date))->format(config('date.format')),
+                'support_start'         => optional($this->cached_relations->customer->support_start_date, fn ($date) => Carbon::parse($date))->format(config('date.format')),
+                'support_end'           => optional($this->cached_relations->customer->support_end_date, fn ($date) => Carbon::parse($date))->format(config('date.format')),
             ],
             'permissions'               => [
                 'view'      => $user->can('view', $this->resource),

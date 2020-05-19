@@ -61,4 +61,20 @@ return [
         'secret' => env('RECAPTCHA_V2_SECRET'),
     ],
 
+    'vs' => [
+        'url' => env('VS_API_URL'),
+        
+        'token_route' => 'api/oauth/token',
+
+        'service_routes' => [
+            'DEL' => 'dell-data/{serial}',
+            'HPE' => 'hpe-data/{serial}',
+            'LEN' => 'lenovo-data/serial/{serial}/type/{sku}',
+            'IBM' => 'ibm-data/serial/{serial}/type/{sku}',
+        ],
+
+        'client_id' => env('VS_API_CLIENT_ID'),
+        'client_secret' => env('VS_API_CLIENT_SECRET'),
+    ]
+
 ];

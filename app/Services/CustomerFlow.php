@@ -40,6 +40,7 @@ class CustomerFlow implements Contract
     {
         $query = $this->customer->on(MYSQL_UNBUFFERED)
             ->notMigrated()
+            ->whereSource('S4')
             /** Select only the customers which are not having respective company. */
             ->where(fn (DbBuilder $query) => $query->selectRaw('COUNT(*)')->from('companies')
                 ->where(static::CUSTOMER_FLOW_ATTRIBUTES)->whereColumn('customers.name', 'companies.name'), false);
@@ -70,14 +71,18 @@ class CustomerFlow implements Contract
     protected function findOrCreateCustomerCompany(Customer $customer): Company
     {
         return DB::transaction(function () use ($customer) {
-            $company = $this->company->query()->firstOrNew(['name' => $customer->name] + static::CUSTOMER_FLOW_ATTRIBUTES);
+            $company = $this->company->query()->firstOrNew([
+                'name' => $customer->name,
+                /** easyQuote customers need user_id to save a company for that user. */
+                'user_id' => $customer->user_id
+            ] + static::CUSTOMER_FLOW_ATTRIBUTES);
 
             /** Fill company attributes and save if company does not exist yet. */
             $this->saveExternalCompanyIfNeeds($company, $customer);
 
             /** @var \Illuminate\Database\Eloquent\Collection */
             $addresses = static::rejectDuplicatedAddresses($company->addresses, $customer->addresses);
-            
+
             /** @var \Illuminate\Database\Eloquent\Collection */
             $contacts = $customer->contacts;
 
@@ -98,7 +103,7 @@ class CustomerFlow implements Contract
             fn (Address $address) => $companyAddresses
                 ->contains(
                     fn (Address $companyAddress) =>
-                        $companyAddress->address_type === $address->address_type
+                    $companyAddress->address_type === $address->address_type
                         && $companyAddress->address_1 === $address->address_1
                         && $companyAddress->address_2 === $address->address_2
                         && $companyAddress->contact_name === $address->contact_name

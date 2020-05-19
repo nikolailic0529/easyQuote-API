@@ -8,7 +8,7 @@ use Carbon\CarbonPeriod;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class Summary extends FormRequest
+class Summary extends Request
 {
     protected Countries $countries;
 

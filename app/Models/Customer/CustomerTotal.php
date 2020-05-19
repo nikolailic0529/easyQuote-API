@@ -17,7 +17,7 @@ class CustomerTotal extends Model
     use Uuid, BelongsToCompany, BelongsToAddress, BelongsToLocation, BelongsToCountry, SpatialTrait;
 
     protected $fillable = [
-        'address_id', 'location_id', 'country_id', 'company_id', 'location_address', 'customer_name', 'total_value', 'total_count', 'location_coordinates'
+        'address_id', 'location_id', 'country_id', 'company_id', 'user_id', 'location_address', 'customer_name', 'total_value', 'total_count', 'location_coordinates'
     ];
 
     protected $spatialFields = [

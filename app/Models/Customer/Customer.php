@@ -15,6 +15,8 @@ use App\Traits\{
     Migratable,
     Uuid
 };
+use App\Traits\Auth\Multitenantable;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\{
     Model,
     SoftDeletes,
@@ -31,6 +33,7 @@ class Customer extends Model
     public const S4_SOURCE = 'S4', EQ_SOURCE = 'easyQuote';
 
     use Uuid,
+        Multitenantable,
         BelongsToAddresses,
         HasAddressTypes,
         BelongsToContacts,
@@ -233,12 +236,18 @@ class Customer extends Model
     public function toCacheableArray()
     {
         return [
-            'name'          => $this->name,
-            'rfq'           => $this->rfq,
-            'source'        => $this->source,
-            'valid_until'   => $this->valid_until_date,
+            'name'              => $this->name,
+            'rfq'               => $this->rfq,
+            'source'            => $this->source,
+            
+            'valid_until'       => $this->valid_until_date,
+            'valid_until_date'  => optional($this->getRawOriginal('valid_until'), fn ($date) => Carbon::parse($date))->toDateString(),
+
             'support_start' => $this->support_start_date,
-            'support_end'   => $this->support_end_date
+            'support_start_date'  => optional($this->getRawOriginal('support_start'), fn ($date) => Carbon::parse($date))->toDateString(),
+
+            'support_end'   => $this->support_end_date,
+            'support_end_date'  => optional($this->getRawOriginal('support_end'), fn ($date) => Carbon::parse($date))->toDateString(),
         ];
     }
 }

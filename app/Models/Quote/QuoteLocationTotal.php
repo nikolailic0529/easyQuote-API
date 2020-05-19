@@ -15,7 +15,7 @@ class QuoteLocationTotal extends Model
     use Uuid, BelongsToLocation, BelongsToCountry, SpatialTrait;
 
     protected $fillable = [
-        'location_id', 'country_id', 'location_address', 'location_coordinates', 'total_drafted_count', 'total_drafted_value', 'total_submitted_count', 'total_submitted_value'
+        'location_id', 'country_id', 'user_id', 'location_address', 'location_coordinates', 'total_drafted_count', 'total_drafted_value', 'total_submitted_count', 'total_submitted_value'
     ];
 
     protected $casts = [

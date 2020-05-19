@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\Quotes;
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\{
     Customer\CustomerRepositoryInterface as Customers,
+    Quote\QuoteRepositoryInterface as QuoteState
 };
 use App\Http\Requests\Customer\CreateEqCustomer;
 use App\Http\Resources\Customer\EqCustomer as EqCustomerResource;
@@ -49,14 +50,16 @@ class CustomerController extends Controller
      * @param  CreateEqCustomer  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(CreateEqCustomer $request)
+    public function store(CreateEqCustomer $request, QuoteState $quoteState)
     {
-        $resource = tap(
+        $customer = tap(
             $this->customers->create($request->validated()),
             fn (Customer $customer) => CustomerFlow::migrateCustomer($customer)
         );
 
-        return response()->json(EqCustomerResource::make($resource), Response::HTTP_CREATED);
+        $quote = $quoteState->create(['customer_id' => $customer->id, 'company_id' => $request->int_company_id]);
+
+        return response()->json($quote, Response::HTTP_CREATED);
     }
 
     /**

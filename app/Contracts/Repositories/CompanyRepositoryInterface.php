@@ -61,6 +61,13 @@ interface CompanyRepositoryInterface
     public function searchExternal(?string $query, int $limit = 15);
 
     /**
+     * Retrieve all External type companies.
+     *
+     * @return IlluminateCollection
+     */
+    public function allExternal(): IlluminateCollection;
+
+    /**
      * Companies query.
      *
      * @return Builder

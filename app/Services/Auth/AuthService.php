@@ -105,8 +105,8 @@ class AuthService implements AuthServiceInterface
         app(Pipeline::class)
             ->send(app('auth.case')->initiate($user, $this->currentAttempt))
             ->through([
+                \App\Services\Auth\AuthenticatedCases\LoggedInDifferentAccount::class,
                 \App\Services\Auth\AuthenticatedCases\AlreadyLoggedIn::class,
-                \App\Services\Auth\AuthenticatedCases\LoggedInDifferentAccount::class
             ])
             ->thenReturn();
     }

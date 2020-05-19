@@ -56,6 +56,7 @@ Route::group(['namespace' => 'API'], function () {
             Route::post('attachments', 'AttachmentController');
 
             Route::resource('assets', 'AssetController')->only(ROUTE_CRUD);
+            Route::post('lookup/service', 'ServiceController');
         });
 
         Route::group(['middleware' => THROTTLE_RATE_01, 'namespace' => 'Data'], function () {
@@ -141,11 +142,12 @@ Route::group(['namespace' => 'API'], function () {
         });
 
         Route::group(['middleware' => THROTTLE_RATE_01], function () {
+            Route::get('companies/external', 'CompanyController@getExternal');
+            
             Route::resource('companies', 'CompanyController', ['only' => ROUTE_CRUD]);
+
             Route::put('companies/activate/{company}', 'CompanyController@activate');
             Route::put('companies/deactivate/{company}', 'CompanyController@deactivate');
-
-            Route::get('companies/external/{query}', 'CompanyController@searchExternal');
         });
 
         Route::group([], function () {

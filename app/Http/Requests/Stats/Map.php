@@ -5,12 +5,11 @@ namespace App\Http\Requests\Stats;
 use App\Contracts\Services\LocationService;
 use Illuminate\Foundation\Http\FormRequest;
 use Grimzy\LaravelMysqlSpatial\{
-    Types\LineString,
     Types\Point,
     Types\Polygon,
 };
 
-class Map extends FormRequest
+class Map extends Request
 {
     protected LocationService $service;
 

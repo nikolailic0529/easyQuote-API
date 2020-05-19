@@ -120,7 +120,6 @@ class ParserService implements ParserServiceInterface
         if ($quoteFile->isPrice() && $quoteFile->isNotAutomapped()) {
             $this->mapColumnsToFields($quote, $quoteFile);
             dispatch(new RetrievePriceAttributes($quote->usingVersion));
-            dispatch(new MigrateQuoteAssets($quote));
         }
 
         return $quoteFile->processing_state;

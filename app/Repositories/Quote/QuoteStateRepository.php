@@ -25,6 +25,7 @@ use App\Http\Requests\{
 };
 use App\Http\Requests\Quote\TryDiscountsRequest;
 use App\Http\Resources\QuoteReviewResource;
+use App\Jobs\MigrateQuoteAssets;
 use App\Jobs\RetrievePriceAttributes;
 use App\Models\Quote\QuoteVersion;
 use App\Repositories\Concerns\{
@@ -159,7 +160,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
 
     public function create(array $attributes): Quote
     {
-        return $this->quote->create($attributes);
+        return tap($this->quote->make($attributes))->saveOrFail();
     }
 
     public function make(array $array)
@@ -748,6 +749,7 @@ class QuoteStateRepository implements QuoteRepositoryInterface
         }
 
         dispatch(new RetrievePriceAttributes($quote));
+        dispatch(new MigrateQuoteAssets($quote));
 
         /**
          * Clear Cache Mapping Review Data when Mapping was changed.

@@ -92,20 +92,24 @@ class StatsAggregator
         $this->cache = $cache;
     }
 
-    public function quotesSummary(?CarbonPeriod $period = null, ?string $countryId = null)
+    public function quotesSummary(?CarbonPeriod $period = null, ?string $countryId = null, ?string $userId = null)
     {
         $where = [];
 
         if ($period) {
             array_push(
                 $where,
-                ['quote_created_at', '>=', $period->getStartDate()],
-                ['quote_created_at', '<=', $period->getEndDate()]
+                ['quote_created_at', '>=', $period->getStartDate()->endOfDay()],
+                ['quote_created_at', '<=', $period->getEndDate()->endOfDay()]
             );
         }
 
         if ($countryId) {
             array_push($where, ['country_id', '=', $countryId]);
+        }
+
+        if ($userId) {
+            array_push($where, ['user_id', '=', $userId]);
         }
 
         $bindings = array_merge($where, [['notification_time', '=', setting('notification_time')->d]]);
@@ -125,13 +129,13 @@ class StatsAggregator
             ->where($where)
             ->first();
 
-        $expiringQuotesSummary = $this->expiringQuotesSummary($countryId);
+        $expiringQuotesSummary = $this->expiringQuotesSummary($countryId, $userId);
 
-        $customersSummary = $this->customersSummary($countryId);
+        $customersSummary = $this->customersSummary($countryId, $userId);
 
-        $locationsSummary = $this->locationsSummary($countryId);
+        $locationsSummary = $this->locationsSummary($countryId, $userId);
 
-        $assetsSummary = $this->assetsSummary($countryId);
+        $assetsSummary = $this->assetsSummary($countryId, $userId);
 
         $totals = (array) $quoteTotals + (array) $expiringQuotesSummary + (array) $customersSummary + (array) $locationsSummary + (array) $assetsSummary;
 
@@ -143,9 +147,16 @@ class StatsAggregator
         );
     }
 
-    public function mapQuoteTotals(Point $center, Polygon $polygon)
+    public function mapQuoteTotals(Point $center, Polygon $polygon, ?string $userId = null)
     {
+        $where = [];
+
+        if ($userId) {
+            array_push($where, ['user_id', '=', $userId]);
+        }
+
         $bindings = ['polygon' => (string) $polygon, 'c_lat' => $center->getLat(), 'c_lng' => $center->getLng()];
+        $bindings = array_merge($where, $bindings);
 
         $cacheKey = static::quotesLocationCacheKey($bindings);
 
@@ -159,6 +170,8 @@ class StatsAggregator
             ->selectRaw('`total_submitted_value` * ? AS `total_submitted_value`', [$this->baseRate()])
             ->intersects('location_coordinates', $polygon)
             ->orderByDistance('location_coordinates', $center)
+            ->where($where)
+            ->groupBy('user_id')
             ->limit(static::MAP_BOUNDS_LIMIT)
             ->get()
             ->append(['total_value', 'total_count']);
@@ -169,20 +182,24 @@ class StatsAggregator
         );
     }
 
-    public function customersSummaryList(?CarbonPeriod $period = null, ?string $countryId = null)
+    public function customersSummaryList(?CarbonPeriod $period = null, ?string $countryId = null, ?string $userId = null)
     {
         $where = [];
 
         if ($period) {
             array_push(
                 $where,
-                ['quote_created_at', '>=', $period->getStartDate()],
-                ['quote_created_at', '<=', $period->getEndDate()]
+                ['quote_created_at', '>=', $period->getStartDate()->endOfDay()],
+                ['quote_created_at', '<=', $period->getEndDate()->endOfDay()]
             );
         }
 
         if ($countryId) {
             array_push($where, ['country_id', '=', $countryId]);
+        }
+
+        if ($userId) {
+            array_push($where, ['user_id', '=', $userId]);
         }
 
         $bindings = $where;
@@ -213,9 +230,16 @@ class StatsAggregator
         );
     }
 
-    public function mapCustomerTotals(Polygon $polygon)
+    public function mapCustomerTotals(Polygon $polygon, ?string $userId = null)
     {
+        $where = [];
+
+        if ($userId) {
+            array_push($where, ['user_id', '=', $userId]);
+        }
+
         $bindings = ['polygon' => (string) $polygon];
+        $bindings = array_merge($where, $bindings);
 
         if ($summary = $this->cache->get(static::customersLocationCacheKey($bindings))) {
             return $summary;
@@ -226,6 +250,8 @@ class StatsAggregator
             ->selectRaw('`total_value` * ? AS `total_value`', [$this->baseRate()])
             ->intersects('location_coordinates', $polygon)
             ->orderByDesc('total_count')
+            ->groupBy('location_id')
+            ->where($where)
             ->limit(static::MAP_BOUNDS_LIMIT)
             ->get();
 
@@ -239,9 +265,16 @@ class StatsAggregator
         );
     }
 
-    public function mapAssetTotals(Point $center, Polygon $polygon)
+    public function mapAssetTotals(Point $center, Polygon $polygon, ?string $userId)
     {
+        $where = [];
+
+        if ($userId) {
+            array_push($where, ['user_id', '=', $userId]);
+        }
+
         $bindings = ['polygon' => (string) $polygon, 'c_lat' => $center->getLat(), 'c_lng' => $center->getLng()];
+        $bindings = array_merge($where, $bindings);
 
         if ($summary = $this->cache->get(static::assetsLocationCacheKey($bindings))) {
             return $summary;
@@ -252,6 +285,7 @@ class StatsAggregator
             ->selectRaw('`total_value` * ? AS `total_value`', [$this->baseRate()])
             ->intersects('location_coordinates', $polygon)
             ->orderByDistance('location_coordinates', $center)
+            ->where($where)
             ->limit(static::MAP_BOUNDS_LIMIT)
             ->withCasts([
                 'total_value' => 'float'
@@ -268,12 +302,16 @@ class StatsAggregator
         );
     }
 
-    public function expiringQuotesSummary(?string $countryId = null): object
+    public function expiringQuotesSummary(?string $countryId = null, ?string $userId = null): object
     {
         $where = [];
 
         if ($countryId) {
             array_push($where, ['country_id', '=', $countryId]);
+        }
+
+        if ($userId) {
+            array_push($where, ['user_id', '=', $userId]);
         }
 
         $bindings = $where;
@@ -288,7 +326,6 @@ class StatsAggregator
             ->toBase()
             ->selectRaw('COUNT(*) AS `expiring_quotes_count`')
             ->selectRaw('SUM(`total_price`) AS `expiring_quotes_value`')
-            ->whereNull('quote_submitted_at')
             ->whereRaw('`valid_until_date` > NOW()')
             ->whereRaw('DATEDIFF(`valid_until_date`, NOW()) <= ?', [setting('notification_time')->d])
             ->where($where)
@@ -297,12 +334,16 @@ class StatsAggregator
         return tap($result, fn () => $this->cache->put($cacheKey, $result, static::SUMMARY_CACHE_TTL));
     }
 
-    public function locationsSummary(?string $countryId = null): object
+    public function locationsSummary(?string $countryId = null, ?string $userId = null): object
     {
         $where = [];
 
         if ($countryId) {
             array_push($where, ['country_id', '=', $countryId]);
+        }
+
+        if ($userId) {
+            array_push($where, ['user_id', '=', $userId]);
         }
 
         $bindings = $where;
@@ -313,21 +354,26 @@ class StatsAggregator
         }
 
         $result = $this->customerTotal
-                ->query()
-                ->toBase()
-                ->selectRaw('COUNT(*) AS `locations_total`')
-                ->distinct('address_id')
-                ->first();
+            ->query()
+            ->toBase()
+            ->selectRaw('COUNT(*) AS `locations_total`')
+            ->distinct('address_id')
+            ->where($where)
+            ->first();
 
         return tap($result, fn () => $this->cache->put($cacheKey, $result, static::SUMMARY_CACHE_TTL));
     }
 
-    public function customersSummary(?string $countryId = null): object
+    public function customersSummary(?string $countryId = null, ?string $userId = null): object
     {
         $where = [];
 
         if ($countryId) {
-            array_push($where, ['country_id', '=', $countryId]);
+            array_push($where, ['default_country_id', '=', $countryId]);
+        }
+
+        if ($userId) {
+            array_push($where, ['user_id', '=', $userId]);
         }
 
         $bindings = $where;
@@ -337,17 +383,26 @@ class StatsAggregator
             return $this->cache->get($cacheKey);
         }
 
-        $result = (object) ['customers_count' => $this->companies->count(['type' => 'External', 'category' => 'End User'])];
+        $where = array_merge(
+            [['type', '=', 'External'], ['category', '=', 'End User']],
+            $where
+        );
+
+        $result = (object) ['customers_count' => $this->companies->count($where)];
 
         return tap($result, fn () => $this->cache->put($cacheKey, $result, static::SUMMARY_CACHE_TTL));
     }
 
-    public function assetsSummary(?string $countryId = null): object
+    public function assetsSummary(?string $countryId = null, ?string $userId = null): object
     {
         $where = [];
 
         if ($countryId) {
             array_push($where, ['country_id', '=', $countryId]);
+        }
+
+        if ($userId) {
+            array_push($where, ['user_id', '=', $userId]);
         }
 
         $bindings = $where;
@@ -363,12 +418,14 @@ class StatsAggregator
             ->selectRaw('SUM(CASE WHEN `active_warranty_end_date` <= NOW() THEN `unit_price` END) AS `assets_renewals_value`')
             ->selectRaw('COUNT(*) AS `assets_count`')
             ->selectRaw('SUM(`unit_price`) AS `assets_value`')
+            ->where($where)
             ->first();
 
         $result->assets_locations_count = $this->assetTotal->query()
             ->toBase()
             ->whereNotNull('location_id')
             ->distinct('location_id')
+            ->where($where)
             ->count();
 
         return tap($result, fn () => $this->cache->put($cacheKey, $result, static::SUMMARY_CACHE_TTL));
@@ -380,13 +437,18 @@ class StatsAggregator
      * @param string $locationId
      * @return mixed
      */
-    public function quotesByLocation(string $locationId)
+    public function quotesByLocation(string $locationId, ?string $userId = null)
     {
+        if ($userId) {
+            array_push($where, ['user_id', '=', $userId]);
+        }
+
         return $this->quoteTotal
             ->query()
             ->whereLocationId($locationId)
             ->select('quote_id', 'customer_name', 'rfq_number', 'quote_created_at', 'quote_submitted_at', 'valid_until_date')
             ->selectRaw('`total_price` * ? as total_price', [$this->baseRate()])
+            ->where($where)
             ->withCasts([
                 'quote_created_at' => 'date:' . config('date.format_time'),
                 'quote_submitted_at' => 'date:' . config('date.format_time'),

@@ -229,14 +229,16 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
     {
         return [
             'company_name'              => optional($this->company)->name,
+            
             'customer_name'             => $this->customer->name,
             'customer_rfq'              => $this->customer->rfq,
             'customer_valid_until'      => $this->customer->quotation_valid_until,
             'customer_support_start'    => $this->customer->support_start_date,
             'customer_support_end'      => $this->customer->support_end_date,
+            'customer_source'           => $this->customer->source,
 
             'user_fullname'             => optional($this->user)->fullname,
-            'created_at'                => $this->created_at
+            'created_at'                => optional($this->created_at)->format(config('date.format_time'))
         ];
     }
 

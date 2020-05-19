@@ -57,15 +57,14 @@ class CompanyController extends Controller
     }
 
     /**
-     * Search external companies by partial name.
+     * Display a listing of the existing external companies.
      *
-     * @param string $query
      * @return \Illuminate\Http\Response
      */
-    public function searchExternal(string $query)
+    public function getExternal()
     {
         return response()->json(
-            $this->company->searchExternal($query)
+            $this->company->allExternal()
         );
     }
 

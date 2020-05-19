@@ -16,6 +16,6 @@ class LoggedInDifferentAccount
             return $next($case);
         }
 
-        $case->abort(AU_00, 'AU_00');
+        $case->abort(AU_01, 'AU_01');
     }
 }

@@ -10,6 +10,7 @@ use App\Contracts\{
     Repositories\Quote\QuoteSubmittedRepositoryInterface as SubmittedQuotes,
     Repositories\AssetRepository as Assets,
 };
+use App\DTO\AssetAggregate;
 use App\Models\{
     Address,
     Asset,
@@ -26,6 +27,7 @@ use Illuminate\Database\{
     Eloquent\Builder,
     Eloquent\Collection as DbCollection,
 };
+use Illuminate\Database\Query\Builder as DbBuilder;
 use Illuminate\Support\{
     Collection,
     Facades\DB,
@@ -116,8 +118,8 @@ class StatsService implements Stats
                 ->toBase()
                 ->selectRaw('SUM(`total_price`) as `total_value`')
                 ->selectRaw('COUNT(*) AS `total_count`')
-                ->addSelect('company_id', 'customer_name')
-                ->groupBy('company_id')
+                ->addSelect('company_id', 'customer_name', 'user_id')
+                ->groupBy('company_id', 'user_id')
                 ->orderBy('company_id')
                 ->chunk(100, fn (Collection $chunk) => $chunk->each(fn (object $total) => $this->handleCustomerTotal($total)));
         });
@@ -161,48 +163,67 @@ class StatsService implements Stats
         $this->finishProgress();
     }
 
-    protected function handleQuoteLocation(Location $location): QuoteLocationTotal
+    protected function handleQuoteLocation(Location $location): void
     {
-        $attributes = $this->quoteTotal->query()
-            ->toBase()
+        $quoteTotals = $this->quoteTotal->query()
             ->selectRaw('SUM(CASE WHEN ISNULL(`quote_submitted_at`) THEN `total_price` ELSE 0 END) AS `total_drafted_value`')
             ->selectRaw('COUNT(ISNULL(`quote_submitted_at`) OR NULL) AS `total_drafted_count`')
             ->selectRaw('SUM(CASE WHEN `quote_submitted_at` IS NOT NULL THEN `total_price` ELSE 0 END) AS `total_submitted_value`')
             ->selectRaw('COUNT(`quote_submitted_at` IS NOT NULL OR NULL) AS `total_submitted_count`')
+            ->addSelect('user_id')
             ->whereLocationId($location->getKey())
-            ->first();
+            ->groupBy('user_id')
+            ->get();
 
-        $attributes = (array) $attributes + [
-            'location_id' => $location->id,
-            'country_id' => $location->country->getKey(),
-            'location_coordinates' => $location->coordinates,
-            'location_address' => $location->formatted_address
-        ];
+        /**
+         * We are creating aggregates for each quote user.
+         */
+        DB::transaction(
+            fn () =>
+            $quoteTotals->each(
+                fn (QuoteTotal $quoteTotal) => $this->quoteLocationTotal->make([
+                    'user_id' => $quoteTotal->user_id,
+                    'location_id' => $location->id,
+                    'country_id' => $location->country->getKey(),
+                    'location_coordinates' => $location->coordinates,
+                    'location_address' => $location->formatted_address,
+                    'total_drafted_value' => $quoteTotal->total_drafted_value,
+                    'total_drafted_count' => $quoteTotal->total_drafted_count,
+                    'total_submitted_value' => $quoteTotal->total_submitted_value,
+                    'total_submitted_count' => $quoteTotal->total_submitted_count
+                ])
+                    ->saveOrFail()
+            ),
+            5
+        );
 
-        return tap($this->quoteLocationTotal->make($attributes), function (QuoteLocationTotal $quoteLocationTotal) {
-            $quoteLocationTotal->save();
-            $this->advanceProgress();
-        });
+        $this->advanceProgress();
     }
 
-    protected function handleAssetLocation(Location $location): AssetTotal
+    protected function handleAssetLocation(Location $location): void
     {
-        $totalCount = $this->assets->countByLocation($location->id);
-        $totalValue = $this->assets->sumByLocation($location->id);
+        $totals = $this->assets->aggregatesByUserAndLocation($location->getKey());
 
-        $attributes = [
-            'location_id' => $location->id,
-            'country_id' => $location->country->getKey(),
-            'location_coordinates' => $location->coordinates,
-            'location_address' => $location->formatted_address,
-            'total_count' => $totalCount,
-            'total_value' => $totalValue
-        ];
+        /**
+         * We are creating aggregates for each asset user.
+         */
+        DB::transaction(
+            fn () =>
+            $totals->each(
+                fn (AssetAggregate $aggregate) => $this->assetTotal->make([
+                    'location_id' => $location->id,
+                    'country_id' => $location->country->getKey(),
+                    'user_id' => $aggregate->user_id,
+                    'location_coordinates' => $location->coordinates,
+                    'location_address' => $location->formatted_address,
+                    'total_count' => $aggregate->total_count,
+                    'total_value' => $aggregate->total_value
+                ])
+                    ->save()
+            )
+        );
 
-        return tap($this->assetTotal->make($attributes), function (AssetTotal $assetTotal) {
-            $assetTotal->save();
-            $this->advanceProgress($assetTotal->total_count);
-        });
+        $this->advanceProgress($totals->sum('total_count'));
     }
 
     protected function handleQuote(Quote $quote): bool
@@ -212,7 +233,7 @@ class StatsService implements Stats
 
             if (!$company instanceof Company) {
                 report_logger(['message' => 'External Company does not exist']);
-    
+
                 return false;
             }
 
@@ -226,6 +247,7 @@ class StatsService implements Stats
                 'company_id'            => $company->id,
                 'location_id'           => $quote->customer->equipmentLocation->id,
                 'country_id'            => $quote->customer->equipmentLocation->country->getKey(),
+                'user_id'               => $quote->user_id,
                 'location_address'      => $quote->customer->equipmentLocation->formatted_address,
                 'location_coordinates'  => $quote->customer->equipmentLocation->coordinates,
                 'total_price'           => $totalPrice,
@@ -279,28 +301,22 @@ class StatsService implements Stats
         DB::transaction(
             fn () =>
             $company->addresses->each(function (Address $address) use ($company, $total) {
-                $customerTotal = $this->customerTotal->query()->updateOrCreate(
+                $customerTotal = tap($this->customerTotal->query()->make(
                     [
                         'customer_name' => $company->name,
                         'location_id' => $address->location_id,
                         'country_id' => $address->location->country->getKey(),
                         'address_id' => $address->id,
-                        'company_id' => $company->id
-                    ],
-                    [
+                        'company_id' => $company->id,
+                        'user_id' => $total->user_id,
                         'total_count' => $total->total_count,
                         'total_value' => $total->total_value,
                         'location_address' => $address->location->formatted_address,
                         'location_coordinates' => $address->location->coordinates,
                     ]
-                );
-
-                if ($customerTotal->wasRecentlyCreated) {
-                    report_logger(['message' => 'A new customer total created with new location']);
-                    return;
-                }
-
-                report_logger(['message' => 'Customer total has been updated'], $customerTotal->toArray());
+                ))->save();
+                
+                report_logger(['message' => 'A new customer total created with new location'], $customerTotal->toArray());
             }),
             5
         );

@@ -192,6 +192,7 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
             'customer_valid_until^4',
             'customer_support_start^4',
             'customer_support_end^4',
+            'customer_source^4',
             'user_fullname^4',
             'created_at^1'
         ];

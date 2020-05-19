@@ -7,6 +7,6 @@ class OrderBySupportStart extends Query
 {
     public function applyQuery($builder, string $table)
     {
-        return $builder->orderByCachedRelation('customer.support_start', $this->value);
+        return $builder->orderByRaw("STR_TO_DATE(JSON_UNQUOTE(`cached_relations`->'$.customer.support_start_date'), '%Y-%m-%d') {$this->value}");
     }
 }

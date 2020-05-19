@@ -237,6 +237,14 @@ define('ASSET_TCF_01', '*** Asset totals calculation successfully finished ***')
 define('ASSET_TCERR_01', 'An error occured when asset totals calculation');
 
 /**
+ * Service lookup.
+ */
+define('SL_REQ_01', 'Trying to receive the data using url [%s]');
+define('SL_CRE_01', 'Service response exists in the cache. Cached response will be returned.');
+define('SL_UR_01', 'Unable to retrieve records from external service');
+define('SL_UR_02', 'Unable to build DTO object from the external service response. Possibly unexpected response or data is corrupted.');
+
+/**
  * Misc.
  */
 define('THROTTLE_RATE_01', 'throttle:240,1');
@@ -255,6 +263,7 @@ define('MLFQ_01', 'Malformed request.');
 define('FFTC_01', 'Failed when flushing Eloquent tagged cache.');
 define('TABLE_COUNT_POSTFIX', '_count');
 define('ND_01', 'N/A');
+define('SUN_01', 'Unable to fetch data from external service');
 // MySQL unbuffered connection used for cursors.
 define('MYSQL_UNBUFFERED', 'mysql_unbuffered');
 

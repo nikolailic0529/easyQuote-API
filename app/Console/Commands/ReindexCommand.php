@@ -48,6 +48,8 @@ class ReindexCommand extends Command
      */
     protected $description = 'Indexes all entries to Elasticsearch';
 
+    protected ElasticsearchClient $elasticsearch;
+
     /**
      * Create a new command instance.
      *
@@ -77,7 +79,8 @@ class ReindexCommand extends Command
         } catch (Throwable $exception) {
             $this->error($exception->getMessage());
             $this->error("Reindexing will be skipped.");
-            return;
+
+            return false;
         }
 
         $this->handleModels(
@@ -105,6 +108,10 @@ class ReindexCommand extends Command
                 ImportableColumn::regular(),
             ]
         );
+
+        $this->info('Reindex has been successfully finished!');
+
+        return true;
     }
 
     private function handleModels(array $models)
@@ -119,7 +126,7 @@ class ReindexCommand extends Command
             }
 
             $model->unsetEventDispatcher();
-            $model->setConnection('mysql_unbuffered');
+            $model->setConnection(MYSQL_UNBUFFERED);
 
             $plural = Str::plural(class_basename($model));
 
