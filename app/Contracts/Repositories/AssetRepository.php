@@ -3,10 +3,10 @@
 namespace App\Contracts\Repositories;
 
 use App\Models\Asset;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Collection as SupportCollection;
+use App\DTO\AssetAggregate;
 
 interface AssetRepository
 {
@@ -42,6 +42,14 @@ interface AssetRepository
      * @return boolean
      */
     public function chunk(int $count, callable $callback, array $with = [], ?callable $clause = null): bool;
+
+    /**
+     * Retrieve total_value & total_count by each user.
+     *
+     * @param string $locationId
+     * @return SupportCollection[AssetAggregate]
+     */
+    public function aggregatesByUserAndLocation(string $locationId): SupportCollection;
 
     /**
      * Calculate total value by specific location.

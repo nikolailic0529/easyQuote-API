@@ -17,6 +17,7 @@ class AssetTotal extends Model
     protected $fillable = [
         'location_id',
         'country_id',
+        'user_id',
         'location_coordinates',
         'location_address',
         'total_value',

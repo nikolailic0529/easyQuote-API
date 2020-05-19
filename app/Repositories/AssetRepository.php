@@ -3,13 +3,16 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\AssetRepository as Contract;
+use App\DTO\AssetAggregate;
 use App\Repositories\Exceptions\InvalidModel;
 use App\Models\Asset;
+use Closure;
 use Illuminate\Database\{
     Eloquent\Builder,
     Eloquent\Model,
     Query\JoinClause,
 };
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class AssetRepository extends SearchableRepository implements Contract
@@ -42,6 +45,19 @@ class AssetRepository extends SearchableRepository implements Contract
             ->join('locations', fn (JoinClause $join) => $join->on('locations.id', '=', 'addresses.location_id')->whereNull('locations.deleted_at'))
             ->with('location')
             ->groupByRaw('locations.id');
+    }
+
+    public function aggregatesByUserAndLocation(string $locationId): Collection
+    {
+        return $this->asset->query()
+            ->selectRaw('SUM(`unit_price`) AS `total_value`')
+            ->selectRaw('COUNT(*) AS `total_count`')
+            ->addSelect('user_id')
+            ->groupBy('user_id')
+            ->whereHas('location', fn (Builder $q) => $q->whereKey($locationId))
+            ->toBase()
+            ->get()
+            ->mapInto(AssetAggregate::class);
     }
 
     public function countByLocation(string $locationId): int
