@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use Tests\TestCase;
 use App\Contracts\Services\ExchangeRateServiceInterface as Service;
 use App\Repositories\RateFileRepository as RateFiles;
+use Carbon\Carbon;
 
 class ExchangeRateTest extends TestCase
 {
@@ -33,7 +34,7 @@ class ExchangeRateTest extends TestCase
 
         $this->assertTrue($result);
 
-        $this->assertTrue($erUpdatedAfter->gt($erUpdatedBefore));
+        $this->assertTrue(Carbon::parse($erUpdatedAfter)->gt($erUpdatedBefore));
     }
 
     /**

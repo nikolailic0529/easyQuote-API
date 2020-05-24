@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\{
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Support\Str;
 use Closure;
+use Illuminate\Support\Arr;
 
 class CountryRepository extends SearchableRepository implements CountryRepositoryInterface
 {
@@ -45,9 +46,11 @@ class CountryRepository extends SearchableRepository implements CountryRepositor
 
     public function allCached(): Collection
     {
+        /** @var Collection */
         return $this->cache->sear(
             static::COUNTRIES_CACHE_KEY,
             fn () => $this->all()
+                ->sortBy(fn (Country $country) => static::countryCodeSortScore($country->iso_3166_2))
         );
     }
 
@@ -160,6 +163,17 @@ class CountryRepository extends SearchableRepository implements CountryRepositor
         return [
             'name^5', 'iso_3166_2^4', 'currency_code^3', 'currency_name^3', 'currency_symbol^3', 'created_at^2'
         ];
+    }
+
+    protected static function countryCodeSortScore(string $iso)
+    {
+        $score = Arr::get(array_flip(array_reverse(CSRT_01)), $iso, $iso);
+
+        if (is_int($score)) {
+            return -$score;
+        }
+
+        return $score;
     }
 
     protected static function countryIdCacheKey(string $iso): string

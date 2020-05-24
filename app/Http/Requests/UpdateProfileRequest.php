@@ -67,7 +67,7 @@ class UpdateProfileRequest extends FormRequest
         return [
             'password.regex' => 'The Password should contain uppercase and lowercase characters, digits, non-alphanumeric characters.',
             'current_password.password' => 'You have entered invalid current password.',
-            'password.different' => 'A new password must be different.',
+            'password.different' => "Your new password shouldn't be same as your last password",
             'first_name.min' => 'The first name/last name must be of at least :min characters.',
             'last_name.min' => 'The first name/last name must be of at least :min characters.'
         ];

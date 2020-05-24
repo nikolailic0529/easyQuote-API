@@ -10,7 +10,7 @@ use App\Contracts\{
 use App\Repositories\{
     SearchableRepository,
     Concerns\ResolvesImplicitModel,
-    Concerns\ResolvesQuoteVersion,
+    Concerns\ResolvesTargetModel,
 };
 use App\Http\Resources\QuoteRepository\SubmittedCollection;
 use App\Models\Quote\{
@@ -27,19 +27,16 @@ use Illuminate\Support\LazyCollection;
 
 class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubmittedRepositoryInterface
 {
-    use ResolvesImplicitModel, ResolvesQuoteVersion;
+    use ResolvesImplicitModel, ResolvesTargetModel;
 
     const EXPORT_CACHE_TTL = 60;
 
     const EXPORT_CACHE_PREFIX = 'quote-pdf';
 
-    /** @var \App\Models\Quote\Quote */
     protected Quote $quote;
 
-    /** @var \App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface */
     protected QuoteFileRepository $quoteFile;
 
-    /** @var \App\Contracts\Services\QuoteServiceInterface */
     protected QuoteServiceInterface $quoteService;
 
     public function __construct(Quote $quote, QuoteFileRepository $quoteFile, QuoteServiceInterface $quoteService)
@@ -75,6 +72,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
 
     public function userQuery(): Builder
     {
+        /** @var \App\Models\User */
         $user = auth()->user();
 
         return $this->quote
@@ -193,7 +191,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     public function copy($quote)
     {
         $quote = $this->resolveModel($quote);
-        $version = $this->resolveQuoteVersion($quote, $quote->usingVersion);
+        $version = $this->resolveTargetModel($quote, $quote->usingVersion);
 
         return DB::transaction(function () use ($quote, $version) {
             $replicatedQuote = $version->replicate(['laravel_through_key']);

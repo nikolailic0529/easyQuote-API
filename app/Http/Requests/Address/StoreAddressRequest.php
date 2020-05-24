@@ -22,9 +22,9 @@ class StoreAddressRequest extends FormRequest
             'address_type' => ['required', 'string', Rule::in(Address::TYPES)],
             'address_1' => 'required|string|min:2',
             'address_2' => 'nullable|string|min:2',
-            'city' => 'string|min:2',
-            'state' => 'string|min:2',
-            'post_code' => 'string|min:4',
+            'city' => 'string',
+            'state' => 'string',
+            'post_code' => 'string',
             'country_id' => 'required_without:country_code|string|uuid|exists:countries,id'
         ];
     }

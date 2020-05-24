@@ -42,8 +42,10 @@ class AddressController extends Controller
      */
     public function store(StoreAddressRequest $request)
     {
+        $resource = $this->address->create($request);
+
         return response()->json(
-            $this->address->create($request)
+            $resource->loadMissing('country')
         );
     }
 
@@ -56,7 +58,7 @@ class AddressController extends Controller
     public function show(Address $address)
     {
         return response()->json(
-            $this->address->find($address->id)
+            $address->loadMissing('country')
         );
     }
 
@@ -69,8 +71,10 @@ class AddressController extends Controller
      */
     public function update(UpdateAddressRequest $request, Address $address)
     {
+        $resource = $this->address->update($request, $address->id);
+        
         return response()->json(
-            $this->address->update($request, $address->id)
+            $resource->loadMissing('country')
         );
     }
 

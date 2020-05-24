@@ -52,6 +52,7 @@ trait HasLogo
         }
 
         $this->image()->delete();
+        $this->image()->flushQueryCache();
         $this->image()->create(compact('original', 'thumbnails'));
 
         return $this->load('image');

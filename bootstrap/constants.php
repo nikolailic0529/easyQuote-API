@@ -196,6 +196,21 @@ define('IMPR_ERR_01', 'Something went wrong when making row. Row will be importe
  */
 define('CSU_01', 'You could not update the system defined Country.');
 define('CSD_01', 'You could not delete the system defined Country.');
+/** @var string[] */
+define('CSRT_01', [
+    'GB',
+    'US',
+    'FR',
+    'CA',
+    'SE',
+    'NL',
+    'BE',
+    'AF',
+    'NO',
+    'DK',
+    'AT',
+    'ZA',
+]);
 
 
 /**
@@ -308,3 +323,4 @@ define('ROUTE_R', ['index', 'show']);
  * Recaptcha.
  */
 define('GRC_ERR_01', 'A server error occured while sending request to Google Recaptcha.');
+define('GRCS_01', 'Recaptcha skip key has been provided. Verification request skipped.');

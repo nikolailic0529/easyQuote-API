@@ -7,7 +7,7 @@ use App\Contracts\{
     Services\WordParserInterface as WordParser,
     Services\PdfParserInterface as PdfParser,
     Services\CsvParserInterface as CsvParser,
-    Repositories\Quote\QuoteRepositoryInterface as QuoteState,
+    Services\QuoteState,
     Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository,
     Repositories\QuoteFile\ImportableColumnRepositoryInterface as ImportableColumn,
     Repositories\QuoteFile\FileFormatRepositoryInterface as FileFormatRepository,

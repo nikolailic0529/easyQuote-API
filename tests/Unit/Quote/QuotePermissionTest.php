@@ -74,7 +74,7 @@ class QuotePermissionTest extends TestCase
 
         $authorizableUsers = factory(User::class, 5)->create(['role_id' => $role->id]);
 
-        $permission = app('quote.repository')->getQuotePermission($this->quote, ['read', 'update']);
+        $permission = app('quote.state')->getQuotePermission($this->quote, ['read', 'update']);
 
         /** Grant quote permissions to newly created users. */
         app('user.repository')->syncUsersPermission($authorizableUsers->pluck('id')->toArray(), $permission);

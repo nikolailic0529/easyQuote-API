@@ -30,7 +30,7 @@ trait WithFakeQuote
     protected function setUpFakeQuote()
     {
         $uses = array_flip(class_uses_recursive(static::class));
-        $this->quoteRepository = app('quote.repository');
+        $this->quoteRepository = app('quote.state');
 
         if (isset($uses[WithFakeUser::class])) {
             $this->quote = $this->firstOrCreateQuote();
@@ -44,7 +44,7 @@ trait WithFakeQuote
 
     protected function createQuote(User $user): Quote
     {
-        return app('quote.repository')->create(
+        return app('quote.state')->create(
             $this->makeGenericQuoteAttributes($user)
         );
     }

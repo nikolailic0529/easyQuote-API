@@ -21,6 +21,7 @@ use Illuminate\Support\{
 use Carbon\Carbon;
 use RuntimeException;
 use Arr, DB, File;
+use Illuminate\Support\Facades\Http;
 
 abstract class ExchangeRateService implements ExchangeRateServiceInterface
 {
@@ -158,10 +159,9 @@ abstract class ExchangeRateService implements ExchangeRateServiceInterface
         $requestUrl = $this->requestUrl();
 
         try {
-            $response = $this->httpClient->get($requestUrl, [RequestOptions::IDN_CONVERSION => false]);
-            $content = $response->getBody()->getContents();
-
-            return $content;
+            $response = Http::get($requestUrl);
+            
+            return (string) $response;
         } catch (\Throwable $e) {
             static::requestError($requestUrl);
         }

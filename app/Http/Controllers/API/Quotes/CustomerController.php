@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\API\Quotes;
 
 use App\Http\Controllers\Controller;
-use App\Contracts\Repositories\{
-    Customer\CustomerRepositoryInterface as Customers,
-    Quote\QuoteRepositoryInterface as QuoteState
+use App\Contracts\{
+    Repositories\Customer\CustomerRepositoryInterface as Customers,
+    Services\QuoteState
 };
 use App\Http\Requests\Customer\CreateEqCustomer;
 use App\Http\Resources\Customer\EqCustomer as EqCustomerResource;

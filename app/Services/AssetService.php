@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Contracts\Repositories\{
-    Quote\QuoteRepositoryInterface as QuoteState,
-    Quote\QuoteSubmittedRepositoryInterface as SubmittedQuotes,
+use App\Contracts\{
+    Services\QuoteState,
+    Repositories\Quote\QuoteSubmittedRepositoryInterface as SubmittedQuotes,
 };
 use App\DTO\QuoteAsset;
 use App\Models\{
@@ -16,7 +16,6 @@ use App\Models\{
 use App\Models\Quote\BaseQuote;
 use App\Services\Concerns\WithProgress;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Query\Builder as DbBuilder;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 

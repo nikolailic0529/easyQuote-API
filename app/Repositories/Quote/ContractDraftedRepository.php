@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\{
 
 class ContractDraftedRepository extends SearchableRepository implements ContractDraftedRepositoryInterface
 {
-    /** @var \App\Models\Quote\Contract */
     protected Contract $contract;
 
     public function __construct(Contract $contract)
@@ -27,6 +26,7 @@ class ContractDraftedRepository extends SearchableRepository implements Contract
 
     public function userQuery(): Builder
     {
+        /** @var \App\Models\User */
         $user = auth()->user();
 
         return $this->contract

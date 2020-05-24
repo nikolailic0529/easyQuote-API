@@ -21,10 +21,8 @@ use Illuminate\Support\LazyCollection;
 
 class QuoteDraftedRepository extends SearchableRepository implements QuoteDraftedRepositoryInterface
 {
-    /** @var \App\Models\Quote\Quote */
     protected Quote $quote;
 
-    /** @var \App\Models\Quote\QuoteVersion */
     protected QuoteVersion $quoteVersion;
 
     public function __construct(Quote $quote, QuoteVersion $quoteVersion)
@@ -54,6 +52,7 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
 
     public function userQuery(): Builder
     {
+        /** @var \App\Models\User */
         $user = auth()->user();
 
         return $this->quote

@@ -32,7 +32,6 @@ use App\Contracts\{
     Repositories\QuoteFile\FileFormatRepositoryInterface,
     Repositories\QuoteFile\ImportableColumnRepositoryInterface,
     Repositories\QuoteFile\DataSelectSeparatorRepositoryInterface,
-    Repositories\Quote\QuoteRepositoryInterface,
     Repositories\Quote\Margin\MarginRepositoryInterface,
     Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface,
     Repositories\QuoteTemplate\ContractTemplateRepositoryInterface,
@@ -58,7 +57,6 @@ use App\Contracts\{
     Repositories\System\ClientCredentialsInterface,
     Repositories\System\BuildRepositoryInterface,
     Repositories\ExchangeRateRepositoryInterface,
-    Repositories\Contract\ContractStateRepositoryInterface,
     Repositories\Contract\ContractDraftedRepositoryInterface,
     Repositories\Contract\ContractSubmittedRepositoryInterface,
     Repositories\Quote\QuoteNoteRepositoryInterface,
@@ -67,6 +65,8 @@ use App\Contracts\{
     Repositories\AssetRepository as AssetRepositoryContract,
     Repositories\AssetCategoryRepository as AssetCategoryRepositoryContract,
 };
+use App\Contracts\Services\ContractState;
+use App\Contracts\Services\QuoteState;
 use App\Repositories\{
     TimezoneRepository,
     CountryRepository,
@@ -81,7 +81,6 @@ use App\Repositories\{
     QuoteFile\FileFormatRepository,
     QuoteFile\ImportableColumnRepository,
     QuoteFile\DataSelectSeparatorRepository,
-    Quote\QuoteStateRepository,
     Quote\Margin\MarginRepository,
     QuoteTemplate\QuoteTemplateRepository,
     QuoteTemplate\ContractTemplateRepository,
@@ -99,7 +98,6 @@ use App\Repositories\{
     Quote\Discount\SNDrepository,
     Quote\QuoteDraftedRepository,
     Quote\QuoteSubmittedRepository,
-    Quote\ContractStateRepository,
     Quote\ContractDraftedRepository,
     Quote\ContractSubmittedRepository,
     Quote\QuoteNoteRepository,
@@ -141,6 +139,8 @@ use Elasticsearch\{
 };
 use App\Factories\Failure\Failure;
 use App\Http\Resources\RequestQueryFilter;
+use App\Services\ContractStateProcessor;
+use App\Services\QuoteStateProcessor;
 use Schema;
 
 class AppServiceProvider extends ServiceProvider
@@ -155,7 +155,7 @@ class AppServiceProvider extends ServiceProvider
         QuoteFileRepositoryInterface::class             => QuoteFileRepository::class,
         FileFormatRepositoryInterface::class            => FileFormatRepository::class,
         ImportableColumnRepositoryInterface::class      => ImportableColumnRepository::class,
-        QuoteRepositoryInterface::class                 => QuoteStateRepository::class,
+        QuoteState::class                               => QuoteStateProcessor::class,
         QuoteTemplateRepositoryInterface::class         => QuoteTemplateRepository::class,
         ContractTemplateRepositoryInterface::class      => ContractTemplateRepository::class,
         TemplateFieldRepositoryInterface::class         => TemplateFieldRepository::class,
@@ -195,7 +195,7 @@ class AppServiceProvider extends ServiceProvider
         ExchangeRateRepositoryInterface::class          => ExchangeRateRepository::class,
         ExchangeRateServiceInterface::class             => ER_SERVICE_CLASS,
         'request.filter'                                => RequestQueryFilter::class,
-        ContractStateRepositoryInterface::class         => ContractStateRepository::class,
+        ContractState::class                            => ContractStateProcessor::class,
         QuoteNoteRepositoryInterface::class             => QuoteNoteRepository::class,
         TaskRepositoryInterface::class                  => TaskRepository::class,
         PermissionBrokerContract::class                 => PermissionBroker::class,
@@ -218,8 +218,8 @@ class AppServiceProvider extends ServiceProvider
         AuthenticatedCase::class                        => 'auth.case',
         ElasticsearchClient::class                      => 'elasticsearch.client',
         QuoteServiceInterface::class                    => 'quote.service',
-        QuoteRepositoryInterface::class                 => 'quote.repository',
-        ContractStateRepositoryInterface::class         => 'contract.repository',
+        QuoteState::class                               => 'quote.state',
+        ContractState::class                            => 'contract.state',
         QuoteDraftedRepositoryInterface::class          => 'quote.drafted.repository',
         QuoteSubmittedRepositoryInterface::class        => 'quote.submitted.repository',
         QuoteFileRepositoryInterface::class             => 'quotefile.repository',

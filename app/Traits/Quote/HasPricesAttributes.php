@@ -2,7 +2,7 @@
 
 namespace App\Traits\Quote;
 
-use App\Contracts\Repositories\Quote\QuoteRepositoryInterface as QuoteState;
+use App\Contracts\Services\QuoteState;
 use Str;
 
 trait HasPricesAttributes
@@ -29,7 +29,10 @@ trait HasPricesAttributes
             return $this->totalPrice;
         }
 
-        return $this->totalPrice = app(QuoteState::class)->calculateTotalPrice($this);
+        /** @var QuoteState */
+        $stateProcessor = app(QuoteState::class);
+
+        return $this->totalPrice = $stateProcessor->calculateTotalPrice($this);
     }
 
     public function setTotalPriceAttribute(float $value): void

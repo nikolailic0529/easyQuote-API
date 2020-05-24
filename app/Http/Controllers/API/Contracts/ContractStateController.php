@@ -4,7 +4,7 @@ namespace App\Http\Controllers\API\Contracts;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Contracts\Repositories\Contract\ContractStateRepositoryInterface as Contracts;
+use App\Contracts\Services\ContractState;
 use App\Contracts\Services\QuoteServiceInterface as QuoteService;
 use App\Http\Requests\Quote\StoreContractStateRequest;
 use App\Models\Quote\Contract;
@@ -13,11 +13,11 @@ use App\Http\Resources\QuoteReviewResource;
 
 class ContractStateController extends Controller
 {
-    protected Contracts $contracts;
+    protected ContractState $processor;
 
-    public function __construct(Contracts $contracts)
+    public function __construct(ContractState $processor)
     {
-        $this->contracts = $contracts;
+        $this->processor = $processor;
 
         $this->authorizeResource(Contract::class, 'contract');
     }
@@ -83,7 +83,7 @@ class ContractStateController extends Controller
     {
         $this->authorize('state', $contract);
 
-        $resource = $this->contracts->storeState($request->validated(), $contract);
+        $resource = $this->processor->storeState($request->validated(), $contract);
 
         return response()->json(
             ContractVersionResource::make($resource)

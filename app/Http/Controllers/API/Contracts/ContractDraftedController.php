@@ -12,8 +12,7 @@ use App\Models\{
 
 class ContractDraftedController extends Controller
 {
-    /** @var \App\Contracts\Repositories\Quote\ContractDraftedRepositoryInterface */
-    protected $contracts;
+    protected Contracts $contracts;
 
     public function __construct(Contracts $contracts)
     {

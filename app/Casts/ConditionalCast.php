@@ -35,7 +35,7 @@ class ConditionalCast implements CastsAttributes
                 return is_array($value) ? $value : json_decode($value, true);
                 break;
             case 'datetime':
-                return Carbon::parse($value);
+                return (string) Carbon::parse($value);
                 break;
             default:
                 return $value;
@@ -57,6 +57,9 @@ class ConditionalCast implements CastsAttributes
         switch ($attributes['type']) {
             case 'array':
                 return is_array($value) ? json_encode($value) : $value;
+                break;
+            case 'datetime':
+                return (string) Carbon::parse($value);
                 break;
             default:
                 return $value;

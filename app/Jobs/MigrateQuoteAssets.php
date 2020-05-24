@@ -2,7 +2,10 @@
 
 namespace App\Jobs;
 
-use App\Models\Quote\Quote;
+use App\Models\{
+    Quote\BaseQuote,
+    Quote\QuoteVersion,
+};
 use App\Services\AssetService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -16,14 +19,14 @@ class MigrateQuoteAssets implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected Quote $quote;
+    protected BaseQuote $quote;
 
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct(Quote $quote)
+    public function __construct(BaseQuote $quote)
     {
         $this->quote = $quote;
     }
@@ -35,6 +38,12 @@ class MigrateQuoteAssets implements ShouldQueue
      */
     public function handle(AssetService $service)
     {
-       $service->migrateQuoteAssets($this->quote);
+        $quote = $this->quote;
+
+        if ($quote instanceof QuoteVersion) {
+            $quote = $quote->quote;
+        }
+
+        $service->migrateQuoteAssets($quote);
     }
 }

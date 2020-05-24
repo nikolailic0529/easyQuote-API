@@ -15,12 +15,13 @@ use App\Traits\{
 };
 use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Staudenmeir\EloquentHasManyDeep\HasOneDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 class Asset extends Model
 {
-    use Uuid, Multitenantable, BelongsToUser, BelongsToVendor, BelongsToAddress, BelongsToAssetCategory, Searchable, HasRelationships, EloquentJoin;
+    use Uuid, Multitenantable, BelongsToUser, BelongsToVendor, BelongsToAddress, BelongsToAssetCategory, Searchable, HasRelationships, EloquentJoin, SoftDeletes;
 
     protected $fillable = [
         'asset_category_id',

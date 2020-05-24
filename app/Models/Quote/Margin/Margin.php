@@ -26,7 +26,7 @@ abstract class Margin extends Model implements HasOrderedScope, ActivatableInter
 {
     use Uuid, EloquentJoin, Multitenantable, BelongsToUser, BelongsToVendor, SoftDeletes, Activatable;
 
-    protected $perPage = 8;
+    const METHODS = ['No Margin', 'Standard'];
 
     protected $attributes = [
         'is_fixed' => false,

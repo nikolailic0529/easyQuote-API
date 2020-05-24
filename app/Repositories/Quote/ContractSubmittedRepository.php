@@ -7,7 +7,7 @@ use App\Repositories\SearchableRepository;
 use App\Models\Quote\Contract;
 use App\Repositories\Concerns\{
     ResolvesImplicitModel,
-    ResolvesQuoteVersion
+    ResolvesTargetModel
 };
 use Illuminate\Database\Eloquent\{
     Model,
@@ -16,9 +16,8 @@ use Illuminate\Database\Eloquent\{
 
 class ContractSubmittedRepository extends SearchableRepository implements ContractSubmittedRepositoryInterface
 {
-    use ResolvesImplicitModel, ResolvesQuoteVersion;
+    use ResolvesImplicitModel, ResolvesTargetModel;
 
-    /** @var \App\Models\Quote\Contract */
     protected Contract $contract;
 
     public function __construct(Contract $contract)
@@ -33,6 +32,7 @@ class ContractSubmittedRepository extends SearchableRepository implements Contra
 
     public function userQuery(): Builder
     {
+        /** @var \App\Models\User */
         $user = auth()->user();
 
         return $this->contract

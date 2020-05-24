@@ -27,7 +27,7 @@ class StoreCompanyRequest extends FormRequest
                 Rule::unique(Company::class)->whereNull('deleted_at')
             ],
             'vat' => [
-                'required',
+                'nullable',
                 'string',
                 'max:191',
                 'min:2',
@@ -100,6 +100,6 @@ class StoreCompanyRequest extends FormRequest
 
     protected function nullValues()
     {
-        return ['phone', 'website'];
+        return ['phone', 'website', 'vat', 'default_vendor_id', 'default_country_id', 'default_template_id'];
     }
 }

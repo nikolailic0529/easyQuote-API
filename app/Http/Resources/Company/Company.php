@@ -38,6 +38,10 @@ class Company extends JsonResource
 
                 return $this->vendors;
             }),
+
+            'default_country' => $this->whenLoaded('defaultCountry'),
+            'default_vendor' => $this->whenLoaded('defaultVendor'),
+            'default_template' => $this->whenLoaded('defaultTemplate'),
             
             'addresses' => $this->whenLoaded('addresses'),
             'contacts' => $this->whenLoaded('contacts'),

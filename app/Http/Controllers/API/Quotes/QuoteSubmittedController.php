@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\API\Quotes;
 
 use App\Http\Controllers\Controller;
-use App\Contracts\Repositories\{
-    Contract\ContractStateRepositoryInterface as Contracts,
-    Quote\QuoteSubmittedRepositoryInterface as Repository
+use App\Contracts\{
+    Services\ContractState,
+    Repositories\Quote\QuoteSubmittedRepositoryInterface as Repository
 };
 use App\Http\Requests\Quote\CreateQuoteContractRequest;
 use App\Http\Resources\ContractVersionResource;
@@ -18,12 +18,12 @@ class QuoteSubmittedController extends Controller
 {
     protected Repository $repository;
 
-    protected Contracts $contracts;
+    protected ContractState $contractProcessor;
 
-    public function __construct(Repository $repository, Contracts $contracts)
+    public function __construct(Repository $repository, ContractState $contractProcessor)
     {
         $this->repository = $repository;
-        $this->contracts = $contracts;
+        $this->contractProcessor = $contractProcessor;
         $this->authorizeResource(Quote::class, 'submitted');
     }
 
@@ -138,7 +138,7 @@ class QuoteSubmittedController extends Controller
     {
         $this->authorize('createContract', $submitted);
 
-        $resource = $this->contracts->createFromQuote($submitted, $request->validated());
+        $resource = $this->contractProcessor->createFromQuote($submitted, $request->validated());
 
         return response()->json(
             ContractVersionResource::make($resource)

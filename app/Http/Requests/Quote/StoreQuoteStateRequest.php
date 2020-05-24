@@ -14,6 +14,8 @@ use App\Models\{
     // Customer\EqCustomer,
     Data\Country,
 };
+use App\Models\Quote\BaseQuote;
+use App\Models\Quote\Margin\Margin;
 use App\Rules\{
     UniqueCustomer,
     UseRowGroups,
@@ -154,11 +156,11 @@ class StoreQuoteStateRequest extends FormRequest
             'margin.quote_type' => [
                 'string',
                 'required_with:margin.is_fixed,margin.method,margin.type,margin.value',
-                Rule::in(__('quote.types'))
+                Rule::in(BaseQuote::TYPES)
             ],
             'margin.method' => [
                 'required_with:margin.is_fixed,margin.type,margin.quote_type,margin.value',
-                Rule::in(__('margin.methods'))
+                Rule::in(Margin::METHODS)
             ],
             'margin.is_fixed' => 'required_with:margin.method,margin.type,margin.quote_type,margin.value|boolean',
             'margin.value' => [

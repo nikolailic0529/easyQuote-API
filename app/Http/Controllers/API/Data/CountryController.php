@@ -33,6 +33,11 @@ class CountryController extends Controller
         );
     }
 
+    /**
+     * Display a listing of the countries.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function index()
     {
         $resource = request()->filled('search')

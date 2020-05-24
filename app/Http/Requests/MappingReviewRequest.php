@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Quote\Quote;
 use Illuminate\Foundation\Http\FormRequest;
 
 class MappingReviewRequest extends FormRequest
 {
+    protected ?Quote $quote = null;
+
     /**
      * Determine if the user is authorized to make this request.
      *
@@ -28,5 +31,14 @@ class MappingReviewRequest extends FormRequest
             'group_id' => 'nullable|string|uuid',
             'search' => 'string'
         ];
+    }
+
+    public function getQuote()
+    {
+        if (isset($this->quote)) {
+            return $this->quote;
+        }
+
+        return $this->quote = Quote::findOrFail($this->quote_id);
     }
 }

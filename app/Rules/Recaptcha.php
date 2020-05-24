@@ -26,6 +26,15 @@ class Recaptcha implements Rule
      */
     public function passes($attribute, $value)
     {
+        if (
+            config('services.recaptcha.skip_enabled') &&
+            request('recaptcha_skip_key') === config('services.recaptcha.skip_key')
+        ) {
+            report_logger(['message' => GRCS_01]);
+
+            return true;
+        }
+
         $data = [
             'secret' => config("services.recaptcha_{$this->version}.secret"),
             'response' => $value,

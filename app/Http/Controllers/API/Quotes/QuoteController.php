@@ -3,16 +3,16 @@
 namespace App\Http\Controllers\API\Quotes;
 
 use App\Http\Controllers\Controller;
-use App\Contracts\Repositories\{
-    Quote\QuoteRepositoryInterface as QuoteRepository,
-    Quote\Margin\MarginRepositoryInterface as MarginRepository,
-    CompanyRepositoryInterface as CompanyRepository,
-    CurrencyRepositoryInterface as CurrencyRepository,
-    QuoteTemplate\QuoteTemplateRepositoryInterface as QuoteTemplateRepository,
-    QuoteFile\DataSelectSeparatorRepositoryInterface as DataSelectRepository,
-    QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository,
-    UserRepositoryInterface as Users,
-    RoleRepositoryInterface as Roles,
+use App\Contracts\{
+    Services\QuoteState,
+    Repositories\Quote\Margin\MarginRepositoryInterface as MarginRepository,
+    Repositories\CompanyRepositoryInterface as CompanyRepository,
+    Repositories\CurrencyRepositoryInterface as CurrencyRepository,
+    Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface as QuoteTemplateRepository,
+    Repositories\QuoteFile\DataSelectSeparatorRepositoryInterface as DataSelectRepository,
+    Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository,
+    Repositories\UserRepositoryInterface as Users,
+    Repositories\RoleRepositoryInterface as Roles,
 };
 use App\Contracts\Services\QuoteServiceInterface as QuoteService;
 use App\Http\Requests\{
@@ -40,7 +40,7 @@ use Setting;
 
 class QuoteController extends Controller
 {
-    protected QuoteRepository $quotes;
+    protected QuoteState $processor;
 
     protected QuoteTemplateRepository $quoteTemplates;
 
@@ -55,7 +55,7 @@ class QuoteController extends Controller
     protected DataSelectRepository $dataSelects;
 
     public function __construct(
-        QuoteRepository $quotes,
+        QuoteState $processor,
         QuoteTemplateRepository $quoteTemplates,
         QuoteFileRepository $quoteFiles,
         MarginRepository $margins,
@@ -63,7 +63,7 @@ class QuoteController extends Controller
         DataSelectRepository $dataSelects,
         CurrencyRepository $currencies
     ) {
-        $this->quotes = $quotes;
+        $this->processor = $processor;
         $this->quoteTemplates = $quoteTemplates;
         $this->quoteFiles = $quoteFiles;
         $this->margins = $margins;
@@ -90,7 +90,7 @@ class QuoteController extends Controller
         }
 
         return response()->json(
-            $this->quotes->storeState($request)
+            $this->processor->storeState($request)
         );
     }
 
@@ -99,7 +99,7 @@ class QuoteController extends Controller
         $this->authorize('update', $quote);
 
         return response()->json(
-            $this->quotes->setVersion($request->version_id, $quote)
+            $this->processor->setVersion($request->version_id, $quote)
         );
     }
 
@@ -117,17 +117,17 @@ class QuoteController extends Controller
 
     public function step2(MappingReviewRequest $request)
     {
-        $this->authorize('view', $quote = $this->quotes->find($request->quote_id));
+        $this->authorize('view', $quote = $request->getQuote());
 
         if ($request->has('search')) {
             return response()->json(
-                $this->quotes->searchRows($quote->usingVersion, $request->search, $request->group_id)
+                $this->processor->searchRows($quote->usingVersion, $request->search, $request->group_id)
             );
         }
 
         $rows = cache()->sear(
             $quote->usingVersion->mappingReviewCacheKey,
-            fn () => $this->quotes->retrieveRows($quote->usingVersion)
+            fn () => $this->processor->retrieveRows($quote->usingVersion)
         );
 
         return response()->json(MappedRow::collection($rows));
@@ -144,7 +144,7 @@ class QuoteController extends Controller
         $this->authorize('view', $quote);
 
         return response()->json(
-            $this->quotes->retrieveRowsGroups($quote->usingVersion)
+            $this->processor->retrieveRowsGroups($quote->usingVersion)
         );
     }
 
@@ -173,7 +173,7 @@ class QuoteController extends Controller
         $this->authorize('view', $quote);
 
         return response()->json(
-            $this->quotes->discounts($quote->id)
+            $this->processor->discounts($quote->id)
         );
     }
 
@@ -190,7 +190,7 @@ class QuoteController extends Controller
         $this->authorize('view', $quote);
 
         return response()->json(
-            $this->quotes->tryDiscounts($request, $quote->id)
+            $this->processor->tryDiscounts($request, $quote->id)
         );
     }
 
@@ -205,7 +205,7 @@ class QuoteController extends Controller
         $this->authorize('view', $quote);
 
         return response()->json(
-            $this->quotes->review($quote->id)
+            $this->processor->review($quote->id)
         );
     }
 
@@ -221,7 +221,7 @@ class QuoteController extends Controller
         $this->authorize('view', $quote);
 
         return response()->json(
-            $this->quotes->findGroupDescription($group, $quote->id)
+            $this->processor->findGroupDescription($group, $quote->id)
         );
     }
 
@@ -237,7 +237,7 @@ class QuoteController extends Controller
         $this->authorize('update', $quote);
 
         return response()->json(
-            $this->quotes->createGroupDescription($request, $quote->id)
+            $this->processor->createGroupDescription($request, $quote->id)
         );
     }
 
@@ -254,7 +254,7 @@ class QuoteController extends Controller
         $this->authorize('update', $quote);
 
         return response()->json(
-            $this->quotes->selectGroupDescription($request->validated(), $quote->id)
+            $this->processor->selectGroupDescription($request->validated(), $quote->id)
         );
     }
 
@@ -271,7 +271,7 @@ class QuoteController extends Controller
         $this->authorize('update', $quote);
 
         return response()->json(
-            $this->quotes->updateGroupDescription($request, $group, $quote->id)
+            $this->processor->updateGroupDescription($request, $group, $quote->id)
         );
     }
 
@@ -287,7 +287,7 @@ class QuoteController extends Controller
         $this->authorize('update', $quote);
 
         return response()->json(
-            $this->quotes->moveGroupDescriptionRows($request, $quote->id)
+            $this->processor->moveGroupDescriptionRows($request, $quote->id)
         );
     }
 
@@ -303,7 +303,7 @@ class QuoteController extends Controller
         $this->authorize('update', $quote);
 
         return response()->json(
-            $this->quotes->deleteGroupDescription($group, $quote->id)
+            $this->processor->deleteGroupDescription($group, $quote->id)
         );
     }
 
@@ -339,7 +339,7 @@ class QuoteController extends Controller
     {
         $this->authorize('grantPermission', $quote);
 
-        $permission = $this->quotes->getQuotePermission($quote, ['read', 'update']);
+        $permission = $this->processor->getQuotePermission($quote, ['read', 'update']);
 
         return response()->json(
             $users->getUsersWithPermission($permission)
@@ -369,7 +369,7 @@ class QuoteController extends Controller
     {
         $this->authorize('grantPermission', $quote);
 
-        $permission = $this->quotes->getQuotePermission($quote, ['read', 'update']);
+        $permission = $this->processor->getQuotePermission($quote, ['read', 'update']);
 
         $authorized = $users->syncUsersPermission($request->users, $permission);
 

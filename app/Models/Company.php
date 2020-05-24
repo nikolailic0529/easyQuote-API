@@ -51,7 +51,9 @@ class Company extends Model implements WithImage, WithLogo, ActivatableInterface
 
     public const EXT_TYPE = 'External';
 
-    public const REGULAR_RELATIONSHIPS = ['vendors', 'addresses.country', 'contacts', 'vendors.countries', 'addresses.country', 'contacts'];
+    public const REGULAR_RELATIONSHIPS = [
+        'defaultCountry', 'defaultVendor', 'defaultTemplate', 'vendors', 'addresses.country', 'contacts', 'vendors.countries', 'addresses.country', 'contacts'
+    ];
 
     use Uuid,
         Multitenantable,

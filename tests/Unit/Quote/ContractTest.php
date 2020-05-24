@@ -210,6 +210,6 @@ class ContractTest extends TestCase
 
         $attributes = ['contract_template_id' => $contractTemplate->id];
 
-        return app('contract.repository')->createFromQuote(factory(Quote::class)->create(), $attributes);
+        return app('contract.state')->createFromQuote(factory(Quote::class)->create(), $attributes);
     }
 }

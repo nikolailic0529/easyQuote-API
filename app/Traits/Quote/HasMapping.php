@@ -2,19 +2,21 @@
 
 namespace App\Traits\Quote;
 
-use App\Contracts\Repositories\Quote\QuoteRepositoryInterface as QuoteState;
+use App\Contracts\{
+    Services\QuoteState,
+    Repositories\QuoteTemplate\TemplateFieldRepositoryInterface as Fields,
+};
 use App\Models\{
     Quote\FieldColumn,
     QuoteFile\ImportableColumn,
     QuoteTemplate\TemplateField
 };
-use App\Contracts\Repositories\QuoteTemplate\TemplateFieldRepositoryInterface as Fields;
-use DB, Arr, Cache;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Database\Eloquent\{
+    Builder,
+    Collection as EloquentCollection,
+    Relations\BelongsToMany,
+    Relations\HasMany,
+};
 use Illuminate\Support\Collection;
 
 trait HasMapping

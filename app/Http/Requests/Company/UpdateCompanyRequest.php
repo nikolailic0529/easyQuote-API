@@ -26,6 +26,7 @@ class UpdateCompanyRequest extends FormRequest
                 Rule::unique(Company::class)->whereNull('deleted_at')->ignore($this->company)
             ],
             'vat' => [
+                'nullable',
                 'string',
                 'max:191',
                 'min:2',
@@ -39,7 +40,7 @@ class UpdateCompanyRequest extends FormRequest
                 Rule::requiredIf(fn () => $this->type === Company::INT_TYPE),
                 'string',
                 'size:3',
-                Rule::unique(Company::class)->whereNull('deleted_at')
+                Rule::unique(Company::class)->whereNull('deleted_at')->ignore($this->company)
             ],
             'logo' => [
                 'image',
@@ -95,6 +96,6 @@ class UpdateCompanyRequest extends FormRequest
 
     protected function nullValues()
     {
-        return ['phone', 'website'];
+        return ['phone', 'website', 'vat', 'default_vendor_id', 'default_country_id', 'default_template_id'];
     }
 }

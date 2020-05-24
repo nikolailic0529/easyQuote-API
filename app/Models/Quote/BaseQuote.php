@@ -91,6 +91,8 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
         'service_agreement_id'  => 'searchable'
     ];
 
+    const TYPES = ['New', 'Renewal'];
+
     protected $connection = 'mysql';
 
     protected $fillable = [
