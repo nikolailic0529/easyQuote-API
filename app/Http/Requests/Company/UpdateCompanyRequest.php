@@ -43,9 +43,11 @@ class UpdateCompanyRequest extends FormRequest
                 Rule::unique(Company::class)->whereNull('deleted_at')->ignore($this->company)
             ],
             'logo' => [
+                'exclude_if:delete_logo,1',
                 'image',
                 'max:2048'
             ],
+            'delete_logo' => 'boolean',
             'category' => [
                 'nullable',
                 Rule::requiredIf(fn () => $this->type === Company::EXT_TYPE),
@@ -54,7 +56,7 @@ class UpdateCompanyRequest extends FormRequest
             ],
             'email' => 'email',
             'phone' => 'nullable|string|min:4|phone',
-            'website' => 'nullable|string|min:4',
+            'website' => 'nullable|string',
             'vendors' => 'array',
             'vendors.*' => 'required|uuid|exists:vendors,id',
             'default_vendor_id' => [
@@ -92,6 +94,13 @@ class UpdateCompanyRequest extends FormRequest
             'name.exists' => CPE_01,
             'vat.exists' => CPE_01
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->prepareNullValues();
+
+        $this->merge(['delete_logo' => (bool) $this->delete_logo]);
     }
 
     protected function nullValues()

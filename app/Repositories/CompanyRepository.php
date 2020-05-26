@@ -119,13 +119,12 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
                 $company->save();
 
                 $company->createLogo(Arr::get($attributes, 'logo'));
+
                 $company->syncVendors(Arr::get($attributes, 'vendors'));
 
                 $company->syncAddresses(Arr::get($attributes, 'addresses_attach'));
-                $company->detachAddresses(Arr::get($attributes, 'addresses_detach'));
 
                 $company->syncContacts(Arr::get($attributes, 'contacts_attach'));
-                $company->detachContacts(Arr::get($attributes, 'contacts_detach'));
             })
         );
     }
@@ -138,14 +137,13 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
                 $company->update($attributes);
 
                 $company->createLogo(Arr::get($attributes, 'logo'));
+                $company->deleteImageWhen(Arr::get($attributes, 'delete_logo'));
 
                 $company->syncVendors(Arr::get($attributes, 'vendors'));
 
                 $company->syncAddresses(Arr::get($attributes, 'addresses_attach'));
-                $company->detachAddresses(Arr::get($attributes, 'addresses_detach'));
 
                 $company->syncContacts(Arr::get($attributes, 'contacts_attach'));
-                $company->detachContacts(Arr::get($attributes, 'contacts_detach'));
             })
         );
     }

@@ -5,6 +5,7 @@ namespace App\Http\Requests\Asset;
 use App\Contracts\Repositories\VendorRepositoryInterface as Vendors;
 use App\Models\{
     Address,
+    Asset,
     AssetCategory,
     Vendor
 };
@@ -38,7 +39,7 @@ class CreateAsset extends FormRequest
             'active_warranty_end_date'      => ['required', 'date_format:Y-m-d'],
             'item_number'                   => ['nullable', 'string', 'max:191'],
             'product_number'                => ['required', 'string', 'max:191'],
-            'serial_number'                 => ['required', 'string', 'max:191'],
+            'serial_number'                 => ['required', 'string', 'max:191', Rule::unique(Asset::class)->where('vendor_id', $this->vendor_id)->where('user_id', auth()->id())->whereNull('deleted_at')],
             'product_description'           => ['nullable', 'string', 'max:191'],
         ];
     }
@@ -48,5 +49,12 @@ class CreateAsset extends FormRequest
         $vendor = $this->vendors->findCached($this->vendor_id);
 
         return parent::validated() + ['vendor_short_code' => optional($vendor)->short_code];
+    }
+
+    public function messages()
+    {
+        return [
+            'serial_number.unique' => 'The asset with the same serial number already exists.'
+        ];
     }
 }

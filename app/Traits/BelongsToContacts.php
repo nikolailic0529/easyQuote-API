@@ -15,9 +15,7 @@ trait BelongsToContacts
 
     public function syncContacts(?array $contacts, bool $detach = true): void
     {
-        if (blank($contacts)) {
-            return;
-        }
+        $contacts ??= [];
 
         $oldContacts = $this->contacts;
 

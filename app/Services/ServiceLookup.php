@@ -26,7 +26,7 @@ class ServiceLookup
 
     protected const ROUTE_SKU_KEY = '{sku}';
 
-    protected const INV_RESPONSE = null;
+    protected const RESP_FAIL = null;
 
     protected Repository $cache;
 
@@ -35,6 +35,14 @@ class ServiceLookup
         $this->cache = $cache;
     }
 
+    /**
+     * Get service data by specific parameters.
+     *
+     * @param Vendor $vendor
+     * @param string $serial
+     * @param string|null $sku
+     * @return ServiceData|null
+     */
     public function getService(Vendor $vendor, string $serial, ?string $sku = null): ?ServiceData
     {
         $url = Str::of(static::serviceBaseUrl())
@@ -57,16 +65,16 @@ class ServiceLookup
         $response = Http::withToken($this->issueServiceToken())->get((string) $url);
 
         /**
-         * Hydrate the client token in the cache when the external service responded with 401 error code.
+         * Refresh the client token in the cache when the external service responded with 401 error code.
          */
         if ($response->status() === Response::HTTP_UNAUTHORIZED) {
             $response = Http::withToken($this->issueServiceToken(true))->get((string) $url);
         }
 
-        if ($response->clientError() || $response->serverError()) {
+        if ($response->failed()) {
             report_logger(['ErrorCode' => 'SL_UR_01'], ['ErrorDetails' => SL_UR_01, 'Exception' => "HTTP request returned status code {$response->status()}."]);
 
-            return static::INV_RESPONSE;
+            return static::RESP_FAIL;
         }
 
         try {
@@ -77,7 +85,7 @@ class ServiceLookup
         } catch (Throwable $e) {
             report_logger(['ErrorCode' => 'SL_UR_02'], ['ErrorDetails' => SL_UR_02, 'Exception' => $e->getMessage()]);
 
-            return static::INV_RESPONSE;
+            return static::RESP_FAIL;
         }
     }
 

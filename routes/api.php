@@ -56,6 +56,7 @@ Route::group(['namespace' => 'API'], function () {
             Route::post('attachments', 'AttachmentController');
 
             Route::resource('assets', 'AssetController')->only(ROUTE_CRUD);
+            Route::post('assets/unique', 'AssetController@checkUniqueness');
             Route::post('lookup/service', 'ServiceController');
         });
 

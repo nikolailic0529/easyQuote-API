@@ -107,17 +107,8 @@ class AssetService
                 'asset_category_id',
                 'vendor_id',
                 'address_id',
-                'item_number',
                 'product_number',
                 'serial_number',
-                'product_description',
-                'service_description',
-                'base_warranty_start_date',
-                'base_warranty_end_date',
-                'active_warranty_start_date',
-                'active_warranty_end_date',
-                'unit_price',
-                'buy_price',
             )->toArray(),
             $quoteAsset->toArray()
         );
