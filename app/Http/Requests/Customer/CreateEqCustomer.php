@@ -8,6 +8,7 @@ use App\Models\Contact;
 use App\Models\Customer\Customer;
 use App\Models\Data\Country;
 use App\Models\InternalCompany;
+use App\Models\Vendor;
 use App\Services\EqCustomerService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -48,8 +49,15 @@ class CreateEqCustomer extends FormRequest
             // 'country_id'                        => ['required', 'uuid', Rule::exists(Country::class, 'id')->whereNull('deleted_at')],
             'addresses'                         => 'array',
             'addresses.*'                       => ['bail', 'required', 'uuid', Rule::exists(Address::class, 'id')->whereNull('deleted_at')],
-            'contacts'                         => 'array',
-            'contacts.*'                       => ['bail', 'required', 'uuid', Rule::exists(Contact::class, 'id')->whereNull('deleted_at')],
+            'contacts'                          => 'array',
+            'contacts.*'                        => ['bail', 'required', 'uuid', Rule::exists(Contact::class, 'id')->whereNull('deleted_at')],
+
+            'email'                             => 'nullable|string',
+            'vat'                               => 'nullable|string',
+            'phone'                             => 'nullable|string',
+
+            'vendors'                           => 'array',
+            'vendors.*'                         => ['uuid', Rule::exists(Vendor::class, 'id')->whereNull('deleted_at')],
         ];
     }
 

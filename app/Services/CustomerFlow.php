@@ -71,14 +71,17 @@ class CustomerFlow implements Contract
     protected function findOrCreateCustomerCompany(Customer $customer): Company
     {
         return DB::transaction(function () use ($customer) {
+            /** @var Company */
             $company = $this->company->query()->firstOrNew([
                 'name' => $customer->name,
                 /** easyQuote customers need user_id to save a company for that user. */
                 'user_id' => $customer->user_id
             ] + static::CUSTOMER_FLOW_ATTRIBUTES);
 
+            $this->pullCustomerAttributes($company, $customer);
+
             /** Fill company attributes and save if company does not exist yet. */
-            $this->saveExternalCompanyIfNeeds($company, $customer);
+            $this->pullCustomerAttributes($company, $customer);
 
             /** @var \Illuminate\Database\Eloquent\Collection */
             $addresses = static::rejectDuplicatedAddresses($company->addresses, $customer->addresses);
@@ -90,6 +93,8 @@ class CustomerFlow implements Contract
 
             $company->addresses()->syncWithoutDetaching($addresses);
             $company->contacts()->syncWithoutDetaching($contacts);
+
+            $company->vendors()->syncWithoutDetaching($customer->vendors);
 
             report_logger(['message' => CUS_ECAC_01]);
 
@@ -118,10 +123,18 @@ class CustomerFlow implements Contract
         );
     }
 
-    protected static function saveExternalCompanyIfNeeds(Company $company, Customer $customer): void
+    protected static function pullCustomerAttributes(Company $company, Customer $customer): void
     {
         if ($company->exists) {
             report_logger(['message' => CUS_ECE_01]);
+
+            /** Fill company attributes from the customer instance when some of them don't exist in the Company instance. */
+            $company->fill([
+                'email' => $company->email ?? $customer->email,
+                'vat'   => $company->vat ?? $customer->vat,
+                'phone' => $company->phone ?? $customer->phone,
+            ])->saveOrFail();
+
             return;
         }
 
@@ -140,11 +153,12 @@ class CustomerFlow implements Contract
         $templateId = optional($quote)->quote_template_id;
 
         $company->fill([
-            'email' => $emails->first(),
-            'phone' => $numbers->first(),
-            'default_country_id' => $countryId,
-            'default_vendor_id' => $vendorId,
-            'default_template_id' => $templateId,
+            'email'                 => $customer->email ?? $emails->first(),
+            'phone'                 => $customer->phone ?? $numbers->first(),
+            'vat'                   => $customer->vat,
+            'default_country_id'    => $countryId,
+            'default_vendor_id'     => $vendorId,
+            'default_template_id'   => $templateId,
         ]);
 
         $company->saveOrFail();

@@ -83,6 +83,7 @@ class CustomerRepository implements CustomerRepositoryInterface
 
                 $customer->addresses()->sync(Arr::get($attributes, 'addresses', []));
                 $customer->contacts()->sync(Arr::get($attributes, 'contacts', []));
+                $customer->vendors()->sync(Arr::get($attributes, 'vendors', []));
 
                 $customer->load('country', 'addresses');
             })

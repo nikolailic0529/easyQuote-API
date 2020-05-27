@@ -12,6 +12,7 @@ use App\Traits\{
     Submittable,
     Quote\HasQuotes,
     Activity\LogsActivity,
+    BelongsToVendors,
     Migratable,
     Uuid
 };
@@ -38,6 +39,7 @@ class Customer extends Model
         HasAddressTypes,
         BelongsToContacts,
         BelongsToCountry,
+        BelongsToVendors,
         HasContactTypes,
         Submittable,
         HasQuotes,
@@ -45,12 +47,6 @@ class Customer extends Model
         LogsActivity,
         Migratable,
         HasRelationships;
-
-    protected $attributes = [
-        'support_start' => null,
-        'support_end' => null,
-        'valid_until' => null
-    ];
 
     protected $fillable = [
         'name',
@@ -67,7 +63,10 @@ class Customer extends Model
         'quotation_valid_until',
         'payment_terms',
         'invoicing_terms',
-        'service_levels'
+        'service_levels',
+        'vat',
+        'email',
+        'phone'
     ];
 
     protected $hidden = [
