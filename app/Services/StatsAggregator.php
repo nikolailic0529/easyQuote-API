@@ -25,6 +25,7 @@ use Grimzy\LaravelMysqlSpatial\{
 use Illuminate\Support\Arr;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Carbon\CarbonPeriod;
+use Illuminate\Database\Eloquent\Builder;
 
 class StatsAggregator
 {
@@ -397,15 +398,11 @@ class StatsAggregator
     {
         $where = [];
 
-        if ($countryId) {
-            array_push($where, ['country_id', '=', $countryId]);
-        }
-
         if ($userId) {
             array_push($where, ['user_id', '=', $userId]);
         }
 
-        $bindings = $where;
+        $bindings = array_merge($where, ['country_id', '=', $countryId]);
         $cacheKey = static::assetsSummaryCacheKey($bindings);
 
         if ($this->cache->has($cacheKey)) {
@@ -413,12 +410,13 @@ class StatsAggregator
         }
 
         $result = $this->asset->query()
-            ->toBase()
             ->selectRaw('COUNT(`active_warranty_end_date` <= NOW() OR NULL) AS `assets_renewals_count`')
             ->selectRaw('SUM(CASE WHEN `active_warranty_end_date` <= NOW() THEN `unit_price` END) AS `assets_renewals_value`')
             ->selectRaw('COUNT(*) AS `assets_count`')
             ->selectRaw('SUM(`unit_price`) AS `assets_value`')
             ->where($where)
+            ->when($countryId, fn (Builder $q) => $q->whereHas('country', fn (Builder $country) => $country->whereKey($countryId)))
+            ->toBase()
             ->first();
 
         $result->assets_locations_count = $this->assetTotal->query()

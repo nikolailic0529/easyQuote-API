@@ -24,6 +24,7 @@ class Uniqueness extends FormRequest
     {
         return [
             ['id', '!=', $this->asset_id],
+            ['user_id', '=', auth()->id()],
             ['vendor_id', '=', $this->vendor_id],
             ['serial_number', '=', $this->serial_number],
         ];
