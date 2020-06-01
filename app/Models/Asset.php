@@ -39,6 +39,7 @@ class Asset extends Model
         'active_warranty_end_date',
         'unit_price',
         'buy_price',
+        'product_image',
         'is_migrated'
     ];
 

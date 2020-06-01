@@ -41,6 +41,7 @@ class UpdateAsset extends FormRequest
             'product_number'                => ['required', 'string', 'max:191'],
             'serial_number'                 => ['required', 'string', 'max:191', Rule::unique(Asset::class)->ignore($this->route('asset'))->where('vendor_id', $this->vendor_id)->where('user_id', auth()->id())->whereNull('deleted_at')],
             'product_description'           => ['nullable', 'string', 'max:191'],
+            'product_image'                 => ['nullable', 'string', 'max:191']
         ];
     }
 

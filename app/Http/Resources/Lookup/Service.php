@@ -21,6 +21,7 @@ class Service extends JsonResource
             'model' => $this->model,
             'serial' => $this->serial,
             'description' => $this->description,
+            'product_image' => $this->product_image,
             'warranty_start_date' => optional($this->warranty_start_date)->format(config('date.format')),
             'warranty_end_date' => optional($this->warranty_end_date)->format(config('date.format')),
             'warranty_status' => $this->warranty_status,
