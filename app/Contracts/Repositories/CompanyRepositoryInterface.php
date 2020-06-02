@@ -63,9 +63,10 @@ interface CompanyRepositoryInterface
     /**
      * Retrieve all External type companies.
      *
+     * @param array $where
      * @return IlluminateCollection
      */
-    public function allExternal(): IlluminateCollection;
+    public function allExternal(array $where = []): IlluminateCollection;
 
     /**
      * Companies query.

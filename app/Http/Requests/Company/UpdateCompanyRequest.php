@@ -42,6 +42,12 @@ class UpdateCompanyRequest extends FormRequest
                 'string',
                 Rule::in(Company::TYPES)
             ],
+            'source' => [
+                'nullable',
+                Rule::requiredIf(fn () => $this->type === Company::EXT_TYPE),
+                'string',
+                Rule::in(Company::SOURCES)
+            ],
             'short_code' => [
                 Rule::requiredIf(fn () => $this->type === Company::INT_TYPE),
                 'string',

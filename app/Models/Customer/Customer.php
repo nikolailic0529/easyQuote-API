@@ -31,7 +31,7 @@ use Staudenmeir\EloquentHasManyDeep\{
 
 class Customer extends Model
 {
-    public const S4_SOURCE = 'S4', EQ_SOURCE = 'easyQuote';
+    public const S4_SOURCE = 'S4', EQ_SOURCE = 'EQ';
 
     use Uuid,
         Multitenantable,
@@ -66,7 +66,8 @@ class Customer extends Model
         'service_levels',
         'vat',
         'email',
-        'phone'
+        'phone',
+        'int_company_id'
     ];
 
     protected $hidden = [

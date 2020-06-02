@@ -16,6 +16,7 @@ use App\Http\Resources\{
     Company\CompanyCollection,
 };
 use App\Models\Company;
+use App\Models\Customer\Customer;
 
 class CompanyController extends Controller
 {
@@ -64,7 +65,7 @@ class CompanyController extends Controller
     public function getExternal()
     {
         return response()->json(
-            $this->company->allExternal()
+            $this->company->allExternal(['source' => Customer::EQ_SOURCE])
         );
     }
 

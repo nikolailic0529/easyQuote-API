@@ -11,6 +11,7 @@ use Tests\Unit\Traits\{
     WithFakeUser
 };
 use App\Models\Quote\Quote;
+use App\Models\Role;
 
 class ContractTest extends TestCase
 {
@@ -204,12 +205,54 @@ class ContractTest extends TestCase
         $this->assertSoftDeleted($contract);
     }
 
+    /**
+     * Test download the contract PDF having the respective permissions.
+     *
+     * @return void
+     */
+    public function testSubmittedContractDownload()
+    {
+        $contract = tap($this->createFakeContract())->submit();
+
+        $this->assertTrue($this->user->can('download_contract_pdf'));
+
+        $this->get(url('api/quotes/submitted/pdf/' . $contract->quote_id . '/contract'))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+    }
+
+    /**
+     * Test download the contract PDF not having the respective permissions.
+     *
+     * @return void
+     */
+    public function testSubmittedContractDownloadWithoutPermissions()
+    {
+        $this->user->role->revokePermissionTo('download_contract_pdf');
+
+        $contract = tap($this->createFakeContract())->submit();
+
+        $this->assertFalse($this->user->can('download_contract_pdf'));
+
+        $this->get(url('api/quotes/submitted/pdf/' . $contract->quote_id . '/contract'))
+            ->assertForbidden();
+
+        $this->user->role->givePermissionTo('download_contract_pdf');
+    }
+
     protected function createFakeContract(): Contract
     {
+        /** @var \App\Models\QuoteTemplate\QuoteTemplate */
+        $quoteTemplate = app('template.repository')->random();
+
+        /** @var \App\Models\QuoteTemplate\ContractTemplate */
         $contractTemplate = app('contract_template.repository')->random();
 
-        $attributes = ['contract_template_id' => $contractTemplate->id];
+        $attributes = ['contract_template_id' => $contractTemplate->getKey()];
 
-        return app('contract.state')->createFromQuote(factory(Quote::class)->create(), $attributes);
+        return app('contract.state')->createFromQuote(
+            factory(Quote::class)->create(['quote_template_id' => $quoteTemplate->getKey()]),
+            $attributes
+        );
     }
 }

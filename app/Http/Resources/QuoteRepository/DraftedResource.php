@@ -32,7 +32,7 @@ class DraftedResource extends JsonResource
                 'id'                    => $this->customer_id,
                 'name'                  => $this->cached_relations->customer->name,
                 'rfq'                   => $this->cached_relations->customer->rfq,
-                'source'                => $this->cached_relations->customer->source,
+                'source'                => __($this->cached_relations->customer->source),
 
                 'valid_until'           => optional($this->cached_relations->customer->valid_until_date, fn ($date) => Carbon::parse($date))->format(config('date.format')),
                 'support_start'         => optional($this->cached_relations->customer->support_start_date, fn ($date) => Carbon::parse($date))->format(config('date.format')),

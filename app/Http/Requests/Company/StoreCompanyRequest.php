@@ -50,6 +50,12 @@ class StoreCompanyRequest extends FormRequest
                 'string',
                 Rule::in(Company::TYPES)
             ],
+            'source' => [
+                'nullable',
+                Rule::requiredIf(fn () => $this->type === Company::EXT_TYPE),
+                'string',
+                Rule::in(Company::SOURCES)
+            ],
             'logo' => [
                 'image',
                 'max:2048'
