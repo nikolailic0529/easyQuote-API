@@ -373,12 +373,13 @@ class QuoteStateProcessor implements QuoteState
     public function replicateMapping(string $sourceId, string $targetId): void
     {
         DB::table('quote_field_column')->insertUsing(
-            ['quote_id', 'template_field_id', 'importable_column_id', 'is_default_enabled'],
+            ['quote_id', 'template_field_id', 'importable_column_id', 'is_default_enabled', 'sort'],
             DB::table('quote_field_column')->select(
                 DB::raw("'{$targetId}' as quote_id"),
                 'template_field_id',
                 'importable_column_id',
-                'is_default_enabled'
+                'is_default_enabled',
+                'sort'
             )
                 ->where('quote_id', $sourceId)
         );

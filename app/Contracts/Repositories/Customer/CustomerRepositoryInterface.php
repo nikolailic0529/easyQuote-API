@@ -71,6 +71,15 @@ interface CustomerRepositoryInterface
     public function create($attributes): Customer;
 
     /**
+     * Update the specific Customer.
+     *
+     * @param string|Customer $customer
+     * @param array $attributes
+     * @return \App\Models\Customer\Customer
+     */
+    public function update($customer, array $attributes): Customer;
+
+    /**
      * Delete a specified Customer.
      *
      * @param \App\Models\Customer\Customer|string $customer

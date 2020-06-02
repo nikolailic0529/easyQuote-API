@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Contracts\Repositories\CompanyRepositoryInterface;
 use App\Models\Company;
 use Illuminate\Database\Eloquent\Builder;
 use Tests\TestCase;
@@ -62,9 +63,15 @@ class CompanyTest extends TestCase
      */
     public function testCompanyCreatingWithExistingVat()
     {
-        $vat = app('company.repository')->random()->vat;
+        $company = tap(
+            factory(Company::class)->make(['user_id' => $this->user->getKey()]),
+            function (Company $company) {
+                unset($company['vendors']);
+                $company->save();
+            }
+        );
 
-        $attributes = factory(Company::class)->raw(compact('vat'));
+        $attributes = factory(Company::class)->raw(['vat' => $company->vat]);
 
         $this->postJson(url('api/companies'), $attributes)
             ->assertStatus(422)

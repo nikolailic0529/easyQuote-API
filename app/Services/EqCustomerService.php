@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Company;
 use App\Models\Customer\Customer;
 use App\Services\Exceptions\InvalidCompany;
+use Illuminate\Database\Eloquent\Builder;
 
 class EqCustomerService
 {
@@ -25,13 +26,13 @@ class EqCustomerService
      * @param Company $company
      * @return string
      */
-    public function giveNumber(Company $company): string
+    public function giveNumber(Company $company, ?Customer $customer = null): string
     {
         if ($company->type !== Company::INT_TYPE) {
             throw InvalidCompany::nonInternal();
         }
 
-        $highestNumber = $this->getHighestNumber();
+        $highestNumber = $this->getHighestNumber($customer);
 
         return sprintf(
             static::RFQ_NUMBER_PATTERN,
@@ -46,8 +47,10 @@ class EqCustomerService
      *
      * @return integer
      */
-    public function getHighestNumber(): int
+    public function getHighestNumber(?Customer $customer = null): int
     {
-        return (int) $this->customer->whereSource(Customer::EQ_SOURCE)->max('sequence_number');
+        return (int) $this->customer
+            ->when($customer, fn (Builder $q) => $q->whereKeyNot($customer->getKey()))
+            ->whereSource(Customer::EQ_SOURCE)->max('sequence_number');
     }
 }

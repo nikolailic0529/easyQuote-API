@@ -34,6 +34,24 @@ class CustomerPolicy
     }
 
     /**
+     * Determine whether the user can view the customer.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Customer\Customer  $customer
+     * @return mixed
+     */
+    public function update(User $user, Customer $customer)
+    {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if ($user->can('create_quotes') && $customer->user_id === $user->getKey()) {
+            return true;
+        }
+    }
+
+    /**
      * Determine whether the user can delete the customer.
      *
      * @param  \App\Models\User  $user

@@ -5,6 +5,7 @@ return [
         'download_quote_pdf',
         'download_quote_price',
         'download_quote_schedule',
+        'download_contract_pdf',
     ],
     'privileges' => [
         'Read Only',

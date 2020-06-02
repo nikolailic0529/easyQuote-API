@@ -314,7 +314,7 @@ class QuotePolicy
      */
     public function downloadContractPdf(User $user, Quote $quote)
     {
-        if ($this->downloadPdf($user, $quote) && $quote->contractTemplate()->doesntExist()) {
+        if ($user->cant('download_contract_pdf') || $quote->contractTemplate()->doesntExist()) {
             return $this->deny(QNT_02);
         }
 

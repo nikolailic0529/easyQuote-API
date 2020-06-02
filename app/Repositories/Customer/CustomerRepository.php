@@ -86,7 +86,23 @@ class CustomerRepository implements CustomerRepositoryInterface
                 $customer->vendors()->sync(Arr::get($attributes, 'vendors', []));
 
                 $customer->load('country', 'addresses');
-            })
+            }, 3)
+        );
+    }
+
+    public function update($customer, array $attributes): Customer
+    {
+        /** @var Customer */
+        $customer = $this->resolveModel($customer);
+
+        return DB::transaction(
+            fn () => tap($customer->fill($attributes), function (Customer $customer) use ($attributes) {
+                $customer->save();
+
+                $customer->addresses()->sync(Arr::get($attributes, 'addresses', []));
+                $customer->contacts()->sync(Arr::get($attributes, 'contacts', []));
+                $customer->vendors()->sync(Arr::get($attributes, 'vendors', []));
+            }, 3)
         );
     }
 

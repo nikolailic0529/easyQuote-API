@@ -221,6 +221,11 @@ class Customer extends Model
         return "Customer ({$this->rfq})";
     }
 
+    public function belongsToEasyQuote(): bool
+    {
+        return $this->source === static::EQ_SOURCE;
+    }
+
     public function toSearchArray()
     {
         return [

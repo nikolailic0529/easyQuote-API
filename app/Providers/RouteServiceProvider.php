@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Customer\Customer;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 
@@ -24,8 +25,10 @@ class RouteServiceProvider extends ServiceProvider
     public function boot()
     {
         //
-
+        
         parent::boot();
+        
+        Route::bind('eq_customer', fn ($id) => Customer::query()->whereSource(Customer::EQ_SOURCE)->findOrFail($id));
     }
 
     /**

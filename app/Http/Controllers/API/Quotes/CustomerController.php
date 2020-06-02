@@ -15,6 +15,8 @@ use App\Models\{
 };
 use App\Services\EqCustomerService;
 use App\Facades\CustomerFlow;
+use App\Http\Requests\Customer\UpdateEqCustomer;
+use App\Models\Customer\EqCustomer;
 use Illuminate\Http\Response;
 
 class CustomerController extends Controller
@@ -26,7 +28,7 @@ class CustomerController extends Controller
         $this->customers = $customers;
 
         $this->authorizeResource(Customer::class, 'customer', [
-            'except' => 'store'
+            'except' => ['store', 'update']
         ]);
     }
 
@@ -63,6 +65,23 @@ class CustomerController extends Controller
     }
 
     /**
+     * Update the specified resource in storage.
+     *
+     * @param  UpdateEqCustomer  $request
+     * @param  \App\Models\Customer\Customer  $customer
+     * @return \Illuminate\Http\Response
+     */
+    public function update(UpdateEqCustomer $request, Customer $customer)
+    {
+        $this->authorize('update', $customer);
+        
+        $resource = $this->customers->update($customer, $request->validated())
+            ->load('addresses', 'contacts', 'vendors');
+
+        return response()->json($resource);
+    }
+
+    /**
      * Display the specified resource.
      *
      * @param  \App\Models\Customer\Customer  $customer
@@ -71,7 +90,7 @@ class CustomerController extends Controller
     public function show(Customer $customer)
     {
         return response()->json(
-            $this->customers->find($customer->id)
+            $customer->load('addresses', 'contacts', 'vendors')
         );
     }
 
