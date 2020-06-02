@@ -56,6 +56,7 @@ Route::group(['namespace' => 'API'], function () {
             Route::post('attachments', 'AttachmentController');
 
             Route::resource('assets', 'AssetController')->only(ROUTE_CRUD);
+            Route::post('assets/unique', 'AssetController@checkUniqueness');
             Route::post('lookup/service', 'ServiceController');
         });
 
@@ -273,6 +274,8 @@ Route::group(['namespace' => 'API'], function () {
                  * Customers
                  */
                 Route::apiResource('customers', 'CustomerController', ['only' => ROUTE_CRD]);
+                Route::patch('customers/{eq_customer}', 'CustomerController@update');
+
                 Route::get('customers/number/{company}', 'CustomerController@giveCustomerNumber');
 
                 Route::group(['prefix' => 'step'], function () {

@@ -31,6 +31,7 @@ class Asset extends JsonResource
             'product_number' => $this->product_number,
             'serial_number' => $this->serial_number,
             'product_description' => $this->product_description,
+            'product_image' => $this->product_image,
             'created_at' => optional($this->created_at)->format(config('date.format_time')),
             'updated_at' => optional($this->updated_at)->format(config('date.format_time')),
         ];

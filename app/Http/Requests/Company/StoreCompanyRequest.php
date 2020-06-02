@@ -24,20 +24,26 @@ class StoreCompanyRequest extends FormRequest
                 'string',
                 'max:191',
                 'min:2',
-                Rule::unique(Company::class)->whereNull('deleted_at')
+                Rule::unique(Company::class)
+                    ->where('user_id', auth()->id())
+                    ->whereNull('deleted_at')
             ],
             'vat' => [
                 'nullable',
                 'string',
                 'max:191',
                 'min:2',
-                Rule::unique(Company::class)->whereNull('deleted_at')
+                Rule::unique(Company::class)
+                    ->where('user_id', auth()->id())
+                    ->whereNull('deleted_at')
             ],
             'short_code' => [
                 Rule::requiredIf(fn () => $this->type === Company::INT_TYPE),
                 'string',
                 'size:3',
-                Rule::unique(Company::class)->whereNull('deleted_at')
+                Rule::unique(Company::class)
+                    ->where('user_id', auth()->id())
+                    ->whereNull('deleted_at')
             ],
             'type' => [
                 'required',

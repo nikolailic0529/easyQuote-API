@@ -10,6 +10,7 @@ use App\Http\Requests\{
     Asset\CreateAsset,
     Asset\UpdateAsset,
 };
+use App\Http\Requests\Asset\Uniqueness;
 use App\Http\Resources\Asset\Asset as AssetResource;
 use App\Http\Resources\Asset\AssetCollection;
 use App\Models\Asset;
@@ -108,6 +109,13 @@ class AssetController extends Controller
     {
         return response()->json(
             $this->assets->delete($asset)
+        );
+    }
+
+    public function checkUniqueness(Uniqueness $request)
+    {
+        return response()->json(
+            $this->assets->checkUniqueness($request->validated())
         );
     }
 }

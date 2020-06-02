@@ -36,6 +36,6 @@ class ServiceController extends Controller
             );
         }
 
-        return response()->json(['message' => SUN_01], Response::HTTP_SERVICE_UNAVAILABLE);
+        return response()->json(['message' => SUN_01], Response::HTTP_NOT_FOUND);
     }
 }

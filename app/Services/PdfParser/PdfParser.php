@@ -163,7 +163,7 @@ class PdfParser implements PdfParserInterface
 
     private function fetchPricePage(string $content): array
     {
-        $matches = collect([PdfOptions::REGEXP_PRICE_LINES_01, PdfOptions::REGEXP_PRICE_LINES_02, PdfOptions::REGEXP_PRICE_LINES_03])
+        $matches = collect([PdfOptions::REGEXP_PRICE_LINES_01, PdfOptions::REGEXP_PRICE_LINES_02, PdfOptions::REGEXP_PRICE_LINES_03, PdfOptions::REGEXP_PRICE_LINES_04])
             ->reduce(function (Collection $matches, $regexp) use ($content) {
                 preg_match_all($regexp, $content, $lines, PREG_UNMATCHED_AS_NULL, 0);
                 return $matches->mergeRecursive(Arr::only($lines, $this->getColumnNames()));

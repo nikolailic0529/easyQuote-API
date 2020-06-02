@@ -5,15 +5,14 @@ namespace App\Http\Requests\Customer;
 use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
-use App\Models\Customer\Customer;
-use App\Models\Data\Country;
 use App\Models\InternalCompany;
 use App\Models\Vendor;
+use App\Models\Customer\Customer;
 use App\Services\EqCustomerService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class CreateEqCustomer extends FormRequest
+class UpdateEqCustomer extends FormRequest
 {
     protected EqCustomerService $eqCustomerService;
 
@@ -34,19 +33,17 @@ class CreateEqCustomer extends FormRequest
         return [
             'int_company_id'                    => ['required', 'uuid', Rule::exists(Company::class, 'id')->where('type', Company::INT_TYPE)->whereNull('deleted_at')],
 
-            // 'ext_company_id'                    => ['nullable', 'uuid', Rule::exists(Company::class, 'id')->where('type', Company::EXT_TYPE)->whereNull('deleted_at')],
             'customer_name'                     => 'required|string|min:2',
 
             'service_levels'                    => 'nullable|array',
             'service_levels.*.service_level'    => 'bail|required|string|min:2',
 
-            'quotation_valid_until'             => 'bail|required|string|date_format:Y-m-d',
-            'support_start_date'                => 'bail|required|string|date_format:Y-m-d',
-            'support_end_date'                  => 'bail|required|string|date_format:Y-m-d',
+            'quotation_valid_until'             => 'bail|string|date_format:Y-m-d',
+            'support_start_date'                => 'bail|string|date_format:Y-m-d',
+            'support_end_date'                  => 'bail|string|date_format:Y-m-d',
 
-            'invoicing_terms'                   => 'bail|required|string|min:2|max:2500',
+            'invoicing_terms'                   => 'bail|string|min:2|max:2500',
 
-            // 'country_id'                        => ['required', 'uuid', Rule::exists(Country::class, 'id')->whereNull('deleted_at')],
             'addresses'                         => 'array',
             'addresses.*'                       => ['bail', 'required', 'uuid', Rule::exists(Address::class, 'id')->whereNull('deleted_at')],
             'contacts'                          => 'array',
@@ -74,8 +71,8 @@ class CreateEqCustomer extends FormRequest
     {
         $company = $this->getCompany();
 
-        $rfqNumber = $this->eqCustomerService->giveNumber($company);
-        $highestNumber = $this->eqCustomerService->getHighestNumber();
+        $rfqNumber = $this->eqCustomerService->giveNumber($company, $this->route('eq_customer'));
+        $highestNumber = $this->eqCustomerService->getHighestNumber($this->route('eq_customer'));
 
         $attributes = [
             'rfq_number' => $rfqNumber,

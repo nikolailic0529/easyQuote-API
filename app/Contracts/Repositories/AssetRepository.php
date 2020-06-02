@@ -76,6 +76,14 @@ interface AssetRepository
     public function count(array $where = []): int;
 
     /**
+     * Check asset uniqueness by specific parameters.
+     *
+     * @param array $where
+     * @return boolean
+     */
+    public function checkUniqueness(array $where): bool;
+
+    /**
      * Get asset locations.
      *
      * @return Builder

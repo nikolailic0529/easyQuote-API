@@ -21,16 +21,16 @@ class StoreAddressRequest extends FormRequest
         return [
             'address_type' => ['required', 'string', Rule::in(Address::TYPES)],
             'address_1' => 'required|string|min:2',
-            'address_2' => 'nullable|string|min:2',
-            'city' => 'string',
-            'state' => 'string',
-            'post_code' => 'string',
+            'address_2' => 'nullable|string',
+            'city' => 'nullable|string',
+            'state' => 'nullable|string',
+            'post_code' => 'nullable|string',
             'country_id' => 'required_without:country_code|string|uuid|exists:countries,id'
         ];
     }
 
     protected function nullValues()
     {
-        return ['address_2'];
+        return ['address_2', 'city', 'state', 'post_code'];
     }
 }

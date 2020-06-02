@@ -129,7 +129,7 @@ define('CP_DEF_NAME', 'Support Warehouse Ltd');
  */
 define('CUS_M_01', 'Customer successfully migrated in the external companies.');
 define('CUS_ECNE_01', 'External company does not exist. A new company will be saved in database.');
-define('CUS_ECE_01', 'External company already exists in database. The attributes will not be updated.');
+define('CUS_ECE_01', 'External company already exists in database.');
 define('CUS_ECS_01', 'External company successfully saved in database.');
 define('CUS_ECAC_01', "Customer's addresses and contacts has been attached to external company.");
 

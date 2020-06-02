@@ -67,6 +67,7 @@ class QuoteVersionResource extends JsonResource
             'contract_template'                         => TemplateResourceDesign::make($this->whenLoaded('contractTemplate')),
             'country_margin'                            => $this->usingVersion->countryMargin,
             'discounts'                                 => $this->usingVersion->discounts,
+            'belongs_to_eq_customer'                    => $this->usingVersion->customer->belongsToEasyQuote(),
             'customer'                                  => [
                 'id' => $this->usingVersion->customer->id,
                 'name' => $this->usingVersion->customer->name,
@@ -78,6 +79,7 @@ class QuoteVersionResource extends JsonResource
                 'payment_terms' => $this->usingVersion->customer->payment_terms,
                 'invoicing_terms' => $this->usingVersion->customer->invoicing_terms,
                 'service_levels' => $this->usingVersion->customer->service_levels,
+                'source' => $this->usingVersion->customer->source,
             ],
             'country'                                   => $this->usingVersion->country,
             'vendor'                                    => $this->usingVersion->vendor,

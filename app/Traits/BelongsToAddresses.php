@@ -15,9 +15,7 @@ trait BelongsToAddresses
 
     public function syncAddresses(?array $addresses, bool $detach = true): void
     {
-        if (blank($addresses)) {
-            return;
-        }
+        $addresses ??= [];
 
         $oldAddresses = $this->addresses;
 

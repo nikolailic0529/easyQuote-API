@@ -39,6 +39,7 @@ class Asset extends Model
         'active_warranty_end_date',
         'unit_price',
         'buy_price',
+        'product_image',
         'is_migrated'
     ];
 
@@ -56,6 +57,11 @@ class Asset extends Model
     public function location(): HasOneDeep
     {
         return $this->hasOneDeepFromRelations($this->address(), (new Address)->location());
+    }
+
+    public function country(): HasOneDeep
+    {
+        return $this->hasOneDeepFromRelations($this->address(), (new Address)->country());
     }
 
     public function toSearchArray()

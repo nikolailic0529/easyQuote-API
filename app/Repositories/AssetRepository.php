@@ -80,6 +80,11 @@ class AssetRepository extends SearchableRepository implements Contract
         return $this->asset->query()->where($where)->count();
     }
 
+    public function checkUniqueness(array $where): bool
+    {
+        return $this->asset->query()->where($where)->doesntExist();
+    }
+
     public function findOrFail(string $id): Asset
     {
         return $this->asset->whereKey($id)->firstOrFail();
