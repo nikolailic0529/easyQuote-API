@@ -1,6 +1,11 @@
 <?php
 
 if (!function_exists('slack')) {
+    /**
+     * Slack notification client.
+     *
+     * @return App\Contracts\Services\SlackInterface
+     */
     function slack()
     {
         if (func_num_args() > 0) {

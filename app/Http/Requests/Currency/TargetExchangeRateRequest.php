@@ -31,11 +31,11 @@ class TargetExchangeRateRequest extends FormRequest
 
     public function sourceCurrency(): Currency
     {
-        return $this->currencies->find($this->source_currency_id);
+        return $this->currencies->findOrFail($this->source_currency_id);
     }
 
     public function targetCurrency(): Currency
     {
-        return $this->currencies->find($this->target_currency_id);
+        return $this->currencies->findOrFail($this->target_currency_id);
     }
 }

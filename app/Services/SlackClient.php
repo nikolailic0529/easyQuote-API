@@ -3,23 +3,15 @@
 namespace App\Services;
 
 use App\Contracts\Services\SlackInterface;
-use GuzzleHttp\Client as GuzzleClient;
 use App\Jobs\SendSlackNotification;
-use Psr\Http\Message\ResponseInterface;
-use Exception, Arr, Str;
+use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Http;
+use RuntimeException;
+use Arr, Str;
 
 class SlackClient implements SlackInterface
 {
-    /** @var array */
     protected array $attributes = [];
-
-    /** @var \GuzzleHttp\Client */
-    protected GuzzleClient $guzzle;
-
-    public function __construct()
-    {
-        $this->guzzle = app(GuzzleClient::class);
-    }
 
     public function send(?array $attributes = null)
     {
@@ -36,12 +28,14 @@ class SlackClient implements SlackInterface
         try {
             $response = $this->request($this->toArray());
 
-            if (blank($response)) {
+            if ($response->failed() || blank($response->json())) {
                 $this->error();
+
                 return false;
             }
 
-            $this->success($response->getBody()->getContents());
+            $this->success();
+
             return true;
         } catch (Exception $e) {
             report_logger(['ErrorCode' => 'SNE_02'], ['ErrorDetails' => SNE_02 . ' — ' . $e->getMessage()]);
@@ -65,27 +59,31 @@ class SlackClient implements SlackInterface
         dispatch(new SendSlackNotification($this->attributes));
     }
 
-    public function title($title): SlackInterface
+    public function title($title)
     {
         $this->attributes[__FUNCTION__] = $title;
+        
         return $this;
     }
 
-    public function status($status): SlackInterface
+    public function status($status)
     {
         $this->attributes[__FUNCTION__] = $status;
+
         return $this;
     }
 
-    public function image(string $image): SlackInterface
+    public function image(string $image)
     {
         $this->attributes[__FUNCTION__] = $image;
+
         return $this;
     }
 
-    public function url(string $url): SlackInterface
+    public function url(string $url)
     {
         $this->attributes[__FUNCTION__] = $url;
+
         return $this;
     }
 
@@ -138,9 +136,9 @@ class SlackClient implements SlackInterface
         }
     }
 
-    protected function request(array $payload): ResponseInterface
+    protected function request(array $payload): Response
     {
-        return $this->guzzle->request('POST', config('services.slack.endpoint'), $payload);
+        return Http::post(config('services.slack.endpoint'), $payload);
     }
 
     protected function success()
@@ -187,9 +185,9 @@ class SlackClient implements SlackInterface
         return ['json' => compact('blocks')];
     }
 
-    protected static function undefinedAttributes(): Exception
+    protected static function undefinedAttributes(): RuntimeException
     {
-        return new Exception('The title and status attributes must be defined.');
+        return new RuntimeException('The title and status attributes must be defined.');
     }
 
     protected function setPayload(SlackMessage $message): void

@@ -93,7 +93,7 @@ class StatsAggregator
         $this->cache = $cache;
     }
 
-    public function quotesSummary(?CarbonPeriod $period = null, ?string $countryId = null, ?string $userId = null)
+    public function quotesSummary(?CarbonPeriod $period = null, ?string $countryId = null, ?string $currencyId = null, ?string $userId = null)
     {
         $where = [];
 
@@ -113,7 +113,7 @@ class StatsAggregator
             array_push($where, ['user_id', '=', $userId]);
         }
 
-        $bindings = array_merge($where, [['notification_time', '=', setting('notification_time')->d]]);
+        $bindings = array_merge($where, [['notification_time', '=', setting('notification_time')->d], ['currency_id', '=', $currencyId]]);
         $cacheKey = static::quotesSummaryCacheKey($bindings);
 
         if ($this->cache->has($cacheKey)) {
@@ -140,7 +140,7 @@ class StatsAggregator
 
         $totals = (array) $quoteTotals + (array) $expiringQuotesSummary + (array) $customersSummary + (array) $locationsSummary + (array) $assetsSummary;
 
-        $result = Summary::create($totals, $this->baseRate(), setting('base_currency'), $period);
+        $result = Summary::create($totals, $this->currencyRate($currencyId), setting('base_currency'), $period);
 
         return tap(
             $result,
@@ -183,7 +183,7 @@ class StatsAggregator
         );
     }
 
-    public function customersSummaryList(?CarbonPeriod $period = null, ?string $countryId = null, ?string $userId = null)
+    public function customersSummaryList(?CarbonPeriod $period = null, ?string $countryId = null, ?string $currencyId = null, ?string $userId = null)
     {
         $where = [];
 
@@ -203,7 +203,7 @@ class StatsAggregator
             array_push($where, ['user_id', '=', $userId]);
         }
 
-        $bindings = $where;
+        $bindings = array_merge($where, [['currency_id', '=', $currencyId]]);
         $cacheKey = static::customersListSummaryCacheKey($bindings);
 
         if ($this->cache->has($cacheKey)) {
@@ -223,7 +223,7 @@ class StatsAggregator
             ->take(15)
             ->get();
 
-        $result = CustomersSummary::create($result, $this->baseRate())->toArray();
+        $result = CustomersSummary::create($result, $this->currencyRate($currencyId))->toArray();
 
         return tap(
             $result,
@@ -477,6 +477,21 @@ class StatsAggregator
             static::baseRateCacheKey($currency),
             fn () => $currency->exchangeRate->exchange_rate
         );
+    }
+
+    protected function currencyRate(?string $id): float
+    {
+        if (null === $id) {
+            return $this->baseRate();
+        }
+
+        $currency = $this->currencies->findCached($id);
+
+        if (! $currency instanceof Currency) {
+            return $this->baseRate();
+        }
+
+        return $currency->exchangeRate->exchange_rate;
     }
 
     protected static function quotesSummaryCacheKey(array $bindings = []): string

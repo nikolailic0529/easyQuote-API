@@ -34,6 +34,7 @@ class StatsController extends Controller
             $this->stats->quotesSummary(
                 $request->period(),
                 $request->country_id,
+                $request->currency_id,
                 $request->userId()
             )
         );
@@ -51,6 +52,7 @@ class StatsController extends Controller
             $this->stats->customersSummaryList(
                 $request->period(),
                 $request->country_id,
+                $request->currency_id,
                 $request->userId()
             )
         );

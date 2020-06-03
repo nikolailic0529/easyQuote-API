@@ -30,5 +30,11 @@ class StopMaintenance implements ShouldQueue
         MaintenanceCompleted::dispatch();
 
         app(Users::class)->cursor()->each(fn (User $user) => $user->notify(new MaintenanceFinished));
+
+        slack()
+            ->title('Maintenance')
+            ->status(['Maintenance finished', 'Time' => now()->format(config('date.format_time'))])
+            ->image(assetExternal(SN_IMG_MF))
+            ->send();
     }
 }

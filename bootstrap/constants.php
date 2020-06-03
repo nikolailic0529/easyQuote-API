@@ -293,6 +293,8 @@ define('SN_IMG_QSS', 'img/slack/qss.gif');
 define('SN_IMG_QSF', 'img/slack/qsf.gif');
 define('SN_IMG_S4RDS', 'img/slack/s4rds.gif');
 define('SN_IMG_S4RDF', 'img/slack/s4rdf.gif');
+define('SN_IMG_MS', 'img/slack/ms.gif');
+define('SN_IMG_MF', 'img/slack/mf.gif');
 
 /**
  * Exchange Rates.

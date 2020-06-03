@@ -23,6 +23,18 @@ class CurrencyController extends Controller
     }
 
     /**
+     * Display all currencies having the exchange rate.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function showAllHavingExrate()
+    {
+        return response()->json(
+            $this->currencies->allHaveExrate()
+        );
+    }
+
+    /**
      * Display target exchange rate based on source & target currencies.
      *
      * @param \App\Http\Requests\Currency\TargetExchangeRateRequest $request

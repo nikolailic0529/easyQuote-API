@@ -42,7 +42,23 @@ interface CurrencyRepositoryInterface
      * @return \App\Models\Data\Currency
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
-    public function find(string $id): Currency;
+    public function findOrFail(string $id): Currency;
+
+    /**
+     * Retrieve the specified currency by id.
+     *
+     * @param string $id
+     * @return Currency|null
+     */
+    public function find(string $id): ?Currency;
+
+    /**
+     * Retrieve the specified currency by id from the cache repository.
+     *
+     * @param string $id
+     * @return Currency|null
+     */
+    public function findCached(string $id): ?Currency;
 
     /**
      * Retrieve Currency passed Currency code.

@@ -31,6 +31,7 @@ Route::group(['namespace' => 'API'], function () {
             Route::get('timezones', 'TimezonesController');
             Route::get('languages', 'LanguagesController');
             Route::get('currencies', 'CurrencyController');
+            Route::get('currencies/xr', 'CurrencyController@showAllHavingExrate');
             Route::get('fileformats', 'FileFormatsController');
         });
         Route::get('countries', 'CountryController'); // exclusive high throttle rate
