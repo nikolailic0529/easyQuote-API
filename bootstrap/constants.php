@@ -283,6 +283,12 @@ define('SUN_01', 'Unable to fetch data from external service');
 define('MYSQL_UNBUFFERED', 'mysql_unbuffered');
 
 /**
+ * Elasticsearch
+ */
+define('ES_AL_01', 'Elasticsearch nodes are alive.');
+define('ES_NAL_01', 'No alive elasticsearch nodes found. Restarting...');
+
+/**
  * Slack.
  */
 define('SLACK_SERVICE_URL', 'https://hooks.slack.com/services/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');
@@ -293,6 +299,8 @@ define('SN_IMG_QSS', 'img/slack/qss.gif');
 define('SN_IMG_QSF', 'img/slack/qsf.gif');
 define('SN_IMG_S4RDS', 'img/slack/s4rds.gif');
 define('SN_IMG_S4RDF', 'img/slack/s4rdf.gif');
+define('SN_IMG_MS', 'img/slack/ms.gif');
+define('SN_IMG_MF', 'img/slack/mf.gif');
 
 /**
  * Exchange Rates.

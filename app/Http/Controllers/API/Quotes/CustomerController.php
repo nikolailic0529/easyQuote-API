@@ -8,7 +8,6 @@ use App\Contracts\{
     Services\QuoteState
 };
 use App\Http\Requests\Customer\CreateEqCustomer;
-use App\Http\Resources\Customer\EqCustomer as EqCustomerResource;
 use App\Models\{
     InternalCompany,
     Customer\Customer,
@@ -16,7 +15,6 @@ use App\Models\{
 use App\Services\EqCustomerService;
 use App\Facades\CustomerFlow;
 use App\Http\Requests\Customer\UpdateEqCustomer;
-use App\Models\Customer\EqCustomer;
 use Illuminate\Http\Response;
 
 class CustomerController extends Controller
@@ -75,8 +73,10 @@ class CustomerController extends Controller
     {
         $this->authorize('update', $customer);
         
-        $resource = $this->customers->update($customer, $request->validated())
-            ->load('addresses', 'contacts', 'vendors');
+        $resource = tap($this->customers->update($customer, $request->validated()), function (Customer $customer) {
+            $customer->load('addresses', 'contacts', 'vendors');
+            CustomerFlow::migrateCustomer($customer);
+        });
 
         return response()->json($resource);
     }
@@ -114,10 +114,10 @@ class CustomerController extends Controller
      * @param EqCustomerService $service
      * @return \Illuminate\Http\Response
      */
-    public function giveCustomerNumber(InternalCompany $company, EqCustomerService $service)
+    public function giveCustomerNumber(InternalCompany $company, EqCustomerService $service, ?Customer $customer = null)
     {
         return response()->json([
-            'rfq_number' => $service->giveNumber($company)
+            'rfq_number' => $service->giveNumber($company, $customer)
         ]);
     }
 }

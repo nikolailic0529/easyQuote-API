@@ -61,7 +61,7 @@ class Asset extends Model
 
     public function country(): HasOneDeep
     {
-        return $this->hasOneDeepFromRelations($this->address(), (new Address)->country());
+        return $this->hasOneDeepFromRelations($this->address(), (new Address)->country())->withDefault();
     }
 
     public function toSearchArray()

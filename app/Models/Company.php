@@ -47,6 +47,8 @@ class Company extends Model implements WithImage, WithLogo, ActivatableInterface
 
     public const CATEGORIES = ['End User', 'Reseller', 'Business Partner'];
 
+    public const SOURCES = ['EQ', 'S4'];
+
     public const INT_TYPE = 'Internal';
 
     public const EXT_TYPE = 'External';
@@ -73,7 +75,7 @@ class Company extends Model implements WithImage, WithLogo, ActivatableInterface
         HasRelationships;
 
     protected $fillable = [
-        'name', 'short_code', 'category', 'vat', 'type', 'email', 'website', 'phone', 'default_vendor_id', 'default_country_id', 'default_template_id'
+        'name', 'short_code', 'type', 'category', 'source', 'vat', 'email', 'website', 'phone', 'default_vendor_id', 'default_country_id', 'default_template_id'
     ];
 
     protected static $logAttributes = [

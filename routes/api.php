@@ -31,6 +31,7 @@ Route::group(['namespace' => 'API'], function () {
             Route::get('timezones', 'TimezonesController');
             Route::get('languages', 'LanguagesController');
             Route::get('currencies', 'CurrencyController');
+            Route::get('currencies/xr', 'CurrencyController@showAllHavingExrate');
             Route::get('fileformats', 'FileFormatsController');
         });
         Route::get('countries', 'CountryController'); // exclusive high throttle rate
@@ -276,7 +277,7 @@ Route::group(['namespace' => 'API'], function () {
                 Route::apiResource('customers', 'CustomerController', ['only' => ROUTE_CRD]);
                 Route::patch('customers/{eq_customer}', 'CustomerController@update');
 
-                Route::get('customers/number/{company}', 'CustomerController@giveCustomerNumber');
+                Route::get('customers/number/{company}/{customer?}', 'CustomerController@giveCustomerNumber');
 
                 Route::group(['prefix' => 'step'], function () {
                     Route::get('1', 'QuoteController@step1');

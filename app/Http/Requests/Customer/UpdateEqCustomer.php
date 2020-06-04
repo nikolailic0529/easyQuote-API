@@ -18,6 +18,8 @@ class UpdateEqCustomer extends FormRequest
 
     protected ?InternalCompany $internalCompany = null;
 
+    protected ?Customer $eqCustomer = null;
+
     public function __construct(EqCustomerService $eqCustomerService)
     {
         $this->eqCustomerService = $eqCustomerService;
@@ -69,10 +71,14 @@ class UpdateEqCustomer extends FormRequest
     
     public function validated()
     {
+        if ($this->int_company_id === $this->getCustomer()->int_company_id) {
+            return parent::validated();
+        }
+        
         $company = $this->getCompany();
 
-        $rfqNumber = $this->eqCustomerService->giveNumber($company, $this->route('eq_customer'));
-        $highestNumber = $this->eqCustomerService->getHighestNumber($this->route('eq_customer'));
+        $rfqNumber = $this->eqCustomerService->giveNumber($company, $this->getCustomer());
+        $highestNumber = $this->eqCustomerService->getHighestNumber($this->getCustomer());
 
         $attributes = [
             'rfq_number' => $rfqNumber,
@@ -81,5 +87,14 @@ class UpdateEqCustomer extends FormRequest
         ];
 
         return $attributes + parent::validated();
+    }
+
+    public function getCustomer(): Customer
+    {
+        if (isset($this->eqCustomer)) {
+            return $this->eqCustomer;
+        }
+
+        return $this->eqCustomer = $this->route('eq_customer');
     }
 }

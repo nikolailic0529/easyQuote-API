@@ -75,7 +75,8 @@ class CustomerFlow implements Contract
             $company = $this->company->query()->firstOrNew([
                 'name' => $customer->name,
                 /** easyQuote customers need user_id to save a company for that user. */
-                'user_id' => $customer->user_id
+                'user_id' => $customer->user_id,
+                'source' => $customer->source
             ] + static::CUSTOMER_FLOW_ATTRIBUTES);
 
             $this->pullCustomerAttributes($company, $customer);

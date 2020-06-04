@@ -4,7 +4,9 @@ namespace App\Repositories;
 
 use App\Contracts\Repositories\CurrencyRepositoryInterface;
 use App\Models\Data\Currency;
+use App\Models\Data\ExchangeRate;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Database\Query\Builder as DbBuilder;
 use Setting;
 
 class CurrencyRepository implements CurrencyRepositoryInterface
@@ -50,9 +52,19 @@ class CurrencyRepository implements CurrencyRepositoryInterface
             ->get();
     }
 
-    public function find(string $id): Currency
+    public function findOrFail(string $id): Currency
     {
-        return $this->currency->query()->whereId($id)->firstOrFail();
+        return $this->currency->query()->whereKey($id)->firstOrFail();
+    }
+
+    public function find(string $id): ?Currency
+    {
+        return $this->currency->query()->whereKey($id)->first();
+    }
+
+    public function findCached(string $id): ?Currency
+    {
+        return $this->currency->query()->whereKey($id)->cacheForever()->first();
     }
 
     public function findByCode(?string $code)

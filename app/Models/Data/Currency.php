@@ -8,11 +8,12 @@ use App\Traits\{
     Currency\HasExchangeRate,
 };
 use Illuminate\Database\Eloquent\Model;
+use Rennokki\QueryCache\Traits\QueryCacheable;
 use Setting;
 
 class Currency extends Model implements HasOrderedScope
 {
-    use Uuid, HasExchangeRate;
+    use Uuid, HasExchangeRate, QueryCacheable;
 
     public $timestamps = false;
 

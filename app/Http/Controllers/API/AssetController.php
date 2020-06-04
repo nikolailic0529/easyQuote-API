@@ -80,7 +80,7 @@ class AssetController extends Controller
      */
     public function show(Asset $asset)
     {
-        $asset->loadMissing('assetCategory', 'address');
+        $asset->loadMissing('assetCategory', 'address', 'country');
         
         return response()->json(AssetResource::make($asset));
     }

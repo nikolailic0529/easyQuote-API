@@ -24,7 +24,7 @@ class UpdateCompanyRequest extends FormRequest
                 'max:191',
                 'min:2',
                 Rule::unique(Company::class)
-                    ->where('user_id', auth()->id())
+                    ->where('user_id', optional($this->company)->user_id)
                     ->whereNull('deleted_at')
                     ->ignore($this->company)
             ],
@@ -34,7 +34,7 @@ class UpdateCompanyRequest extends FormRequest
                 'max:191',
                 'min:2',
                 Rule::unique(Company::class)
-                    ->where('user_id', auth()->id())
+                    ->where('user_id', optional($this->company)->user_id)
                     ->whereNull('deleted_at')
                     ->ignore($this->company)
             ],
@@ -42,12 +42,18 @@ class UpdateCompanyRequest extends FormRequest
                 'string',
                 Rule::in(Company::TYPES)
             ],
+            'source' => [
+                'nullable',
+                Rule::requiredIf(fn () => $this->type === Company::EXT_TYPE),
+                'string',
+                Rule::in(Company::SOURCES)
+            ],
             'short_code' => [
                 Rule::requiredIf(fn () => $this->type === Company::INT_TYPE),
                 'string',
                 'size:3',
                 Rule::unique(Company::class)
-                    ->where('user_id', auth()->id())
+                    ->where('user_id', optional($this->company)->user_id)
                     ->whereNull('deleted_at')
                     ->ignore($this->company)
             ],

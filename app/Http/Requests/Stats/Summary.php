@@ -4,6 +4,7 @@ namespace App\Http\Requests\Stats;
 
 use App\Contracts\Repositories\CountryRepositoryInterface as Countries;
 use App\Models\Data\Country;
+use App\Models\Data\Currency;
 use Carbon\CarbonPeriod;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -26,6 +27,7 @@ class Summary extends Request
     {
         return [
             'country_id' => ['nullable', 'uuid', Rule::exists(Country::class, 'id')->whereNull('deleted_at')],
+            'currency_id' => ['nullable', 'uuid', Rule::exists(Currency::class, 'id')],
             'start_date' => 'required_with:end_date|string|date_format:Y-m-d',
             'end_date' => 'required_with:start_date|string|date_format:Y-m-d',
         ];

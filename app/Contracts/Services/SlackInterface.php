@@ -24,33 +24,33 @@ interface SlackInterface
      * Set the Title attribute.
      *
      * @param mixed $title
-     * @return self
+     * @return $this
      */
-    public function title($title): self;
+    public function title($title);
 
     /**
      * Set the Status attribute.
      *
      * @param mixed $status
-     * @return self
+     * @return $this
      */
-    public function status($status): self;
+    public function status($status);
 
     /**
      * Set the image attribute.
      *
      * @param string $image
-     * @return self
+     * @return $this
      */
-    public function image(string $image): self;
+    public function image(string $image);
 
     /**
      * Set the url attribute.
      *
      * @param string $url
-     * @return self
+     * @return $this
      */
-    public function url(string $url): self;
+    public function url(string $url);
 
     /**
      * Get the title attribute.
