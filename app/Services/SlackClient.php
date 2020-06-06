@@ -7,6 +7,8 @@ use App\Jobs\SendSlackNotification;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
+use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\Response as Psr7Response;
 use Arr, Str;
 
 class SlackClient implements SlackInterface
@@ -28,7 +30,7 @@ class SlackClient implements SlackInterface
         try {
             $response = $this->request($this->toArray());
 
-            if ($response->failed() || blank($response->json())) {
+            if (blank($response->getBody()->getContents())) {
                 $this->error();
 
                 return false;
@@ -105,8 +107,7 @@ class SlackClient implements SlackInterface
         if (is_array($status)) {
             $status = collect($status)->map(function ($value, $key) {
                 $value = is_string($key) ? "{$key}: {$value}" : $value;
-                $value .= !Str::endsWith($value, '.') ? '.' : '';
-                return $value;
+                return Str::finish($value, '.');
             })->implode(PHP_EOL);
         }
 
@@ -136,9 +137,9 @@ class SlackClient implements SlackInterface
         }
     }
 
-    protected function request(array $payload): Response
+    protected function request(array $payload): Psr7Response
     {
-        return Http::post(config('services.slack.endpoint'), $payload);
+        return app(Client::class)->post(config('services.slack.endpoint'), $payload);
     }
 
     protected function success()

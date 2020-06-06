@@ -292,6 +292,7 @@ define('ES_NAL_01', 'No alive elasticsearch nodes found. Restarting...');
  * Slack.
  */
 define('SLACK_SERVICE_URL', 'https://hooks.slack.com/services/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');
+// define('SLACK_SERVICE_URL', 'https://hooks.slack.com/services/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'); // dev
 define('SNE_01', 'Slack Service did not confirm sending the notification.');
 define('SNE_02', 'Failed to send Slack Notification due exception.');
 define('SNS_01', 'Slack Notification has been successfully sent.');
