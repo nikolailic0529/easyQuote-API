@@ -267,7 +267,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->instance('path.storage', config('filesystems.disks.local.path'));
 
-        $this->app->singleton(ElasticsearchClient::class, fn () => ElasticsearchBuilder::create()->setHosts(config('services.search.hosts'))->build());
+        $this->app->bind(ElasticsearchClient::class, fn () => ElasticsearchBuilder::create()->setHosts(config('services.search.hosts'))->build());
 
         $this->app->singleton(QuoteTaskTemplateStore::class, fn () => QuoteTaskTemplateStore::make(storage_path('valuestore/quote.task.template.json')));
 

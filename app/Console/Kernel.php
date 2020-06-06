@@ -24,6 +24,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+        // $schedule->command('eq:ping-es')->runInBackground()->everyFiveMinutes();
+
         /**
          * Logout the users with expired activity.
          */

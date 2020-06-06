@@ -27,6 +27,10 @@ class Company extends JsonResource
             'short_code' => $this->short_code,
             'type' => $this->type,
             'category' => $this->category,
+
+            'source' => $this->source,
+            'source_long' => __($this->source),
+
             'vat' => $this->vat,
             'email' => $this->email,
             'phone' => $this->phone,

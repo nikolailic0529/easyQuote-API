@@ -283,6 +283,12 @@ define('SUN_01', 'Unable to fetch data from external service');
 define('MYSQL_UNBUFFERED', 'mysql_unbuffered');
 
 /**
+ * Elasticsearch
+ */
+define('ES_AL_01', 'Elasticsearch nodes are alive.');
+define('ES_NAL_01', 'No alive elasticsearch nodes found. Restarting...');
+
+/**
  * Slack.
  */
 define('SLACK_SERVICE_URL', 'https://hooks.slack.com/services/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');
