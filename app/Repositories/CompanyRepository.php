@@ -66,7 +66,7 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
 
     public function allExternal(array $where = []): Collection
     {
-        return $this->userQuery()->whereType('External')->get(['id', 'name']);
+        return $this->userQuery()->where($where)->whereType('External')->get(['id', 'name']);
     }
 
     public function searchExternal(?string $query, int $limit = 15)
