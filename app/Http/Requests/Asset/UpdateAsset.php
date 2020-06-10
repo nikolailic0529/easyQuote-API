@@ -39,7 +39,7 @@ class UpdateAsset extends FormRequest
             'active_warranty_end_date'      => ['required', 'date_format:Y-m-d'],
             'item_number'                   => ['nullable', 'string', 'max:191'],
             'product_number'                => ['required', 'string', 'max:191'],
-            'serial_number'                 => ['required', 'string', 'max:191', Rule::unique(Asset::class)->ignore($this->route('asset'))->where('vendor_id', $this->vendor_id)->where('user_id', auth()->id())->whereNull('deleted_at')],
+            'serial_number'                 => ['required', 'string', 'max:191', Rule::unique(Asset::class)->ignore($this->route('asset'))->where('vendor_id', $this->vendor_id)->where('user_id', optional($this->route('asset'))->user_id)->whereNull('deleted_at')],
             'product_description'           => ['nullable', 'string', 'max:191'],
             'product_image'                 => ['nullable', 'string', 'max:191']
         ];

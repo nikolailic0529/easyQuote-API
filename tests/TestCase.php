@@ -4,6 +4,7 @@ namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Tests\Unit\Traits\{
+    AssertsModelAttributes,
     TruncatesDatabaseTables,
     WithClientCredentials,
     WithFakeQuote,
@@ -13,7 +14,7 @@ use Tests\Unit\Traits\{
 
 abstract class TestCase extends BaseTestCase
 {
-    use CreatesApplication;
+    use CreatesApplication, AssertsModelAttributes;
 
     /**
      * Boot the testing helper traits.

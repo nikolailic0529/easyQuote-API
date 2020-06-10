@@ -281,6 +281,7 @@ define('ND_01', 'N/A');
 define('SUN_01', 'Unable to fetch data from external service');
 // MySQL unbuffered connection used for cursors.
 define('MYSQL_UNBUFFERED', 'mysql_unbuffered');
+define('DB_TA', 5);
 
 /**
  * Elasticsearch
