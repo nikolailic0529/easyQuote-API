@@ -37,7 +37,7 @@ class ContractDraftedRepository extends SearchableRepository implements Contract
                 fn (Builder $query) => $query->currentUser()
                     /** Adding contracts that have been granted access to */
                     ->orWhereIn('quote_id', $user->getPermissionTargets('quotes.read'))
-                    ->orWhereIn('user_id', $user->getModulePermissionProviders('quotes.read'))
+                    ->orWhereIn('user_id', $user->getModulePermissionProviders('contracts.read'))
             )
             ->drafted();
     }

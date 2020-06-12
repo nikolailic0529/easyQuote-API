@@ -69,7 +69,7 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
         return $this->role->query()
             ->when($scope, $scope)
             ->orderBy('name')
-            ->whereHas('permissions', fn (Builder $query) => $query->where('name', 'regexp', '^view(.*)_'.$module.'$'))
+            ->whereHas('permissions', fn (Builder $query) => $query->whereIn('name', ["view_{$module}", "view_own_{$module}"]))
             ->get();
     }
 

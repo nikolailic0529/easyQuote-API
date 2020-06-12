@@ -17,7 +17,7 @@ class CreateAttachmentRequest extends FormRequest
     {
         return [
             'type' => ['required', 'filled', 'string', Rule::in(Attachment::TYPES)],
-            'file' => ['required', 'file', 'mimes:txt,csv,pdf,xlsx,docx', 'max:'.setting('file_upload_size_kb')]
+            'file' => ['required', 'file', 'mimes:txt,csv,pdf,xlsx,docx,jpeg,jpg,png,gif,svg,webp', 'max:'.setting('file_upload_size_kb')]
         ];
     }
 }

@@ -4,7 +4,7 @@ return [
 
     'enable_wildcard_permission' => true,
 
-    'provided_modules' => ['quotes'],
+    'provided_modules' => ['quotes', 'contracts'],
 
     'provided_levels' => ['read', 'read,update', 'read,update,delete'],
 

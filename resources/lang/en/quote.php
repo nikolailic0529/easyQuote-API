@@ -5,6 +5,7 @@ return [
     'types' => ['New', 'Renewal'],
     'stages' => [
         'Initiated' => 1,
+        'Customer' => 10,
         'Import' => 20,
         'Mapping' => 40,
         'Review' => 50,

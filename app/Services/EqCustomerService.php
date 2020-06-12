@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Company;
 use App\Models\Customer\Customer;
+use App\Services\Exceptions\EqCustomer;
 use App\Services\Exceptions\InvalidCompany;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -52,5 +53,26 @@ class EqCustomerService
         return (int) $this->customer
             ->when($customer, fn (Builder $q) => $q->whereKeyNot($customer->getKey()))
             ->whereSource(Customer::EQ_SOURCE)->max('sequence_number');
+    }
+
+    /**
+     * Retrieve attributes for new Quote initiation from EQ Customer instance.
+     *
+     * @param Customer $customer
+     * @return array
+     * 
+     * @throws EqCustomer
+     */
+    public static function retrieveQuoteAttributes(Customer $customer): array
+    {
+        if ($customer->source !== Customer::EQ_SOURCE) {
+            EqCustomer::nonEqCustomer();
+        }
+
+        return [
+            'customer_id' => $customer->getKey(),
+            'company_id' => $customer->int_company_id,
+            'last_drafted_step' => 'Customer'
+        ];
     }
 }

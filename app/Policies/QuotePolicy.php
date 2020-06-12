@@ -126,7 +126,7 @@ class QuotePolicy
      */
     public function grantPermission(User $user, Quote $quote)
     {
-        if ($user->hasRole('Administrator')) {
+        if ($user->hasRole(R_SUPER)) {
             return true;
         }
 
@@ -145,7 +145,7 @@ class QuotePolicy
      */
     public function revokePermission(User $user, Quote $quote)
     {
-        if ($user->hasRole('Administrator')) {
+        if ($user->hasRole(R_SUPER)) {
             return true;
         }
 

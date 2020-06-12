@@ -15,6 +15,9 @@ class DraftedResource extends JsonResource
      */
     public function toArray($request)
     {
+        /** @var \App\Models\User */
+        $user = $request->user();
+
         return [
             'id'                => $this->id,
             'quote_id'          => $this->quote_id,
@@ -29,6 +32,11 @@ class DraftedResource extends JsonResource
             ],
             'contract_customer' => [
                 'rfq'           => $this->contract_number,
+            ],
+            'permissions'               => [
+                'view'      => $user->can('view', $this->resource),
+                'update'    => $user->can('update', $this->resource),
+                'delete'    => $user->can('delete', $this->resource),
             ],
             'quote_customer'    => QuoteCustomerResource::make($this),
             'created_at'        => optional($this->created_at)->format(config('date.format_time')),

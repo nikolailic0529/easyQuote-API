@@ -30,7 +30,15 @@ class ContractPolicy
      */
     public function view(User $user, Contract $contract)
     {
-        if ($user->can('view_contracts')) {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if ($user->can("contracts.read.{$contract->id}")) {
+            return true;
+        }
+
+        if ($user->can("contracts.read.user.{$contract->user_id}")) {
             return true;
         }
 
@@ -59,7 +67,15 @@ class ContractPolicy
      */
     public function update(User $user, Contract $contract)
     {
-        if ($user->can('update_contracts')) {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if ($user->can("contracts.update.{$contract->id}")) {
+            return true;
+        }
+
+        if ($user->can("contracts.update.user.{$contract->user_id}")) {
             return true;
         }
 
@@ -93,7 +109,7 @@ class ContractPolicy
      */
     public function submit(User $user, Contract $contract)
     {
-        if (!$this->update($user, $contract)) {
+        if (! $this->update($user, $contract)) {
             return false;
         }
 
@@ -117,7 +133,11 @@ class ContractPolicy
      */
     public function delete(User $user, Contract $contract)
     {
-        if ($user->can('delete_contracts')) {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if ($user->can("contracts.delete.user.{$contract->user_id}")) {
             return true;
         }
 
