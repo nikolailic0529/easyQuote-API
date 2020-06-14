@@ -36,7 +36,7 @@ class PermissionBroker implements BrokerContract
 
     public function grantModulePermission(array $users, string $module, string $level)
     {
-        $provider ??= auth()->user();
+        $provider = auth()->user();
 
         $users = array_filter($users, fn ($id) => $id !== $provider->id);
 

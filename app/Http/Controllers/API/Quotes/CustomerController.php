@@ -57,7 +57,7 @@ class CustomerController extends Controller
             fn (Customer $customer) => CustomerFlow::migrateCustomer($customer)
         );
 
-        $quote = $quoteState->create(['customer_id' => $customer->id, 'company_id' => $request->int_company_id]);
+        $quote = $quoteState->create(EqCustomerService::retrieveQuoteAttributes($customer));
 
         return response()->json($quote, Response::HTTP_CREATED);
     }

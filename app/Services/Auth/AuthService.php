@@ -92,7 +92,7 @@ class AuthService implements AuthServiceInterface
          * Also the User will be marked as Logged Out.
          */
         tap($user)
-            ->revokeTokens()
+            // ->revokeTokens()
             ->markAsLoggedOut();
 
         activity()->on($user)->by($user)->queue('deauthenticated');

@@ -9,7 +9,9 @@ class Attachment extends Model
 {
     use Uuid;
 
-    public const TYPES = ['Maintenance Contract', 'Distribution Quotation', 'Email', 'Proof of delivery', 'Customer Purchase Order'];
+    public const TYPES = [
+        'Maintenance Contract', 'Distribution Quotation', 'Email', 'Proof of delivery', 'Customer Purchase Order', 'Image'
+    ];
 
     protected $fillable = [
         'type', 'filepath', 'filename', 'extension', 'size'
