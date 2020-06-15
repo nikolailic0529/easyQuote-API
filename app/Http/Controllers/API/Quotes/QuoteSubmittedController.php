@@ -136,8 +136,6 @@ class QuoteSubmittedController extends Controller
      */
     public function createContract(CreateQuoteContractRequest $request, Quote $submitted)
     {
-        $this->authorize('createContract', $submitted);
-
         $resource = $this->contractProcessor->createFromQuote($submitted, $request->validated());
 
         return response()->json(

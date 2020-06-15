@@ -43,6 +43,8 @@ class Company extends JsonResource
                 return $this->vendors;
             }),
 
+            'total_quoted_value'  => $this->total_quoted_value,
+
             'default_country' => $this->whenLoaded('defaultCountry'),
             'default_vendor' => $this->whenLoaded('defaultVendor'),
             'default_template' => $this->whenLoaded('defaultTemplate'),

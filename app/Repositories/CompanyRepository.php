@@ -171,7 +171,7 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
     protected function filterQueryThrough(): array
     {
         return [
-            \App\Http\Query\DefaultOrderBy::class,
+            app(\App\Http\Query\DefaultOrderBy::class, ['column' => 'total_quoted_value']),
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\OrderByName::class,
             \App\Http\Query\Company\OrderByVat::class,
@@ -179,21 +179,22 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
             \App\Http\Query\Company\OrderByWebsite::class,
             \App\Http\Query\Company\OrderByEmail::class,
             \App\Http\Query\Company\OrderByType::class,
-            \App\Http\Query\Company\OrderByCategory::class
+            \App\Http\Query\Company\OrderByCategory::class,
+            \App\Http\Query\Company\OrderByTotalQuotedValue::class,
         ];
     }
 
     protected function filterableQuery()
     {
         return [
-            $this->userQuery()->with('image')->activated(),
-            $this->userQuery()->with('image')->deactivated()
+            $this->userQuery()->with('image')->withTotalQuotedValue()->activated(),
+            $this->userQuery()->with('image')->withTotalQuotedValue()->deactivated()
         ];
     }
 
     protected function searchableQuery()
     {
-        return $this->userQuery()->with('image');
+        return $this->userQuery()->with('image')->withTotalQuotedValue();
     }
 
     protected function searchableModel(): Model

@@ -40,11 +40,13 @@ class LogoutInactiveUsers extends Command
     {
         $time = now()->subMinutes(config('activity.expires_in', 60));
 
-        $users->updateWhere(
+        $affected = $users->updateWhere(
             ['already_logged_in' => false],
-            [['last_activity_at', '<=', $time]]
+            [['last_activity_at', '<=', $time], ['already_logged_in', '=', true]]
         );
 
-        return true;
+        report_logger(['message' => sprintf('Logged out %s inactive users.', $affected)]);
+
+        return 0;
     }
 }

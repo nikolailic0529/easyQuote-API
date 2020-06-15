@@ -227,7 +227,7 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
 
     public function updateWhere(array $attributes, array $where = []): int
     {
-        return $this->user->query()->where($where)->update($attributes);
+        return DB::transaction(fn () => $this->user->query()->where($where)->update($attributes), DB_TA);
     }
 
     public function increment(string $id, string $attribute, array $options = []): bool

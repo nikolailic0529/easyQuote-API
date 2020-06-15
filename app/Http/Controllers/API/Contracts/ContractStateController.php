@@ -65,6 +65,8 @@ class ContractStateController extends Controller
      */
     public function review(Contract $contract, QuoteService $service)
     {
+        $this->authorize('view', $contract);
+
         $service->prepareQuoteReview($contract->usingVersion);
 
         return response()->json(

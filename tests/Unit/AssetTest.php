@@ -6,11 +6,16 @@ use App\Models\Asset;
 use Illuminate\Support\Collection;
 use Tests\TestCase;
 use Tests\Unit\Traits\AssertsListing;
+use Tests\Unit\Traits\TruncatesDatabaseTables;
 use Tests\Unit\Traits\WithFakeUser;
 
 class AssetTest extends TestCase
 {
-    use WithFakeUser, AssertsListing;
+    use WithFakeUser, AssertsListing, TruncatesDatabaseTables;
+
+    protected array $truncatableTables = [
+        'assets'
+    ];
 
     /**
      * A basic unit test example.
