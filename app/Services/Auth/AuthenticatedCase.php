@@ -8,6 +8,7 @@ use App\Models\{
 };
 use App\Notifications\AccessAttempt as AccessAttemptNotification;
 use App\Contracts\Repositories\UserRepositoryInterface as Users;
+use Illuminate\Http\Response;
 
 class AuthenticatedCase
 {
@@ -62,7 +63,7 @@ class AuthenticatedCase
 
     public function abort(string $message, string $code): void
     {
-        error_abort($message, $code, 422);
+        error_abort($message, $code, Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 
     public static function initiate(User $user, AccessAttempt $attempt): AuthenticatedCase

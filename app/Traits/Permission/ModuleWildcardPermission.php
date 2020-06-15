@@ -38,7 +38,7 @@ class ModuleWildcardPermission extends WildcardPermission
 
             if (
                 !$this->getParts()->get($i)->contains(static::WILDCARD_TOKEN)
-                && !$this->containsAll($otherPart, $permission->getParts()->get($i))
+                && !$this->containsAll($otherPart, $this->getParts()->get($i))
             ) {
                 return false;
             }

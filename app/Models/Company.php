@@ -12,6 +12,7 @@ use App\Models\{
     Data\Country,
     QuoteTemplate\QuoteTemplate,
 };
+use App\Models\Customer\CustomerTotal;
 use App\Traits\{
     Activatable,
     BelongsToAddresses,
@@ -29,6 +30,7 @@ use App\Traits\{
     Uuid
 };
 use Illuminate\Database\Eloquent\{
+    Builder,
     Model,
     SoftDeletes,
 };
@@ -36,6 +38,7 @@ use Illuminate\Database\Eloquent\{
     Relations\BelongsTo,
     Relations\BelongsToMany,
 };
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Staudenmeir\EloquentHasManyDeep\{
     HasManyDeep,
     HasRelationships,
@@ -110,6 +113,22 @@ class Company extends Model implements WithImage, WithLogo, ActivatableInterface
     public function defaultTemplate(): BelongsTo
     {
         return $this->belongsTo(QuoteTemplate::class, 'default_template_id');
+    }
+
+    public function customerTotals(): HasMany
+    {
+        return $this->hasMany(CustomerTotal::class);
+    }
+
+    public function scopeWithTotalQuotedValue(Builder $query): Builder
+    {
+        return $query->addSelect([
+            'total_quoted_value' => fn ($q) =>
+            $q
+                ->selectRaw('SUM(`total_value`)')
+                ->from('customer_totals')
+                ->whereColumn('customer_totals.company_id', 'companies.id')
+        ]);
     }
 
     public function sortVendorsCountries(): self
