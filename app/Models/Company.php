@@ -125,9 +125,10 @@ class Company extends Model implements WithImage, WithLogo, ActivatableInterface
         return $query->addSelect([
             'total_quoted_value' => fn ($q) =>
             $q
-                ->selectRaw('SUM(`total_value`)')
+                ->select('total_value')
                 ->from('customer_totals')
                 ->whereColumn('customer_totals.company_id', 'companies.id')
+                ->limit(1)
         ]);
     }
 
