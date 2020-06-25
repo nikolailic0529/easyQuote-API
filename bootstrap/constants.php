@@ -56,8 +56,10 @@ define('QE_02', 'expiring-quotes');
 define('QG_FTNF_01', 'From or To Group Description is not found.');
 define('QG_NF_01', 'The Group Description is not found.');
 define('QV_SD_01', 'You could not delete the given Version as the Quote is already submitted.');
-define('Q_TYPE_QUOTE', 'quote');
-define('Q_TYPE_CONTRACT', 'contract');
+
+define('Q_TYPE_QUOTE', 'q');
+define('Q_TYPE_CONTRACT', 'c');
+
 define('QCE_01', 'Contract for the given Quote already exists.');
 define('QCE_UN_01', 'A contract exists for this quote, please delete the contract first to undo this quote');
 define('QCE_D_01', 'A contract exists for this quote, please delete the contract first to delete this quote');

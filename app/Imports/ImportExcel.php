@@ -23,11 +23,21 @@ use App\Imports\Concerns\{
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Webpatser\Uuid\Uuid;
-use Arr, DB, Str;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkReading
 {
     use Importable, MapsHeaders, LimitsHeaders;
+
+    const C_IMPC = 'importable_column_id';
+
+    const C_HDR = 'header';
+
+    const C_VL = 'value';
+
+    const C_OP = 'is_one_pay';
 
     /**
      * QuoteFile instance.
@@ -250,9 +260,13 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
     protected function checkColumnsData(Collection $columnsData): bool
     {
+        if ($columnsData->contains(static::C_OP, true)) {
+            return true;
+        }
+
         return $this->requiredHeadersMapping->reject(function ($header, $id) use ($columnsData) {
-            return $columnsData->contains(fn ($column) => trim($column['header']) === trim($header) && isset($column['value']))
-                || $columnsData->filter(fn ($column) => isset($column['value']))->count() > 3;
+            return ($columnsData->contains(fn ($column) => trim($column[static::C_HDR]) === trim($header) && isset($column[static::C_VL]))
+                || $columnsData->whereNotNull(static::C_VL)->count() > 3);
         })->isEmpty();
     }
 
@@ -312,7 +326,22 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
     protected function fetchRow(Collection $row): array
     {
-        return $this->makeImportedRow() + ['columns_data' => $this->makeColumnsData($row)];
+        $now = now()->toDateTimeString();
+
+        $columnsData = $this->makeColumnsData($row);
+
+        $onePay = $columnsData->contains(static::C_OP, true);
+
+        return [
+            'id'            => Uuid::generate(4)->string,
+            'user_id'       => $this->user->id,
+            'quote_file_id' => $this->quoteFile->id,
+            'page'          => $this->activeSheetIndex,
+            'columns_data'  => $columnsData,
+            static::C_OP    => $onePay,
+            'created_at'    => $now,
+            'updated_at'    => $now
+        ];
     }
 
     protected function setHeader(Worksheet $worksheet): void
@@ -350,34 +379,56 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         }, $attributes);
     }
 
-    private function makeImportedRow(): array
-    {
-        $now = now()->toDateTimeString();
-
-        return [
-            'id'            => Uuid::generate(4)->string,
-            'user_id'       => $this->user->id,
-            'quote_file_id' => $this->quoteFile->id,
-            'page'          => $this->activeSheetIndex,
-            'created_at'    => $now,
-            'updated_at'    => $now
-        ];
-    }
-
     private function makeColumnsData($attributes): Collection
     {
         $attributes = Collection::wrap($attributes);
 
-        return $attributes->map(
+        $columns = $attributes->map(
             fn ($value, $header) =>
             [
-                'importable_column_id'  => $this->headersMapping->get($header),
-                'header'                => $this->limitHeader($this->quoteFile, $header),
-                'value'                 => static::sanitizeColumnValue($value)
+                static::C_IMPC  => $this->headersMapping->get($header),
+                static::C_HDR   => $this->limitHeader($this->quoteFile, $header),
+                static::C_VL    => static::sanitizeColumnValue($value),
             ]
         )
-            ->filter(fn ($column) => isset($column['importable_column_id']) && $column['header'] !== $column['value'])
-            ->keyBy('importable_column_id');
+            ->filter(fn ($column) => isset($column[static::C_IMPC]) && $column[static::C_HDR] !== $column[static::C_VL])
+            ->keyBy(static::C_IMPC);
+
+        $hasOnePayColumn = $columns->contains(fn ($column) => preg_match('/return to/i', data_get($column, static::C_VL)));
+
+        if ($hasOnePayColumn && null !== ($priceHeader = $this->requiredHeadersMapping->get('price'))) {
+            $currentPriceColumn = $columns->firstWhere(static::C_HDR, $priceHeader);
+
+            if (null !== $currentPriceColumn && !is_null($currentPriceColumn[static::C_VL])) {
+                $currentPriceColumn = array_merge($currentPriceColumn, [static::C_OP => true]);
+
+                $columns->put($currentPriceColumn[static::C_IMPC], $currentPriceColumn);
+
+                return $columns;
+            }
+
+            /**
+             * In case if price column is not present in One Pay row, we will assume that price cell is merged with qty.
+             */
+            /** @var array|null */
+            $priceColumn = $columns->first(fn ($column) => Str::containsInsensitive(data_get($column, static::C_HDR), 'qty'));
+
+            if ($priceColumn === null || $priceHeader === $priceColumn[static::C_HDR]) {
+                return $columns;
+            }
+
+            $columns->forget($priceColumn[static::C_IMPC]);
+
+            $priceColumn = array_merge($priceColumn, [
+                static::C_IMPC  => $columnId = $this->headersMapping->get($priceHeader),
+                static::C_HDR   => $priceHeader,
+                static::C_OP    => true
+            ]);
+
+            $columns->put($columnId, $priceColumn);
+        }
+
+        return $columns;
     }
 
     private function findRowAttribute(string $regexp, string $cellRegexp, Collection $row)
