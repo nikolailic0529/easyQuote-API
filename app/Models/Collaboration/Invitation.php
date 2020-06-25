@@ -47,6 +47,10 @@ class Invitation extends Model
         'resended', 'canceled'
     ];
 
+    protected $dates = [
+        'expires_at'
+    ];
+
     protected static $logOnlyDirty = true;
 
     protected static $submitEmptyLogs = true;
@@ -102,6 +106,16 @@ class Invitation extends Model
         $this->fireModelEvent('canceled', false);
 
         return $this->forceFill(['expires_at' => null])->save();
+    }
+
+    public function toSearchArray()
+    {
+        return [
+            'role_name' => optional($this->role)->name,
+            'email' => $this->email,
+            'created_at' => optional($this->created_at)->format(config('date.format_time')),
+            'expires_at' => optional($this->expires_at)->format(config('date.format_time')),
+        ];
     }
 
     public function getItemNameAttribute()
