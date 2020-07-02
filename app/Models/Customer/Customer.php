@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\{
     SoftDeletes,
 };
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Rennokki\QueryCache\Traits\QueryCacheable;
 use Staudenmeir\EloquentHasManyDeep\{
     HasManyDeep,
     HasOneDeep,
@@ -46,7 +47,8 @@ class Customer extends Model
         SoftDeletes,
         LogsActivity,
         Migratable,
-        HasRelationships;
+        HasRelationships,
+        QueryCacheable;
 
     protected $fillable = [
         'name',

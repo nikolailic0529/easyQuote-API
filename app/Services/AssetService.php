@@ -16,6 +16,7 @@ use App\Models\{
 use App\Models\Quote\BaseQuote;
 use App\Services\Concerns\WithProgress;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -23,7 +24,7 @@ class AssetService
 {
     use WithProgress;
 
-    protected SubmittedQuotes $submittedQuotes;
+    protected Quote $quote;
 
     protected QuoteState $quoteState;
 
@@ -33,9 +34,9 @@ class AssetService
 
     protected array $assetCategoryCache = [];
 
-    public function __construct(SubmittedQuotes $submittedQuotes, QuoteState $quoteState, Asset $asset, AssetCategory $assetCategory)
+    public function __construct(Quote $quote, QuoteState $quoteState, Asset $asset, AssetCategory $assetCategory)
     {
-        $this->submittedQuotes = $submittedQuotes;
+        $this->quote = $quote;
         $this->quoteState = $quoteState;
         $this->asset = $asset;
         $this->assetCategory = $assetCategory;
@@ -50,11 +51,15 @@ class AssetService
                 $this->asset->whereIsMigrated(true)->forceDelete();
             }
 
-            $this->setProgressBar($bar, fn () => $this->submittedQuotes->count($fresh ? [] : ['assets_migrated_at' => null]));
+            /** @var \Illuminate\Database\Eloquent\Builder */
+            $query = $this->quote->query()->where('completeness', '>', 40)->when(!$fresh, fn ($q) => $q->whereNull('assets_migrated_at'));
 
-            $this->submittedQuotes
-                ->cursor(fn (Builder $q) => $q->when(!$fresh, fn ($q) => $q->whereNull('assets_migrated_at')))
-                ->each(fn (Quote $quote) => $this->migrateQuoteAssets($quote));
+            $this->setProgressBar($bar, fn () => (clone $query)->count());
+
+            $query
+                ->chunk(50, fn (Collection $chunk) => 
+                $chunk->each(fn (Quote $quote) => $this->migrateQuoteAssets($quote))
+            );
         });
 
         $this->finishProgress();

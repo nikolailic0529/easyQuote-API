@@ -10,7 +10,7 @@ use Carbon\Carbon;
 
 class QuoteAsset extends DataTransferObject
 {
-    public string $vendor_id, $user_id, $vendor_short_code, $asset_category_id;
+    public string $vendor_id, $user_id, $vendor_short_code, $asset_category_id, $quote_id;
 
     public ?string $product_number, $serial_number, $address_id, $service_description, $product_description, $pricing_document, $system_handle, $service_agreement_id;
 
@@ -27,8 +27,9 @@ class QuoteAsset extends DataTransferObject
         $user_id = $quote->user_id;
         $vendor_id = $quote->vendor_id;
         $vendor_short_code = $quote->vendor->short_code;
-        $address_id = optional($address)->id;
-        $asset_category_id = optional($assetCategory)->id;
+        $quote_id = $quote->getKey();
+        $address_id = optional($address)->getKey();
+        $asset_category_id = optional($assetCategory)->getKey();
 
         $product_number = optional($row)->product_no;
 
@@ -48,6 +49,7 @@ class QuoteAsset extends DataTransferObject
             'user_id',
             'address_id',
             'vendor_id',
+            'quote_id',
             'vendor_short_code',
             'asset_category_id',
             'product_number',

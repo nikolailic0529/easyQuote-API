@@ -409,8 +409,9 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
             /**
              * In case if price column is not present in One Pay row, we will assume that price cell is merged with qty.
+             * 
+             * @var array|null
              */
-            /** @var array|null */
             $priceColumn = $columns->first(fn ($column) => Str::containsInsensitive(data_get($column, static::C_HDR), 'qty'));
 
             if ($priceColumn === null || $priceHeader === $priceColumn[static::C_HDR]) {

@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Customer\Customer;
+use App\Models\Quote\Quote;
 use App\Traits\{
     Uuid,
     BelongsToAddress,
     BelongsToAssetCategory,
+    BelongsToQuote,
     BelongsToUser,
     BelongsToVendor,
 };
@@ -15,16 +18,28 @@ use App\Traits\{
 };
 use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Staudenmeir\EloquentHasManyDeep\HasOneDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 class Asset extends Model
 {
-    use Uuid, Multitenantable, BelongsToUser, BelongsToVendor, BelongsToAddress, BelongsToAssetCategory, Searchable, HasRelationships, EloquentJoin, SoftDeletes;
+    use Uuid,
+        Multitenantable,
+        BelongsToUser,
+        BelongsToVendor,
+        BelongsToAddress,
+        BelongsToAssetCategory,
+        BelongsToQuote,
+        Searchable,
+        HasRelationships,
+        EloquentJoin,
+        SoftDeletes;
 
     protected $fillable = [
         'asset_category_id',
+        'quote_id',
         'vendor_id',
         'address_id',
         'vendor_short_code',
@@ -64,6 +79,11 @@ class Asset extends Model
         return $this->hasOneDeepFromRelations($this->address(), (new Address)->country())->withDefault();
     }
 
+    public function customer(): HasOneDeep
+    {
+        return $this->hasOneDeepFromRelations($this->quote(), (new Quote)->customer())->withDefault();
+    }
+
     public function toSearchArray()
     {
         return [
@@ -82,7 +102,8 @@ class Asset extends Model
             'active_warranty_start_date'    => optional($this->active_warranty_start_date)->format(config('date.format')),
             'active_warranty_end_date'      => optional($this->active_warranty_end_date)->format(config('date.format')),
             'unit_price'                    => $this->unit_price,
-            'buy_price'                     => $this->buy_price
+            'buy_price'                     => $this->buy_price,
+            'rfq_number'                    => $this->customer->rfq,
         ];
     }
 }
