@@ -16,10 +16,15 @@ class Asset extends JsonResource
     {
         return [
             'id' => $this->id,
+            
             'asset_category_id' => $this->asset_category_id,
             'user_id' => $this->user_id,
             'address_id' => $this->address_id,
             'vendor_id' => $this->vendor_id,
+            'quote_id' => $this->quote_id,
+
+            'rfq_number' => $this->customer->rfq,
+
             'vendor_short_code' => $this->vendor_short_code,
             'asset_category_name' => $this->whenLoaded('assetCategory', fn () => $this->assetCategory->name),
             'address' => $this->whenLoaded('address'),
