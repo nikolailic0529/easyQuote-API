@@ -28,6 +28,7 @@ use App\Models\{
     QuoteFile\ImportableColumn,
 };
 use App\Models\QuoteTemplate\ContractTemplate;
+use App\Models\QuoteTemplate\HpeContractTemplate;
 use Illuminate\Database\Eloquent\Builder;
 use Str;
 use Throwable;
@@ -91,6 +92,7 @@ class ReindexCommand extends Command
                 Contract::class,
                 QuoteTemplate::class,
                 ContractTemplate::class,
+                HpeContractTemplate::class,
                 TemplateField::class,
                 CountryMargin::class,
                 MultiYearDiscount::class,

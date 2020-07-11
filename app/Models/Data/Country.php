@@ -20,10 +20,11 @@ use Illuminate\Database\Eloquent\{
     Relations\BelongsTo,
     SoftDeletes
 };
+use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 class Country extends Model implements HasOrderedScope, ActivatableInterface
 {
-    use Uuid, Multitenantable, Activatable, Systemable, Searchable, LogsActivity, SoftDeletes;
+    use Uuid, Multitenantable, Activatable, Systemable, Searchable, LogsActivity, SoftDeletes, HasRelationships;
 
     const FLAGS_DIRECTORY = 'img/countries';
 

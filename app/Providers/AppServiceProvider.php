@@ -65,6 +65,7 @@ use App\Contracts\{
     Repositories\AssetRepository as AssetRepositoryContract,
     Repositories\AssetCategoryRepository as AssetCategoryRepositoryContract,
 };
+use App\Contracts\Repositories\QuoteTemplate\HpeContractTemplate;
 use App\Contracts\Services\ContractState;
 use App\Contracts\Services\QuoteState;
 use App\Repositories\{
@@ -139,6 +140,7 @@ use Elasticsearch\{
 };
 use App\Factories\Failure\Failure;
 use App\Http\Resources\RequestQueryFilter;
+use App\Repositories\QuoteTemplate\HpeContractTemplateRepository;
 use App\Services\ContractStateProcessor;
 use App\Services\QuoteStateProcessor;
 use Schema;
@@ -206,6 +208,7 @@ class AppServiceProvider extends ServiceProvider
         AssetCategoryRepositoryContract::class          => AssetCategoryRepository::class,
         EqCustomerRepositoryContract::class             => EqCustomerRepository::class,
         LocationServiceContract::class                  => LocationService::class,
+        HpeContractTemplate::class                      => HpeContractTemplateRepository::class,
     ];
 
     public $bindings = [
@@ -236,6 +239,7 @@ class AppServiceProvider extends ServiceProvider
         MarginRepositoryInterface::class                => 'margin.repository',
         QuoteTemplateRepositoryInterface::class         => 'template.repository',
         ContractTemplateRepositoryInterface::class      => 'contract_template.repository',
+        HpeContractTemplate::class                      => 'hpe_contract_template.repository',
         CurrencyRepositoryInterface::class              => 'currency.repository',
         ImportableColumnRepositoryInterface::class      => 'importablecolumn.repository',
         ReportLoggerInterface::class                    => 'report.logger',

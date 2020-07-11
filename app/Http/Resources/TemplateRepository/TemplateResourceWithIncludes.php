@@ -3,6 +3,7 @@
 namespace App\Http\Resources\TemplateRepository;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Collection;
 
 class TemplateResourceWithIncludes extends JsonResource
 {
@@ -14,8 +15,6 @@ class TemplateResourceWithIncludes extends JsonResource
      */
     public function toArray($request)
     {
-        $this->loadMissing('templateFields.templateFieldType');
-
         return [
             'id'                => $this->id,
             'name'              => $this->name,
@@ -31,10 +30,9 @@ class TemplateResourceWithIncludes extends JsonResource
                 'id'    => $this->vendor->id,
                 'name'  => $this->vendor->name
             ],
-            'template_fields'   => $this->templateFields,
             'currency'          => $this->currency,
             'form_data'         => $this->form_data,
-            'data_headers'      => $this->data_headers,
+            'data_headers'      => Collection::wrap($this->data_headers)->values(),
             'countries'         => $this->countries->map->only('id', 'name'),
             'created_at'        => (string) $this->created_at,
             'activated_at'      => (string) $this->activated_at

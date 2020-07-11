@@ -3,6 +3,7 @@
 namespace App\Models\QuoteTemplate;
 
 use App\Scopes\ContractTemplateScope;
+use Illuminate\Database\Eloquent\Builder;
 
 class ContractTemplate extends BaseQuoteTemplate
 {
@@ -29,7 +30,9 @@ class ContractTemplate extends BaseQuoteTemplate
     {
         parent::boot();
 
-        static::addGlobalScope(new ContractTemplateScope);
+        static::addGlobalScope(
+            fn (Builder $builder) => $builder->where($builder->getModel()->qualifyColumn('type'), QT_TYPE_CONTRACT)
+        );
     }
 
     public function getItemNameAttribute()

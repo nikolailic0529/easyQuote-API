@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\{
     Scope
 };
 
-class QuoteTemplateScope implements Scope
+class HpeContractTemplateScope implements Scope
 {
     /**
      * Apply the scope to a given Eloquent query builder.
@@ -19,6 +19,6 @@ class QuoteTemplateScope implements Scope
      */
     public function apply(Builder $builder, Model $model)
     {
-        $builder->where($model->qualifyColumn('type'), QT_TYPE_QUOTE);
+        $builder->where($model->qualifyColumn('type'), QT_TYPE_HPE_CONTRACT);
     }
 }

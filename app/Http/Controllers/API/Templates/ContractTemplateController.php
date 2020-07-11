@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\Templates;
 use App\Contracts\Repositories\QuoteTemplate\ContractTemplateRepositoryInterface as Repository;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\QuoteTemplate\{
+    DeleteTemplate,
     StoreQuoteTemplateRequest,
     UpdateQuoteTemplateRequest
 };
@@ -17,8 +18,7 @@ use App\Models\QuoteTemplate\ContractTemplate;
 
 class ContractTemplateController extends Controller
 {
-    /** @var \App\Contracts\Repositories\QuoteTemplate\ContractTemplateRepositoryInterface */
-    protected $contractTemplate;
+    protected Repository $contractTemplate;
 
     public function __construct(Repository $contractTemplate)
     {
@@ -96,10 +96,11 @@ class ContractTemplateController extends Controller
     /**
      * Remove the specified Contract Template from storage.
      *
+     * @param  DeleteTemplate $request
      * @param  \App\Models\QuoteTemplate\ContractTemplate $contract_template
      * @return \Illuminate\Http\Response
      */
-    public function destroy(ContractTemplate $contract_template)
+    public function destroy(DeleteTemplate $request, ContractTemplate $contract_template)
     {
         return response()->json(
             $this->contractTemplate->delete($contract_template->id)

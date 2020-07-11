@@ -3,12 +3,15 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\CountryRepositoryInterface;
+use App\Models\Company;
 use App\Models\Data\Country;
+use App\Models\Vendor;
 use Illuminate\Database\Eloquent\{
     Builder,
     Collection,
     Model
 };
+use Illuminate\Database\Query\Builder as DbBuilder;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Support\Str;
 use Closure;
@@ -91,6 +94,33 @@ class CountryRepository extends SearchableRepository implements CountryRepositor
 
             return optional($this->allCached()->firstWhere('iso_3166_2', $code))->getKey();
         }
+    }
+
+    public function findBy(array $where, array $columns = ['*'])
+    {
+        return $this->country->query()->where($where)->get($columns);
+    }
+
+    public function findByVendor(string $vendor, array $columns = ['*'])
+    {
+        Country::resolveRelationUsing('vendors', fn (Country $model) => $model->belongsToMany(Vendor::class));
+
+        return $this->country->query()
+            ->whereHas('vendors', fn (Builder $builder) => $builder->whereKey($vendor))
+            ->get($columns);
+    }
+
+    public function findByCompany(string $company, array $columns = ['*'])
+    {
+        Country::resolveRelationUsing(
+            'companies',
+            fn (Country $model) =>
+            $model->hasManyDeepFromRelations($model->belongsToMany(Vendor::class), (new Vendor)->companies())
+        );
+
+        return $this->country->query()
+            ->whereHas('companies', fn (Builder $builder) => $builder->whereKey($company))
+            ->get($columns);
     }
 
     public function random(int $limit = 1, ?Closure $scope = null)

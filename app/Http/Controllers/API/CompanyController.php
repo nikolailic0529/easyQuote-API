@@ -70,6 +70,18 @@ class CompanyController extends Controller
     }
 
     /**
+     * Display a listing of companies with related countries.
+     *
+     * @return void
+     */
+    public function showCompaniesWithCountries()
+    {
+        return response()->json(
+            $this->company->allInternalWithCountries(['id', 'name', 'short_code'])
+        );
+    }
+
+    /**
      * Store a newly created Company in storage.
      *
      * @param  StoreCompanyRequest  $request

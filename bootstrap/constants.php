@@ -89,9 +89,10 @@ define('QTAD_01', 'You could not delete this Template because it is already in u
 define('QTNF_01', 'No any Quote Templates found');
 define('QTSU_01', 'You could not update the system defined Template.');
 define('QTSD_01', 'You could not delete the system defined Template.');
-define('QT_TYPE_QUOTE', 'quote');
-define('QT_TYPE_CONTRACT', 'contract');
-define('QT_TYPES', ['quote', 'contract']);
+define('QT_TYPE_QUOTE', 1);
+define('QT_TYPE_CONTRACT', 2);
+define('QT_TYPE_HPE_CONTRACT', 3);
+define('QT_TYPES', [QT_TYPE_QUOTE => 'quote', QT_TYPE_CONTRACT => 'contract', QT_TYPE_HPE_CONTRACT => 'hpe_contract']);
 define('INV_QT_TYPE', 'Invalid Quote Template Type passed.');
 
 /**

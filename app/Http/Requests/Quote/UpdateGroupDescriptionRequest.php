@@ -1,4 +1,6 @@
-<?php namespace App\Http\Requests\Quote;
+<?php
+
+namespace App\Http\Requests\Quote;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Collection;

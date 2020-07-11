@@ -86,7 +86,7 @@ class StoreQuoteStateRequest extends FormRequest
 
             'quote_data.quote_template_id' => [
                 'uuid',
-                Rule::exists('quote_templates', 'id')->whereNull('deleted_at')->whereNull('type')
+                Rule::exists('quote_templates', 'id')->whereNull('deleted_at')->where('type', QT_TYPE_QUOTE)
             ],
 
             'quote_data.contract_template_id' => [

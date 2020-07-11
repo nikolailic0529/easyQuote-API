@@ -64,6 +64,26 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
         return $companies;
     }
 
+    public function allInternalWithCountries(array $columns = ['*']): Collection
+    {
+        $companies = $this->company->query()
+            ->whereType('Internal')
+            ->with(['countries' => fn ($query) => $query->select('countries.id', 'countries.iso_3166_2', 'countries.name')->whereNotNull('vendors.activated_at')])
+            ->activated()
+            ->ordered()
+            ->get(array_merge($columns, ['default_country_id']));
+
+        return tap($companies, function (Collection $companies) {
+            $companies->transform(function (Company $company) {
+                $countries = $company->countries
+                    ->unique('id')
+                    ->sortByDesc(fn ($country) => $country->getKey() === $company->default_country_id)
+                    ->makeHidden('laravel_through_key');
+                return $company->setRelation('countries', $countries->values());
+            });
+        });
+    }
+
     public function allExternal(array $where = []): Collection
     {
         return $this->userQuery()->where($where)->whereType('External')->get(['id', 'name']);

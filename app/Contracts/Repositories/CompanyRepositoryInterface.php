@@ -44,6 +44,13 @@ interface CompanyRepositoryInterface
     public function allInternalWithVendorsAndCountries(): IlluminateCollection;
 
     /**
+     * Retrieve all Internal type Companies with associated Countries.
+     *
+     * @return IlluminateCollection
+     */
+    public function allInternalWithCountries(): IlluminateCollection;
+
+    /**
      * Search over Companies.
      *
      * @param string $query

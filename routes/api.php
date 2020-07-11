@@ -62,6 +62,8 @@ Route::group(['namespace' => 'API'], function () {
         });
 
         Route::group(['middleware' => THROTTLE_RATE_01, 'namespace' => 'Data'], function () {
+            Route::get('countries/vendor/{vendor}', 'CountryController@filterCountriesByVendor');
+            Route::get('countries/company/{company}', 'CountryController@filterCountriesByCompany');
             Route::apiResource('countries', 'CountryController');
             Route::put('countries/activate/{country}', 'CountryController@activate');
             Route::put('countries/deactivate/{country}', 'CountryController@deactivate');
@@ -142,9 +144,19 @@ Route::group(['namespace' => 'API'], function () {
             Route::put('contract-templates/deactivate/{contract_template}', 'ContractTemplateController@deactivate');
             Route::put('contract-templates/copy/{contract_template}', 'ContractTemplateController@copy');
         });
+        
+        Route::group(['namespace' => 'Templates', 'middleware' => THROTTLE_RATE_01], function () {
+            Route::get('hpe-contract-templates/designer/{hpe_contract_template}', 'HpeContractTemplateController@designer');
+            Route::get('hpe-contract-templates/country/{country}', 'HpeContractTemplateController@country');
+            Route::apiResource('hpe-contract-templates', 'HpeContractTemplateController');
+            Route::put('hpe-contract-templates/activate/{hpe_contract_template}', 'HpeContractTemplateController@activate');
+            Route::put('hpe-contract-templates/deactivate/{hpe_contract_template}', 'HpeContractTemplateController@deactivate');
+            Route::put('hpe-contract-templates/copy/{hpe_contract_template}', 'HpeContractTemplateController@copy');
+        });
 
         Route::group(['middleware' => THROTTLE_RATE_01], function () {
             Route::get('companies/external', 'CompanyController@getExternal');
+            Route::get('companies/countries', 'CompanyController@showCompaniesWithCountries');
             
             Route::resource('companies', 'CompanyController', ['only' => ROUTE_CRUD]);
 
