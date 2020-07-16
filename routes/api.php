@@ -148,6 +148,7 @@ Route::group(['namespace' => 'API'], function () {
         Route::group(['namespace' => 'Templates', 'middleware' => THROTTLE_RATE_01], function () {
             Route::get('hpe-contract-templates/designer/{hpe_contract_template}', 'HpeContractTemplateController@designer');
             Route::get('hpe-contract-templates/country/{country}', 'HpeContractTemplateController@country');
+            Route::post('hpe-contract-templates/filter', 'HpeContractTemplateController@filterTemplates');
             Route::apiResource('hpe-contract-templates', 'HpeContractTemplateController');
             Route::put('hpe-contract-templates/activate/{hpe_contract_template}', 'HpeContractTemplateController@activate');
             Route::put('hpe-contract-templates/deactivate/{hpe_contract_template}', 'HpeContractTemplateController@deactivate');
@@ -196,6 +197,20 @@ Route::group(['namespace' => 'API'], function () {
             Route::put('snd/activate/{snd}', 'SNDcontroller@activate');
             Route::put('snd/deactivate/{snd}', 'SNDcontroller@deactivate');
         });
+
+        Route::post('hpe-contract-files', 'HpeContractFileController');
+
+        Route::get('hpe-contracts/step/import', 'HpeContractController@showImportStepData');
+        Route::patch('hpe-contracts/{hpe_contract}/import/{hpe_contract_file}', 'HpeContractController@importHpeContract');
+        Route::get('hpe-contracts/{hpe_contract}/review', 'HpeContractController@reviewHpeContractData');
+        Route::get('hpe-contracts/{hpe_contract}/preview', 'HpeContractController@previewHpeContract');
+        Route::patch('hpe-contracts/{hpe_contract}/select-assets', 'HpeContractController@selectAssets');
+        Route::patch('hpe-contracts/{hpe_contract}/submit', 'HpeContractController@submitHpeContract');
+        Route::patch('hpe-contracts/{hpe_contract}/unsubmit', 'HpeContractController@unsubmitHpeContract');
+        Route::patch('hpe-contracts/{hpe_contract}/activate', 'HpeContractController@activateHpeContract');
+        Route::patch('hpe-contracts/{hpe_contract}/deactivate', 'HpeContractController@deactivateHpeContract');
+        Route::apiResource('hpe-contracts', 'HpeContractController');
+        
 
         Route::group(['prefix' => 'contracts', 'namespace' => 'Contracts', 'as' => 'contracts.'], function () {
             /**

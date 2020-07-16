@@ -11,7 +11,8 @@ use App\Traits\{
     NotifiableModel,
     Quote\HasVersions
 };
-use Str;
+use Illuminate\Support\Str;
+use Illuminate\Support\Stringable;
 
 class Contract extends BaseQuote
 {
@@ -21,6 +22,10 @@ class Contract extends BaseQuote
 
     use HasVersions, BelongsToQuote, NotifiableModel;
 
+    protected $attributes = [
+        'document_type' => Q_TYPE_CONTRACT
+    ];
+
     protected static function boot()
     {
         parent::boot();
@@ -28,10 +33,6 @@ class Contract extends BaseQuote
         static::addGlobalScope(new NonVersionScope);
         static::addGlobalScope(new ContractTypeScope);
     }
-
-    protected $attributes = [
-        'document_type' => Q_TYPE_CONTRACT
-    ];
 
     public function toSearchArray()
     {
@@ -55,6 +56,10 @@ class Contract extends BaseQuote
 
     public function getContractNumberAttribute()
     {
-        return Str::replaceFirst(static::REG_CUSTOMER_RFQ_PREFIX, static::QB_CUSTOMER_RFQ_PREFIX, $this->customer->rfq);
+        if ($this->document_type === Q_TYPE_HPE_CONTRACT) {
+            return $this->hpe_contract_number;
+        }
+
+        return (string) Str::of($this->customer->rfq)->replaceFirst(static::REG_CUSTOMER_RFQ_PREFIX, static::QB_CUSTOMER_RFQ_PREFIX);
     }
 }

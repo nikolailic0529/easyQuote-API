@@ -56,48 +56,98 @@ final class TemplateDesign
         ],
         'hpe_contract' => [
             'first_page' => [
-                ['id' => 'contract_date', 'label' => 'Contract Date'],
-                ['id' => 'purchase_order_date', 'label' => 'Purchase Order [Authorization Date]'],
-                ['id' => 'purchase_order_no', 'label' => 'Purchase Order [Authorization]'],
-                ['id' => 'amp_id', 'label' => 'AMP ID'],
-                ['id' => 'contract_details', 'label' => 'Contract Details'],
+                ['id' => 'contract_number', 'label' => 'Contract Number'], // *
+                ['id' => 'contract_date', 'label' => 'Contract Date'], // *
+                ['id' => 'purchase_order_date', 'label' => 'Purchase Order [Authorization Date]'], // *
+                ['id' => 'purchase_order_no', 'label' => 'Purchase Order [Authorization]'], // *
+                ['id' => 'amp_id', 'label' => 'AMP ID'], // *
+                ['id' => 'contract_details', 'label' => 'Contract Details [Table]'], // *
             ],
             'contract_summary' => [
-                ['id' => 'contract_date', 'label' => 'Contract Date'],
-                ['id' => 'amp_id', 'label' => 'AMP ID'],
-                ['id' => 'customer_sold_address', 'label' => 'Sold Address'],
-                ['id' => 'customer_bill_address', 'label' => 'Bill Address'],
-                ['id' => 'hpe_address', 'label' => 'HPE Address'],
-                ['id' => 'contract_admin', 'label' => 'Contract Admin'],
-                ['id' => 'service_overview', 'label' => 'Service Overview'],
+                ['id' => 'contract_number', 'label' => 'Contract Number'], // *
+
+                ['id' => 'contract_date', 'label' => 'Contract Date'], // *
+
+                ['id' => 'amp_id', 'label' => 'AMP ID'], // *
+                
+                ['id' => 'sold_contact.org_name', 'label' => 'Sold To Address [Org. Name]'], // *
+                ['id' => 'sold_contact.attn', 'label' => 'Sold To Address [Attn]'], // *
+                ['id' => 'sold_contact.address', 'label' => 'Sold To Address [Address]'], // *
+                ['id' => 'sold_contact.post_code', 'label' => 'Sold To Address [Post Code]'], // *
+                ['id' => 'sold_contact.country', 'label' => 'Sold To Address [Country]'], // *
+                ['id' => 'sold_contact.city', 'label' => 'Sold To Address [City]'], // *
+
+                ['id' => 'bill_contact.org_name', 'label' => 'Bill To Address [Org. Name]'], // *
+                ['id' => 'bill_contact.attn', 'label' => 'Bill To Address [Attn]'], // *
+                ['id' => 'bill_contact.address', 'label' => 'Bill To Address [Address]'], // *
+                ['id' => 'bill_contact.post_code', 'label' => 'Bill To Address [Post Code]'], // *
+                ['id' => 'bill_contact.country', 'label' => 'Bill To Address [Country]'], // *
+                ['id' => 'bill_contact.city', 'label' => 'Bill To Address [City]'], // *
+
+                ['id' => 'service_overview', 'label' => 'Service Overview [Table]'], // *
             ],
             'contract_details' => [
-                ['id' => 'contract_date', 'label' => 'Contract Date'],
-                ['id' => 'contract_start_date', 'label' => 'Contract Start Date'],
-                ['id' => 'contract_end_date', 'label' => 'Contract End Date'],
-                ['id' => 'purchase_order_date', 'label' => 'Purchase Order [Authorization Date]'],
-                ['id' => 'purchase_order_no', 'label' => 'Purchase Order [Authorization]'],
-                ['id' => 'hpe_sales_order', 'label' => 'HPE Sales Order'],
+                ['id' => 'contract_assets', 'label' => 'Contract Assets [Table]'], // *
 
-                ['id' => 'hw_delivery_contact', 'label' => 'HW Delivery Contact'],
-                ['id' => 'sw_delivery_contact', 'label' => 'SW Delivery Contact'],
-                ['id' => 'primary_support_recipient', 'label' => 'Primary Support Recipient'],
-                ['id' => 'entitled_party', 'label' => 'Entitled Party'],
-                ['id' => 'end_customer_name', 'label' => 'End Customer Name'],
-            ],
-            'support_service_details' => [
-                ['id' => 'contract_date', 'label' => 'Contract Date'],
-                ['id' => 'support_service_levels', 'label' => 'Support Service Levels'],
+                ['id' => 'contract_date', 'label' => 'Contract Date'], // *
+
+                ['id' => 'purchase_order_date', 'label' => 'Purchase Order [Authorization Date]'],  // create input *
+                ['id' => 'purchase_order_no', 'label' => 'Purchase Order [Authorization]'], // create input *
+                ['id' => 'hpe_sales_order_no', 'label' => 'HPE Sales Order'], // create input *
+
+                ['id' => 'sold_contact.org_name', 'label' => 'Sold To Address [Org. Name]'], // *
+                ['id' => 'sold_contact.attn', 'label' => 'Sold To Address [Attn]'], // *
+                ['id' => 'sold_contact.address', 'label' => 'Sold To Address [Address]'], // *
+                ['id' => 'sold_contact.post_code', 'label' => 'Sold To Address [Post Code]'], // *
+                ['id' => 'sold_contact.country', 'label' => 'Sold To Address [Country]'], // *
+                ['id' => 'sold_contact.city', 'label' => 'Sold To Address [City]'], // *
+
+                ['id' => 'bill_contact.org_name', 'label' => 'Bill To Address [Org. Name]'], // *
+                ['id' => 'bill_contact.attn', 'label' => 'Bill To Address [Attn]'], // *
+                ['id' => 'bill_contact.address', 'label' => 'Bill To Address [Address]'], // *
+                ['id' => 'bill_contact.post_code', 'label' => 'Bill To Address [Post Code]'], // *
+                ['id' => 'bill_contact.country', 'label' => 'Bill To Address [Country]'], // *
+                ['id' => 'bill_contact.city', 'label' => 'Bill To Address [City]'], // *
+
+                /** Contacts */
+                ['id' => 'pr_support_contact.attn', 'label' => 'Primary Support Recipient [Attn]'], // *
+                ['id' => 'pr_support_contact.email', 'label' => 'Primary Support Recipient [Email]'], // *
+                ['id' => 'pr_support_contact.phone', 'label' => 'Primary Support Recipient [Phone]'], // *
+
+                ['id' => 'hw_delivery_contact.attn', 'label' => 'HW Delivery Contact [Attn]'], // *
+                ['id' => 'hw_delivery_contact.email', 'label' => 'HW Delivery Contact [Email]'], // *
+                ['id' => 'hw_delivery_contact.phone', 'label' => 'HW Delivery Contact [Phone]'], // *
+
+                ['id' => 'sw_delivery_contact.attn', 'label' => 'SW Delivery Contact [Attn]'], // *
+                ['id' => 'sw_delivery_contact.email', 'label' => 'SW Delivery Contact [Email]'], // *
+                ['id' => 'sw_delivery_contact.phone', 'label' => 'SW Delivery Contact [Phone]'], // *
+
+                ['id' => 'entitled_party_contact.org_name', 'label' => 'Entitled Party Contact [Org. Name]'], // *
+                ['id' => 'entitled_party_contact.attn', 'label' => 'Entitled Party Contact [Attn]'], // *
+                ['id' => 'entitled_party_contact.address', 'label' => 'Entitled Party Contact [Address]'], // *
+                ['id' => 'entitled_party_contact.post_code', 'label' => 'Entitled Party Contact [Post Code]'], // *
+                ['id' => 'entitled_party_contact.country', 'label' => 'Entitled Party Contact [Country]'], // *
+                ['id' => 'entitled_party_contact.city', 'label' => 'Entitled Party Contact [City]'], // *
+
+                ['id' => 'end_customer_contact.org_name', 'label' => 'End Customer Contact [Org. Name]'], // *
+                ['id' => 'end_customer_contact.attn', 'label' => 'End Customer Contact [Attn]'], // *
+                ['id' => 'end_customer_contact.address', 'label' => 'End Customer Contact [Address]'], // *
+                ['id' => 'end_customer_contact.post_code', 'label' => 'End Customer Contact [Post Code]'], // *
+                ['id' => 'end_customer_contact.country', 'label' => 'End Customer Contact [Country]'], // *
+                ['id' => 'end_customer_contact.city', 'label' => 'End Customer Contact [City]'], // *
             ],
             'support_account_reference_detail' => [
+                ['id' => 'contract_number', 'label' => 'Contract Number'],
                 ['id' => 'contract_date', 'label' => 'Contract Date'],
                 ['id' => 'support_account_reference', 'label' => 'Support Account Reference [Table]'],
             ],
             'asset_location_details' => [
+                ['id' => 'contract_number', 'label' => 'Contract Number'],
                 ['id' => 'contract_date', 'label' => 'Contract Date'],
                 ['id' => 'asset_locations', 'label' => 'Asset Locations [Table]'],
             ],
             'serial_number_details' => [
+                ['id' => 'contract_number', 'label' => 'Contract Number'],
                 ['id' => 'contract_date', 'label' => 'Contract Date'],
                 ['id' => 'serial_numbers', 'label' => 'Serial Numbers [Table]'],
             ]

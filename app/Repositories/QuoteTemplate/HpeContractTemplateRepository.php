@@ -4,12 +4,10 @@ namespace App\Repositories\QuoteTemplate;
 
 use App\Contracts\Repositories\QuoteTemplate\HpeContractTemplate as Contract;
 use App\Models\QuoteTemplate\HpeContractTemplate;
-use App\Repositories\Concerns\ResolvesImplicitModel;
 use App\Repositories\SearchableRepository;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
+use App\Repositories\Concerns\ResolvesImplicitModel;
+use Illuminate\Database\Eloquent\{Builder, Collection, Model};
+use Illuminate\Support\{Arr, Str, Facades\DB};
 
 class HpeContractTemplateRepository extends SearchableRepository implements Contract
 {
@@ -41,6 +39,20 @@ class HpeContractTemplateRepository extends SearchableRepository implements Cont
     public function findByCountry(string $country)
     {
         return $this->template->whereHas('countries', fn (Builder $query) => $query->whereKey($country))->get(['id', 'name']);
+    }
+
+    public function findBy(array $clause, array $columns = ['*']): Collection
+    {
+        return $this->template->query()
+            ->when(
+                Str::isUuid(Arr::get($clause, 'company_id')),
+                fn ($query) => $query->whereHas('company', fn ($query) => $query->whereKey(Arr::get($clause, 'company_id')))
+            )
+            ->when(
+                Str::isUuid(Arr::get($clause, 'country_id')),
+                fn ($query) => $query->whereHas('countries', fn ($query) => $query->whereKey(Arr::get($clause, 'country_id'))),
+            )
+            ->get($columns);
     }
 
     public function copy($id)
@@ -178,7 +190,7 @@ class HpeContractTemplateRepository extends SearchableRepository implements Cont
     protected function searchableScope($query)
     {
         return $query
-            ->select('id', 'name', 'is_system', 'company_id')
+            ->select('id', 'name', 'is_system', 'company_id', 'created_at', 'activated_at')
             ->with('company:id,name', 'countries:id,name');
     }
 }

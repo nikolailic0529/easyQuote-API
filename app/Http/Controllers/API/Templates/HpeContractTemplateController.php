@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\Templates;
 use App\Contracts\Repositories\QuoteTemplate\HpeContractTemplate as Templates;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\QuoteTemplate\DeleteTemplate;
+use App\Http\Requests\QuoteTemplate\FilterHpeTemplates;
 use App\Http\Requests\QuoteTemplate\HpeTemplateDesign;
 use App\Http\Requests\QuoteTemplate\StoreHpeContractTemplate;
 use App\Http\Requests\QuoteTemplate\UpdateHpeContractTemplate;
@@ -31,6 +32,19 @@ class HpeContractTemplateController extends Controller
     {
         return response()->json(
             $this->templates->paginate($request->query('search'))
+        );
+    }
+
+    /**
+     * Filter Hpe Contract Templates by specified clause.
+     *
+     * @param FilterHpeTemplates $request
+     * @return void
+     */
+    public function filterTemplates(FilterHpeTemplates $request)
+    {
+        return response()->json(
+            $request->getFilteredTemplates()
         );
     }
 

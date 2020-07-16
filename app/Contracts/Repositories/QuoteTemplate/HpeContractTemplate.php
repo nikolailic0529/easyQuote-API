@@ -3,6 +3,7 @@
 namespace App\Contracts\Repositories\QuoteTemplate;
 
 use App\Models\QuoteTemplate\HpeContractTemplate as Model;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 interface HpeContractTemplate
@@ -23,6 +24,15 @@ interface HpeContractTemplate
      * @throws ModelNotFoundException
      */
     public function findOrFail(string $id): Model;
+
+    /**
+     * Retrieve hpe contract templates by passed array clause.
+     *
+     * @param  array $clause
+     * @param  array $columns
+     * @return Collection
+     */
+    public function findBy(array $clause, array $columns = ['*']): Collection;
 
     /**
      * Store a newly created hpe contract template in repository.

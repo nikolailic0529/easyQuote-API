@@ -109,6 +109,7 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
         'contract_template_id',
         'pricing_document',
         'service_agreement_id',
+        'hpe_contract_number',
         'system_handle',
         'checkbox_status',
         'closing_date'

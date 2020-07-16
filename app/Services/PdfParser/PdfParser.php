@@ -370,14 +370,25 @@ class PdfParser implements PdfParserInterface
                 return $row;
             }
 
+            $exactlyMatches = false;
+
             if (Arr::get(static::$exactDatesMatchesCache, $from) === static::DT_TO) {
                 Arr::set($row, static::DT_TO, $from);
                 Arr::set($row, static::DT_FROM, null);
+
+                $exactlyMatches = true;
             }
 
             if (Arr::get(static::$exactDatesMatchesCache, $to) === static::DT_FROM) {
                 Arr::set($row, static::DT_FROM, $to);
                 Arr::set($row, static::DT_TO, null);
+
+                $exactlyMatches = true;
+            }
+
+            if (false === $exactlyMatches && blank($from) && filled($to))  {
+                Arr::set($row, static::DT_TO, null);
+                Arr::set($row, static::DT_FROM, $to);
             }
 
             return $row;

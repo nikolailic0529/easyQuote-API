@@ -12,7 +12,7 @@ use App\Models\Quote\QuoteVersion;
 use Illuminate\Database\Query\Builder;
 use Webpatser\Uuid\Uuid;
 use Illuminate\Support\Facades\DB;
-use Arr;
+use Illuminate\Support\Arr;
 
 trait ManagesGroupDescription
 {
@@ -83,7 +83,7 @@ trait ManagesGroupDescription
         $initialGroupDescription = $this->retrieveRowsGroups($version);
 
         $data = collect($attributes);
-        $group = $data->only(['name', 'search_text'])->prepend(Uuid::generate(4)->string, 'id');
+        $group = $data->only(['name', 'search_text'])->merge(['id' => Uuid::generate(4)->string, 'is_selected' => false]);
         $rows = $data->get('rows', []);
 
         /** We are updating group description rows only in case when new version was not created, because there are different rows ids. */

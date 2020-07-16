@@ -133,22 +133,22 @@ class Customer extends Model
 
     public function getSupportStartDateAttribute()
     {
-        return carbon_format($this->attributes['support_start'], $this->dynamicDateFormat);
+        return carbon_format($this->getRawOriginal('support_start'), $this->dynamicDateFormat);
     }
 
     public function getSupportEndDateAttribute()
     {
-        return carbon_format($this->attributes['support_end'], $this->dynamicDateFormat);
+        return carbon_format($this->getRawOriginal('support_end'), $this->dynamicDateFormat);
     }
 
     public function getValidUntilDateAttribute()
     {
-        return carbon_format($this->attributes['valid_until'], $this->dynamicDateFormat);
+        return carbon_format($this->getRawOriginal('valid_until'), $this->dynamicDateFormat);
     }
 
     public function getValidUntilUiAttribute()
     {
-        return carbon_format($this->attributes['valid_until'], config('date.format_ui'));
+        return carbon_format($this->getRawOriginal('valid_until'), config('date.format_ui'));
     }
 
     public function getQuotationValidUntilAttribute()
@@ -248,13 +248,13 @@ class Customer extends Model
             'source'            => $this->source,
             
             'valid_until'       => $this->valid_until_date,
-            'valid_until_date'  => optional($this->getRawOriginal('valid_until'), fn ($date) => Carbon::parse($date))->toDateString(),
+            'valid_until_date'  => transform($this->getRawOriginal('valid_until'), fn ($date) => Carbon::parse($date)->toDateString()),
 
             'support_start' => $this->support_start_date,
-            'support_start_date'  => optional($this->getRawOriginal('support_start'), fn ($date) => Carbon::parse($date))->toDateString(),
+            'support_start_date'  => transform($this->getRawOriginal('support_start'), fn ($date) => Carbon::parse($date)->toDateString()),
 
             'support_end'   => $this->support_end_date,
-            'support_end_date'  => optional($this->getRawOriginal('support_end'), fn ($date) => Carbon::parse($date))->toDateString(),
+            'support_end_date'  => transform($this->getRawOriginal('support_end'), fn ($date) => Carbon::parse($date)->toDateString()),
         ];
     }
 }

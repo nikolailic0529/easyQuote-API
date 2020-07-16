@@ -31,7 +31,7 @@ class CollectionMixin
 
     public function sortByFields()
     {
-        return function (?array $sortable) {
+        return function ($sortable) {
             if (blank($sortable)) {
                 return $this;
             }

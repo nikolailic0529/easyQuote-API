@@ -57,8 +57,9 @@ define('QG_FTNF_01', 'From or To Group Description is not found.');
 define('QG_NF_01', 'The Group Description is not found.');
 define('QV_SD_01', 'You could not delete the given Version as the Quote is already submitted.');
 
-define('Q_TYPE_QUOTE', 'q');
-define('Q_TYPE_CONTRACT', 'c');
+define('Q_TYPE_QUOTE', 1);
+define('Q_TYPE_CONTRACT', 2);
+define('Q_TYPE_HPE_CONTRACT', 3);
 
 define('QCE_01', 'Contract for the given Quote already exists.');
 define('QCE_UN_01', 'A contract exists for this quote, please delete the contract first to undo this quote');
@@ -81,6 +82,9 @@ define('CTSS_02', 'Contract with number :contract_number has been successfully s
 define('CTSE_01', 'An activated submitted Contract with the same Contract Number already exists.');
 define('CTSU_01', 'You could not update a submitted Contract.');
 define('CTD_01', 'Contract with number :contract_number has been deleted.');
+
+// HPE Contracts.
+define('HPEC_IMPE_01', 'Unable to import the provided file');
 
 /**
  * Quote Template.

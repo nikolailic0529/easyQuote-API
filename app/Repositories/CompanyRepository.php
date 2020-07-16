@@ -35,6 +35,15 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
             ->union($additional);
     }
 
+    public function allInternal(array $columns = ['*']): Collection
+    {
+        return $this->company->query()
+            ->whereType('Internal')
+            ->activated()
+            ->ordered()
+            ->get($columns);
+    }
+
     public function allWithVendorsAndCountries(): Collection
     {
         $companies = $this->company->query()->with([
@@ -68,20 +77,20 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
     {
         $companies = $this->company->query()
             ->whereType('Internal')
-            ->with(['countries' => fn ($query) => $query->select('countries.id', 'countries.iso_3166_2', 'countries.name')->whereNotNull('vendors.activated_at')])
-            ->activated()
+            ->with([
+                'countries' => fn ($query) => $query
+                    ->select('countries.id', 'countries.iso_3166_2', 'countries.name')
+                    ->whereNotNull('vendors.activated_at')
+                    ->addSelect([
+                        'default_country_id' => fn ($query) => $query->select('default_country_id')->from('companies')->whereColumn('companies.id', 'company_vendor.company_id')
+                    ])
+                    ->orderByRaw('FIELD(countries.id, default_country_id, NULL) DESC')
+            ])
+            ->whereNotNull('companies.activated_at')
             ->ordered()
             ->get(array_merge($columns, ['default_country_id']));
 
-        return tap($companies, function (Collection $companies) {
-            $companies->transform(function (Company $company) {
-                $countries = $company->countries
-                    ->unique('id')
-                    ->sortByDesc(fn ($country) => $country->getKey() === $company->default_country_id)
-                    ->makeHidden('laravel_through_key');
-                return $company->setRelation('countries', $countries->values());
-            });
-        });
+        return $companies;
     }
 
     public function allExternal(array $where = []): Collection

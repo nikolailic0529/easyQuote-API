@@ -30,12 +30,13 @@ class TemplateResourceWithIncludes extends JsonResource
                 'id'    => $this->vendor->id,
                 'name'  => $this->vendor->name
             ],
-            'currency'          => $this->currency,
-            'form_data'         => $this->form_data,
-            'data_headers'      => Collection::wrap($this->data_headers)->values(),
-            'countries'         => $this->countries->map->only('id', 'name'),
-            'created_at'        => (string) $this->created_at,
-            'activated_at'      => (string) $this->activated_at
+            'currency'              => $this->currency,
+            'form_data'             => $this->form_data,
+            'data_headers'          => Collection::wrap($this->data_headers)->values(),
+            'data_headers_keyed'    => Collection::wrap($this->data_headers),
+            'countries'             => $this->countries->map->only('id', 'name'),
+            'created_at'            => (string) $this->created_at,
+            'activated_at'          => (string) $this->activated_at
         ];
     }
 }

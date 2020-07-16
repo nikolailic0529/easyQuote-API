@@ -89,7 +89,7 @@ abstract class BaseQuoteTemplate extends Model implements ActivatableInterface
     {
         return [
             'name' => $this->name,
-            'countries' => $this->load('countries')->countries->map->only('name'),
+            'countries' => $this->loadMissing('countries')->countries->map->only('name'),
             'vendor' => $this->vendor->toSearchArray(),
             'company' => $this->company->toSearchArray(),
             'created_at' => (string) $this->created_at

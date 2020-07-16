@@ -30,6 +30,14 @@ interface CompanyRepositoryInterface
     public function all();
 
     /**
+     * Retrieve all Internal type Companies.
+     *
+     * @param  array $columns
+     * @return IlluminateCollection
+     */
+    public function allInternal(array $columns = ['*']): IlluminateCollection;
+
+    /**
      * Retrieve all Companies with associated Vendors and Countries.
      *
      * @return \Illuminate\Database\Eloquent\Collection
@@ -46,9 +54,10 @@ interface CompanyRepositoryInterface
     /**
      * Retrieve all Internal type Companies with associated Countries.
      *
+     * @param  array $columns
      * @return IlluminateCollection
      */
-    public function allInternalWithCountries(): IlluminateCollection;
+    public function allInternalWithCountries(array $columns = ['*']): IlluminateCollection;
 
     /**
      * Search over Companies.

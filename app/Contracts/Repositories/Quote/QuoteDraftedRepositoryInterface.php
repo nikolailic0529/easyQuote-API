@@ -31,6 +31,15 @@ interface QuoteDraftedRepositoryInterface
     public function cursor(?Closure $scope = null): LazyCollection;
 
     /**
+     * Check if any Quotes exist by the given RFQ Number.
+     *
+     * @param  string $rfqNumber
+     * @param  bool $activated
+     * @return boolean
+     */
+    public function rfqExist(string $rfqNumber, bool $activated = true): bool;
+
+    /**
      * Search by Drafted Quotes.
      *
      * @param string $query

@@ -16,10 +16,10 @@ trait Submittable
         $this->fireModelEvent('submitting');
 
         if ($this->exists && !is_null($this->submitted_at)) {
-            return true;
+            return false;
         }
 
-        $pass = $this->forceFill(['submitted_at' => now()])->save();
+        $pass = $this->forceFill(['submitted_at' => now()])->saveOrFail();
 
         activity()->on($this)->queue('submitted');
 
@@ -33,10 +33,10 @@ trait Submittable
         $this->fireModelEvent('unsubmitting');
 
         if (is_null($this->submitted_at)) {
-            return true;
+            return false;
         }
 
-        $pass = $this->forceFill(['submitted_at' => null])->save();
+        $pass = $this->forceFill(['submitted_at' => null])->saveOrFail();
 
         activity()->on($this)->queue('unravel');
 
