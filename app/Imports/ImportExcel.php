@@ -397,7 +397,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         $hasOnePayColumn = $columns->contains(fn ($column) => preg_match('/return to/i', data_get($column, static::C_VL)));
 
         if ($hasOnePayColumn && null !== ($priceHeader = $this->requiredHeadersMapping->get('price'))) {
-            $currentPriceColumn = $columns->firstWhere(static::C_HDR, $priceHeader);
+            $currentPriceColumn = $columns->whereNotNull(static::C_HDR)->first(fn ($column) => trim($column[static::C_HDR]) === trim($priceHeader));
 
             if (null !== $currentPriceColumn && !is_null($currentPriceColumn[static::C_VL])) {
                 $currentPriceColumn = array_merge($currentPriceColumn, [static::C_OP => true]);
@@ -415,6 +415,14 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
             $priceColumn = $columns->first(fn ($column) => Str::containsInsensitive(data_get($column, static::C_HDR), 'qty'));
 
             if ($priceColumn === null || $priceHeader === $priceColumn[static::C_HDR]) {
+                return $columns;
+            }
+
+            if (blank($priceColumn[static::C_VL]) && null !== $currentPriceColumn) {
+                $currentPriceColumn = array_merge($currentPriceColumn, [static::C_OP => true]);
+
+                $columns->put($currentPriceColumn[static::C_IMPC], $currentPriceColumn);
+
                 return $columns;
             }
 

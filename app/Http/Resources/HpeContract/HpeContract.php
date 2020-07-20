@@ -74,8 +74,10 @@ class HpeContract extends JsonResource
             ],
 
             'last_drafted_step' => $this->last_drafted_step,
+
+            'additional_notes' => $this->additional_notes,
+
             'completeness' => $this->completeness,
-            'last_drafted_step' => $this->last_drafted_step,
             'checkbox_status' => $this->checkbox_status,
             
             'contract_date' => optional($this->contract_date)->format(config('date.format_ui')),

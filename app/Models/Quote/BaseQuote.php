@@ -245,7 +245,7 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
         ];
     }
 
-    public static function getCompletenessDictionary()
+    public function getCompletenessDictionary()
     {
         return __('quote.stages');
     }

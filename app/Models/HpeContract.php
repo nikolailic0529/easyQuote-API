@@ -69,6 +69,8 @@ class HpeContract extends Model
         'sold_contact',
         'bill_contact',
 
+        'additional_notes',
+
         'last_drafted_step',
         'completeness',
         'checkbox_status',
@@ -115,7 +117,7 @@ class HpeContract extends Model
         return $this->hasOne(Contract::class)->withoutGlobalScope(ContractTypeScope::class)->withDefault();
     }
 
-    public static function getCompletenessDictionary()
+    public function getCompletenessDictionary()
     {
         return __('hpecontract.stages');
     }

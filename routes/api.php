@@ -45,7 +45,7 @@ Route::group(['namespace' => 'API'], function () {
         Route::get('quotes/{rfq}/pdf', 'S4QuoteController@pdf')->name('pdf');
     });
 
-    Route::group(['middleware' => 'auth:api'], function () {
+Route::group(['middleware' => 'auth:api'], function () {
         Route::group(['middleware' => THROTTLE_RATE_01], function () {
             Route::match(['get', 'post'], 'stats', 'StatsController@quotesSummary');
             Route::match(['get', 'post'], 'stats/customers', 'StatsController@customersSummary');
@@ -209,6 +209,7 @@ Route::group(['namespace' => 'API'], function () {
         Route::patch('hpe-contracts/{hpe_contract}/unsubmit', 'HpeContractController@unsubmitHpeContract');
         Route::patch('hpe-contracts/{hpe_contract}/activate', 'HpeContractController@activateHpeContract');
         Route::patch('hpe-contracts/{hpe_contract}/deactivate', 'HpeContractController@deactivateHpeContract');
+        Route::get('hpe-contracts/{hpe_contract}/export', 'HpeContractController@exportHpeContract');
         Route::apiResource('hpe-contracts', 'HpeContractController');
         
 

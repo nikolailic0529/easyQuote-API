@@ -147,7 +147,7 @@ class HpeContractTemplateRepository extends SearchableRepository implements Cont
         return DB::transaction(fn () => $model->deactivate(), DB_TA);
     }
 
-    public function model()
+    public function model(): string
     {
         return HpeContractTemplate::class;
     }
@@ -166,7 +166,7 @@ class HpeContractTemplateRepository extends SearchableRepository implements Cont
     protected function filterableQuery()
     {
         $query = $this->template->query()
-            ->select('id', 'name', 'is_system', 'company_id', 'created_at', 'activated_at')
+            ->select(...$this->qualifyColumns('id', 'name', 'is_system', 'company_id', 'created_at', 'activated_at'))
             ->with('company:id,name', 'countries:id,name');
 
         return [
@@ -192,5 +192,10 @@ class HpeContractTemplateRepository extends SearchableRepository implements Cont
         return $query
             ->select('id', 'name', 'is_system', 'company_id', 'created_at', 'activated_at')
             ->with('company:id,name', 'countries:id,name');
+    }
+
+    protected function qualifyColumns(string ...$columns): array
+    {
+        return Collection::wrap($columns)->map(fn ($column) => $this->template->qualifyColumn($column))->toArray();
     }
 }

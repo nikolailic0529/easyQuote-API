@@ -2,6 +2,7 @@
 
 namespace App\Models\Quote;
 
+use App\Models\HpeContract;
 use App\Scopes\{
     ContractTypeScope,
     NonVersionScope
@@ -61,5 +62,14 @@ class Contract extends BaseQuote
         }
 
         return (string) Str::of($this->customer->rfq)->replaceFirst(static::REG_CUSTOMER_RFQ_PREFIX, static::QB_CUSTOMER_RFQ_PREFIX);
+    }
+
+    public function getCompletenessDictionary()
+    {
+        if ($this->document_type === Q_TYPE_HPE_CONTRACT) {
+            return HpeContract::modelCompleteness();
+        }
+
+        return parent::getCompletenessDictionary();
     }
 }

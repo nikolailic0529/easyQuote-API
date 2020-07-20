@@ -69,20 +69,24 @@ final class TemplateDesign
                 ['id' => 'contract_date', 'label' => 'Contract Date'], // *
 
                 ['id' => 'amp_id', 'label' => 'AMP ID'], // *
-                
-                ['id' => 'sold_contact.org_name', 'label' => 'Sold To Address [Org. Name]'], // *
-                ['id' => 'sold_contact.attn', 'label' => 'Sold To Address [Attn]'], // *
-                ['id' => 'sold_contact.address', 'label' => 'Sold To Address [Address]'], // *
-                ['id' => 'sold_contact.post_code', 'label' => 'Sold To Address [Post Code]'], // *
-                ['id' => 'sold_contact.country', 'label' => 'Sold To Address [Country]'], // *
-                ['id' => 'sold_contact.city', 'label' => 'Sold To Address [City]'], // *
 
-                ['id' => 'bill_contact.org_name', 'label' => 'Bill To Address [Org. Name]'], // *
-                ['id' => 'bill_contact.attn', 'label' => 'Bill To Address [Attn]'], // *
-                ['id' => 'bill_contact.address', 'label' => 'Bill To Address [Address]'], // *
-                ['id' => 'bill_contact.post_code', 'label' => 'Bill To Address [Post Code]'], // *
-                ['id' => 'bill_contact.country', 'label' => 'Bill To Address [Country]'], // *
-                ['id' => 'bill_contact.city', 'label' => 'Bill To Address [City]'], // *
+                ['id' => 'sold_contact.org_name', 'label' => 'Sold To Address [Org. Name]'],
+                ['id' => 'sold_contact.attn', 'label' => 'Sold To Address [Attn]'],
+                ['id' => 'sold_contact.address', 'label' => 'Sold To Address [Address]'],
+                ['id' => 'sold_contact.post_code', 'label' => 'Sold To Address [Post Code]'],
+                ['id' => 'sold_contact.country', 'label' => 'Sold To Address [Country]'],
+                ['id' => 'sold_contact.city', 'label' => 'Sold To Address [City]'],
+                ['id' => 'sold_contact.phone', 'label' => 'Sold To Address [Phone]'],
+                ['id' => 'sold_contact.email', 'label' => 'Sold To Address [Email]'],
+
+                ['id' => 'bill_contact.org_name', 'label' => 'Bill To Address [Org. Name]'],
+                ['id' => 'bill_contact.attn', 'label' => 'Bill To Address [Attn]'],
+                ['id' => 'bill_contact.address', 'label' => 'Bill To Address [Address]'],
+                ['id' => 'bill_contact.post_code', 'label' => 'Bill To Address [Post Code]'],
+                ['id' => 'bill_contact.country', 'label' => 'Bill To Address [Country]'],
+                ['id' => 'bill_contact.city', 'label' => 'Bill To Address [City]'],
+                ['id' => 'bill_contact.phone', 'label' => 'Bill To Address [Phone]'],
+                ['id' => 'bill_contact.email', 'label' => 'Bill To Address [Email]'],
 
                 ['id' => 'service_overview', 'label' => 'Service Overview [Table]'], // *
             ],
@@ -95,19 +99,23 @@ final class TemplateDesign
                 ['id' => 'purchase_order_no', 'label' => 'Purchase Order [Authorization]'], // create input *
                 ['id' => 'hpe_sales_order_no', 'label' => 'HPE Sales Order'], // create input *
 
-                ['id' => 'sold_contact.org_name', 'label' => 'Sold To Address [Org. Name]'], // *
-                ['id' => 'sold_contact.attn', 'label' => 'Sold To Address [Attn]'], // *
-                ['id' => 'sold_contact.address', 'label' => 'Sold To Address [Address]'], // *
-                ['id' => 'sold_contact.post_code', 'label' => 'Sold To Address [Post Code]'], // *
-                ['id' => 'sold_contact.country', 'label' => 'Sold To Address [Country]'], // *
-                ['id' => 'sold_contact.city', 'label' => 'Sold To Address [City]'], // *
+                ['id' => 'sold_contact.org_name', 'label' => 'Sold To Address [Org. Name]'],
+                ['id' => 'sold_contact.attn', 'label' => 'Sold To Address [Attn]'],
+                ['id' => 'sold_contact.address', 'label' => 'Sold To Address [Address]'],
+                ['id' => 'sold_contact.post_code', 'label' => 'Sold To Address [Post Code]'],
+                ['id' => 'sold_contact.country', 'label' => 'Sold To Address [Country]'],
+                ['id' => 'sold_contact.city', 'label' => 'Sold To Address [City]'],
+                ['id' => 'sold_contact.phone', 'label' => 'Sold To Address [Phone]'],
+                ['id' => 'sold_contact.email', 'label' => 'Sold To Address [Email]'],
 
-                ['id' => 'bill_contact.org_name', 'label' => 'Bill To Address [Org. Name]'], // *
-                ['id' => 'bill_contact.attn', 'label' => 'Bill To Address [Attn]'], // *
-                ['id' => 'bill_contact.address', 'label' => 'Bill To Address [Address]'], // *
-                ['id' => 'bill_contact.post_code', 'label' => 'Bill To Address [Post Code]'], // *
-                ['id' => 'bill_contact.country', 'label' => 'Bill To Address [Country]'], // *
-                ['id' => 'bill_contact.city', 'label' => 'Bill To Address [City]'], // *
+                ['id' => 'bill_contact.org_name', 'label' => 'Bill To Address [Org. Name]'],
+                ['id' => 'bill_contact.attn', 'label' => 'Bill To Address [Attn]'],
+                ['id' => 'bill_contact.address', 'label' => 'Bill To Address [Address]'],
+                ['id' => 'bill_contact.post_code', 'label' => 'Bill To Address [Post Code]'],
+                ['id' => 'bill_contact.country', 'label' => 'Bill To Address [Country]'],
+                ['id' => 'bill_contact.city', 'label' => 'Bill To Address [City]'],
+                ['id' => 'bill_contact.phone', 'label' => 'Bill To Address [Phone]'],
+                ['id' => 'bill_contact.email', 'label' => 'Bill To Address [Email]'],
 
                 /** Contacts */
                 ['id' => 'pr_support_contact.attn', 'label' => 'Primary Support Recipient [Attn]'], // *
@@ -136,12 +144,83 @@ final class TemplateDesign
                 ['id' => 'end_customer_contact.country', 'label' => 'End Customer Contact [Country]'], // *
                 ['id' => 'end_customer_contact.city', 'label' => 'End Customer Contact [City]'], // *
             ],
+            'contract_page' => [
+                ['id' => 'contract_date', 'label' => 'Contract Date'], // *
+
+                ['id' => 'purchase_order_date', 'label' => 'Purchase Order [Authorization Date]'],  // create input *
+                ['id' => 'purchase_order_no', 'label' => 'Purchase Order [Authorization]'], // create input *
+                ['id' => 'hpe_sales_order_no', 'label' => 'HPE Sales Order'], // create input *
+
+                ['id' => 'sold_contact.org_name', 'label' => 'Sold To Address [Org. Name]'],
+                ['id' => 'sold_contact.attn', 'label' => 'Sold To Address [Attn]'],
+                ['id' => 'sold_contact.address', 'label' => 'Sold To Address [Address]'],
+                ['id' => 'sold_contact.post_code', 'label' => 'Sold To Address [Post Code]'],
+                ['id' => 'sold_contact.country', 'label' => 'Sold To Address [Country]'],
+                ['id' => 'sold_contact.city', 'label' => 'Sold To Address [City]'],
+                ['id' => 'sold_contact.phone', 'label' => 'Sold To Address [Phone]'],
+                ['id' => 'sold_contact.email', 'label' => 'Sold To Address [Email]'],
+
+                ['id' => 'bill_contact.org_name', 'label' => 'Bill To Address [Org. Name]'],
+                ['id' => 'bill_contact.attn', 'label' => 'Bill To Address [Attn]'],
+                ['id' => 'bill_contact.address', 'label' => 'Bill To Address [Address]'],
+                ['id' => 'bill_contact.post_code', 'label' => 'Bill To Address [Post Code]'],
+                ['id' => 'bill_contact.country', 'label' => 'Bill To Address [Country]'],
+                ['id' => 'bill_contact.city', 'label' => 'Bill To Address [City]'],
+                ['id' => 'bill_contact.phone', 'label' => 'Bill To Address [Phone]'],
+                ['id' => 'bill_contact.email', 'label' => 'Bill To Address [Email]'],
+
+                /** Contacts */
+                ['id' => 'pr_support_contact.attn', 'label' => 'Primary Support Recipient [Attn]'], // *
+                ['id' => 'pr_support_contact.email', 'label' => 'Primary Support Recipient [Email]'], // *
+                ['id' => 'pr_support_contact.phone', 'label' => 'Primary Support Recipient [Phone]'], // *
+
+                ['id' => 'hw_delivery_contact.attn', 'label' => 'HW Delivery Contact [Attn]'], // *
+                ['id' => 'hw_delivery_contact.email', 'label' => 'HW Delivery Contact [Email]'], // *
+                ['id' => 'hw_delivery_contact.phone', 'label' => 'HW Delivery Contact [Phone]'], // *
+
+                ['id' => 'sw_delivery_contact.attn', 'label' => 'SW Delivery Contact [Attn]'], // *
+                ['id' => 'sw_delivery_contact.email', 'label' => 'SW Delivery Contact [Email]'], // *
+                ['id' => 'sw_delivery_contact.phone', 'label' => 'SW Delivery Contact [Phone]'], // *
+
+                ['id' => 'entitled_party_contact.org_name', 'label' => 'Entitled Party Contact [Org. Name]'], // *
+                ['id' => 'entitled_party_contact.attn', 'label' => 'Entitled Party Contact [Attn]'], // *
+                ['id' => 'entitled_party_contact.address', 'label' => 'Entitled Party Contact [Address]'], // *
+                ['id' => 'entitled_party_contact.post_code', 'label' => 'Entitled Party Contact [Post Code]'], // *
+                ['id' => 'entitled_party_contact.country', 'label' => 'Entitled Party Contact [Country]'], // *
+                ['id' => 'entitled_party_contact.city', 'label' => 'Entitled Party Contact [City]'], // *
+
+                ['id' => 'end_customer_contact.org_name', 'label' => 'End Customer Contact [Org. Name]'], // *
+                ['id' => 'end_customer_contact.attn', 'label' => 'End Customer Contact [Attn]'], // *
+                ['id' => 'end_customer_contact.address', 'label' => 'End Customer Contact [Address]'], // *
+                ['id' => 'end_customer_contact.post_code', 'label' => 'End Customer Contact [Post Code]'], // *
+                ['id' => 'end_customer_contact.country', 'label' => 'End Customer Contact [Country]'], // *
+                ['id' => 'end_customer_contact.city', 'label' => 'End Customer Contact [City]'], // *
+            ],
+            'support_service_details' => [
+                ['id' => 'contract_number', 'label' => 'Contract Number'],
+                ['id' => 'contract_date', 'label' => 'Contract Date'],
+                ['id' => 'support_services', 'label' => 'Support Services [List]'],
+            ],
             'support_account_reference_detail' => [
+                ['id' => 'end_customer_contact.org_name', 'label' => 'End Customer Contact [Org. Name]'], // *
+                ['id' => 'end_customer_contact.attn', 'label' => 'End Customer Contact [Attn]'], // *
+                ['id' => 'end_customer_contact.address', 'label' => 'End Customer Contact [Address]'], // *
+                ['id' => 'end_customer_contact.post_code', 'label' => 'End Customer Contact [Post Code]'], // *
+                ['id' => 'end_customer_contact.country', 'label' => 'End Customer Contact [Country]'], // *
+                ['id' => 'end_customer_contact.city', 'label' => 'End Customer Contact [City]'], // *
+
                 ['id' => 'contract_number', 'label' => 'Contract Number'],
                 ['id' => 'contract_date', 'label' => 'Contract Date'],
                 ['id' => 'support_account_reference', 'label' => 'Support Account Reference [Table]'],
             ],
             'asset_location_details' => [
+                ['id' => 'end_customer_contact.org_name', 'label' => 'End Customer Contact [Org. Name]'], // *
+                ['id' => 'end_customer_contact.attn', 'label' => 'End Customer Contact [Attn]'], // *
+                ['id' => 'end_customer_contact.address', 'label' => 'End Customer Contact [Address]'], // *
+                ['id' => 'end_customer_contact.post_code', 'label' => 'End Customer Contact [Post Code]'], // *
+                ['id' => 'end_customer_contact.country', 'label' => 'End Customer Contact [Country]'], // *
+                ['id' => 'end_customer_contact.city', 'label' => 'End Customer Contact [City]'], // *
+                
                 ['id' => 'contract_number', 'label' => 'Contract Number'],
                 ['id' => 'contract_date', 'label' => 'Contract Date'],
                 ['id' => 'asset_locations', 'label' => 'Asset Locations [Table]'],
@@ -150,7 +229,8 @@ final class TemplateDesign
                 ['id' => 'contract_number', 'label' => 'Contract Number'],
                 ['id' => 'contract_date', 'label' => 'Contract Date'],
                 ['id' => 'serial_numbers', 'label' => 'Serial Numbers [Table]'],
-            ]
+            ],
+
         ]
     ];
 

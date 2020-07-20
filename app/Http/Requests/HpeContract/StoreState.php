@@ -74,8 +74,10 @@ class StoreState extends FormRequest
             'end_customer_contact.city'              => ['nullable', 'string', 'max:191'],
             'end_customer_contact.country'           => ['nullable', 'string', 'max:191'],
 
+            'additional_notes'      => ['nullable', 'string', 'max:20000'],
+
             'checkbox_status'       => ['nullable', 'array'],
-            'last_drafted_step'     => ['required', 'string', Rule::in(array_keys(HpeContract::getCompletenessDictionary()))],
+            'last_drafted_step'     => ['required', 'string', Rule::in(array_keys(HpeContract::modelCompleteness()))],
             'contract_date'         => ['exclude_unless:last_drafted_step,Assorted Detail', 'date']
         ];
     }

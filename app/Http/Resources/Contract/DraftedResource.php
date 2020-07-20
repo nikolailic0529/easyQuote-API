@@ -41,6 +41,8 @@ class DraftedResource extends JsonResource
                 'update'    => $user->can('update', $this->resource),
                 'delete'    => $user->can('delete', $this->resource),
             ],
+            'completeness'      => $this->completeness,
+            'last_drafted_step' => $this->last_drafted_step,
             'quote_customer'    => QuoteCustomerResource::make($this),
             'created_at'        => optional($this->created_at)->format(config('date.format_time')),
             'updated_at'        => optional($this->usingVersion->updated_at)->format(config('date.format_time')),

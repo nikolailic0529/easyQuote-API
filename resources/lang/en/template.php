@@ -101,6 +101,30 @@ return [
         ]
     ],
     'hpe_contract_data_headers' => [
+        'hpe_contract' => [
+            'value' => 'HPE Contract',
+            'label' => 'HPE Contract No.'
+        ],
+        'support_account_reference' => [
+            'value' => 'Support Account Reference',
+            'label' => 'Support Account Reference'
+        ],
+        'serial_number_details' => [
+            'value' => 'Serial Number Details',
+            'label' => 'Serial Number Details'
+        ],
+        'hpe_sales_order' => [
+            'value' => 'HPE Sales Order',
+            'label' => 'Hpe Sales Order No.'
+        ],
+        'number' => [
+            'value' => 'No.',
+            'label' => 'No.'
+        ],
+        'asset_location_details' => [
+            'value' => 'Asset Location Details',
+            'label' => 'Asset Location Details'
+        ],
         'authorization_date' => [
             'value' => 'Purchase Order / Authorization Date',
             'label' => 'Authorization Date'

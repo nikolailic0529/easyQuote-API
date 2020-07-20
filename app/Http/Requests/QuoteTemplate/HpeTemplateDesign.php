@@ -2,19 +2,18 @@
 
 namespace App\Http\Requests\QuoteTemplate;
 
-use App\Contracts\Repositories\VendorRepositoryInterface as Vendors;
+use App\Contracts\Services\HpeExporter;
 use App\Models\QuoteTemplate\BaseQuoteTemplate;
 use App\Models\QuoteTemplate\TemplateDesign;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Arr;
 
 class HpeTemplateDesign extends FormRequest
 {
-    protected Vendors $vendors;
+    protected HpeExporter $exporter;
 
-    public function __construct(Vendors $vendors)
+    public function __construct(HpeExporter $exporter)
     {
-        $this->vendors = $vendors;
+        $this->exporter = $exporter;
     }
 
     /**
@@ -35,16 +34,11 @@ class HpeTemplateDesign extends FormRequest
             return [];
         }
 
-        $hpe = $this->vendors->findByCode('HPE');
-
-        $logos = array_merge(
-            $template->company->logoDimensions ?? [],
-            $hpe->logoDimensions ?? []
-        );
+        $images = $this->exporter->retrieveTemplateImages($template);
 
         return transform(
             TemplateDesign::getPages(TemplateDesign::HPE_CONTRACT),
-            fn ($pages) => collect($pages)->map(fn ($page) => array_merge($page, $logos))->toArray()
+            fn ($pages) => collect($pages)->map(fn ($page) => array_merge($page, $images))->toArray()
         );
     }
 }

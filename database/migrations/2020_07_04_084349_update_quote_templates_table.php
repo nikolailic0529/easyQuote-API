@@ -14,7 +14,6 @@ class UpdateQuoteTemplatesTable extends Migration
      */
     public function up()
     {
-
         /** @var \Doctrine\DBAL\Schema\DB2SchemaManager */
         $schemaManager = Schema::getConnection()->getDoctrineSchemaManager();
 

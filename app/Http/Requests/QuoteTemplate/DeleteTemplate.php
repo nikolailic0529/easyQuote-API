@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests\QuoteTemplate;
 
+use App\Models\QuoteTemplate\BaseQuoteTemplate;
 use Illuminate\Foundation\Http\FormRequest;
+use App\Services\RelationUsage;
+use Illuminate\Support\Str;
 
 class DeleteTemplate extends FormRequest
 {
@@ -16,7 +19,25 @@ class DeleteTemplate extends FormRequest
         /** @var \App\Models\QuoteTemplate\BaseQuoteTemplate */
         $template = head($this->route()->parameters());
 
-        error_abort_if($template->isAttached(), QTAD_01, 'QTAD_01', 409);
+        if (!$template instanceof BaseQuoteTemplate) {
+            return true;
+        }
+
+        $usage = RelationUsage::templateUsage($template);
+
+        $relationName = Str::plural(static::detectRelationName($template), $usage);
+
+        validator(
+            [
+                'usage_count' => $usage
+            ],
+            [
+                'usage_count' => 'exclude_if:is_system,true|integer|size:0',
+            ],
+            [
+                'usage_count.*' => sprintf('You could not delete the Template as %s %s %s it.', $usage, $relationName, Str::plural('use', $usage !== 1))
+            ]
+        )->validate();
 
         return true;
     }
@@ -31,5 +52,13 @@ class DeleteTemplate extends FormRequest
         return [
             //
         ];
+    }
+
+    protected static function detectRelationName(BaseQuoteTemplate $template)
+    {
+        return (string) Str::of(class_basename($template))
+            ->before('Template')
+            ->replaceMatches('/([a-z]*)([A-Z]*?)([A-Z][a-z]+)/', '$1 $2$3')
+            ->trim();
     }
 }

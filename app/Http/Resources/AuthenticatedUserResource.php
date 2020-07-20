@@ -31,6 +31,8 @@ class AuthenticatedUserResource extends JsonResource
             'must_change_password'          => $this->must_change_password,
             'role_id'                       => $this->role_id,
             'role_name'                     => $this->role_name,
+            'country_id'                    => $this->country_id,
+            'country'                       => $this->whenLoaded('country'),
             'picture'                       => $this->picture,
             'privileges'                    => $this->privileges,
             'role_properties'               => $this->role_properties,

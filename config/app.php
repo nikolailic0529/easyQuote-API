@@ -189,6 +189,8 @@ return [
         Barryvdh\Snappy\ServiceProvider::class,
         App\Providers\ExchangeRatesServiceProvider::class,
         Spatie\Geocoder\GeocoderServiceProvider::class,
+
+        LynX39\LaraPdfMerger\PdfMergerServiceProvider::class,
     ],
 
     /*

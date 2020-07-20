@@ -21,6 +21,8 @@ class HpeContractTemplateController extends Controller
     public function __construct(Templates $templates)
     {
         $this->templates = $templates;
+
+        $this->authorizeResource(HpeContractTemplate::class);
     }
 
     /**
@@ -136,11 +138,11 @@ class HpeContractTemplateController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-    //  * @param  DeleteTemplate $request
+     * @param  DeleteTemplate $request
      * @param  \App\Models\QuoteTemplate\HpeContractTemplate  $hpeContractTemplate
      * @return \Illuminate\Http\JsonResponse
      */
-    public function destroy(HpeContractTemplate $hpeContractTemplate)
+    public function destroy(DeleteTemplate $request, HpeContractTemplate $hpeContractTemplate)
     {
         return response()->json(
             $this->templates->delete($hpeContractTemplate)

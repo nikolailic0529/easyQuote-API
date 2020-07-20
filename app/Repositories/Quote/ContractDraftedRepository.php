@@ -46,6 +46,7 @@ class ContractDraftedRepository extends SearchableRepository implements Contract
             'hpe_contract_customer_name',
             'cached_relations',
             'document_type',
+            'completeness',
             'created_at',
             'updated_at',
             'activated_at'

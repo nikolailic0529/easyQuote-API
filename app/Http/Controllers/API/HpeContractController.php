@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Contracts\Services\HpeExporter;
 use App\DTO\ImportResponse;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\HpeContract\Export;
 use App\Http\Requests\HpeContract\ImportStep;
 use App\Http\Requests\HpeContract\SelectAssets;
 use App\Http\Requests\HpeContract\StoreState;
@@ -11,6 +13,7 @@ use App\Http\Requests\HpeContract\Submit;
 use App\Http\Resources\HpeContract\HpeContract as Resource;
 use App\Models\HpeContract;
 use App\Models\HpeContractFile;
+use App\Services\HpeContractExporter;
 use App\Services\HpeContractFileService;
 use App\Services\HpeContractStateProcessor;
 use Illuminate\Http\JsonResponse;
@@ -201,6 +204,41 @@ class HpeContractController extends Controller
                 $request->getIds(),
                 $request->boolean('reject')
             )
+        );
+    }
+
+    /**
+     * Export to PDF the specified HPE Contract.
+     *
+     * @param  Export $request
+     * @param  HpeContract $hpeContract
+     * @param  HpeExporter $exporter
+     * @return \Illuminate\Http\Response
+     */
+    public function exportHpeContract(Export $request, HpeContract $hpeContract, HpeExporter $exporter)
+    {
+        return response()->download(
+            $exporter->export(
+                $hpeContract->hpeContractTemplate,
+                $this->processor->retrieveSummarizedContractData($hpeContract)
+            )
+        );
+    }
+
+    /**
+     * Web Preview the specified HPE Contract.
+     *
+     * @param  Export $request
+     * @param  HpeContract $hpeContract
+     * @param  HpeExporter $exporter
+     * @return \Illuminate\Http\Response
+     */
+    public function viewHpeContract(Export $request, HpeContract $hpeContract, HpeExporter $exporter)
+    {
+        return $exporter->export(
+            $hpeContract->hpeContractTemplate,
+            $this->processor->retrieveSummarizedContractData($hpeContract),
+            true
         );
     }
 

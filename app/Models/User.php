@@ -34,6 +34,7 @@ use App\Traits\{
     User\EnforceableChangePassword,
     User\PerformsActivity,
     Activity\LogsActivity,
+    BelongsToCountry,
     Permission\HasPermissionTargets,
     Permission\HasModulePermissions,
     Notifiable,
@@ -79,10 +80,10 @@ class User extends Model implements
         HasQuoteFiles,
         HasQuoteFilesDirectory,
         HasApiTokens,
-        HasCountry,
         HasInvitations,
         Notifiable,
         BelongsToTimezone,
+        BelongsToCountry,
         HasCountryMargins,
         HasDiscounts,
         HasVendors,
@@ -105,7 +106,18 @@ class User extends Model implements
      * @var array
      */
     protected $fillable = [
-        'first_name', 'middle_name', 'last_name', 'timezone_id', 'email', 'password', 'role_id', 'phone', 'default_route', 'recent_notifications_limit', 'failed_attempts'
+        'first_name',
+        'middle_name',
+        'last_name',
+        'timezone_id',
+        'country_id',
+        'role_id',
+        'email',
+        'password',
+        'phone',
+        'default_route',
+        'recent_notifications_limit',
+        'failed_attempts'
     ];
 
     /**

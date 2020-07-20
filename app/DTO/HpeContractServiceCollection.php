@@ -16,4 +16,9 @@ class HpeContractServiceCollection extends DataTransferObjectCollection
 
         return new static($data->toArray());
     }
+
+    public function toBaseCollection(): Collection
+    {
+        return Collection::wrap($this->items());
+    }
 }

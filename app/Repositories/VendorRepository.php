@@ -37,7 +37,7 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
 
     public function userQuery(): Builder
     {
-        return $this->vendor->query()->with('image', 'countries');
+        return $this->vendor->query()->with('image');
     }
 
     public function find(string $id): Vendor

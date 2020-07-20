@@ -7,6 +7,7 @@ use App\Models\{
     Role,
     Permission
 };
+use Illuminate\Support\Facades\DB;
 
 class RolesUpdate extends Command
 {
@@ -45,10 +46,7 @@ class RolesUpdate extends Command
 
         activity()->disableLogging();
 
-        \DB::transaction(function () {
-            $this->updateSystemRoles();
-            $this->updateNonSystemRoles();
-        });
+        DB::transaction(fn () => $this->updateSystemRoles());
 
         activity()->enableLogging();
 
@@ -74,11 +72,5 @@ class RolesUpdate extends Command
 
             $role->syncPermissions($permissions)->save();
         });
-    }
-
-    protected function updateNonSystemRoles()
-    {
-        app('role.repository')->allNonSystem()
-            ->each(fn (Role $role) => $role->syncPrivileges());
     }
 }

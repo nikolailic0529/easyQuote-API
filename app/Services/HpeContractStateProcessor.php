@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\Services\HpeContractState;
-use App\DTO\{ImportResponse, HpeContractService, HpeContractAssetCollection};
+use App\DTO\{ImportResponse, HpeContractService, HpeContractAssetCollection, HpeContractServiceCollection, PreviewHpeContractData};
 use App\Models\{HpeContract, HpeContractFile};
 use App\Models\Customer\Customer;
 use App\Models\Quote\Contract;
@@ -68,6 +68,8 @@ class HpeContractStateProcessor implements HpeContractState
             return false;
         }
 
+        $hpeContract->forceFill(['last_drafted_step' => 'Complete']);
+
         return DB::transaction(fn () => tap(
             $hpeContract->submit(),
             fn () => $this->reflectHpeContractState($hpeContract)
@@ -129,7 +131,7 @@ class HpeContractStateProcessor implements HpeContractState
     }
 
     /**
-     * Delete the specified HPE Contract and respective reflection in the Quotes table.
+     * Delete the specified HPE Contract and it's respective reflection in the Quotes table.
      *
      * @param HpeContract $hpeContract
      * @return boolean
@@ -238,10 +240,10 @@ class HpeContractStateProcessor implements HpeContractState
     /**
      * Retrieve HPE Contract Assets grouped by Support Account Reference
      *
-     * @param HpeContract $hpeContract
-     * @return void
+     * @param  HpeContract $hpeContract
+     * @return PreviewHpeContractData
      */
-    public function retrieveSummarizedContractData(HpeContract $hpeContract)
+    public function retrieveSummarizedContractData(HpeContract $hpeContract): PreviewHpeContractData
     {
         $assets = $this->buildHpeContractAssetsQuery($hpeContract)->whereIsSelected(true)->get();
 
@@ -285,7 +287,7 @@ class HpeContractStateProcessor implements HpeContractState
 
         $sars = $assets->groupBy('support_account_reference')->map(fn ($assets, $key) => [
             'support_account_reference' => $key,
-            'assets' => HpeContractAssetCollection::fromCollection($assets)->toArray()
+            'assets' => HpeContractAssetCollection::fromCollection($assets)->items()
         ])->values();
 
         $contractAssets = $contracts
@@ -301,7 +303,7 @@ class HpeContractStateProcessor implements HpeContractState
                             'service_code'          => $service->service_code_2,
                             'service_description'   => $service->service_description,
                             'service_description_2' => $service->service_description_2,
-                            'assets'                => HpeContractAssetCollection::fromCollection($assets)->toArray()
+                            'assets'                => HpeContractAssetCollection::fromCollection($assets)->items()
                         ];
                     })->values();
 
@@ -316,15 +318,15 @@ class HpeContractStateProcessor implements HpeContractState
                     'contract_end_date'      => $contract['contract_end_date'] ?? null,
                     'order_authorization'    => $contract['order_authorization'] ?? null,
                     'assets_services'        => $assetsWithinServices,
-                    'support_service_levels' => $supportServiceLevels,
+                    'support_service_levels' => HpeContractServiceCollection::fromCollection($supportServiceLevels)->items(),
                 ];
             })->values();
 
-        $serialNumbers = $assets->groupBy('contract_number')->map->unique('serial_number')
+        $serialNumbers = $assets->groupBy('contract_number')
             ->map(fn (Collection $assets, $contractNumber) =>
             [
                 'contract_number'   => (string) $contractNumber,
-                'assets'            => HpeContractAssetCollection::fromCollection($assets)->toArray()
+                'assets'            => HpeContractAssetCollection::fromCollection($assets->sortBy('serial_number')->values())->items()
             ])
             ->sortKeys()
             ->values();
@@ -333,25 +335,36 @@ class HpeContractStateProcessor implements HpeContractState
             ->map(fn ($contract) => array_merge($contract, ['hpe_sales_order_no' => $hpeContract->hpe_sales_order_no]))
             ->values();
 
-        return array_merge([
-            'amp_id'                        => $hpeContract->amp_id,
-            'contract_number'               => $hpeContract->contract_number,
+        $supportServices = HpeContractServiceCollection::fromCollection($services->values())->toBaseCollection()
+            ->groupBy('contract_number')->map(fn (Collection $services, $contract) => [
+                'contract_number' => $contract,
+                'services' => $services,
+            ])
+            ->values();
 
-            'contract_details'              => $contractDetails,
+        return new PreviewHpeContractData(
+            array_merge([
+                'amp_id'                        => $hpeContract->amp_id,
+                'contract_number'               => $hpeContract->contract_number,
 
-            'contract_assets'               => $contractAssets,
+                'contract_details'              => $contractDetails,
 
-            'purchase_order_date'           => optional($hpeContract->purchase_order_date)->format(config('date.format_ui')),
-            'purchase_order_no'             => $hpeContract->purchase_order_no,
-            'hpe_sales_order_no'            => $hpeContract->hpe_sales_order_no,
+                'contract_assets'               => $contractAssets,
 
-            'contract_date'                 => optional($hpeContract->contract_date)->format(config('date.format_ui')),
+                'support_services'              => $supportServices,
 
-            'service_overview'              => $allContractServices->sortKeys()->values(),
-            'support_account_reference'     => $sars,
-            'asset_locations'               => $assets,
-            'serial_numbers'                => $serialNumbers,
-        ], $contacts);
+                'purchase_order_date'           => optional($hpeContract->purchase_order_date)->format(config('date.format_ui')),
+                'purchase_order_no'             => $hpeContract->purchase_order_no,
+                'hpe_sales_order_no'            => $hpeContract->hpe_sales_order_no,
+
+                'contract_date'                 => optional($hpeContract->contract_date)->format(config('date.format_ui')),
+
+                'service_overview'              => $allContractServices->values(),
+                'support_account_reference'     => $sars,
+                'asset_locations'               => $assets,
+                'serial_numbers'                => $serialNumbers,
+            ], $contacts)
+        );
     }
 
     /**
@@ -397,8 +410,10 @@ class HpeContractStateProcessor implements HpeContractState
             'document_type'              => Q_TYPE_HPE_CONTRACT,
             'user_id'                    => $hpeContract->user_id,
             'company_id'                 => $hpeContract->company_id,
+            'quote_template_id'          => $hpeContract->quote_template_id,
             'hpe_contract_number'        => $hpeContract->contract_number,
             'hpe_contract_customer_name' => $hpeContract->sold_contact->org_name,
+            'last_drafted_step'          => $hpeContract->last_drafted_step,
             'created_at'                 => $hpeContract->getRawOriginal('created_at'),
             'updated_at'                 => $hpeContract->getRawOriginal('updated_at'),
             'submitted_at'               => $hpeContract->getRawOriginal('submitted_at'),

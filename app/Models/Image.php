@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\Thumbnails;
 use App\Traits\Uuid;
 use Illuminate\Database\Eloquent\{
     Model,
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\{
     Relations\MorphTo,
 };
 use Rennokki\QueryCache\Traits\QueryCacheable;
+use Illuminate\Support\Str;
 
 class Image extends Model
 {
@@ -19,7 +21,7 @@ class Image extends Model
     ];
 
     protected $casts = [
-        'thumbnails' => 'array'
+        'thumbnails' => Thumbnails::class
     ];
 
     public function imageable(): MorphTo
@@ -27,16 +29,8 @@ class Image extends Model
         return $this->morphTo();
     }
 
-    public function getThumbnailsAttribute($value)
-    {
-        return optional(
-            $value,
-            fn ($thumbnails) => array_map(fn ($value) => asset("storage/{$value}"), json_decode($thumbnails, true))
-        );
-    }
-
     public function getOriginalImageAttribute()
     {
-        return $this->attributes['original'];
+        return $this->getRawOriginal('original');
     }
 }
