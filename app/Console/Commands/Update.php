@@ -63,7 +63,8 @@ class Update extends Command
         $this->call(TemplatesUpdate::class);
 
         $this->call('db:seed', [
-            '--class' => HpeContractTemplatesSeeder::class
+            '--class' => HpeContractTemplatesSeeder::class,
+            '--force' => true
         ]);
 
         $this->call(UpdateTemplatesAssets::class);
