@@ -157,6 +157,7 @@ Route::group(['middleware' => 'auth:api'], function () {
 
         Route::group(['middleware' => THROTTLE_RATE_01], function () {
             Route::get('companies/external', 'CompanyController@getExternal');
+            Route::get('companies/internal', 'CompanyController@getInternal');
             Route::get('companies/countries', 'CompanyController@showCompaniesWithCountries');
             
             Route::resource('companies', 'CompanyController', ['only' => ROUTE_CRUD]);
@@ -205,6 +206,8 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::get('hpe-contracts/{hpe_contract}/review', 'HpeContractController@reviewHpeContractData');
         Route::get('hpe-contracts/{hpe_contract}/preview', 'HpeContractController@previewHpeContract');
         Route::patch('hpe-contracts/{hpe_contract}/select-assets', 'HpeContractController@selectAssets');
+
+        Route::put('hpe-contracts/{hpe_contract}/copy', 'HpeContractController@copyHpeContract');
         Route::patch('hpe-contracts/{hpe_contract}/submit', 'HpeContractController@submitHpeContract');
         Route::patch('hpe-contracts/{hpe_contract}/unsubmit', 'HpeContractController@unsubmitHpeContract');
         Route::patch('hpe-contracts/{hpe_contract}/activate', 'HpeContractController@activateHpeContract');

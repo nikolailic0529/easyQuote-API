@@ -9,8 +9,10 @@ use App\Http\Requests\Role\{
     StoreRoleRequest,
     UpdateRoleRequest
 };
-use App\Http\Resources\Role\RoleResource;
+use App\Http\Resources\Role\Role as RoleResource;
+use App\Http\Resources\Role\RoleListing;
 use Illuminate\Database\Eloquent\Builder;
+use App\Services\ProfileHelper;
 
 class RoleController extends Controller
 {
@@ -47,7 +49,7 @@ class RoleController extends Controller
         $resource = $this->roles->findByModule($module, fn (Builder $builder) => $builder->withCount('users'));
 
         return response()->json(
-            RoleResource::collection($resource)
+            RoleListing::collection($resource)
         );
     }
 
@@ -72,7 +74,7 @@ class RoleController extends Controller
     public function store(StoreRoleRequest $request)
     {
         return response()->json(
-            $this->roles->create($request)
+            RoleResource::make($this->roles->create($request->validated())->load('companies:id,name'))
         );
     }
 
@@ -85,7 +87,7 @@ class RoleController extends Controller
     public function show(Role $role)
     {
         return response()->json(
-            $this->roles->find($role->id)
+            RoleResource::make($role->load('companies:id,name'))
         );
     }
 
@@ -98,8 +100,13 @@ class RoleController extends Controller
      */
     public function update(UpdateRoleRequest $request, Role $role)
     {
+        $resource = tap(
+            $this->roles->update($role->getKey(), $request->validated()),
+            fn (Role $role) => ProfileHelper::flushRoleUserProfiles($role)
+        );
+
         return response()->json(
-            $this->roles->update($request, $role->id)
+            RoleResource::make($resource->load('companies:id,name'))
         );
     }
 

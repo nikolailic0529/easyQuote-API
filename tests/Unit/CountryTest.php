@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class CountryTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser;
+    use WithFakeUser;
 
     protected static $assertableAttributes = [
         'id', 'name', 'iso_3166_2', 'currency_name', 'currency_code', 'currency_symbol', 'default_currency'

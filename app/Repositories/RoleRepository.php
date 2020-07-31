@@ -2,25 +2,18 @@
 
 namespace App\Repositories;
 
-use App\Casts\UserGrantedPermission;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Models\{
     Role,
     Permission
-};
-use App\Http\Requests\Role\{
-    StoreRoleRequest,
-    UpdateRoleRequest
 };
 use Illuminate\Database\Eloquent\{
     Model,
     Builder,
     Collection as IlluminateCollection
 };
-use Illuminate\Database\Query\Builder as DbBuilder;
-use Illuminate\Support\Collection;
+use Illuminate\Support\{Arr, Collection, Facades\DB};
 use Closure;
-use Illuminate\Support\Facades\DB;
 
 class RoleRepository extends SearchableRepository implements RoleRepositoryInterface
 {
@@ -78,27 +71,26 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
         return $this->role->whereName($name)->firstOrFail();
     }
 
-    public function create($request): Role
+    public function create(array $attributes): Role
     {
-        if ($request instanceof \Illuminate\Http\Request) {
-            $request = $request->validated();
-        }
-
-        throw_unless(is_array($request), new \InvalidArgumentException(INV_ARG_RA_01));
-
-        return tap($this->role->create($request), function ($role) use ($request) {
-            $role->syncPrivileges(data_get($request, 'properties'));
-            $role->append('properties');
-        });
+        return DB::transaction(
+            fn () => tap($this->role->create($attributes), function (Role $role) use ($attributes) {
+                $role->syncPrivileges(Arr::get($attributes, 'properties'));
+                $role->companies()->sync(Arr::get($attributes, 'companies') ?? []);
+            })
+        );
     }
 
-    public function update(UpdateRoleRequest $request, string $id): Role
+    public function update(string $id, array $attributes): Role
     {
-        return tap($this->find($id), function (Role $role) use ($request) {
-            $role->update($request->validated());
-            $role->syncPrivileges($request->input('properties'));
-            $role->append('properties');
-        });
+        return DB::transaction(
+            fn () => tap($this->find($id), function (Role $role) use ($attributes) {
+                $role->update($attributes);
+                $role->syncPrivileges(Arr::get($attributes, 'properties'));
+                $role->companies()->sync(Arr::get($attributes, 'companies') ?? []);
+            }),
+            DB_TA
+        );
     }
 
     public function delete(string $id): bool

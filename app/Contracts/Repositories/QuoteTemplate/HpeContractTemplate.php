@@ -29,10 +29,11 @@ interface HpeContractTemplate
      * Retrieve hpe contract templates by passed array clause.
      *
      * @param  array $clause
+     * @param  bool|null $activated
      * @param  array $columns
      * @return Collection
      */
-    public function findBy(array $clause, array $columns = ['*']): Collection;
+    public function findBy(array $clause, ?bool $activated = null, array $columns = ['*']): Collection;
 
     /**
      * Store a newly created hpe contract template in repository.

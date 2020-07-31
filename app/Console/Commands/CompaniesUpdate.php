@@ -7,6 +7,7 @@ use App\Contracts\Repositories\{
     VendorRepositoryInterface as Vendors,
     CompanyRepositoryInterface as Companies
 };
+use App\Services\ThumbnailManager;
 use Illuminate\Console\Command;
 use Arr;
 
@@ -26,13 +27,10 @@ class CompaniesUpdate extends Command
      */
     protected $description = 'Update Companies Vendors';
 
-    /** @var \App\Contracts\Repositories\CompanyRepositoryInterface */
     protected Companies $companies;
 
-    /** @var \App\Contracts\Repositories\VendorRepositoryInterface */
     protected Vendors $vendors;
 
-    /** @var \App\Contracts\Repositories\CountryRepositoryInterface */
     protected Countries $countries;
 
     /**
@@ -82,6 +80,10 @@ class CompaniesUpdate extends Command
                 $company->vendors()->sync($vendors);
 
                 $company->createLogo($companyData['logo'], true);
+
+                if (isset($companyData['svg_logo'])) {
+                    ThumbnailManager::updateModelSvgThumbnails($company, base_path($companyData['svg_logo']));
+                }
 
                 $this->output->write('.');
             });

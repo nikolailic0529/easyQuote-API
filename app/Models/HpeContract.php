@@ -12,6 +12,7 @@ use App\DTO\HpeContractContact;
 use App\Models\Customer\Customer;
 use App\Models\Quote\Contract;
 use App\Scopes\ContractTypeScope;
+use App\Traits\Activity\LogsActivity;
 use App\Traits\Search\Searchable;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -34,6 +35,7 @@ class HpeContract extends Model
         Multitenantable,
         Completable,
         HasRelationships,
+        LogsActivity,
         Activatable,
         Submittable;
 
@@ -96,6 +98,30 @@ class HpeContract extends Model
         'orders_authorization'      => 'array',
         'checkbox_status'           => 'array'
     ];
+
+    protected static $logAttributes = [
+        'amp_id',
+
+        'customer_name',
+        'customer_address',
+        'customer_city',
+        'customer_post_code',
+        'customer_country_code',
+
+        'purchase_order_no',
+        'hpe_sales_order_no',
+        'purchase_order_date',
+
+        'additional_notes',
+
+        'last_drafted_step',
+        'completeness',
+        'contract_date'
+    ];
+
+    protected static $logOnlyDirty = true;
+
+    protected static $submitEmptyLogs = false;
 
     public function hpeContractTemplate(): BelongsTo
     {

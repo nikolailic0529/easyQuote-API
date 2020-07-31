@@ -70,7 +70,7 @@ class Role extends Model implements RoleContract, ActivatableInterface
 
     public function __construct(array $attributes = [])
     {
-        $attributes['guard_name'] = $attributes['guard_name'] ?? config('auth.defaults.guard');
+        $attributes['guard_name'] ??= config('auth.defaults.guard');
 
         parent::__construct($attributes);
 
@@ -79,10 +79,10 @@ class Role extends Model implements RoleContract, ActivatableInterface
 
     public static function create(array $attributes = [])
     {
-        $attributes['guard_name'] = $attributes['guard_name'] ?? 'web';
+        $attributes['guard_name'] ??= 'web';
 
         if (!app()->runningInConsole()) {
-            $attributes['user_id'] = $attributes['user_id'] ?? auth()->id();
+            $attributes['user_id'] ??= auth()->id();
         }
 
         if (
@@ -139,7 +139,7 @@ class Role extends Model implements RoleContract, ActivatableInterface
      */
     public static function findByName(string $name, $guardName = null): RoleContract
     {
-        $guardName = $guardName ?? Guard::getDefaultName(static::class);
+        $guardName ??= Guard::getDefaultName(static::class);
 
         $role = static::where('name', $name)->where('guard_name', $guardName)->first();
 
@@ -152,7 +152,7 @@ class Role extends Model implements RoleContract, ActivatableInterface
 
     public static function findById(int $id, $guardName = null): RoleContract
     {
-        $guardName = $guardName ?? Guard::getDefaultName(static::class);
+        $guardName ??= Guard::getDefaultName(static::class);
 
         $role = static::where('id', $id)->where('guard_name', $guardName)->first();
 
@@ -267,24 +267,34 @@ class Role extends Model implements RoleContract, ActivatableInterface
     public function getPropertiesAttribute(): Collection
     {
         return collect(config('role.properties'))->flip()
-            ->transform(function ($value, $key) {
-                $value = $this->permissions->pluck('name')->contains($key);
-                return $value;
-            });
+            ->transform(
+                fn ($value, $key) => $this->permissions->pluck('name')->contains($key)
+            );
     }
 
     public function getModulesPrivilegesAttribute()
     {
         return collect()->wrap($this->privileges)->toString('module', 'privilege');
     }
+    
+    public function companies(): MorphToMany
+    {
+        return $this->morphedByMany(
+            Company::class,
+            'model',
+            config('permission.table_names.model_has_roles'),
+            'role_id',
+            config('permission.column_names.model_morph_key')
+        );
+    }
+    
+    public function getItemNameAttribute()
+    {
+        return $this->name;
+    }
 
     public static function administrator()
     {
         return static::whereName('Administrator')->system()->firstOrFail();
-    }
-
-    public function getItemNameAttribute()
-    {
-        return $this->name;
     }
 }

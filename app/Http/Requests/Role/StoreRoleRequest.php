@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Role;
 
+use App\Models\Company;
 use Illuminate\Validation\Rule;
 
 class StoreRoleRequest extends Request
@@ -49,7 +50,8 @@ class StoreRoleRequest extends Request
                 'string',
                 Rule::in(static::$properties)
             ],
-            'properties.*.value' => 'required|boolean'
+            'properties.*.value' => 'required|boolean',
+            'companies.*' => ['uuid', Rule::exists(Company::class, 'id')->where('type', Company::INT_TYPE)->whereNull('deleted_at')]
         ];
     }
 }

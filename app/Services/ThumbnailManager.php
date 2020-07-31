@@ -132,6 +132,39 @@ class ThumbnailManager
         )->collapse()->toArray();
     }
 
+    public static function updateModelSvgThumbnails(WithLogo $model, string $filepath): void
+    {
+        $thumbs = Collection::wrap($model->thumbnailProperties())
+            ->mapWithKeys(function ($properties, $key) use ($filepath) {
+                $base64 = static::svgUrlEncode($filepath, $properties['width'], $properties['height']);
+
+                $key = (string) Str::of($key)->prepend('svg_');
+
+                return [$key => $base64];
+            });
+
+        $model->image->thumbnails = array_merge($model->image->thumbnails, $thumbs->toArray());
+
+        $model->image->save();
+    }
+
+    public static function svgUrlEncode(string $filepath, int $width, int $height)
+    {
+        $data = file_get_contents($filepath);
+
+        return (string) Str::of($data)
+            ->replace('{width}', $width)
+            ->replace('{height}', $height)
+            ->replaceMatches('/\v(?:[\v\h]+)/', ' ')
+            ->replace('"', "'")
+            ->when(true, fn ($string) => Str::of(rawurlencode((string) $string)))
+            ->replace('%20', ' ')
+            ->replace('%3D', '=')
+            ->replace('%3A', ':')
+            ->replace('%2F', '/')
+            ->prepend('data:image/svg+xml,');
+    }
+
     protected static function filterCollectionKeysStartingWith(Collection $collection, string $startingWith): Collection
     {
         return $collection->filter(fn ($value, $key) => Str::startsWith($key, $startingWith));
@@ -139,6 +172,6 @@ class ThumbnailManager
 
     protected static function parseAbsPath($src)
     {
-        return (string) Str::of($src)->when(Str::contains($src, 'svg+xml'), fn () => $src, fn () => $src, File::abspath($src));
+        return (string) Str::of($src)->when(Str::contains($src, 'svg+xml'), fn () => $src, fn () => File::abspath($src));
     }
 }

@@ -221,7 +221,7 @@ class QuoteController extends Controller
         $this->authorize('view', $quote);
 
         return response()->json(
-            $this->processor->findGroupDescription($group, $quote->id)
+            $this->processor->findGroupDescription($group, $quote)
         );
     }
 
@@ -237,7 +237,7 @@ class QuoteController extends Controller
         $this->authorize('update', $quote);
 
         return response()->json(
-            $this->processor->createGroupDescription($request, $quote->id)
+            $this->processor->createGroupDescription($request->validated(), $quote)
         );
     }
 
@@ -254,7 +254,7 @@ class QuoteController extends Controller
         $this->authorize('update', $quote);
 
         return response()->json(
-            $this->processor->selectGroupDescription($request->validated(), $quote->id)
+            $this->processor->selectGroupDescription($request->validated(), $quote)
         );
     }
 
@@ -271,7 +271,7 @@ class QuoteController extends Controller
         $this->authorize('update', $quote);
 
         return response()->json(
-            $this->processor->updateGroupDescription($request, $group, $quote->id)
+            $this->processor->updateGroupDescription($group, $quote, $request->validated())
         );
     }
 
@@ -287,7 +287,7 @@ class QuoteController extends Controller
         $this->authorize('update', $quote);
 
         return response()->json(
-            $this->processor->moveGroupDescriptionRows($request, $quote->id)
+            $this->processor->moveGroupDescriptionRows($quote, $request->validated())
         );
     }
 
@@ -303,7 +303,7 @@ class QuoteController extends Controller
         $this->authorize('update', $quote);
 
         return response()->json(
-            $this->processor->deleteGroupDescription($group, $quote->id)
+            $this->processor->deleteGroupDescription($group, $quote)
         );
     }
 

@@ -16,7 +16,7 @@ $factory->define(Asset::class, function (Faker $faker) {
     return [
         'serial_number'                 => $faker->regexify('[A-Z0-9]{6}'),
         'product_number'                => $faker->regexify('\d{4}[A-Z]{4}'),
-        'product_description'           => $faker->text,
+        'product_description'           => $faker->text(191),
         'unit_price'                    => (float) mt_rand(10, 10000),
         'vendor_id'                     => optional($vendor)->getKey(),
         'asset_category_id'             => optional($category)->getKey(),

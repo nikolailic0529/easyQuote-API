@@ -85,6 +85,7 @@ define('CTD_01', 'Contract with number :contract_number has been deleted.');
 
 // HPE Contracts.
 define('HPEC_IMPE_01', 'Unable to import the provided file');
+define('HPEC_DC_01', 'In order to copy the HPE Contract it must be submitted.');
 
 /**
  * Quote Template.

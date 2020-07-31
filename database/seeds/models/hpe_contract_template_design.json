@@ -1,17 +1,17 @@
 {
     "first_page": [
         {
-            "id": "db3600bb-dce1-4c3e-a213-8a5415d1f374",
-            "name": "Single Column",
+            "id": "f5075eac-18ac-4359-ac0b-2607b406ac1e",
+            "name": "Two Column",
             "child": [
                 {
-                    "id": "5e3a4f44-c3b0-4507-8e2d-3ee2a3a2246b",
-                    "class": "col-lg-12 border-right",
+                    "id": "044ffc02-1bf9-4e4b-864a-c5368d722c48",
+                    "class": "col-lg-6",
                     "controls": [
                         {
                             "id": "vendor_logo_x3",
                             "css": null,
-                            "src": "http://167.172.55.144/easyQuote-API/public/storage/images/vendors/OnL0JoLleJ4N25mJjWUzUQJByzg9rW74ISfNzeiB@x3.png",
+                            "src": "{{vendor_logo_x3}}",
                             "name": "vendor_logo_x3",
                             "show": false,
                             "type": "img",
@@ -23,19 +23,44 @@
                             "droppable": false,
                             "is_system": true,
                             "is_required": false,
-                            "attached_child_id": "5e3a4f44-c3b0-4507-8e2d-3ee2a3a2246b",
-                            "attached_element_id": "db3600bb-dce1-4c3e-a213-8a5415d1f374"
+                            "attached_child_id": "044ffc02-1bf9-4e4b-864a-c5368d722c48",
+                            "attached_element_id": "f5075eac-18ac-4359-ac0b-2607b406ac1e"
                         }
                     ],
                     "position": 1
+                },
+                {
+                    "id": "f49d1e7e-bf81-4a7a-94f4-ecfebc1b1a0f",
+                    "class": "col-lg-6 border-right",
+                    "controls": [
+                        {
+                            "id": "company_logo_x3",
+                            "css": null,
+                            "src": "{{company_logo_x3}}",
+                            "name": "company_logo_x3",
+                            "show": false,
+                            "type": "img",
+                            "class": "s4-form-control float-right",
+                            "label": "Logo 240X120",
+                            "value": null,
+                            "is_field": true,
+                            "is_image": true,
+                            "droppable": false,
+                            "is_system": true,
+                            "is_required": false,
+                            "attached_child_id": "f49d1e7e-bf81-4a7a-94f4-ecfebc1b1a0f",
+                            "attached_element_id": "f5075eac-18ac-4359-ac0b-2607b406ac1e"
+                        }
+                    ],
+                    "position": 2
                 }
             ],
-            "class": "single-column field-dragger",
-            "order": 1,
+            "class": "two-column field-dragger",
+            "order": 2,
             "controls": [],
             "is_field": false,
             "droppable": false,
-            "decoration": "1"
+            "decoration": "2"
         },
         {
             "id": "936f7511-0921-4aad-b374-ed7c0d165563",
@@ -1776,17 +1801,17 @@
     ],
     "contract_summary": [
         {
-            "id": "ae3ae683-bd6d-41ea-86ad-7b7ec83ec16a",
-            "name": "Single Column",
+            "id": "f5075eac-18ac-4359-ac0b-2607b406ac1e",
+            "name": "Two Column",
             "child": [
                 {
-                    "id": "d70f9bef-35b4-461e-b01b-a3d1e112c3d4",
-                    "class": "col-lg-12 border-right",
+                    "id": "044ffc02-1bf9-4e4b-864a-c5368d722c48",
+                    "class": "col-lg-6",
                     "controls": [
                         {
                             "id": "vendor_logo_x3",
                             "css": null,
-                            "src": "http://167.172.55.144/easyQuote-API/public/storage/images/vendors/O9APS78y1fKir6aXAjKG8swgGc9J55YbvKFWgqNe@x3.png",
+                            "src": "{{vendor_logo_x3}}",
                             "name": "vendor_logo_x3",
                             "show": false,
                             "type": "img",
@@ -1798,19 +1823,44 @@
                             "droppable": false,
                             "is_system": true,
                             "is_required": false,
-                            "attached_child_id": "d70f9bef-35b4-461e-b01b-a3d1e112c3d4",
-                            "attached_element_id": "ae3ae683-bd6d-41ea-86ad-7b7ec83ec16a"
+                            "attached_child_id": "044ffc02-1bf9-4e4b-864a-c5368d722c48",
+                            "attached_element_id": "f5075eac-18ac-4359-ac0b-2607b406ac1e"
                         }
                     ],
                     "position": 1
+                },
+                {
+                    "id": "f49d1e7e-bf81-4a7a-94f4-ecfebc1b1a0f",
+                    "class": "col-lg-6 border-right",
+                    "controls": [
+                        {
+                            "id": "company_logo_x3",
+                            "css": null,
+                            "src": "{{company_logo_x3}}",
+                            "name": "company_logo_x3",
+                            "show": false,
+                            "type": "img",
+                            "class": "s4-form-control float-right",
+                            "label": "Logo 240X120",
+                            "value": null,
+                            "is_field": true,
+                            "is_image": true,
+                            "droppable": false,
+                            "is_system": true,
+                            "is_required": false,
+                            "attached_child_id": "f49d1e7e-bf81-4a7a-94f4-ecfebc1b1a0f",
+                            "attached_element_id": "f5075eac-18ac-4359-ac0b-2607b406ac1e"
+                        }
+                    ],
+                    "position": 2
                 }
             ],
-            "class": "single-column field-dragger",
-            "order": 1,
+            "class": "two-column field-dragger",
+            "order": 2,
             "controls": [],
             "is_field": false,
             "droppable": false,
-            "decoration": "1"
+            "decoration": "2"
         },
         {
             "id": "7a147689-0fd5-496b-a12a-1b80263c79a8",
@@ -2471,7 +2521,7 @@
                             "type": "richtext",
                             "class": null,
                             "label": "Rich Text",
-                            "value": "<p>HEWLETT-PACKARD 1 (SCHWEIZ) GMBH</p><p>Ueberlandstrasse 12</p><p>8600 Dübendorf</p><p>Switzerland</p>",
+                            "value": "<p>TESEDI SCHWEIZ</p><p>Einkaufszentrum Glatt</p><p>Neue Winterthurerstrasse 99 </p><p>8304 Wallisellen</p><p>Switzerland</p>",
                             "is_field": true,
                             "is_image": false,
                             "droppable": false,

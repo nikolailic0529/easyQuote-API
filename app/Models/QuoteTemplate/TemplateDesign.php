@@ -250,4 +250,11 @@ final class TemplateDesign
 
         return static::$designCache[$name] = $pages;
     }
+
+    public static function parseTemplateDesign(string $design, array $attributes): array
+    {
+        $design = preg_replace_callback('/{{(.*)}}/m', fn ($item) => data_get($attributes, last($item)), $design);
+
+        return json_decode($design, true);
+    }
 }

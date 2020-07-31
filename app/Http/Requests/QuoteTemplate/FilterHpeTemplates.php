@@ -25,8 +25,8 @@ class FilterHpeTemplates extends FormRequest
     public function rules()
     {
         return [
-            'company_id'        => ['nullable', 'string', 'uuid', Rule::exists('companies', 'id')->whereNull('deleted_at')],
-            'country_id'        => ['nullable', 'string', 'uuid', Rule::exists('countries', 'id')->whereNull('deleted_at')],
+            'company_id' => ['nullable', 'string', 'uuid', Rule::exists('companies', 'id')->whereNull('deleted_at')],
+            'country_id' => ['nullable', 'string', 'uuid', Rule::exists('countries', 'id')->whereNull('deleted_at')],
         ];
     }
 
@@ -36,6 +36,11 @@ class FilterHpeTemplates extends FormRequest
             return Collection::make();
         }
 
-        return $this->templates->findBy($this->validated(), ['id', 'name']);
+        /** @var \App\Models\User */
+        $user = optional(auth()->user());
+
+        return $this->templates->findBy($this->validated(), true, ['id', 'name'])
+            ->sortByDesc(fn (HpeContractTemplate $template) => $template->getKey() === $user->hpe_contract_template_id)
+            ->values();
     }
 }

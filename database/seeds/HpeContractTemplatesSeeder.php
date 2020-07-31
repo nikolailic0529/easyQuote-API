@@ -1,5 +1,6 @@
 <?php
 
+use App\Contracts\Repositories\CurrencyRepositoryInterface;
 use App\Models\QuoteTemplate\HpeContractTemplate;
 use Illuminate\Database\Seeder;
 use App\Models\{
@@ -9,6 +10,7 @@ use App\Models\{
     Data\Country,
     Image
 };
+use App\Services\CurrencyHelper;
 use App\Services\ThumbnailManager;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -17,9 +19,6 @@ class HpeContractTemplatesSeeder extends Seeder
 {
     /** @var string */
     protected string $design;
-
-    /** @var \App\Models\Data\Currency */
-    protected Currency $currency;
 
     /**
      * Run the database seeds.
@@ -30,7 +29,6 @@ class HpeContractTemplatesSeeder extends Seeder
     {
         $templates = json_decode(file_get_contents(__DIR__ . '/models/hpe_contract_templates.json'), true);
         $this->design = file_get_contents(database_path('seeds/models/hpe_contract_template_design.json'));
-        $this->currency = Currency::whereCode(Setting::get('base_currency'))->first();
 
         \DB::transaction(
             fn () => collect($templates)->each(
@@ -51,6 +49,11 @@ class HpeContractTemplatesSeeder extends Seeder
 
         $formData = $this->parseDesign($this->design, $images);
 
+        /** @var CurrencyRepositoryInterface */
+        $currencies = app(CurrencyRepositoryInterface::class);
+
+        $currency = $currencies->findByCountryCode(head($attributes['countries']));
+
         $template->forceFill([
             'id'            => $attributes['id'],
             'name'          => $attributes['name'],
@@ -58,7 +61,7 @@ class HpeContractTemplatesSeeder extends Seeder
             'form_data'     => $formData,
             'company_id'    => $company->getKey(),
             'vendor_id'     => $vendor->getKey(),
-            'currency_id'   => $this->currency->getKey(),
+            'currency_id'   => optional($currency)->getKey(),
             'deleted_at'    => null,
         ])->save();
 

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\HpeContract;
 
 use App\Contracts\Repositories\CompanyRepositoryInterface as Companies;
+use App\Services\ProfileHelper;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ImportStep extends FormRequest
@@ -28,8 +29,15 @@ class ImportStep extends FormRequest
 
     public function getData(): array
     {
+        $companies = $this->companies->allInternalWithCountries(['id', 'name'])
+            ->find(ProfileHelper::profileCompaniesIds())
+            ->load('image')
+            ->makeHidden('image')
+            ->append('logo')
+            ->values();
+
         return [
-            'companies' => $this->companies->allInternalWithCountries(['id', 'name'])
+            'companies' => $companies
         ];
     }
 }

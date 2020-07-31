@@ -70,9 +70,21 @@ class CompanyController extends Controller
     }
 
     /**
+     * Display a listing of all internal companies.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function getInternal()
+    {
+        return response()->json(
+            $this->company->allInternal(['id', 'name'])
+        );
+    }
+
+    /**
      * Display a listing of companies with related countries.
      *
-     * @return void
+     * @return \Illuminate\Http\Response
      */
     public function showCompaniesWithCountries()
     {

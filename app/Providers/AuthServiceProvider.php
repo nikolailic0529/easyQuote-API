@@ -27,6 +27,7 @@ use App\Models\{
     System\Activity,
     System\Notification,
     Data\Country,
+    HpeContract,
 };
 use App\Models\QuoteTemplate\HpeContractTemplate;
 use App\Policies\{
@@ -40,6 +41,7 @@ use App\Policies\{
     CountryPolicy,
     CustomerPolicy,
     DiscountPolicy,
+    HpeContractPolicy,
     HpeContractTemplatePolicy,
     ImportableColumnPolicy,
     InvitationPolicy,
@@ -94,6 +96,7 @@ class AuthServiceProvider extends ServiceProvider
         Country::class              => CountryPolicy::class,
         ImportableColumn::class     => ImportableColumnPolicy::class,
         Asset::class                => AssetPolicy::class,
+        HpeContract::class          => HpeContractPolicy::class,
     ];
 
     public function register()

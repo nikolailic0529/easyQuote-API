@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Contracts\Services\HpeContractState;
 use App\DTO\{ImportResponse, HpeContractService, HpeContractAssetCollection, HpeContractServiceCollection, PreviewHpeContractData};
-use App\Models\{HpeContract, HpeContractFile};
+use App\Models\{HpeContract, HpeContractData, HpeContractFile};
 use App\Models\Customer\Customer;
 use App\Models\Quote\Contract;
 use App\Scopes\ContractTypeScope;
@@ -54,6 +54,52 @@ class HpeContractStateProcessor implements HpeContractState
             'contract_number' => static::giveContractNumber($sequenceNumber),
             'sequence_number' => $sequenceNumber,
         ]);
+    }
+
+    public function copy(HpeContract $hpeContract)
+    {
+        return DB::transaction(function () use ($hpeContract) {
+            /** @var HpeContractFile */
+            $newContractFile = tap($hpeContract->hpeContractFile->replicate(['user_id']))->save();
+
+            /**
+             * Replicating HPE Contract File Imported Data.
+             */
+            $contractFileKey = $newContractFile->getKey();
+
+            $columns = (new HpeContractData)->getFillable();
+
+            $replicateColumns = Collection::wrap([...$columns, ...['hpe_contract_file_id']])
+                ->flip()
+                ->flip()
+                ->map(fn ($column) => $column === 'hpe_contract_file_id' ? DB::raw("'{$contractFileKey}' as hpe_contract_file_id") : $column)
+                ->toArray();
+
+            DB::table('hpe_contract_data')->insertUsing(
+                $columns,
+                $hpeContract->hpeContractFile->hpeContractData()->select($replicateColumns)->toBase()
+            );
+
+            /**
+             * Replicating the HPE Contract Instance and association with the new one HPE Contract File.
+             */
+            $newHpeContract = tap(
+                $hpeContract->replicate(['user_id', 'hpe_contract_file_id', 'hpeContractFile']),
+                function (HpeContract $newHpeContract) use ($newContractFile) {
+                    $newHpeContract->save();
+
+                    $this->associateHpeContractFile($newHpeContract, $newContractFile);
+                    $this->reflectHpeContractState($newHpeContract);
+                }
+            );
+
+            /**
+             * Finally we unravel the copyable contract.
+             */
+            tap($hpeContract->unsubmit(), fn () => $this->reflectHpeContractState($hpeContract));
+
+            return [$newHpeContract->getKeyName() => $newHpeContract->getKey()];
+        }, DB_TA);
     }
 
     /**
@@ -150,7 +196,7 @@ class HpeContractStateProcessor implements HpeContractState
      * @param  HpeContractFile $hpeContractFile
      * @return void
      */
-    public function associateHpeContractFile(HpeContract $hpeContract, HpeContractFile $hpeContractFile)
+    public function associateHpeContractFile(HpeContract $hpeContract, HpeContractFile $hpeContractFile): void
     {
         DB::transaction(fn () => $hpeContract->hpeContractFile()->associate($hpeContractFile)->save(), DB_TA);
     }
@@ -476,20 +522,25 @@ class HpeContractStateProcessor implements HpeContractState
             ->selectRaw('MAX(pr_support_contact_phone) pr_support_contact_phone')
             ->first();
 
+        $country = auth()->user()->country->name;
+
         $soldContact = [
             'org_name'      => Arr::get($contractData, 'customer_name'),
             'address'       => Arr::get($contractData, 'customer_address'),
             'city'          => Arr::get($contractData, 'customer_city'),
             'post_code'     => Arr::get($contractData, 'customer_post_code'),
             'state_code'    => Arr::get($contractData, 'customer_state_code'),
+            'country'       => $country,
         ];
 
         $contacts = [
-            'sold_contact'         => $soldContact,
-            'bill_contact'         => $soldContact,
-            'hw_delivery_contact'  => ['attn' => Arr::get($contractData, 'hw_delivery_contact_name'), 'phone' => Arr::get($contractData, 'hw_delivery_contact_phone')],
-            'sw_delivery_contact'  => ['attn' => Arr::get($contractData, 'sw_delivery_contact_name'), 'phone' => Arr::get($contractData, 'sw_delivery_contact_phone')],
-            'pr_support_contact'   => ['attn' => Arr::get($contractData, 'pr_support_contact_name'), 'phone' => Arr::get($contractData, 'pr_support_contact_phone')],
+            'sold_contact'              => $soldContact,
+            'bill_contact'              => $soldContact,
+            'hw_delivery_contact'       => ['attn' => Arr::get($contractData, 'hw_delivery_contact_name'), 'phone' => Arr::get($contractData, 'hw_delivery_contact_phone')],
+            'sw_delivery_contact'       => ['attn' => Arr::get($contractData, 'sw_delivery_contact_name'), 'phone' => Arr::get($contractData, 'sw_delivery_contact_phone')],
+            'pr_support_contact'        => ['attn' => Arr::get($contractData, 'pr_support_contact_name'), 'phone' => Arr::get($contractData, 'pr_support_contact_phone')],
+            'entitled_party_contact'    => ['country' => $country],
+            'end_customer_contact'      => ['country' => $country],
         ];
 
         return $contacts;

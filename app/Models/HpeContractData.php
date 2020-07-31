@@ -44,6 +44,7 @@ class HpeContractData extends Model
         'customer_country_code',
         'support_start_date',
         'support_end_date',
+        'is_selected',
     ];
 
     protected $dates = [

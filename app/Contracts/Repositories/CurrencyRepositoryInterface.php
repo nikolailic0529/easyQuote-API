@@ -84,4 +84,12 @@ interface CurrencyRepositoryInterface
      * @return \App\Models\Data\Currency|static
      */
     public function firstOrCreate(array $attributes, array $values = []): Currency;
+
+    /**
+     * Retrieve the default currency for the specified country.
+     *
+     * @param string $country
+     * @return Currency|null
+     */
+    public function findByCountryCode(string $country): ?Currency;
 }

@@ -41,7 +41,7 @@ class HpeContractTemplateRepository extends SearchableRepository implements Cont
         return $this->template->whereHas('countries', fn (Builder $query) => $query->whereKey($country))->get(['id', 'name']);
     }
 
-    public function findBy(array $clause, array $columns = ['*']): Collection
+    public function findBy(array $clause, ?bool $activated = null, array $columns = ['*']): Collection
     {
         return $this->template->query()
             ->when(
@@ -51,6 +51,14 @@ class HpeContractTemplateRepository extends SearchableRepository implements Cont
             ->when(
                 Str::isUuid(Arr::get($clause, 'country_id')),
                 fn ($query) => $query->whereHas('countries', fn ($query) => $query->whereKey(Arr::get($clause, 'country_id'))),
+            )
+            ->when(
+                is_bool($activated) && $activated,
+                fn ($query) => $query->whereNotNull('activated_at')
+            )
+            ->when(
+                is_bool($activated) && !$activated,
+                fn ($query) => $query->whereNull('activated_at')
             )
             ->get($columns);
     }

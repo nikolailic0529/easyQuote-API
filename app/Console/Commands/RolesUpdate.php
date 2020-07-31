@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\{
+    Company,
     Role,
     Permission
 };
@@ -58,19 +59,24 @@ class RolesUpdate extends Command
         $roles = json_decode(file_get_contents(database_path('seeds/models/roles.json')), true);
 
         collect($roles)->each(function ($attributes) {
+            /** @var Role */
             $role = Role::whereName($attributes['name'])->firstOrFail();
 
-            $privileges = collect($attributes['privileges'])
-                ->transform(fn ($privilege, $module) => compact('module', 'privilege'));
+            $privileges = collect($attributes['privileges'])->transform(fn ($privilege, $module) => compact('module', 'privilege'));
 
             $role->fill(compact('privileges'))->save();
 
             $permissions = collect($attributes['permissions'])->map(function ($name) {
                 $this->output->write('.');
+
                 return Permission::where('name', $name)->firstOrCreate(compact('name'));
             });
 
             $role->syncPermissions($permissions)->save();
+
+            $companies = Company::whereIn('short_code', $attributes['companies'])->pluck('id');
+
+            $role->companies()->sync($companies);
         });
     }
 }

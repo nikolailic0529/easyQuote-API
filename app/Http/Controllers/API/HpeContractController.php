@@ -2,30 +2,23 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Contracts\Services\HpeExporter;
+use App\Contracts\Services\{HpeContractState, HpeExporter};
 use App\DTO\ImportResponse;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\HpeContract\Export;
-use App\Http\Requests\HpeContract\ImportStep;
-use App\Http\Requests\HpeContract\SelectAssets;
-use App\Http\Requests\HpeContract\StoreState;
-use App\Http\Requests\HpeContract\Submit;
+use App\Http\Requests\HpeContract\{Export, ImportStep, SelectAssets, StoreState, Submit};
 use App\Http\Resources\HpeContract\HpeContract as Resource;
-use App\Models\HpeContract;
-use App\Models\HpeContractFile;
-use App\Services\HpeContractExporter;
+use App\Models\{HpeContract, HpeContractFile};
 use App\Services\HpeContractFileService;
-use App\Services\HpeContractStateProcessor;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class HpeContractController extends Controller
 {
-    protected HpeContractStateProcessor $processor;
+    protected HpeContractState $processor;
 
-    public function __construct(HpeContractStateProcessor $processor)
+    public function __construct(HpeContractState $processor)
     {
         $this->processor = $processor;
+
+        $this->authorizeResource(HpeContract::class);
     }
 
     /**
@@ -75,6 +68,8 @@ class HpeContractController extends Controller
      */
     public function importHpeContract(HpeContract $hpeContract, HpeContractFile $hpeContractFile, HpeContractFileService $fileService)
     {
+        $this->authorize('update', $hpeContract);
+        
         return tap(
             $fileService->processImport($hpeContractFile),
             fn (ImportResponse $importResponse) => $this->processor->processHpeContractData($hpeContract, $hpeContractFile)
@@ -89,6 +84,8 @@ class HpeContractController extends Controller
      */
     public function reviewHpeContractData(HpeContract $hpeContract)
     {
+        $this->authorize('view', $hpeContract);
+
         return response()->json(
             $this->processor->retrieveContractData($hpeContract)
         );
@@ -102,6 +99,8 @@ class HpeContractController extends Controller
      */
     public function previewHpeContract(HpeContract $hpeContract)
     {
+        $this->authorize('view', $hpeContract);
+
         return response()->json(
             $this->processor->retrieveSummarizedContractData($hpeContract)
         );
@@ -116,6 +115,8 @@ class HpeContractController extends Controller
      */
     public function submitHpeContract(Submit $request, HpeContract $hpeContract)
     {
+        $this->authorize('update', $hpeContract);
+
         return response()->json(
             $this->processor->submit($hpeContract)
         );
@@ -129,6 +130,8 @@ class HpeContractController extends Controller
      */
     public function unsubmitHpeContract(HpeContract $hpeContract)
     {
+        $this->authorize('update', $hpeContract);
+
         return response()->json(
             $this->processor->unsubmit($hpeContract)
         );
@@ -142,6 +145,8 @@ class HpeContractController extends Controller
      */
     public function activateHpeContract(HpeContract $hpeContract)
     {
+        $this->authorize('update', $hpeContract);
+
         return response()->json(
             $this->processor->activate($hpeContract)
         );
@@ -155,8 +160,25 @@ class HpeContractController extends Controller
      */
     public function deactivateHpeContract(HpeContract $hpeContract)
     {
+        $this->authorize('update', $hpeContract);
+
         return response()->json(
             $this->processor->deactivate($hpeContract)
+        );
+    }
+
+    /**
+     * Make a new copy of the specified HPE Contract in repository.
+     *
+     * @param  HpeContract $hpeContract
+     * @return \Illuminate\Http\Response
+     */
+    public function copyHpeContract(HpeContract $hpeContract)
+    {
+        $this->authorize('copy', $hpeContract);
+
+        return response()->json(
+            $this->processor->copy($hpeContract)
         );
     }
 

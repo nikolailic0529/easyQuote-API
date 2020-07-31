@@ -11,6 +11,7 @@ use App\Models\{
     Role,
     Collaboration\Invitation
 };
+use App\Models\QuoteTemplate\HpeContractTemplate;
 use App\Traits\{
     Activatable,
     HasCountry,
@@ -34,12 +35,14 @@ use App\Traits\{
     User\EnforceableChangePassword,
     User\PerformsActivity,
     Activity\LogsActivity,
+    BelongsToCompany,
     BelongsToCountry,
     Permission\HasPermissionTargets,
     Permission\HasModulePermissions,
     Notifiable,
     Uuid,
 };
+use App\Traits\QuoteTemplate\BelongsToQuoteTemplate;
 use Illuminate\Database\Eloquent\{
     Builder,
     Collection,
@@ -59,6 +62,10 @@ use Illuminate\Auth\{
     Passwords\CanResetPassword
 };
 use Arr;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
+use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 class User extends Model implements
     ActivatableInterface,
@@ -84,10 +91,10 @@ class User extends Model implements
         Notifiable,
         BelongsToTimezone,
         BelongsToCountry,
+        BelongsToCompany,
         HasCountryMargins,
         HasDiscounts,
         HasVendors,
-        HasCompanies,
         HasQuoteTemplates,
         HasTemplateFields,
         HasPictureAttribute,
@@ -98,7 +105,8 @@ class User extends Model implements
         LogsActivity,
         Loginable,
         PerformsActivity,
-        EnforceableChangePassword;
+        EnforceableChangePassword,
+        HasRelationships;
 
     /**
      * The attributes that are mass assignable.
@@ -109,15 +117,17 @@ class User extends Model implements
         'first_name',
         'middle_name',
         'last_name',
+        'role_id',
         'timezone_id',
         'country_id',
-        'role_id',
+        'company_id',
+        'hpe_contract_template_id',
         'email',
         'password',
         'phone',
         'default_route',
         'recent_notifications_limit',
-        'failed_attempts'
+        'failed_attempts',
     ];
 
     /**
@@ -147,6 +157,21 @@ class User extends Model implements
     protected static $submitEmptyLogs = false;
 
     protected static $recordEvents = ['created', 'updated', 'deleted'];
+
+    public function companies(): HasManyDeep
+    {      
+        return $this->hasManyDeep(
+            Company::class,
+            ['model_has_roles', Role::class, ModelHasRoles::class . ' as model_roles'],
+            [['model_type', 'model_id'], 'id', 'role_id', 'id'],
+            ['id', 'role_id', 'id', ['model_type', 'model_id']],
+        );
+    }
+
+    public function hpeContractTemplate(): BelongsTo
+    {
+        return $this->belongsTo(HpeContractTemplate::class)->withDefault();
+    }
 
     public function getFullNameAttribute()
     {

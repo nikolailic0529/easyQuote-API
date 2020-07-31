@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\HpeContract;
 
+use App\Http\Resources\TemplateRepository\TemplateResourceWithIncludes;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class HpeContract extends JsonResource
@@ -37,7 +38,7 @@ class HpeContract extends JsonResource
 
             'company' => $this->whenLoaded('company'),
             'country' => $this->whenLoaded('country'),
-            'hpe_contract_template' => $this->whenLoaded('hpeContractTemplate'),
+            'hpe_contract_template' => TemplateResourceWithIncludes::make($this->whenLoaded('hpeContractTemplate')),
 
             'amp_id' => $this->amp_id,
             'support_account_reference' => $this->support_account_reference,

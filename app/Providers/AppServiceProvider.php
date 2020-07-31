@@ -67,6 +67,7 @@ use App\Contracts\{
 };
 use App\Contracts\Repositories\QuoteTemplate\HpeContractTemplate;
 use App\Contracts\Services\ContractState;
+use App\Contracts\Services\HpeContractState;
 use App\Contracts\Services\HpeExporter;
 use App\Contracts\Services\QuoteState;
 use App\Repositories\{
@@ -121,6 +122,7 @@ use App\Services\{
     CsvParser,
     CustomerFlow,
     HpeContractExporter,
+    HpeContractStateProcessor,
     NotificationStorage,
     ParserService,
     WordParser,
@@ -212,6 +214,7 @@ class AppServiceProvider extends ServiceProvider
         LocationServiceContract::class                  => LocationService::class,
         HpeContractTemplate::class                      => HpeContractTemplateRepository::class,
         HpeExporter::class                              => HpeContractExporter::class,
+        HpeContractState::class                         => HpeContractStateProcessor::class,
     ];
 
     public $bindings = [

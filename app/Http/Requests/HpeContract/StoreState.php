@@ -16,12 +16,12 @@ class StoreState extends FormRequest
     public function rules()
     {
         return [
-            'company_id'            => ['exclude_unless:last_drafted_step,Import', 'required', 'uuid', Rule::exists('companies', 'id')->whereNull('deleted_at')],
-            'country_id'            => ['exclude_unless:last_drafted_step,Import', 'required', 'uuid', Rule::exists('countries', 'id')->whereNull('deleted_at')],
-            'quote_template_id'     => ['exclude_unless:last_drafted_step,Import', 'required', 'uuid', Rule::exists('quote_templates', 'id')->whereNull('deleted_at')],
-            'hpe_contract_file_id'  => ['exclude_unless:last_drafted_step,Import', 'nullable', 'uuid', Rule::exists('hpe_contract_files', 'id')->whereNull('deleted_at')],
+            'company_id'            => ['nullable', 'uuid', Rule::exists('companies', 'id')->whereNull('deleted_at')],
+            'country_id'            => ['nullable', 'uuid', Rule::exists('countries', 'id')->whereNull('deleted_at')],
+            'quote_template_id'     => ['nullable', 'uuid', Rule::exists('quote_templates', 'id')->whereNull('deleted_at')],
+            'hpe_contract_file_id'  => ['nullable', 'uuid', Rule::exists('hpe_contract_files', 'id')->whereNull('deleted_at')],
 
-            'sold_contact'           => ['exclude_unless:last_drafted_step,Assorted Detail', 'nullable', 'array'],
+            'sold_contact'           => ['nullable', 'array'],
             'sold_contact.org_name'  => ['required_with:sold_contact', 'string', 'max:191'],
             'sold_contact.attn'      => ['nullable', 'string', 'max:191'],
             'sold_contact.address'   => ['nullable', 'string', 'max:500'],
@@ -31,7 +31,7 @@ class StoreState extends FormRequest
             'sold_contact.country'   => ['nullable', 'string', 'max:191'],
             'sold_contact.city'      => ['required_with:sold_contact', 'string', 'max:191'],
 
-            'bill_contact'           => ['exclude_unless:last_drafted_step,Assorted Detail', 'required', 'array'],
+            'bill_contact'           => ['nullable', 'array'],
             'bill_contact.org_name'  => ['required_with:bill_contact', 'string', 'max:191'],
             'bill_contact.attn'      => ['nullable', 'string', 'max:191'],
             'bill_contact.email'     => ['nullable', 'string', 'max:191'],
@@ -41,33 +41,33 @@ class StoreState extends FormRequest
             'bill_contact.country'   => ['nullable', 'string', 'max:191'],
             'bill_contact.city'      => ['required_with:bill_contact', 'string', 'max:191'],
 
-            'purchase_order_no'      => ['exclude_unless:last_drafted_step,Assorted Detail', 'required', 'string', 'max:191'],
-            'hpe_sales_order_no'     => ['exclude_unless:last_drafted_step,Assorted Detail', 'required', 'string', 'max:191'],
-            'purchase_order_date'    => ['exclude_unless:last_drafted_step,Assorted Detail', 'required', 'date'],
+            'purchase_order_no'      => ['nullable', 'string', 'max:191'],
+            'hpe_sales_order_no'     => ['nullable', 'string', 'max:191'],
+            'purchase_order_date'    => ['nullable', 'date'],
 
-            'hw_delivery_contact'           => ['exclude_unless:last_drafted_step,Assorted Detail', 'required', 'array'],
+            'hw_delivery_contact'           => ['nullable', 'array'],
             'hw_delivery_contact.attn'      => ['required_with:hw_delivery_contact', 'string', 'max:191'],
             'hw_delivery_contact.phone'     => ['nullable', 'string', 'max:191'],
             'hw_delivery_contact.email'     => ['nullable', 'string', 'max:191'],
 
-            'sw_delivery_contact'           => ['exclude_unless:last_drafted_step,Assorted Detail', 'required', 'array'],
+            'sw_delivery_contact'           => ['nullable', 'array'],
             'sw_delivery_contact.attn'      => ['required_with:sw_delivery_contact', 'string', 'max:191'],
             'sw_delivery_contact.phone'     => ['nullable', 'string', 'max:191'],
             'sw_delivery_contact.email'     => ['nullable', 'string', 'max:191'],
 
-            'pr_support_contact'           => ['exclude_unless:last_drafted_step,Assorted Detail', 'required', 'array'],
+            'pr_support_contact'           => ['nullable', 'array'],
             'pr_support_contact.attn'      => ['required_with:pr_support_contact', 'string', 'max:191'],
             'pr_support_contact.phone'     => ['nullable', 'string', 'max:191'],
             'pr_support_contact.email'     => ['nullable', 'string', 'max:191'],
 
-            'entitled_party_contact'                 => ['exclude_unless:last_drafted_step,Assorted Detail', 'required', 'array'],
+            'entitled_party_contact'                 => ['nullable', 'array'],
             'entitled_party_contact.org_name'        => ['required_with:entitled_party_contact', 'string', 'max:191'],
             'entitled_party_contact.address'         => ['required_with:entitled_party_contact', 'string', 'max:500'],
             'entitled_party_contact.post_code'       => ['nullable', 'string', 'max:191'],
             'entitled_party_contact.city'            => ['nullable', 'string', 'max:191'],
             'entitled_party_contact.country'         => ['nullable', 'string', 'max:191'],
 
-            'end_customer_contact'                   => ['exclude_unless:last_drafted_step,Assorted Detail', 'required', 'array'],
+            'end_customer_contact'                   => ['nullable', 'array'],
             'end_customer_contact.org_name'          => ['required_with:end_customer_contact', 'string', 'max:191'],
             'end_customer_contact.address'           => ['required_with:end_customer_contact', 'string', 'max:500'],
             'end_customer_contact.post_code'         => ['nullable', 'string', 'max:191'],
@@ -77,7 +77,7 @@ class StoreState extends FormRequest
             'additional_notes'      => ['nullable', 'string', 'max:20000'],
 
             'checkbox_status'       => ['nullable', 'array'],
-            'last_drafted_step'     => ['required', 'string', Rule::in(array_keys(HpeContract::modelCompleteness()))],
+            'last_drafted_step'     => ['string', Rule::in(array_keys(HpeContract::modelCompleteness()))],
             'contract_date'         => ['exclude_unless:last_drafted_step,Assorted Detail', 'date']
         ];
     }

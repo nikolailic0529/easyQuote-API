@@ -157,7 +157,12 @@ class QuoteService implements QuoteServiceInterface
 
         $targetExchangeRate = $quote->targetExchangeRate;
 
-        $initialTotalPayments = $quote->scheduleData->value->sum('price') * $targetExchangeRate;
+        /** @var \Illuminate\Support\Collection */
+        $payments = Collection::wrap($quote->scheduleData->value);
+
+        $payments = $payments->map(fn ($payment) => data_set($payment, 'price', (float) data_get($payment, 'price')));
+
+        $initialTotalPayments = $payments->sum('price') * $targetExchangeRate;
 
         if ($initialTotalPayments == 0) {
             return $this;
@@ -165,7 +170,7 @@ class QuoteService implements QuoteServiceInterface
 
         $reverseMultiplier = $quote->finalPrice / $initialTotalPayments;
 
-        $quote->scheduleData->value = collect($quote->scheduleData->value)->map(function ($payment) use ($targetExchangeRate, $reverseMultiplier) {
+        $quote->scheduleData->value = $payments->map(function ($payment) use ($targetExchangeRate, $reverseMultiplier) {
             $price = data_get($payment, 'price', 0.0);
             return data_set($payment, 'price', Str::price($price) * $targetExchangeRate * $reverseMultiplier);
         });
@@ -181,7 +186,7 @@ class QuoteService implements QuoteServiceInterface
                 fn (Builder $query) => $query->when(
                     $quote->groupsReady(),
                     /** When quote has groups and proposed to use groups we are retrieving rows with group_name. */
-                    fn (Builder $query) => $query->whereIn('group_name', $quote->selected_group_description_names),
+                    fn (Builder $query) => $query->whereIn('id', $quote->groupedRows()),
                     /** Otherwise we are retrieving only selected rows. */
                     fn (Builder $query) => $query->where('is_selected', true)
                 )
@@ -344,7 +349,7 @@ class QuoteService implements QuoteServiceInterface
         $renderHiddenHeaders = $quote->isMode(QT_TYPE_CONTRACT) ? ['total_price'] : [];
 
         $quote->renderableRows = $quote->computableRows->exceptHeaders([...$quote->systemHiddenFields, ...$renderHiddenHeaders]);
-        
+
         return $this;
     }
 

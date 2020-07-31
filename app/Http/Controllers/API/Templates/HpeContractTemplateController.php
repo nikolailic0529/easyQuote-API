@@ -4,15 +4,18 @@ namespace App\Http\Controllers\API\Templates;
 
 use App\Contracts\Repositories\QuoteTemplate\HpeContractTemplate as Templates;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\QuoteTemplate\DeleteTemplate;
-use App\Http\Requests\QuoteTemplate\FilterHpeTemplates;
-use App\Http\Requests\QuoteTemplate\HpeTemplateDesign;
-use App\Http\Requests\QuoteTemplate\StoreHpeContractTemplate;
-use App\Http\Requests\QuoteTemplate\UpdateHpeContractTemplate;
+use App\Http\Requests\QuoteTemplate\{
+    DeleteTemplate,
+    FilterHpeTemplates,
+    HpeTemplateDesign,
+    StoreHpeContractTemplate,
+    UpdateHpeContractTemplate,
+};
 use App\Http\Resources\TemplateRepository\TemplateResourceWithIncludes;
 use App\Models\QuoteTemplate\HpeContractTemplate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Services\ProfileHelper;
 
 class HpeContractTemplateController extends Controller
 {
@@ -145,7 +148,10 @@ class HpeContractTemplateController extends Controller
     public function destroy(DeleteTemplate $request, HpeContractTemplate $hpeContractTemplate)
     {
         return response()->json(
-            $this->templates->delete($hpeContractTemplate)
+            tap(
+                $this->templates->delete($hpeContractTemplate),
+                fn () => ProfileHelper::flushHpeContractTemplateProfiles($hpeContractTemplate)
+            )
         );
     }
 
@@ -171,7 +177,10 @@ class HpeContractTemplateController extends Controller
     public function deactivate(HpeContractTemplate $hpeContractTemplate)
     {
         return response()->json(
-            $this->templates->deactivate($hpeContractTemplate)
+            tap(
+                $this->templates->deactivate($hpeContractTemplate),
+                fn () => ProfileHelper::flushHpeContractTemplateProfiles($hpeContractTemplate, 'deactivated')
+            )
         );
     }
 }

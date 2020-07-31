@@ -42,9 +42,9 @@ class HpeContractFileService
     public function processImport(HpeContractFile $hpeContractFile): ImportResponse
     {
         try {
-            // if (null !== $hpeContractFile->imported_at) {
-            //     return new ImportResponse(true);
-            // }
+            if (null !== $hpeContractFile->imported_at) {
+                return new ImportResponse(true);
+            }
 
             return DB::transaction(function () use ($hpeContractFile) {
                 $hpeContractFile->hpeContractData()->delete();

@@ -2,6 +2,7 @@
 
 namespace App\Models\Quote;
 
+use App\Casts\GroupDescription;
 use App\Contracts\{
     ActivatableInterface,
     HasOrderedScope
@@ -51,6 +52,9 @@ use Illuminate\Database\Eloquent\{
 use Illuminate\Support\Traits\Tappable;
 use Str;
 
+/**
+ * @property \Illuminate\Support\Collection $group_description
+ */
 abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableInterface
 {
     use Uuid,
@@ -125,6 +129,7 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
     ];
 
     protected $casts = [
+        'group_description' => GroupDescription::class,
         'margin_data' => 'array',
         'checkbox_status' => 'json',
         'calculate_list_price' => 'boolean',

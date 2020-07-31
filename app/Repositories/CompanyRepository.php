@@ -75,19 +75,22 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
 
     public function allInternalWithCountries(array $columns = ['*']): Collection
     {
+        /** @var \App\Models\User */
+        $user = auth()->user();
+
         $companies = $this->company->query()
             ->whereType('Internal')
             ->with([
                 'countries' => fn ($query) => $query
-                    ->select('countries.id', 'countries.iso_3166_2', 'countries.name')
+                    ->select('countries.id', 'countries.iso_3166_2', 'countries.name', 'countries.flag')
                     ->whereNotNull('vendors.activated_at')
                     ->addSelect([
                         'default_country_id' => fn ($query) => $query->select('default_country_id')->from('companies')->whereColumn('companies.id', 'company_vendor.company_id')
                     ])
-                    ->orderByRaw('FIELD(countries.id, default_country_id, NULL) DESC')
+                    ->orderByRaw('FIELD(countries.id, default_country_id, ?, NULL) DESC', [optional($user)->country_id])
             ])
             ->whereNotNull('companies.activated_at')
-            ->ordered()
+            ->orderByRaw('FIELD(companies.id, NULL, ?) DESC', [optional($user)->company_id])
             ->get(array_merge($columns, ['default_country_id']));
 
         return $companies;
