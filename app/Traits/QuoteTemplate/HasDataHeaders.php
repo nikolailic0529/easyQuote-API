@@ -5,6 +5,9 @@ namespace App\Traits\QuoteTemplate;
 use Illuminate\Support\Collection;
 use Arr;
 
+/**
+ * @property Collection $data_headers
+ */
 trait HasDataHeaders
 {
     public function initializeHasDataHeaders()
@@ -18,13 +21,11 @@ trait HasDataHeaders
         $headers = collect(json_decode($value, true))->keyBy('key');
 
         return static::defaultDataHeaders()
-            ->keyBy('key')
-            ->map(function ($header, $key) use ($headers) {
-                $value = data_get($headers, "{$key}.value", $header['value']);
-                data_set($header, 'value', $value);
-                return $header;
-            })
-            ->values();
+            ->map(fn ($header, $key) => [
+                'key' => $key,
+                'label' => $header['label'] ?? null,
+                'value' => data_get($headers, "{$key}.value", $header['value'] ?? null)
+            ]);
     }
 
     public function setDataHeadersAttribute($value)
@@ -34,8 +35,8 @@ trait HasDataHeaders
 
     public function dataHeader(string $key, ?string $fallback = null): string
     {
-        $headers = $this->data_headers->keyBy('key');
-        $default = data_get(static::dataHeadersDictionary(), $key);
+        $headers = $this->data_headers;
+        $default = data_get(static::dataHeadersDictionary(), "{$key}.value");
 
         if (is_null($default) && is_string($fallback)) {
             $default = $fallback;
@@ -56,7 +57,7 @@ trait HasDataHeaders
 
     public static function dataHeaderKeys(): array
     {
-        return Arr::pluck(static::dataHeadersDictionary(), 'key');
+        return array_keys(static::dataHeadersDictionary());
     }
 
     abstract public static function dataHeadersDictionary(): array;

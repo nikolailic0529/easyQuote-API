@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\Templates;
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface as QuoteTemplateRepository;
 use App\Http\Requests\QuoteTemplate\{
+    DeleteTemplate,
     StoreQuoteTemplateRequest,
     UpdateQuoteTemplateRequest
 };
@@ -99,10 +100,11 @@ class QuoteTemplateController extends Controller
     /**
      * Remove the specified Quote Template from storage.
      *
+     * @param  DeleteTemplate $request
      * @param  QuoteTemplate $template
      * @return \Illuminate\Http\Response
      */
-    public function destroy(QuoteTemplate $template)
+    public function destroy(DeleteTemplate $request, QuoteTemplate $template)
     {
         return response()->json(
             $this->quoteTemplate->delete($template->id)

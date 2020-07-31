@@ -21,6 +21,7 @@ use App\Http\Requests\{
 use App\Http\Resources\User\UserByRoleCollection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use App\Services\ProfileHelper;
 
 class UserController extends Controller
 {
@@ -85,7 +86,7 @@ class UserController extends Controller
     {
         $resource = $this->user->findByRoles(
             $request->roles,
-            fn (Builder $q) => $q->withCasts(['granted_level' => UserGrantedPermission::class.':'.$request->granted_module])
+            fn (Builder $q) => $q->withCasts(['granted_level' => UserGrantedPermission::class . ':' . $request->granted_module])
         );
 
         return response()->json(
@@ -151,8 +152,10 @@ class UserController extends Controller
     {
         $this->authorize('updateProfile', [$user, $request]);
 
+        $resource = ProfileHelper::listenAndFlushUserProfile($user, fn () => $this->user->update($user->id, $request->validated()));
+
         return response()->json(
-            $this->user->update($user->id, $request->validated())
+            $resource
         );
     }
 

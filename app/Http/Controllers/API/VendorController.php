@@ -56,7 +56,7 @@ class VendorController extends Controller
     public function show(Vendor $vendor)
     {
         return response()->json(
-            $this->vendor->find($vendor->id)
+            $vendor->appendLogo()->load('countries:id,name,iso_3166_2,flag')
         );
     }
 

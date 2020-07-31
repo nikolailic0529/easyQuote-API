@@ -6,6 +6,7 @@ use App\Contracts\Repositories\QuoteTemplate\{
     QuoteTemplateRepositoryInterface as QuoteTemplates,
     ContractTemplateRepositoryInterface as ContractTemplates
 };
+use Illuminate\Support\Arr;
 
 class GetQuoteTemplatesRequest extends FormRequest
 {
@@ -30,14 +31,18 @@ class GetQuoteTemplatesRequest extends FormRequest
             'company_id'        => ['required', 'string', 'uuid', Rule::exists('companies', 'id')->whereNull('deleted_at')],
             'vendor_id'         => ['nullable', 'string', 'uuid', Rule::exists('vendors', 'id')->whereNull('deleted_at')],
             'country_id'        => ['nullable', 'string', 'uuid', Rule::exists('countries', 'id')->whereNull('deleted_at')],
-            'quote_template_id' => ['nullable', 'string', 'uuid', Rule::exists('quote_templates', 'id')->whereNull('deleted_at')->whereNull('type')],
+            'quote_template_id' => ['nullable', 'string', 'uuid', Rule::exists('quote_templates', 'id')->whereNull('deleted_at')->where('type', QT_TYPE_QUOTE)],
             'type'              => ['nullable', 'string', Rule::in(QT_TYPES)]
         ];
     }
 
     public function contract(): bool
     {
-        return $this->input('type') === QT_TYPE_CONTRACT;
+        if ($this->missing('type')) {
+            return false;
+        }
+
+        return Arr::get(array_flip(QT_TYPES), $this->input('type')) === QT_TYPE_CONTRACT;
     }
 
     public function validated()

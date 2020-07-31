@@ -15,6 +15,7 @@ use App\Models\{
     System\Notification,
 };
 use App\Models\Quote\Contract;
+use App\Models\QuoteTemplate\HpeContractTemplate;
 use App\Observers\{
     VendorObserver,
     QuoteObserver,
@@ -57,6 +58,8 @@ class ObserverServiceProvider extends ServiceProvider
         QuoteTemplate::observe(QuoteTemplateObserver::class);
 
         ContractTemplate::observe(QuoteTemplateObserver::class);
+        
+        HpeContractTemplate::observe(QuoteTemplateObserver::class);
 
         Invitation::observe(InvitationObserver::class);
 

@@ -45,72 +45,189 @@ return [
         ]
     ],
     'quote_data_headers' => [
-        [
-            'key' => 'product_no',
+        'product_no' => [
             'value' => 'Product No',
             'label' => 'Product No'
         ],
-        [
-            'key' => 'description',
+        'description' => [
             'value' => 'Description',
             'label' => 'Description'
         ],
-        [
-            'key' => 'serial_no',
+        'serial_no' => [
             'value' => 'Serial Number',
             'label' => 'Serial Number'
         ],
-        [
-            'key' => 'date_from',
+        'date_from' => [
             'value' => 'From Date',
             'label' => 'From Date'
         ],
-        [
-            'key' => 'date_to',
+        'date_to' => [
             'value' => 'To Date',
             'label' => 'To Date'
         ],
-        [
-            'key' => 'qty',
+        'qty' => [
             'value' => 'Quantity',
             'label' => 'Quantity'
         ],
-        [
-            'key' => 'price',
+        'price' => [
             'value' => 'Price',
             'label' => 'Price'
         ]
     ],
     'contract_data_headers' => [
-        [
-            'key' => 'product_no',
+        'product_no' => [
             'value' => 'Product No',
             'label' => 'Product No'
         ],
-        [
-            'key' => 'description',
+        'description' => [
             'value' => 'Description',
             'label' => 'Description'
         ],
-        [
-            'key' => 'serial_no',
+        'serial_no' => [
             'value' => 'Serial Number',
             'label' => 'Serial Number'
         ],
-        [
-            'key' => 'date_from',
+        'date_from' => [
             'value' => 'From Date',
             'label' => 'From Date'
         ],
-        [
-            'key' => 'date_to',
+        'date_to' => [
             'value' => 'To Date',
             'label' => 'To Date'
         ],
-        [
-            'key' => 'qty',
+        'qty' => [
             'value' => 'Quantity',
             'label' => 'Quantity'
         ]
+    ],
+    'hpe_contract_data_headers' => [
+        'hpe_contract' => [
+            'value' => 'HPE Contract',
+            'label' => 'HPE Contract No.'
+        ],
+        'support_account_reference' => [
+            'value' => 'Support Account Reference',
+            'label' => 'Support Account Reference'
+        ],
+        'serial_number_details' => [
+            'value' => 'Serial Number Details',
+            'label' => 'Serial Number Details'
+        ],
+        'hpe_sales_order' => [
+            'value' => 'HPE Sales Order',
+            'label' => 'Hpe Sales Order No.'
+        ],
+        'number' => [
+            'value' => 'No.',
+            'label' => 'No.'
+        ],
+        'asset_location_details' => [
+            'value' => 'Asset Location Details',
+            'label' => 'Asset Location Details'
+        ],
+        'authorization_date' => [
+            'value' => 'Purchase Order / Authorization Date',
+            'label' => 'Authorization Date'
+        ],
+        'authorization' => [
+            'value' => 'Purchase Order / Authorization',
+            'label' => 'Authorization'
+        ],
+        'amp_id' => [
+            'value' => 'AMP ID',
+            'label' => 'AMP ID'
+        ],
+        'contract_no' => [
+            'value' => 'HPE Contract',
+            'label' => 'Contract No'
+        ],
+        'date_from' => [
+            'value' => 'Start Date',
+            'label' => 'Start Date'
+        ],
+        'date_to' => [
+            'value' => 'End Date',
+            'label' => 'End Date'
+        ],
+        'sales_order' => [
+            'value' => 'HPE Sales Order',
+            'label' => 'Sales Order'
+        ],
+        'product_no' => [
+            'value' => 'Product',
+            'label' => 'Product'
+        ],
+        'description' => [
+            'value' => 'Description',
+            'label' => 'Description'
+        ],
+        'qty' => [
+            'value' => 'Quantity',
+            'label' => 'Quantity'
+        ],
+        'serial_no' => [
+            'value' => 'Serial No',
+            'label' => 'Serial No'
+        ],
+        'support_account' => [
+            'value' => 'Support Account Reference',
+            'label' => 'Support Account Reference'
+        ],
+        'contract_summary' => [
+            'value' => 'Contract Summary',
+            'label' => 'Contract Summary'
+        ],
+        'customer_contacts' => [
+            'value' => 'Customer Contacts',
+            'label' => 'Customer Contacts'
+        ],
+        'hpe_contacts' => [
+            'value' => 'HPE Contacts',
+            'label' => 'HPE Contacts'
+        ],
+        'sold_to_address' => [
+            'value' => 'Sold To Address',
+            'label' => 'Sold Address'
+        ],
+        'bill_to_address' => [
+            'value' => 'Bill To Address',
+            'label' => 'Bill To Address'
+        ],
+        'address' => [
+            'value' => 'Address',
+            'label' => 'Address'
+        ],
+        'contract_admin' => [
+            'value' => 'Contract Admin',
+            'label' => 'Contract Admin'
+        ],
+        'service_overview' => [
+            'value' => 'Service Overview',
+            'label' => 'Service Overview'
+        ],
+        'service_level' => [
+            'value' => 'Service Level',
+            'label' => 'Service Level'
+        ],
+        'contract_details' => [
+            'value' => 'Contract Details',
+            'label' => 'Contract Details'
+        ],
+        'customer_contacts' => [
+            'value' => 'Customer Contacts',
+            'label' => 'Customer Contacts'
+        ],
+        'support_service_details' => [
+            'value' => 'Support Service Details',
+            'label' => 'Support Service Details'
+        ],
+        'support_account_reference_detail' => [
+            'value' => 'Support Account Reference Detail',
+            'label' => 'Support Account Reference Detail'
+        ],
+        'page_no' => [
+            'value' => 'Page',
+            'label' => 'Page No.'
+        ],
     ]
 ];

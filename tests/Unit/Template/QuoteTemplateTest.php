@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Template;
 
+use App\Models\QuoteTemplate\QuoteTemplate;
 use Illuminate\Database\Eloquent\Builder;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -80,6 +81,10 @@ class QuoteTemplateTest extends TestCase
     {
         $template = app('template.repository')->random(1, fn (Builder $query) => $query->system());
 
+        if ($template === null) {
+            $template = factory(QuoteTemplate::class)->create(['is_system' => true]);
+        }
+
         $attributes = $this->makeGenericTemplateAttributes();
 
         $this->patchJson(url("api/templates/{$template->id}"), $attributes)
@@ -95,6 +100,10 @@ class QuoteTemplateTest extends TestCase
     public function testTemplateCopying()
     {
         $template = app('template.repository')->random(1, fn (Builder $query) => $query->system());
+
+        if ($template === null) {
+            $template = factory(QuoteTemplate::class)->create(['is_system' => true]);
+        }
 
         $response = $this->putJson(url("api/templates/copy/{$template->id}"), [])->assertOk();
 
@@ -132,6 +141,10 @@ class QuoteTemplateTest extends TestCase
     public function testMasterTemplateDeleting()
     {
         $template = app('template.repository')->random(1, fn (Builder $query) => $query->system());
+
+        if ($template === null) {
+            $template = factory(QuoteTemplate::class)->create(['is_system' => true]);
+        }
 
         $this->deleteJson(url("api/templates/{$template->id}"), [])
             ->assertForbidden()

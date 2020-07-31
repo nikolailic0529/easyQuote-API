@@ -11,11 +11,7 @@ trait ResolvesImplicitModel
         $class = $this->model();
 
         if (is_string($model)) {
-            return tap($this->find($model), function ($model) use ($class) {
-                if (is_null($model)) {
-                    throw (new ModelNotFoundException)->setModel($class, (array) $model);
-                }
-            });
+            return app($class)->findOrFail($model);
         }
 
         throw_unless($model instanceof $class, new \InvalidArgumentException(

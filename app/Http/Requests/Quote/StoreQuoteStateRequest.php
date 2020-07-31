@@ -86,7 +86,7 @@ class StoreQuoteStateRequest extends FormRequest
 
             'quote_data.quote_template_id' => [
                 'uuid',
-                Rule::exists('quote_templates', 'id')->whereNull('deleted_at')->whereNull('type')
+                Rule::exists('quote_templates', 'id')->whereNull('deleted_at')->where('type', QT_TYPE_QUOTE)
             ],
 
             'quote_data.contract_template_id' => [
@@ -118,9 +118,9 @@ class StoreQuoteStateRequest extends FormRequest
             'quote_data.selected_rows_is_rejected'  => 'boolean',
             'quote_data.use_groups'                 => ['boolean', new UseRowGroups($this->quote())],
             'quote_data.last_drafted_step'          => 'string|max:20',
-            'quote_data.pricing_document'           => 'string|max:300|min:2',
-            'quote_data.service_agreement_id'       => 'string|max:300|min:2',
-            'quote_data.system_handle'              => 'string|max:300|min:2',
+            'quote_data.pricing_document'           => 'string|max:1000|min:2',
+            'quote_data.service_agreement_id'       => 'string|max:1000|min:2',
+            'quote_data.system_handle'              => 'string|max:1000|min:2',
             'quote_data.additional_details'         => 'nullable|string|max:20000|min:2',
             'quote_data.checkbox_status'            => 'array',
             'quote_data.closing_date'               => 'date_format:Y-m-d',
@@ -249,7 +249,7 @@ class StoreQuoteStateRequest extends FormRequest
     protected function customerRequired()
     {
         return is_null($this->quote()->customer_id)
-            && $this->missing('customer_id')
+            && $this->missing('quote_data.customer_id')
             ? 'required' : null;
     }
 

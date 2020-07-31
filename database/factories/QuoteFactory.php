@@ -11,21 +11,49 @@ use App\Contracts\Repositories\{
 use App\Models\User;
 use App\Models\Quote\Quote;
 use App\Models\Quote\Margin\CountryMargin;
+use App\Models\QuoteTemplate\QuoteTemplate;
+use App\Models\Vendor;
 use Faker\Generator as Faker;
 use Illuminate\Support\Arr;
 
 $factory->define(Quote::class, function (Faker $faker) {
+    /** @var \App\Models\Company */
     $company = app(Companies::class)->allWithVendorsAndCountries()->random();
-    
-    $vendor = $company->vendors->random();
+
+    $vendor = $company->vendors->whenEmpty(
+        function ($vendors) use ($company) {
+            $vendor = factory(Vendor::class)->create();
+
+            $company->vendors()->syncWithoutDetaching([$vendor->getKey()]);
+
+            return $vendor;
+        },
+        fn () => $company->vendors->random()
+    );
 
     $country = $vendor->countries->random();
 
-    $template = app(Templates::class)->findByCompanyVendorCountry([
-        'company_id'    => $company->id,
-        'vendor_id'     => $vendor->id,
-        'country_id'    => $country->id,
-    ])->random();
+    /** @var \Illuminate\Database\Eloquent\Collection */
+    $templates = app(Templates::class)->findByCompanyVendorCountry([
+        'company_id'    => $company->getKey(),
+        'vendor_id'     => $vendor->getKey(),
+        'country_id'    => $country->getKey(),
+    ]);
+
+    $template = $templates->whenEmpty(
+        function () use ($company, $vendor, $country) {
+            /** @var QuoteTemplate */
+            $template = factory(QuoteTemplate::class)->create([
+                'company_id' => $company->getKey(),
+                'vendor_id'  => $vendor->getKey()
+            ]);
+
+            $template->countries()->syncWithoutDetaching([$country->getKey()]);
+
+            return $template;
+        },
+        fn ($templates) => $templates->random()
+    );
 
     $sourceCurrency = app(Currencies::class)->all()->random();
 

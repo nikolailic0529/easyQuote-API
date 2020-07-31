@@ -9,7 +9,7 @@ trait BelongsToContractTemplate
 {
     public function contractTemplate(): BelongsTo
     {
-        return $this->belongsTo(ContractTemplate::class)->withDefault();
+        return $this->belongsTo(ContractTemplate::class)->withTrashed()->withDefault();
     }
 
     public function getHasContractTemplateAttribute(): bool

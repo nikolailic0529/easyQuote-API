@@ -1,0 +1,290 @@
+html {
+    font-size: 16px;
+}
+
+body {
+    font-size: 1rem;
+    font-family: Arial, Tahoma, sans-serif !important;
+    color: #000;
+}
+
+h5,
+.h5 {
+    font-size: 1.5rem !important;
+}
+
+th>h5 {
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+    margin-top: 0 !important;
+}
+
+b {
+    font-weight: 600
+}
+
+hr {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+span p {
+    margin-bottom: 0;
+}
+
+/* .blue-text {
+    color: #1876bd;
+    margin-bottom: .5rem;
+    margin-top: 1.25rem
+} */
+
+.bold-blue-line, .hpe-blue {
+    border-top-width: 3px;
+    border-color: #0d5265;
+    margin: 0;
+}
+
+.hpe-black {
+    border-color: #000000;
+    border-width: 3px;
+    margin: 0;
+}
+
+.float-right {
+    text-align: right;
+    float: right;
+}
+
+.bold-green-line {
+    border-top-width: 5px;
+    border-color: #01a082;
+    margin: 0;
+}
+
+.page-break~.blue-text {
+    margin-top: 0
+}
+
+/* h5 {
+    margin-bottom: 0;
+    padding-bottom: 0;
+} */
+
+.details {
+    margin-bottom: 1.25rem;
+}
+
+.page-break {
+    page-break-after: always;
+}
+
+.border-none {
+    border: none !important;
+}
+
+/* .table {
+    font-size: 16px;
+    margin-bottom: 0;
+} */
+
+.heading-table td,
+.heading-table th {
+    padding: 0 8px
+}
+
+thead>tr {
+    border-bottom-width: 5px;
+    border-bottom-style: solid;
+    border-color: #01a082;
+    font-size: 1rem;
+}
+
+thead>tr.table-header {
+    border-bottom-width: 3px;
+    border-bottom-color: #0d5265;
+}
+
+thead>tr.table-header th {
+    font-size: 1.125rem;
+}
+
+thead>tr.table-subheader {
+    border-bottom-width: 3px;
+    border-bottom-color: #0d5265;
+}
+
+thead>tr.table-header.table-header-bordered {
+    border-bottom-width: 3px;
+    border-top-width: 3px;
+    border-top-style: solid;
+    border-bottom-style: solid;
+    border-top-color: #000000;
+    border-bottom-color: #01a082;
+}
+
+/* th {
+    font-size: 1.125rem;
+} */
+
+/* .page-break-avoid {
+    page-break-after: avoid;
+} */
+
+.table-striped>tbody>tr:nth-of-type(odd) {
+    background-color: #d0e4f5
+}
+
+.table-striped>tbody>tr:nth-of-type(even) {
+    background-color: #eee
+}
+
+.table-bordered>thead>tr>th,
+.table-bordered>tbody>tr>th,
+.table-bordered>tfoot>tr>th,
+.table-bordered>thead>tr>td,
+.table-bordered>tbody>tr>td,
+.table-bordered>tfoot>tr>td {
+    border-color: #aaa;
+    border-bottom: 0
+}
+
+.table>thead>tr>th,
+.table>tbody>tr>th,
+.table>tfoot>tr>th,
+.table>thead>tr>td,
+.table>tbody>tr>td,
+.table>tfoot>tr>td {
+    border-top: 0;
+    border-bottom: 2px solid #ddd;
+}
+
+.table>tbody.border-none>tr>td, .table>tbody.border-none>tr>th {
+    border: none !important;
+}
+
+thead {
+    display: table-header-group;
+}
+
+tfoot {
+    display: table-row-group;
+}
+
+tr {
+    page-break-inside: avoid !important;
+}
+
+.blue {
+    color: #1876BD !important;
+}
+
+hr.blue {
+    border-top: 1px solid #1876BD !important;
+}
+
+.bold {
+    font-weight: bold !important;
+}
+
+.text-nowrap {
+    white-space: nowrap !important;
+}
+
+.text-normal {
+    font-weight: 400 !important;
+}
+
+.text-size-12 {
+    font-size: 12px !important;
+}
+
+.text-size-14 {
+    font-size: 14px !important;
+}
+
+.text-size-16 {
+    font-size: 16px !important;
+}
+
+.text-size-17 {
+    font-size: 17px !important;
+}
+
+.br-0 {
+    border-right: 0 !important;
+}
+
+.bl-0 {
+    border-left: 0 !important;
+}
+
+.mt-1 {
+    margin-top: 1rem !important
+}
+
+.mt-2 {
+    margin-top: 2rem !important
+}
+
+.mt-5 {
+    margin-top: 5rem !important
+}
+
+.mb-0 {
+    margin-bottom: 0 !important;
+}
+
+.mb-2 {
+    margin-bottom: 2rem !important;
+}
+
+.mb-3 {
+    margin-bottom: 3rem !important;
+}
+
+.mb-5 {
+    margin-bottom: 5rem !important;
+}
+
+.mb-8 {
+    margin-bottom: 8rem !important;
+}
+
+.mb-10 {
+    margin-bottom: 10rem !important;
+}
+
+.mb-15 {
+    margin-bottom: 15rem !important;
+}
+
+.pt-5 {
+    padding-top: 5rem !important;
+}
+
+.pb-0 {
+    margin-bottom: 0 !important;
+}
+
+.pb-2 {
+    padding-bottom: 2rem !important;
+}
+
+.pb-10 {
+    padding-bottom: 10rem !important;
+}
+
+.py-0 {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+.px-0 {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+.my-0 {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}

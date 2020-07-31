@@ -17,6 +17,12 @@ if (!function_exists('slack')) {
 }
 
 if (!function_exists('notification')) {
+    /**
+     * Begin Pending Notification instance.
+     *
+     * @param array $attributes
+     * @return \App\Contracts\Services\NotificationInterface
+     */
     function notification(array $attributes = [])
     {
         return app('notification.storage')->setAttributes($attributes);

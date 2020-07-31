@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Routine\UpdateExchangeRates;
+use HpeContractTemplatesSeeder;
 use Illuminate\Console\Command;
 
 class Update extends Command
@@ -51,23 +53,29 @@ class Update extends Command
             '--force' => true
         ]);
 
-        $this->call('eq:parser-update');
-        $this->call('eq:collaborations-update');
-        $this->call('eq:companies-update');
-        $this->call('eq:vendors-update');
-        $this->call('eq:roles-update');
-        $this->call('eq:settings-sync');
-        $this->call('eq:update-exchange-rates');
-        $this->call('eq:templatefields-update');
-        $this->call('eq:templates-update');
-        $this->call('eq:update-templates-assets');
-        $this->call('eq:currencies-update');
-        $this->call('eq:countries-update');
-        $this->call('eq:reset-task-templates');
-        $this->call('eq:create-personal-access-client');
-        $this->call('eq:create-client-credentials');
-        $this->call('eq:search-reindex');
-        $this->call('eq:cache-relations');
+        $this->call(ImportableColumnsUpdate::class);
+        $this->call(CompaniesUpdate::class);
+        $this->call(VendorsUpdate::class);
+        $this->call(RolesUpdate::class);
+        $this->call(SystemSettingsSync::class);
+        $this->call(UpdateExchangeRates::class);
+        $this->call(TemplateFieldsUpdate::class);
+        $this->call(TemplatesUpdate::class);
+
+        $this->call('db:seed', [
+            '--class' => HpeContractTemplatesSeeder::class
+        ]);
+
+        $this->call(UpdateTemplatesAssets::class);
+        $this->call(CurrenciesUpdate::class);
+        $this->call(CountriesUpdate::class);
+        $this->call(ResetTaskTemplates::class);
+        $this->call(CreatePersonalAccessClient::class);
+        $this->call(CreateClientCredentials::class);
+        $this->call(ReindexCommand::class);
+        $this->call(CacheRelations::class);
+        $this->call(UpdateQuoteGroupDescription::class);
+
         $this->call('cache:clear');
         $this->call('optimize:clear');
     }

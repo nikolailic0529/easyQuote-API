@@ -8,29 +8,14 @@ trait HasGroupDescriptionAttribute
 {
     public function initializeHasGroupDescriptionAttribute()
     {
-        $this->casts = array_merge($this->casts, ['group_description' => 'array', 'use_groups' => 'boolean', 'sort_group_description' => 'array']);
+        $this->casts = array_merge($this->casts, ['use_groups' => 'boolean', 'sort_group_description' => 'array']);
         $this->fillable = array_merge($this->fillable, ['group_description', 'use_groups', 'sort_group_description']);
         $this->appends = array_merge($this->appends, ['has_group_description']);
     }
 
-    public function setGroupDescriptionAttribute($value): void
-    {
-        if (is_string($value)) {
-            $this->attributes['group_description'] = $value;
-            return;
-        }
-
-        if (is_iterable($value)) {
-            $this->attributes['group_description'] = json_encode($value, true);
-            return;
-        }
-
-        $this->attributes['group_description'] = $value;
-    }
-
     public function getHasGroupDescriptionAttribute(): bool
     {
-        return filled($this->group_description);
+        return Collection::wrap($this->group_description)->isNotEmpty();
     }
 
     public function getHasNotGroupDescriptionAttribute(): bool
@@ -70,6 +55,11 @@ trait HasGroupDescriptionAttribute
     public function groupsReady(): bool
     {
         return $this->use_groups && $this->has_group_description;
+    }
+
+    public function groupedRows(): array
+    {
+        return $this->group_description->pluck('rows_ids')->flatten(1)->toArray();
     }
 
     public function getSelectedGroupDescriptionNamesAttribute(): array

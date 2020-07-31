@@ -3,6 +3,7 @@
 namespace App\Repositories\Concerns;
 
 use App\Collections\MappedRows;
+use App\DTO\RowsGroup;
 use App\Models\Quote\BaseQuote;
 use Illuminate\Support\Collection;
 
@@ -10,13 +11,10 @@ trait FetchesGroupDescription
 {
     protected static function mapGroupDescriptionWithRows(BaseQuote $quote, Collection $rows)
     {
-        $groups = Collection::wrap($quote->group_description)->keyBy('name');
-
-        return $rows->groupBy('group_name')->transform(
-            fn ($group, $name) => static::unionGroupRowsWithDescription(Collection::wrap($groups->get($name)), $group)
+        return MappedRows::wrap($quote->group_description)->map(
+            fn (RowsGroup $group) => static::unionGroupRowsWithDescription($group->toArray(), $rows->whereIn('id', $group->rows_ids))
         )
-        ->values()
-        ->sortByFields($quote->sort_group_description);
+            ->sortByFields($quote->sort_group_description);
     }
 
     private static function fetchRowsSearchInput(string $query): array
@@ -29,8 +27,8 @@ trait FetchesGroupDescription
         $group = MappedRows::make($group);
         $rows = MappedRows::make($rows);
 
-        return $group->union([
-            'rows'          => $rows,
+        return $group->merge([
+            'rows'          => $rows->values(),
             'total_count'   => $rows->count(),
             'total_price'   => round((float) $rows->sum('price'), 2)
         ]);

@@ -3,20 +3,26 @@
 namespace App\Repositories\Quote;
 
 use App\Contracts\Repositories\Contract\ContractDraftedRepositoryInterface;
+use App\Models\HpeContract;
 use App\Repositories\SearchableRepository;
 use App\Models\Quote\Contract;
+use App\Scopes\ContractTypeScope;
 use Illuminate\Database\Eloquent\{
     Model,
     Builder
 };
+use Illuminate\Support\Facades\DB;
 
 class ContractDraftedRepository extends SearchableRepository implements ContractDraftedRepositoryInterface
 {
     protected Contract $contract;
 
-    public function __construct(Contract $contract)
+    protected HpeContract $hpeContract;
+
+    public function __construct(Contract $contract, HpeContract $hpeContract)
     {
         $this->contract = $contract;
+        $this->hpeContract = $hpeContract;
     }
 
     public function paginate()
@@ -29,8 +35,27 @@ class ContractDraftedRepository extends SearchableRepository implements Contract
         /** @var \App\Models\User */
         $user = auth()->user();
 
-        return $this->contract
-            ->query()
+        $contractColumns = [
+            'id',
+            'user_id',
+            'customer_id',
+            'company_id',
+            'quote_id',
+            'hpe_contract_id',
+            'hpe_contract_number',
+            'hpe_contract_customer_name',
+            'cached_relations',
+            'document_type',
+            'completeness',
+            'created_at',
+            'updated_at',
+            'activated_at'
+        ];
+
+        $query = $this->contract->newQueryWithoutScope(ContractTypeScope::class)
+            ->whereIn('document_type', [Q_TYPE_CONTRACT, Q_TYPE_HPE_CONTRACT]);
+
+        $query = $query->select($contractColumns)
             ->when(
                 /** If user is not super-admin we are retrieving the user's own contracts */
                 $user->cant('view_contracts'),
@@ -40,6 +65,8 @@ class ContractDraftedRepository extends SearchableRepository implements Contract
                     ->orWhereIn('user_id', $user->getModulePermissionProviders('contracts.read'))
             )
             ->drafted();
+
+        return $query;
     }
 
     public function find(string $id): Contract
@@ -88,8 +115,8 @@ class ContractDraftedRepository extends SearchableRepository implements Contract
     protected function filterableQuery()
     {
         return [
-            $this->userQuery()->with('quote')->activated(),
-            $this->userQuery()->with('quote')->deactivated()
+            $this->userQuery()->with('usingVersion:id,updated_at', 'customer:id,rfq')->activated(),
+            $this->userQuery()->with('usingVersion:id,updated_at', 'customer:id,rfq')->deactivated()
         ];
     }
 
@@ -100,7 +127,7 @@ class ContractDraftedRepository extends SearchableRepository implements Contract
 
     protected function searchableQuery()
     {
-        return $this->userQuery()->with('quote');
+        return $this->userQuery()->with('usingVersion:id,updated_at', 'customer:id,rfq');
     }
 
     protected function searchableFields(): array

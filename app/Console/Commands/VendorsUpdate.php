@@ -6,7 +6,12 @@ use App\Models\{
     Vendor,
     Data\Country
 };
+use App\Services\ThumbnailManager;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
+use Illuminate\Support\Stringable;
 
 class VendorsUpdate extends Command
 {
@@ -49,10 +54,15 @@ class VendorsUpdate extends Command
             $vendors = json_decode(file_get_contents(database_path('seeds/models/vendors.json')), true);
 
             collect($vendors)->each(function ($vendorData) {
+                /** @var Vendor */
                 $vendor = Vendor::whereShortCode($vendorData['short_code'])->first();
                 $countries = Country::whereIn('iso_3166_2', $vendorData['countries'])->get();
                 $vendor->countries()->sync($countries);
                 $vendor->createLogo($vendorData['logo'], true);
+
+                if (isset($vendorData['svg_logo'])) {
+                    ThumbnailManager::updateModelSvgThumbnails($vendor, base_path($vendorData['svg_logo']));
+                }
 
                 $this->output->write('.');
             });

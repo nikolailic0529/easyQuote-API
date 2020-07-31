@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\Data;
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\CountryRepositoryInterface;
 use App\Http\Requests\Country\{
+    FilterCountries,
     StoreCountryRequest,
     UpdateCountryRequest
 };
@@ -14,6 +15,7 @@ use App\Http\Resources\Country\{
     CountryResource
 };
 use App\Models\Data\Country;
+use App\Models\Vendor;
 
 class CountryController extends Controller
 {
@@ -57,6 +59,32 @@ class CountryController extends Controller
     {
         return response()->json(
             CountryResource::make($country)->load('defaultCurrency')
+        );
+    }
+
+    /**
+     * Display a plain listing of Countries filtered by Vendor.
+     *
+     * @param  string $vendor
+     * @return \Illuminate\Http\Response
+     */
+    public function filterCountriesByVendor(string $vendor)
+    {
+        return response()->json(
+            $this->countries->findByVendor($vendor, ['id', 'iso_3166_2', 'name'])
+        );
+    }
+
+    /**
+     * Display a plain listing of Countries filtered by Company.
+     *
+     * @param  string $company
+     * @return \Illuminate\Http\Response
+     */
+    public function filterCountriesByCompany(string $company)
+    {
+        return response()->json(
+            $this->countries->findByCompany($company, ['id', 'iso_3166_2', 'name'])
         );
     }
 

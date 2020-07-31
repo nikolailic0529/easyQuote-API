@@ -18,9 +18,12 @@ class DraftedResource extends JsonResource
         /** @var \App\Models\User */
         $user = $request->user();
 
+        $modelKey = $this->document_type === Q_TYPE_HPE_CONTRACT ? $this->hpe_contract_id : $this->id;
+
         return [
-            'id'                => $this->id,
+            'id'                => $modelKey,
             'quote_id'          => $this->quote_id,
+            'type'              => $this->document_type,
             'user' => [
                 'id'            => $this->user_id,
                 'first_name'    => $this->cached_relations->user->first_name,
@@ -33,14 +36,16 @@ class DraftedResource extends JsonResource
             'contract_customer' => [
                 'rfq'           => $this->contract_number,
             ],
-            'permissions'               => [
+            'permissions'       => [
                 'view'      => $user->can('view', $this->resource),
                 'update'    => $user->can('update', $this->resource),
                 'delete'    => $user->can('delete', $this->resource),
             ],
+            'completeness'      => $this->completeness,
+            'last_drafted_step' => $this->last_drafted_step,
             'quote_customer'    => QuoteCustomerResource::make($this),
             'created_at'        => optional($this->created_at)->format(config('date.format_time')),
-            'updated_at'        => optional($this->usingVersionFromSelection->updated_at)->format(config('date.format_time')),
+            'updated_at'        => optional($this->usingVersion->updated_at)->format(config('date.format_time')),
             'activated_at'      => $this->activated_at,
         ];
     }

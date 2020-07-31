@@ -2,6 +2,7 @@
 
 namespace App\Models\Quote;
 
+use App\Casts\GroupDescription;
 use App\Contracts\{
     ActivatableInterface,
     HasOrderedScope
@@ -51,6 +52,9 @@ use Illuminate\Database\Eloquent\{
 use Illuminate\Support\Traits\Tappable;
 use Str;
 
+/**
+ * @property \Illuminate\Support\Collection $group_description
+ */
 abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableInterface
 {
     use Uuid,
@@ -109,6 +113,7 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
         'contract_template_id',
         'pricing_document',
         'service_agreement_id',
+        'hpe_contract_number',
         'system_handle',
         'checkbox_status',
         'closing_date'
@@ -124,6 +129,7 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
     ];
 
     protected $casts = [
+        'group_description' => GroupDescription::class,
         'margin_data' => 'array',
         'checkbox_status' => 'json',
         'calculate_list_price' => 'boolean',
@@ -244,7 +250,7 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
         ];
     }
 
-    public static function getCompletenessDictionary()
+    public function getCompletenessDictionary()
     {
         return __('quote.stages');
     }

@@ -27,7 +27,9 @@ use App\Models\{
     System\Activity,
     System\Notification,
     Data\Country,
+    HpeContract,
 };
+use App\Models\QuoteTemplate\HpeContractTemplate;
 use App\Policies\{
     ActivityPolicy,
     AddressPolicy,
@@ -39,6 +41,8 @@ use App\Policies\{
     CountryPolicy,
     CustomerPolicy,
     DiscountPolicy,
+    HpeContractPolicy,
+    HpeContractTemplatePolicy,
     ImportableColumnPolicy,
     InvitationPolicy,
     MarginPolicy,
@@ -75,6 +79,7 @@ class AuthServiceProvider extends ServiceProvider
         Task::class                 => TaskPolicy::class,
         QuoteTemplate::class        => QuoteTemplatePolicy::class,
         ContractTemplate::class     => ContractTemplatePolicy::class,
+        HpeContractTemplate::class  => HpeContractTemplatePolicy::class,
         Company::class              => CompanyPolicy::class,
         Vendor::class               => VendorPolicy::class,
         Discount::class             => DiscountPolicy::class,
@@ -91,6 +96,7 @@ class AuthServiceProvider extends ServiceProvider
         Country::class              => CountryPolicy::class,
         ImportableColumn::class     => ImportableColumnPolicy::class,
         Asset::class                => AssetPolicy::class,
+        HpeContract::class          => HpeContractPolicy::class,
     ];
 
     public function register()
@@ -108,17 +114,17 @@ class AuthServiceProvider extends ServiceProvider
         $this->registerPolicies();
 
         Client::creating(function (Client $client) {
-            $client->incrementing = false;
-            $client->id = Uuid::generate(4)->string;
+            $client->setIncrementing(false);
+            $client->{$client->getKeyName()} = Uuid::generate(4)->string;
         });
 
         Client::retrieved(function (Client $client) {
-            $client->incrementing = false;
+            $client->setIncrementing(false);
         });
 
         PersonalAccessClient::creating(function (PersonalAccessClient $client) {
-            $client->incrementing = false;
-            $client->id = Uuid::generate(4)->string;
+            $client->setIncrementing(false);
+            $client->{$client->getKeyName()} = Uuid::generate(4)->string;
         });
 
         Passport::routes();
