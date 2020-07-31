@@ -69,7 +69,7 @@ class HpeContractExporter implements HpeExporter
 
         $fileName = $this->disk->path('hpe_contracts' . DIRECTORY_SEPARATOR .  static::makeFileName($data));
 
-        return tap($fileName, fn () => $pdfMerger->save($fileName, 'download'));
+        return tap($fileName, fn () => $pdfMerger->save(static::makeFileName($data), 'download'));
     }
 
     public function retrieveTemplateImages(HpeContractTemplate $template, bool $preferSvg = false): array
