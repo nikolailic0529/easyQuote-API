@@ -15,7 +15,7 @@ use Str, Arr;
 
 class CompanyTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, AssertsListing;
+    use WithFakeUser, AssertsListing;
 
     /**
      * Test Company listing.

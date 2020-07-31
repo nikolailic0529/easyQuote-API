@@ -9,6 +9,6 @@ trait BelongsToQuoteTemplate
 {
     public function quoteTemplate(): BelongsTo
     {
-        return $this->belongsTo(QuoteTemplate::class)->withDefault();
+        return $this->belongsTo(QuoteTemplate::class)->withTrashed()->withDefault();
     }
 }

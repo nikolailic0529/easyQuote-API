@@ -80,6 +80,13 @@ return [
             'root' => env('STORAGE_PATH_ATTACHMENTS', storage_path('app/public/attachments')),
             'url' => env('APP_URL').'/storage/attachments',
             'visibility' => 'public',
+        ],
+
+        'hpe_contract_files' => [
+            'driver' => 'local',
+            'root' => env('STORAGE_PATH_PUBLIC', storage_path('app/public')) . '/hpe_contract_files',
+            'url' => env('APP_URL').'/storage/hpe_contract_files',
+            'visibility' => 'public',
         ]
 
     ],

@@ -4,7 +4,7 @@ namespace App\Http\Requests\Quote;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Arr;
+
 
 class SelectGroupDescriptionRequest extends FormRequest
 {
@@ -15,10 +15,11 @@ class SelectGroupDescriptionRequest extends FormRequest
      */
     public function rules()
     {
+        /** @var \App\Models\Quote\BaseQuote */
         $version = $this->route('quote')->usingVersion;
 
         return [
-            '*' => ['string', 'uuid', Rule::in(Arr::pluck($version->group_description, 'id'))]
+            '*' => ['string', 'uuid', Rule::in($version->group_description->pluck('id')->toArray())]
         ];
     }
 

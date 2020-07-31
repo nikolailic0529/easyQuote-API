@@ -100,6 +100,14 @@ class Company extends Model implements WithImage, WithLogo, ActivatableInterface
         return $this->hasManyDeepFromRelations($this->addresses(), (new Address)->location());
     }
 
+    public function countries(): HasManyDeep
+    {
+        return $this->hasManyDeep(
+            Country::class,
+            ['company_vendor', Vendor::class, 'country_vendor'],
+        )->groupBy('countries.id', 'company_vendor.company_id');
+    }
+
     public function defaultVendor(): BelongsTo
     {
         return $this->belongsTo(Vendor::class);

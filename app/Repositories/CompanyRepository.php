@@ -35,6 +35,15 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
             ->union($additional);
     }
 
+    public function allInternal(array $columns = ['*']): Collection
+    {
+        return $this->company->query()
+            ->whereType('Internal')
+            ->activated()
+            ->ordered()
+            ->get($columns);
+    }
+
     public function allWithVendorsAndCountries(): Collection
     {
         $companies = $this->company->query()->with([
@@ -60,6 +69,29 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
             ->activated()->ordered()->get();
 
         $companies->map->sortVendorsCountries();
+
+        return $companies;
+    }
+
+    public function allInternalWithCountries(array $columns = ['*']): Collection
+    {
+        /** @var \App\Models\User */
+        $user = auth()->user();
+
+        $companies = $this->company->query()
+            ->whereType('Internal')
+            ->with([
+                'countries' => fn ($query) => $query
+                    ->select('countries.id', 'countries.iso_3166_2', 'countries.name', 'countries.flag')
+                    ->whereNotNull('vendors.activated_at')
+                    ->addSelect([
+                        'default_country_id' => fn ($query) => $query->select('default_country_id')->from('companies')->whereColumn('companies.id', 'company_vendor.company_id')
+                    ])
+                    ->orderByRaw('FIELD(countries.id, default_country_id, ?, NULL) DESC', [optional($user)->country_id])
+            ])
+            ->whereNotNull('companies.activated_at')
+            ->orderByRaw('FIELD(companies.id, NULL, ?) DESC', [optional($user)->company_id])
+            ->get(array_merge($columns, ['default_country_id']));
 
         return $companies;
     }

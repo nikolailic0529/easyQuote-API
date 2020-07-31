@@ -109,6 +109,15 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
             );
     }
 
+    public function rfqExist(string $rfqNumber, bool $activated = true): bool
+    {
+        return $this->quote->query()
+            ->whereNull('submitted_at')
+            ->when($activated, fn ($q) => $q->whereNotNull('activated_at'))
+            ->whereHas('customer', fn ($q) => $q->where('rfq', $rfqNumber))
+            ->exists();
+    }
+
     public function count(array $where = []): int
     {
         return $this->quote->drafted()->where($where)->count();

@@ -19,6 +19,6 @@ class QuoteTemplateScope implements Scope
      */
     public function apply(Builder $builder, Model $model)
     {
-        $builder->whereNull("{$model->getTable()}.type");
+        $builder->where($model->qualifyColumn('type'), QT_TYPE_QUOTE);
     }
 }

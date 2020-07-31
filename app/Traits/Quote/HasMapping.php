@@ -19,6 +19,9 @@ use Illuminate\Database\Eloquent\{
 };
 use Illuminate\Support\Collection;
 
+/**
+ * @property EloquentCollection $fieldsColumns
+ */
 trait HasMapping
 {
     protected ?Collection $computableRows = null;
@@ -168,7 +171,7 @@ trait HasMapping
 
     public function getSortFieldsAttribute(): Collection
     {
-        return $this->fieldsColumns->where('sort', '!==', null)->map(
+        return $this->fieldsColumns->whereNotNull('sort')->map(
             fn ($column) => ['name' => $column->templateField->name, 'direction' => $column->sort]
         )->values();
     }

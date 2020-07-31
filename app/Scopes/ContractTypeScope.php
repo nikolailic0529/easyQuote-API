@@ -19,6 +19,6 @@ class ContractTypeScope implements Scope
      */
     public function apply(Builder $builder, Model $model)
     {
-        $builder->where("{$model->getTable()}.document_type", Q_TYPE_CONTRACT);
+        $builder->where($model->qualifyColumn('document_type'), Q_TYPE_CONTRACT);
     }
 }

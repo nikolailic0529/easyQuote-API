@@ -70,6 +70,30 @@ class CompanyController extends Controller
     }
 
     /**
+     * Display a listing of all internal companies.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function getInternal()
+    {
+        return response()->json(
+            $this->company->allInternal(['id', 'name'])
+        );
+    }
+
+    /**
+     * Display a listing of companies with related countries.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function showCompaniesWithCountries()
+    {
+        return response()->json(
+            $this->company->allInternalWithCountries(['id', 'name', 'short_code'])
+        );
+    }
+
+    /**
      * Store a newly created Company in storage.
      *
      * @param  StoreCompanyRequest  $request

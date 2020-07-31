@@ -14,7 +14,7 @@ use Arr;
 
 abstract class DiscountTest extends TestCase
 {
-    use DatabaseTransactions, TruncatesDatabaseTables, WithFakeUser, WithFakeQuote, AssertsListing;
+    use TruncatesDatabaseTables, WithFakeUser, WithFakeQuote, AssertsListing;
 
     protected $truncatableTables = [
         'multi_year_discounts', 'sn_discounts', 'pre_pay_discounts', 'promotional_discounts'

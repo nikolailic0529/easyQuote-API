@@ -226,15 +226,16 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         $quote_file_id = $quoteFile->id;
         $user_id = $quoteFile->user_id;
 
+        /** @var QuoteFile */
         $quoteFileCopy = tap($quoteFile->replicate(), function ($file) use ($quoteId) {
             $file->quote()->associate($quoteId);
             $file->save();
         });
 
-        $new_quote_file_id = $quoteFileCopy->id;
+        $new_quote_file_id = $quoteFileCopy->getKey();
 
         $tempRowsTable = 'temp_imported_rows_table_' . uniqid();
-        $importedRowColumn = 'temp_imported_row_id';
+        $importedRowColumn = 'replicated_row_id';
 
         /** Generating new Ids for Imported Columns and Rows in the temporary table. */
         DB::select(
@@ -248,12 +249,12 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         $this->updateTempSelectedImportedRows($tempRowsTable, $importedRowColumn);
 
         /** We are updating temporary group description if the related payload is present in the current request. */
-        $this->updateTempGroupDescription($tempRowsTable, $importedRowColumn);
+        // $this->updateTempGroupDescription($tempRowsTable, $importedRowColumn);
 
         /** Inserting Imported Rows with new Ids. */
         DB::insert(
-            "insert into `imported_rows` (`id`, `user_id`, `quote_file_id`, `columns_data`, `page`, `is_selected`, `group_name`)
-            select `id`, :user_id, :new_quote_file_id, `columns_data`, `page`, `is_selected`, `group_name`
+            "insert into `imported_rows` (`id`, `{$importedRowColumn}`, `user_id`, `quote_file_id`, `columns_data`, `page`, `is_selected`, `group_name`)
+            select `id`, `{$importedRowColumn}`, :user_id, :new_quote_file_id, `columns_data`, `page`, `is_selected`, `group_name`
             from `{$tempRowsTable}`",
             compact('user_id', 'new_quote_file_id')
         );

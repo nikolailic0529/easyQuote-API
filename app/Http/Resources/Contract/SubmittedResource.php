@@ -18,9 +18,12 @@ class SubmittedResource extends JsonResource
         /** @var \App\Models\User */
         $user = $request->user();
 
+        $modelKey = $this->document_type === Q_TYPE_HPE_CONTRACT ? $this->hpe_contract_id : $this->id;
+
         return [
-            'id'                => $this->id,
+            'id'                => $modelKey,
             'quote_id'          => $this->quote_id,
+            'type'              => $this->document_type,
             'user' => [
                 'id'            => $this->user_id,
                 'first_name'    => $this->cached_relations->user->first_name,
@@ -40,6 +43,7 @@ class SubmittedResource extends JsonResource
             ],
             'quote_customer'    => QuoteCustomerResource::make($this),
             'created_at'        => optional($this->created_at)->format(config('date.format_time')),
+            // 'submitted_at'      => $this->submitted_at,
             'activated_at'      => $this->activated_at,
         ];
     }

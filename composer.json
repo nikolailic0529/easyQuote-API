@@ -10,6 +10,7 @@
     "require": {
         "php": "^7.4.0",
         "barryvdh/laravel-snappy": "^0.4.6",
+        "daltcore/lara-pdf-merger": "^2.0",
         "devengine/phpword": "^0.17.0",
         "doctrine/dbal": "^2.9",
         "elasticsearch/elasticsearch": "^7.2",

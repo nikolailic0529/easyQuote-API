@@ -7,6 +7,7 @@ use App\Models\Data\Currency;
 use App\Models\Data\ExchangeRate;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\Query\Builder as DbBuilder;
+use Illuminate\Database\Query\JoinClause;
 use Setting;
 
 class CurrencyRepository implements CurrencyRepositoryInterface
@@ -99,6 +100,16 @@ class CurrencyRepository implements CurrencyRepositoryInterface
     public function firstOrCreate(array $attributes, array $values = []): Currency
     {
         return $this->currency->firstOrCreate($attributes, $values);
+    }
+
+    public function findByCountryCode(string $country): ?Currency
+    {
+        return $this->currency->query()
+            ->join('countries', fn (JoinClause $join) => $join->on('countries.currency_code', '=', 'currencies.code')
+                ->where('countries.iso_3166_2', $country)
+                ->whereNull('countries.deleted_at'))
+            ->select('currencies.*')
+            ->first();
     }
 
     protected function remember($key, $value, $ttl = null)

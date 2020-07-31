@@ -57,7 +57,10 @@ return [
         ],
         'quote_note' => \App\Models\Quote\QuoteNote::class,
         'task' => \App\Models\Task::class,
-        'contract' => \App\Models\Quote\Contract::class,
+        'contract' => [
+            \App\Models\Quote\Contract::class,
+            \App\Models\HpeContract::class,
+        ],
         'customer' => \App\Models\Customer\Customer::class,
         'discount' => [
             \App\Models\Quote\Discount\MultiYearDiscount::class,

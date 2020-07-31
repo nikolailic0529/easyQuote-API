@@ -7,6 +7,7 @@ use App\Models\CachedRelation\{
     CachedRelationWrapper,
     CachedRelation
 };
+use App\Models\Customer\Customer;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;

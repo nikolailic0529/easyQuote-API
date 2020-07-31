@@ -23,21 +23,13 @@ class UpdateUserRequest extends FormRequest
     public function rules()
     {
         return [
-            'first_name' => 'string|alpha_spaces',
-            'middle_name' => 'nullable|string|alpha_spaces',
-            'last_name' => 'string|alpha_spaces',
-            'email' => [
-                'string',
-                'email',
-                Rule::unique('users')->ignore($this->user)->whereNull('deleted_at')
-            ],
-            'phone' => 'nullable|string|min:4|phone',
-            'timezone_id' => 'string|uuid|exists:timezones,id',
-            'role_id' => [
-                'string',
-                'uuid',
-                Rule::exists('roles', 'id')->whereNotNull('activated_at')->whereNull('deleted_at')
-            ]
+            'first_name'    => 'string|alpha_spaces',
+            'middle_name'   => 'nullable|string|alpha_spaces',
+            'last_name'     => 'string|alpha_spaces',
+            'email'         => ['string', 'email', Rule::unique('users')->ignore($this->user)->whereNull('deleted_at')],
+            'phone'         => 'nullable|string|min:4|phone',
+            'timezone_id'   => 'string|uuid|exists:timezones,id',
+            'role_id'       => ['string', 'uuid', Rule::exists('roles', 'id')->whereNotNull('activated_at')->whereNull('deleted_at')]
         ];
     }
 }

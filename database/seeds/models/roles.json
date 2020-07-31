@@ -40,7 +40,8 @@
             "Vendors": "Read, Write and Delete",
             "Margins": "Read, Write and Delete",
             "Discounts": "Read, Write and Delete"
-        }
+        },
+        "companies": ["SWH", "THG", "EPD"]
     },
     {
         "name": "Sales Manager",
@@ -72,6 +73,7 @@
             "Vendors": "Read, Write and Delete",
             "Margins": "Read, Write and Delete",
             "Discounts": "Read, Write and Delete"
-        }
+        },
+        "companies": ["SWH", "THG", "EPD"]
     }
 ]

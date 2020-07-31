@@ -24,7 +24,7 @@ class ContractSubmittedController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function index()
-    {
+    {       
         $resource = request()->filled('search')
             ? $this->contracts->search(request('search'))
             : $this->contracts->paginate();

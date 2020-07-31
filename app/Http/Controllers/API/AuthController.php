@@ -118,7 +118,9 @@ class AuthController extends Controller
     public function user(BuildRepositoryInterface $build)
     {
         return response()->json(
-            AuthenticatedUserResource::make(auth()->user())
+            AuthenticatedUserResource::make(
+                auth()->user()->load('company:id,name', 'hpeContractTemplate:id,name', 'roles.companies:id,name')
+            )
                 ->additional(['build' => $build->last()])
         );
     }
@@ -145,7 +147,9 @@ class AuthController extends Controller
     public function updateOwnProfile(UpdateProfileRequest $request, BuildRepositoryInterface $build)
     {
         return response()->json(
-            AuthenticatedUserResource::make($this->user->updateOwnProfile($request))
+            AuthenticatedUserResource::make(
+                $this->user->updateOwnProfile($request)->load('company:id,name', 'hpeContractTemplate:id,name', 'roles.companies:id,name')
+            )
                 ->additional(['build' => $build->last()])
         );
     }

@@ -161,7 +161,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
         return $this->retrieveCachedQuotePdf($quote);
     }
 
-    public function exportPdf($quote, string $type = QT_TYPE_QUOTE)
+    public function exportPdf($quote, int $type = QT_TYPE_QUOTE)
     {
         $quote = $this->resolveModel($quote);
 

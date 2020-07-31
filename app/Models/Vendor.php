@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\{
     Model,
     SoftDeletes,
 };
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Vendor extends Model implements WithImage, WithLogo, ActivatableInterface
 {
@@ -79,5 +80,10 @@ class Vendor extends Model implements WithImage, WithLogo, ActivatableInterface
     public function getItemNameAttribute()
     {
         return $this->name;
+    }
+
+    public function companies(): BelongsToMany
+    {
+        return $this->belongsToMany(Company::class);
     }
 }

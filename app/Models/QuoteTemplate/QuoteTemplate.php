@@ -3,6 +3,8 @@
 namespace App\Models\QuoteTemplate;
 
 use App\Scopes\QuoteTemplateScope;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class QuoteTemplate extends BaseQuoteTemplate
 {
@@ -21,14 +23,16 @@ class QuoteTemplate extends BaseQuoteTemplate
     ];
 
     protected $attributes = [
-        'type' => null
+        'type' => QT_TYPE_QUOTE
     ];
 
     protected static function boot()
     {
         parent::boot();
 
-        static::addGlobalScope(new QuoteTemplateScope);
+        static::addGlobalScope(
+            fn (Builder $builder) => $builder->where($builder->getModel()->qualifyColumn('type'), QT_TYPE_QUOTE)
+        );
     }
 
     public function getItemNameAttribute()
