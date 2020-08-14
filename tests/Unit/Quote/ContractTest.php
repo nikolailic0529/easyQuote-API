@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Quote;
 
+use App\DTO\RowsGroup;
 use App\Models\Quote\Contract;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -11,11 +12,17 @@ use Tests\Unit\Traits\{
     WithFakeUser
 };
 use App\Models\Quote\Quote;
+use App\Models\QuoteFile\DataSelectSeparator;
+use App\Models\QuoteFile\ImportedRow;
+use App\Models\QuoteFile\QuoteFileFormat;
+use App\Models\QuoteTemplate\ContractTemplate;
+use App\Models\QuoteTemplate\QuoteTemplate;
+use Illuminate\Support\Str;
 use App\Models\Role;
 
 class ContractTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, AssertsListing;
+    use WithFakeUser, AssertsListing;
 
     protected static $assertableAttributes = [
         'id',
@@ -94,11 +101,95 @@ class ContractTest extends TestCase
     {
         $quote = tap(factory(Quote::class)->create())->submit();
 
-        $contractTemplate = app('contract_template.repository')->random();
+        $contractTemplate = factory(ContractTemplate::class)->create();
 
-        $this->postJson(url('api/quotes/submitted/contract/' . $quote->id), ['contract_template_id' => $contractTemplate->id])
+        $this->postJson(url('api/quotes/submitted/contract/' . $quote->getKey()), ['contract_template_id' => $contractTemplate->getKey()])
             ->assertOk()
             ->assertJsonStructure(static::$assertableAttributes);
+    }
+
+    /**
+     * Test contract creating based on submitted quote with group description.
+     *
+     * @return void
+     */
+    public function testContractCreatingBasedOnSubmittedQuoteWithGroupDescription()
+    {
+        /** @var Quote */
+        $quote = tap(factory(Quote::class)->create())->submit();
+
+        $quote->quoteFiles()->create([
+            'original_file_path' => Str::random(),
+            'original_file_name' => Str::random(),
+            'file_type' => 'Distributor Price List',
+            'pages' => 2,
+            'quote_file_format_id' => QuoteFileFormat::value('id'),
+            'data_select_separator_id' => DataSelectSeparator::value('id'),
+            'imported_page' => 1
+        ]);
+
+        /** @var \App\Models\QuoteFile\QuoteFile */
+        $priceList = $quote->quoteFiles->first();
+
+        $priceList->rowsData()->createMany([
+            [
+                'page' => 1,
+                'user_id' => auth()->id(),
+                'columns_data' => []
+            ],
+            [
+                'page' => 1,
+                'user_id' => auth()->id(),
+                'columns_data' => []
+            ]
+        ]);
+
+        /** @var \Illuminate\Database\Eloquent\Collection */
+        $rows = $priceList->rowsData;
+
+        tap($quote, function (Quote $quote) use ($rows) {
+            $groups = collect([
+                new RowsGroup([
+                    'id' => (string) Str::uuid(),
+                    'name' => 'Group',
+                    'search_text' => '1234',
+                    'is_selected' => true,
+                    'rows_ids' => $rows->modelKeys()
+                ])
+            ]);
+
+            $quote->use_groups = true;
+
+            $quote->group_description = $groups;
+
+            $quote->save();
+        });
+
+        $contractTemplate = factory(ContractTemplate::class)->create();
+
+        $response = $this->postJson(url('api/quotes/submitted/contract/' . $quote->getKey()), ['contract_template_id' => $contractTemplate->getKey()])
+            ->assertOk()
+            ->assertJsonStructure(static::$assertableAttributes);
+
+        $contract = Contract::find($response->json('id'));
+
+        $this->assertInstanceOf(Contract::class, $contract);
+
+        /** @var \Illuminate\Support\Collection */
+        $contractRows = $contract->rowsData()->pluck('imported_rows.id', 'imported_rows.replicated_row_id');
+
+        /** @var \Illuminate\Support\Collection */
+        $contractGroups = $contract->group_description;
+
+        $contractGroupedRows = $contractGroups->pluck('rows_ids')->collapse();
+
+        $rows->pluck('id')->each(function ($key) use ($contractGroupedRows, $contractRows) {
+            $this->assertTrue($contractRows->has($key));
+
+            $this->assertNotSame($contractRows->get($key), $key);
+
+            $this->assertContains($contractRows->get($key), $contractGroupedRows);
+        });
     }
 
     /**
@@ -243,10 +334,10 @@ class ContractTest extends TestCase
     protected function createFakeContract(): Contract
     {
         /** @var \App\Models\QuoteTemplate\QuoteTemplate */
-        $quoteTemplate = app('template.repository')->random();
+        $quoteTemplate = factory(QuoteTemplate::class)->create();
 
         /** @var \App\Models\QuoteTemplate\ContractTemplate */
-        $contractTemplate = app('contract_template.repository')->random();
+        $contractTemplate = factory(ContractTemplate::class)->create();
 
         $attributes = ['contract_template_id' => $contractTemplate->getKey()];
 

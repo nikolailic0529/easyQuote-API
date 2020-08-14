@@ -8,6 +8,8 @@ use App\Http\Requests\Discount\{
     StorePromotionalDiscountRequest,
     UpdatePromotionalDiscountRequest
 };
+use App\Http\Resources\Discount\DiscountList;
+use App\Http\Resources\Discount\DiscountListCollection;
 use App\Models\Quote\Discount\{
     Discount,
     PromotionalDiscount
@@ -20,7 +22,7 @@ class PromotionalDiscountController extends Controller
     public function __construct(PromotionalDiscountRepository $promotionalDiscount)
     {
         $this->promotionalDiscount = $promotionalDiscount;
-        $this->authorizeResource(Discount::class, 'promotion');
+        $this->authorizeResource(PromotionalDiscount::class, 'promotion');
     }
 
     /**
@@ -30,11 +32,11 @@ class PromotionalDiscountController extends Controller
      */
     public function index()
     {
-        return response()->json(
-            request()->filled('search')
-                ? $this->promotionalDiscount->search(request('search'))
-                : $this->promotionalDiscount->all()
-        );
+        $resource = request()->filled('search')
+            ? $this->promotionalDiscount->search(request('search'))
+            : $this->promotionalDiscount->all();
+
+        return DiscountListCollection::make($resource);
     }
 
     /**

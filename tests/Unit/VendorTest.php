@@ -13,7 +13,7 @@ use Str, Arr;
 
 class VendorTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, AssertsListing;
+    use WithFakeUser, AssertsListing;
 
     /**
      * Test Vendor Listing.

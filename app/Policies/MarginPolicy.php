@@ -20,6 +20,10 @@ class MarginPolicy
      */
     public function viewAny(User $user)
     {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
         if ($user->can('view_margins')) {
             return true;
         }
@@ -34,6 +38,10 @@ class MarginPolicy
      */
     public function view(User $user, Margin $margin)
     {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
         if ($user->can('view_margins')) {
             return true;
         }
@@ -47,6 +55,10 @@ class MarginPolicy
      */
     public function create(User $user)
     {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
         if ($user->can('create_margins')) {
             return true;
         }
@@ -61,7 +73,14 @@ class MarginPolicy
      */
     public function update(User $user, Margin $margin)
     {
-        if ($user->can('update_margins')) {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if (
+            $user->can('update_margins') &&
+            $user->getKey() === $margin->{$margin->user()->getForeignKeyName()}
+        ) {
             return true;
         }
     }
@@ -75,7 +94,14 @@ class MarginPolicy
      */
     public function delete(User $user, Margin $margin)
     {
-        if ($user->can('delete_margins')) {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+        
+        if (
+            $user->can('delete_margins') &&
+            $user->getKey() === $margin->{$margin->user()->getForeignKeyName()}
+        ) {
             return true;
         }
     }

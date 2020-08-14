@@ -12,7 +12,7 @@ use Setting;
 
 class UploadQuoteFileTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser;
+    use WithFakeUser;
 
     /**
      * Test QuoteFile Storing.

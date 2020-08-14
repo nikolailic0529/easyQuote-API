@@ -18,7 +18,13 @@ class HpeContractTemplatePolicy
      */
     public function viewAny(User $user)
     {
-        return $user->can('view_templates');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if ($user->can('view_own_hpe_contract_templates')) {
+            return true;
+        }
     }
 
     /**
@@ -30,7 +36,13 @@ class HpeContractTemplatePolicy
      */
     public function view(User $user, HpeContractTemplate $hpeContractTemplate)
     {
-        return $user->can('view_templates');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if ($user->can('view_own_hpe_contract_templates')) {
+            return true;
+        }
     }
 
     /**
@@ -41,7 +53,13 @@ class HpeContractTemplatePolicy
      */
     public function create(User $user)
     {
-        return $user->can('create_templates');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if ($user->can('create_hpe_contract_templates')) {
+            return true;
+        }
     }
 
     /**
@@ -57,7 +75,16 @@ class HpeContractTemplatePolicy
             return $this->deny(QTSU_01);
         }
 
-        return $user->can('update_templates');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if (
+            $user->can('update_own_hpe_contract_templates') &&
+            $user->getKey() === $hpeContractTemplate->{$hpeContractTemplate->user()->getForeignKeyName()}
+        ) {
+            return true;
+        }
     }
 
     /**
@@ -73,7 +100,16 @@ class HpeContractTemplatePolicy
             return $this->deny(QTSD_01);
         }
 
-        return $user->can('delete_templates');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if (
+            $user->can('delete_own_hpe_contract_templates') &&
+            $user->getKey() === $hpeContractTemplate->{$hpeContractTemplate->user()->getForeignKeyName()}
+        ) {
+            return true;
+        }
     }
 
     /**

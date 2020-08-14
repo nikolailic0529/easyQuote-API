@@ -7,6 +7,7 @@ use App\Contracts\{
     Services\ContractState,
     Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFiles,
 };
+use App\DTO\RowsGroup;
 use App\Models\Quote\{
     Quote,
     Contract
@@ -97,6 +98,21 @@ class ContractStateProcessor implements ContractState
                         break;
                 }
             });
+
+            if ($version->group_description->isNotEmpty()) {
+                $rowsIds = $contract->groupedRows();
+
+                /** @var \Illuminate\Database\Eloquent\Collection */
+                $replicatedRows = $contract->rowsData()->getQuery()->toBase()->whereIn('imported_rows.replicated_row_id', $rowsIds)->get(['imported_rows.id', 'imported_rows.replicated_row_id']);
+
+                $contract->group_description->each(function (RowsGroup $group) use ($replicatedRows) {
+                    $rowsIds = $replicatedRows->whereIn('replicated_row_id', $group->rows_ids)->pluck('id');
+
+                    $group->rows_ids = $rowsIds->toArray();
+                });
+
+                $contract->save();
+            }
 
             return $contract;
         }, 3);

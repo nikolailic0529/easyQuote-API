@@ -305,18 +305,13 @@ class QuoteService implements QuoteServiceInterface
         $resource = QuoteResource::make($baseQuote->enableReview())->resolve();
         $data = to_array_recursive(data_get($resource, 'quote_data', []));
 
-        $template = $baseQuote->isMode(QT_TYPE_CONTRACT)
-            && $baseQuote instanceof QuoteVersion
-            && $baseQuote->quote->exists
-            /**
-             * Resolve parent quote instance when mode is 'contract' and passed instance of QuoteVersion
-             * as we are storing contract_template_id in the parent quote instance.
-             */
-            ? $baseQuote->quote->{'contractTemplate'}
-            /**
-             * Otherwise we are retrieving template based on the given instance mode.
-             */
-            : $baseQuote->{'quoteTemplate'};
+        if ($baseQuote->isMode(QT_TYPE_CONTRACT)) {
+            $template = $baseQuote instanceof QuoteVersion && $baseQuote->quote->exists
+                ? $baseQuote->quote->contractTemplate
+                : $baseQuote->contractTemplate;
+        } else {
+            $template = $baseQuote->quoteTemplate;
+        }
 
         $assets = $this->getTemplateAssets($template);
 

@@ -36,7 +36,7 @@ class HpeContractExporter implements HpeExporter
 
         $form = static::sortFormPages($form);
 
-        $data->images = Collection::wrap($this->retrieveTemplateImages($template, true))->pluck('abs_src', 'id')->toArray();
+        $data->images = Collection::wrap($this->retrieveTemplateImages($template, ThumbnailManager::PREFER_SVG))->pluck('abs_src', 'id')->toArray();
 
         $data->translations = $template->data_headers->pluck('value', 'key')->toArray();
 
@@ -72,20 +72,18 @@ class HpeContractExporter implements HpeExporter
         return tap($fileName, fn () => $pdfMerger->save(static::makeFileName($data), 'download'));
     }
 
-    public function retrieveTemplateImages(HpeContractTemplate $template, bool $preferSvg = false): array
+    public function retrieveTemplateImages(HpeContractTemplate $template, int $flags = 0): array
     {
         $hpe = $this->vendors->findByCode('HPE');
 
         return Collection::wrap([$template->company, $hpe])
             ->whereInstanceOf(Model::class)
-            ->reduce(function (Collection $carry, Model $model) use ($preferSvg) {
+            ->reduce(function (Collection $carry, Model $model) use ($flags) {
                 $images = ThumbnailManager::retrieveLogoDimensions(
                     $model->image,
                     $model->thumbnailProperties(),
                     get_class($model),
-                    false,
-                    false,
-                    $preferSvg
+                    $flags
                 );
 
                 return $carry->merge($images);

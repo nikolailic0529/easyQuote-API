@@ -64,8 +64,7 @@ trait HasLogo
             $this->image,
             $this->thumbnailProperties(),
             static::class,
-            true,
-            true
+            ThumbnailManager::WITH_KEYS | ThumbnailManager::ABS_PATH
         );
     }
 
@@ -75,7 +74,7 @@ trait HasLogo
             $this->image,
             $this->thumbnailProperties(),
             static::class,
-            true
+            ThumbnailManager::WITH_KEYS
         );
     }
 }

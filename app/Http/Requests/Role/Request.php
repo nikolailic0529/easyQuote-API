@@ -2,10 +2,12 @@
 
 namespace App\Http\Requests\Role;
 
+use App\Services\PermissionHelper;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
-use Str;
+use Illuminate\Support\Str;
 
 abstract class Request extends FormRequest
 {
@@ -52,6 +54,37 @@ abstract class Request extends FormRequest
      */
     abstract public function rules();
 
+    public function validated()
+    {
+        $validated = parent::validated();
+
+        $permissions = Collection::wrap($this->input('privileges'))->map(
+            function ($module) {
+                $modulePermissions = PermissionHelper::modulePermissions($module['module'] ?? null, $module['privilege'] ?? null);
+
+                $subPermissions = Collection::wrap($module['submodules'] ?? [])
+                    ->map(fn ($submodule) => PermissionHelper::subModulePermissions(
+                        $module['module'] ?? null,
+                        $submodule['submodule'] ?? null,
+                        $submodule['privilege'] ?? null
+                    ))
+                    ->collapse()
+                    ->toArray();
+
+                return array_merge($modulePermissions, $subPermissions);
+            }
+        )
+            ->collapse();
+
+        $properties = Collection::wrap($this->input('properties.*.key'));
+
+        $permissions = $permissions->merge($properties)->toArray();
+
+        $permissions = PermissionHelper::permissionKey($permissions);
+
+        return array_merge($validated, compact('permissions'));
+    }
+
     protected function prepareForValidation()
     {
         $privileges = collect($this->input('privileges'))->unique('module')->toArray();
@@ -79,9 +112,47 @@ abstract class Request extends FormRequest
             $module = $this->input($moduleAttrubute);
 
             $modulePrivileges = static::$privilegesMapping->get($module, []);
-            $message = "The privilege for `{$module}` module must be " . collect($modulePrivileges)->implodeWithWrap(' or ', '`');
+            $message = "Allowed Privileges for {$module} module: " . collect($modulePrivileges)->implodeWithWrap(' or ', "'");
 
             if (!isset(array_flip($modulePrivileges)[$value])) {
+                $fail($message);
+            }
+        };
+    }
+
+    protected function subModuleRule(): Closure
+    {
+        return function ($attribute, $value, $fail) {
+            $moduleName = (string) Str::of($attribute)->before('.submodules')->append('.module');
+
+            $module = $this->input($moduleName);
+
+            $subModules = array_keys(config('role.submodules')[$module] ?? []);
+
+            $message = "Allowed Sub-modules for {$module} module: " . collect($subModules)->implodeWithWrap(' or ', "'");
+
+            if (!in_array($value, $subModules)) {
+                $fail($message);
+            }
+        };
+    }
+
+    protected function subModulePrivilegeRule(): Closure
+    {
+        return function ($attribute, $value, $fail) {
+            $attribute = Str::of($attribute);
+
+            $moduleName = (string) $attribute->before('.submodules')->append('.module');
+            $subModuleName = (string) $attribute->before('.privilege')->append('.submodule');
+
+            $module = $this->input($moduleName);
+            $subModule = $this->input($subModuleName);
+
+            $subModulePrivileges = (config('role.submodules')[$module] ?? [])[$subModule] ?? [];
+
+            $message = "Allowed Privileges for {$subModule} sub-module: " . collect($subModulePrivileges)->keys()->implodeWithWrap(' or ', "'");
+
+            if (filled($subModulePrivileges) && !isset($subModulePrivileges[$value])) {
                 $fail($message);
             }
         };

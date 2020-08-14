@@ -10,7 +10,7 @@ use Str, Arr;
 
 class AuthTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser;
+    use WithFakeUser;
 
     protected bool $dontAuthenticate = true;
 

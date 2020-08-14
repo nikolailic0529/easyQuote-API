@@ -20,7 +20,7 @@ use Arr, Str;
 
 class InvitationTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, AssertsListing;
+    use WithFakeUser, AssertsListing;
 
     protected ?Roles $roleRepository = null;
 

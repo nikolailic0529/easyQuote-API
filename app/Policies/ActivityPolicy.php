@@ -2,7 +2,7 @@
 
 namespace App\Policies;
 
-use App\App\Models\System\Activity;
+use App\Models\System\Activity;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
@@ -25,7 +25,7 @@ class ActivityPolicy
      * Determine whether the user can view the activity.
      *
      * @param  \App\Models\User  $user
-     * @param  \App\App\Models\System\Activity  $activity
+     * @param  \App\Models\System\Activity  $activity
      * @return mixed
      */
     public function view(User $user, Activity $activity)
