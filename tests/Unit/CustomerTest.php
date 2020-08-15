@@ -9,7 +9,7 @@ use Arr;
 
 class CustomerTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser;
+    use WithFakeUser;
 
     protected static $assertableAttributes = ['id', 'name', 'rfq', 'valid_until', 'support_start', 'support_end', 'created_at'];
 

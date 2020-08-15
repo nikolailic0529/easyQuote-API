@@ -6,6 +6,7 @@ use App\Contracts\Repositories\RoleRepositoryInterface as Roles;
 use App\Models\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Role\{
+    ShowForm,
     StoreRoleRequest,
     UpdateRoleRequest
 };
@@ -16,7 +17,7 @@ use App\Services\ProfileHelper;
 
 class RoleController extends Controller
 {
-    protected Roles $role;
+    protected Roles $roles;
 
     public function __construct(Roles $roles)
     {
@@ -56,12 +57,13 @@ class RoleController extends Controller
     /**
      * Data for creating a new Role.
      *
+     * @param  ShowForm $request
      * @return \Illuminate\Http\Response
      */
-    public function create()
+    public function create(ShowForm $request)
     {
         return response()->json(
-            $this->roles->data()
+            $request->data()
         );
     }
 
@@ -74,7 +76,9 @@ class RoleController extends Controller
     public function store(StoreRoleRequest $request)
     {
         return response()->json(
-            RoleResource::make($this->roles->create($request->validated())->load('companies:id,name'))
+            RoleResource::make(
+                $this->roles->create($request->validated())->load('companies:id,name')
+            )
         );
     }
 

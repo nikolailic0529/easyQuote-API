@@ -1,0 +1,87 @@
+Liste des produits
+
+Contrat d'entretien                                                                N° Accord Service 108580108421
+
+Groupe de contrat: 81-T32117                                                       Référence du contrat MAIRI-CRIEL-01
+
+                                                                                   HPE Référence Nr°: 0055865053
+
+Adresse d'installation hardware:                                                   Adresse d'envoi des mises à jour:
+
+MAIRIE DE CRIEL-SUR-MER                                                            MAIRIE DE CRIEL-SUR-MER
+
+Place Du Général De Gaulle                                                         Place Du Général De Gaulle
+
+76910 Criel Sur Mer                                                                76910 Criel Sur Mer
+
+Personne de contact hardware:                                                      Personne de contact software:
+
+Séverine Frété-Machard                                                             Séverine Frété-Machard
+
+Tel: 0235505120                                                                    Tel: 0235505120
+
+Fax:                                                                               Fax:
+
+E-Mail: s.fretemachard@criel-sur-mer.fr                                            E-Mail: s.fretemachard@criel-sur-mer.fr
+
+Les prix indiqués dans l'offre sont valables au            plus tard 3 jours  ouvrés avant la première date de début, cela  au
+
+maximum 60 jours à partir du 28.02.2019
+
+Période du contrat: 23.03.2019 - 22.09.2019
+
+Pour toute demande d'intervention ou d'assistance:
+
+- Visitez notre site: www.hpe.com/support/hpesc
+
+- Service Technique Tel: 08 25 00 41 23
+
+N° de produit           Description                        N° de série                              Période du    Fin:      Qté  Prix /EUR
+
+                                                                                                    prod. Dèbut:
+
+H7J35AC                 HP Foundation Care 24x7 w DMR SVC
+
+                        Maintenance matériel sur site
+
+                        Diagnostic materiél
+
+                        Cvtre: 24 h le dimanche
+
+                        Intervention sur site
+
+                        Pièces détachées
+
+                        Délai d'intervention de 4h
+
+                        Cvtre: 24h le samedi
+
+                        Cvtre: 24h par jour ouvré
+
+                        Cvtre: jours fériés compris
+
+                        Defective Media Retention
+
+483448-B21              HP ML350T06 LFF CTO Server         CZJ2010PXZ                                                       1    73.80
+
+                        HP Collaborative Remote Support
+
+                        Basic Software Phone Support
+
+                        Collaborative Call Managemnt
+
+                        24 Hours, Day 1-7 Phone Supp
+
+                        Standard Response Time
+
+483448-B21              HP ML350T06 LFF CTO Server         CZJ2010PXZ                                                       1    3.60
+
+Montant total pour le group                                                                                                      77.40
+
+Réduction totale
+
+Special Neg HdrDisc% -10.0 %                                                                                                     8,60-
+
+Les prix indiqués sont facturés d'avance.
+
+Imprimé le: 28.02.2019                                     Prix par mois sans TVA                                                Page 2 / 2

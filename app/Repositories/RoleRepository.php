@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\{
     Builder,
     Collection as IlluminateCollection
 };
-use Illuminate\Support\{Arr, Collection, Facades\DB};
+use Illuminate\Support\{Arr, Facades\DB};
 use Closure;
 
 class RoleRepository extends SearchableRepository implements RoleRepositoryInterface
@@ -25,15 +25,6 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
     {
         $this->role = $role;
         $this->permission = $permission;
-    }
-
-    public function data(): Collection
-    {
-        $privileges = config('role.privileges');
-        $modules = collect(config('role.modules'))->keys();
-        $properties = config('role.properties');
-
-        return collect(compact('privileges', 'modules', 'properties'));
     }
 
     public function allActivated(array $columns = ['*']): IlluminateCollection
@@ -53,8 +44,7 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
 
     public function find(string $id): Role
     {
-        return $this->userQuery()
-            ->whereId($id)->firstOrFail()->append('properties');
+        return $this->role->query()->whereKey($id)->firstOrFail();
     }
 
     public function findByModule(string $module, ?Closure $scope = null)
@@ -75,8 +65,10 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
     {
         return DB::transaction(
             fn () => tap($this->role->create($attributes), function (Role $role) use ($attributes) {
-                $role->syncPrivileges(Arr::get($attributes, 'properties'));
+                $role->permissions()->sync(Arr::get($attributes, 'permissions') ?? []);
                 $role->companies()->sync(Arr::get($attributes, 'companies') ?? []);
+
+                $role->forgetCachedPermissions();
             })
         );
     }
@@ -86,8 +78,11 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
         return DB::transaction(
             fn () => tap($this->find($id), function (Role $role) use ($attributes) {
                 $role->update($attributes);
-                $role->syncPrivileges(Arr::get($attributes, 'properties'));
+
+                $role->permissions()->sync(Arr::get($attributes, 'permissions') ?? []);
                 $role->companies()->sync(Arr::get($attributes, 'companies') ?? []);
+
+                $role->forgetCachedPermissions();
             }),
             DB_TA
         );

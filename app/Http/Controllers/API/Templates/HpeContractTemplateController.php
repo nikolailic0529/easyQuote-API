@@ -11,6 +11,7 @@ use App\Http\Requests\QuoteTemplate\{
     StoreHpeContractTemplate,
     UpdateHpeContractTemplate,
 };
+use App\Http\Resources\TemplateRepository\TemplateCollection;
 use App\Http\Resources\TemplateRepository\TemplateResourceWithIncludes;
 use App\Models\QuoteTemplate\HpeContractTemplate;
 use Illuminate\Http\JsonResponse;
@@ -36,7 +37,7 @@ class HpeContractTemplateController extends Controller
     public function index(Request $request)
     {
         return response()->json(
-            $this->templates->paginate($request->query('search'))
+            TemplateCollection::make($this->templates->paginate($request->query('search')))
         );
     }
 

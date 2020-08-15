@@ -3,17 +3,8 @@
 use App\Contracts\Repositories\CurrencyRepositoryInterface;
 use App\Models\QuoteTemplate\HpeContractTemplate;
 use Illuminate\Database\Seeder;
-use App\Models\{
-    Company,
-    Vendor,
-    Data\Currency,
-    Data\Country,
-    Image
-};
-use App\Services\CurrencyHelper;
+use App\Models\{Company, Vendor, Data\Country,};
 use App\Services\ThumbnailManager;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
 
 class HpeContractTemplatesSeeder extends Seeder
 {
@@ -43,9 +34,9 @@ class HpeContractTemplatesSeeder extends Seeder
         $vendor = Vendor::query()->whereShortCode($attributes['vendor'])->first();
         $countries = Country::query()->whereIn('iso_3166_2', $attributes['countries'])->pluck('id');
 
-        $template = HpeContractTemplate::query()->withTrashed()->whereKey($attributes['id'])->firstOrNew();
+        $template = HpeContractTemplate::query()->withoutGlobalScopes()->firstOrNew(['id' => $attributes['id']]);
 
-        $images = ThumbnailManager::retrieveLogoFromModels(true, false, false, $company, $vendor);
+        $images = ThumbnailManager::retrieveLogoFromModels([$company, $vendor], ThumbnailManager::WITH_KEYS);
 
         $formData = $this->parseDesign($this->design, $images);
 

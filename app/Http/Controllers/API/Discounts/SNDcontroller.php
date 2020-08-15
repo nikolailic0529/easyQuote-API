@@ -8,6 +8,8 @@ use App\Http\Requests\Discount\{
     StoreSNDrequest,
     UpdateSNDrequest
 };
+use App\Http\Resources\Discount\DiscountList;
+use App\Http\Resources\Discount\DiscountListCollection;
 use App\Models\Quote\Discount\{
     Discount,
     SND
@@ -20,7 +22,7 @@ class SNDcontroller extends Controller
     public function __construct(SNDrepository $snd)
     {
         $this->snd = $snd;
-        $this->authorizeResource(Discount::class, 'snd');
+        $this->authorizeResource(SND::class, 'snd');
     }
 
     /**
@@ -30,11 +32,11 @@ class SNDcontroller extends Controller
      */
     public function index()
     {
-        return response()->json(
-            request()->filled('search')
-                ? $this->snd->search(request('search'))
-                : $this->snd->all()
-        );
+        $resource = request()->filled('search')
+            ? $this->snd->search(request('search'))
+            : $this->snd->all();
+
+        return DiscountListCollection::make($resource);
     }
 
     /**

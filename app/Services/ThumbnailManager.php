@@ -13,11 +13,17 @@ use Illuminate\Http\{
 use Intervention\Image\ImageManagerStatic as ImageIntervention;
 use App\Models\Image;
 use Illuminate\Support\{Arr, Collection, Str, Facades\Storage};
-use File;
 use Illuminate\Database\Eloquent\Model;
+use File;
 
 class ThumbnailManager
 {
+    const WITH_KEYS = 1;
+
+    const ABS_PATH = 2;
+
+    const PREFER_SVG = 4;
+
     public static function createLogoThumbnails(Model $model, $file, $fake = false): Model
     {
         if (!$fake && (!$file instanceof UploadedFile || !$model instanceof WithLogo || !$model instanceof WithImage)) {
@@ -74,13 +80,17 @@ class ThumbnailManager
         ?Image $image,
         array $properties,
         string $classname,
-        bool $withKeys = false,
-        bool $absPath = false,
-        bool $preferSvg = false
+        int $flags = 0
     ): array {
         if (is_null($image) || is_null($image->thumbnails)) {
             return [];
         }
+
+        $withKeys = (bool) ($flags & static::WITH_KEYS);
+
+        $absPath = (bool) ($flags & static::ABS_PATH);
+
+        $preferSvg = (bool) ($flags & static::PREFER_SVG);
 
         $name = Str::snake(class_basename($classname));
         $method = $withKeys ? 'mapWithKeys' : 'transform';
@@ -109,15 +119,13 @@ class ThumbnailManager
 
                 $src = $absPath ? static::parseAbsPath($src) : $src;
 
-                $entity = compact('id', 'label', 'src', 'abs_src', 'is_image');
-
-                return $withKeys ? [$id => $src] : $entity;
+                return $withKeys ? [$id => $src] : compact('id', 'label', 'src', 'abs_src', 'is_image');
             })
             ->when(false === $withKeys, fn (Collection $thumbs) => $thumbs->values())
             ->toArray();
     }
 
-    public static function retrieveLogoFromModels(bool $withKeys, bool $absPath, bool $preferSvg, WithLogo ...$models): array
+    public static function retrieveLogoFromModels(array $models, int $flags = 0): array
     {
         return Collection::wrap($models)->map(
             fn (WithLogo $model) =>
@@ -125,9 +133,7 @@ class ThumbnailManager
                 $model->image,
                 $model->thumbnailProperties(),
                 get_class($model),
-                $withKeys,
-                $absPath,
-                $preferSvg
+                $flags
             )
         )->collapse()->toArray();
     }

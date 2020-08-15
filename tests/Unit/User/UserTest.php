@@ -14,7 +14,7 @@ use Str;
 
 class UserTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, AssertsListing, TruncatesDatabaseTables;
+    use WithFakeUser, AssertsListing, TruncatesDatabaseTables;
 
     protected $truncatableTables = ['users'];
 

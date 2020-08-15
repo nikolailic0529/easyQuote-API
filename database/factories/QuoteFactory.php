@@ -18,7 +18,7 @@ use Illuminate\Support\Arr;
 
 $factory->define(Quote::class, function (Faker $faker) {
     /** @var \App\Models\Company */
-    $company = app(Companies::class)->allWithVendorsAndCountries()->random();
+    $company = app(Companies::class)->allInternalWithVendorsAndCountries()->random();
 
     $vendor = $company->vendors->whenEmpty(
         function ($vendors) use ($company) {

@@ -8,6 +8,8 @@ use App\Http\Requests\Discount\{
     StoreMultiYearDiscountRequest,
     UpdateMultiYearDiscountRequest
 };
+use App\Http\Resources\Discount\DiscountList;
+use App\Http\Resources\Discount\DiscountListCollection;
 use App\Models\Quote\Discount\{
     Discount,
     MultiYearDiscount
@@ -21,7 +23,7 @@ class MultiYearDiscountController extends Controller
     public function __construct(MultiYearDiscountRepository $multiYearDiscount)
     {
         $this->multiYearDiscount = $multiYearDiscount;
-        $this->authorizeResource(Discount::class, 'multi_year');
+        $this->authorizeResource(MultiYearDiscount::class, 'multi_year');
     }
 
     /**
@@ -31,11 +33,11 @@ class MultiYearDiscountController extends Controller
      */
     public function index()
     {
-        return response()->json(
-            request()->filled('search')
-                ? $this->multiYearDiscount->search(request('search'))
-                : $this->multiYearDiscount->all()
-        );
+        $resource = request()->filled('search')
+            ? $this->multiYearDiscount->search(request('search'))
+            : $this->multiYearDiscount->all();
+
+        return DiscountListCollection::make($resource);
     }
 
     /**

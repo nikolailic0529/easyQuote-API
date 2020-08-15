@@ -20,7 +20,13 @@ class QuoteTemplatePolicy
      */
     public function viewAny(User $user)
     {
-        return $user->can('view_templates');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if ($user->can('view_own_quote_templates')) {
+            return true;
+        }
     }
 
     /**
@@ -32,7 +38,13 @@ class QuoteTemplatePolicy
      */
     public function view(User $user, QuoteTemplate $quoteTemplate)
     {
-        return $user->can('view_templates');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if ($user->can('view_own_quote_templates')) {
+            return true;
+        }
     }
 
     /**
@@ -43,7 +55,13 @@ class QuoteTemplatePolicy
      */
     public function create(User $user)
     {
-        return $user->can('create_templates');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if ($user->can('create_quote_templates')) {
+            return true;
+        }
     }
 
     /**
@@ -59,7 +77,16 @@ class QuoteTemplatePolicy
             return $this->deny(QTSU_01);
         }
 
-        return $user->can('update_templates');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if (
+            $user->can('update_own_quote_templates') &&
+            $user->getKey() === $quoteTemplate->{$quoteTemplate->user()->getForeignKeyName()}
+        ) {
+            return true;
+        }
     }
 
     /**
@@ -75,7 +102,16 @@ class QuoteTemplatePolicy
             return $this->deny(QTSD_01);
         }
 
-        return $user->can('delete_templates');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if (
+            $user->can('delete_own_quote_templates') &&
+            $user->getKey() === $quoteTemplate->{$quoteTemplate->user()->getForeignKeyName()}
+        ) {
+            return true;
+        }
     }
 
     /**

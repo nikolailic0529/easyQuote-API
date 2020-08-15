@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Contracts\ActivatableInterface;
 use App\Models\Permission;
+use App\Services\PermissionHelper;
 use App\Traits\{
     Activatable,
     BelongsToUser,
@@ -21,17 +22,17 @@ use Spatie\Permission\{
     Exceptions\RoleDoesNotExist,
     Exceptions\GuardDoesNotMatch,
     Exceptions\RoleAlreadyExists,
-    Contracts\Role as RoleContract
+    Contracts\Role as RoleContract,
+    PermissionRegistrar
 };
 use Illuminate\Database\Eloquent\{
     Model,
-    Collection as EloquentCollection,
     SoftDeletes,
     Relations\MorphToMany,
     Relations\BelongsToMany,
 };
 use Illuminate\Support\Collection;
-use Arr;
+use Illuminate\Support\Arr;
 
 class Role extends Model implements RoleContract, ActivatableInterface
 {
@@ -48,7 +49,7 @@ class Role extends Model implements RoleContract, ActivatableInterface
         LogsActivity;
 
     protected $fillable = [
-        'name', 'guard_name', 'privileges', 'is_system'
+        'name', 'guard_name', 'is_system'
     ];
 
     protected $hidden = [
@@ -56,9 +57,10 @@ class Role extends Model implements RoleContract, ActivatableInterface
     ];
 
     protected $casts = [
-        'privileges' => 'collection',
         'is_system' => 'boolean'
     ];
+
+    protected ?array $permissionsCache = null;
 
     protected static $logAttributes = [
         'name', 'modules_privileges'
@@ -212,71 +214,31 @@ class Role extends Model implements RoleContract, ActivatableInterface
         return $this->permissions->contains('id', $permission->id);
     }
 
-    public function setPrivilegesAttribute($value)
+    /**
+     * Forget the cached permissions.
+     */
+    public function forgetCachedPermissions()
     {
-        if (!Arr::accessible($value)) {
-            return;
-        }
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $modules = array_flip(array_keys(config('role.modules')));
-
-        $value = collect($value)->sortBy(function ($value) use ($modules) {
-            return data_get($modules, data_get($value, 'module'));
-        })->values()->toJson();
-
-        $this->attributes['privileges'] = $value;
-    }
-
-    public function syncPrivileges(?array $properties = null): void
-    {
-        $permissionsNames = collect($this->privileges)->reduce(function ($carry, $privilege) {
-            $permissions = config('role.modules')[$privilege['module']][$privilege['privilege']];
-            array_push($carry, ...$permissions);
-            return $carry;
-        }, []);
-
-        $permissions = Permission::whereIn('name', $permissionsNames)->get();
-        $properties = static::getPropertiesPermissions($properties);
-
-        if ($properties->isNotEmpty()) {
-            $permissions->push(...$properties);
-        }
-
-        $this->syncPermissions($permissions);
-    }
-
-    public static function getPropertiesPermissions(?array $properties = null): EloquentCollection
-    {
-        if (is_null($properties)) {
-            return EloquentCollection::make();
-        }
-
-        $roleProperties = array_flip(config('role.properties'));
-
-        $permissionsNames = collect($properties)
-            ->filter(function ($property) use ($roleProperties) {
-                return Arr::has($roleProperties, data_get($property, 'key')) &&
-                    data_get($property, 'value', false);
-            })
-            ->pluck('key')
-            ->toArray();
-
-        return Permission::whereIn('name', $permissionsNames)->get();
+        $this->permissionsCache = null;
     }
 
     public function getPropertiesAttribute(): Collection
     {
-        return collect(config('role.properties'))->flip()
-            ->transform(
-                fn ($value, $key) => $this->permissions->pluck('name')->contains($key)
-            );
+        return PermissionHelper::roleProperties($this);
+    }
+
+    public function getPrivilegesAttribute(): Collection
+    {
+        return PermissionHelper::rolePrivileges($this);
     }
 
     public function getModulesPrivilegesAttribute()
     {
-        return collect()->wrap($this->privileges)->toString('module', 'privilege');
+        return Collection::wrap($this->privileges)->toString('module', 'privilege');
     }
-    
+
     public function companies(): MorphToMany
     {
         return $this->morphedByMany(
@@ -287,10 +249,32 @@ class Role extends Model implements RoleContract, ActivatableInterface
             config('permission.column_names.model_morph_key')
         );
     }
-    
+
     public function getItemNameAttribute()
     {
         return $this->name;
+    }
+
+    public function roleCachedPermissions(): array
+    {
+        if (isset($this->permissionsCache)) {
+            return $this->permissionsCache;
+        }
+
+        return $this->permissionsCache = PermissionHelper::roleCachedPermissions($this);
+    }
+
+    public function hasCachedPermissionTo(string ...$permissions): bool
+    {
+        $cachedPermissionsKeys = array_flip($this->roleCachedPermissions());
+
+        foreach ($permissions as $name) {
+            if (!Arr::has($cachedPermissionsKeys, $name)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public static function administrator()
