@@ -11,7 +11,7 @@ use Arr, Setting;
 
 class SettingTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser;
+    use WithFakeUser;
 
     protected static array $assertableAttributes = [
         'id',

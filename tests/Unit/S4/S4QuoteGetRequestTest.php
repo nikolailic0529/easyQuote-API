@@ -15,7 +15,7 @@ use App\Models\Quote\Quote;
 
 class S4QuoteGetRequestTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, WithFakeQuote, WithFakeQuoteFile, WithClientCredentials;
+    use WithFakeUser, WithFakeQuote, WithFakeQuoteFile, WithClientCredentials;
 
     /**
      * Submit the Quote and check availability using request.

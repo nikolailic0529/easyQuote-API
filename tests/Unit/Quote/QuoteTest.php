@@ -18,7 +18,8 @@ use App\Models\{
     QuoteFile\ImportedRow,
     QuoteTemplate\TemplateField,
 };
-use Str, Arr;
+use Illuminate\Database\Eloquent\JsonEncodingException;
+use Illuminate\Support\{Str, Arr};
 
 class QuoteTest extends TestCase
 {
@@ -121,6 +122,67 @@ class QuoteTest extends TestCase
             ->assertJsonStructure([
                 'id', 'name', 'search_text'
             ]);
+
+        $gd = $this->quote->refresh()->group_description;
+
+        $this->assertInstanceOf(Collection::class, $gd);
+
+        $gd->each(fn ($group) => $this->assertInstanceOf(RowsGroup::class, $group));
+    }
+
+    /**
+     * Test Group Description Setter.
+     *
+     * @return void
+     */
+    public function testGroupDescriptionSetter()
+    {
+        $groups = collect()->times(100, fn () => new RowsGroup([
+            'id' => (string) Str::uuid(),
+            'name' => 'Group',
+            'search_text' => '1234',
+            'is_selected' => true,
+            'rows_ids' => collect()->times(600, fn () => (string) Str::uuid())->toArray()
+        ]));
+
+        $this->quote->group_description = $groups;
+
+        $this->assertTrue($this->quote->save());
+
+        /**
+         * All Groups must be instance of RowsGroup.
+         */
+        $groups = collect()->times(50, fn () => new RowsGroup([
+            'id' => (string) Str::uuid(),
+            'name' => 'Group',
+            'search_text' => '1234',
+            'is_selected' => true,
+            'rows_ids' => collect()->times(600, fn () => (string) Str::uuid())->toArray()
+        ]));
+
+        $groups = collect()->times(50, fn () => Str::random());
+
+        $this->expectException(JsonEncodingException::class);
+        $this->expectExceptionMessageMatches('/The Collection must contain only values instance of/i');
+
+        $this->quote->group_description = $groups;
+
+        $this->assertTrue($this->quote->save());
+
+        /**
+         * It is allowed to set Groups Collection as Json string.
+         */
+        $groups = collect()->times(100, fn () => new RowsGroup([
+            'id' => (string) Str::uuid(),
+            'name' => 'Group',
+            'search_text' => '1234',
+            'is_selected' => true,
+            'rows_ids' => collect()->times(600, fn () => (string) Str::uuid())->toArray()
+        ]))->toJson();
+
+        $this->quote->group_description = $groups;
+
+        $this->assertTrue($this->quote->save());
     }
 
     /**
@@ -137,6 +199,12 @@ class QuoteTest extends TestCase
         $this->patchJson(url("api/quotes/groups/{$this->quote->id}/{$group->id}"), $attributes)
             ->assertOk()
             ->assertExactJson([true]);
+
+        $gd = $this->quote->refresh()->group_description;
+
+        $this->assertInstanceOf(Collection::class, $gd);
+
+        $gd->each(fn ($group) => $this->assertInstanceOf(RowsGroup::class, $group));
     }
 
     /**
@@ -164,7 +232,7 @@ class QuoteTest extends TestCase
 
         /** @var RowsGroup */
         $fromGroup = $groups->shift();
-        
+
         /** @var RowsGroup */
         $toGroup = $groups->shift();
 
@@ -177,6 +245,12 @@ class QuoteTest extends TestCase
         $response = $this->putJson(url("api/quotes/groups/{$this->quote->id}"), $attributes)->assertOk();
 
         $this->assertIsBool(json_decode($response->getContent(), true));
+
+        $gd = $this->quote->refresh()->group_description;
+
+        $this->assertInstanceOf(Collection::class, $gd);
+
+        $gd->each(fn ($group) => $this->assertInstanceOf(RowsGroup::class, $group));
     }
 
     /**

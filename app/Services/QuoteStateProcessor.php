@@ -211,7 +211,7 @@ class QuoteStateProcessor implements QuoteState
         return DB::query()->fromSub($this->mappedRowsQuery($quote), 'mapped_rows')
             ->when(
                 $quote->groupsReady(),
-                fn (QueryBuilder $query) => $query->whereIn('group_name', $quote->selected_group_description_names),
+                fn (QueryBuilder $query) => $query->whereIn('id', $quote->groupedRows()),
                 fn (QueryBuilder $query) => $query->whereIsSelected(true)
             )
             ->sum('price');

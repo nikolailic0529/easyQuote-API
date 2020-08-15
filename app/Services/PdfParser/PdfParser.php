@@ -201,6 +201,17 @@ class PdfParser implements PdfParserInterface
             }
         }
 
+        /**
+         * We'll assume if we haven't found any rows on the page, the page may contain lines without serial number.
+         */
+        if ($matches->filter()->isEmpty()) {
+            $matches = collect(PdfOptions::REGEXP_PRICE_LINES_NS)
+                ->reduce(function (Collection $matches, $regexp) use ($content, $page) {
+                    preg_match_all($regexp, $content, $lines, PREG_UNMATCHED_AS_NULL, 0);
+                    return $matches->mergeRecursive(Arr::only($lines, $this->getColumnNames()));
+                }, collect());
+        }
+
         if ($matches->isEmpty()) {
             return [];
         }

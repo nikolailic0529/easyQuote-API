@@ -5,18 +5,17 @@ namespace App\Http\Controllers\API;
 use App\Casts\UserGrantedPermission;
 use App\Contracts\Repositories\{
     UserRepositoryInterface as UserRepository,
-    RoleRepositoryInterface as RoleRepository,
-    CountryRepositoryInterface as CountryRepository,
-    TimezoneRepositoryInterface as TimezoneRepository
 };
 use App\Models\User;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\{
     Collaboration\InviteUserRequest,
     Collaboration\UpdateUserRequest,
+    
+    User\ShowForm,
+    User\ListByRoles,
 
     StoreResetPasswordRequest,
-    User\ListByRoles,
 };
 use App\Http\Resources\User\UserByRoleCollection;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,12 +26,9 @@ class UserController extends Controller
 {
     protected $user;
 
-    public function __construct(UserRepository $user, RoleRepository $role, CountryRepository $country, TimezoneRepository $timezone)
+    public function __construct(UserRepository $user)
     {
         $this->user = $user;
-        $this->role = $role;
-        $this->country = $country;
-        $this->timezone = $timezone;
     }
 
     /**
@@ -97,17 +93,12 @@ class UserController extends Controller
     /**
      * Data for creating a new Role.
      *
+     * @param  ShowForm $request
      * @return \Illuminate\Http\Response
      */
-    public function create()
+    public function create(ShowForm $request)
     {
-        return response()->json(
-            [
-                'roles' => $this->role->allActivated(['id', 'name']),
-                'countries' => $this->country->all(),
-                'timezones' => $this->timezone->all()
-            ]
-        );
+        return response()->json($request->data());
     }
 
     /**

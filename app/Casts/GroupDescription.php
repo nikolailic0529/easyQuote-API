@@ -6,6 +6,7 @@ use App\DTO\RowsGroup;
 use Illuminate\Contracts\Database\Eloquent\CastsAttributes;
 use Illuminate\Database\Eloquent\JsonEncodingException;
 use Illuminate\Support\Collection;
+use Throwable;
 
 class GroupDescription implements CastsAttributes
 {
@@ -22,6 +23,10 @@ class GroupDescription implements CastsAttributes
     {
         if (is_string($value)) {
             $value = $model->fromJson($value ?? []);
+        }
+
+        if ($value instanceof Collection) {
+            return $value;
         }
 
         $value ??= [];
@@ -44,14 +49,28 @@ class GroupDescription implements CastsAttributes
             return $value;
         }
 
-        $value = json_encode($value);
+        if (is_string($value)) {
+            $value = Collection::wrap(json_decode($value, true))->map(function ($group) {
+                try {
+                    return new RowsGroup($group);
+                } catch (Throwable $e) {
+                    // 
+                }
+            });
+        }
 
-        if ($value === false) {
+        if (! $value instanceof Collection) {
             throw JsonEncodingException::forAttribute(
-                $model, $key, json_last_error_msg()
+                $model, $key, 'The value must be an instance of \Illuminate\Support\Collection'
             );
         }
 
-        return $value;
+        if (Collection::wrap($value)->contains(fn ($group) => ! $group instanceof RowsGroup)) {
+            throw JsonEncodingException::forAttribute(
+                $model, $key, 'The Collection must contain only values instance of \App\DTO\RowsGroup'
+            );
+        }
+
+        return $value->toJson();
     }
 }

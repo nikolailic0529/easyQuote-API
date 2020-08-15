@@ -61,7 +61,14 @@ class CompanyPolicy
      */
     public function update(User $user, Company $company)
     {
-        if ($user->can('update_companies')) {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if (
+            $user->can('update_companies') &&
+            $user->getKey() === $company->{$company->user()->getForeignKeyName()}
+        ) {
             return true;
         }
     }
@@ -83,6 +90,15 @@ class CompanyPolicy
             return $this->deny(CPUD_01);
         }
 
-        return $user->can('delete_companies');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if (
+            $user->can('delete_companies') &&
+            $user->getKey() === $company->{$company->user()->getForeignKeyName()}
+        ) {
+            return true;
+        }
     }
 }

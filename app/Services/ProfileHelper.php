@@ -98,9 +98,17 @@ class ProfileHelper
         $user ??= auth()->user();
 
         if ($user === null) {
-            return [];       
+            return [];
         }
 
         return $user->companies()->toBase()->select('companies.id')->pluck('id')->toArray();
+    }
+
+    public static function defaultCompanyId(?User $user = null)
+    {
+        /** @var User */
+        $user ??= auth()->user();
+
+        return optional($user)->company_id;
     }
 }

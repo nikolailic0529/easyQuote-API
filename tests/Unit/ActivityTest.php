@@ -13,7 +13,7 @@ use Str;
 
 class ActivityTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, AssertsListing, TruncatesDatabaseTables;
+    use WithFakeUser, AssertsListing, TruncatesDatabaseTables;
 
     protected $truncatableTables = ['activity_log'];
 

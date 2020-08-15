@@ -367,14 +367,20 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
     {
         $permission = $this->permission->firstOrCreate(['name' => $permissionName, 'guard_name' => 'web']);
 
-        $user->givePermissionTo($permission);
+        $user->permissions()->syncWithoutDetaching($permission);
+
+        $user->forgetCachedPermissions();
 
         return true;
     }
 
     public function revokePermissionTo(string $permissionName, User $user): bool
     {
-        $user->revokePermissionTo($permissionName);
+        $permission = $this->permission->where(['name' => $permissionName, 'guard_name' => 'web'])->value('id');
+
+        $user->permissions()->detach($permission);
+
+        $user->forgetCachedPermissions();
 
         return true;
     }

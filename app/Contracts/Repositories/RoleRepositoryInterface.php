@@ -12,14 +12,6 @@ use Illuminate\Support\Collection;
 interface RoleRepositoryInterface
 {
     /**
-     * Data for creating a new Role
-     *
-     * @param $array
-     * @return Collection
-     */
-    public function data(): Collection;
-
-    /**
      * Get all Collaboration Roles.
      *
      * @return mixed

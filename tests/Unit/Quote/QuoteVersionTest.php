@@ -16,7 +16,7 @@ use Illuminate\Support\Arr;
 
 class QuoteVersionTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, WithFakeQuote;
+    use WithFakeUser, WithFakeQuote;
 
     /**
      * Test a new Version creating when non-author user is editing a Quote.

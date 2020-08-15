@@ -13,7 +13,7 @@ use Str, Arr;
 
 class ContractTemplateTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, AssertsListing;
+    use WithFakeUser, AssertsListing;
 
     protected static array $assertableAttributes = ['name', 'company_id', 'vendor_id', 'currency_id', 'form_data'];
 

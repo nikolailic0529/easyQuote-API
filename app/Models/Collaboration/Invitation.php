@@ -12,6 +12,7 @@ use App\Traits\{
     Auth\Multitenantable,
     Uuid
 };
+use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
 use Illuminate\Database\Eloquent\{
     Model,
     SoftDeletes,
@@ -29,7 +30,8 @@ class Invitation extends Model
         CanGenerateToken,
         Expirable,
         LogsActivity,
-        SoftDeletes;
+        SoftDeletes,
+        EloquentJoin;
 
     protected $fillable = [
         'email', 'user_id', 'role_id', 'host'

@@ -3,12 +3,30 @@
 namespace App\Mixins;
 
 use Illuminate\Support\{
+    Arr,
     Str,
     Collection
 };
 
 class CollectionMixin
 {
+    public function prioritize()
+    {
+        return function (callable $callable): Collection {
+            $items = [];
+
+            foreach ($this->items as $key => $item) {
+                if (call_user_func($callable, $item, $key)) {
+                    $items = Arr::prepend($items, $item, $key);
+                } else {
+                    $items[$key] = $item;
+                }
+            }
+
+            return new static($items);
+        };
+    }
+
     public function exceptEach()
     {
         return function (...$keys) {

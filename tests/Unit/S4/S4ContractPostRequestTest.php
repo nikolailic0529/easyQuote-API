@@ -13,7 +13,7 @@ use Str, DB;
 
 class S4ContractPostRequestTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, WithClientCredentials;
+    use WithFakeUser, WithClientCredentials;
 
     /**
      * Test Storing S4 Contract with valid attributes.
