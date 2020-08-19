@@ -30,7 +30,7 @@ class Recaptcha implements Rule
             config('services.recaptcha.skip_enabled') &&
             request('recaptcha_skip_key') === config('services.recaptcha.skip_key')
         ) {
-            report_logger(['message' => GRCS_01]);
+            customlog(['message' => GRCS_01]);
 
             return true;
         }
@@ -40,20 +40,20 @@ class Recaptcha implements Rule
             'response' => $value,
         ];
 
-        report_logger(['message' => 'Google Recaptcha token validation.'], $data);
+        customlog(['message' => 'Google Recaptcha token validation.'], $data);
 
         $response = Http::asForm()->post(config("services.recaptcha_{$this->version}.url"), $data);
 
         $json = $response->json();
 
         if ($response->serverError()) {
-            report_logger(['ErrorCode' => 'GRC_ERR_01'], ['ErrorDetails' => GRC_ERR_01], ['version' => $this->version, 'response' => $json, 'payload' => $data]);
+            customlog(['ErrorCode' => 'GRC_ERR_01'], ['ErrorDetails' => GRC_ERR_01], ['version' => $this->version, 'response' => $json, 'payload' => $data]);
             return false;
         }
 
         request()->request->set('recaptcha_response', $json);
 
-        report_logger(['message' => 'Google Recaptcha response.'], $json);
+        customlog(['message' => 'Google Recaptcha response.'], $json);
 
         return
             app()->environment(['testing', 'local'])

@@ -426,7 +426,8 @@ class HpeContractStateProcessor implements HpeContractState
         return DB::transaction(function () use ($hpeContract, $ids, $reject) {
             $assetsQuery = $hpeContract->hpeContractData()->getQuery();
 
-            (clone $assetsQuery)->update(['is_selected' => false]);
+            (clone $assetsQuery)
+                ->update(['is_selected' => false]);
 
             (clone $assetsQuery)->when(
                 $reject,
@@ -512,7 +513,7 @@ class HpeContractStateProcessor implements HpeContractState
             ->selectRaw('MAX(customer_address) customer_address')
             ->selectRaw('MAX(customer_city) customer_city')
             ->selectRaw('MAX(customer_post_code) customer_post_code')
-            ->selectRaw('MAX(customer_country_code) customer_state_code')
+            ->selectRaw('MAX(customer_state_code) customer_state_code')
 
             ->selectRaw('MAX(hw_delivery_contact_name) hw_delivery_contact_name')
             ->selectRaw('MAX(hw_delivery_contact_phone) hw_delivery_contact_phone')
@@ -522,7 +523,7 @@ class HpeContractStateProcessor implements HpeContractState
             ->selectRaw('MAX(pr_support_contact_phone) pr_support_contact_phone')
             ->first();
 
-        $country = auth()->user()->country->name;
+        $country = data_get(auth()->user(), 'country.name');
 
         $soldContact = [
             'org_name'      => Arr::get($contractData, 'customer_name'),

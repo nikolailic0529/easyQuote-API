@@ -2,19 +2,17 @@
 
 namespace App\Models;
 
-use App\Casts\HpeContactCast;
-use App\Casts\HpeServicesCast;
+use App\Casts\{HpeContactCast, HpeServicesCast};
 use App\Models\QuoteTemplate\HpeContractTemplate;
 use App\Traits\{Uuid, Activatable, BelongsToCompany, BelongsToCountry, BelongsToUser, Completable, Submittable, Auth\Multitenantable};
 use Illuminate\Database\Eloquent\{Model, SoftDeletes, Relations\BelongsTo, Relations\HasMany};
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 use App\DTO\HpeContractContact;
-use App\Models\Customer\Customer;
 use App\Models\Quote\Contract;
 use App\Scopes\ContractTypeScope;
 use App\Traits\Activity\LogsActivity;
-use App\Traits\Search\Searchable;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Collection;
 
 /**
  * @property HpeContractContact $hw_delivery_contact

@@ -17,7 +17,7 @@ use App\Models\{
 };
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection as IlluminateCollection;
+use Illuminate\Database\Eloquent\Collection as DbCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\LazyCollection;
 
@@ -137,9 +137,9 @@ interface UserRepositoryInterface
      * Retrieve many users by specified ids.
      *
      * @param array $ids
-     * @return IlluminateCollection
+     * @return DbCollection
      */
-    public function findMany(array $ids): IlluminateCollection;
+    public function findMany(array $ids): DbCollection;
 
     /**
      * Retrieve users by specific roles.
@@ -156,6 +156,14 @@ interface UserRepositoryInterface
      * @return \App\Models\User
      */
     public function random(): User;
+
+    /**
+     * Retrieve authenticated users with the same ip.
+     *
+     * @param  string $ip
+     * @return DbCollection
+     */
+    public function findAuthenticatedUsersByIp(string $ip, array $columns = ['*']): DbCollection;
 
     /**
      * Determine that user with the same ip is authenticated.
@@ -249,9 +257,9 @@ interface UserRepositoryInterface
     /**
      * Retrieve All Users who have Administrator role.
      *
-     * @return IlluminateCollection
+     * @return DbCollection
      */
-    public function administrators(): IlluminateCollection;
+    public function administrators(): DbCollection;
 
     /**
      * Reset Password for specified User.

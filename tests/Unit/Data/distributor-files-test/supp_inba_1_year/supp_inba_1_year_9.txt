@@ -1,0 +1,97 @@
+Detail for Support Account ID: SUPP-INBA
+
+                                                                                                 Service Agreement ID: 1086 5192                       6685
+
+Support Quotation                                                                                System Handle: SUPPINBA-US
+
+Agreement No.                                                                                    UNITED STATES
+
+Your PO Reference:                                                                               HPE Reference No.: 56784791
+
+Equipment Address:                                                                               Software Update Address:
+
+International Baccalaureate                                                                      International Baccalaureate
+
+Ib Global Centre                                                                                 Ib Global Centre
+
+7501 Wisconsin Avenue                                                                            7501 Wisconsin Avenue
+
+MARYLAND MD 20814                                                                                MARYLAND MD 20814
+
+UNITED STATES                                                                                    UNITED STATES
+
+Hardware Contact:                                                                                Software Contact:
+
+Sean Robson                                                                                      Sean Robson
+
+Tel: 01707 648588                                                                                Tel: 01707 648588
+
+Fax:                                                                                             Fax:
+
+This quote is valid until 16.08.2020
+
+Coverage from: 17.08.2020 to: 16.08.2021
+
+To log a call please telephone our Customer Care                                      Reception  on: 0845 161 0050
+
+Product No.             Description                                                   Serial No.                    Coverage Period                    Qty      Price/GBP
+
+                                                                                                                    from:                         to:
+
+H7J32AC                 HPE Foundation Care NBD SVC
+
+*** Hardware ***
+
+                        HPE Hardware Maintenance Onsite Support
+
+                             Hardware Problem Diagnosis
+
+                             Onsite Support
+
+                             Parts and Material provided
+
+                             Next Cov Day Onsite Response
+
+                             Std Office Hrs Std Office Days
+
+818208-B21              HPE DL360 Gen9 E5-2630v4 1P 16G 8SFF Svr                      CZJ6510640                                                             1  48.78
+
+818208-B21              HPE DL360 Gen9 E5-2630v4 1P 16G 8SFF Svr                      CZJ6510645                                                             1  48.78
+
+                                                                                                 Hardware Subtotal                                              97.56
+
+                                                                                                 Discounts                                                      -18.36
+
+                                                                                                 Total                                                          79.20
+
+                        HPE Collaborative Remote Support
+
+                             Basic Software Phone Support
+
+                             Collaborative Call Managemnt
+
+                             24 Hours, Day 1-7 Phone Supp
+
+                             Standard Response Time
+
+818208-B21              HPE DL360 Gen9 E5-2630v4 1P 16G 8SFF Svr                      CZJ6510640                                                             1  4.57
+
+818208-B21              HPE DL360 Gen9 E5-2630v4 1P 16G 8SFF Svr                      CZJ6510645                                                             1  4.57
+
+                                                                                                 Hardware Subtotal                                              9.14
+
+                                                                                                 Discounts                                                      -1.72
+
+                                                                                                 Total                                                          7.42
+
+Discount Summary
+
+Special Neg HdrDisc% -18%                                                                                                                                       19.20-
+
+Pre Payment HdrDisc% -1%                                                                                                                                        0.88-
+
+Single Payment for Duration
+
+Printed on: 12.08.2020                                         Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT                Page: 9 / 16
+
+Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN.  Registered No: 690597

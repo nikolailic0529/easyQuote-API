@@ -1,0 +1,37 @@
+Service Agreement ID: 1086 5193 3142
+
+Support Quotation                                                                                     System Handle: SUPPINBA-SG
+
+Agreement No.                                                                                         SINGAPORE
+
+Your PO Reference:                                                                                    HPE Reference No.: 56785419
+
+Product No.             Description                                                   Serial No.                         Coverage Period                      Qty  Price/GBP
+
+                                                                                                                         from:                    to:
+
+*** Hardware ***
+
+UJ558AC                 HPE Ind Std Svrs Return to HW Supp                                                                                        16.09.2020       635.58
+
+                                                                                                      Hardware Subtotal                                            635.58
+
+                                                                                                      Discounts                                                    -82.63
+
+                                                                                                      Total                                                        552.95
+
+Discount Summary
+
+Special Neg HdrDisc% -13%                                                                                                                                          82.63-
+
+                                                                                      Hardware Total                                                               767.70
+
+                                                                                      Discount Total                                                               -100.97
+
+                                                                                      Contract Total                                                               666.73
+
+Single Payment for Duration
+
+Printed on: 12.08.2020                                         Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT                   Page: 8 / 16
+
+Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN.  Registered No: 690597

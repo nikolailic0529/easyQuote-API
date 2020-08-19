@@ -62,7 +62,7 @@ class CustomerFlow implements Contract
         return tap($this->findOrCreateCustomerCompany($customer), function () use ($customer) {
             $customer->markAsMigrated();
 
-            report_logger(['message' => CUS_M_01], $customer->toArray());
+            customlog(['message' => CUS_M_01], $customer->toArray());
 
             $this->advanceProgress();
         });
@@ -97,7 +97,7 @@ class CustomerFlow implements Contract
 
             $company->vendors()->syncWithoutDetaching($customer->vendors);
 
-            report_logger(['message' => CUS_ECAC_01]);
+            customlog(['message' => CUS_ECAC_01]);
 
             return $company;
         });
@@ -127,7 +127,7 @@ class CustomerFlow implements Contract
     protected static function pullCustomerAttributes(Company $company, Customer $customer): void
     {
         if ($company->exists) {
-            report_logger(['message' => CUS_ECE_01]);
+            customlog(['message' => CUS_ECE_01]);
 
             /** Fill company attributes from the customer instance when some of them don't exist in the Company instance. */
             $company->fill([
@@ -139,7 +139,7 @@ class CustomerFlow implements Contract
             return;
         }
 
-        report_logger(['message' => CUS_ECNE_01]);
+        customlog(['message' => CUS_ECNE_01]);
 
         /**
          * Retrieving the rest attributes from respective customer addresses and contacts.
@@ -164,6 +164,6 @@ class CustomerFlow implements Contract
 
         $company->saveOrFail();
 
-        report_logger(['message' => CUS_ECS_01], $company->toArray());
+        customlog(['message' => CUS_ECS_01], $company->toArray());
     }
 }

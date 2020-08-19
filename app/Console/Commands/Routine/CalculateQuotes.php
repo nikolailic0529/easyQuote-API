@@ -41,7 +41,7 @@ class CalculateQuotes extends Command
     public function handle(Stats $service, StatsAggregator $aggregator)
     {
         $this->warn(QTC_S_01);
-        report_logger(['message' => QTC_S_01]);
+        customlog(['message' => QTC_S_01]);
 
         try {
             $service->calculateQuoteTotals($this->output->createProgressBar());
@@ -52,13 +52,13 @@ class CalculateQuotes extends Command
             }
         } catch (Throwable $e) {
             $this->error(QTC_ERR_01);
-            report_logger(['ErrorCode' => 'QTC_ERR_01'], report_logger()->formatError(QTC_ERR_01, $e));
+            customlog(['ErrorCode' => 'QTC_ERR_01'], customlog()->formatError(QTC_ERR_01, $e));
 
             return false;
         }
 
         $this->info("\n".QTC_F_01);
-        report_logger(['message' => QTC_F_01]);
+        customlog(['message' => QTC_F_01]);
 
         return true;
     }

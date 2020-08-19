@@ -29,7 +29,7 @@ class HMRCRates extends ExchangeRateService
 
             return collect($data)->map(fn ($attributes) => $this->prepareAttributes($attributes))->toArray();
         } catch (Throwable $exception) {
-            report_logger(['ErrorCode' => 'ER_PARSE_ERR_01'], ER_PARSE_ERR_01);
+            customlog(['ErrorCode' => 'ER_PARSE_ERR_01'], ER_PARSE_ERR_01);
 
             static::fetchRatesError();
         }
@@ -49,7 +49,7 @@ class HMRCRates extends ExchangeRateService
 
             return Carbon::createFromFormat('d/M/Y', $period);
         } catch (Throwable $e) {
-            report_logger(
+            customlog(
                 ['ErrorCode' => 'ER_PARSE_ERR_02'],
                 sprintf("%s Filepath: '%s'. Original error: '%s'.", ER_DT_ERR_01, $filepath, $e->getMessage())
             );

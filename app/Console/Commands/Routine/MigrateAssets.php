@@ -40,19 +40,19 @@ class MigrateAssets extends Command
     public function handle(AssetService $service)
     {
         $this->warn(ASSET_MGS_01);
-        report_logger(['message' => ASSET_MGS_01]);
+        customlog(['message' => ASSET_MGS_01]);
 
         try {
             $service->migrateAssets((bool) $this->option('fresh'), $this->output->createProgressBar());
         } catch (Throwable $e) {
             $this->error(ASSET_MGERR_02);
-            report_logger(['ErrorCode' => 'ASSET_MGERR_02'], report_logger()->formatError(ASSET_MGERR_02, $e));
+            customlog(['ErrorCode' => 'ASSET_MGERR_02'], customlog()->formatError(ASSET_MGERR_02, $e));
 
             return false;
         }
 
         $this->info("\n".ASSET_MGF_01);
-        report_logger(['message' => ASSET_MGF_01]);
+        customlog(['message' => ASSET_MGF_01]);
 
         return true;
     }

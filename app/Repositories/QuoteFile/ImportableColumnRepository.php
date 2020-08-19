@@ -5,17 +5,14 @@ namespace App\Repositories\QuoteFile;
 use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface;
 use App\Models\QuoteFile\ImportableColumn;
 use App\Repositories\SearchableRepository;
+use Illuminate\Database\Eloquent\{Builder, Model};
+use Illuminate\Support\{Arr, Facades\DB, Collection};
 use Closure;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
-use Arr, DB;
-use Webpatser\Uuid\Uuid;
 
 class ImportableColumnRepository extends SearchableRepository implements ImportableColumnRepositoryInterface
 {
     const CACHE_KEY_SYSTEM_COLS = 'importable-columns:system';
 
-    /** @var \App\Models\QuoteFile\ImportableColumn */
     protected ImportableColumn $importableColumn;
 
     public function __construct(ImportableColumn $importableColumn)
@@ -40,9 +37,7 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
 
     public function findByIds(iterable $ids)
     {
-        if ($ids instanceof Arrayable) {
-            $ids = $ids->toArray();
-        }
+        $ids = Collection::wrap($ids)->toArray();
 
         return $this->query()->whereIn('id', $ids)->get();
     }

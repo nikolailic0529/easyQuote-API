@@ -40,19 +40,19 @@ class UpdateAddressLocations extends Command
     public function handle(LocationService $service)
     {
         $this->warn(ADDR_LCU_S_01);
-        report_logger(['message' => ADDR_LCU_S_01]);
+        customlog(['message' => ADDR_LCU_S_01]);
 
         try {
             $service->updateAddressLocations($this->output->createProgressBar());
         } catch (Throwable $e) {
             $this->error(ADDR_LCU_ERR_01);
-            report_logger(['ErrorCode' => 'QTC_ERR_01'], report_logger()->formatError(ADDR_LCU_ERR_01, $e));
+            customlog(['ErrorCode' => 'QTC_ERR_01'], customlog()->formatError(ADDR_LCU_ERR_01, $e));
 
             return false;
         }
 
         $this->info("\n".ADDR_LCU_F_01);
-        report_logger(['message' => ADDR_LCU_F_01]);
+        customlog(['message' => ADDR_LCU_F_01]);
 
         return true;
     }
