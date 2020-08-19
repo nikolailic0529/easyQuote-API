@@ -139,7 +139,6 @@ return [
     */
 
     'providers' => [
-
         /*
          * Laravel Framework Service Providers...
          */
@@ -173,8 +172,8 @@ return [
         /*
          * Application Service Providers...
          */
-        App\Providers\HelperServiceProvider::class,
         App\Providers\AppServiceProvider::class,
+        App\Providers\HelperServiceProvider::class,
         App\Providers\QueryBuilderServiceProvider::class,
         App\Providers\MacroServiceProvider::class,
         App\Providers\ObserverServiceProvider::class,

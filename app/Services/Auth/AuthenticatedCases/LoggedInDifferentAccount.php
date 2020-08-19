@@ -16,6 +16,10 @@ class LoggedInDifferentAccount
             return $next($case);
         }
 
-        $case->abort(AU_01, 'AU_01');
+        $users = $case->userRepository->findAuthenticatedUsersByIp($case->attempt->ip_address, ['email']);
+
+        $emails = $users->pluck('email')->toArray();
+
+        $case->abort(AU_01, 'AU_01', ['Authenticated-Users' => $emails]);
     }
 }

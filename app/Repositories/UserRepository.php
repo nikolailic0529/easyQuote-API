@@ -146,6 +146,11 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         return $this->user->query()->inRandomOrder()->firstOrFail();
     }
 
+    public function findAuthenticatedUsersByIp(string $ip, array $columns = ['*']): Collection
+    {
+        return $this->user->query()->where('already_logged_in', true)->where('ip_address', $ip)->get($columns);
+    }
+
     public function authenticatedIpExists(string $excludedId, string $ip): bool
     {
         return $this->user->query()->whereKeyNot($excludedId)->loggedIn()->ip($ip)->exists();

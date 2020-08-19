@@ -17,7 +17,7 @@ class RfqReceivedListener
      */
     public function handle(RfqReceived $event)
     {
-        report_logger(['message' => S4_CS_01], CustomerResponseResource::make($event->customer));
+        customlog(['message' => S4_CS_01], CustomerResponseResource::make($event->customer));
 
         CustomerFlow::migrateCustomer($event->customer);
 

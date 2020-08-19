@@ -81,17 +81,17 @@ class AssetService
                 $quote->markAsMigrated('assets_migrated_at');
             });
 
-            report_logger(
+            customlog(
                 ['message' => ASSET_MGQF_01],
                 ['quote_id' => $quote->id, 'rfq_number' => $quote->rfq_number]
             );
 
             $this->advanceProgress();
         } catch (Throwable $e) {
-            report_logger(
+            customlog(
                 ['ErrorCode' => 'ASSET_MGERR_01'],
                 [
-                    'ErrorDetails' => report_logger()->formatError(ASSET_MGERR_01, $e),
+                    'ErrorDetails' => customlog()->formatError(ASSET_MGERR_01, $e),
                     'quote_id' => $quote->id,
                     'rfq_number' => $quote->rfq_number
                 ]
@@ -121,8 +121,8 @@ class AssetService
         return tap(
             $asset,
             fn (Asset $asset) => $asset->wasRecentlyCreated
-                ? report_logger(['message' => ASSET_MGSS_01], $asset->toArray())
-                : report_logger(['message' => ASSET_MGAE_01], $asset->toArray())
+                ? customlog(['message' => ASSET_MGSS_01], $asset->toArray())
+                : customlog(['message' => ASSET_MGAE_01], $asset->toArray())
         );
     }
 

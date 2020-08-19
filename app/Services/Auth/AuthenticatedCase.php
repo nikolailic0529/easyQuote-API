@@ -61,9 +61,9 @@ class AuthenticatedCase
             ->store();
     }
 
-    public function abort(string $message, string $code): void
+    public function abort(string $message, string $code, array $headers = []): void
     {
-        error_abort($message, $code, Response::HTTP_UNPROCESSABLE_ENTITY);
+        error_abort($message, $code, Response::HTTP_UNPROCESSABLE_ENTITY, $headers);
     }
 
     public static function initiate(User $user, AccessAttempt $attempt): AuthenticatedCase

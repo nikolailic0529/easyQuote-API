@@ -57,7 +57,7 @@ class HpeContractFileService
                 return new ImportResponse(true);
             });
         } catch (Throwable $e) {
-            report_logger(['ErrorCode' => 'HPEC-IMPE-01'], ['ErrorDetails' => report_logger()->formatError(HPEC_IMPE_01, $e)]);
+            customlog(['ErrorCode' => 'HPEC-IMPE-01'], ['ErrorDetails' => customlog()->formatError(HPEC_IMPE_01, $e)]);
 
             if ($e instanceof ValidationException) {
                 /** @var \Maatwebsite\Excel\Validators\Failure */

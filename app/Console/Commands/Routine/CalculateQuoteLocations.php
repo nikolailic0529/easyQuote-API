@@ -41,7 +41,7 @@ class CalculateQuoteLocations extends Command
     public function handle(Stats $service, StatsAggregator $aggregator)
     {
         $this->warn(QLTC_S_01);
-        report_logger(['message' => QLTC_S_01]);
+        customlog(['message' => QLTC_S_01]);
 
         try {
             $service->calculateQuoteLocationTotals($this->output->createProgressBar());
@@ -52,13 +52,13 @@ class CalculateQuoteLocations extends Command
             }
         } catch (Throwable $e) {
             $this->error(QLTC_ERR_01);
-            report_logger(['ErrorCode' => 'QLTC_ERR_01'], report_logger()->formatError(QLTC_ERR_01, $e));
+            customlog(['ErrorCode' => 'QLTC_ERR_01'], customlog()->formatError(QLTC_ERR_01, $e));
 
             return false;
         }
 
         $this->info("\n".QLTC_F_01);
-        report_logger(['message' => QLTC_F_01]);
+        customlog(['message' => QLTC_F_01]);
 
         return true;
     }

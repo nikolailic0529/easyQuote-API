@@ -8,8 +8,8 @@ use App\Http\Requests\{
     UserSignInRequest,
     Collaboration\CompleteInvitationRequest,
     PasswordResetRequest,
-    RefreshTokenRequest,
-    UpdateProfileRequest
+    UpdateProfileRequest,
+    Auth\LogoutUser
 };
 use App\Contracts\{
     Repositories\UserRepositoryInterface,
@@ -19,9 +19,9 @@ use App\Contracts\Repositories\System\BuildRepositoryInterface;
 use App\Http\Resources\{
     AuthenticatedUserResource,
     User\AttemptsResource,
+    User\AuthResource,
+    Invitation\InvitationPublicResource
 };
-use App\Http\Resources\Invitation\InvitationPublicResource;
-use App\Http\Resources\User\AuthResource;
 use App\Models\{
     Collaboration\Invitation,
     PasswordReset
@@ -107,6 +107,19 @@ class AuthController extends Controller
     {
         return response()->json(
             $this->auth->logout()
+        );
+    }
+
+    /**
+     * Authenticate user with username & password and logout.
+     *
+     * @param  LogoutUser $request
+     * @return \Illuminate\Http\Response
+     */
+    public function authenticateAndLogout(LogoutUser $request)
+    {
+        return response()->json(
+            $this->auth->logout($request->getLogoutableUser())
         );
     }
 

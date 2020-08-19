@@ -17,7 +17,7 @@ class MaintenanceScheduled implements ShouldBroadcastNow
     protected User $user;
 
     /** @var \Carbon\Carbon */
-    protected Carbon $schedule;
+    public Carbon $schedule;
 
     /**
      * Create a new event instance.

@@ -17,11 +17,9 @@ class ScheduleMaintenance implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable;
 
-    /** @var \Carbon\Carbon */
-    protected Carbon $startTime;
+    public Carbon $startTime;
 
-    /** @var \Carbon\Carbon */
-    protected Carbon $endTime;
+    public Carbon $endTime;
 
     /**
      * Create a new job instance.
@@ -44,7 +42,7 @@ class ScheduleMaintenance implements ShouldQueue
         $startInMinutes = max($this->startTime->diffInMinutes(now()->startOfMinute()), 1);
         $unavailableMinutes = $this->startTime->diffInMinutes($this->endTime);
 
-        $startIn = Str::of($startInMinutes)->append(Str::plural('minute', $startInMinutes))->__toString();
+        $startIn = Str::of($startInMinutes)->append(' ', Str::plural('minute', $startInMinutes))->__toString();
         $duration = Str::of($unavailableMinutes)->append(' minutes')->__toString();
 
         slack()

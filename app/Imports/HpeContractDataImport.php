@@ -60,7 +60,7 @@ class HpeContractDataImport implements ToModel, WithBatchInserts, WithChunkReadi
     const CELL_CSA = 31;
     const CELL_CSC = 32;
     const CELL_CSPC = 34;
-    const CELL_CSCC = 35;
+    const CELL_CSTC = 35;
     const CELL_SSD = 41;
     const CELL_SED = 42;
 
@@ -122,7 +122,7 @@ class HpeContractDataImport implements ToModel, WithBatchInserts, WithChunkReadi
             'customer_address'              => $row[static::CELL_CSA],
             'customer_city'                 => $row[static::CELL_CSC],
             'customer_post_code'            => $row[static::CELL_CSPC],
-            'customer_country_code'         => $row[static::CELL_CSCC],
+            'customer_state_code'           => $row[static::CELL_CSTC],
             'support_start_date'            => static::parseDate($row[static::CELL_SSD]),
             'support_end_date'              => static::parseDate($row[static::CELL_SED]),
         ];
@@ -217,9 +217,11 @@ class HpeContractDataImport implements ToModel, WithBatchInserts, WithChunkReadi
     public function bindValue(Cell $cell, $value)
     {
         if (is_string($value)) {
-            $value = StringHelper::sanitizeUTF8($value);
+            if (! ASCII::is_ascii($value)) {
+                $value = ASCII::to_ascii(utf8_encode($value));
+            }
 
-            $value = Str::ascii($value);
+            $value = StringHelper::sanitizeUTF8($value);
         }
 
         $cell->setValueExplicit((string) $value, DataType::TYPE_STRING);

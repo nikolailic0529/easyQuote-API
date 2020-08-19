@@ -57,14 +57,14 @@ class PurgeDuplicatedCompanies extends Command
         $company = Company::whereName($name)->whereSource(Customer::S4_SOURCE)->first();
 
         if (null === $company) {
-            report_logger(['ErrorDetails' => sprintf("Unable to find S4 Company with name '%'", $name)]);
+            customlog(['ErrorDetails' => sprintf("Unable to find S4 Company with name '%'", $name)]);
 
             return;
         }
 
         $company->query()->whereKeyNot($company->getKey())->whereSource(Customer::S4_SOURCE)->whereName($company->name)->delete();
 
-        report_logger([
+        customlog([
             'message' => sprintf("Duplicated S4 Companies with name '%s' have been deleted!", $company->name)
         ]);
     }
