@@ -41,7 +41,7 @@ class HpeContractData extends Model
         'customer_address',
         'customer_city',
         'customer_post_code',
-        'customer_country_code',
+        'customer_state_code',
         'support_start_date',
         'support_end_date',
         'is_selected',

@@ -69,10 +69,11 @@ class HpeContractController extends Controller
     public function importHpeContract(HpeContract $hpeContract, HpeContractFile $hpeContractFile, HpeContractFileService $fileService)
     {
         $this->authorize('update', $hpeContract);
-        
+
         return tap(
             $fileService->processImport($hpeContractFile),
-            fn (ImportResponse $importResponse) => $this->processor->processHpeContractData($hpeContract, $hpeContractFile)
+            fn (ImportResponse $importResponse) =>
+            $this->processor->processHpeContractData($hpeContract, $hpeContractFile, $importResponse)
         );
     }
 

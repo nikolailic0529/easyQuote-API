@@ -3,21 +3,23 @@
 namespace App\Services;
 
 use App\Contracts\Services\SlackInterface;
+use App\Events\Slack\FailedSend;
+use App\Events\Slack\Sent;
 use App\Jobs\SendSlackNotification;
 use Illuminate\Http\Client\Response;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\{Arr, Collection, Str, Stringable, Facades\Http};
 use RuntimeException;
-use GuzzleHttp\Client;
-use GuzzleHttp\Psr7\Response as Psr7Response;
-use Arr, Str;
+use Throwable;
 
 class SlackClient implements SlackInterface
 {
     protected array $attributes = [];
 
+    protected bool $forceEnabled = false;
+
     public function send(?array $attributes = null)
     {
-        if($this->disabled()) {
+        if ($this->disabled()) {
             return false;
         }
 
@@ -28,9 +30,15 @@ class SlackClient implements SlackInterface
         $this->validateAttributes();
 
         try {
-            $response = $this->request($this->toArray());
+            if (app()->runningUnitTests() && !$this->forceEnabled) {
+                $this->success();
 
-            if (blank($response->getBody()->getContents())) {
+                return true;
+            }
+
+            $response = $this->performRequest($this->toArray());
+
+            if ($response->failed()) {
                 $this->error();
 
                 return false;
@@ -39,8 +47,8 @@ class SlackClient implements SlackInterface
             $this->success();
 
             return true;
-        } catch (Exception $e) {
-            report_logger(['ErrorCode' => 'SNE_02'], ['ErrorDetails' => SNE_02 . ' — ' . $e->getMessage()]);
+        } catch (Throwable $e) {
+            customlog(['ErrorCode' => 'SNE-02'], ['ErrorDetails' => customlog()->formatError(SNE_02, $e)]);
 
             return false;
         }
@@ -48,7 +56,7 @@ class SlackClient implements SlackInterface
 
     public function queue(?array $attributes = null)
     {
-        if($this->disabled()) {
+        if ($this->disabled()) {
             return;
         }
 
@@ -64,7 +72,7 @@ class SlackClient implements SlackInterface
     public function title($title)
     {
         $this->attributes[__FUNCTION__] = $title;
-        
+
         return $this;
     }
 
@@ -91,10 +99,10 @@ class SlackClient implements SlackInterface
 
     public function getTitle()
     {
-        $title = optional($this->attributes)['title'];
+        $title = $this->getAttribute('title');
 
-        if (is_array($title)) {
-            $title = implode(' ', $title);
+        if (is_iterable($title)) {
+            $title = Collection::wrap($title)->implode(' ');
         }
 
         return $title;
@@ -102,13 +110,15 @@ class SlackClient implements SlackInterface
 
     public function getStatus()
     {
-        $status = optional($this->attributes)['status'];
+        $status = $this->getAttribute('status');
 
-        if (is_array($status)) {
-            $status = collect($status)->map(function ($value, $key) {
-                $value = is_string($key) ? "{$key}: {$value}" : $value;
-                return Str::finish($value, '.');
-            })->implode(PHP_EOL);
+        if (is_iterable($status)) {
+            $status = Collection::wrap($status)
+                ->map(
+                    fn ($value, $key) => (string) Str::of($value)
+                        ->when(is_string($key), fn (Stringable $string) => $string->prepend($key, ': '))
+                        ->finish('.')
+                )->implode(PHP_EOL);
         }
 
         return $status;
@@ -116,7 +126,7 @@ class SlackClient implements SlackInterface
 
     public function getUrl()
     {
-        $url = optional($this->attributes)['url'];
+        $url = $this->getAttribute('url');
 
         if (!isset($url)) {
             $url = config('app.url');
@@ -127,7 +137,21 @@ class SlackClient implements SlackInterface
 
     public function getImage()
     {
-        return optional($this->attributes)['image'];
+        return $this->getAttribute('image');
+    }
+
+    public function enable()
+    {
+        $this->forceEnabled = true;
+
+        return $this;
+    }
+
+    public function disable()
+    {
+        $this->forceEnabled = false;
+
+        return $this;
     }
 
     protected function validateAttributes(): void
@@ -137,69 +161,64 @@ class SlackClient implements SlackInterface
         }
     }
 
-    protected function request(array $payload): Psr7Response
+    protected function getAttribute(string $key)
     {
-        return app(Client::class)->post(config('services.slack.endpoint'), $payload);
+        return Arr::get($this->attributes, $key);
+    }
+
+    protected function performRequest(array $payload): Response
+    {
+        return Http::asJson()->post(config('services.slack.endpoint'), $payload);
     }
 
     protected function success()
     {
-        report_logger(['message' => SNS_01], ['payload' => $this->toArray()]);
+        event(new Sent($this->toArray()));
+
+        customlog(['message' => SNS_01], ['payload' => $this->toArray()]);
     }
 
     protected function error()
     {
-        report_logger(['ErrorCode' => 'SNE_01'], ['ErrorDetails' => SNE_01, 'payload' => $this->toArray()]);
+        event(new FailedSend($this->toArray()));
+
+        customlog(['ErrorCode' => 'SNE_01'], ['ErrorDetails' => SNE_01, 'payload' => $this->toArray()]);
     }
 
     protected function toArray()
     {
-        $blocks = [
+        $json = [
             [
                 'type' => 'section',
                 'text' => [
                     'type' => 'mrkdwn',
                     'text' => $this->getTitle()
                 ]
-            ]
+            ],
+            [
+                'type' => 'section',
+                'block_id' => 'section_body',
+                'text' => [
+                    'type' => 'mrkdwn',
+                    'text' => static::formatBody($this->getUrl(), $this->getTitle(), $this->getStatus())
+                ],
+                'accessory' => transform($this->getImage(), fn () => [
+                    'type' => 'image',
+                    'image_url' => $this->getImage(),
+                    'alt_text' => $this->getTitle()
+                ])
+            ],
         ];
 
-        $body = [
-            'type' => 'section',
-            'block_id' => 'section_body',
-            'text' => [
-                'type' => 'mrkdwn',
-                'text' => '<' . $this->getUrl() . '|' . $this->getTitle() . '> ' . PHP_EOL . $this->getStatus()
-            ]
-        ];
+        $json = array_map(fn ($block) => array_filter($block), $json);
 
-        if (isset($this->attributes['image'])) {
-            data_set($body, 'accessory', [
-                'type' => 'image',
-                'image_url' => $this->getImage(),
-                'alt_text' => $this->getTitle()
-            ]);
-        }
-
-        array_push($blocks, $body);
-
-        return ['json' => compact('blocks')];
-    }
-
-    protected static function undefinedAttributes(): RuntimeException
-    {
-        return new RuntimeException('The title and status attributes must be defined.');
-    }
-
-    protected function setPayload(SlackMessage $message): void
-    {
-        $this->payload = $message->toArray();
+        return ['blocks' => $json];
     }
 
     protected function disabled(): bool
     {
-        if (app()->runningUnitTests()) {
-            return true;
+        if ($this->forceEnabled) {
+            return false;
         }
 
         if (config('services.slack.enabled') === false) {
@@ -207,5 +226,15 @@ class SlackClient implements SlackInterface
         }
 
         return false;
+    }
+
+    protected static function formatBody($url, $title, $status): string
+    {
+        return sprintf('<%s|%s> %s%s', $url, $title, PHP_EOL, $status);
+    }
+
+    protected static function undefinedAttributes(): RuntimeException
+    {
+        return new RuntimeException('The title and status attributes must be defined.');
     }
 }

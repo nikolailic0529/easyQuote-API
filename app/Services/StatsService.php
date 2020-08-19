@@ -232,7 +232,7 @@ class StatsService implements Stats
             $company = Company::whereName($quote->customer->name)->where(['type' => 'External', 'category' => 'End User'])->first();
 
             if (!$company instanceof Company) {
-                report_logger(['message' => 'External Company does not exist']);
+                customlog(['message' => 'External Company does not exist']);
 
                 return false;
             }
@@ -260,13 +260,13 @@ class StatsService implements Stats
 
             $this->quoteTotal->query()->make($attributes)->save();
 
-            report_logger(['message' => sprintf(QSC_01, $quote->customer->rfq, $totalPrice)]);
+            customlog(['message' => sprintf(QSC_01, $quote->customer->rfq, $totalPrice)]);
 
             $this->advanceProgress();
 
             return true;
         } catch (Throwable $e) {
-            report_logger(['ErrorCode' => 'QSC_ERR_01'], sprintf('%s. Details: %s', QSC_ERR_01, $e->getMessage()));
+            customlog(['ErrorCode' => 'QSC_ERR_01'], sprintf('%s. Details: %s', QSC_ERR_01, $e->getMessage()));
 
             return false;
         }
@@ -285,7 +285,7 @@ class StatsService implements Stats
         $company = Company::whereKey($total->company_id)->where(['type' => 'External', 'category' => 'End User'])->with('locations')->first();
 
         if (!$company instanceof Company) {
-            report_logger(['message' => 'External Company does not exist']);
+            customlog(['message' => 'External Company does not exist']);
 
             return;
         }
@@ -294,7 +294,7 @@ class StatsService implements Stats
         $company->load(['addresses' => fn ($q) => $q->has('location'), 'addresses.location']);
 
         if ($company->addresses->isEmpty()) {
-            report_logger(['message' => 'External Company does not have any location']);
+            customlog(['message' => 'External Company does not have any location']);
             return;
         }
 
@@ -316,7 +316,7 @@ class StatsService implements Stats
                     ]
                 ))->save();
                 
-                report_logger(['message' => 'A new customer total created with new location'], $customerTotal->toArray());
+                customlog(['message' => 'A new customer total created with new location'], $customerTotal->toArray());
             }),
             5
         );

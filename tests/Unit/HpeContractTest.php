@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Contracts\Services\HpeContractState;
+use App\Models\HpeContract;
 use App\Models\HpeContractFile;
 use App\Services\HpeContractFileService;
 use Illuminate\Http\UploadedFile;
@@ -11,6 +12,7 @@ use Tests\TestCase;
 use Storage;
 use File;
 use Illuminate\Http\Testing\File as TestingFile;
+use Illuminate\Support\Collection;
 
 class HpeContractTest extends TestCase
 {
@@ -41,12 +43,61 @@ class HpeContractTest extends TestCase
         Storage::disk('hpe_contract_files')->assertExists($response->json('original_file_path'));
     }
 
+    public function testHpeContract20200817083029123286GBS4Importing()
+    {
+        $this->authenticateApi();
+
+        $filePath = static::contractFiles()['20200817083029_123286_GB_S4'];
+
+        $file = static::createUploadedFile($filePath);
+
+        /** @var HpeContractFileService */
+        $fileService = app(HpeContractFileService::class);
+
+        /** @var HpeContractFile */
+        $hpeContractFile = $fileService->store($file);
+
+        $response = $fileService->processImport($hpeContractFile);
+
+        $this->assertFalse($response->failed());
+
+        /** @var HpeContractState */
+        $stateProcessor = app(HpeContractState::class);
+
+        /** @var HpeContract */
+        $hpeContract = factory(HpeContract::class)->create();
+
+        $this->assertTrue(
+            $stateProcessor->processHpeContractData($hpeContract, $hpeContractFile, $response)
+        );
+
+        $this->assertSame($hpeContract->sold_contact->org_name, 'Semadeni (Europe) AG');
+        $this->assertSame($hpeContract->bill_contact->org_name, 'Semadeni (Europe) AG');
+        $this->assertSame($hpeContract->sold_contact->address, 'Tagetlistrasse 35-39');
+        $this->assertSame($hpeContract->bill_contact->address, 'Tagetlistrasse 35-39');
+        $this->assertSame($hpeContract->sold_contact->post_code, '3072');
+        $this->assertSame($hpeContract->bill_contact->post_code, '3072');
+        $this->assertSame($hpeContract->sold_contact->city, 'Ostermundigen');
+        $this->assertSame($hpeContract->bill_contact->city, 'Ostermundigen');
+
+        $assetIds = Collection::wrap($stateProcessor->retrieveContractData($hpeContract))->pluck('assets.*.id')->collapse();
+
+        $stateProcessor->selectAssets($hpeContract, $assetIds->all());
+
+        $preview = $stateProcessor->retrieveSummarizedContractData($hpeContract);
+
+        $this->assertSame($preview->service_overview[0]['contract_number'], '4000007072');
+        $this->assertSame($preview->service_overview[0]['contract_start_date'], '26/08/2020');
+        $this->assertSame($preview->service_overview[0]['contract_end_date'], '25/08/2021');
+        $this->assertSame($preview->service_overview[0]['service_description_2'], 'Telefonische SW Unterstutzung');
+    }
+
     /**
      * Test HPE Contract File importing.
      *
      * @return void
      */
-    public function testHpeContractImporting()
+    public function testHpeContract20200623063555123286GBS4Importing()
     {
         $this->authenticateApi();
 
@@ -78,7 +129,7 @@ class HpeContractTest extends TestCase
             'price' => 0.0,
             'product_number' => 'HA158AC',
             'serial_number' => null,
-            'product_description' => '',
+            'product_description' => 'Telefonische SW Unterstutzung',
             'product_quantity' => 1,
             'asset_type' => 'Software Support Service',
             'service_type' => 'K3 - HP Technology Softwa',
@@ -97,7 +148,7 @@ class HpeContractTest extends TestCase
             'customer_address' => 'Einkaufszentrum Glatt',
             'customer_city' => 'Wallisellen',
             'customer_post_code' => '8304',
-            'customer_country_code' => 'ZE',
+            'customer_state_code' => 'ZE',
             'support_start_date' => '2020-08-07',
             'support_end_date' => '2023-07-07',
         ]);
@@ -119,7 +170,7 @@ class HpeContractTest extends TestCase
             'service_code' => 'HA156AC',
             'service_description' => 'HPE Software Updates SVC',
             'service_code_2' => 'HA158AC',
-            'service_description_2' => '',
+            'service_description_2' => 'Telefonische SW Unterstutzung',
             'service_levels' => 'SW Technical Support;SW Electronic Support;24 Hrs Std Office Days;24 Hrs Day 6;24 Hrs Day 7;Holidays Covered;Standard Response',
             'hw_delivery_contact_name' => 'Cavin Jean Michel',
             'hw_delivery_contact_phone' => null,
@@ -131,7 +182,7 @@ class HpeContractTest extends TestCase
             'customer_address' => 'Einkaufszentrum Glatt',
             'customer_city' => 'Wallisellen',
             'customer_post_code' => '8304',
-            'customer_country_code' => 'ZE',
+            'customer_state_code' => 'ZE',
             'support_start_date' => '2020-08-07',
             'support_end_date' => '2023-07-07',
         ]);
@@ -153,7 +204,7 @@ class HpeContractTest extends TestCase
             'service_code' => 'HA156AC',
             'service_description' => 'HPE Software Updates SVC',
             'service_code_2' => 'HA158AC',
-            'service_description_2' => '',
+            'service_description_2' => 'Telefonische SW Unterstutzung',
             'service_levels' => 'SW Technical Support;SW Electronic Support;24 Hrs Std Office Days;24 Hrs Day 6;24 Hrs Day 7;Holidays Covered;Standard Response',
             'hw_delivery_contact_name' => 'Cavin Jean Michel',
             'hw_delivery_contact_phone' => null,
@@ -165,7 +216,7 @@ class HpeContractTest extends TestCase
             'customer_address' => 'Einkaufszentrum Glatt',
             'customer_city' => 'Wallisellen',
             'customer_post_code' => '8304',
-            'customer_country_code' => 'ZE',
+            'customer_state_code' => 'ZE',
             'support_start_date' => '2020-08-07',
             'support_end_date' => '2023-07-07',
         ]);
@@ -311,6 +362,7 @@ class HpeContractTest extends TestCase
             '20200623063555_123286_GB_S4' => base_path('tests/Unit/Data/hpe-contract-test/20200623063555_123286_GB_S4.txt'),
             '20200626124903_123286_GB_S4' => base_path('tests/Unit/Data/hpe-contract-test/20200626124903_123286_GB_S4.txt'),
             '20200626125911_123286_GB_S4' => base_path('tests/Unit/Data/hpe-contract-test/20200626125911_123286_GB_S4.txt'),
+            '20200817083029_123286_GB_S4' => base_path('tests/Unit/Data/hpe-contract-test/20200817083029_123286_GB_S4.txt'),
         ];
     }
 }

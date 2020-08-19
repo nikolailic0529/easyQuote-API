@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\{
     Collection,
     SoftDeletes,
 };
-use Str;
+use Illuminate\Support\Str;
 
 class SystemSetting extends Model
 {
@@ -110,7 +110,7 @@ class SystemSetting extends Model
 
     public function getFieldTitleAttribute()
     {
-        return __("setting.titles.{$this->attributes['key']}");
+        return __('setting.titles.'.$this->getRawOriginal('key'));
     }
 
     public function getFieldTypeAttribute(): string

@@ -17,7 +17,7 @@ class MaintenanceStarted implements ShouldBroadcastNow
     protected User $user;
 
     /** @var \Carbon\Carbon */
-    protected Carbon $time;
+    public Carbon $time;
 
     /**
      * Create a new event instance.

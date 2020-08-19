@@ -3,10 +3,14 @@
 Route::group(['namespace' => 'API'], function () {
     Route::group(['prefix' => 'auth', 'middleware' => THROTTLE_RATE_01], function () {
         Route::get('attempts/{email}', 'AuthController@showAttempts');
+        
         Route::post('signin', 'AuthController@signin')->name('signin');
         Route::post('signup', 'AuthController@signup')->name('signup');
+        Route::post('logout-user', 'AuthController@authenticateAndLogout');
+
         Route::get('signup/{invitation}', 'AuthController@showInvitation');
         Route::post('signup/{invitation}', 'AuthController@signupCollaborator');
+
         Route::get('reset-password/{reset}', 'AuthController@verifyPasswordReset');
         Route::post('reset-password/{reset}', 'AuthController@resetPassword');
 

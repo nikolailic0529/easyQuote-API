@@ -5,6 +5,20 @@ namespace App\Contracts\Services;
 interface SlackInterface
 {
     /**
+     * Force enable notifications even in running unit tests.
+     *
+     * @return $this
+     */
+    public function enable();
+
+    /**
+     * Force disable notifications.
+     *
+     * @return $this
+     */
+    public function disable();
+
+    /**
      * Send a message to Slack chanel.
      *
      * @param array|null $data

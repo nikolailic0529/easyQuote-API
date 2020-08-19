@@ -31,7 +31,7 @@ class QuoteNoteCreatedListener implements ShouldQueue
         $quote = $event->quoteNote->quote;
 
         if ($causer->is($quote->user)) {
-            report_logger(['message' => 'Quote note causer is quote user. The user will not be notified.']);
+            customlog(['message' => 'Quote note causer is quote user. The user will not be notified.']);
             return;
         }
 

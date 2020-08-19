@@ -45,7 +45,7 @@ class LogoutInactiveUsers extends Command
             [['last_activity_at', '<=', $time], ['already_logged_in', '=', true]]
         );
 
-        report_logger(['message' => sprintf('Logged out %s inactive users.', $affected)]);
+        customlog(['message' => sprintf('Logged out %s inactive users.', $affected)]);
 
         return 0;
     }

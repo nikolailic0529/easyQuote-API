@@ -41,7 +41,7 @@ class CalculateAssets extends Command
     public function handle(Stats $service, StatsAggregator $aggregator)
     {
         $this->warn(ASSET_TCS_01);
-        report_logger(['message' => ASSET_TCS_01]);
+        customlog(['message' => ASSET_TCS_01]);
 
         try {
             $service->calculateAssetTotals($this->output->createProgressBar());
@@ -52,13 +52,13 @@ class CalculateAssets extends Command
             }
         } catch (Throwable $e) {
             $this->error(ASSET_TCERR_01);
-            report_logger(['ErrorCode' => 'ASSET_TCERR_01'], report_logger()->formatError(ASSET_TCERR_01, $e));
+            customlog(['ErrorCode' => 'ASSET_TCERR_01'], customlog()->formatError(ASSET_TCERR_01, $e));
 
             return false;
         }
 
         $this->info("\n".ASSET_TCF_01);
-        report_logger(['message' => ASSET_TCF_01]);
+        customlog(['message' => ASSET_TCF_01]);
 
         return true;
     }

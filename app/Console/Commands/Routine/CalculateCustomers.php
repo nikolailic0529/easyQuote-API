@@ -41,7 +41,7 @@ class CalculateCustomers extends Command
     public function handle(Stats $service, StatsAggregator $aggregator)
     {
         $this->warn(CUSTC_S_01);
-        report_logger(['message' => CUSTC_S_01]);
+        customlog(['message' => CUSTC_S_01]);
 
         try {
             $service->calculateCustomerTotals($this->output->createProgressBar());
@@ -52,13 +52,13 @@ class CalculateCustomers extends Command
             }
         } catch (Throwable $e) {
             $this->error(CUSTC_ERR_01);
-            report_logger(['ErrorCode' => 'QTC_ERR_01'], report_logger()->formatError(CUSTC_ERR_01, $e));
+            customlog(['ErrorCode' => 'QTC_ERR_01'], customlog()->formatError(CUSTC_ERR_01, $e));
 
             return false;
         }
 
         $this->info("\n".CUSTC_F_01);
-        report_logger(['message' => CUSTC_F_01]);
+        customlog(['message' => CUSTC_F_01]);
 
         return true;
     }

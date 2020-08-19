@@ -1,0 +1,45 @@
+Service Agreement ID: 1086 5192 6805
+
+Support Quotation                                                                                     System Handle: SUPPINBA-SG
+
+Agreement No.                                                                                         SINGAPORE
+
+Your PO Reference:                                                                                    HPE Reference No.: 56784793
+
+Product No.             Description                                                   Serial No.                         Coverage Period                      Qty  Price/GBP
+
+                                                                                                                         from:                    to:
+
+Discount Summary
+
+Multi-Year Hdr Disc% -3%                                                                                                                                           3.96-
+
+Special Neg HdrDisc% -13%                                                                                                                                          16.66-
+
+Pre Payment HdrDisc% -2%                                                                                                                                           2.24-
+
+*** Hardware ***
+
+UJ558AC                 HPE Ind Std Svrs Return to HW Supp                                                                                        16.09.2020       635.58
+
+                                                                                                      Hardware Subtotal                                            635.58
+
+                                                                                                      Discounts                                                    -82.63
+
+                                                                                                      Total                                                        552.95
+
+Discount Summary
+
+Special Neg HdrDisc% -13%                                                                                                                                          82.63-
+
+                                                                                      Hardware Total                                                               767.70
+
+                                                                                      Discount Total                                                               -105.49
+
+                                                                                      Contract Total                                                               662.21
+
+Single Payment for Duration
+
+Printed on: 12.08.2020                                         Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT                   Page: 8 / 19
+
+Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN.  Registered No: 690597

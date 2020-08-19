@@ -12,12 +12,13 @@ interface HttpInterface
     /**
      * Make a new Json response instance.
      *
-     * @param string $details
-     * @param string $code
-     * @param integer $status
+     * @param  string $details
+     * @param  string $code
+     * @param  integer $status
+     * @param  array $headers
      * @return \Illuminate\Http\JsonResponse
      */
-    public function makeErrorResponse(string $details, string $code, int $status): JsonResponse;
+    public function makeErrorResponse(string $details, string $code, int $status, array $headers =  []): JsonResponse;
 
     /**
      * Determine if the given exception is related to invalid request exceptions.

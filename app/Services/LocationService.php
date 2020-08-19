@@ -69,7 +69,7 @@ class LocationService implements Contract
          if ($location instanceof Location) {
              $address->location()->associate($location)->saveOrFail();
 
-             report_logger(['message' => LC_AA_01], $address->toArray());
+             customlog(['message' => LC_AA_01], $address->toArray());
          }
 
          $this->advanceProgress();
@@ -89,7 +89,7 @@ class LocationService implements Contract
         }
 
         if (($location = Location::whereSearchableAddress($address)->first()) instanceof Location) {
-            report_logger(['message' => LC_FE_01], $location->toArray());
+            customlog(['message' => LC_FE_01], $location->toArray());
 
             return $location;
         }
@@ -107,7 +107,7 @@ class LocationService implements Contract
         $location = Location::wherePlaceId($dto->place_id)->first();
 
         if ($location instanceof Location) {
-            report_logger(['message' => LC_FE_01], $location->toArray());
+            customlog(['message' => LC_FE_01], $location->toArray());
         
             return $location;
         }
@@ -117,7 +117,7 @@ class LocationService implements Contract
         return tap(Location::make($dto->toArray() + ['country_id' => $countryId, 'searchable_address' => $address]), function (Location $location) {
             $location->saveOrFail();
 
-            report_logger(['message' => LC_FC_01], $location->toArray());
+            customlog(['message' => LC_FC_01], $location->toArray());
         });
     }
 
@@ -168,7 +168,7 @@ class LocationService implements Contract
      */
     protected function onUpdateAddressLocationsCompleted(): void
     {
-        report_logger(['message' => LC_AUC_01], ['not_found_addresses' => $this->notFoundAddresses]);
+        customlog(['message' => LC_AUC_01], ['not_found_addresses' => $this->notFoundAddresses]);
 
         $this->finishProgress();
     }
@@ -188,7 +188,7 @@ class LocationService implements Contract
 
         array_push($this->notFoundAddresses, compact('address'));
 
-        report_logger(['ErrorCode' => 'LC_NF_01'], [LC_NF_01, compact('address')]);
+        customlog(['ErrorCode' => 'LC_NF_01'], [LC_NF_01, compact('address')]);
     }
 
     /**
