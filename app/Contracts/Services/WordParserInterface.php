@@ -11,7 +11,7 @@ interface WordParserInterface
      *
      * @param string $path
      * @param bool $storage
-     * @return App\Services\WordParser\WordParser
+     * @return $this
      */
     public function load(string $path, bool $storage = true);
 
@@ -27,17 +27,17 @@ interface WordParserInterface
     /**
      * Extract all first level tables from DOCX format file
      *
-     * @param PhpWord $phpWord
-     * @return Array
+     * @param PhpWord|null $phpWord
+     * @return $this
      */
-    public function getTables(PhpWord $phpWord);
+    public function getTables(?PhpWord $phpWord = null);
 
     /**
      * Recursive search header by $needle and rows on the same nesting level
      *
      * @param string $needle
-     * @param Array $tables
-     * @return Array [[header][rows]]
+     * @param array $tables
+     * @return array [[header][rows]]
      */
-    public function findRows(string $needle, array $tables);
+    public function findRows(string $needle, array $tables = []);
 }
