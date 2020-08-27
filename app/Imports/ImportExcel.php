@@ -144,7 +144,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
     public function onRow(Row $excelRow)
     {
-        $row = $excelRow->toCollection(null, true);
+        $row = $excelRow->toCollection(null, false);
 
         if ($excelRow->getIndex() < $this->startRow) {
             $this->findPriceAttributes($row);

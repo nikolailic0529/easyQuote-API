@@ -4,11 +4,12 @@ namespace App\Services;
 
 use App\Contracts\Repositories\VendorRepositoryInterface as Vendors;
 use App\Contracts\Services\HpeExporter;
+use App\DTO\HpeContractExportFile;
 use App\DTO\PreviewHpeContractData;
 use App\Models\QuoteTemplate\HpeContractTemplate;
 use Barryvdh\Snappy\PdfWrapper;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Arr;
+use Illuminate\Support\{Arr, Str};
 use Illuminate\Support\Collection;
 use LynX39\LaraPdfMerger\PdfManage;
 use Illuminate\Filesystem\FilesystemAdapter as Disk;
@@ -67,9 +68,16 @@ class HpeContractExporter implements HpeExporter
         $pdfMerger->addPDF($landscapePages, 'all', 'L');
         $pdfMerger->merge();
 
-        $fileName = $this->disk->path('hpe_contracts' . DIRECTORY_SEPARATOR .  static::makeFileName($data));
+        $filePath = 'hpe_contracts' . DIRECTORY_SEPARATOR .  static::makeFileName($data);
 
-        return tap($fileName, fn () => $pdfMerger->save(static::makeFileName($data), 'download'));
+        $content = $pdfMerger->save(null, 'string');
+
+        $this->disk->put($filePath, $content);
+
+        return new HpeContractExportFile([
+            'filePath' => $this->disk->path($filePath),
+            'fileName' => static::makeFileName($data)
+        ]);
     }
 
     public function retrieveTemplateImages(HpeContractTemplate $template, int $flags = 0): array
@@ -120,6 +128,11 @@ class HpeContractExporter implements HpeExporter
 
     protected static function makeFileName(PreviewHpeContractData $data): string
     {
-        return sprintf('%s.pdf', $data->contract_number);
+        return sprintf('%s.pdf', $data->purchase_order_no);
+    }
+
+    protected static function makeDownloadFileName(PreviewHpeContractData $data): string
+    {
+        return sprintf('%s_%s.pdf', $data->purchase_order_no, Str::random(40));
     }
 }
