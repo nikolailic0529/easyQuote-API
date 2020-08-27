@@ -240,11 +240,9 @@ class HpeContractController extends Controller
      */
     public function exportHpeContract(Export $request, HpeContract $hpeContract, HpeExporter $exporter)
     {
-        return response()->download(
-            $exporter->export(
-                $hpeContract->hpeContractTemplate,
-                $this->processor->retrieveSummarizedContractData($hpeContract)
-            )
+        return $exporter->export(
+            $hpeContract->hpeContractTemplate,
+            $this->processor->retrieveSummarizedContractData($hpeContract)
         );
     }
 

@@ -5,9 +5,7 @@ namespace App\Services;
 use App\Contracts\Services\WordParserInterface;
 use App\Contracts\Repositories\QuoteFile\{
     ImportableColumnRepositoryInterface as ImportableColumns,
-    DataSelectSeparatorRepositoryInterface as DataSelectSeparators
 };
-use App\Models\QuoteFile\DataSelectSeparator;
 use Devengine\PhpWord\{
     IOFactory,
     PhpWord,
@@ -17,8 +15,9 @@ use Devengine\PhpWord\{
     Element\Cell
 };
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Collection as SupportCollection;
-use Storage, Arr;
+use Illuminate\Support\{Arr, Str, Collection as SupportCollection};
+use Storage;
+use voku\helper\ASCII;
 
 class WordParser implements WordParserInterface
 {
@@ -77,7 +76,7 @@ class WordParser implements WordParserInterface
         return $rawPages;
     }
 
-    public function getTables(PhpWord $phpWord = null)
+    public function getTables(?PhpWord $phpWord = null)
     {
         $phpWord ??= $this->phpWord;
 
@@ -302,12 +301,14 @@ class WordParser implements WordParserInterface
         }
 
         if (!method_exists($element, 'getElements')) {
-            return false;
+            return;
         }
 
         foreach ($element->getElements() as $element) {
             if ($this->isTableInstance($element)) {
-                return array_push($this->tables, $element);
+                array_push($this->tables, $element);
+
+                continue;
             }
 
             $this->extractTables($element);
@@ -379,9 +380,25 @@ class WordParser implements WordParserInterface
 
         $rows = collect($rows)
             ->transform(function ($row) {
-                $cells = collect(Arr::get($row, 'cells', []))->transform(fn ($cell) => data_get($cell, 'text'))
-                    ->filter(fn ($cell) => filled($cell));
-                return collect(Arr::set($row, 'cells', $cells));
+                $cells = collect($row['cells'] ?? [])
+                    ->transform(function ($cell) use ($row) {
+                        $value = $cell['text'] ?? null;
+
+                        if (is_string($value) && !ASCII::is_ascii($value)) {
+                            $value = ASCII::to_ascii($value);
+                        }
+
+                        if (is_string($value)) {
+                            $value = trim($value);
+                        }
+
+                        return $value;
+                    })
+                    ->filter(fn ($value) => filled($value));
+
+                $row['cells'] = $cells;
+
+                return Collection::wrap($row);
             })
             ->reject(fn (SupportCollection $row) => $row->get('cells')->count() < $columnsCount - 1)
             ->transform(function (SupportCollection $row) use ($keys) {

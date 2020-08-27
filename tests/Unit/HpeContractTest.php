@@ -7,15 +7,18 @@ use App\Models\HpeContract;
 use App\Models\HpeContractFile;
 use App\Services\HpeContractFileService;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Arr;
+use Illuminate\Support\{Arr, Str};
 use Tests\TestCase;
 use Storage;
 use File;
+use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\Testing\File as TestingFile;
 use Illuminate\Support\Collection;
 
 class HpeContractTest extends TestCase
 {
+    use WithFaker;
+
     /**
      * Test HPE Contract File Uploading.
      *
@@ -120,105 +123,105 @@ class HpeContractTest extends TestCase
         $this->assertEquals(3, $hpeContractFile->hpeContractData()->count());
 
         $this->assertArrayHasEqualValues(optional($hpeContractFile->hpeContractData[0])->toArray(), [
-            'amp_id' => '87-SMD502 703',
+            'amp_id'                    => '87-SMD502 703',
             'support_account_reference' => '1000834175_00001',
-            'contract_number' => '4000003765',
-            'order_authorization' => '471262142',
-            'contract_start_date' => '2020-07-08',
-            'contract_end_date' => '2023-07-07',
-            'price' => 0.0,
-            'product_number' => 'HA158AC',
-            'serial_number' => null,
-            'product_description' => 'Telefonische SW Unterstutzung',
-            'product_quantity' => 1,
-            'asset_type' => 'Software Support Service',
-            'service_type' => 'K3 - HP Technology Softwa',
-            'service_code' => null,
-            'service_description' => null,
-            'service_code_2' => 'BD505A',
-            'service_description_2' => 'HP iLO Adv incl 3yr TS U 1-Svr Lic',
-            'service_levels' => 'SW Technical Support;SW Electronic Support;24 Hrs Std Office Days;24 Hrs Day 6;24 Hrs Day 7;Holidays Covered;Standard Response',
-            'hw_delivery_contact_name' => 'Cavin Jean Michel',
+            'contract_number'           => '4000003765',
+            'order_authorization'       => '471262142',
+            'contract_start_date'       => '2020-07-08',
+            'contract_end_date'         => '2023-07-07',
+            'price'                     => 0.0,
+            'product_number'            => 'HA158AC',
+            'serial_number'             => null,
+            'product_description'       => 'Telefonische SW Unterstutzung',
+            'product_quantity'          => 1,
+            'asset_type'                => 'Software Support Service',
+            'service_type'              => 'K3 - HP Technology Softwa',
+            'service_code'              => null,
+            'service_description'       => null,
+            'service_code_2'            => 'BD505A',
+            'service_description_2'     => 'HP iLO Adv incl 3yr TS U 1-Svr Lic',
+            'service_levels'            => 'SW Technical Support;SW Electronic Support;24 Hrs Std Office Days;24 Hrs Day 6;24 Hrs Day 7;Holidays Covered;Standard Response',
+            'hw_delivery_contact_name'  => 'Cavin Jean Michel',
             'hw_delivery_contact_phone' => null,
-            'sw_delivery_contact_name' => 'Cavin Jean Michel',
+            'sw_delivery_contact_name'  => 'Cavin Jean Michel',
             'sw_delivery_contact_phone' => null,
-            'pr_support_contact_name' => 'Cavin Jean Michel',
-            'pr_support_contact_phone' => null,
-            'customer_name' => 'TESEDI Schweiz GmbH',
-            'customer_address' => 'Einkaufszentrum Glatt',
-            'customer_city' => 'Wallisellen',
-            'customer_post_code' => '8304',
-            'customer_state_code' => 'ZE',
-            'support_start_date' => '2020-08-07',
-            'support_end_date' => '2023-07-07',
+            'pr_support_contact_name'   => 'Cavin Jean Michel',
+            'pr_support_contact_phone'  => null,
+            'customer_name'             => 'TESEDI Schweiz GmbH',
+            'customer_address'          => 'Einkaufszentrum Glatt',
+            'customer_city'             => 'Wallisellen',
+            'customer_post_code'        => '8304',
+            'customer_state_code'       => 'ZE',
+            'support_start_date'        => '2020-08-07',
+            'support_end_date'          => '2023-07-07',
         ]);
 
         $this->assertArrayHasEqualValues(optional($hpeContractFile->hpeContractData[1])->toArray(), [
-            'amp_id' => '87-SMD502 703',
+            'amp_id'                    => '87-SMD502 703',
             'support_account_reference' => '1000834175_00001',
-            'contract_number' => '4000003765',
-            'order_authorization' => '471262142',
-            'contract_start_date' => '2020-07-08',
-            'contract_end_date' => '2023-07-07',
-            'price' => 0.0,
-            'product_number' => 'BD505A',
-            'serial_number' => '9YE5AJTUY4YE',
-            'product_description' => 'HP iLO Adv incl 3yr TS U 1-Svr Lic',
-            'product_quantity' => 1,
-            'asset_type' => 'Software',
-            'service_type' => '4U - Volume Software',
-            'service_code' => 'HA156AC',
-            'service_description' => 'HPE Software Updates SVC',
-            'service_code_2' => 'HA158AC',
-            'service_description_2' => 'Telefonische SW Unterstutzung',
-            'service_levels' => 'SW Technical Support;SW Electronic Support;24 Hrs Std Office Days;24 Hrs Day 6;24 Hrs Day 7;Holidays Covered;Standard Response',
-            'hw_delivery_contact_name' => 'Cavin Jean Michel',
+            'contract_number'           => '4000003765',
+            'order_authorization'       => '471262142',
+            'contract_start_date'       => '2020-07-08',
+            'contract_end_date'         => '2023-07-07',
+            'price'                     => 0.0,
+            'product_number'            => 'BD505A',
+            'serial_number'             => '9YE5AJTUY4YE',
+            'product_description'       => 'HP iLO Adv incl 3yr TS U 1-Svr Lic',
+            'product_quantity'          => 1,
+            'asset_type'                => 'Software',
+            'service_type'              => '4U - Volume Software',
+            'service_code'              => 'HA156AC',
+            'service_description'       => 'HPE Software Updates SVC',
+            'service_code_2'            => 'HA158AC',
+            'service_description_2'     => 'Telefonische SW Unterstutzung',
+            'service_levels'            => 'SW Technical Support;SW Electronic Support;24 Hrs Std Office Days;24 Hrs Day 6;24 Hrs Day 7;Holidays Covered;Standard Response',
+            'hw_delivery_contact_name'  => 'Cavin Jean Michel',
             'hw_delivery_contact_phone' => null,
-            'sw_delivery_contact_name' => 'Cavin Jean Michel',
+            'sw_delivery_contact_name'  => 'Cavin Jean Michel',
             'sw_delivery_contact_phone' => null,
-            'pr_support_contact_name' => 'Cavin Jean Michel',
-            'pr_support_contact_phone' => null,
-            'customer_name' => 'TESEDI Schweiz GmbH',
-            'customer_address' => 'Einkaufszentrum Glatt',
-            'customer_city' => 'Wallisellen',
-            'customer_post_code' => '8304',
-            'customer_state_code' => 'ZE',
-            'support_start_date' => '2020-08-07',
-            'support_end_date' => '2023-07-07',
+            'pr_support_contact_name'   => 'Cavin Jean Michel',
+            'pr_support_contact_phone'  => null,
+            'customer_name'             => 'TESEDI Schweiz GmbH',
+            'customer_address'          => 'Einkaufszentrum Glatt',
+            'customer_city'             => 'Wallisellen',
+            'customer_post_code'        => '8304',
+            'customer_state_code'       => 'ZE',
+            'support_start_date'        => '2020-08-07',
+            'support_end_date'          => '2023-07-07',
         ]);
 
         $this->assertArrayHasEqualValues(optional($hpeContractFile->hpeContractData[2])->toArray(), [
-            'amp_id' => '87-SMD502 703',
+            'amp_id'                    => '87-SMD502 703',
             'support_account_reference' => '1000834175_00001',
-            'contract_number' => '4000003765',
-            'order_authorization' => '471262142',
-            'contract_start_date' => '2020-07-08',
-            'contract_end_date' => '2023-07-07',
-            'price' => 0.0,
-            'product_number' => 'BD505A',
-            'serial_number' => 'CEYAAJTUY4YE',
-            'product_description' => 'HP iLO Adv incl 3yr TS U 1-Svr Lic',
-            'product_quantity' => 1,
-            'asset_type' => 'Software',
-            'service_type' => '4U - Volume Software',
-            'service_code' => 'HA156AC',
-            'service_description' => 'HPE Software Updates SVC',
-            'service_code_2' => 'HA158AC',
-            'service_description_2' => 'Telefonische SW Unterstutzung',
-            'service_levels' => 'SW Technical Support;SW Electronic Support;24 Hrs Std Office Days;24 Hrs Day 6;24 Hrs Day 7;Holidays Covered;Standard Response',
-            'hw_delivery_contact_name' => 'Cavin Jean Michel',
+            'contract_number'           => '4000003765',
+            'order_authorization'       => '471262142',
+            'contract_start_date'       => '2020-07-08',
+            'contract_end_date'         => '2023-07-07',
+            'price'                     => 0.0,
+            'product_number'            => 'BD505A',
+            'serial_number'             => 'CEYAAJTUY4YE',
+            'product_description'       => 'HP iLO Adv incl 3yr TS U 1-Svr Lic',
+            'product_quantity'          => 1,
+            'asset_type'                => 'Software',
+            'service_type'              => '4U - Volume Software',
+            'service_code'              => 'HA156AC',
+            'service_description'       => 'HPE Software Updates SVC',
+            'service_code_2'            => 'HA158AC',
+            'service_description_2'     => 'Telefonische SW Unterstutzung',
+            'service_levels'            => 'SW Technical Support;SW Electronic Support;24 Hrs Std Office Days;24 Hrs Day 6;24 Hrs Day 7;Holidays Covered;Standard Response',
+            'hw_delivery_contact_name'  => 'Cavin Jean Michel',
             'hw_delivery_contact_phone' => null,
-            'sw_delivery_contact_name' => 'Cavin Jean Michel',
+            'sw_delivery_contact_name'  => 'Cavin Jean Michel',
             'sw_delivery_contact_phone' => null,
-            'pr_support_contact_name' => 'Cavin Jean Michel',
-            'pr_support_contact_phone' => null,
-            'customer_name' => 'TESEDI Schweiz GmbH',
-            'customer_address' => 'Einkaufszentrum Glatt',
-            'customer_city' => 'Wallisellen',
-            'customer_post_code' => '8304',
-            'customer_state_code' => 'ZE',
-            'support_start_date' => '2020-08-07',
-            'support_end_date' => '2023-07-07',
+            'pr_support_contact_name'   => 'Cavin Jean Michel',
+            'pr_support_contact_phone'  => null,
+            'customer_name'             => 'TESEDI Schweiz GmbH',
+            'customer_address'          => 'Einkaufszentrum Glatt',
+            'customer_city'             => 'Wallisellen',
+            'customer_post_code'        => '8304',
+            'customer_state_code'       => 'ZE',
+            'support_start_date'        => '2020-08-07',
+            'support_end_date'          => '2023-07-07',
         ]);
     }
 
@@ -259,14 +262,14 @@ class HpeContractTest extends TestCase
                 'purchase_order_no',
                 'hpe_sales_order_no',
                 'purchase_order_date',
-                'customer_contacts' => [
-                    'sold_contact'              => ['org_name', 'attn', 'email', 'phone', 'address', 'post_code', 'country', 'city'],
-                    'bill_contact'              => ['org_name', 'attn', 'email', 'phone', 'address', 'post_code', 'country', 'city'],
-                    'hw_delivery_contact'       => ['org_name', 'attn', 'email', 'phone', 'address', 'post_code', 'country', 'city'],
-                    'sw_delivery_contact'       => ['org_name', 'attn', 'email', 'phone', 'address', 'post_code', 'country', 'city'],
-                    'pr_support_contact'        => ['org_name', 'attn', 'email', 'phone', 'address', 'post_code', 'country', 'city'],
-                    'entitled_party_contact'    => ['org_name', 'attn', 'email', 'phone', 'address', 'post_code', 'country', 'city'],
-                    'end_customer_contact'      => ['org_name', 'attn', 'email', 'phone', 'address', 'post_code', 'country', 'city'],
+                'customer_contacts'          => [
+                    'sold_contact'           => ['org_name', 'attn', 'email', 'phone', 'address', 'post_code', 'country', 'city'],
+                    'bill_contact'           => ['org_name', 'attn', 'email', 'phone', 'address', 'post_code', 'country', 'city'],
+                    'hw_delivery_contact'    => ['org_name', 'attn', 'email', 'phone', 'address', 'post_code', 'country', 'city'],
+                    'sw_delivery_contact'    => ['org_name', 'attn', 'email', 'phone', 'address', 'post_code', 'country', 'city'],
+                    'pr_support_contact'     => ['org_name', 'attn', 'email', 'phone', 'address', 'post_code', 'country', 'city'],
+                    'entitled_party_contact' => ['org_name', 'attn', 'email', 'phone', 'address', 'post_code', 'country', 'city'],
+                    'end_customer_contact'   => ['org_name', 'attn', 'email', 'phone', 'address', 'post_code', 'country', 'city'],
                 ],
                 'last_drafted_step',
                 'additional_notes',
@@ -349,6 +352,25 @@ class HpeContractTest extends TestCase
 
         $this->assertNull($hpeContract->refresh()->activated_at);
         $this->assertNull($hpeContract->contract->refresh()->activated_at);
+    }
+
+    /**
+     * Test exporting a newly created HPE Contract.
+     *
+     * @return void
+     */
+    public function testHpeContractExporting()
+    {
+        $this->authenticateApi();
+
+        /** @var HpeContract */
+        $hpeContract = factory(HpeContract::class)->create([
+            'purchase_order_no' => $this->faker->randomNumber()
+        ]);
+
+        $response = $this->get('api/hpe-contracts/'.$hpeContract->getKey().'/export')->assertOk();
+
+        $response->assertHeader('content-disposition', 'attachment; filename='.$hpeContract->purchase_order_no.'.pdf');
     }
 
     protected static function createUploadedFile(string $filePath): TestingFile
