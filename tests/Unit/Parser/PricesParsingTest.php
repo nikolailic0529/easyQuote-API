@@ -90,8 +90,7 @@ class PricesParsingTest extends ParsingTest
     protected function performFileAssertions(QuoteFile $quoteFile): void
     {
         $expectedRowsCount = $this->getMappingAttribute('count', $quoteFile->original_file_name);
-
-        $this->assertEquals($quoteFile->rowsData()->count(), $expectedRowsCount, $this->message($quoteFile));
+        $this->assertEquals($expectedRowsCount, $quoteFile->rowsData()->count(), $this->message($quoteFile));
     }
 
     protected function mapping(): Collection

@@ -515,6 +515,12 @@ class HpeContractStateProcessor implements HpeContractState
             ->selectRaw('MAX(customer_post_code) customer_post_code')
             ->selectRaw('MAX(customer_state_code) customer_state_code')
 
+            ->selectRaw('MAX(reseller_name) reseller_name')
+            ->selectRaw('MAX(reseller_address) reseller_address')
+            ->selectRaw('MAX(reseller_city) reseller_city')
+            ->selectRaw('MAX(reseller_post_code) reseller_post_code')
+            ->selectRaw('MAX(reseller_state) reseller_state')
+
             ->selectRaw('MAX(hw_delivery_contact_name) hw_delivery_contact_name')
             ->selectRaw('MAX(hw_delivery_contact_phone) hw_delivery_contact_phone')
             ->selectRaw('MAX(sw_delivery_contact_name) sw_delivery_contact_name')
@@ -525,7 +531,16 @@ class HpeContractStateProcessor implements HpeContractState
 
         $country = data_get(auth()->user(), 'country.name');
 
-        $soldContact = [
+        $resellerContact = [
+            'org_name'      => Arr::get($contractData, 'reseller_name'),
+            'address'       => Arr::get($contractData, 'reseller_address'),
+            'city'          => Arr::get($contractData, 'reseller_city'),
+            'post_code'     => Arr::get($contractData, 'reseller_post_code'),
+            'state'         => Arr::get($contractData, 'reseller_state'),
+            'country'       => $country,
+        ];
+
+        $endUserContact = [
             'org_name'      => Arr::get($contractData, 'customer_name'),
             'address'       => Arr::get($contractData, 'customer_address'),
             'city'          => Arr::get($contractData, 'customer_city'),
@@ -535,13 +550,13 @@ class HpeContractStateProcessor implements HpeContractState
         ];
 
         $contacts = [
-            'sold_contact'              => $soldContact,
-            'bill_contact'              => $soldContact,
+            'sold_contact'              => $resellerContact,
+            'bill_contact'              => $resellerContact,
             'hw_delivery_contact'       => ['attn' => Arr::get($contractData, 'hw_delivery_contact_name'), 'phone' => Arr::get($contractData, 'hw_delivery_contact_phone')],
             'sw_delivery_contact'       => ['attn' => Arr::get($contractData, 'sw_delivery_contact_name'), 'phone' => Arr::get($contractData, 'sw_delivery_contact_phone')],
             'pr_support_contact'        => ['attn' => Arr::get($contractData, 'pr_support_contact_name'), 'phone' => Arr::get($contractData, 'pr_support_contact_phone')],
-            'entitled_party_contact'    => ['country' => $country],
-            'end_customer_contact'      => ['country' => $country],
+            'entitled_party_contact'    => $endUserContact,
+            'end_customer_contact'      => $endUserContact,
         ];
 
         return $contacts;
