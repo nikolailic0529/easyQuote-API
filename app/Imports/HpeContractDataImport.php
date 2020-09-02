@@ -63,6 +63,11 @@ class HpeContractDataImport implements ToModel, WithBatchInserts, WithChunkReadi
     const CELL_CSTC = 35;
     const CELL_SSD = 41;
     const CELL_SED = 42;
+    const CELL_RLN = 48;
+    const CELL_RLA = 49;
+    const CELL_RLS = 50;
+    const CELL_RLC = 52;
+    const CELL_RLPC = 53;
 
     protected HpeContractFile $hpeContractFile;
 
@@ -118,11 +123,19 @@ class HpeContractDataImport implements ToModel, WithBatchInserts, WithChunkReadi
             'sw_delivery_contact_phone'     => $row[static::CELL_SWDCP],
             'pr_support_contact_name'       => $row[static::CELL_PRSCN],
             'pr_support_contact_phone'      => $row[static::CELL_PRSCP],
+
             'customer_name'                 => $row[static::CELL_CSN],
             'customer_address'              => $row[static::CELL_CSA],
             'customer_city'                 => $row[static::CELL_CSC],
             'customer_post_code'            => $row[static::CELL_CSPC],
             'customer_state_code'           => $row[static::CELL_CSTC],
+
+            'reseller_name'                 => $row[static::CELL_RLN],
+            'reseller_address'              => $row[static::CELL_RLA],
+            'reseller_city'                 => $row[static::CELL_RLC],
+            'reseller_post_code'            => $row[static::CELL_RLPC],
+            'reseller_state'           => $row[static::CELL_RLS],
+
             'support_start_date'            => static::parseDate($row[static::CELL_SSD]),
             'support_end_date'              => static::parseDate($row[static::CELL_SED]),
         ];
