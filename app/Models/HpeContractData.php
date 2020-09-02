@@ -31,17 +31,26 @@ class HpeContractData extends Model
         'service_code_2',
         'service_description_2',
         'service_levels',
+        
         'hw_delivery_contact_name',
         'hw_delivery_contact_phone',
         'sw_delivery_contact_name',
         'sw_delivery_contact_phone',
         'pr_support_contact_name',
         'pr_support_contact_phone',
+
         'customer_name',
         'customer_address',
         'customer_city',
         'customer_post_code',
         'customer_state_code',
+
+        'reseller_name',
+        'reseller_address',
+        'reseller_city',
+        'reseller_state',
+        'reseller_post_code',
+
         'support_start_date',
         'support_end_date',
         'is_selected',

@@ -74,14 +74,23 @@ class HpeContractTest extends TestCase
             $stateProcessor->processHpeContractData($hpeContract, $hpeContractFile, $response)
         );
 
-        $this->assertSame($hpeContract->sold_contact->org_name, 'Semadeni (Europe) AG');
-        $this->assertSame($hpeContract->bill_contact->org_name, 'Semadeni (Europe) AG');
-        $this->assertSame($hpeContract->sold_contact->address, 'Tagetlistrasse 35-39');
-        $this->assertSame($hpeContract->bill_contact->address, 'Tagetlistrasse 35-39');
-        $this->assertSame($hpeContract->sold_contact->post_code, '3072');
-        $this->assertSame($hpeContract->bill_contact->post_code, '3072');
-        $this->assertSame($hpeContract->sold_contact->city, 'Ostermundigen');
-        $this->assertSame($hpeContract->bill_contact->city, 'Ostermundigen');
+        $this->assertSame($hpeContract->sold_contact->org_name, 'smart dynamic ag');
+        $this->assertSame($hpeContract->bill_contact->org_name, 'smart dynamic ag');
+        $this->assertSame($hpeContract->sold_contact->address, 'Zentweg 9');
+        $this->assertSame($hpeContract->bill_contact->address, 'Zentweg 9');
+        $this->assertSame($hpeContract->sold_contact->post_code, '3006');
+        $this->assertSame($hpeContract->bill_contact->post_code, '3006');
+        $this->assertSame($hpeContract->sold_contact->city, 'Bern');
+        $this->assertSame($hpeContract->bill_contact->city, 'Bern');
+
+        $this->assertSame($hpeContract->entitled_party_contact->org_name, 'Semadeni (Europe) AG');
+        $this->assertSame($hpeContract->end_customer_contact->org_name, 'Semadeni (Europe) AG');
+        $this->assertSame($hpeContract->entitled_party_contact->address, 'Tagetlistrasse 35-39');
+        $this->assertSame($hpeContract->end_customer_contact->address, 'Tagetlistrasse 35-39');
+        $this->assertSame($hpeContract->entitled_party_contact->post_code, '3072');
+        $this->assertSame($hpeContract->end_customer_contact->post_code, '3072');
+        $this->assertSame($hpeContract->entitled_party_contact->city, 'Ostermundigen');
+        $this->assertSame($hpeContract->end_customer_contact->city, 'Ostermundigen');
 
         $assetIds = Collection::wrap($stateProcessor->retrieveContractData($hpeContract))->pluck('assets.*.id')->collapse();
 
