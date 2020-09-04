@@ -9,6 +9,20 @@ use Illuminate\Validation\Rule;
 class StoreState extends FormRequest
 {
     /**
+     * Determine if the user is authorized to make this request.
+     *
+     * @return bool
+     */
+    public function authorize()
+    {
+        if (optional($this->route('hpe_contract'))->isSubmitted()) {
+            abort(403, 'Unable to update submitted HPE Contract');
+        }
+
+        return true;
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array

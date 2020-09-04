@@ -8,12 +8,15 @@ use App\DTO\HpeContractExportFile;
 use App\DTO\PreviewHpeContractData;
 use App\Models\QuoteTemplate\HpeContractTemplate;
 use Barryvdh\Snappy\PdfWrapper;
+use File;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\{Arr, Str};
 use Illuminate\Support\Collection;
 use LynX39\LaraPdfMerger\PdfManage;
 use Illuminate\Filesystem\FilesystemAdapter as Disk;
 use Illuminate\Contracts\Filesystem\Factory as DiskFactory;
+use Spatie\PdfToText\Pdf as PdfToText;
+use Smalot\PdfParser\Parser as PdfParser;
 
 class HpeContractExporter implements HpeExporter
 {
@@ -30,9 +33,8 @@ class HpeContractExporter implements HpeExporter
         $this->exportView = $exportView;
     }
 
-    public function export(HpeContractTemplate $template, PreviewHpeContractData $data, bool $web = false)
+    public function export(HpeContractTemplate $template, PreviewHpeContractData $data)
     {
-        // $form = Collection::wrap(json_decode(file_get_contents(database_path('seeds/models/hpe_contract_template_design.json')), true));
         $form = Collection::wrap($template->form_data);
 
         $form = static::sortFormPages($form);
@@ -41,41 +43,42 @@ class HpeContractExporter implements HpeExporter
 
         $data->translations = $template->data_headers->pluck('value', 'key')->toArray();
 
-        if ($web) {
-            return view($this->exportView, ['data' => $data, 'form' => $form, 'web' => true]);
-        }
-
         $tempDir = (new TemporaryDirectory)->create();
 
         $portraitPages = $tempDir->path('portrait-pages.pdf');
+        
         $landscapePages = $tempDir->path('landscape-pages.pdf');
 
         $this->pdfWrapper()
             ->setPaper('letter', 'Portrait')
             ->setOption('margin-left', 26)
             ->setOption('margin-right', 26)
-            ->loadView($this->exportView, ['form' => $form->only('first_page', 'contract_summary'), 'data' => $data])
+            ->loadView($this->exportView, ['form' => $form->only('first_page', 'contract_summary'), 'data' => $data, 'orientation' => 'P'])
             ->save($portraitPages, true);
 
         $this->pdfWrapper()
             ->setPaper('letter', 'Landscape')
-            ->loadView($this->exportView, ['form' => $form->except('first_page', 'contract_summary'), 'data' => $data])
+            ->setOption('enable-javascript', true)
+            ->loadView($this->exportView, ['form' => $form->except('first_page', 'contract_summary'), 'data' => $data, 'orientation' => 'L'])
             ->save($landscapePages, true);
 
         $pdfMerger = $this->pdfMerger()->init();
 
-        $pdfMerger->addPDF($portraitPages, 'all', 'P');
-        $pdfMerger->addPDF($landscapePages, 'all', 'L');
+        $portraitPagesNumbers = $this->findFilledPages($portraitPages);
+        $landscapePagesNumbers = $this->findFilledPages($landscapePages);
+
+        $pdfMerger->addPDF($portraitPages, implode(',', $portraitPagesNumbers), 'P');
+        $pdfMerger->addPDF($landscapePages, implode(',', $landscapePagesNumbers), 'L');
         $pdfMerger->merge();
 
-        $filePath = 'hpe_contracts' . DIRECTORY_SEPARATOR .  static::makeFileName($data);
+        $filePath = 'hpe_contracts' . DIRECTORY_SEPARATOR .  static::makeDownloadFileName($data);
 
         $content = $pdfMerger->save(null, 'string');
 
-        $this->disk->put($filePath, $content);
+        File::put($tempDir->path($filePath), $content);
 
         return new HpeContractExportFile([
-            'filePath' => $this->disk->path($filePath),
+            'filePath' => $tempDir->path($filePath),
             'fileName' => static::makeFileName($data)
         ]);
     }
@@ -108,6 +111,37 @@ class HpeContractExporter implements HpeExporter
     protected function pdfMerger(): PdfManage
     {
         return app('pdf-merger');
+    }
+
+    protected function findFilledPages(string $filePath): array
+    {
+        /** @var PdfToText */
+        $pdfToText = app(PdfToText::class);
+
+        /** @var PdfParser */
+        $pdfParser = app(PdfParser::class);
+
+        $pagesCount = $pdfParser->parseFile($filePath)->getDetails()['Pages'];
+
+        $allPagesNumbers = range(1, $pagesCount);
+
+        $blankPages = [];
+
+        foreach ($allPagesNumbers as $pageNumber) {
+            $text = $pdfToText->setPdf($filePath)->setOptions(["f {$pageNumber}", "l {$pageNumber}"])->text();
+
+            if (blank($text)) {
+                $blankPages[] = $pageNumber;
+            }
+        }
+
+        $filledPages = array_filter($allPagesNumbers, fn ($number) => !in_array($number, $blankPages));
+
+        if (empty($filledPages)) {
+            $filledPages = [1];
+        }
+
+        return $filledPages;
     }
 
     protected static function sortFormPages(Collection $form): Collection

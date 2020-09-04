@@ -92,6 +92,16 @@ interface UserRepositoryInterface
     public function updateWhere(array $attributes, array $where = []): int;
 
     /**
+     * Pluck user attributes by specific clause.
+     *
+     * @param  array $where
+     * @param  string $column
+     * @param  string|null $key
+     * @return array
+     */
+    public function pluckWhere(array $where, $column, $key = null): array;
+
+    /**
      * Increment the given user attribute.
      *
      * @param string $id

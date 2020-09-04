@@ -258,9 +258,8 @@ class HpeContractController extends Controller
     {
         return $exporter->export(
             $hpeContract->hpeContractTemplate,
-            $this->processor->retrieveSummarizedContractData($hpeContract),
-            true
-        );
+            $this->processor->retrieveSummarizedContractData($hpeContract)
+        )->stream();
     }
 
     /**

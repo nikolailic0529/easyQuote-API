@@ -12,10 +12,9 @@ interface HpeExporter
      *
      * @param HpeContractTemplate $template
      * @param PreviewHpeContractData $data
-     * @param boolean $web
      * @return mixed
      */
-    public function export(HpeContractTemplate $template, PreviewHpeContractData $data, bool $web = false);
+    public function export(HpeContractTemplate $template, PreviewHpeContractData $data);
 
     /**
      * Retrieve arrayable HPE Contract Template images.
