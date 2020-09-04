@@ -29,10 +29,11 @@ use Illuminate\Database\Eloquent\{
     Builder,
     Collection
 };
-use Arr, Hash;
-use Closure;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\LazyCollection;
+use Closure;
 
 class UserRepository extends SearchableRepository implements UserRepositoryInterface
 {
@@ -228,6 +229,11 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
                 $user->timestamps = $usesTimestamps;
             }
         });
+    }
+
+    public function pluckWhere(array $where, $column, $key = null): array
+    {
+        return $this->user->query()->where($where)->pluck($column, $key)->all();
     }
 
     public function updateWhere(array $attributes, array $where = []): int
