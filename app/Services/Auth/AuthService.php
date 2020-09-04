@@ -7,15 +7,11 @@ use App\Contracts\{
     Repositories\AccessAttemptRepositoryInterface as Attempts,
     Repositories\UserRepositoryInterface as Users,
 };
-use App\Models\{
-    AccessAttempt,
-    User,
-};
+use App\Models\{AccessAttempt, User,};
 use App\Notifications\AttemptsExceeded;
 use Laravel\Passport\PersonalAccessTokenResult;
 use Illuminate\Pipeline\Pipeline;
-use Illuminate\Http\Request;
-use Auth, Arr;
+use Illuminate\Support\{Arr, Facades\Auth};
 
 class AuthService implements AuthServiceInterface
 {
@@ -85,6 +81,7 @@ class AuthService implements AuthServiceInterface
 
     public function logout(?User $user = null)
     {
+        /** @var \App\Models\User */
         $user ??= auth()->user();
 
         /**
@@ -136,7 +133,7 @@ class AuthService implements AuthServiceInterface
         /**
          * Throw an exception if the User Already Logged In.
          */
-        $this->checkAlreadyAuthenticatedCase($user);
+        // $this->checkAlreadyAuthenticatedCase($user);
 
         /**
          * Once user logged in we are freshing the last activity timestamp and writing the related activity.

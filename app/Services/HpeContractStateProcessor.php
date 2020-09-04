@@ -31,6 +31,10 @@ class HpeContractStateProcessor implements HpeContractState
      */
     public function processState(array $state, ?HpeContract $hpeContract = null)
     {
+        if (! isset($state['last_drafted_step'])) {
+            $state['last_drafted_step'] = collect($this->hpeContract->getCompletenessDictionary())->sort()->keys()->first();
+        }
+
         return DB::transaction(function () use ($state, $hpeContract) {
             /** @var HpeContract */
             $hpeContract ??= $this->initiateHpeContractInstance();

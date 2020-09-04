@@ -239,6 +239,7 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
 
         $foundStart = false;
         $foundEnd = false;
+        
         foreach ($cellIterator as $cell) {
             if (preg_match($coverageReg, $cell->getValue()) && !$foundStart) {
                 $cell->setValue(__("parser.coverage_period.{$lang}.from"));
