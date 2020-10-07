@@ -25,18 +25,14 @@ class PasswordExpiration extends Command
      */
     protected $description = 'Notify Users to change password';
 
-    protected Users $users;
-
     /**
      * Create a new command instance.
      *
      * @return void
      */
-    public function __construct(Users $users)
+    public function __construct()
     {
         parent::__construct();
-
-        $this->users = $users;
     }
 
     /**
@@ -44,11 +40,11 @@ class PasswordExpiration extends Command
      *
      * @return mixed
      */
-    public function handle()
+    public function handle(Users $users)
     {
         \DB::transaction(
             fn () =>
-            $this->users->cursor(static::scope())
+            $users->cursor(static::scope())
                 ->each(fn (User $user) => $this->serveUser($user))
         );
     }

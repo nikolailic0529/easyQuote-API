@@ -6,7 +6,8 @@ use App\Models\QuoteTemplate\BaseQuoteTemplate;
 use App\Models\QuoteTemplate\ContractTemplate;
 use App\Models\QuoteTemplate\QuoteTemplate;
 use Illuminate\Console\Command;
-use Arr, Str;
+use Illuminate\Support\{Arr, Str};
+use RuntimeException;
 use Throwable;
 
 class UpdateTemplatesAssets extends Command
@@ -58,12 +59,28 @@ class UpdateTemplatesAssets extends Command
 
     protected function updateModelTemplates(string $model): void
     {
+        if (!class_exists($model)) {
+            throw new RuntimeException('Invalid Model Class provided');
+        }
+
         $pluralizedModel = Str::plural(class_basename($model));
 
-        $this->info("\nUpdating the {$pluralizedModel} assets...");
+        $this->output->title("\nUpdating the {$pluralizedModel} assets...");
 
-        app($model)->on('mysql_unbuffered')->cursor()
-            ->each(fn (BaseQuoteTemplate $template) => $this->updateTemplateAssets($template));
+        /** @var \Illuminate\Database\Eloquent\Model */
+        $model = new $model;
+
+        $this->output->progressStart($model->count());
+
+        $model->on('mysql_unbuffered')->select(['id', 'company_id', 'vendor_id', 'form_data'])
+            ->cursor()
+            ->each(function (BaseQuoteTemplate $template) {
+                $this->updateTemplateAssets($template);
+
+                $this->output->progressAdvance();
+            });
+
+        $this->output->progressFinish();
 
         $this->info("\n{$pluralizedModel} assets were updated!");
     }
@@ -77,7 +94,10 @@ class UpdateTemplatesAssets extends Command
             return;
         }
 
+        $template->load('vendor:id', 'company:id');
+
         $assets = collect($template->vendor->logoSelectionWithKeys)->merge($template->company->logoSelectionWithKeys);
+        $controls = [];
 
         try {
             $controls = Arr::where(
@@ -93,20 +113,18 @@ class UpdateTemplatesAssets extends Command
             return;
         }
 
-        $form_data = $template->form_data;
+        $formData = $template->form_data;
 
-        collect($controls)->each(function ($name, $key) use (&$form_data, $assets) {
-            data_set($form_data, Str::replaceLast('.id', '.src', $key), $assets[$name]);
+        collect($controls)->each(function ($name, $key) use (&$formData, $assets) {
+            data_set($formData, Str::replaceLast('.id', '.src', $key), $assets[$name]);
         });
 
         /** We are preventing update with null form_data as it means that something went wrong when parsing. */
-        if (is_null(json_decode(json_encode($form_data), true))) {
+        if (is_null(json_decode(json_encode($formData), true))) {
             $this->error($errorMessage);
             return;
         }
 
-        $this->output->write('.');
-
-        $template->update(compact('form_data'));
+        $template->query()->whereKey($template->getKey())->toBase()->update(['form_data' => $formData]);
     }
 }

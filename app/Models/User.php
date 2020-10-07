@@ -235,6 +235,11 @@ class User extends Model implements
         return $this->role->properties;
     }
 
+    public function getTimezoneTextAttribute()
+    {
+        return $this->timezone->text;
+    }
+
     public function imagesDirectory(): string
     {
         return "images/users";

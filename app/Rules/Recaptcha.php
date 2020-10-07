@@ -26,6 +26,12 @@ class Recaptcha implements Rule
      */
     public function passes($attribute, $value)
     {
+        if (! (setting('google_recaptcha_enabled') ?? false)) {
+            customlog(['message' => 'Google Recaptcha disabled']);
+
+            return true;
+        }
+
         if (
             config('services.recaptcha.skip_enabled') &&
             request('recaptcha_skip_key') === config('services.recaptcha.skip_key')

@@ -64,7 +64,9 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
     public function create(array $attributes): Role
     {
         return DB::transaction(
-            fn () => tap($this->role->create($attributes), function (Role $role) use ($attributes) {
+            fn () => tap($this->role->query()->make($attributes), function (Role $role) use ($attributes) {
+                $role->save();
+
                 $role->permissions()->sync(Arr::get($attributes, 'permissions') ?? []);
                 $role->companies()->sync(Arr::get($attributes, 'companies') ?? []);
 
@@ -75,9 +77,11 @@ class RoleRepository extends SearchableRepository implements RoleRepositoryInter
 
     public function update(string $id, array $attributes): Role
     {
+        $role = $this->find($id);
+
         return DB::transaction(
-            fn () => tap($this->find($id), function (Role $role) use ($attributes) {
-                $role->update($attributes);
+            fn () => tap($role->fill($attributes), function (Role $role) use ($attributes) {
+                $role->save();
 
                 $role->permissions()->sync(Arr::get($attributes, 'permissions') ?? []);
                 $role->companies()->sync(Arr::get($attributes, 'companies') ?? []);

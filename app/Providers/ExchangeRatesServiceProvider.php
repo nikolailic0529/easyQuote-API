@@ -2,12 +2,15 @@
 
 namespace App\Providers;
 
-use App\Repositories\RateFileRepository;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Contracts\Support\DeferrableProvider;
+use App\Contracts\Repositories\ExchangeRateRepositoryInterface;
+use App\Contracts\Services\ExchangeRateServiceInterface;
+use App\Repositories\{ExchangeRateRepository, RateFileRepository};
 use Illuminate\Contracts\Filesystem\Factory;
 use Illuminate\Contracts\Foundation\Application;
 
-class ExchangeRatesServiceProvider extends ServiceProvider
+class ExchangeRatesServiceProvider extends ServiceProvider implements DeferrableProvider
 {
     /**
      * Register services.
@@ -16,18 +19,12 @@ class ExchangeRatesServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        // 
-    }
+        $this->app->singleton(ExchangeRateRepositoryInterface::class, ExchangeRateRepository::class);
 
-    /**
-     * Bootstrap services.
-     *
-     * @return void
-     */
-    public function boot()
-    {
+        $this->app->singleton(ExchangeRateServiceInterface::class, ER_SERVICE_CLASS);
+
         $this->app->bind(RateFileRepository::class, function (Application $app) {
-            $diskName = config('exchange-rates.disk');
+            $diskName = $this->app['config']->get('exchange-rates.disk');
 
             $disk = $app->make(Factory::class)->disk($diskName);
 
@@ -35,5 +32,18 @@ class ExchangeRatesServiceProvider extends ServiceProvider
         });
 
         $this->app->alias(RateFileRepository::class, 'rate-file.repository');
+
+        $this->app->alias(ExchangeRateServiceInterface::class, 'exchange.service');
+    }
+
+    public function provides()
+    {
+        return [
+            RateFileRepository::class,
+            'rate-file.repository',
+            ExchangeRateRepositoryInterface::class,
+            ExchangeRateServiceInterface::class,
+            'exchange.service',
+        ];
     }
 }

@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Contracts\Repositories\VendorRepositoryInterface;
 use App\Http\Requests\Vendor\UpdateVendorRequest;
 use App\Models\Vendor;
+use Closure;
 use Illuminate\Database\Eloquent\{
     Model,
     Builder,
@@ -68,11 +69,17 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
         throw new \InvalidArgumentException(INV_ARG_SA_01);
     }
 
-    public function random(int $limit = 1)
+    public function random(int $limit = 1, ?Closure $scope = null)
     {
         $method = $limit > 1 ? 'get' : 'first';
 
-        return $this->vendor->query()->inRandomOrder()->limit($limit)->{$method}();
+        $query = $this->vendor->query()->inRandomOrder()->limit($limit);
+        
+        if ($scope instanceof Closure) {
+            $scope($query);
+        }
+        
+        return $query->{$method}();
     }
 
     public function create($request): Vendor

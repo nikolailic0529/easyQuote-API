@@ -9,6 +9,7 @@ use App\Models\Customer\Customer;
 use App\Models\Quote\Contract;
 use App\Scopes\ContractTypeScope;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\{Arr, Carbon, Collection, Str, Facades\DB};
 
 class HpeContractStateProcessor implements HpeContractState
@@ -31,7 +32,7 @@ class HpeContractStateProcessor implements HpeContractState
      */
     public function processState(array $state, ?HpeContract $hpeContract = null)
     {
-        if (! isset($state['last_drafted_step'])) {
+        if (!isset($state['last_drafted_step'])) {
             $state['last_drafted_step'] = collect($this->hpeContract->getCompletenessDictionary())->sort()->keys()->first();
         }
 
@@ -231,11 +232,15 @@ class HpeContractStateProcessor implements HpeContractState
 
             $services = $hpeContractFile->hpeContractData()
                 ->getBaseQuery()
-                ->selectRaw('MAX(service_levels) as service_levels')
+                ->selectRaw('service_levels')
                 ->addSelect('contract_number', 'service_code', 'service_code_2', 'service_description', 'service_description_2')
-                ->whereNotNull('service_description')
-                ->whereNotNull('service_description_2')
-                ->groupBy('service_description', 'service_description_2', 'contract_number')
+                ->whereIn('id', fn (BaseBuilder $query) => $query->selectRaw('MIN(id)')->from('hpe_contract_data')
+                    ->where('hpe_contract_file_id', $hpeContractFile->getKey())
+                    ->whereNotNull('service_description')
+                    ->whereNotNull('service_description_2')
+                    ->groupBy('contract_number'))
+                // ->whereColumn('service_description', '<>', 'service_description_2')
+                // ->groupBy('service_description', 'service_description_2', 'service_code', 'service_code_2', 'contract_number')
                 ->get();
 
             $services = static::parseServices($services);
@@ -344,15 +349,15 @@ class HpeContractStateProcessor implements HpeContractState
             ->filter(fn ($assets, $contract) => $contractsData->has($contract))
             ->map(function ($assets, $contractNumber) use ($contractsData, $services, $contractServices) {
                 $assetsWithinServices = $assets->groupBy('service_code_2')
-                    ->filter(fn ($assets, $serviceCode) => $services->has($serviceCode))
+                    // ->filter(fn ($assets, $serviceCode) => $services->has($serviceCode))
                     ->map(function (Collection $assets, $serviceCode) use ($services) {
                         /** @var \App\DTO\HpeContractService */
                         $service = $services->get($serviceCode);
 
                         return [
-                            'service_code'          => $service->service_code_2,
-                            'service_description'   => $service->service_description,
-                            'service_description_2' => $service->service_description_2,
+                            'service_code'          => $assets->first()['service_code_2'] ?? null,
+                            'service_description'   => $assets->first()['service_description'] ?? null,
+                            'service_description_2' => $assets->first()['service_description_2'] ?? null,
                             'assets'                => HpeContractAssetCollection::fromCollection($assets)->items()
                         ];
                     })->values();
@@ -360,7 +365,7 @@ class HpeContractStateProcessor implements HpeContractState
                 /** @var array */
                 $contract = $contractsData->get($contractNumber);
 
-                $supportServiceLevels = $contractServices->get($contractNumber);
+                $supportServiceLevels = Collection::wrap($contractServices->get($contractNumber))->filter();
 
                 return [
                     'contract_number'        => (string) $contractNumber,

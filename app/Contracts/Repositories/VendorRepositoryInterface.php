@@ -8,6 +8,7 @@ use App\Http\Requests\Vendor\{
     UpdateVendorRequest
 };
 use App\Models\Vendor;
+use Closure;
 use Illuminate\Database\Eloquent\Collection;
 
 interface VendorRepositoryInterface
@@ -75,10 +76,11 @@ interface VendorRepositoryInterface
     /**
      * Retrieve random existing Vendor.
      *
-     * @param int $limit
+     * @param  int $limit
+     * @param  Closure|null $scope
      * @return \App\Models\Vendor|\Illuminate\Database\Eloquent\Collection|null
      */
-    public function random(int $limit = 1);
+    public function random(int $limit = 1, ?Closure $scope = null);
 
     /**
      * Create Vendor.

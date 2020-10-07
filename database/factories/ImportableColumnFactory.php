@@ -11,14 +11,14 @@ $factory->define(ImportableColumn::class, function (Faker $faker) {
     $country = Country::query()->first();
 
     return [
-        'header' => Str::random(),
+        'header'     => Str::random(),
         'country_id' => $country->getKey(),
-        'type' => $faker->randomElement(['text', 'date', 'number', 'decimal'])
+        'type'       => $faker->randomElement(['text', 'date', 'number', 'decimal'])
     ];
 });
 
 $factory->state(ImportableColumn::class, 'aliases', function (Faker $faker) {
     return [
-        'aliases' => array_unique($faker->words(10))
+        'aliases' => collect()->times(10, fn () => Str::random(20))->all()
     ];
 });

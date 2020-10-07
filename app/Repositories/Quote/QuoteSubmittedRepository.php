@@ -84,7 +84,11 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
                     ->orWhereIn('id', $user->getPermissionTargets('quotes.read'))
                     ->orWhereIn('user_id', $user->getModulePermissionProviders('quotes.read'))
             )
-            ->with('usingVersion.quoteFiles')
+            ->with(
+                'quoteFiles:id,quote_id,file_type,quote_id,original_file_name',
+                'usingVersion.quoteFiles:id,quote_id,file_type,quote_id,original_file_name',
+                'contract:id,quote_id,submitted_at'
+            )
             ->submitted();
     }
 
@@ -295,7 +299,7 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
     protected function filterableQuery()
     {
         return [
-            $this->userQuery()->activated()->with('contract.customer'),
+            $this->userQuery()->runPaginationCountQueryUsing($this->userQuery())->activated()->with('contract.customer'),
             $this->userQuery()->deactivated()->with('contract.customer')
         ];
     }

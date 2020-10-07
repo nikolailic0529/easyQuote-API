@@ -2,11 +2,18 @@
 
 namespace Tests\Unit;
 
+use App\Contracts\Services\LocationService;
 use App\Contracts\Services\Stats;
+use App\DTO\Summary;
 use App\Models\{
     Quote\Quote,
-    Quote\QuoteTotal
+    Quote\QuoteTotal,
+    Data\Country,
 };
+use App\Services\StatsAggregator;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Carbon;
+use Carbon\CarbonPeriod;
 use Tests\TestCase;
 use Tests\Unit\Traits\{
     TruncatesDatabaseTables,
@@ -32,59 +39,167 @@ class StatsTest extends TestCase
     }
 
     /**
-     * Test stats retrieving.
-     * Test that response data is valid.
+     * Test Quotes Stats by Location.
      *
      * @return void
      */
-    public function testStatsRetrieving()
+    public function testQuotesStatsByLocation()
     {
-        $responseStructure = [
-            'totals' => [
-                'drafted_quotes_count',
-                'submitted_quotes_count',
-                'drafted_quotes_value',
-                'submitted_quotes_value',
-                'expiring_quotes_count',
-                'expiring_quotes_value',
-                'customers_count',
-                'locations_total',
-            ],
-            'period' => [
-                'start_date', 'end_date'
-            ],
-            'base_currency'
-        ];
+        /** @var StatsAggregator */
+        $aggregator = app(StatsAggregator::class);
 
-        $response = $this->getJson(url('api/stats'))->assertOk()->assertJsonStructure($responseStructure);
+        $quotes = $aggregator->quotesByLocation($this->faker->uuid);
 
-        $this->assertEquals(null, $response->json('period.start_date'));
-        $this->assertEquals(null, $response->json('period.end_date'));
-        $this->assertIsNumeric($response->json('totals.drafted_quotes_count'));
-        $this->assertIsNumeric($response->json('totals.submitted_quotes_count'));
-        $this->assertIsNumeric($response->json('totals.expiring_quotes_count'));
-        $this->assertIsNumeric($response->json('totals.drafted_quotes_value'));
-        $this->assertIsNumeric($response->json('totals.submitted_quotes_value'));
-        $this->assertIsNumeric($response->json('totals.expiring_quotes_value'));
-        $this->assertIsNumeric($response->json('totals.customers_count'));
-        $this->assertIsNumeric($response->json('totals.locations_total'));
-        $this->assertEquals(setting('base_currency'), $response->json('base_currency'));
+        $this->assertInstanceOf(Collection::class, $quotes);
+    }
 
-        $startDate = now()->subMonth()->toDateString();
-        $endDate = now()->toDateString();
+    /**
+     * Test Quotes on Map aggregate.
+     *
+     * @return void
+     */
+    public function testQuotesOnMap()
+    {
+        /** @var StatsAggregator */
+        $aggregator = app(StatsAggregator::class);
 
-        $response = $this->postJson(url('api/stats'), ['start_date' => $startDate, 'end_date' => $endDate])->assertJsonStructure($responseStructure);
+        /** @var LocationService */
+        $locationService = app(LocationService::class);
 
-        $this->assertIsNumeric($response->json('totals.drafted_quotes_count'));
-        $this->assertIsNumeric($response->json('totals.submitted_quotes_count'));
-        $this->assertIsNumeric($response->json('totals.expiring_quotes_count'));
-        $this->assertIsNumeric($response->json('totals.drafted_quotes_value'));
-        $this->assertIsNumeric($response->json('totals.submitted_quotes_value'));
-        $this->assertIsNumeric($response->json('totals.expiring_quotes_value'));
-        $this->assertIsNumeric($response->json('totals.customers_count'));
-        $this->assertIsNumeric($response->json('totals.locations_total'));
-        $this->assertEquals($startDate, $response->json('period.start_date'));
-        $this->assertEquals($endDate, $response->json('period.end_date'));
-        $this->assertEquals(setting('base_currency'), $response->json('base_currency'));
+        $quotes = $aggregator->mapQuoteTotals(
+            $locationService->renderPoint(
+                $this->faker->latitude,
+                $this->faker->longitude
+            ),
+            $locationService->renderPolygon(
+                $this->faker->latitude,
+                $this->faker->longitude,
+                $this->faker->latitude,
+                $this->faker->longitude
+            )
+        );
+
+        $this->assertInstanceOf(Collection::class, $quotes);
+    }
+    
+    /**
+     * Test Assets on Map aggregate.
+     *
+     * @return void
+     */
+    public function testAssetsOnMap()
+    {
+        /** @var StatsAggregator */
+        $aggregator = app(StatsAggregator::class);
+    
+        /** @var LocationService */
+        $locationService = app(LocationService::class);
+    
+        $assets = $aggregator->mapAssetTotals(
+            $locationService->renderPoint(
+                $this->faker->latitude,
+                $this->faker->longitude
+            ),
+            $locationService->renderPolygon(
+                $this->faker->latitude,
+                $this->faker->longitude,
+                $this->faker->latitude,
+                $this->faker->longitude
+            ),
+            null
+        );
+    
+        $this->assertInstanceOf(Collection::class, $assets);
+        
+    }
+    
+    /**
+     * Test Customers on Map aggregate.
+     *
+     * @return void
+     */
+    public function testCustomersOnMap()
+    {
+        /** @var StatsAggregator */
+        $aggregator = app(StatsAggregator::class);
+    
+        /** @var LocationService */
+        $locationService = app(LocationService::class);
+    
+        $customers = $aggregator->mapCustomerTotals(
+            $locationService->renderPolygon(
+                $this->faker->latitude,
+                $this->faker->longitude,
+                $this->faker->latitude,
+                $this->faker->longitude
+            ),
+            null
+        );
+    
+        $this->assertInstanceOf(Collection::class, $customers);
+    }
+
+    /**
+     * Test Customers Summary aggregate.
+     *
+     * @return void
+     */
+    public function testCustomersSummary()
+    {
+        /** @var StatsAggregator */
+        $aggregator = app(StatsAggregator::class);
+    
+        $customers = $aggregator->customersSummary(
+            value($this->faker->randomElement([null, fn () => Country::value('id')]))
+        );
+
+        $this->assertIsObject($customers);
+        $this->assertObjectHasAttribute('customers_count', $customers);
+    }
+
+    /**
+     * Test Quotes Summary aggregate.
+     *
+     * @return void
+     */
+    public function testQuotesSummary()
+    {
+        /** @var StatsAggregator */
+        $aggregator = app(StatsAggregator::class);
+
+        $period = CarbonPeriod::create(Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth());
+    
+        /** @var Summary */
+        $quotes = $aggregator->quotesSummary($period);
+
+        $this->assertInstanceOf(Summary::class, $quotes);
+
+        $this->assertIsArray($quotes->period);
+        $this->assertIsArray($quotes->totals);
+
+        $this->assertArrayHasKey('start_date', $quotes->period);
+        $this->assertArrayHasKey('end_date', $quotes->period);
+        $this->assertArrayHasKey('drafted_quotes_count', $quotes->totals);
+        $this->assertArrayHasKey('submitted_quotes_count', $quotes->totals);
+        $this->assertArrayHasKey('expiring_quotes_count', $quotes->totals);
+        $this->assertArrayHasKey('drafted_quotes_value', $quotes->totals);
+        $this->assertArrayHasKey('submitted_quotes_value', $quotes->totals);
+        $this->assertArrayHasKey('expiring_quotes_value', $quotes->totals);
+        $this->assertArrayHasKey('customers_count', $quotes->totals);
+        $this->assertArrayHasKey('locations_total', $quotes->totals);
+
+        $this->assertEquals($period->getStartDate()->toDateString(), $quotes->period['start_date']);
+        $this->assertEquals($period->getEndDate()->toDateString(), $quotes->period['end_date']);
+
+        $this->assertIsNumeric($quotes->totals['drafted_quotes_count']);
+        $this->assertIsNumeric($quotes->totals['submitted_quotes_count']);
+        $this->assertIsNumeric($quotes->totals['expiring_quotes_count']);
+        $this->assertIsNumeric($quotes->totals['drafted_quotes_value']);
+        $this->assertIsNumeric($quotes->totals['submitted_quotes_value']);
+        $this->assertIsNumeric($quotes->totals['expiring_quotes_value']);
+        $this->assertIsNumeric($quotes->totals['customers_count']);
+        $this->assertIsNumeric($quotes->totals['locations_total']);
+        
+        $this->assertEquals(setting('base_currency'), $quotes->base_currency);
     }
 }

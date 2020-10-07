@@ -43,7 +43,7 @@ if (!function_exists('notification')) {
      */
     function notification(array $attributes = [])
     {
-        return app('notification.storage')->setAttributes($attributes);
+        return app('notification.dispatcher')->setAttributes($attributes);
     }
 }
 

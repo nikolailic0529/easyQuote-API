@@ -162,11 +162,11 @@ class HpeContractExporter implements HpeExporter
 
     protected static function makeFileName(PreviewHpeContractData $data): string
     {
-        return sprintf('%s.pdf', $data->purchase_order_no);
+        return sprintf('%s.pdf', (string) Str::of($data->purchase_order_no)->replace(['/', '\\'], ['_', '_'])->slug('_'));
     }
 
     protected static function makeDownloadFileName(PreviewHpeContractData $data): string
     {
-        return sprintf('%s_%s.pdf', $data->purchase_order_no, Str::random(40));
+        return sprintf('%s_%s.pdf', (string) Str::of($data->purchase_order_no)->replace(['/', '\\'], ['_', '_'])->slug('_'), Str::random(40));
     }
 }

@@ -11,7 +11,7 @@ use App\Models\{AccessAttempt, User,};
 use App\Notifications\AttemptsExceeded;
 use Laravel\Passport\PersonalAccessTokenResult;
 use Illuminate\Pipeline\Pipeline;
-use Illuminate\Support\{Arr, Facades\Auth};
+use Illuminate\Support\{Arr, Facades\DB, Facades\Auth};
 
 class AuthService implements AuthServiceInterface
 {
@@ -84,13 +84,15 @@ class AuthService implements AuthServiceInterface
         /** @var \App\Models\User */
         $user ??= auth()->user();
 
-        /**
-         * When Logout the System is revoking all the existing User's Personal Access Tokens.
-         * Also the User will be marked as Logged Out.
-         */
-        tap($user)
-            ->revokeTokens()
-            ->markAsLoggedOut();
+        DB::transaction(function () use ($user) {
+            /**
+             * When Logout the System is revoking all the existing User's Personal Access Tokens.
+             * Also the User will be marked as Logged Out.
+             */
+            tap($user)
+                ->revokeTokens()
+                ->markAsLoggedOut();
+        }, 10);
 
         activity()->on($user)->by($user)->queue('deauthenticated');
 
@@ -112,40 +114,44 @@ class AuthService implements AuthServiceInterface
     {
         $user = $this->retrieveUserFromCredentials($credentials);
 
-        $this->incrementUserFailedAttempts($user);
+        DB::transaction(function () use ($user) {
+            $this->incrementUserFailedAttempts($user);
 
-        $this->deactivateUserWhenAttemptsExceeded($user);
+            $this->deactivateUserWhenAttemptsExceeded($user);
+        }, 10);
 
         abort(403, __('auth.failed'));
     }
 
     protected function handleSuccessfulAttempt()
     {
+        /** @var \App\Models\User */
         $user = request()->user();
 
-        /**
-         * If the User has expired tokens the System will mark the User as Logged Out.
-         */
-        if ($user->doesntHaveNonExpiredTokens()) {
-            $user->markAsLoggedOut();
-        }
+        DB::transaction(function () use ($user) {
+            /**
+             * If the User has expired tokens the System will mark the User as Logged Out.
+             */
+            if ($user->doesntHaveNonExpiredTokens()) {
+                $user->markAsLoggedOut();
+            }
 
-        /**
-         * Throw an exception if the User Already Logged In.
-         */
-        // $this->checkAlreadyAuthenticatedCase($user);
+            /**
+             * Throw an exception if the User Already Logged In.
+             */
+            // $this->checkAlreadyAuthenticatedCase($user);
 
-        /**
-         * Once user logged in we are freshing the last activity timestamp and writing the related activity.
-         */
-        tap($user)
-            ->markAsLoggedIn($this->currentAttempt->ip)
-            ->freshActivity();
+            /**
+             * Once user logged in we are freshing the last activity timestamp and writing the related activity.
+             */
+            $user->markAsLoggedIn($this->currentAttempt->ip);
+            $user->freshActivity();
 
-        /**
-         * Finally we are resetting user's failed attempts.
-         */
-        $this->resetUserFailedAttempts($user);
+            /**
+             * Finally we are resetting user's failed attempts.
+             */
+            $this->resetUserFailedAttempts($user);
+        }, 10);
 
         activity()->on($user)->by($user)->queue('authenticated');
     }

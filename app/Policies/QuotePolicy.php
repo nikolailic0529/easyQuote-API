@@ -168,7 +168,7 @@ class QuotePolicy
             return false;
         }
 
-        if ($quote->contract()->exists()) {
+        if ($quote->isSubmitted() && $quote->contract->exists) {
             return $this->deny(QCE_UN_01);
         }
 
@@ -208,7 +208,7 @@ class QuotePolicy
      */
     public function delete(User $user, Quote $quote)
     {
-        if ($quote->contract()->exists()) {
+        if ($quote->isSubmitted() && $quote->contract->exists) {
             return $this->deny(QCE_D_01);
         }
 

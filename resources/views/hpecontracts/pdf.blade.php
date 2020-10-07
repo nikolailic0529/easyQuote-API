@@ -48,7 +48,7 @@
     <script>
         // Handling overflowed columns.
         document.addEventListener("DOMContentLoaded", function (event) {           
-            var overflowThreshold = 50;
+            var overflowThreshold = 90;
 
             var columns = document.querySelectorAll('.row > [class*=col-]');
 

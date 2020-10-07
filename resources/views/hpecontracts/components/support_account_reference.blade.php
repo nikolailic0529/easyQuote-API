@@ -12,11 +12,11 @@
                 </th>
             </tr>
             <tr>
-                <th>Qty</th>
-                <th>Product</th>
-                <th>Description</th>
-                <th>Serial No</th>
-                <th>HPE Contract</th>
+                <th>{{ $data->translations['qty'] ?? 'Qty' }}</th>
+                <th>{{ $data->translations['product_no'] ?? 'Product' }}</th>
+                <th>{{ $data->translations['description'] ?? 'Description' }}</th>
+                <th>{{ $data->translations['serial_no'] ?? 'Serial No' }}</th>
+                <th>{{ $data->translations['hpe_contract'] ?? 'HPE Contract' }}</th>
             </tr>
         </thead>
         <tbody>
