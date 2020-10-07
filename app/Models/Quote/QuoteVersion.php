@@ -30,7 +30,9 @@ class QuoteVersion extends BaseQuote
 
     public function getVersionNameAttribute(): string
     {
-        return "{$this->user->first_name} {$this->user->last_name} {$this->version_number}";
+        $userName = $this->user ? "{$this->user->first_name} {$this->user->last_name}" : "[USER DELETED]";
+
+        return "{$userName} {$this->version_number}";
     }
 
     public function getParentIdAttribute(): ?string

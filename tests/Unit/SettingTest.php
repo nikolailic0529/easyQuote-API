@@ -2,12 +2,15 @@
 
 namespace Tests\Unit;
 
+use App\Models\System\SystemSetting;
+use App\Models\User;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\WithFakeUser;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
-use Arr, Setting;
+use Illuminate\Support\Arr;
+use Setting;
 
 class SettingTest extends TestCase
 {
@@ -54,21 +57,41 @@ class SettingTest extends TestCase
      */
     public function testSettingsUpdating()
     {
-        $attributes = Setting::all()
-            ->reject(fn ($setting) => $setting->is_read_only || blank($setting->possible_values))
-            ->map(function ($setting) {
-                $value = data_get(
-                    Collection::wrap($setting->possible_values)->random(),
-                    'value'
-                );
+        $settings = SystemSetting::pluck('id', 'key');
 
-                return $setting->only('id') + compact('value');
-            })
-            ->toArray();
+        $attributes = [
+            ['id' => $settings['base_currency'], 'value' => $this->faker->randomElement(['GBP', 'EUR'])],
+            ['id' => $settings['password_expiry_notification'], 'value' => mt_rand(7, 30)],
+            ['id' => $settings['notification_time'], 'value' => mt_rand(1, 3)],
+            ['id' => $settings['failure_report_recipients'], 'value' => User::inRandomOrder()->limit(10)->pluck('email')->all()],
+            ['id' => $settings['google_recaptcha_enabled'], 'value' => $this->faker->boolean],
+        ];
 
         $this->patchJson(url('api/settings'), $attributes)
             ->assertOk()
             ->assertExactJson([true]);
+    }
+
+    /**
+     * Test Public Settings Listing.
+     *
+     * @return void
+     */
+    public function testPublicSettingsListing()
+    {
+        $this->app->make('auth')->guard('web')->logout();
+
+        $response = $this->getJson('api/settings/public')->assertOk();
+
+        $ids = SystemSetting::whereIn('key', config('settings.public'))->pluck('id');
+
+        $responseIds = $response->json('*.*.id');
+
+        $this->assertSameSize($ids, $responseIds);
+
+        foreach ($responseIds as $id) {
+            $this->assertContains($id, $ids);
+        }
     }
 
     /**

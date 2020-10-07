@@ -32,21 +32,14 @@ class QuotesExpiration extends Command
      */
     protected $description = 'Notify Users about Quotes Expiration';
 
-    protected Users $users;
-
-    protected Quotes $quotes;
-
     /**
      * Create a new job instance.
      *
      * @return void
      */
-    public function __construct(Users $users, Quotes $quotes)
+    public function __construct()
     {
         parent::__construct();
-
-        $this->users = $users;
-        $this->quotes = $quotes;
     }
 
     /**
@@ -54,16 +47,19 @@ class QuotesExpiration extends Command
      *
      * @return void
      */
-    public function handle()
+    public function handle(Users $users)
     {
         DB::transaction(
-            fn () => $this->users->cursor()->each(fn (User $user) => $this->serveUser($user))
+            fn () => $users->cursor()->each(fn (User $user) => $this->serveUser($user))
         );
     }
 
     protected function serveUser(User $user): void
     {
-        $this->quotes->getExpiring(setting('notification_time'), $user, static::scope())
+        /** @var Quotes */
+        $quotes = app(Quotes::class);
+
+        $quotes->getExpiring(setting('notification_time'), $user, static::scope())
             ->each(function (Quote $quote) {
                 notification()
                     ->for($quote->user)

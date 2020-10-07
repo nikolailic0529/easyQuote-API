@@ -55,11 +55,21 @@ class SettingValueType implements Rule
 
     protected function translateTypeRule(string $type)
     {
+        $rules = [];
+
         switch ($type) {
             case 'float':
             case 'integer':
-                return ['min:0', 'numeric'];
+                $rules = ['min:0', 'numeric'];
+                break;
+            case 'boolean':
+                $rules = ['boolean'];
+                break;
+            default:
+                $rules = [];
                 break;
         }
+
+        return $rules;
     }
 }

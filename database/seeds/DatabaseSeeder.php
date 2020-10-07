@@ -22,8 +22,11 @@ class DatabaseSeeder extends Seeder
         $this->call(TimezonesSeeder::class);
         $this->command->info('Seeded the timezones!');
 
+        $this->call(PermissionSeeder::class);
+        $this->command->info('Seeded the permissions!');
+
         $this->call(RolesSeeder::class);
-        $this->command->info('Seeded the users roles!');
+        $this->command->info('Seeded the roles!');
 
         $this->call(UsersSeeder::class);
         $this->command->info('Seeded the users!');

@@ -107,6 +107,11 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         return $this->userQuery()->whereId($id)->firstOrFail()->withAppends();
     }
 
+    public function findWithLock(string $id): ?User
+    {
+        return $this->user->query()->whereKey($id)->lockForUpdate()->first();
+    }
+
     public function findByEmail($email)
     {
         $query = $this->user->query();

@@ -472,6 +472,8 @@ class StatsAggregator
      */
     public function quotesByLocation(string $locationId, ?string $userId = null)
     {
+        $where = [];
+        
         if ($userId) {
             array_push($where, ['user_id', '=', $userId]);
         }

@@ -2,18 +2,32 @@
 
 namespace Bootstrap;
 
-use App\Facades\Maintenance;
 use Illuminate\Foundation\Application as Base;
+use Illuminate\Foundation\Bootstrap\LoadConfiguration;
 
 class Application extends Base
 {
     /**
-     * Determine if the application is currently down for maintenance.
+     * Create a new Illuminate application instance.
      *
-     * @return bool
+     * @param  string|null  $basePath
+     * @return void
      */
-    public function isDownForMaintenance()
+    public function __construct($basePath = null)
     {
-        return file_exists($this->storagePath().'/framework/down') || Maintenance::running();
+        parent::__construct($basePath);
+
+        $this->afterBootstrapping(LoadConfiguration::class, function () {
+            $this->useCustomStoragePath();
+        });
+    }
+
+    protected function useCustomStoragePath()
+    {
+        $storagePath = $this['config']->get('paths.storage');
+
+        if (!is_null($storagePath)) {
+            $this->useStoragePath($this['config']->get('paths.storage'));
+        }
     }
 }

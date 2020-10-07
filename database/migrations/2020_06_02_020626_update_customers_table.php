@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\DB;
 
 class UpdateCustomersTable extends Migration
 {
+    public function __construct()
+    {
+        DB::getDoctrineSchemaManager()->getDatabasePlatform()->registerDoctrineTypeMapping('json', 'text');
+    }
+
     /**
      * Run the migrations.
      *
@@ -22,8 +27,7 @@ class UpdateCustomersTable extends Migration
         }
 
         DB::transaction(fn () =>
-            Customer::query()->whereSource('easyQuote')->update(['source' => Customer::EQ_SOURCE])
-        );
+        Customer::query()->whereSource('easyQuote')->update(['source' => Customer::EQ_SOURCE]));
 
         Schema::table('customers', function (Blueprint $table) {
             $table->dropIndex(['source']);

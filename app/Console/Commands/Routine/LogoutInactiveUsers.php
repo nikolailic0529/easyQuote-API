@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands\Routine;
 
-use App\Services\InactiveUsersService;
+use App\Services\UserActivityService;
 use Illuminate\Console\Command;
 
 class LogoutInactiveUsers extends Command
@@ -36,7 +36,7 @@ class LogoutInactiveUsers extends Command
      *
      * @return mixed
      */
-    public function handle(InactiveUsersService $service)
+    public function handle(UserActivityService $service)
     {
         $count = $service->logoutInactive();
 

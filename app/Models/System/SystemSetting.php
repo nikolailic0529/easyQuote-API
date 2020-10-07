@@ -36,7 +36,7 @@ class SystemSetting extends Model
     ];
 
     protected $types = [
-        'string', 'integer', 'float', 'decimal', 'array', 'datetime'
+        'string', 'integer', 'boolean', 'float', 'decimal', 'array', 'datetime'
     ];
 
     protected $appends = [
@@ -117,13 +117,15 @@ class SystemSetting extends Model
     {
         if ($this->is_read_only) {
             return 'label';
-        }
-
-        if ($this->possible_values instanceof Collection) {
+        } elseif ($this->possible_values instanceof Collection) {
             return 'multiselect';
+        } elseif (is_iterable($this->possible_values)) {
+            return 'dropdown';
+        } elseif ($this->type === 'boolean') {
+            return 'checkbox';
         }
 
-        return is_iterable($this->possible_values) ? 'dropdown' : 'textbox';
+        return 'textbox';
     }
 
     public function getValueCacheKeyAttribute(): string

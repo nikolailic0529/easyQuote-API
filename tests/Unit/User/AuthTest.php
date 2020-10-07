@@ -2,11 +2,12 @@
 
 namespace Tests\Unit\User;
 
+use App\Http\Middleware\PerformUserActivity;
 use Tests\TestCase;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\WithFakeUser;
-use Str, Arr;
+use Illuminate\Support\{Str, Arr};
 
 class AuthTest extends TestCase
 {
@@ -23,7 +24,14 @@ class AuthTest extends TestCase
      */
     public function testAuthExistingUser()
     {
-        $attributes = factory(User::class)->state('authentication')->raw();
+        $user = factory(User::class)->create();
+
+        $attributes = [
+            'email'       => $user->email,
+            'local_ip'    => $user->ip_address,
+            'password'    => 'password',
+            'g_recaptcha' => Str::random(),
+        ];
 
         $response = $this->postJson(url('/api/auth/signin'), $attributes);
 
@@ -38,9 +46,14 @@ class AuthTest extends TestCase
      */
     public function testFailingAuthExistingUser()
     {
-        $attributes = factory(User::class)->state('authentication')->raw([
-            'password' => Str::random(20)
-        ]);
+        $user = factory(User::class)->create();
+
+        $attributes = [
+            'email'       => $user->email,
+            'local_ip'    => $user->ip_address,
+            'password'    => Str::random(20),
+            'g_recaptcha' => Str::random(),
+        ];
 
         $this->postJson(url('/api/auth/signin'), $attributes)->assertStatus(403);
     }
@@ -68,7 +81,14 @@ class AuthTest extends TestCase
      */
     public function testAuthUserWithoutLocalIp()
     {
-        $attributes = factory(User::class)->state('authentication')->raw();
+        $user = factory(User::class)->create();
+
+        $attributes = [
+            'email'       => $user->email,
+            'local_ip'    => $user->ip_address,
+            'password'    => 'password',
+            'g_recaptcha' => Str::random(),
+        ];
 
         $this->postJson(url('/api/auth/signin'), Arr::only($attributes, ['email', 'password']))
             ->assertStatus(422)
@@ -84,7 +104,14 @@ class AuthTest extends TestCase
      */
     public function testSignupUser()
     {
-        $attributes = factory(User::class)->state('registration')->raw();
+        $user = factory(User::class)->raw();
+
+        $attributes = array_merge($user, [
+            'local_ip'              => $user['ip_address'],
+            'password'              => 'password',
+            'password_confirmation' => 'password',
+            'g_recaptcha'           => Str::random(),
+        ]);
 
         $this->postJson(url('/api/auth/signup'), $attributes)
             ->assertOk()
@@ -120,7 +147,9 @@ class AuthTest extends TestCase
      */
     public function testCurrentUserRetrieving()
     {
-        $this->authenticate()->getJson(url('api/auth/user'))
+        $this->authenticate();
+        
+        $this->getJson(url('api/auth/user'))
             ->assertOk()
             ->assertJsonStructure([
                 'id', 'email', 'first_name', 'middle_name', 'last_name', 'default_route', 'already_logged_in', 'role_id', 'role_name', 'privileges'

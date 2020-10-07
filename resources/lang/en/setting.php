@@ -16,6 +16,7 @@ return [
         'maintenance_start_time'        => 'Maintenance Start Time',
         'maintenance_end_time'          => 'Maintenance End Time',
         'maintenance_message'           => 'Maintenance Message',
+        'google_recaptcha_enabled'      => 'Google Recaptcha Enabled',
     ],
     'supported_file_types' => [
         'pdf' => [

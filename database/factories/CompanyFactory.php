@@ -14,6 +14,6 @@ $factory->define(Company::class, function (Faker $faker) {
         'email'         => $this->faker->unique()->companyEmail,
         'phone'         => $this->faker->phoneNumber,
         'website'       => $this->faker->url,
-        'vendors'       => app('vendor.repository')->random(2)->pluck('id')->toArray()
+        'vendors'       => app('vendor.repository')->random(2, fn ($query) => $query->activated())->pluck('id')->toArray()
     ];
 });

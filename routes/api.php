@@ -1,6 +1,10 @@
 <?php
 
+use App\Http\Controllers\API\System\SystemSettingController;
+
 Route::group(['namespace' => 'API'], function () {
+    Route::get('settings/public', [SystemSettingController::class, 'showPublicSettings']);
+
     Route::group(['prefix' => 'auth', 'middleware' => THROTTLE_RATE_01], function () {
         Route::get('attempts/{email}', 'AuthController@showAttempts');
         

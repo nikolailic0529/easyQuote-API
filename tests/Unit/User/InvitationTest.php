@@ -16,7 +16,7 @@ use App\Contracts\Repositories\{
     RoleRepositoryInterface as Roles,
     UserRepositoryInterface as Users,
 };
-use Arr, Str;
+use Illuminate\Support\{Arr, Str};
 
 class InvitationTest extends TestCase
 {
@@ -91,7 +91,16 @@ class InvitationTest extends TestCase
                 'role_name' => 'Administrator'
             ]);
 
-        $this->postJson($invitationUrl, factory(User::class)->state('registration')->raw())
+        $user = factory(User::class)->raw();
+
+        $attributes = array_merge($user, [
+            'local_ip'              => $user['ip_address'],
+            'password'              => 'password',
+            'password_confirmation' => 'password',
+            'g_recaptcha'           => Str::random(),
+        ]);
+
+        $this->postJson($invitationUrl, $attributes)
             ->assertOk()
             ->assertJsonStructure([
                 'id',

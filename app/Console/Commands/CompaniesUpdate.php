@@ -9,7 +9,7 @@ use App\Contracts\Repositories\{
 };
 use App\Services\ThumbnailManager;
 use Illuminate\Console\Command;
-use Arr;
+use Illuminate\Support\Arr;
 
 class CompaniesUpdate extends Command
 {
@@ -27,24 +27,14 @@ class CompaniesUpdate extends Command
      */
     protected $description = 'Update Companies Vendors';
 
-    protected Companies $companies;
-
-    protected Vendors $vendors;
-
-    protected Countries $countries;
-
     /**
      * Create a new command instance.
      *
      * @return void
      */
-    public function __construct(Companies $companies, Vendors $vendors, Countries $countries)
+    public function __construct()
     {
         parent::__construct();
-
-        $this->companies = $companies;
-        $this->vendors = $vendors;
-        $this->countries = $countries;
     }
 
     /**
@@ -52,37 +42,40 @@ class CompaniesUpdate extends Command
      *
      * @return mixed
      */
-    public function handle()
+    public function handle(Companies $companyRepository, Vendors $vendorRepository, Countries $countryRepository)
     {
         $this->info("Updating System Defined Companies...");
 
         activity()->disableLogging();
 
-        \DB::transaction(function () {
+        \DB::transaction(function () use ($companyRepository, $vendorRepository, $countryRepository) {
             $companies = json_decode(file_get_contents(database_path('seeds/models/companies.json')), true);
 
-            collect($companies)->each(function ($companyData) {
-                $company = $this->companies->findByVat($companyData['vat']);
+            collect($companies)->each(function ($companyData) use ($companyRepository, $vendorRepository, $countryRepository) {
+                /** @var \App\Models\Company */
+                $company = $companyRepository->findByVat($companyData['vat']);
 
                 if (is_null($company)) {
                     $this->line('E');
                     return true;
                 }
 
-                $default_vendor_id = optional($this->vendors->findByCode($companyData['default_vendor']))->id;
-                $default_country_id = app('country.repository')->findIdByCode($companyData['default_country']);
+                $default_vendor_id = optional($vendorRepository->findByCode($companyData['default_vendor']))->id;
+                $default_country_id = $countryRepository->findIdByCode($companyData['default_country']);
 
                 $company->update(
                     array_merge(Arr::only($companyData, ['type', 'email', 'phone', 'website']), compact('default_vendor_id', 'default_country_id'))
                 );
 
-                $vendors = $this->vendors->findByCode($companyData['vendors']);
+                $vendors = $vendorRepository->findByCode($companyData['vendors']);
                 $company->vendors()->sync($vendors);
 
-                $company->createLogo($companyData['logo'], true);
-
-                if (isset($companyData['svg_logo'])) {
-                    ThumbnailManager::updateModelSvgThumbnails($company, base_path($companyData['svg_logo']));
+                if (is_null($company->logo)) {
+                    $company->createLogo($companyData['logo'], true);
+    
+                    if (isset($companyData['svg_logo'])) {
+                        ThumbnailManager::updateModelSvgThumbnails($company, base_path($companyData['svg_logo']));
+                    }
                 }
 
                 $this->output->write('.');

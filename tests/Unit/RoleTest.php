@@ -83,7 +83,19 @@ class RoleTest extends TestCase
         $this->patchJson("api/roles/{$role->id}", $attributes)
             ->assertOk()
             ->assertJsonStructure([
-                'id', 'name', 'privileges', 'user_id', 'is_system', 'created_at', 'activated_at'
+                'id', 'name', 'user_id', 'is_system', 'created_at', 'activated_at',
+                'privileges' => [
+                    '*' => [
+                        'module',
+                        'privilege',
+                        'submodules' => [
+                            '*' => [
+                                'submodule',
+                                'privilege',
+                            ]
+                        ]
+                    ]
+                ],
             ])
             ->assertJsonFragment(Arr::only($attributes, ['name', 'privileges']));
     }
