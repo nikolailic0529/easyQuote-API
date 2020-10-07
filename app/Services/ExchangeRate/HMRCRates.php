@@ -2,8 +2,10 @@
 
 namespace App\Services\ExchangeRate;
 
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\File;
 use Carbon\Carbon;
-use File, Str;
+use Throwable;
 
 class HMRCRates extends ExchangeRateService
 {
@@ -28,10 +30,10 @@ class HMRCRates extends ExchangeRateService
             $data = iterator_to_array(simplexml_load_string($content), false);
 
             return collect($data)->map(fn ($attributes) => $this->prepareAttributes($attributes))->toArray();
-        } catch (Throwable $exception) {
+        } catch (Throwable $e) {
             customlog(['ErrorCode' => 'ER_PARSE_ERR_01'], ER_PARSE_ERR_01);
 
-            static::fetchRatesError();
+            throw $e;
         }
     }
 

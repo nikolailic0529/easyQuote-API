@@ -27,18 +27,14 @@ class TaskExpiration extends Command
      */
     protected $description = 'Notify task creator and task assigned users';
 
-    protected Tasks $tasks;
-
     /**
      * Create a new command instance.
      *
      * @return void
      */
-    public function __construct(Tasks $tasks)
+    public function __construct()
     {
         parent::__construct();
-
-        $this->tasks = $tasks;
     }
 
     /**
@@ -46,9 +42,9 @@ class TaskExpiration extends Command
      *
      * @return mixed
      */
-    public function handle()
+    public function handle(Tasks $tasks)
     {
-        $this->tasks->getExpired(static::scope())
+        $tasks->getExpired(static::scope())
             ->each(fn (Task $task) => $this->handleTask($task));
     }
 

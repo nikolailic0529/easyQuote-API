@@ -112,7 +112,7 @@ class UserController extends Controller
         $this->authorize('view', $user);
 
         return response()->json(
-            $this->user->find($user->id)
+            $user->withAppends('timezone_text')
         );
     }
 

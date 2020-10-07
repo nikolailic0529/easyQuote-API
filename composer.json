@@ -39,7 +39,8 @@
         "spatie/valuestore": "^1.2",
         "staudenmeir/eloquent-has-many-deep": "^1.12",
         "webpatser/laravel-countries": "^1.5",
-        "webpatser/laravel-uuid": "^3.0"
+        "webpatser/laravel-uuid": "^3.0",
+        "symfony/http-kernel": "^5.1.5"
     },
     "require-dev": {
         "beyondcode/laravel-dump-server": "^1.0",

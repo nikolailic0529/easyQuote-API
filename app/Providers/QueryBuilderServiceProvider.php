@@ -6,7 +6,8 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as DatabaseBuilder;
 use Illuminate\Pagination\Paginator;
-use Arr;
+use Illuminate\Support\Arr;
+use InvalidArgumentException;
 
 class QueryBuilderServiceProvider extends ServiceProvider
 {
@@ -17,13 +18,38 @@ class QueryBuilderServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        DatabaseBuilder::macro('runCachedPaginationCountQuery', $this->runCachedPaginationCountQuery());
-
         DatabaseBuilder::macro('apiGetCountForPagination', $this->apiGetCountForPagination());
 
         Builder::macro('apiPaginate', $this->apiPaginateMacro());
 
+        DatabaseBuilder::macro('runPaginationCountQueryUsing', $this->runPaginationCountQueryUsing());
+
+        Builder::macro('runPaginationCountQueryUsing', $this->runPaginationCountQueryUsing());
+
         DatabaseBuilder::macro('apiPaginate', $this->apiPaginateMacro());
+    }
+
+    protected function runPaginationCountQueryUsing()
+    {
+        return function ($countQuery) {
+            if ($countQuery instanceof Builder) {
+                $countQuery = $countQuery->toBase();
+            }
+
+            if (! $countQuery instanceof DatabaseBuilder) {
+                throw new InvalidArgumentException(sprintf('Query must be either instance of %s or %s', Builder::class, DatabaseBuilder::class));
+            }
+
+            $query = $this;
+
+            if ($this instanceof Builder) {
+                $query = $this->getQuery();
+            }
+
+            $query->runPaginationCountQueryUsing = $countQuery;
+
+            return $this;
+        };
     }
 
     protected function apiPaginateMacro()
@@ -54,7 +80,11 @@ class QueryBuilderServiceProvider extends ServiceProvider
     protected function apiGetCountForPagination()
     {
         return function ($columns = ['*']) {
-            $results = $this->runCachedPaginationCountQuery($columns);
+            if (isset($this->runPaginationCountQueryUsing)) {
+                $results = $this->runPaginationCountQueryUsing->runPaginationCountQuery($columns);
+            } else {
+                $results = $this->runPaginationCountQuery($columns);
+            }
 
             if (!isset($results[0])) {
                 return 0;
@@ -63,23 +93,6 @@ class QueryBuilderServiceProvider extends ServiceProvider
             }
 
             return (int) array_change_key_case((array) $results[0])['aggregate'];
-        };
-    }
-
-    protected function runCachedPaginationCountQuery()
-    {
-        return function ($columns = ['*']) {
-            $without = $this->unions ? ['orders', 'limit', 'offset'] : ['columns', 'orders', 'limit', 'offset'];
-
-            $query = $this->cloneWithout($without)
-                ->cloneWithoutBindings($this->unions ? ['order'] : ['select', 'order'])
-                ->setAggregate('count', $this->withoutSelectAliases($columns));
-
-            $clonedQuery = clone $query;
-            $cacheKey = md5('query|' . $clonedQuery->toSql() . implode('', $clonedQuery->getBindings()));
-
-            return cache()->tags($query->from.TABLE_COUNT_POSTFIX)
-                ->remember($cacheKey, config('api-paginate.count_cache_ttl'), fn () => $query->get()->all());
         };
     }
 }

@@ -120,12 +120,20 @@ interface UserRepositoryInterface
     public function updateOwnProfile(UpdateProfileRequest $request): User;
 
     /**
-     * Get Collaboration User by id.
+     * Find the User by id.
      *
      * @param string $id
      * @return \App\Models\User
      */
     public function find(string $id): User;
+
+    /**
+     * Find the User by id and lock a record for update.
+     * 
+     * @param  string $id
+     * @return User|null
+     */
+    public function findWithLock(string $id): ?User;
 
     /**
      * Find User by specified Email.

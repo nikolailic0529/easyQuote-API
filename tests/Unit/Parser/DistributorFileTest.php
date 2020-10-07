@@ -12,6 +12,31 @@ use File;
 class DistributorFileTest extends TestCase
 {
 
+    public function testSupportWarehouseLtdJbtFoodtech4976610509302020xlsx()
+    {
+        $this->be(factory(User::class)->create(), 'api');
+
+        /** @var Quote */
+        $quote = factory(Quote::class)->create();
+
+        $quoteFile = $quote->quoteFiles()->create([
+            'original_file_path'   => Str::random(),
+            'original_file_name'   => Str::random(),
+            'file_type'            => 'Distributor Price List',
+            'pages'                => 2,
+            'quote_file_format_id' => QuoteFileFormat::value('id'),
+            'imported_page'        => 1
+        ]);
+
+        $filePath = base_path('tests/Unit/Data/distributor-files-test/Support Warehouse Ltd-Jbt Foodtech-49766105-09302020.xlsx');
+
+        (new ImportExcel($quoteFile))->import($filePath);
+
+        $importedRows = $quoteFile->rowsData->pluck('columns_data')->map(fn ($row) => collect($row)->pluck('value', 'header')->all())->all();
+
+        $this->assertCount(5, $importedRows);
+    }
+
     public function testSupportWarehouseKromannReumenrtXlsx()
     {
         $this->be(factory(User::class)->create(), 'api');
@@ -771,9 +796,7 @@ class DistributorFileTest extends TestCase
 
         $rows = $rows->map(fn ($row) => Arr::except((array) $row, ['id', 'replicated_row_id']))->toArray();
 
-        array_multisort($rows);
-
-        $this->assertSame($rows, [
+        $assertRows = [
             [
                 'is_selected'   => 0,
                 'group_name'    => null,
@@ -1060,7 +1083,11 @@ class DistributorFileTest extends TestCase
                 'price'         => '1092.00',
                 'serial_no'     => '2M241301ZQ',
             ]
-        ]);
+        ];
+
+        foreach ($assertRows as $key => $row) {
+            $this->assertContains($row, $rows);
+        }
     }
 
     // public function test81T321172303201922092019LeNbOffre280220191023Tepr()

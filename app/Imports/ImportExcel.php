@@ -17,14 +17,14 @@ use App\Imports\Concerns\{
     MapsHeaders,
     LimitsHeaders
 };
-use Maatwebsite\Excel\Concerns\{ToModel, WithBatchInserts, WithLimit, WithStartRow, WithCalculatedFormulas, };
+use Maatwebsite\Excel\Concerns\{ToModel, WithBatchInserts, WithLimit, WithStartRow, WithCalculatedFormulas, WithColumnLimit, };
 use App\Models\{QuoteFile\QuoteFile, QuoteFile\ImportedRow};
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Webpatser\Uuid\Uuid;
 use Illuminate\Support\{Arr, Str, Collection};
 use voku\helper\ASCII;
 
-class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInserts, WithChunkReading, WithStartRow, WithLimit
+class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInserts, WithChunkReading, WithStartRow, WithLimit, WithColumnLimit
 {
     use Importable, MapsHeaders, LimitsHeaders;
 
@@ -110,7 +110,7 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
 
     public function batchSize(): int
     {
-        return 1000;
+        return 200;
     }
 
     public function chunkSize(): int
@@ -121,6 +121,11 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
     public function limit(): int
     {
         return 100000;
+    }
+
+    public function endColumn(): string
+    {
+        return 'BZ';
     }
 
     public function startRow(): int

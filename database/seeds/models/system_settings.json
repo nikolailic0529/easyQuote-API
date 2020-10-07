@@ -132,12 +132,20 @@
         ]
     },
     {
+        "key": "google_recaptcha_enabled",
+        "value": true,
+        "type": "boolean",
+        "is_read_only": false,
+        "section": "global",
+        "order": 7
+    },
+    {
         "key": "supported_file_types",
         "value": ["CSV", "PDF", "XLSX", "DOCX"],
         "type": "array",
         "is_read_only": true,
         "section": "global",
-        "order": 7
+        "order": 8
     },
     {
         "key": "exchange_rate_provider",
@@ -145,7 +153,7 @@
         "type": "string",
         "is_read_only": false,
         "section": "exchange_rates",
-        "order": 8,
+        "order": 1,
         "possible_values": [
             {
                 "label": "HMRC",
@@ -159,7 +167,7 @@
         "type": "string",
         "is_read_only": false,
         "section": "exchange_rates",
-        "order": 9,
+        "order": 2,
         "possible_values": [
             {
                 "label": "Monthly",
@@ -185,7 +193,7 @@
             "required": true,
             "decimal": true
         },
-        "order": 10
+        "order": 3
     },
     {
         "key": "exchange_rates_update",
@@ -193,7 +201,7 @@
         "type": "datetime",
         "is_read_only": true,
         "section": "exchange_rates",
-        "order": 11,
+        "order": 4,
         "label_format": "Last Update was done :value"
     },
     {
@@ -203,7 +211,7 @@
         "is_read_only": false,
         "possible_values": "RANGE:1,30,in {value} minute(s) from now",
         "section": "maintenance",
-        "order": 12
+        "order": 1
     },
     {
         "key": "maintenance_end_time",
@@ -212,7 +220,7 @@
         "is_read_only": false,
         "possible_values": "RANGE:1,120,5,{value} minutes",
         "section": "maintenance",
-        "order": 13
+        "order": 2
     },
     {
         "key": "maintenance_message",
@@ -220,6 +228,6 @@
         "type": "string",
         "is_read_only": false,
         "section": "maintenance",
-        "order": 14
+        "order": 3
     }
 ]

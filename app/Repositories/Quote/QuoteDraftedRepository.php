@@ -67,7 +67,9 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
             )
             ->with(
                 'versions:id,quotes.user_id,version_number,completeness,created_at,updated_at,drafted_at',
-                'usingVersion.quoteFiles'
+                'versions.user:id,first_name,last_name',
+                'quoteFiles:id,quote_id,file_type,quote_id,original_file_name',
+                'usingVersion.quoteFiles:id,quote_id,file_type,quote_id,original_file_name'
             )
             ->drafted();
     }
@@ -176,8 +178,8 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
     protected function filterableQuery()
     {
         return [
-            $this->userQuery()->activated(),
-            $this->userQuery()->deactivated()
+            $this->userQuery()->runPaginationCountQueryUsing($this->userQuery())->activated(),
+            $this->userQuery()->runPaginationCountQueryUsing($this->userQuery())->deactivated()
         ];
     }
 

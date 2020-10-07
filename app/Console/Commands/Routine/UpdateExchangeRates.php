@@ -30,26 +30,13 @@ class UpdateExchangeRates extends Command
     protected $description = 'Update Exchange Rates';
 
     /**
-     * Rates service.
-     */
-    protected Service $service;
-
-    /**
-     * Rate files repository.
-     */
-    protected Repository $repository;
-
-    /**
      * Create a new command instance.
      *
      * @return void
      */
-    public function __construct(Service $service, Repository $repository)
+    public function __construct()
     {
         parent::__construct();
-
-        $this->service = $service;
-        $this->repository = $repository;
     }
 
     /**
@@ -57,11 +44,11 @@ class UpdateExchangeRates extends Command
      *
      * @return mixed
      */
-    public function handle()
+    public function handle(Service $service, Repository $repository)
     {
         /** Perform scheduled update if option '--file' is missing. */
         if (!$this->option('file')) {
-            $result = $this->service->updateRates();
+            $result = $service->updateRates();
             
             return $this->interpretUpdateResult($result);
         }
@@ -73,14 +60,17 @@ class UpdateExchangeRates extends Command
             return;
         }
 
-        $result = $this->service->updateRatesFromFile($filepath, $date);
+        $result = $service->updateRatesFromFile($filepath, $date);
 
         return $this->interpretUpdateResult($result);
     }
 
     protected function resolveFilepath()
     {
-        $names = $this->repository->getAllNames();
+        /** @var Repository */
+        $repository = app(Repository::class);
+
+        $names = $repository->getAllNames();
 
         if (empty($names)) {
             $this->warn(sprintf('No rate files found. Please put at least one at %s.', config('filesystems.disks.rates.root')));
@@ -88,13 +78,16 @@ class UpdateExchangeRates extends Command
 
         $name = $this->choice('Which file?', $names, 0);
 
-        return $this->repository->path($name);
+        return $repository->path($name);
     }
 
     protected function resolveRatesDate(string $filepath): Carbon
     {
+        /** @var Service */
+        $service = app(Service::class);
+
         try {
-            $date = $this->service->retrieveDateFromFile($filepath);
+            $date = $service->retrieveDateFromFile($filepath);
 
             return tap(
                 $date,
