@@ -72,7 +72,7 @@ interface QuoteFileRepositoryInterface
      *
      * @param QuoteFile $quoteFile
      * @param int $page
-     * @return array
+     * @return \Illuminate\Support\Collection
      */
     public function getRawData(QuoteFile $quoteFile);
 

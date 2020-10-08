@@ -105,6 +105,7 @@ define('INV_QT_TYPE', 'Invalid Quote Template Type passed.');
  */
 define('QFTNS_01', 'This file type is not supported.');
 define('QFNRF_01', 'No rows found in the provided Quote File.');
+define('QFNRF_02', 'Mandatory data not found. Price or Product Number columns are missing on the page.');
 define('QFNS_01', 'No data found in the provided Payment Schedule File, try to choose another page.');
 define('QFWS_01', 'It seems you\'ve chosen wrong Data Select Separator');
 define('QFUH_01', 'Unknown Header');
