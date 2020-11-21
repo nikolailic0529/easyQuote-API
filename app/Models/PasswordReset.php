@@ -9,6 +9,7 @@ use App\Traits\{
     Uuid
 };
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class PasswordReset extends Model
 {
@@ -22,13 +23,16 @@ class PasswordReset extends Model
         'url'
     ];
 
-    protected static function boot()
+    protected static function booted()
     {
-        parent::boot();
+        static::creating(function (PasswordReset $model) {
+            if (!isset($model->attributes['expires_at'])) {
+                $model->attributes['expires_at'] = now()->addHours(12)->toDateTimeString();
+            }
 
-        static::creating(function ($model) {
-            $model->attributes['expires_at'] = now()->addHours(12)->toDateTimeString();
-            $model->attributes['token'] = $model->generateToken();
+            if (!isset($model->attributes['token'])) {
+                $model->attributes['token'] = $model->generateToken();
+            }
         });
     }
 
@@ -39,7 +43,7 @@ class PasswordReset extends Model
      */
     public function getUrlAttribute(): string
     {
-        return "{$this->host}/reset/{$this->attributes['token']}";
+        return Str::of($this->host)->finish('/')->append('reset/', $this->token);
     }
 
     public function getRouteKeyName()

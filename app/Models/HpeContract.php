@@ -22,6 +22,7 @@ use Illuminate\Support\Collection;
  * @property HpeContractContact $end_customer_contact
  * @property HpeContractContact $sold_contact
  * @property HpeContractContact $bill_contact
+ * @property Collection $services
  */
 class HpeContract extends Model
 {

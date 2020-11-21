@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\{
     Model
 };
 use Elasticsearch\Client as Elasticsearch;
+use Illuminate\Support\Str;
 use Closure;
 use Throwable;
 
@@ -90,10 +91,9 @@ abstract class SearchableRepository
     {
         $body = [
             'query' => [
-                'multi_match' => [
+                'query_string' => [
                     'fields' => $fields,
-                    'type' => 'phrase_prefix',
-                    'query' => $query
+                    'query' => Str::of($query)->start('*')->finish('*')->__toString()
                 ]
             ]
         ];

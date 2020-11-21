@@ -238,7 +238,7 @@ class HpeContractStateProcessor implements HpeContractState
                     ->where('hpe_contract_file_id', $hpeContractFile->getKey())
                     ->whereNotNull('service_description')
                     ->whereNotNull('service_description_2')
-                    ->groupBy('contract_number'))
+                    ->groupBy('contract_number', 'service_code_2'))
                 // ->whereColumn('service_description', '<>', 'service_description_2')
                 // ->groupBy('service_description', 'service_description_2', 'service_code', 'service_code_2', 'contract_number')
                 ->get();

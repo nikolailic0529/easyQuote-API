@@ -2,29 +2,30 @@
 
 namespace App\Services;
 
-use App\Contracts\Repositories\UserRepositoryInterface;
+use App\Models\User;
+use App\Repositories\UserRepository;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 class UserActivityService
 {
-    protected UserRepositoryInterface $users;
-
-    public function __construct(UserRepositoryInterface $users)
-    {
-        $this->users = $users;
-    }
-
     public function logoutInactive(): int
     {
-        $time = now()->subMinutes(config('activity.expires_in', 60));
+        $query = User::where(fn (Builder $query) => $query->whereRaw('last_activity_at <= DATE_SUB(NOW(), INTERVAL ? MINUTE)', [config('activity.expires_in', 60)])->orWhereNull('last_activity_at'))
+            ->where('already_logged_in', true)->toBase();
 
-        $ids = $this->users->pluckWhere([['last_activity_at', '<=', $time], ['already_logged_in', '=', true]], 'id');
+        $ids = $query->pluck('id');
 
         if (empty($ids)) {
             return 0;
         }
 
         foreach ($ids as $id) {
-            $this->users->updateWhere(['already_logged_in' => false], ['id' => $id, 'already_logged_in' => true]);
+            $lock = UserRepository::lock($id);
+
+            $lock->get(
+                fn () => DB::transaction(fn () => (clone $query)->where('id', $id)->update(['already_logged_in' => false]))
+            );
         }
 
         return count($ids);
