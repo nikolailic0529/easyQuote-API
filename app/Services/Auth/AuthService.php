@@ -9,6 +9,7 @@ use App\Contracts\{
 };
 use App\Models\{AccessAttempt, User,};
 use App\Notifications\AttemptsExceeded;
+use App\Repositories\UserRepository;
 use Laravel\Passport\PersonalAccessTokenResult;
 use Illuminate\Pipeline\Pipeline;
 use Illuminate\Support\{Arr, Facades\DB, Facades\Auth};
@@ -84,15 +85,10 @@ class AuthService implements AuthServiceInterface
         /** @var \App\Models\User */
         $user ??= auth()->user();
 
-        DB::transaction(function () use ($user) {
-            /**
-             * When Logout the System is revoking all the existing User's Personal Access Tokens.
-             * Also the User will be marked as Logged Out.
-             */
-            tap($user)
-                ->revokeTokens()
-                ->markAsLoggedOut();
-        }, 10);
+        UserRepository::lock($user->getKey())->block(30, function () use ($user) {
+            $user->revokeTokens();
+            $user->markAsLoggedOut();
+        });
 
         activity()->on($user)->by($user)->queue('deauthenticated');
 
@@ -114,11 +110,12 @@ class AuthService implements AuthServiceInterface
     {
         $user = $this->retrieveUserFromCredentials($credentials);
 
-        DB::transaction(function () use ($user) {
-            $this->incrementUserFailedAttempts($user);
-
-            $this->deactivateUserWhenAttemptsExceeded($user);
-        }, 10);
+        if (!is_null($user)) {
+            UserRepository::lock($user->getKey())->block(30, function () use ($user) {
+                $this->incrementUserFailedAttempts($user);
+                $this->deactivateUserWhenAttemptsExceeded($user);
+            });
+        }
 
         abort(403, __('auth.failed'));
     }
@@ -128,7 +125,7 @@ class AuthService implements AuthServiceInterface
         /** @var \App\Models\User */
         $user = request()->user();
 
-        DB::transaction(function () use ($user) {
+        UserRepository::lock($user->getKey())->block(30, function () use ($user) {
             /**
              * If the User has expired tokens the System will mark the User as Logged Out.
              */
@@ -151,7 +148,7 @@ class AuthService implements AuthServiceInterface
              * Finally we are resetting user's failed attempts.
              */
             $this->resetUserFailedAttempts($user);
-        }, 10);
+        });
 
         activity()->on($user)->by($user)->queue('authenticated');
     }

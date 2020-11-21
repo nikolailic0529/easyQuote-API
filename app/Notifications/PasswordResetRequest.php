@@ -17,7 +17,7 @@ class PasswordResetRequest extends Notification
      *
      * @var \App\Models\PasswordReset
      */
-    protected $passwordReset;
+    public $passwordReset;
 
     /**
      * Create a new notification instance.

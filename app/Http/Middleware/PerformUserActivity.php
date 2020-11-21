@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Repositories\UserRepository;
 use Closure;
 
 class PerformUserActivity
@@ -19,6 +20,7 @@ class PerformUserActivity
             return $next($request);
         }
 
+        /** @var \App\Models\User */
         $user = auth()->user();
 
         /**
@@ -33,6 +35,7 @@ class PerformUserActivity
 
     public function terminate($request, $response)
     {
+        /** @var \App\Models\User|null */
         if (is_null($user = $request->user())) {
             return;
         }
@@ -42,6 +45,6 @@ class PerformUserActivity
             return;
         }
 
-        $user->freshActivity();
+        UserRepository::lock($user->getKey(), 2)->get(fn () => $user->freshActivity());
     }
 }

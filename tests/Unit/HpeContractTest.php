@@ -46,6 +46,40 @@ class HpeContractTest extends TestCase
         Storage::disk('hpe_contract_files')->assertExists($response->json('original_file_path'));
     }
 
+    public function test20200928124822123534GBS4Importing()
+    {
+        $this->authenticateApi();
+
+        $filePath = static::contractFiles()['20200928124822_123534_GB_S4'];
+
+        $file = static::createUploadedFile($filePath);
+
+        /** @var HpeContractFileService */
+        $fileService = app(HpeContractFileService::class);
+
+        /** @var HpeContractFile */
+        $hpeContractFile = $fileService->store($file);
+
+        $response = $fileService->processImport($hpeContractFile);
+
+        $this->assertFalse($response->failed());
+
+        /** @var HpeContractState */
+        $stateProcessor = app(HpeContractState::class);
+
+        /** @var HpeContract */
+        $hpeContract = factory(HpeContract::class)->create();
+
+        $this->assertTrue(
+            $stateProcessor->processHpeContractData($hpeContract, $hpeContractFile, $response)
+        );
+
+        $serviceDescription = $hpeContract->services->pluck('service_description_2');
+
+        $this->assertContains("HPE Software Updates SVC", $serviceDescription);
+        $this->assertContains("HPE Software Technical Unlimited Support", $serviceDescription);
+    }
+
     public function testHpeContract20200817083029123286GBS4Importing()
     {
         $this->authenticateApi();
@@ -377,9 +411,9 @@ class HpeContractTest extends TestCase
             'purchase_order_no' => $this->faker->randomNumber()
         ]);
 
-        $response = $this->get('api/hpe-contracts/'.$hpeContract->getKey().'/export')->assertOk();
+        $response = $this->get('api/hpe-contracts/' . $hpeContract->getKey() . '/export')->assertOk();
 
-        $response->assertHeader('content-disposition', 'attachment; filename='.$hpeContract->purchase_order_no.'.pdf');
+        $response->assertHeader('content-disposition', 'attachment; filename=' . $hpeContract->purchase_order_no . '.pdf');
     }
 
     protected static function createUploadedFile(string $filePath): TestingFile
@@ -394,6 +428,7 @@ class HpeContractTest extends TestCase
             '20200626124903_123286_GB_S4' => base_path('tests/Unit/Data/hpe-contract-test/20200626124903_123286_GB_S4.txt'),
             '20200626125911_123286_GB_S4' => base_path('tests/Unit/Data/hpe-contract-test/20200626125911_123286_GB_S4.txt'),
             '20200817083029_123286_GB_S4' => base_path('tests/Unit/Data/hpe-contract-test/20200817083029_123286_GB_S4.txt'),
+            '20200928124822_123534_GB_S4' => base_path('tests/Unit/Data/hpe-contract-test/20200928124822_123534_GB_S4.txt'),
         ];
     }
 }

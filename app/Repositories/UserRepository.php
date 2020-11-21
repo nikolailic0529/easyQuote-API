@@ -2,37 +2,18 @@
 
 namespace App\Repositories;
 
-use App\Contracts\Repositories\{
-    UserRepositoryInterface
-};
+use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Http\Requests\{
     PasswordResetRequest as AppPasswordResetRequest,
     StoreResetPasswordRequest,
     UpdateProfileRequest
 };
-use App\Http\Resources\{
-    UserRepositoryCollection
-};
-use App\Models\{
-    User,
-    Role,
-    Collaboration\Invitation,
-    PasswordReset,
-    Permission
-};
-use App\Notifications\{
-    PasswordResetRequest,
-    PasswordResetSuccess
-};
-use Illuminate\Database\Eloquent\{
-    Model,
-    Builder,
-    Collection
-};
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\LazyCollection;
+use App\Http\Resources\{UserRepositoryCollection};
+use App\Models\{User, Role, Collaboration\Invitation, PasswordReset, Permission};
+use App\Notifications\{PasswordResetRequest, PasswordResetSuccess};
+use Illuminate\Database\Eloquent\{Model, Builder, Collection};
+use Illuminate\Support\{Arr, Facades\DB, Facades\Hash, Facades\Cache, LazyCollection};
+use Illuminate\Contracts\Cache\Lock;
 use Closure;
 
 class UserRepository extends SearchableRepository implements UserRepositoryInterface
@@ -59,6 +40,11 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         $this->permission = $permission;
         $this->invitation = $invitation;
         $this->passwordReset = $passwordReset;
+    }
+
+    public static function lock(string $key, $seconds = 0, $owner = null): Lock
+    {
+        return Cache::lock("user-{$key}-update", $seconds, $owner);
     }
 
     public function userQuery(): Builder
