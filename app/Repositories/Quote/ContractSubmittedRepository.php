@@ -143,7 +143,7 @@ class ContractSubmittedRepository extends SearchableRepository implements Contra
             'customer_valid_until^5',
             'customer_rfq^5',
             'user_fullname^4',
-            'created_at^1'
+            'created_at^1',
         ];
     }
 }

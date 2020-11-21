@@ -7,7 +7,6 @@ use Tests\Unit\Traits\{
     WithFakeUser,
     AssertsListing,
 };
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use App\Models\{
     User,
     Collaboration\Invitation,

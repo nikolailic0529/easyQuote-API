@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Contracts\ReindexQuery;
 use Illuminate\Console\Command;
 use Elasticsearch\Client as ElasticsearchClient;
 use App\Models\{
@@ -85,7 +86,7 @@ class ReindexCommand extends Command
                 User::class,
                 Role::class,
                 Quote::class,
-                Contract::class,
+                Contract::reindexQuery(),
                 QuoteTemplate::class,
                 ContractTemplate::class,
                 HpeContractTemplate::class,
@@ -118,13 +119,7 @@ class ReindexCommand extends Command
         $elasticsearch = app(ElasticsearchClient::class);
 
         foreach ($models as &$model) {
-            if ($model instanceof Builder) {
-                $query = $model;
-                $model = $model->getModel();
-            } else {
-                $model = app($model);
-                $query = $model->query();
-            }
+            [$model, $query] = static::modelQuery($model);
 
             $model->unsetEventDispatcher();
             $model->setConnection(MYSQL_UNBUFFERED);
@@ -160,5 +155,18 @@ class ReindexCommand extends Command
 
             $this->info("\nDone!");
         }
+    }
+
+    private static function modelQuery($model): array
+    {
+        if ($model instanceof Builder) {
+            return [$model->getModel(), $model];
+        }
+
+        if (is_a($model, ReindexQuery::class, true)) {
+            return [new $model, $model::reindexQuery()];
+        }
+
+        return [$model = (new $model), $model->query()];
     }
 }

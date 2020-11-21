@@ -50,7 +50,7 @@ use Illuminate\Database\Eloquent\{
     Model
 };
 use Illuminate\Support\Traits\Tappable;
-use Str;
+use Illuminate\Support\Str;
 
 /**
  * @property \Illuminate\Support\Collection $group_description
@@ -129,11 +129,11 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
     ];
 
     protected $casts = [
-        'group_description' => GroupDescription::class,
-        'margin_data' => 'array',
-        'checkbox_status' => 'json',
+        'group_description'    => GroupDescription::class,
+        'margin_data'          => 'array',
+        'checkbox_status'      => 'json',
         'calculate_list_price' => 'boolean',
-        'buy_price' => 'float'
+        'buy_price'            => 'float',
     ];
 
     protected $hidden = [
@@ -246,7 +246,7 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
             'customer_source'           => $this->customer->source,
 
             'user_fullname'             => optional($this->user)->fullname,
-            'created_at'                => optional($this->created_at)->format(config('date.format_time'))
+            'created_at'                => optional($this->created_at)->format(config('date.format'))
         ];
     }
 

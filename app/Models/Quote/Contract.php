@@ -2,8 +2,10 @@
 
 namespace App\Models\Quote;
 
+use App\Contracts\ReindexQuery;
 use App\Models\HpeContract;
 use App\Scopes\{
+    AnyContractTypeScope,
     ContractTypeScope,
     NonVersionScope
 };
@@ -12,10 +14,11 @@ use App\Traits\{
     NotifiableModel,
     Quote\HasVersions
 };
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Illuminate\Support\Stringable;
 
-class Contract extends BaseQuote
+class Contract extends BaseQuote implements ReindexQuery
 {
     const REG_CUSTOMER_RFQ_PREFIX = 'CQ';
 
@@ -27,27 +30,38 @@ class Contract extends BaseQuote
         'document_type' => Q_TYPE_CONTRACT
     ];
 
-    protected static function boot()
+    protected static function booted()
     {
-        parent::boot();
-
         static::addGlobalScope(new NonVersionScope);
         static::addGlobalScope(new ContractTypeScope);
     }
 
     public function toSearchArray()
     {
+        $this->loadMissing(
+            'customer:id,rfq,valid_until,name,support_start,support_end,valid_until',
+            'company:id,name',
+            'user:id,first_name,last_name'
+        );
+
+        $customerName = $this->document_type === Q_TYPE_HPE_CONTRACT ? $this->hpe_contract_customer_name : $this->customer->name;
+
         return [
-            'company_name'              => optional($this->company)->name,
-            'contract_number'           => $this->contract_number,
-            'customer_name'             => optional($this->customer)->name,
-            'customer_rfq'              => optional($this->customer)->rfq,
-            'customer_valid_until'      => optional($this->customer)->valid_until,
-            'customer_support_start'    => optional($this->customer)->support_start,
-            'customer_support_end'      => optional($this->customer)->support_end,
-            'user_fullname'             => optional($this->user)->fullname,
-            'created_at'                => $this->created_at,
+            'company_name'           => $this->company->name,
+            'contract_number'        => $this->contract_number,
+            'customer_name'          => $customerName,
+            'customer_rfq'           => $this->customer->rfq,
+            'customer_valid_until'   => $this->customer->valid_until,
+            'customer_support_start' => $this->customer->support_start,
+            'customer_support_end'   => $this->customer->support_end,
+            'user_fullname'          => optional($this->user)->fullname,
+            'created_at'             => optional($this->created_at)->format(config('date.format')),
         ];
+    }
+
+    public static function reindexQuery(): Builder
+    {
+        return static::query()->withoutGlobalScope(ContractTypeScope::class)->withGlobalScope(AnyContractTypeScope::class, new AnyContractTypeScope);
     }
 
     public function getItemNameAttribute()

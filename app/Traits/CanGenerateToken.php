@@ -1,11 +1,17 @@
 <?php namespace App\Traits;
 
-use Arr;
+use Illuminate\Support\Str;
 
 trait CanGenerateToken
 {
     public function generateToken(): string
     {
-        return substr(md5(implode('|', $this->getAttributes()). time()), 0, 32);
+        $key = app()['config']['app.key'];
+
+        if (Str::startsWith($key, 'base64:')) {
+            $key = base64_decode(substr($key, 7));
+        }
+
+        return hash_hmac('sha256', Str::random(40), $key);
     }
 }
