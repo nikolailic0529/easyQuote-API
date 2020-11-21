@@ -20,7 +20,7 @@ class UserSignInRequest extends FormRequest
             'email'         => ['required', 'string', 'email', new UserNotDeactivated],
             'password'      => 'required|string',
             'remember_me'   => 'boolean',
-            'local_ip'      => 'required|string|ip',
+            // 'local_ip'      => 'required|string|ip',
             'g_recaptcha'   => [Rule::requiredIf(setting('google_recaptcha_enabled') ?? false), 'string', new Recaptcha]
         ];
     }

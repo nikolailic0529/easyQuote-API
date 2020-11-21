@@ -22,8 +22,8 @@ class UserSignUpRequest extends FormRequest
             'password'      => 'required|string|min:6|confirmed',
             'phone'         => 'nullable|string|min:4|phone',
             'timezone_id'   => ['uuid', Rule::exists(Timezone::class, 'id')],
-            'country_id'    => ['uuid', Rule::exists(Country::class, 'id')->whereNull('deleted_at')],
-            'local_ip'      => 'required|string|ip'
+            'country_id'    => ['uuid', Rule::exists(Country::class, 'id')->whereNull('deleted_at')]
+            // 'local_ip'      => 'required|string|ip'
         ];
     }
 }
