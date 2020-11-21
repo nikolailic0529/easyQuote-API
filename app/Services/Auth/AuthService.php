@@ -7,15 +7,12 @@ use App\Contracts\{
     Repositories\AccessAttemptRepositoryInterface as Attempts,
     Repositories\UserRepositoryInterface as Users,
 };
-use App\Models\{
-    AccessAttempt,
-    User,
-};
+use App\Models\{AccessAttempt, User,};
 use App\Notifications\AttemptsExceeded;
+use App\Repositories\UserRepository;
 use Laravel\Passport\PersonalAccessTokenResult;
 use Illuminate\Pipeline\Pipeline;
-use Illuminate\Http\Request;
-use Auth, Arr;
+use Illuminate\Support\{Arr, Facades\DB, Facades\Auth};
 
 class AuthService implements AuthServiceInterface
 {
@@ -44,13 +41,13 @@ class AuthService implements AuthServiceInterface
 
     public function authenticate(array $request)
     {
-        $this->currentAttempt = $this->attempts->retrieveOrCreate($request);
+        // $this->currentAttempt = $this->attempts->retrieveOrCreate($request);
 
         $this->checkCredentials(Arr::only($request, ['email', 'password']));
 
         $token = $this->generateToken($request);
 
-        $this->currentAttempt->markAsSuccessful($token);
+        // $this->currentAttempt->markAsSuccessful($token);
 
         return $this->response($token);
     }
@@ -85,15 +82,13 @@ class AuthService implements AuthServiceInterface
 
     public function logout(?User $user = null)
     {
+        /** @var \App\Models\User */
         $user ??= auth()->user();
 
-        /**
-         * When Logout the System is revoking all the existing User's Personal Access Tokens.
-         * Also the User will be marked as Logged Out.
-         */
-        tap($user)
-            ->revokeTokens()
-            ->markAsLoggedOut();
+        UserRepository::lock($user->getKey())->block(30, function () use ($user) {
+            $user->revokeTokens();
+            $user->markAsLoggedOut();
+        });
 
         activity()->on($user)->by($user)->queue('deauthenticated');
 
@@ -115,40 +110,46 @@ class AuthService implements AuthServiceInterface
     {
         $user = $this->retrieveUserFromCredentials($credentials);
 
-        $this->incrementUserFailedAttempts($user);
-
-        $this->deactivateUserWhenAttemptsExceeded($user);
+        if (!is_null($user)) {
+            UserRepository::lock($user->getKey())->block(30, function () use ($user) {
+                $this->incrementUserFailedAttempts($user);
+                $this->deactivateUserWhenAttemptsExceeded($user);
+            });
+        }
 
         abort(403, __('auth.failed'));
     }
 
     protected function handleSuccessfulAttempt()
     {
+        /** @var \App\Models\User */
         $user = request()->user();
 
-        /**
-         * If the User has expired tokens the System will mark the User as Logged Out.
-         */
-        if ($user->doesntHaveNonExpiredTokens()) {
-            $user->markAsLoggedOut();
-        }
+        UserRepository::lock($user->getKey())->block(30, function () use ($user) {
+            /**
+             * If the User has expired tokens the System will mark the User as Logged Out.
+             */
+            if ($user->doesntHaveNonExpiredTokens()) {
+                $user->markAsLoggedOut();
+            }
 
-        /**
-         * Throw an exception if the User Already Logged In.
-         */
-        $this->checkAlreadyAuthenticatedCase($user);
+            /**
+             * Throw an exception if the User Already Logged In.
+             */
+            // $this->checkAlreadyAuthenticatedCase($user);
 
-        /**
-         * Once user logged in we are freshing the last activity timestamp and writing the related activity.
-         */
-        tap($user)
-            ->markAsLoggedIn($this->currentAttempt->ip)
-            ->freshActivity();
+            /**
+             * Once user logged in we are freshing the last activity timestamp and writing the related activity.
+             */
+            // $user->markAsLoggedIn($this->currentAttempt->ip);
+            $user->markAsLoggedIn();
+            $user->freshActivity();
 
-        /**
-         * Finally we are resetting user's failed attempts.
-         */
-        $this->resetUserFailedAttempts($user);
+            /**
+             * Finally we are resetting user's failed attempts.
+             */
+            $this->resetUserFailedAttempts($user);
+        });
 
         activity()->on($user)->by($user)->queue('authenticated');
     }

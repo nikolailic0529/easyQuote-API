@@ -3,9 +3,10 @@
         "name": "Hewlett Packard Enterprise",
         "short_code": "HPE",
         "countries": [
-            "GB", "US", "BE", "CA", "DK", "FR", "NL", "SE", "DE", "AT", "IE", "NO", "ZA", "CH"
+            "GB", "US", "BE", "CA", "DK", "FR", "NL", "SE", "DE", "AT", "IE", "NO", "ZA", "CH", "PL", "CZ"
         ],
-        "logo": "/database/seeds/models/images/hpe.png"
+        "logo": "/database/seeds/models/images/hpe.png",
+        "svg_logo": "/database/seeds/models/images/hpe.svg"
     },
     {
         "name": "Lenovo",
