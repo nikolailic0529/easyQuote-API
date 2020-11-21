@@ -13,7 +13,7 @@ use Str, Arr;
 
 class VendorTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, AssertsListing;
+    use WithFakeUser, AssertsListing;
 
     /**
      * Test Vendor Listing.
@@ -119,5 +119,29 @@ class VendorTest extends TestCase
             ->assertExactJson([true]);
 
         $this->assertSoftDeleted($vendor);
+    }
+
+    /**
+     * Test showing a newly created Vendor.
+     *
+     * @return void
+     */
+    public function testVendorShowing()
+    {
+        $attributes = factory(Vendor::class)->state('countries')->raw();
+
+        /** @var Vendor */
+        $vendor = app('vendor.repository')->create($attributes);
+
+        $this->assertTrue($vendor->countries->isNotEmpty());
+
+        $this->getJson('api/vendors/'.$vendor->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id', 'user_id', 'logo', 'created_at', 'short_code',
+                'countries' => [
+                    ['id', 'iso_3166_2', 'name', 'flag']
+                ]
+            ]);
     }
 }

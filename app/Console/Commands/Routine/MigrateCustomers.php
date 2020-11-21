@@ -40,19 +40,19 @@ class MigrateCustomers extends Command
     public function handle()
     {
         $this->warn(CUSMG_S_01);
-        report_logger(['message' => CUSMG_S_01]);
+        customlog(['message' => CUSMG_S_01]);
 
         try {
             CustomerFlow::migrateCustomers($this->output->createProgressBar());
         } catch (Throwable $e) {
             $this->error(CUSMG_ERR_01);
-            report_logger(['ErrorCode' => 'QTC_ERR_01'], report_logger()->formatError(CUSMG_ERR_01, $e));
+            customlog(['ErrorCode' => 'QTC_ERR_01'], customlog()->formatError(CUSMG_ERR_01, $e));
 
             return false;
         }
 
         $this->info("\n".CUSMG_F_01);
-        report_logger(['message' => CUSMG_F_01]);
+        customlog(['message' => CUSMG_F_01]);
 
         return true;
     }

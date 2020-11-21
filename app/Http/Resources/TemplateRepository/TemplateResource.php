@@ -14,6 +14,9 @@ class TemplateResource extends JsonResource
      */
     public function toArray($request)
     {
+        /** @var \App\Models\User */
+        $user = $request->user();
+
         return [
             'id'                => $this->id,
             'name'              => $this->name,
@@ -30,6 +33,11 @@ class TemplateResource extends JsonResource
                 'name'  => $this->vendor->name
             ],
             'countries'         => $this->countries->map->only('id', 'name'),
+            'permissions'       => [
+                'view'      => $user->can('view', $this->resource),
+                'update'    => $user->can('update', $this->resource),
+                'delete'    => $user->can('delete', $this->resource),
+            ],
             'created_at'        => (string) $this->created_at,
             'activated_at'      => (string) $this->activated_at
         ];

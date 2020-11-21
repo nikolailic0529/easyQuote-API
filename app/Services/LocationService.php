@@ -14,6 +14,8 @@ use App\Services\Concerns\WithProgress;
 use Grimzy\LaravelMysqlSpatial\Types\LineString;
 use Grimzy\LaravelMysqlSpatial\Types\Point;
 use Grimzy\LaravelMysqlSpatial\Types\Polygon;
+use Illuminate\Support\Facades\Cache;
+use Throwable;
 
 class LocationService implements Contract
 {
@@ -67,7 +69,7 @@ class LocationService implements Contract
          if ($location instanceof Location) {
              $address->location()->associate($location)->saveOrFail();
 
-             report_logger(['message' => LC_AA_01], $address->toArray());
+             customlog(['message' => LC_AA_01], $address->toArray());
          }
 
          $this->advanceProgress();
@@ -82,8 +84,12 @@ class LocationService implements Contract
      */
     public function findOrCreateLocationForAddress(string $address): ?Location
     {
+        if ($this->notFoundResultExists($address)) {
+            $this->onLocationNotFound($address);
+        }
+
         if (($location = Location::whereSearchableAddress($address)->first()) instanceof Location) {
-            report_logger(['message' => LC_FE_01], $location->toArray());
+            customlog(['message' => LC_FE_01], $location->toArray());
 
             return $location;
         }
@@ -93,7 +99,7 @@ class LocationService implements Contract
         $dto = GeocoderData::create($result);
 
         if ($dto->resultNotFound()) {
-            $this->onLocationNotFound($address, $dto);
+            $this->onLocationNotFound($address);
             
             return null;
         }
@@ -101,7 +107,7 @@ class LocationService implements Contract
         $location = Location::wherePlaceId($dto->place_id)->first();
 
         if ($location instanceof Location) {
-            report_logger(['message' => LC_FE_01], $location->toArray());
+            customlog(['message' => LC_FE_01], $location->toArray());
         
             return $location;
         }
@@ -111,7 +117,7 @@ class LocationService implements Contract
         return tap(Location::make($dto->toArray() + ['country_id' => $countryId, 'searchable_address' => $address]), function (Location $location) {
             $location->saveOrFail();
 
-            report_logger(['message' => LC_FC_01], $location->toArray());
+            customlog(['message' => LC_FC_01], $location->toArray());
         });
     }
 
@@ -140,6 +146,21 @@ class LocationService implements Contract
         return new Point($lat, $lng);
     }
 
+    protected function rememberNotFoundResult(string $address): void
+    {
+        Cache::forever(static::locationNotFoundCacheKey($address), true);
+    }
+
+    protected function notFoundResultExists(string $address): bool
+    {
+        return Cache::has(static::locationNotFoundCacheKey($address));
+    }
+
+    protected static function locationNotFoundCacheKey(string $address): string
+    {
+        return 'location.not_found:' . md5($address);
+    }
+
     /**
      * Action when address locations update is completed.
      *
@@ -147,7 +168,7 @@ class LocationService implements Contract
      */
     protected function onUpdateAddressLocationsCompleted(): void
     {
-        report_logger(['message' => LC_AUC_01], ['not_found_addresses' => $this->notFoundAddresses]);
+        customlog(['message' => LC_AUC_01], ['not_found_addresses' => $this->notFoundAddresses]);
 
         $this->finishProgress();
     }
@@ -159,11 +180,15 @@ class LocationService implements Contract
      * @param GeocoderData $result
      * @return void
      */
-    protected function onLocationNotFound(string $address, GeocoderData $result): void
+    protected function onLocationNotFound(string $address): void
     {
-        array_push($this->notFoundAddresses, compact('address', 'result'));
+        if (! $this->notFoundResultExists($address)) {
+            $this->rememberNotFoundResult($address);
+        }
 
-        report_logger(['ErrorCode' => 'LC_NF_01'], [LC_NF_01, $result->toArray()]);
+        array_push($this->notFoundAddresses, compact('address'));
+
+        customlog(['ErrorCode' => 'LC_NF_01'], [LC_NF_01, compact('address')]);
     }
 
     /**

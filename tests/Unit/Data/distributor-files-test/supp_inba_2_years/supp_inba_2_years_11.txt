@@ -1,0 +1,43 @@
+Payment Schedule  as  of  12.08.2020
+
+Support Account ID: SUPP-INBA
+
+Settlement Period from: From:  17.08.2020  to: 16.08.2022
+
+System Handle                  17.08.2020
+
+                               16.08.2022
+
+SUPPINBA-UK                    3,839.59
+
+Sub-total for:
+
+UNITED KINGDOM                 3,839.59
+
+SUPPINBA-NL                    2,869.94
+
+Sub-total for:
+
+NETHERLAND                     2,869.94
+
+SUPPINBA-SG                    3,175.19
+
+Sub-total for:
+
+SINGAPORE                      3,175.19
+
+SUPPINBA-US                    2,462.89
+
+Sub-total for:
+
+UNITED STATES                  2,462.89
+
+Total for the period
+
+GREAT BRITAIN                  12,347.61
+
+Print Date 12.08.2020                                                                                                     Page 11 / 19
+
+Single Payment for Duration All amounts shown are in GBP unless otherwise indicated.
+
+Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. RegisteredNo: 690597

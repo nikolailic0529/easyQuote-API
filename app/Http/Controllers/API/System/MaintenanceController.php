@@ -44,6 +44,7 @@ class MaintenanceController extends Controller
 
         if ($request->enable) {
             $this->builds->updateLastOrCreate($request->validated());
+            
             UpMaintenance::dispatchAfterResponse($request->carbonStartTime, $request->carbonEndTime, true);
         }
 

@@ -16,6 +16,7 @@ use App\Traits\{
     BelongsToCountry,
     Uuid
 };
+use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
 use Illuminate\Database\Eloquent\{
     Model,
     Builder,
@@ -36,7 +37,8 @@ class ImportableColumn extends Model implements HasOrderedScope
         LogsActivity,
         SoftDeletes,
         Searchable,
-        Activatable;
+        Activatable,
+        EloquentJoin;
 
     const TYPES = ['text', 'number', 'decimal', 'date'];
 

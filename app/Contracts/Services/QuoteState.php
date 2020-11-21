@@ -46,12 +46,12 @@ interface QuoteState
     /**
      * Find Rows by query.
      *
-     * @param \App\Models\Quote\QuoteVersion|string $quote
+     * @param \App\Models\Quote\BaseQuote $quote
      * @param string $query
      * @param string|null $groupId
      * @return \Illuminate\Support\Collection
      */
-    public function searchRows($quote, string $query = '', ?string $groupId = null): Collection;
+    public function searchRows(BaseQuote $quote, string $query = '', ?string $groupId = null): Collection;
 
     /**
      * Calculate list price based on current mapping.
@@ -131,65 +131,65 @@ interface QuoteState
     /**
      * Retrieve Groups of Imported Rows.
      *
-     * @param string|QuoteVersion $quote
+     * @param  BaseQuote $quote
      * @return Collection
      */
-    public function retrieveRowsGroups($quote): Collection;
+    public function retrieveRowsGroups(BaseQuote $quote): Collection;
 
     /**
      * Retrieve specified Rows Group from specified Quote.
      *
      * @param string $id
-     * @param string $quote_id
+     * @param BaseQuote $quote
      * @return Collection
      */
-    public function findGroupDescription(string $id, string $quote_id): Collection;
+    public function findGroupDescription(string $id, BaseQuote $quote): Collection;
 
     /**
      * Create Rows Group Description for specified Quote.
      *
-     * @param StoreGroupDescriptionRequest $request
-     * @param string $quote_id
+     * @param array $attributes
+     * @param Quote $quote
      * @return Collection
      */
-    public function createGroupDescription(StoreGroupDescriptionRequest $request, string $quote_id): Collection;
+    public function createGroupDescription(array $attributes, Quote $quote);
 
     /**
      * Update specified Rows Group Description for specified Quote.
      *
-     * @param UpdateGroupDescriptionRequest $request
      * @param string $id
-     * @param string $quote_id
+     * @param Quote $quote
+     * @param array $attributes
      * @return bool
      */
-    public function updateGroupDescription(UpdateGroupDescriptionRequest $request, string $id, string $quote_id): bool;
+    public function updateGroupDescription(string $id, Quote $quote, array $attributes): bool;
 
     /**
      * Move specified Rows to specified Rows Group Description for specified Quote.
      *
-     * @param MoveGroupDescriptionRowsRequest $request
-     * @param string $quote_id
+     * @param Quote $quote
+     * @param array $attributes
      * @return bool
      */
-    public function moveGroupDescriptionRows(MoveGroupDescriptionRowsRequest $request, string $quote_id): bool;
+    public function moveGroupDescriptionRows(Quote $quote, array $attributes): bool;
 
     /**
      * Mark as selected specific Rows Group Descriptions.
      *
-     * @param array $ids
-     * @param string $quote
+     * @param  array $ids
+     * @param  Quote $quote
      * @return boolean
      */
-    public function selectGroupDescription(array $ids, string $quote): bool;
+    public function selectGroupDescription(array $ids, Quote $quote): bool;
 
     /**
      * Delete specified Rows Group Description from specified Quote.
      *
-     * @param string $id
-     * @param string $quote_id
+     * @param  string $id
+     * @param  Quote $quote
      * @return bool
      */
-    public function deleteGroupDescription(string $id, string $quote_id): bool;
+    public function deleteGroupDescription(string $id, Quote $quote): bool;
 
     /**
      * Create a new Quote Version if an authenticated user is not the initial Quote creator.

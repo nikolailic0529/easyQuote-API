@@ -4,6 +4,7 @@ namespace App\Traits;
 
 use App\Models\Vendor;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Arr;
 
 trait BelongsToVendors
 {
@@ -22,7 +23,7 @@ trait BelongsToVendors
 
         $changes = $this->vendors()->sync($vendors, $detach);
 
-        if (blank(array_flatten($changes))) {
+        if (blank(Arr::flatten($changes))) {
             return;
         }
 

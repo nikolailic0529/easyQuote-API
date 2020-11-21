@@ -26,6 +26,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Carbon\CarbonPeriod;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as DbBuilder;
 
 class StatsAggregator
 {
@@ -130,13 +131,13 @@ class StatsAggregator
             ->where($where)
             ->first();
 
-        $expiringQuotesSummary = $this->expiringQuotesSummary($countryId, $userId);
+        $expiringQuotesSummary = $this->expiringQuotesSummary($period, $countryId, $userId);
 
         $customersSummary = $this->customersSummary($countryId, $userId);
 
         $locationsSummary = $this->locationsSummary($countryId, $userId);
 
-        $assetsSummary = $this->assetsSummary($countryId, $userId);
+        $assetsSummary = $this->assetsSummary($period, $countryId, $userId);
 
         $totals = (array) $quoteTotals + (array) $expiringQuotesSummary + (array) $customersSummary + (array) $locationsSummary + (array) $assetsSummary;
 
@@ -303,7 +304,7 @@ class StatsAggregator
         );
     }
 
-    public function expiringQuotesSummary(?string $countryId = null, ?string $userId = null): object
+    public function expiringQuotesSummary(?CarbonPeriod $period = null, ?string $countryId = null, ?string $userId = null): object
     {
         $where = [];
 
@@ -316,6 +317,15 @@ class StatsAggregator
         }
 
         $bindings = $where;
+
+        if ($period) {
+            array_push(
+                $bindings,
+                ['valid_until_date', '>=', $period->getStartDate()->endOfDay()],
+                ['valid_until_date', '<=', $period->getEndDate()->endOfDay()]
+            );
+        }
+
         $cacheKey = static::expQuotesSummaryCacheKey($bindings);
 
         if ($this->cache->has($cacheKey)) {
@@ -327,8 +337,12 @@ class StatsAggregator
             ->toBase()
             ->selectRaw('COUNT(*) AS `expiring_quotes_count`')
             ->selectRaw('SUM(`total_price`) AS `expiring_quotes_value`')
-            ->whereRaw('`valid_until_date` > NOW()')
-            ->whereRaw('DATEDIFF(`valid_until_date`, NOW()) <= ?', [setting('notification_time')->d])
+            ->when(
+                $period,
+                fn (DbBuilder $query) => $query->whereBetween('valid_until_date', [$period->getStartDate(), $period->getEndDate()]),
+                fn (DbBuilder $query) => $query->whereDate('valid_until_date', '>=', now())
+
+            )
             ->where($where)
             ->first();
 
@@ -394,7 +408,7 @@ class StatsAggregator
         return tap($result, fn () => $this->cache->put($cacheKey, $result, static::SUMMARY_CACHE_TTL));
     }
 
-    public function assetsSummary(?string $countryId = null, ?string $userId = null): object
+    public function assetsSummary(?CarbonPeriod $period = null, ?string $countryId = null, ?string $userId = null): object
     {
         $where = [];
 
@@ -403,6 +417,15 @@ class StatsAggregator
         }
 
         $bindings = array_merge($where, ['country_id', '=', $countryId]);
+
+        if ($period) {
+            array_push(
+                $bindings,
+                ['active_warranty_end_date', '>=', $period->getStartDate()->endOfDay()],
+                ['active_warranty_end_date', '<=', $period->getEndDate()->endOfDay()]
+            );
+        }
+
         $cacheKey = static::assetsSummaryCacheKey($bindings);
 
         if ($this->cache->has($cacheKey)) {
@@ -410,8 +433,20 @@ class StatsAggregator
         }
 
         $result = $this->asset->query()
-            ->selectRaw('COUNT(`active_warranty_end_date` <= NOW() OR NULL) AS `assets_renewals_count`')
-            ->selectRaw('SUM(CASE WHEN `active_warranty_end_date` <= NOW() THEN `unit_price` END) AS `assets_renewals_value`')
+            ->when(
+                $period,
+                fn (Builder $query) => $query->selectRaw('COUNT(`active_warranty_end_date` <= ? AND `active_warranty_end_date` >= ? OR NULL) AS `assets_renewals_count`', [
+                    $period->getEndDate()->endOfDay(), $period->getStartDate()->endOfDay()
+                ]),
+                fn (Builder $query) => $query->selectRaw('COUNT(`active_warranty_end_date` <= NOW() OR NULL) AS `assets_renewals_count`')
+            )
+            ->when(
+                $period,
+                fn (Builder $query) => $query->selectRaw('SUM(CASE WHEN `active_warranty_end_date` <= ? AND `active_warranty_end_date` >= ? THEN `unit_price` END) AS `assets_renewals_value`', [
+                    $period->getEndDate()->endOfDay(), $period->getStartDate()->endOfDay()
+                ]),
+                fn (Builder $query) => $query->selectRaw('SUM(CASE WHEN `active_warranty_end_date` <= NOW() THEN `unit_price` END) AS `assets_renewals_value`')
+            )
             ->selectRaw('COUNT(*) AS `assets_count`')
             ->selectRaw('SUM(`unit_price`) AS `assets_value`')
             ->where($where)
@@ -437,6 +472,8 @@ class StatsAggregator
      */
     public function quotesByLocation(string $locationId, ?string $userId = null)
     {
+        $where = [];
+        
         if ($userId) {
             array_push($where, ['user_id', '=', $userId]);
         }
@@ -487,7 +524,7 @@ class StatsAggregator
 
         $currency = $this->currencies->findCached($id);
 
-        if (! $currency instanceof Currency) {
+        if (!$currency instanceof Currency) {
             return $this->baseRate();
         }
 

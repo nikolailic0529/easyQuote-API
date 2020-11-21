@@ -20,6 +20,10 @@ class RolePolicy
      */
     public function viewAny(User $user)
     {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
         return $user->can('view_roles');
     }
 
@@ -32,6 +36,10 @@ class RolePolicy
      */
     public function view(User $user, Role $role)
     {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
         return $user->can('view_roles');
     }
 
@@ -43,6 +51,10 @@ class RolePolicy
      */
     public function create(User $user)
     {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
         return $user->can('create_roles');
     }
 
@@ -59,7 +71,17 @@ class RolePolicy
             return $this->deny(RSU_01);
         }
 
-        return $user->can('update_roles');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if ($user->can('update_roles')) {
+            if ($user->getKey() === $role->{$role->user()->getForeignKeyName()}) {
+                return true;
+            }
+
+            return $this->deny('You do not have update permissions for this role.');
+        }
     }
 
     /**
@@ -75,6 +97,16 @@ class RolePolicy
             return $this->deny(RSD_01);
         }
 
-        return $user->can('delete_roles');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if ($user->can('delete_roles')) {
+            if ($user->getKey() === $role->{$role->user()->getForeignKeyName()}) {
+                return true;
+            }
+
+            return $this->deny('You do not have delete permissions for this role.');
+        }
     }
 }

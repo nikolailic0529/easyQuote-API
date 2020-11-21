@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Contracts\ReindexQuery;
 use Illuminate\Console\Command;
 use Elasticsearch\Client as ElasticsearchClient;
 use App\Models\{
@@ -28,8 +29,9 @@ use App\Models\{
     QuoteFile\ImportableColumn,
 };
 use App\Models\QuoteTemplate\ContractTemplate;
+use App\Models\QuoteTemplate\HpeContractTemplate;
 use Illuminate\Database\Eloquent\Builder;
-use Str;
+use Illuminate\Support\Str;
 use Throwable;
 
 class ReindexCommand extends Command
@@ -48,18 +50,14 @@ class ReindexCommand extends Command
      */
     protected $description = 'Indexes all entries to Elasticsearch';
 
-    protected ElasticsearchClient $elasticsearch;
-
     /**
      * Create a new command instance.
      *
      * @return void
      */
-    public function __construct(ElasticsearchClient $elasticsearch)
+    public function __construct()
     {
         parent::__construct();
-
-        $this->elasticsearch = $elasticsearch;
     }
 
     /**
@@ -67,7 +65,7 @@ class ReindexCommand extends Command
      *
      * @return mixed
      */
-    public function handle()
+    public function handle(ElasticsearchClient $elasticsearch)
     {
         /**
          * Perform deleting on all indices
@@ -75,7 +73,7 @@ class ReindexCommand extends Command
         $this->info("Deleting all indexes...");
 
         try {
-            $this->elasticsearch->indices()->delete(['index' => '_all']);
+            $elasticsearch->indices()->delete(['index' => '_all']);
         } catch (Throwable $exception) {
             $this->error($exception->getMessage());
             $this->error("Reindexing will be skipped.");
@@ -88,9 +86,10 @@ class ReindexCommand extends Command
                 User::class,
                 Role::class,
                 Quote::class,
-                Contract::class,
+                Contract::reindexQuery(),
                 QuoteTemplate::class,
                 ContractTemplate::class,
+                HpeContractTemplate::class,
                 TemplateField::class,
                 CountryMargin::class,
                 MultiYearDiscount::class,
@@ -116,14 +115,11 @@ class ReindexCommand extends Command
 
     private function handleModels(array $models)
     {
+        /** @var ElasticsearchClient */
+        $elasticsearch = app(ElasticsearchClient::class);
+
         foreach ($models as &$model) {
-            if ($model instanceof Builder) {
-                $query = $model;
-                $model = $model->getModel();
-            } else {
-                $model = app($model);
-                $query = $model->query();
-            }
+            [$model, $query] = static::modelQuery($model);
 
             $model->unsetEventDispatcher();
             $model->setConnection(MYSQL_UNBUFFERED);
@@ -143,8 +139,8 @@ class ReindexCommand extends Command
 
             rescue(
                 fn () =>
-                $cursor->each(function ($entry) use ($bar) {
-                    $this->elasticsearch->index([
+                $cursor->each(function ($entry) use ($bar, $elasticsearch) {
+                    $elasticsearch->index([
                         'id'    => $entry->getKey(),
                         'index' => $entry->getSearchIndex(),
                         'body'  => $entry->toSearchArray()
@@ -159,5 +155,18 @@ class ReindexCommand extends Command
 
             $this->info("\nDone!");
         }
+    }
+
+    private static function modelQuery($model): array
+    {
+        if ($model instanceof Builder) {
+            return [$model->getModel(), $model];
+        }
+
+        if (is_a($model, ReindexQuery::class, true)) {
+            return [new $model, $model::reindexQuery()];
+        }
+
+        return [$model = (new $model), $model->query()];
     }
 }

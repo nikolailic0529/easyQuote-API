@@ -43,7 +43,12 @@
         },
         {
             "filename": "Export Contract Productlist (Excel) 81-T32117 Nb offre 23.03.2019 - 22.09.2019, le 28.02.2019 1023 [TePr].xls",
-            "count": 5,
+            "count": 2,
+            "page": 1
+        },
+        {
+            "filename": "quote (renewal) 81-T30636    01102020 - 30092021.pdf",
+            "count": 3,
             "page": 1
         }
     ],
@@ -55,6 +60,11 @@
         },
         {
             "filename": "288831SWA2Y0.xls",
+            "count": 5,
+            "page": 1
+        },
+        {
+            "filename": "Copy of 432897SWA1Y0.xlsx",
             "count": 3,
             "page": 1
         }

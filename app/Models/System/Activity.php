@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\{
     Relations\MorphTo
 };
 use Spatie\Activitylog\Contracts\Activity as ActivityContract;
-use Str;
+use Illuminate\Support\Str;
 
 class Activity extends Model implements ActivityContract
 {
@@ -116,14 +116,14 @@ class Activity extends Model implements ActivityContract
 
     public function toSearchArray()
     {
-        $changed_properties = $this->readableChanges->collapse()->pluck('attribute')->unique()->toArray();
-        $causer_name = $this->causer_name;
-        $subject_name = $this->subject_name;
-
-        return array_merge(
-            Arr::only($this->toArray(), ['log_name', 'description', 'created_at']),
-            compact('changed_properties', 'causer_name', 'subject_name')
-        );
+        return [
+            'log_name'           => $this->log_name,
+            'description'        => $this->description,
+            'changed_properties' => $this->readableChanges->collapse()->pluck('attribute')->unique()->toArray(),
+            'causer_name'        => $this->causer_name,
+            'subject_name'       => $this->subject_name,
+            'created_at'         => optional($this->created_at)->format(config('date.format')),
+        ];
     }
 
     public function getReadableChangesAttribute()

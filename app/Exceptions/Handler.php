@@ -96,7 +96,7 @@ class Handler extends ExceptionHandler
      */
     protected function invalidJson($request, ValidationException $exception)
     {
-        report_logger(['ErrorCode' => 'EQ_INV_DP_01'], $exception->errors());
+        customlog(['ErrorCode' => 'EQ_INV_DP_01'], $exception->errors());
 
         $http = $this->container->make('http.service');
 

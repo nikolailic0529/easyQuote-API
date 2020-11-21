@@ -2,15 +2,12 @@
 
 namespace App\Imports;
 
-use App\Models\QuoteFile\QuoteFile;
-use Illuminate\Support\Collection;
 use Maatwebsite\Excel\{
     Row,
     Concerns\WithHeadingRow,
     Concerns\Importable,
     Concerns\WithEvents,
     Concerns\WithChunkReading,
-    Concerns\OnEachRow,
     Events\BeforeSheet,
     Events\AfterImport,
     Imports\HeadingRowFormatter,
@@ -20,106 +17,58 @@ use App\Imports\Concerns\{
     MapsHeaders,
     LimitsHeaders
 };
-use Maatwebsite\Excel\Events\AfterSheet;
+use Maatwebsite\Excel\Concerns\{ToModel, WithBatchInserts, WithLimit, WithStartRow, WithCalculatedFormulas, WithColumnLimit, };
+use App\Models\{QuoteFile\QuoteFile, QuoteFile\ImportedRow};
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Webpatser\Uuid\Uuid;
-use Arr, DB, Str;
+use Illuminate\Support\{Arr, Str, Collection};
+use voku\helper\ASCII;
 
-class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkReading
+class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInserts, WithChunkReading, WithStartRow, WithLimit, WithColumnLimit
 {
     use Importable, MapsHeaders, LimitsHeaders;
 
-    /**
-     * QuoteFile instance.
-     *
-     * @var \App\Models\QuoteFile\QuoteFile
-     */
+    const C_IMPC = 'importable_column_id';
+
+    const C_HDR = 'header';
+
+    const C_VL = 'value';
+
+    const C_OP = 'is_one_pay';
+
+    /** @var \App\Models\QuoteFile\QuoteFile */
     protected $quoteFile;
 
-    /**
-     * User has importing QuoteFile.
-     *
-     * @var \App\Models\User
-     */
+    /** @var \App\Models\User */
     protected $user;
 
-    /**
-     * Retrieved System Importable Columns from repository.
-     *
-     * @var \Illuminate\Database\Eloquent\Collection
-     */
+    /** @var \Illuminate\Database\Eloquent\Collection */
     protected $systemImportableColumns;
 
-    /**
-     * Actual Sheet Index.
-     *
-     * @var integer
-     */
+    /** @var integer */
     protected $activeSheetIndex = 0;
 
-    /**
-     * Heading Row index.
-     *
-     * @var integer
-     */
+    /** @var integer */
     protected $headingRow = 1;
 
-    /**
-     * Start row index.
-     *
-     * @var integer
-     */
+    /** @var integer */
     protected $startRow = 2;
 
-    /**
-     * Required Header for importing.
-     *
-     * @var array
-     */
+    /** @var array */
     protected $requiredHeaders = [
         'price', 'product_no'
     ];
 
-    /**
-     * Actual Header.
-     *
-     * @var \Illuminate\Support\Collection
-     */
+    /** @var \Illuminate\Support\Collection */
     protected $header;
 
-    /**
-     * Mapping for Required Headers on Row for importing.
-     *
-     * @var \Illuminate\Support\Collection
-     */
+    /** @var \Illuminate\Support\Collection */
     protected $requiredHeadersMapping;
 
-    /**
-     * Total Imported Rows Count.
-     *
-     * @var integer
-     */
+    /** @var integer */
     protected $rowsCount = 0;
 
-    /**
-     * Accumulated Sheet Data should be inserted into DB.
-     *
-     * @var array
-     */
-    protected $importableSheetData = [];
-
-    /**
-     * Minumum accumulated Sheet Data Rows should be inserted into DB in each tick.
-     *
-     * @var integer
-     */
-    protected $chunkSize = 100;
-
-    /**
-     * Price Meta Attributes.
-     *
-     * @var array
-     */
+    /** @var array */
     protected $priceAttributes = [];
 
     public function __construct(QuoteFile $quoteFile)
@@ -129,48 +78,59 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         $this->systemImportableColumns = $this->importRepository()->allSystem();
 
         HeadingRowFormatter::
-            default('none');
+        default('none');
     }
 
-    public function onRow(Row $excelRow)
+    public function model(array $row)
     {
-        $row = $excelRow->toCollection(null, true);
+        $collection = collect($row);
 
-        if ($excelRow->getIndex() < $this->startRow) {
-            $this->findPriceAttributes($row);
-            return;
-        }
-
-        $importableRow = $this->fetchRow($row);
+        $importableRow = $this->fetchRow($collection);
 
         if (!$this->checkColumnsData($importableRow['columns_data'])) {
-            return;
-        };
+            return null;
+        }
 
-        $this->makeRow($importableRow);
-
-        $this->increaseRowsCount();
-        $this->performChunkInsert();
+        return tap(ImportedRow::make($importableRow), function () {
+            $this->incrementRowsCount();
+        });
     }
 
     public function registerEvents(): array
     {
         return [
-            BeforeSheet::class => function ($event) {
+            BeforeSheet::class => function (BeforeSheet $event) {
                 $this->beforeNextSheet($event->sheet->getDelegate());
             },
-            AfterSheet::class => function ($event) {
-                $this->importSheetData();
-            },
-            AfterImport::class => function ($event) {
+            AfterImport::class => function (AfterImport $event) {
                 $this->afterImport();
             }
         ];
     }
 
+    public function batchSize(): int
+    {
+        return 200;
+    }
+
     public function chunkSize(): int
     {
-        return 10000;
+        return 1000;
+    }
+
+    public function limit(): int
+    {
+        return 100000;
+    }
+
+    public function endColumn(): string
+    {
+        return 'BZ';
+    }
+
+    public function startRow(): int
+    {
+        return $this->startRow;
     }
 
     public function headingRow(): int
@@ -178,32 +138,8 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         return $this->headingRow;
     }
 
-    protected function performChunkInsert(): void
-    {
-        if (count($this->importableSheetData) < $this->chunkSize) {
-            return;
-        }
-
-        $this->performInsert(array_splice($this->importableSheetData, 0, $this->chunkSize));
-    }
-
-    protected function performInsert(array $importableRows): void
-    {
-        DB::table('imported_rows')->insert($importableRows);
-    }
-
-    protected function importSheetData(): void
-    {
-        if (empty($this->importableSheetData)) {
-            return;
-        }
-
-        $this->performInsert($this->importableSheetData);
-    }
-
     protected function beforeNextSheet(Worksheet $sheet): void
     {
-        $this->importableSheetData = [];
         $this->activeSheetIndex++;
         $this->headingRow = 1;
         $this->startRow = 2;
@@ -211,49 +147,82 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         $highestRow = $sheet->getHighestRow();
 
         while (!$this->checkHeadingRow($sheet) && $this->headingRow < $highestRow) {
+            $this->findPriceAttributes($this->getStartRow($sheet));
+
+            $this->headingRow++;
+            $this->startRow++;
+
             continue;
         }
 
-        $this->determineCoveragePeriod($sheet);
+        if (intval($highestRow) !== $this->headingRow) {
+            $this->determineCoveragePeriod($sheet);
+        }
+
+        $this->setSheetHeader($sheet);
+        $this->mapHeaders();
+    }
+
+    protected function getStartRow(Worksheet $sheet): Collection
+    {
+        $headingRow = HeadingRowExtractor::extract($sheet, $this);
+
+        $iterator = $sheet->getRowIterator()->resetStart($this->startRow)->resetEnd($this->startRow);
+
+        foreach ($iterator as $row) {
+            return (new Row($row, $headingRow))->toCollection();
+        }
     }
 
     protected function afterImport(): void
     {
         if ($this->rowsCount < 1) {
-            tap($this->quoteFile)->setException(QFNRF_01, 'QFNRF_01')
-                ->markAsUnHandled();
+            tap($this->quoteFile)->setException(QFNRF_01, 'QFNRF_01')->markAsUnHandled();
         }
 
         $this->quoteFile->storeMetaAttributes($this->priceAttributes);
     }
 
-    protected function increaseRowsCount(): void
+    protected function incrementRowsCount(): void
     {
         $this->rowsCount++;
     }
 
     protected function checkHeadingRow(Worksheet $worksheet): bool
     {
-        $this->setHeader($worksheet);
+        $this->setSheetHeader($worksheet);
         $this->mapRequiredHeaders();
 
-        if (!$this->requiredHeadersPresent()) {
-            $this->startRow++;
-            $this->headingRow++;
-            return false;
-        }
-
-        $this->mapHeaders();
-
-        return true;
+        return $this->requiredHeadersPresent();
     }
 
     protected function checkColumnsData(Collection $columnsData): bool
     {
-        return $this->requiredHeadersMapping->reject(function ($header, $id) use ($columnsData) {
-            return $columnsData->contains(fn ($column) => trim($column['header']) === trim($header) && isset($column['value']))
-                || $columnsData->filter(fn ($column) => isset($column['value']))->count() > 3;
-        })->isEmpty();
+        if ($columnsData->contains(static::C_OP, true)) {
+            return true;
+        }
+
+        $headerValue = $columnsData->pluck(static::C_VL, static::C_IMPC)->filter(fn ($value) => filled($value));
+
+        $columnsCount = $headerValue->count();
+
+        if ($columnsCount < count($this->requiredHeadersMapping)) {
+            return false;
+        }
+
+        foreach ($this->requiredHeadersMapping as $header => $value) {
+            if (is_null($value)) {
+                return false;
+            }
+
+            $id = $this->headersMapping->get($value);
+
+            if (!$headerValue->has($id)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     protected function determineCoveragePeriod(Worksheet $worksheet): void
@@ -275,6 +244,7 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
         $foundStart = false;
         $foundEnd = false;
+        
         foreach ($cellIterator as $cell) {
             if (preg_match($coverageReg, $cell->getValue()) && !$foundStart) {
                 $cell->setValue(__("parser.coverage_period.{$lang}.from"));
@@ -293,16 +263,11 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
                 break;
             }
         }
-
-        $this->setHeader($worksheet);
-        $this->mapHeaders();
     }
 
     protected function requiredHeadersPresent(): bool
     {
-        return $this->requiredHeadersMapping->reject(function ($value, $key) {
-            return $value;
-        })->isEmpty();
+        return $this->requiredHeadersMapping->reject(fn ($value) => $value)->isEmpty();
     }
 
     protected function makeRow(array $row): void
@@ -312,10 +277,25 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
 
     protected function fetchRow(Collection $row): array
     {
-        return $this->makeImportedRow() + ['columns_data' => $this->makeColumnsData($row)];
+        $now = now()->toDateTimeString();
+
+        $columnsData = $this->makeColumnsData($row);
+
+        $onePay = $columnsData->contains(static::C_OP, true);
+
+        return [
+            'id'            => Uuid::generate(4)->string,
+            'user_id'       => $this->user->id,
+            'quote_file_id' => $this->quoteFile->id,
+            'page'          => $this->activeSheetIndex,
+            'columns_data'  => $columnsData,
+            static::C_OP    => $onePay,
+            'created_at'    => $now,
+            'updated_at'    => $now
+        ];
     }
 
-    protected function setHeader(Worksheet $worksheet): void
+    protected function setSheetHeader(Worksheet $worksheet): void
     {
         $this->header = HeadingRowExtractor::extract($worksheet, $this);
     }
@@ -325,11 +305,10 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         $this->requiredHeadersMapping = collect($this->requiredHeaders)->mapWithKeys(function ($name) {
             $aliases = $this->systemImportableColumns->firstWhere('name', $name)->aliases->pluck('alias');
 
-            $header = Arr::first($this->header, function ($header) use ($aliases) {
-                return $aliases->contains(function ($alias) use ($header) {
-                    return preg_match("~^{$alias}.*?~i", $header);
-                });
-            }, false);
+            $aliasesParts = $aliases->map(fn ($alias) => '(' . preg_quote($alias, '~') . '.*?)')->implode('|');
+            $aliasesExpression = "~^{$aliasesParts}~i";
+
+            $header = Arr::first($this->header, fn ($header) => preg_match($aliasesExpression, $header), null);
 
             return [$name => $header];
         });
@@ -338,9 +317,9 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
     protected function findPriceAttributes(Collection $row): void
     {
         $foundAttributes = [
-            'service_agreement_id'  => (array) $this->findRowAttribute(ImportExcelOptions::REGEXP_SAID, ImportExcelOptions::REGEXP_SAID_VALUE, $row),
-            'pricing_document'      => (array) $this->findRowAttribute(ImportExcelOptions::REGEXP_PD, ImportExcelOptions::REGEXP_PD_VALUE, $row),
-            'system_handle'         => (array) $this->findRowAttribute(ImportExcelOptions::REGEXP_SH, ImportExcelOptions::REGEXP_SH_VALUE, $row),
+            'service_agreement_id' => (array) $this->findRowAttribute(ImportExcelOptions::REGEXP_SAID, ImportExcelOptions::REGEXP_SAID_VALUE, $row),
+            'pricing_document'     => (array) $this->findRowAttribute(ImportExcelOptions::REGEXP_PD, ImportExcelOptions::REGEXP_PD_VALUE, $row),
+            'system_handle'        => (array) $this->findRowAttribute(ImportExcelOptions::REGEXP_SH, ImportExcelOptions::REGEXP_SH_VALUE, $row),
         ];
 
         $attributes = array_merge_recursive(array_filter($this->priceAttributes), $foundAttributes);
@@ -350,34 +329,65 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         }, $attributes);
     }
 
-    private function makeImportedRow(): array
-    {
-        $now = now()->toDateTimeString();
-
-        return [
-            'id'            => Uuid::generate(4)->string,
-            'user_id'       => $this->user->id,
-            'quote_file_id' => $this->quoteFile->id,
-            'page'          => $this->activeSheetIndex,
-            'created_at'    => $now,
-            'updated_at'    => $now
-        ];
-    }
-
     private function makeColumnsData($attributes): Collection
     {
         $attributes = Collection::wrap($attributes);
 
-        return $attributes->map(
+        $columns = $attributes->map(
             fn ($value, $header) =>
             [
-                'importable_column_id'  => $this->headersMapping->get($header),
-                'header'                => $this->limitHeader($this->quoteFile, $header),
-                'value'                 => static::sanitizeColumnValue($value)
+                static::C_IMPC  => $this->headersMapping->get($header),
+                static::C_HDR   => $this->limitHeader($this->quoteFile, $header),
+                static::C_VL    => static::sanitizeColumnValue($value),
             ]
         )
-            ->filter(fn ($column) => isset($column['importable_column_id']) && $column['header'] !== $column['value'])
-            ->keyBy('importable_column_id');
+            ->filter(fn ($column) => isset($column[static::C_IMPC]) && $column[static::C_HDR] !== $column[static::C_VL])
+            ->keyBy(static::C_IMPC);
+
+        $hasOnePayColumn = $columns->contains(fn ($column) => preg_match('/return to/i', data_get($column, static::C_VL)));
+
+        if ($hasOnePayColumn && null !== ($priceHeader = $this->requiredHeadersMapping->get('price'))) {
+            $currentPriceColumn = $columns->whereNotNull(static::C_HDR)->first(fn ($column) => trim($column[static::C_HDR]) === trim($priceHeader));
+
+            if (null !== $currentPriceColumn && !is_null($currentPriceColumn[static::C_VL])) {
+                $currentPriceColumn = array_merge($currentPriceColumn, [static::C_OP => true]);
+
+                $columns->put($currentPriceColumn[static::C_IMPC], $currentPriceColumn);
+
+                return $columns;
+            }
+
+            /**
+             * In case if price column is not present in One Pay row, we will assume that price cell is merged with qty.
+             * 
+             * @var array|null
+             */
+            $priceColumn = $columns->first(fn ($column) => Str::containsInsensitive(data_get($column, static::C_HDR), 'qty'));
+
+            if ($priceColumn === null || $priceHeader === $priceColumn[static::C_HDR]) {
+                return $columns;
+            }
+
+            if (blank($priceColumn[static::C_VL]) && null !== $currentPriceColumn) {
+                $currentPriceColumn = array_merge($currentPriceColumn, [static::C_OP => true]);
+
+                $columns->put($currentPriceColumn[static::C_IMPC], $currentPriceColumn);
+
+                return $columns;
+            }
+
+            $columns->forget($priceColumn[static::C_IMPC]);
+
+            $priceColumn = array_merge($priceColumn, [
+                static::C_IMPC  => $columnId = $this->headersMapping->get($priceHeader),
+                static::C_HDR   => $priceHeader,
+                static::C_OP    => true
+            ]);
+
+            $columns->put($columnId, $priceColumn);
+        }
+
+        return $columns;
     }
 
     private function findRowAttribute(string $regexp, string $cellRegexp, Collection $row)
@@ -399,12 +409,16 @@ class ImportExcel implements OnEachRow, WithHeadingRow, WithEvents, WithChunkRea
         return null;
     }
 
-    private static function sanitizeColumnValue(?string $value)
+    private static function sanitizeColumnValue($value)
     {
-        if (blank($value)) {
-            return $value;
+        if (is_string($value)) {
+            if (!ASCII::is_ascii($value)) {
+                $value = trim(ASCII::to_ascii($value));
+            }
+
+            $value = preg_replace('/(^[\h]+)|([\h]+$)/um', '', str_replace('_x000D_', '', $value));
         }
 
-        return preg_replace('/(^[\h]+)|([\h]+$)/um', '', str_replace('_x000D_', '', $value));
+        return $value;
     }
 }

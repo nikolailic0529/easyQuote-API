@@ -20,6 +20,10 @@ class InvitationPolicy
      */
     public function viewAny(User $user)
     {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+        
         return $user->can('view_invitations');
     }
 
@@ -32,6 +36,10 @@ class InvitationPolicy
      */
     public function view(User $user, Invitation $invitation)
     {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
         return $user->can('view_invitations');
     }
 
@@ -43,6 +51,10 @@ class InvitationPolicy
      */
     public function create(User $user)
     {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
         return $user->can('create_invitations');
     }
 
@@ -55,7 +67,16 @@ class InvitationPolicy
      */
     public function update(User $user, Invitation $invitation)
     {
-        return $user->can('update_invitations');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if (
+            $user->can('update_invitations') &&
+            $user->getKey() === $invitation->{$invitation->user()->getForeignKeyName()}
+        ) {
+            return true;
+        }
     }
 
     /**
@@ -67,6 +88,15 @@ class InvitationPolicy
      */
     public function delete(User $user, Invitation $invitation)
     {
-        return $user->can('delete_invitations');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if (
+            $user->can('delete_invitations') &&
+            $user->getKey() === $invitation->{$invitation->user()->getForeignKeyName()}
+        ) {
+            return true;
+        }
     }
 }

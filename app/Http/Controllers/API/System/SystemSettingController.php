@@ -10,6 +10,7 @@ use App\Http\Requests\System\{
 };
 use App\Http\Resources\Setting\SettingCollection;
 use App\Models\System\SystemSetting;
+use Illuminate\Support\Arr;
 
 class SystemSettingController extends Controller
 {
@@ -30,6 +31,18 @@ class SystemSettingController extends Controller
     {
         return response()->json(
             SettingCollection::make($this->systemSetting->all())
+        );
+    }
+
+    /**
+     * Display a listing of the public system settings.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function showPublicSettings()
+    {
+        return response()->json(
+            SettingCollection::make($this->systemSetting->all())->only(...Arr::wrap(config('settings.public')))
         );
     }
 

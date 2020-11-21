@@ -27,7 +27,13 @@ use App\Models\{
     System\Activity,
     System\Notification,
     Data\Country,
+    HpeContract,
 };
+use App\Models\Quote\Discount\MultiYearDiscount;
+use App\Models\Quote\Discount\PrePayDiscount;
+use App\Models\Quote\Discount\PromotionalDiscount;
+use App\Models\Quote\Discount\SND;
+use App\Models\QuoteTemplate\HpeContractTemplate;
 use App\Policies\{
     ActivityPolicy,
     AddressPolicy,
@@ -39,20 +45,28 @@ use App\Policies\{
     CountryPolicy,
     CustomerPolicy,
     DiscountPolicy,
+    HpeContractPolicy,
+    HpeContractTemplatePolicy,
     ImportableColumnPolicy,
     InvitationPolicy,
     MarginPolicy,
+    MultiYearDiscountPolicy,
     NotificationPolicy,
+    PrePayDiscountPolicy,
+    PromotionalDiscountPolicy,
     QuoteFilePolicy,
     QuoteNotePolicy,
     QuotePolicy,
+    QuoteTaskTemplatePolicy,
     QuoteTemplatePolicy,
     RolePolicy,
+    SNDPolicy,
     SystemSettingPolicy,
     TaskPolicy,
     UserPolicy,
     VendorPolicy,
 };
+use Illuminate\Support\Facades\Gate;
 use Laravel\Passport\{
     Passport,
     Client,
@@ -73,11 +87,19 @@ class AuthServiceProvider extends ServiceProvider
         QuoteFile::class            => QuoteFilePolicy::class,
         QuoteNote::class            => QuoteNotePolicy::class,
         Task::class                 => TaskPolicy::class,
+
         QuoteTemplate::class        => QuoteTemplatePolicy::class,
         ContractTemplate::class     => ContractTemplatePolicy::class,
+        HpeContractTemplate::class  => HpeContractTemplatePolicy::class,
+
         Company::class              => CompanyPolicy::class,
         Vendor::class               => VendorPolicy::class,
-        Discount::class             => DiscountPolicy::class,
+        
+        SND::class                  => SNDPolicy::class,
+        PrePayDiscount::class       => PrePayDiscountPolicy::class,
+        MultiYearDiscount::class    => MultiYearDiscountPolicy::class,
+        PromotionalDiscount::class  => PromotionalDiscountPolicy::class,
+
         Margin::class               => MarginPolicy::class,
         Role::class                 => RolePolicy::class,
         User::class                 => UserPolicy::class,
@@ -91,6 +113,7 @@ class AuthServiceProvider extends ServiceProvider
         Country::class              => CountryPolicy::class,
         ImportableColumn::class     => ImportableColumnPolicy::class,
         Asset::class                => AssetPolicy::class,
+        HpeContract::class          => HpeContractPolicy::class,
     ];
 
     public function register()
@@ -107,21 +130,30 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
+        $this->registerGates();
+
         Client::creating(function (Client $client) {
-            $client->incrementing = false;
-            $client->id = Uuid::generate(4)->string;
+            $client->setIncrementing(false);
+            $client->{$client->getKeyName()} = Uuid::generate(4)->string;
         });
 
         Client::retrieved(function (Client $client) {
-            $client->incrementing = false;
+            $client->setIncrementing(false);
         });
 
         PersonalAccessClient::creating(function (PersonalAccessClient $client) {
-            $client->incrementing = false;
-            $client->id = Uuid::generate(4)->string;
+            $client->setIncrementing(false);
+            $client->{$client->getKeyName()} = Uuid::generate(4)->string;
         });
 
         Passport::routes();
         Passport::personalAccessTokensExpireIn(now()->addMinutes(config('auth.tokens.expire')));
+    }
+
+    protected function registerGates()
+    {
+        Gate::define('view_quote_task_template', QuoteTaskTemplatePolicy::class.'@view');
+
+        Gate::define('update_quote_task_template', QuoteTaskTemplatePolicy::class.'@update');
     }
 }

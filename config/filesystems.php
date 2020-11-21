@@ -43,15 +43,22 @@ return [
 
     'disks' => [
 
+        # STORAGE_PATH=/data/eq-data
+        # STORAGE_PATH_ROOT=/data/eq-data/app
+        # STORAGE_PATH_PUBLIC=/data/eq-data/app/public
+        # STORAGE_PATH_LOGS=/data/eq-data/logs/laravel.log
+        # STORAGE_PATH_SNAPSHOTS=/data/eq-data/app/snapshots
+        # STORAGE_PATH_ATTACHMENTS=/data/eq-data/app/public/attachments
+
         'local' => [
             'driver' => 'local',
-            'path' => env('STORAGE_PATH', storage_path()),
-            'root' => env('STORAGE_PATH_ROOT', storage_path('app')),
+            'path' => storage_path(),
+            'root' => storage_path('app'),
         ],
 
         'public' => [
             'driver' => 'local',
-            'root' => env('STORAGE_PATH_PUBLIC', storage_path('app/public')),
+            'root' => storage_path('app/public'),
             'url' => env('APP_URL').'/storage',
             'visibility' => 'public',
         ],
@@ -67,7 +74,7 @@ return [
 
         'snapshots' => [
             'driver' => 'local',
-            'root' => env('STORAGE_PATH_SNAPSHOTS', storage_path('app/snapshots'))
+            'root' => storage_path('app/snapshots')
         ],
 
         'exchange-rates' => [
@@ -77,8 +84,15 @@ return [
 
         'attachments' => [
             'driver' => 'local',
-            'root' => env('STORAGE_PATH_ATTACHMENTS', storage_path('app/public/attachments')),
+            'root' => storage_path('app/public/attachments'),
             'url' => env('APP_URL').'/storage/attachments',
+            'visibility' => 'public',
+        ],
+
+        'hpe_contract_files' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/hpe_contract_files'),
+            'url' => env('APP_URL').'/storage/hpe_contract_files',
             'visibility' => 'public',
         ]
 

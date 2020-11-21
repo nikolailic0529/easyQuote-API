@@ -227,6 +227,7 @@ class ParserService implements ParserServiceInterface
                 $this->quoteFile->createScheduleData($quoteFile, $parsedData);
 
                 $quoteFile->markAsHandled();
+
                 return;
             }
 
@@ -347,6 +348,10 @@ class ParserService implements ParserServiceInterface
 
         $this->routeParser($quoteFile);
         $this->quoteFile->deleteExcept($quoteFile);
+
+        if ($quoteFile->isPrice() && $quoteFile->rowsData()->where('page', '>=', $quoteFile->imported_page)->doesntExist()) {
+            $quoteFile->setException(QFNRF_02, 'QFNRF_02');
+        }
 
         /**
          * Clear Cache Mapping Review Data After Processing.

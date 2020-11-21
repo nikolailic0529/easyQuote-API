@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests\Role;
 
+use App\Models\Company;
+use App\Services\PermissionHelper;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 
 class StoreRoleRequest extends Request
@@ -24,32 +27,20 @@ class StoreRoleRequest extends Request
     public function rules()
     {
         return [
-            'name' => [
-                'required',
-                'string',
-                'min:2',
-                'max:60',
-                Rule::unique('roles')->whereNull('deleted_at')
-            ],
+            'name' => ['required', 'string', 'min:2', 'max:60', Rule::unique('roles')->whereNull('deleted_at')],
+
             'privileges' => 'required|array',
-            'privileges.*.module' => [
-                'required',
-                'string',
-                Rule::in(static::$modules)
-            ],
-            'privileges.*.privilege' => [
-                'required',
-                'string',
-                $this->privilegeRule()
-            ],
+            'privileges.*.module' => ['required', 'string', Rule::in(static::$modules)],
+            'privileges.*.privilege' => ['required', 'string', $this->privilegeRule()],
+
+            'privileges.*.submodules.*.submodule' => ['string', $this->subModuleRule()],
+            'privileges.*.submodules.*.privilege' => ['string', $this->subModulePrivilegeRule()],
+
             'properties' => 'array',
             'properties.*' => 'required|array',
-            'properties.*.key' => [
-                'required',
-                'string',
-                Rule::in(static::$properties)
-            ],
-            'properties.*.value' => 'required|boolean'
+            'properties.*.key' => ['required', 'string', Rule::in(static::$properties)],
+            'properties.*.value' => 'required|boolean',
+            'companies.*' => ['uuid', Rule::exists(Company::class, 'id')->where('type', Company::INT_TYPE)->whereNull('deleted_at')]
         ];
     }
 }

@@ -55,6 +55,33 @@ interface CountryRepositoryInterface
     public function findIdByCode($code);
 
     /**
+     * Retrieve Countries by specified clause.
+     *
+     * @param array $where
+     * @param array $columns
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function findBy(array $where, array $columns = ['*']);
+
+    /**
+     * Retrieve Countries belonging to the specified Vendor.
+     *
+     * @param string $vendor
+     * @param  array $columns
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function findByVendor(string $vendor, array $columns = ['*']);
+
+    /**
+     * Retrieve Countries belonging to the specified Company.
+     *
+     * @param string $company
+     * @param  array $columns
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function findByCompany(string $company, array $columns = ['*']);
+
+    /**
      * Retrieve random existing Country.
      *
      * @param int $limit

@@ -16,12 +16,13 @@ class Company extends JsonResource
     {
         return [
             'id' => $this->id,
-
             'user_id' => $this->user_id,
             
             'default_vendor_id' => $this->default_vendor_id,
             'default_country_id' => $this->default_country_id,
             'default_template_id' => $this->default_template_id,
+
+            'is_system' => $this->is_system,
             
             'name' => $this->name,
             'short_code' => $this->short_code,

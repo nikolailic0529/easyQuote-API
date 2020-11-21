@@ -9,6 +9,7 @@ use App\Repositories\Concerns\{
     ResolvesImplicitModel,
     ResolvesTargetModel
 };
+use App\Scopes\ContractTypeScope;
 use Illuminate\Database\Eloquent\{
     Model,
     Builder
@@ -35,8 +36,26 @@ class ContractSubmittedRepository extends SearchableRepository implements Contra
         /** @var \App\Models\User */
         $user = auth()->user();
 
-        return $this->contract
-            ->query()
+        $contractColumns = [
+            'id',
+            'user_id',
+            'customer_id',
+            'company_id',
+            'quote_id',
+            'hpe_contract_id',
+            'hpe_contract_number',
+            'hpe_contract_customer_name',
+            'cached_relations',
+            'document_type',
+            'created_at',
+            'updated_at',
+            'activated_at'
+        ];
+
+        $query = $this->contract->newQueryWithoutScope(ContractTypeScope::class)
+            ->whereIn('document_type', [Q_TYPE_CONTRACT, Q_TYPE_HPE_CONTRACT]);
+
+        $query = $query->select($contractColumns)
             ->when(
                 /** If user is not super-admin we are retrieving the user's own contracts */
                 $user->cant('view_contracts'),
@@ -46,11 +65,13 @@ class ContractSubmittedRepository extends SearchableRepository implements Contra
                     ->orWhereIn('user_id', $user->getModulePermissionProviders('contracts.read'))
             )
             ->submitted();
+
+        return $query;
     }
 
     public function find(string $id): Contract
     {
-        return $this->contract->whereId($id)->firstOrFail();
+        return $this->contract->query()->whereKey($id)->firstOrFail();
     }
 
     public function delete(string $id): bool
@@ -98,8 +119,8 @@ class ContractSubmittedRepository extends SearchableRepository implements Contra
     protected function filterableQuery()
     {
         return [
-            $this->userQuery()->with('quote')->activated(),
-            $this->userQuery()->with('quote')->deactivated()
+            $this->userQuery()->with('customer:id,rfq')->activated(),
+            $this->userQuery()->with('customer:id,rfq')->deactivated()
         ];
     }
 
@@ -110,7 +131,7 @@ class ContractSubmittedRepository extends SearchableRepository implements Contra
 
     protected function searchableQuery()
     {
-        return $this->userQuery()->with('quote');
+        return $this->userQuery()->with('customer:id,rfq');
     }
 
     protected function searchableFields(): array
@@ -122,7 +143,7 @@ class ContractSubmittedRepository extends SearchableRepository implements Contra
             'customer_valid_until^5',
             'customer_rfq^5',
             'user_fullname^4',
-            'created_at^1'
+            'created_at^1',
         ];
     }
 }

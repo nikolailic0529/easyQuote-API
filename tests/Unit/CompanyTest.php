@@ -11,11 +11,11 @@ use Tests\Unit\Traits\{
     WithFakeUser,
     AssertsListing
 };
-use Str, Arr;
+use Illuminate\Support\{Arr, Str};
 
 class CompanyTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, AssertsListing;
+    use WithFakeUser, AssertsListing;
 
     /**
      * Test Company listing.
@@ -186,20 +186,36 @@ class CompanyTest extends TestCase
 
         $vendor = $company->vendors->random();
 
-        $response = $this->patchJson(url("api/companies/{$company->id}"), ['default_vendor_id' => $vendor->id])->assertOk();
+        $response = $this->patchJson("api/companies/{$company->getKey()}", ['default_vendor_id' => $vendor->getKey()])->assertOk();
 
         $this->assertEquals($vendor->id, $response->json('vendors.0.id'));
-
-        /**
-         * Test assigned Default Vendor in the data for Quote Importer screen.
-         */
-        $response = $this->getJson(url('api/quotes/step/1'));
-
-        $firstCompanyVendor = head(collect($response->json('companies'))->firstWhere('id', $company->id)['vendors']);
-
-        $this->assertEquals($vendor->id, $firstCompanyVendor['id']);
     }
 
+    /**
+     * Test Default Company Vendor on first import step.
+     * 
+     * @return void
+     */
+    public function testDefaultCompanyVendorOnFirstImportStep()
+    {
+        $company = app('company.repository')->create(factory(Company::class)->raw());
+
+        $vendor = $company->vendors->random();
+
+        $company->update(['default_vendor_id' => $vendor->getKey()]);
+
+        $response = $this->getJson('api/quotes/step/1')->assertOk();
+
+        $firstVendor = collect($response->json('companies'))->firstWhere('id', $company->getKey());
+
+        $this->assertEquals($vendor->id, data_get($firstVendor, 'vendors.0.id'));
+    }
+
+    /**
+     * Test Default Company Country assigning.
+     * 
+     * @return void
+     */
     public function testDefaultCompanyCountry()
     {
         $attributes = factory(Company::class)->raw();
@@ -215,16 +231,33 @@ class CompanyTest extends TestCase
         $response = $this->getJson(url("api/companies/{$company->id}"))->assertOk();
 
         $this->assertEquals($country->id, $response->json('vendors.0.countries.0.id'));
+    }
 
-        /**
-         * Test assigned Default Country in the data for Quote Importer screen.
-         */
-        $response = $this->getJson(url('api/quotes/step/1'))->assertOk();
+    /**
+     * Test Default Company Country on first import step.
+     * 
+     * @return void
+     */
+    public function testDefaultCompanyCountryOnFirstImportStep()
+    {
+        $attributes = factory(Company::class)->raw();
 
-        $responseCompany = collect($response->json('companies'))->firstWhere('id', $company->id);
+        $attributes['default_vendor_id'] = Arr::random($attributes['vendors']);
 
-        $firstCompanyVendorCountry = data_get($responseCompany, 'vendors.0.countries.0');
+        $company = app('company.repository')->create($attributes);
 
-        $this->assertEquals($country->id, $firstCompanyVendorCountry['id']);
+        $country = $company->defaultVendor->countries->random();
+
+        $company->update(['default_country_id' => $country->getKey()]);
+
+        $response = $this->getJson('api/quotes/step/1')->assertOk();
+
+        $responseCompany = collect($response->json('companies'))->firstWhere('id', $company->getKey());
+
+        $vendor = collect($responseCompany['vendors'])->firstWhere('id', $company->defaultVendor->getKey());
+
+        $this->assertIsArray($vendor, "Company ID: {$company->getKey()}, Default Vendor ID: {$company->defaultVendor->getKey()}");
+
+        $this->assertEquals($country->getKey(), $vendor['countries'][0]['id']);
     }
 }

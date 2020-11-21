@@ -8,6 +8,8 @@ use App\Http\Requests\Discount\{
     StorePrePayDiscountRequest,
     UpdatePrePayDiscountRequest
 };
+use App\Http\Resources\Discount\DiscountList;
+use App\Http\Resources\Discount\DiscountListCollection;
 use App\Models\Quote\Discount\{
     Discount,
     PrePayDiscount
@@ -20,7 +22,7 @@ class PrePayDiscountController extends Controller
     public function __construct(PrePayDiscountRepository $prePayDiscount)
     {
         $this->prePayDiscount = $prePayDiscount;
-        $this->authorizeResource(Discount::class, 'pre_pay');
+        $this->authorizeResource(PrePayDiscount::class, 'pre_pay');
     }
 
     /**
@@ -30,11 +32,11 @@ class PrePayDiscountController extends Controller
      */
     public function index()
     {
-        return response()->json(
-            request()->filled('search')
-                ? $this->prePayDiscount->search(request('search'))
-                : $this->prePayDiscount->all()
-        );
+        $resource = request()->filled('search')
+            ? $this->prePayDiscount->search(request('search'))
+            : $this->prePayDiscount->all();
+
+        return DiscountListCollection::make($resource);
     }
 
     /**

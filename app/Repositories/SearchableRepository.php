@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\{
     Model
 };
 use Elasticsearch\Client as Elasticsearch;
+use Illuminate\Support\Str;
 use Closure;
 use Throwable;
 
@@ -47,15 +48,13 @@ abstract class SearchableRepository
         $items = $this->searchOnElasticsearch($model, $this->searchableFields(), $search);
 
         if ($model instanceof ActivatableInterface && $model instanceof Model) {
-            $activated = $this->buildQuery($model, $items, function ($query) use ($scope) {
-                $this->searchableScope($query)->activated();
+            $baseQuery = $this->buildQuery($model, $items, function ($query) use ($scope) {
+                $this->searchableScope($query);
                 $this->filterQuery($query, $scope);
             });
 
-            $deactivated = $this->buildQuery($model, $items, function ($query) use ($scope) {
-                $this->searchableScope($query)->deactivated();
-                $this->filterQuery($query, $scope);
-            });
+            $activated = (clone $baseQuery)->runPaginationCountQueryUsing($baseQuery)->activated();
+            $deactivated = (clone $baseQuery)->deactivated();
 
             return $activated->unionAll($deactivated);
         }
@@ -78,6 +77,7 @@ abstract class SearchableRepository
         $ids = data_get($items, 'hits.hits.*._id', []);
 
         $query = $this->searchableQuery();
+
         $table = $model->getTable();
 
         if (is_callable($scope)) {
@@ -91,10 +91,9 @@ abstract class SearchableRepository
     {
         $body = [
             'query' => [
-                'multi_match' => [
+                'query_string' => [
                     'fields' => $fields,
-                    'type' => 'phrase_prefix',
-                    'query' => $query
+                    'query' => Str::of($query)->start('*')->finish('*')->__toString()
                 ]
             ]
         ];

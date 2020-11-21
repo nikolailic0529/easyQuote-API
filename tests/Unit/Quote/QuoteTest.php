@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Quote;
 
+use App\DTO\RowsGroup;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Collection;
 use Tests\TestCase;
@@ -17,11 +18,12 @@ use App\Models\{
     QuoteFile\ImportedRow,
     QuoteTemplate\TemplateField,
 };
-use Str, Arr;
+use Illuminate\Database\Eloquent\JsonEncodingException;
+use Illuminate\Support\{Str, Arr};
 
 class QuoteTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, WithFakeQuote, WithFakeQuoteFile, TruncatesDatabaseTables;
+    use WithFakeUser, WithFakeQuote, WithFakeQuoteFile, TruncatesDatabaseTables;
 
     protected ?QuoteFile $quoteFile = null;
 
@@ -120,6 +122,67 @@ class QuoteTest extends TestCase
             ->assertJsonStructure([
                 'id', 'name', 'search_text'
             ]);
+
+        $gd = $this->quote->refresh()->group_description;
+
+        $this->assertInstanceOf(Collection::class, $gd);
+
+        $gd->each(fn ($group) => $this->assertInstanceOf(RowsGroup::class, $group));
+    }
+
+    /**
+     * Test Group Description Setter.
+     *
+     * @return void
+     */
+    public function testGroupDescriptionSetter()
+    {
+        $groups = collect()->times(100, fn () => new RowsGroup([
+            'id' => (string) Str::uuid(),
+            'name' => 'Group',
+            'search_text' => '1234',
+            'is_selected' => true,
+            'rows_ids' => collect()->times(600, fn () => (string) Str::uuid())->toArray()
+        ]));
+
+        $this->quote->group_description = $groups;
+
+        $this->assertTrue($this->quote->save());
+
+        /**
+         * All Groups must be instance of RowsGroup.
+         */
+        $groups = collect()->times(50, fn () => new RowsGroup([
+            'id' => (string) Str::uuid(),
+            'name' => 'Group',
+            'search_text' => '1234',
+            'is_selected' => true,
+            'rows_ids' => collect()->times(600, fn () => (string) Str::uuid())->toArray()
+        ]));
+
+        $groups = collect()->times(50, fn () => Str::random());
+
+        $this->expectException(JsonEncodingException::class);
+        $this->expectExceptionMessageMatches('/The Collection must contain only values instance of/i');
+
+        $this->quote->group_description = $groups;
+
+        $this->assertTrue($this->quote->save());
+
+        /**
+         * It is allowed to set Groups Collection as Json string.
+         */
+        $groups = collect()->times(100, fn () => new RowsGroup([
+            'id' => (string) Str::uuid(),
+            'name' => 'Group',
+            'search_text' => '1234',
+            'is_selected' => true,
+            'rows_ids' => collect()->times(600, fn () => (string) Str::uuid())->toArray()
+        ]))->toJson();
+
+        $this->quote->group_description = $groups;
+
+        $this->assertTrue($this->quote->save());
     }
 
     /**
@@ -130,13 +193,18 @@ class QuoteTest extends TestCase
     public function testGroupDescriptionUpdating()
     {
         $group = $this->createFakeGroupDescription();
-        $id = $group->get('id');
 
         $attributes = $this->makeGenericGroupDescriptionAttributes();
 
-        $this->patchJson(url("api/quotes/groups/{$this->quote->id}/{$id}"), $attributes)
+        $this->patchJson(url("api/quotes/groups/{$this->quote->id}/{$group->id}"), $attributes)
             ->assertOk()
             ->assertExactJson([true]);
+
+        $gd = $this->quote->refresh()->group_description;
+
+        $this->assertInstanceOf(Collection::class, $gd);
+
+        $gd->each(fn ($group) => $this->assertInstanceOf(RowsGroup::class, $group));
     }
 
     /**
@@ -147,9 +215,8 @@ class QuoteTest extends TestCase
     public function testGroupDescriptionDeleting()
     {
         $group = $this->createFakeGroupDescription();
-        $id = $group->get('id');
 
-        $this->deleteJson(url("api/quotes/groups/{$this->quote->id}/{$id}"), [])
+        $this->deleteJson(url("api/quotes/groups/{$this->quote->id}/{$group->id}"), [])
             ->assertOk()
             ->assertExactJson([true]);
     }
@@ -163,18 +230,27 @@ class QuoteTest extends TestCase
     {
         $groups = collect()->times(2)->transform(fn () => $this->createFakeGroupDescription());
 
+        /** @var RowsGroup */
         $fromGroup = $groups->shift();
+
+        /** @var RowsGroup */
         $toGroup = $groups->shift();
 
         $attributes = [
-            'from_group_id' => $fromGroup->get('id'),
-            'to_group_id' => $toGroup->get('id'),
-            'rows' => data_get($fromGroup, 'rows.*')
+            'from_group_id' => $fromGroup->id,
+            'to_group_id' => $toGroup->id,
+            'rows' => $fromGroup->rows_ids
         ];
 
         $response = $this->putJson(url("api/quotes/groups/{$this->quote->id}"), $attributes)->assertOk();
 
         $this->assertIsBool(json_decode($response->getContent(), true));
+
+        $gd = $this->quote->refresh()->group_description;
+
+        $this->assertInstanceOf(Collection::class, $gd);
+
+        $gd->each(fn ($group) => $this->assertInstanceOf(RowsGroup::class, $group));
     }
 
     /**
@@ -185,9 +261,8 @@ class QuoteTest extends TestCase
     public function testGroupDisplaying()
     {
         $group = $this->createFakeGroupDescription();
-        $id = $group->get('id');
 
-        $this->getJson(url("api/quotes/groups/{$this->quote->id}/{$id}"))
+        $this->getJson(url("api/quotes/groups/{$this->quote->id}/{$group->id}"))
             ->assertOk()
             ->assertJsonStructure([
                 'id', 'name', 'search_text', 'total_count', 'total_price', 'rows'
@@ -237,7 +312,7 @@ class QuoteTest extends TestCase
         /**
          * Assert that groups actual is_selected attribute is matching to selected groups.
          */
-        $groups->each(fn ($group) => $this->assertEquals($selected->has($group['id']), $group['is_selected']));
+        $groups->each(fn (RowsGroup $group) => $this->assertEquals($selected->has($group->id), $group->is_selected));
 
         /**
          * Assert that quote review endpoint is displaying selected groups.
@@ -250,7 +325,7 @@ class QuoteTest extends TestCase
 
         $reviewGroupsIds = data_get($reviewData, 'data_pages.rows.*.id');
 
-        $selected->each(fn ($group) => $this->assertTrue(in_array($group['id'], $reviewGroupsIds)));
+        $selected->each(fn (RowsGroup $group) => $this->assertTrue(in_array($group->id, $reviewGroupsIds)));
     }
 
     /**
@@ -312,12 +387,13 @@ class QuoteTest extends TestCase
         $response = $this->getJson('api/quotes/review/' . $this->quote->id)->assertOk();
     }
 
-    protected function createFakeGroupDescription(): Collection
+    protected function createFakeGroupDescription(): RowsGroup
     {
         $attributes = $this->makeGenericGroupDescriptionAttributes();
-        $group = $this->quoteRepository->createGroupDescription($attributes, $this->quote->id);
+        /** @var \App\DTO\RowsGroup */
+        $group = $this->quoteRepository->createGroupDescription($attributes, $this->quote);
 
-        return tap($group)->put('rows', $attributes['rows']);
+        return tap($group, fn () => $group->rows_ids = $attributes['rows']);
     }
 
     protected function makeGenericGroupDescriptionAttributes(): array

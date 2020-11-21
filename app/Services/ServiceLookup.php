@@ -55,12 +55,12 @@ class ServiceLookup
         $cacheKey = static::serviceResponseCacheKey((string) $url);
 
         if ($this->cache->has($cacheKey)) {
-            report_logger(['message' => SL_CRE_01], ['url' => (string) $url, 'cache_ttl' => static::SERVICE_RESPONSE_CACHE_TTL]);
+            customlog(['message' => SL_CRE_01], ['url' => (string) $url, 'cache_ttl' => static::SERVICE_RESPONSE_CACHE_TTL]);
 
             return $this->cache->get($cacheKey);
         }
 
-        report_logger(['message' => sprintf(SL_REQ_01, (string) $url)], ['parameters' => ['vendor' => $vendor->short_code, 'serial' => $serial, 'sku' => $sku]]);
+        customlog(['message' => sprintf(SL_REQ_01, (string) $url)], ['parameters' => ['vendor' => $vendor->short_code, 'serial' => $serial, 'sku' => $sku]]);
 
         $response = Http::withToken($this->issueServiceToken())->get((string) $url);
 
@@ -72,7 +72,7 @@ class ServiceLookup
         }
 
         if ($response->failed()) {
-            report_logger(['ErrorCode' => 'SL_UR_01'], ['ErrorDetails' => SL_UR_01, 'Exception' => "HTTP request returned status code {$response->status()}."]);
+            customlog(['ErrorCode' => 'SL_UR_01'], ['ErrorDetails' => SL_UR_01, 'Exception' => "HTTP request returned status code {$response->status()}."]);
 
             return static::RESP_FAIL;
         }
@@ -83,7 +83,7 @@ class ServiceLookup
                 fn (ServiceData $data) => $this->cache->put($cacheKey, $data, static::SERVICE_RESPONSE_CACHE_TTL)
             );
         } catch (Throwable $e) {
-            report_logger(['ErrorCode' => 'SL_UR_02'], ['ErrorDetails' => SL_UR_02, 'Exception' => $e->getMessage()]);
+            customlog(['ErrorCode' => 'SL_UR_02'], ['ErrorDetails' => SL_UR_02, 'Exception' => $e->getMessage()]);
 
             return static::RESP_FAIL;
         }

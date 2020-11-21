@@ -73,7 +73,7 @@ class PdfParser implements PdfParserInterface
     {
         $pages = LazyCollection::make(function () use ($array) {
             foreach ($array as $page) {
-                yield ['page' => $page['page'], 'content' => Storage::get($page['file_path'])];
+                yield ['page' => $page['page'], 'content' => $page['content'] ?? Storage::get($page['file_path'])];
             }
         });
 
@@ -86,7 +86,7 @@ class PdfParser implements PdfParserInterface
 
             $attributes = $this->findPriceAttributes($content, $attributes);
 
-            if (blank($matches = $this->fetchPricePage($content))) {
+            if (blank($matches = $this->fetchPricePage($content, $page))) {
                 return compact('page', 'rows');
             }
 
@@ -161,13 +161,56 @@ class PdfParser implements PdfParserInterface
         return static::$columnNames = $this->importableColumns->allNames();
     }
 
-    private function fetchPricePage(string $content): array
+    private function fetchPricePage(string $content, $page = null): array
     {
         $matches = collect([PdfOptions::REGEXP_PRICE_LINES_01, PdfOptions::REGEXP_PRICE_LINES_02, PdfOptions::REGEXP_PRICE_LINES_03, PdfOptions::REGEXP_PRICE_LINES_04])
             ->reduce(function (Collection $matches, $regexp) use ($content) {
                 preg_match_all($regexp, $content, $lines, PREG_UNMATCHED_AS_NULL, 0);
                 return $matches->mergeRecursive(Arr::only($lines, $this->getColumnNames()));
             }, collect());
+
+
+        /**
+         * Sometimes PDF pages contain unexpected gaps inside the line decription column.
+         * We'll assume to handle this case using the parts of each line: (product number + description) & (serial number + from date + to date + quantity + price)
+         */
+        if ($matches->filter()->isEmpty()) {
+            foreach (preg_split("/((\r?\n)|(\r\n?))/", $content) as $line) {
+                if (preg_match(PdfOptions::REGEXP_PRICE_LINES_GAPS, $line, $lineMatches)) {
+                    $parts = Arr::only($lineMatches, array_merge($this->getColumnNames(), ['left_part']));
+
+                    $leftPart = Str::of($parts['left_part'] ?? '');
+
+                    $productNo = $leftPart->before(' ')->trim();
+
+                    if ($productNo->isEmpty()) {
+                        continue;
+                    }
+
+                    $description = $leftPart->after((string) $productNo)->trim()->replaceMatches('/\h{1,}/', ' ');
+
+                    $otherParts = Arr::except($parts, 'left_part');
+
+                    $parts = array_merge([
+                        'product_no' => (string) $productNo,
+                        'description' => (string) $description
+                    ], $otherParts);
+
+                    $matches = $matches->mergeRecursive($parts);
+                }
+            }
+        }
+
+        /**
+         * We'll assume if we haven't found any rows on the page, the page may contain lines without serial number.
+         */
+        if ($matches->filter()->isEmpty()) {
+            $matches = collect(PdfOptions::REGEXP_PRICE_LINES_NS)
+                ->reduce(function (Collection $matches, $regexp) use ($content, $page) {
+                    preg_match_all($regexp, $content, $lines, PREG_UNMATCHED_AS_NULL, 0);
+                    return $matches->mergeRecursive(Arr::only($lines, $this->getColumnNames()));
+                }, collect());
+        }
 
         if ($matches->isEmpty()) {
             return [];
@@ -370,14 +413,25 @@ class PdfParser implements PdfParserInterface
                 return $row;
             }
 
+            $exactlyMatches = false;
+
             if (Arr::get(static::$exactDatesMatchesCache, $from) === static::DT_TO) {
                 Arr::set($row, static::DT_TO, $from);
                 Arr::set($row, static::DT_FROM, null);
+
+                $exactlyMatches = true;
             }
 
             if (Arr::get(static::$exactDatesMatchesCache, $to) === static::DT_FROM) {
                 Arr::set($row, static::DT_FROM, $to);
                 Arr::set($row, static::DT_TO, null);
+
+                $exactlyMatches = true;
+            }
+
+            if (false === $exactlyMatches && blank($from) && filled($to)) {
+                Arr::set($row, static::DT_TO, null);
+                Arr::set($row, static::DT_FROM, $to);
             }
 
             return $row;

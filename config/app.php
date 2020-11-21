@@ -139,7 +139,6 @@ return [
     */
 
     'providers' => [
-
         /*
          * Laravel Framework Service Providers...
          */
@@ -173,8 +172,49 @@ return [
         /*
          * Application Service Providers...
          */
-        App\Providers\HelperServiceProvider::class,
         App\Providers\AppServiceProvider::class,
+        App\Providers\HelperServiceProvider::class,
+        
+        App\Providers\AccessServiceProvider::class,
+        App\Providers\ActivityServiceProvider::class,
+        App\Providers\AssetServiceProvider::class,
+        App\Providers\AuthenticationServiceProvider::class,
+        App\Providers\BuildServiceProvider::class,
+
+        App\Providers\CompanyServiceProvider::class,
+        App\Providers\ContactServiceProvider::class,
+        App\Providers\CountryServiceProvider::class,
+        App\Providers\CurrencyServiceProvider::class,
+        App\Providers\CustomerServiceProvider::class,
+        App\Providers\DashboardServiceProvider::class,
+        App\Providers\DiscountServiceProvider::class,
+        App\Providers\ElasticsearchServiceProvider::class,
+        App\Providers\ExchangeRatesServiceProvider::class,
+        App\Providers\FailureServiceProvider::class,
+        App\Providers\HpeContractServiceProvider::class,
+        App\Providers\HttpServiceProvider::class,
+        App\Providers\InvitationServiceProvider::class,
+        App\Providers\LanguageServiceProvider::class,
+        App\Providers\LocationServiceProvider::class,
+        App\Providers\MaintenanceServiceProvider::class,
+        App\Providers\NoteServiceProvider::class,
+        App\Providers\NotificationServiceProvider::class,
+        App\Providers\ParserServiceProvider::class,
+        App\Providers\PermissionServiceProvider::class,
+
+        App\Providers\QuoteContractServiceProvider::class,
+        App\Providers\QuoteServiceProvider::class,
+        App\Providers\ResourceServiceProvider::class,
+
+        App\Providers\SettingServiceProvider::class,
+        App\Providers\SlackServiceProvider::class,
+        App\Providers\TaskServiceProvider::class,
+        App\Providers\TemplateServiceProvider::class,
+        App\Providers\TimezoneServiceProvider::class,
+        App\Providers\UIServiceProvider::class,
+        App\Providers\UserServiceProvider::class,
+        App\Providers\VendorServiceProvider::class,
+
         App\Providers\QueryBuilderServiceProvider::class,
         App\Providers\MacroServiceProvider::class,
         App\Providers\ObserverServiceProvider::class,
@@ -187,8 +227,9 @@ return [
         Maatwebsite\Excel\ExcelServiceProvider::class,
         Intervention\Image\ImageServiceProvider::class,
         Barryvdh\Snappy\ServiceProvider::class,
-        App\Providers\ExchangeRatesServiceProvider::class,
         Spatie\Geocoder\GeocoderServiceProvider::class,
+
+        LynX39\LaraPdfMerger\PdfMergerServiceProvider::class,
     ],
 
     /*

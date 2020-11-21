@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Template;
 
+use Carbon\CarbonInterval;
 use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\{
@@ -12,7 +13,7 @@ use Str, Arr;
 
 class ContractTemplateTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, AssertsListing;
+    use WithFakeUser, AssertsListing;
 
     protected static array $assertableAttributes = ['name', 'company_id', 'vendor_id', 'currency_id', 'form_data'];
 
@@ -163,7 +164,8 @@ class ContractTemplateTest extends TestCase
             'company_id' => app('company.repository')->random()->id,
             'vendor_id' => app('vendor.repository')->random()->id,
             'currency_id' => app('currency.repository')->all()->random()->id,
-            'form_data' => []
+            'form_data' => [],
+            'is_system' => false,
         ];
     }
 }

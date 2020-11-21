@@ -8,8 +8,8 @@ use App\Http\Requests\{
     UserSignInRequest,
     Collaboration\CompleteInvitationRequest,
     PasswordResetRequest,
-    RefreshTokenRequest,
-    UpdateProfileRequest
+    UpdateProfileRequest,
+    Auth\LogoutUser
 };
 use App\Contracts\{
     Repositories\UserRepositoryInterface,
@@ -19,9 +19,9 @@ use App\Contracts\Repositories\System\BuildRepositoryInterface;
 use App\Http\Resources\{
     AuthenticatedUserResource,
     User\AttemptsResource,
+    User\AuthResource,
+    Invitation\InvitationPublicResource
 };
-use App\Http\Resources\Invitation\InvitationPublicResource;
-use App\Http\Resources\User\AuthResource;
 use App\Models\{
     Collaboration\Invitation,
     PasswordReset
@@ -111,6 +111,19 @@ class AuthController extends Controller
     }
 
     /**
+     * Authenticate user with username & password and logout.
+     *
+     * @param  LogoutUser $request
+     * @return \Illuminate\Http\Response
+     */
+    public function authenticateAndLogout(LogoutUser $request)
+    {
+        return response()->json(
+            $this->auth->logout($request->getLogoutableUser())
+        );
+    }
+
+    /**
      * Get authenticated User
      *
      * @return \Illuminate\Http\Response
@@ -118,7 +131,9 @@ class AuthController extends Controller
     public function user(BuildRepositoryInterface $build)
     {
         return response()->json(
-            AuthenticatedUserResource::make(auth()->user())
+            AuthenticatedUserResource::make(
+                auth()->user()->load('company:id,name', 'hpeContractTemplate:id,name', 'roles.companies:id,name')
+            )
                 ->additional(['build' => $build->last()])
         );
     }
@@ -145,7 +160,9 @@ class AuthController extends Controller
     public function updateOwnProfile(UpdateProfileRequest $request, BuildRepositoryInterface $build)
     {
         return response()->json(
-            AuthenticatedUserResource::make($this->user->updateOwnProfile($request))
+            AuthenticatedUserResource::make(
+                $this->user->updateOwnProfile($request)->load('company:id,name', 'hpeContractTemplate:id,name', 'roles.companies:id,name')
+            )
                 ->additional(['build' => $build->last()])
         );
     }

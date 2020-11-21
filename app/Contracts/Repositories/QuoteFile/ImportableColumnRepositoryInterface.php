@@ -42,7 +42,7 @@ interface ImportableColumnRepositoryInterface
      * Find importable columns by their ids.
      *
      * @param iterable $ids
-     * @return void
+     * @return \Illuminate\Support\Collection
      */
     public function findByIds(iterable $ids);
 

@@ -23,10 +23,12 @@ use App\Models\{
     Quote\Quote,
     Task,
 };
+use App\Policies\QuoteTaskTemplatePolicy;
 use Illuminate\Http\{
     Request,
     Response,
 };
+use Illuminate\Support\Facades\Gate;
 
 class QuoteTaskController extends Controller
 {
@@ -63,6 +65,8 @@ class QuoteTaskController extends Controller
      */
     public function create()
     {
+        $this->authorize('view_quote_task_template');
+
         return response()->json($this->template);
     }
 
@@ -74,6 +78,8 @@ class QuoteTaskController extends Controller
      */
     public function updateTemplate(UpdateTaskTemplateRequest $request)
     {
+        $this->authorize('update_quote_task_template');
+
         return response()->json(
             $this->template->setContent($request->form_data)
         );
@@ -86,6 +92,8 @@ class QuoteTaskController extends Controller
      */
     public function resetTemplate()
     {
+        $this->authorize('update_quote_task_template');
+        
         return response()->json(
             $this->template->reset()
         );

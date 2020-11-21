@@ -12,6 +12,7 @@ use App\Traits\{
     Auth\Multitenantable,
     Uuid
 };
+use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
 use Illuminate\Database\Eloquent\{
     Model,
     SoftDeletes,
@@ -29,7 +30,8 @@ class Invitation extends Model
         CanGenerateToken,
         Expirable,
         LogsActivity,
-        SoftDeletes;
+        SoftDeletes,
+        EloquentJoin;
 
     protected $fillable = [
         'email', 'user_id', 'role_id', 'host'
@@ -47,19 +49,26 @@ class Invitation extends Model
         'resended', 'canceled'
     ];
 
+    protected $dates = [
+        'expires_at'
+    ];
+
     protected static $logOnlyDirty = true;
 
     protected static $submitEmptyLogs = true;
 
     protected static $recordEvents = ['created', 'deleted'];
 
-    protected static function boot()
+    protected static function booted()
     {
-        parent::boot();
+        static::creating(function (Invitation $model) {
+            if (!isset($model->attributes['expires_at'])) {
+                $model->attributes['expires_at'] = now()->addDay()->toDateTimeString();
+            }
 
-        static::creating(function (Model $model) {
-            $model->attributes['expires_at'] = now()->addDay()->toDateTimeString();
-            $model->attributes['invitation_token'] = $model->generateToken();
+            if (!isset($model->attributes['invitation_token'])) {
+                $model->attributes['invitation_token'] = $model->generateToken();
+            }
         });
     }
 
@@ -70,9 +79,7 @@ class Invitation extends Model
      */
     public function getUrlAttribute(): string
     {
-        $baseUrl = (string) Str::of($this->host)->finish('/')->finish('signup/');
-
-        return "{$baseUrl}{$this->invitation_token}";
+        return (string) Str::of($this->host)->finish('/')->finish('signup/')->append($this->invitation_token);
     }
 
     public function getUserEmailAttribute()
@@ -102,6 +109,16 @@ class Invitation extends Model
         $this->fireModelEvent('canceled', false);
 
         return $this->forceFill(['expires_at' => null])->save();
+    }
+
+    public function toSearchArray()
+    {
+        return [
+            'role_name'  => optional($this->role)->name,
+            'email'      => $this->email,
+            'created_at' => optional($this->created_at)->format(config('date.format')),
+            'expires_at' => optional($this->expires_at)->format(config('date.format')),
+        ];
     }
 
     public function getItemNameAttribute()

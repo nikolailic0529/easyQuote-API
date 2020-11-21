@@ -20,7 +20,7 @@ class ImportedRow extends Model
     use Uuid, BelongsToUser, BelongsToQuoteFile, Draftable, Selectable, SoftDeletes;
 
     protected $fillable = [
-        'page', 'quote_file_id', 'user_id', 'columns_data', 'is_one_pay'
+        'id', 'page', 'quote_file_id', 'user_id', 'columns_data', 'is_one_pay'
     ];
 
     protected $hidden = [

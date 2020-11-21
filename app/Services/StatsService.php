@@ -101,6 +101,8 @@ class StatsService implements Stats
                 ->each(fn (Quote $quote) => $this->handleQuote($quote));
         });
 
+        customlog(['message' => 'Quote Totals have been calculated.']);
+
         $this->finishProgress();
     }
 
@@ -124,6 +126,8 @@ class StatsService implements Stats
                 ->chunk(100, fn (Collection $chunk) => $chunk->each(fn (object $total) => $this->handleCustomerTotal($total)));
         });
 
+        customlog(['message' => 'Customer Totals have been calculated.']);
+
         $this->finishProgress();
     }
 
@@ -143,6 +147,8 @@ class StatsService implements Stats
                 ->cursor()
                 ->each(fn (QuoteTotal $quoteTotal) => $this->handleQuoteLocation($quoteTotal->location));
         });
+
+        customlog(['message' => 'Quote Location Totals have been calculated.']);
     }
 
     public function calculateAssetTotals(): void
@@ -159,6 +165,8 @@ class StatsService implements Stats
                 ->orderBy('locations.id')
                 ->chunk(20, fn (DbCollection $chunk) => $chunk->each(fn (Asset $asset) => $this->handleAssetLocation($asset->location)));
         });
+
+        customlog(['message' => 'Asset Totals have been calculated.']);
 
         $this->finishProgress();
     }
@@ -182,13 +190,13 @@ class StatsService implements Stats
             fn () =>
             $quoteTotals->each(
                 fn (QuoteTotal $quoteTotal) => $this->quoteLocationTotal->make([
-                    'user_id' => $quoteTotal->user_id,
-                    'location_id' => $location->id,
-                    'country_id' => $location->country->getKey(),
-                    'location_coordinates' => $location->coordinates,
-                    'location_address' => $location->formatted_address,
-                    'total_drafted_value' => $quoteTotal->total_drafted_value,
-                    'total_drafted_count' => $quoteTotal->total_drafted_count,
+                    'user_id'               => $quoteTotal->user_id,
+                    'location_id'           => $location->id,
+                    'country_id'            => $location->country->getKey(),
+                    'location_coordinates'  => $location->coordinates,
+                    'location_address'      => $location->formatted_address,
+                    'total_drafted_value'   => $quoteTotal->total_drafted_value,
+                    'total_drafted_count'   => $quoteTotal->total_drafted_count,
                     'total_submitted_value' => $quoteTotal->total_submitted_value,
                     'total_submitted_count' => $quoteTotal->total_submitted_count
                 ])
@@ -211,13 +219,13 @@ class StatsService implements Stats
             fn () =>
             $totals->each(
                 fn (AssetAggregate $aggregate) => $this->assetTotal->make([
-                    'location_id' => $location->id,
-                    'country_id' => $location->country->getKey(),
-                    'user_id' => $aggregate->user_id,
+                    'location_id'          => $location->id,
+                    'country_id'           => $location->country->getKey(),
+                    'user_id'              => $aggregate->user_id,
                     'location_coordinates' => $location->coordinates,
-                    'location_address' => $location->formatted_address,
-                    'total_count' => $aggregate->total_count,
-                    'total_value' => $aggregate->total_value
+                    'location_address'     => $location->formatted_address,
+                    'total_count'          => $aggregate->total_count,
+                    'total_value'          => $aggregate->total_value,
                 ])
                     ->save()
             )
@@ -232,7 +240,7 @@ class StatsService implements Stats
             $company = Company::whereName($quote->customer->name)->where(['type' => 'External', 'category' => 'End User'])->first();
 
             if (!$company instanceof Company) {
-                report_logger(['message' => 'External Company does not exist']);
+                customlog(['message' => 'External Company does not exist']);
 
                 return false;
             }
@@ -242,31 +250,29 @@ class StatsService implements Stats
             $totalPrice = $version->totalPrice / $version->margin_divider * $version->base_exchange_rate;
 
             $attributes = [
-                'quote_id'              => $quote->id,
-                'customer_id'           => $quote->customer_id,
-                'company_id'            => $company->id,
-                'location_id'           => $quote->customer->equipmentLocation->id,
-                'country_id'            => $quote->customer->equipmentLocation->country->getKey(),
-                'user_id'               => $quote->user_id,
-                'location_address'      => $quote->customer->equipmentLocation->formatted_address,
-                'location_coordinates'  => $quote->customer->equipmentLocation->coordinates,
-                'total_price'           => $totalPrice,
-                'customer_name'         => $quote->customer->name,
-                'rfq_number'            => $quote->customer->rfq,
-                'quote_created_at'      => $quote->getRawOriginal('created_at'),
-                'quote_submitted_at'    => $quote->getRawOriginal('submitted_at'),
-                'valid_until_date'      => $quote->customer->getRawOriginal('valid_until'),
+                'quote_id'             => $quote->id,
+                'customer_id'          => $quote->customer_id,
+                'company_id'           => $company->id,
+                'location_id'          => $quote->customer->equipmentLocation->id,
+                'country_id'           => $quote->customer->equipmentLocation->country->getKey(),
+                'user_id'              => $quote->user_id,
+                'location_address'     => $quote->customer->equipmentLocation->formatted_address,
+                'location_coordinates' => $quote->customer->equipmentLocation->coordinates,
+                'total_price'          => $totalPrice,
+                'customer_name'        => $quote->customer->name,
+                'rfq_number'           => $quote->customer->rfq,
+                'quote_created_at'     => $quote->getRawOriginal('created_at'),
+                'quote_submitted_at'   => $quote->getRawOriginal('submitted_at'),
+                'valid_until_date'     => $quote->customer->getRawOriginal('valid_until'),
             ];
 
             $this->quoteTotal->query()->make($attributes)->save();
-
-            report_logger(['message' => sprintf(QSC_01, $quote->customer->rfq, $totalPrice)]);
 
             $this->advanceProgress();
 
             return true;
         } catch (Throwable $e) {
-            report_logger(['ErrorCode' => 'QSC_ERR_01'], sprintf('%s. Details: %s', QSC_ERR_01, $e->getMessage()));
+            customlog(['ErrorCode' => 'QSC_ERR_01'], sprintf('%s. Details: %s', QSC_ERR_01, $e->getMessage()));
 
             return false;
         }
@@ -285,7 +291,7 @@ class StatsService implements Stats
         $company = Company::whereKey($total->company_id)->where(['type' => 'External', 'category' => 'End User'])->with('locations')->first();
 
         if (!$company instanceof Company) {
-            report_logger(['message' => 'External Company does not exist']);
+            customlog(['message' => 'External Company does not exist']);
 
             return;
         }
@@ -294,7 +300,7 @@ class StatsService implements Stats
         $company->load(['addresses' => fn ($q) => $q->has('location'), 'addresses.location']);
 
         if ($company->addresses->isEmpty()) {
-            report_logger(['message' => 'External Company does not have any location']);
+            customlog(['message' => 'External Company does not have any location']);
             return;
         }
 
@@ -316,7 +322,7 @@ class StatsService implements Stats
                     ]
                 ))->save();
                 
-                report_logger(['message' => 'A new customer total created with new location'], $customerTotal->toArray());
+                customlog(['message' => 'A new customer total created with new location'], $customerTotal->toArray());
             }),
             5
         );

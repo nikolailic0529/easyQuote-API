@@ -12,6 +12,7 @@ use App\Contracts\{
     Services\QuoteState,
     Services\QuoteServiceInterface as QuoteService,
 };
+use App\DTO\RowsGroup;
 use App\Models\{
     Quote\Quote,
     Quote\BaseQuote,
@@ -178,7 +179,7 @@ class QuoteStateProcessor implements QuoteState
         $mapping = $quote->fieldsColumns;
         $columns = $mapping->pluck('templateField.name');
 
-        $query->addSelect('id', 'is_selected', 'group_name', ...$columns);
+        $query->addSelect('id', 'replicated_row_id', 'is_selected', 'group_name', ...$columns);
 
         /** Sorting by columns. */
         $mapping->each(
@@ -210,7 +211,7 @@ class QuoteStateProcessor implements QuoteState
         return DB::query()->fromSub($this->mappedRowsQuery($quote), 'mapped_rows')
             ->when(
                 $quote->groupsReady(),
-                fn (QueryBuilder $query) => $query->whereIn('group_name', $quote->selected_group_description_names),
+                fn (QueryBuilder $query) => $query->whereIn('id', $quote->groupedRows()),
                 fn (QueryBuilder $query) => $query->whereIsSelected(true)
             )
             ->sum('price');
@@ -412,7 +413,7 @@ class QuoteStateProcessor implements QuoteState
 
         $customerAttributesMap = ['date_from' => 'customers.support_start', 'date_to' => 'customers.support_end'];
 
-        $query->select('imported_rows.id', 'imported_rows.is_selected', 'imported_rows.is_one_pay', 'imported_rows.group_name', 'imported_rows.columns_data', 'customers.support_start as customer_support_start', 'customers.support_end as customer_support_end');
+        $query->select('imported_rows.id', 'imported_rows.replicated_row_id', 'imported_rows.is_selected', 'imported_rows.is_one_pay', 'imported_rows.group_name', 'imported_rows.columns_data', 'customers.support_start as customer_support_start', 'customers.support_end as customer_support_end');
 
         $mapping->each(function ($map) use ($query, $customerAttributesMap) {
             if (!$map->is_default_enabled) {
@@ -432,7 +433,7 @@ class QuoteStateProcessor implements QuoteState
             }
         });
 
-        $query = DB::query()->fromSub($query, 'imported_rows')->addSelect('id', 'is_selected', 'is_one_pay', 'columns_data', 'group_name');
+        $query = DB::query()->fromSub($query, 'imported_rows')->addSelect('id', 'replicated_row_id', 'is_selected', 'is_one_pay', 'columns_data', 'group_name');
 
         $defaults = collect(['price' => 0, 'date_from' => '`customer_support_start`', 'date_to' => '`customer_support_end`']);
 
@@ -468,7 +469,7 @@ class QuoteStateProcessor implements QuoteState
         $query = DB::query()->fromSub($query, 'rows');
 
         $columns = $mapping->pluck('templateField.name')->flip()->except('price')->flip();
-        $query->addSelect('id', 'is_selected', 'columns_data', 'group_name', ...$columns);
+        $query->addSelect('id', 'replicated_row_id', 'is_selected', 'columns_data', 'group_name', ...$columns);
 
         /** Calculating price based on date_from & date_to when related option is selected. */
         $query->when($quote->calculate_list_price, fn (QueryBuilder $query) => $query->selectRaw("(CAST(IF(`is_one_pay`, `price`, `price` / 30 * GREATEST(DATEDIFF(STR_TO_DATE(`date_to`, '%d/%m/%Y'), STR_TO_DATE(`date_from`, '%d/%m/%Y')), 0)) AS DECIMAL(15,2))) as `price`"))
@@ -568,6 +569,21 @@ class QuoteStateProcessor implements QuoteState
                         break;
                 }
             });
+
+            if ($version->group_description->isNotEmpty()) {
+                $rowsIds = $replicatedVersion->groupedRows();
+
+                /** @var \Illuminate\Database\Eloquent\Collection */
+                $replicatedRows = $replicatedVersion->rowsData()->getQuery()->toBase()->whereIn('imported_rows.replicated_row_id', $rowsIds)->get(['imported_rows.id', 'imported_rows.replicated_row_id']);
+
+                $replicatedVersion->group_description->each(function (RowsGroup $group) use ($replicatedRows) {
+                    $rowsIds = $replicatedRows->whereIn('replicated_row_id', $group->rows_ids)->pluck('id');
+
+                    $group->rows_ids = $rowsIds->toArray();
+                });
+
+                $replicatedVersion->save();
+            }
 
             if ($pass) {
                 activity()

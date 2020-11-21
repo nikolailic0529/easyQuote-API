@@ -20,10 +20,11 @@ use Illuminate\Database\Eloquent\{
     Relations\BelongsTo,
     SoftDeletes
 };
+use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 class Country extends Model implements HasOrderedScope, ActivatableInterface
 {
-    use Uuid, Multitenantable, Activatable, Systemable, Searchable, LogsActivity, SoftDeletes;
+    use Uuid, Multitenantable, Activatable, Systemable, Searchable, LogsActivity, SoftDeletes, HasRelationships;
 
     const FLAGS_DIRECTORY = 'img/countries';
 
@@ -32,7 +33,7 @@ class Country extends Model implements HasOrderedScope, ActivatableInterface
     ];
 
     protected $hidden = [
-        'pivot', 'iso_3166_3', 'full_name', 'country_code', 'capital', 'citizenship', 'calling_code'
+        'pivot', 'iso_3166_3', 'full_name', 'country_code', 'capital', 'citizenship', 'calling_code', 'laravel_through_key', 'default_country_id'
     ];
 
     protected static $logAttributes = [

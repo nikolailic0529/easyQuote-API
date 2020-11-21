@@ -18,7 +18,10 @@ class ConditionalCast implements CastsAttributes
      */
     public function get($model, $key, $value, $attributes)
     {
-        switch ($attributes['type']) {
+        switch ($attributes['type'] ?? null) {
+            case 'boolean':
+                return (bool) $value;
+                break;
             case 'string':
                 return (string) $value;
                 break;
@@ -54,7 +57,7 @@ class ConditionalCast implements CastsAttributes
      */
     public function set($model, $key, $value, $attributes)
     {
-        switch ($attributes['type']) {
+        switch ($attributes['type'] ?? null) {
             case 'array':
                 return is_array($value) ? json_encode($value) : $value;
                 break;

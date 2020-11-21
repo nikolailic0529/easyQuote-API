@@ -8,7 +8,7 @@ use Tests\Unit\Traits\WithFakeUser;
 
 class CustomerTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser;
+    use WithFakeUser;
 
     /** @var array */
     protected static $assertableAttributes = ['id', 'name', 'rfq', 'valid_until', 'support_start', 'support_end'];

@@ -2,37 +2,19 @@
 
 namespace App\Repositories;
 
-use App\Contracts\Repositories\{
-    UserRepositoryInterface
-};
+use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Http\Requests\{
     PasswordResetRequest as AppPasswordResetRequest,
     StoreResetPasswordRequest,
     UpdateProfileRequest
 };
-use App\Http\Resources\{
-    UserRepositoryCollection
-};
-use App\Models\{
-    User,
-    Role,
-    Collaboration\Invitation,
-    PasswordReset,
-    Permission
-};
-use App\Notifications\{
-    PasswordResetRequest,
-    PasswordResetSuccess
-};
-use Illuminate\Database\Eloquent\{
-    Model,
-    Builder,
-    Collection
-};
-use Arr, Hash;
+use App\Http\Resources\{UserRepositoryCollection};
+use App\Models\{User, Role, Collaboration\Invitation, PasswordReset, Permission};
+use App\Notifications\{PasswordResetRequest, PasswordResetSuccess};
+use Illuminate\Database\Eloquent\{Model, Builder, Collection};
+use Illuminate\Support\{Arr, Facades\DB, Facades\Hash, Facades\Cache, LazyCollection};
+use Illuminate\Contracts\Cache\Lock;
 use Closure;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\LazyCollection;
 
 class UserRepository extends SearchableRepository implements UserRepositoryInterface
 {
@@ -58,6 +40,11 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         $this->permission = $permission;
         $this->invitation = $invitation;
         $this->passwordReset = $passwordReset;
+    }
+
+    public static function lock(string $key, $seconds = 0, $owner = null): Lock
+    {
+        return Cache::lock("user-{$key}-update", $seconds, $owner);
     }
 
     public function userQuery(): Builder
@@ -106,6 +93,11 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         return $this->userQuery()->whereId($id)->firstOrFail()->withAppends();
     }
 
+    public function findWithLock(string $id): ?User
+    {
+        return $this->user->query()->whereKey($id)->lockForUpdate()->first();
+    }
+
     public function findByEmail($email)
     {
         $query = $this->user->query();
@@ -144,6 +136,11 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
     public function random(): User
     {
         return $this->user->query()->inRandomOrder()->firstOrFail();
+    }
+
+    public function findAuthenticatedUsersByIp(string $ip, array $columns = ['*']): Collection
+    {
+        return $this->user->query()->where('already_logged_in', true)->where('ip_address', $ip)->get($columns);
     }
 
     public function authenticatedIpExists(string $excludedId, string $ip): bool
@@ -223,6 +220,11 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
                 $user->timestamps = $usesTimestamps;
             }
         });
+    }
+
+    public function pluckWhere(array $where, $column, $key = null): array
+    {
+        return $this->user->query()->where($where)->pluck($column, $key)->all();
     }
 
     public function updateWhere(array $attributes, array $where = []): int
@@ -367,14 +369,20 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
     {
         $permission = $this->permission->firstOrCreate(['name' => $permissionName, 'guard_name' => 'web']);
 
-        $user->givePermissionTo($permission);
+        $user->permissions()->syncWithoutDetaching($permission);
+
+        $user->forgetCachedPermissions();
 
         return true;
     }
 
     public function revokePermissionTo(string $permissionName, User $user): bool
     {
-        $user->revokePermissionTo($permissionName);
+        $permission = $this->permission->where(['name' => $permissionName, 'guard_name' => 'web'])->value('id');
+
+        $user->permissions()->detach($permission);
+
+        $user->forgetCachedPermissions();
 
         return true;
     }

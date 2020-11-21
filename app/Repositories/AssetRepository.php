@@ -12,8 +12,10 @@ use Illuminate\Database\{
     Eloquent\Model,
     Query\JoinClause,
 };
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Staudenmeir\EloquentHasManyDeep\HasOneDeep;
 
 class AssetRepository extends SearchableRepository implements Contract
 {
@@ -26,8 +28,11 @@ class AssetRepository extends SearchableRepository implements Contract
 
     public function userQuery(): Builder
     {
+        /** @var \App\Models\User */
+        $user = auth()->user();
+
         return $this->asset->query()
-            ->unless(auth()->user()->hasRole(R_SUPER), fn (Builder $q) => $q->whereUserId(auth()->id()));
+            ->unless($user->hasRole(R_SUPER), fn (Builder $q) => $q->whereUserId(auth()->id()));
     }
 
     public function chunk(int $count, callable $callback, array $with = [], ?callable $clause = null): bool
@@ -142,6 +147,7 @@ class AssetRepository extends SearchableRepository implements Contract
             \App\Http\Query\OrderByActiveWarrantyEndDate::class,
             \App\Http\Query\OrderByVendorShortCode::class,
             \App\Http\Query\OrderByAssetCategory::class,
+            \App\Http\Query\OrderByQuoteId::class,
             \App\Http\Query\FilterByLocation::class,
         ];
     }
@@ -153,7 +159,17 @@ class AssetRepository extends SearchableRepository implements Contract
 
     protected function searchableQuery()
     {
-        return $this->userQuery()->with('assetCategory');
+        return $this->userQuery()->with(static::listingRelationships());
+    }
+
+    protected function filterableQuery()
+    {
+        return $this->userQuery()->with(static::listingRelationships());
+    }
+
+    protected function searchableScope($query)
+    {
+        return $query->with(static::listingRelationships());
     }
 
     protected function searchableFields(): array
@@ -175,17 +191,16 @@ class AssetRepository extends SearchableRepository implements Contract
             'active_warranty_end_date',
             'quantity',
             'unit_price',
-            'buy_price'
+            'buy_price',
+            'rfq_number',
         ];
     }
 
-    protected function filterableQuery()
+    protected static function listingRelationships(): array
     {
-        return $this->userQuery()->with('assetCategory');
-    }
-
-    protected function searchableScope($query)
-    {
-        return $query->with('assetCategory');
+        return [
+            'assetCategory' => fn (BelongsTo $q) => $q->cacheForever(),
+            'customer' => fn (HasOneDeep $q) => $q->select('rfq')->cacheForever()
+        ];
     }
 }

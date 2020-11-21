@@ -7,6 +7,7 @@ use App\Contracts\{
     Services\ContractState,
     Repositories\Quote\QuoteSubmittedRepositoryInterface as Repository
 };
+use App\Http\Requests\Quote\Copy;
 use App\Http\Requests\Quote\CreateQuoteContractRequest;
 use App\Http\Resources\ContractVersionResource;
 use App\Models\{
@@ -100,10 +101,11 @@ class QuoteSubmittedController extends Controller
     /**
      * Create copy of the specified Submitted Quote
      *
+     * @param Copy $request
      * @param \App\Models\Quote\Quote $submitted
      * @return \Illuminate\Http\Response
      */
-    public function copy(Quote $submitted)
+    public function copy(Copy $request, Quote $submitted)
     {
         $this->authorize('copy', $submitted);
 

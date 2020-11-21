@@ -126,7 +126,6 @@ class ContractTemplateRepository extends SearchableRepository implements Contrac
          * Determine that passed $attributes have only design related values (self::DESIGN_ATTRIBUTES).
          * Then if the passed $attributes have complete_design we'll perform record log with updated description.
          */
-
         if (
             Arr::has($attributes, self::DESIGN_ATTRIBUTES)
             && blank(array_diff_key($attributes, array_flip(self::DESIGN_ATTRIBUTES)))

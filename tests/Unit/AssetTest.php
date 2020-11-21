@@ -38,7 +38,8 @@ class AssetTest extends TestCase
     {
         $attributes = factory(Asset::class)->raw();
 
-        $response = $this->postJson('api/assets', $attributes)->assertCreated();
+        $response = $this->postJson('api/assets', $attributes)
+            ->assertCreated();
 
         $this->assertDatabaseHas('assets', ['id' => $response->json('id'), 'deleted_at' => null]);
     }
@@ -55,7 +56,7 @@ class AssetTest extends TestCase
 
         $attributes = factory(Asset::class)->raw();
 
-        $this->patchJson('api/assets/'.$asset->getKey(), $attributes)->assertOk();
+        $this->patchJson('api/assets/' . $asset->getKey(), $attributes)->assertOk();
 
         $asset->refresh();
 
@@ -72,7 +73,7 @@ class AssetTest extends TestCase
         /** @var Asset */
         $asset = factory(Asset::class)->create();
 
-        $this->deleteJson('api/assets/'.$asset->getKey())->assertOk();
+        $this->deleteJson('api/assets/' . $asset->getKey())->assertOk();
 
         $this->assertSoftDeleted($asset);
     }

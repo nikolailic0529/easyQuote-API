@@ -14,7 +14,7 @@ use Str;
 
 class MarginTest extends TestCase
 {
-    use TruncatesDatabaseTables, DatabaseTransactions, WithFakeUser, AssertsListing;
+    use TruncatesDatabaseTables, WithFakeUser, AssertsListing;
 
     protected array $truncatableTables = [
         'country_margins'

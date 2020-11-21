@@ -42,6 +42,7 @@
         "vendors": [
             "HPE", "LEN", "IBM", "CIS"
         ],
-        "logo": "/database/seeds/models/images/tesedi.png"
+        "logo": "/database/seeds/models/images/tesedi.png",
+        "svg_logo": "/database/seeds/models/images/tesedi.svg"
     }
 ]

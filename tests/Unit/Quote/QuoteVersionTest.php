@@ -16,7 +16,7 @@ use Illuminate\Support\Arr;
 
 class QuoteVersionTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser, WithFakeQuote;
+    use WithFakeUser, WithFakeQuote;
 
     /**
      * Test a new Version creating when non-author user is editing a Quote.
@@ -113,8 +113,7 @@ class QuoteVersionTest extends TestCase
         $user = tap($this->createUser(), fn ($user) => $this->actingAs($user, 'api'));
 
         $state = transform(static::makeState(), fn ($state) =>
-            Arr::set($state, 'quote_id', $this->quote->id)
-        );
+        Arr::set($state, 'quote_id', $this->quote->id));
 
         $this->postJson(url('api/quotes/state'), $state)->assertOk()->assertExactJson(['id' => $this->quote->id]);
 
@@ -123,7 +122,7 @@ class QuoteVersionTest extends TestCase
         $resource = QuoteVersionResource::make($this->quote->refresh())->resolve();
 
         collect($state['quote_data'])->each(fn ($value, $attribute) => $this->assertEquals($value, Arr::get($resource, $attribute)));
-        collect($state['margin'])->each(fn ($value, $attribute) => $this->assertEquals($value, Arr::get($resource, 'country_margin.'.$attribute)));
+        collect($state['margin'])->each(fn ($value, $attribute) => $this->assertEquals($value, Arr::get($resource, 'country_margin.' . $attribute)));
     }
 
     protected function updateQuoteStateFromNewUser(): void

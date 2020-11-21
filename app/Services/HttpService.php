@@ -10,17 +10,16 @@ use Throwable;
 
 class HttpService implements HttpInterface
 {
-    /** @var array */
     protected array $invalidRequestExceptions = [
         \Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class,
         \Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException::class
     ];
 
-    public function makeErrorResponse(string $details, string $code, int $status): JsonResponse
+    public function makeErrorResponse(string $details, string $code, int $status, array $headers = []): JsonResponse
     {
         $data = $this->convertErrorToArray($details, $code);
 
-        return new JsonResponse($data, $status);
+        return new JsonResponse($data, $status, $headers);
     }
 
     public function invalidJson(Request $request, ValidationException $exception): JsonResponse

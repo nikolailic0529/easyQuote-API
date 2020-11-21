@@ -12,14 +12,6 @@ use Illuminate\Support\Collection;
 interface RoleRepositoryInterface
 {
     /**
-     * Data for creating a new Role
-     *
-     * @param $array
-     * @return Collection
-     */
-    public function data(): Collection;
-
-    /**
      * Get all Collaboration Roles.
      *
      * @return mixed
@@ -85,19 +77,19 @@ interface RoleRepositoryInterface
     /**
      * Create Collaboration Role.
      *
-     * @param \App\Http\Requests\Role\StoreRoleRequest|array $attributes
+     * @param  array $attributes
      * @return Role
      */
-    public function create($attributes): Role;
+    public function create(array $attributes): Role;
 
     /**
      * Update Collaboration Role.
      *
-     * @param \App\Http\Requests\Role\UpdateRoleRequest $request
+     * @param array $attributes
      * @param string $id
      * @return Role
      */
-    public function update(UpdateRoleRequest $request, string $id): Role;
+    public function update(string $id, array $attributes): Role;
 
     /**
      * Delete Collaboration Role.

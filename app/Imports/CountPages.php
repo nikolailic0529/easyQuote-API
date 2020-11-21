@@ -4,18 +4,13 @@ namespace App\Imports;
 
 use Maatwebsite\Excel\{
     Concerns\WithEvents,
-    Concerns\WithChunkReading,
     Events\BeforeSheet,
 };
+use Maatwebsite\Excel\Concerns\WithLimit;
 
-class CountPages implements WithEvents, WithChunkReading
+class CountPages implements WithEvents, WithLimit
 {
-    protected $sheetCount;
-
-    public function __construct()
-    {
-        $this->sheetCount = 0;
-    }
+    protected int $sheetCount = 0;
 
     public function getSheetCount(): int
     {
@@ -31,8 +26,8 @@ class CountPages implements WithEvents, WithChunkReading
         ];
     }
 
-    public function chunkSize(): int
+    public function limit(): int
     {
-        return 1000;
+        return 1;
     }
 }

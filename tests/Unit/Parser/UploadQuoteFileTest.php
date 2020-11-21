@@ -12,7 +12,18 @@ use Setting;
 
 class UploadQuoteFileTest extends TestCase
 {
-    use DatabaseTransactions, WithFakeUser;
+    use WithFakeUser;
+
+    public function testUploadQuoteFileWithInfiniteCoordinatesRange()
+    {
+        $filePath = base_path('tests/Unit/Data/distributor-files-test/Support Warehouse Ltd-SELECT ADMINISTRATIVE SERVICES-49698055-08272020.xlsx');
+
+        $file = UploadedFile::fake()->createWithContent($filePath, File::get($filePath));
+
+        $response = $this->uploadFile($file)->assertOk();
+
+        $this->assertEquals(3, $response->json('pages'));
+    }
 
     /**
      * Test QuoteFile Storing.
@@ -77,7 +88,7 @@ class UploadQuoteFileTest extends TestCase
     {
         return $this->postJson(
             url('/api/quotes/file'),
-            ['quote_file' => $file, 'file_type' => $type ?? __('quote_file.types.price')],
+            ['quote_file' => $file, 'file_type' => $type ?? QFT_PL],
             ['Authorization' => "Bearer {$this->accessToken}"]
         );
     }

@@ -4,6 +4,19 @@ namespace App\Mixins;
 
 class StrMixin
 {
+    public function containsInsensitive()
+    {
+        return function ($haystack, $needles) {
+            foreach ((array) $needles as $needle) {
+                if ($needle !== '' && mb_stripos($haystack, $needle) !== false) {
+                    return true;
+                }
+            }
+    
+            return false;
+        };
+    }
+
     public function header()
     {
         return function ($value, $default = null, $perform = true) {

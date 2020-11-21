@@ -4,6 +4,7 @@ namespace App\Traits;
 
 use App\Models\Address;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 
 trait BelongsToAddresses
@@ -39,7 +40,7 @@ trait BelongsToAddresses
 
     protected function logChangedAddresses($changes, Collection $old): void
     {
-        if (!$changes || (is_array($changes) && blank(array_flatten($changes)))) {
+        if (!$changes || (is_array($changes) && blank(Arr::flatten($changes)))) {
             return;
         }
 

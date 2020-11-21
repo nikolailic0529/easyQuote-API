@@ -1,12 +1,20 @@
 <?php
 
+use App\Http\Controllers\API\System\SystemSettingController;
+
 Route::group(['namespace' => 'API'], function () {
+    Route::get('settings/public', [SystemSettingController::class, 'showPublicSettings']);
+
     Route::group(['prefix' => 'auth', 'middleware' => THROTTLE_RATE_01], function () {
         Route::get('attempts/{email}', 'AuthController@showAttempts');
+        
         Route::post('signin', 'AuthController@signin')->name('signin');
         Route::post('signup', 'AuthController@signup')->name('signup');
+        Route::post('logout-user', 'AuthController@authenticateAndLogout');
+
         Route::get('signup/{invitation}', 'AuthController@showInvitation');
         Route::post('signup/{invitation}', 'AuthController@signupCollaborator');
+
         Route::get('reset-password/{reset}', 'AuthController@verifyPasswordReset');
         Route::post('reset-password/{reset}', 'AuthController@resetPassword');
 
@@ -45,7 +53,7 @@ Route::group(['namespace' => 'API'], function () {
         Route::get('quotes/{rfq}/pdf', 'S4QuoteController@pdf')->name('pdf');
     });
 
-    Route::group(['middleware' => 'auth:api'], function () {
+Route::group(['middleware' => 'auth:api'], function () {
         Route::group(['middleware' => THROTTLE_RATE_01], function () {
             Route::match(['get', 'post'], 'stats', 'StatsController@quotesSummary');
             Route::match(['get', 'post'], 'stats/customers', 'StatsController@customersSummary');
@@ -62,6 +70,8 @@ Route::group(['namespace' => 'API'], function () {
         });
 
         Route::group(['middleware' => THROTTLE_RATE_01, 'namespace' => 'Data'], function () {
+            Route::get('countries/vendor/{vendor}', 'CountryController@filterCountriesByVendor');
+            Route::get('countries/company/{company}', 'CountryController@filterCountriesByCompany');
             Route::apiResource('countries', 'CountryController');
             Route::put('countries/activate/{country}', 'CountryController@activate');
             Route::put('countries/deactivate/{country}', 'CountryController@deactivate');
@@ -142,9 +152,21 @@ Route::group(['namespace' => 'API'], function () {
             Route::put('contract-templates/deactivate/{contract_template}', 'ContractTemplateController@deactivate');
             Route::put('contract-templates/copy/{contract_template}', 'ContractTemplateController@copy');
         });
+        
+        Route::group(['namespace' => 'Templates', 'middleware' => THROTTLE_RATE_01], function () {
+            Route::get('hpe-contract-templates/designer/{hpe_contract_template}', 'HpeContractTemplateController@designer');
+            Route::get('hpe-contract-templates/country/{country}', 'HpeContractTemplateController@country');
+            Route::post('hpe-contract-templates/filter', 'HpeContractTemplateController@filterTemplates');
+            Route::apiResource('hpe-contract-templates', 'HpeContractTemplateController');
+            Route::put('hpe-contract-templates/activate/{hpe_contract_template}', 'HpeContractTemplateController@activate');
+            Route::put('hpe-contract-templates/deactivate/{hpe_contract_template}', 'HpeContractTemplateController@deactivate');
+            Route::put('hpe-contract-templates/copy/{hpe_contract_template}', 'HpeContractTemplateController@copy');
+        });
 
         Route::group(['middleware' => THROTTLE_RATE_01], function () {
             Route::get('companies/external', 'CompanyController@getExternal');
+            Route::get('companies/internal', 'CompanyController@getInternal');
+            Route::get('companies/countries', 'CompanyController@showCompaniesWithCountries');
             
             Route::resource('companies', 'CompanyController', ['only' => ROUTE_CRUD]);
 
@@ -184,6 +206,23 @@ Route::group(['namespace' => 'API'], function () {
             Route::put('snd/activate/{snd}', 'SNDcontroller@activate');
             Route::put('snd/deactivate/{snd}', 'SNDcontroller@deactivate');
         });
+
+        Route::post('hpe-contract-files', 'HpeContractFileController');
+
+        Route::get('hpe-contracts/step/import', 'HpeContractController@showImportStepData');
+        Route::patch('hpe-contracts/{hpe_contract}/import/{hpe_contract_file}', 'HpeContractController@importHpeContract');
+        Route::get('hpe-contracts/{hpe_contract}/review', 'HpeContractController@reviewHpeContractData');
+        Route::get('hpe-contracts/{hpe_contract}/preview', 'HpeContractController@previewHpeContract');
+        Route::patch('hpe-contracts/{hpe_contract}/select-assets', 'HpeContractController@selectAssets');
+
+        Route::put('hpe-contracts/{hpe_contract}/copy', 'HpeContractController@copyHpeContract');
+        Route::patch('hpe-contracts/{hpe_contract}/submit', 'HpeContractController@submitHpeContract');
+        Route::patch('hpe-contracts/{hpe_contract}/unsubmit', 'HpeContractController@unsubmitHpeContract');
+        Route::patch('hpe-contracts/{hpe_contract}/activate', 'HpeContractController@activateHpeContract');
+        Route::patch('hpe-contracts/{hpe_contract}/deactivate', 'HpeContractController@deactivateHpeContract');
+        Route::get('hpe-contracts/{hpe_contract}/export', 'HpeContractController@exportHpeContract');
+        Route::apiResource('hpe-contracts', 'HpeContractController');
+        
 
         Route::group(['prefix' => 'contracts', 'namespace' => 'Contracts', 'as' => 'contracts.'], function () {
             /**

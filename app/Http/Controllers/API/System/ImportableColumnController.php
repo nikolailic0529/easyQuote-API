@@ -13,6 +13,7 @@ use App\Http\Resources\ImportableColumn\{
     ImportableColumnResource
 };
 use App\Models\QuoteFile\ImportableColumn;
+use Illuminate\Http\Response;
 
 class ImportableColumnController extends Controller
 {
@@ -54,7 +55,7 @@ class ImportableColumnController extends Controller
 
         return response()->json(
             filter(ImportableColumnResource::make($importableColumn)),
-            201
+            Response::HTTP_CREATED
         );
     }
 

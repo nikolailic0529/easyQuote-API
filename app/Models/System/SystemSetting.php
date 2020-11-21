@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\{
     Collection,
     SoftDeletes,
 };
-use Str;
+use Illuminate\Support\Str;
 
 class SystemSetting extends Model
 {
@@ -36,7 +36,7 @@ class SystemSetting extends Model
     ];
 
     protected $types = [
-        'string', 'integer', 'float', 'decimal', 'array', 'datetime'
+        'string', 'integer', 'boolean', 'float', 'decimal', 'array', 'datetime'
     ];
 
     protected $appends = [
@@ -110,20 +110,22 @@ class SystemSetting extends Model
 
     public function getFieldTitleAttribute()
     {
-        return __("setting.titles.{$this->attributes['key']}");
+        return __('setting.titles.'.$this->getRawOriginal('key'));
     }
 
     public function getFieldTypeAttribute(): string
     {
         if ($this->is_read_only) {
             return 'label';
-        }
-
-        if ($this->possible_values instanceof Collection) {
+        } elseif ($this->possible_values instanceof Collection) {
             return 'multiselect';
+        } elseif (is_iterable($this->possible_values)) {
+            return 'dropdown';
+        } elseif ($this->type === 'boolean') {
+            return 'checkbox';
         }
 
-        return is_iterable($this->possible_values) ? 'dropdown' : 'textbox';
+        return 'textbox';
     }
 
     public function getValueCacheKeyAttribute(): string

@@ -4,9 +4,17 @@ namespace App\Traits;
 
 trait Completable
 {
-    public static function transformDraftedStep($completeness)
+
+    /**
+     * Get Dictionary for Completed Stages
+     *
+     * @return array
+     */
+    abstract public function getCompletenessDictionary();
+    
+    public function transformDraftedStep($completeness)
     {
-        $dictionary = static::getCompletenessDictionary();
+        $dictionary = $this->getCompletenessDictionary();
         $stage = collect($dictionary)->search($completeness, true);
 
         return $stage;
@@ -14,7 +22,7 @@ trait Completable
 
     public function getLastDraftedStepAttribute()
     {
-        return static::transformDraftedStep($this->completeness);
+        return $this->transformDraftedStep($this->completeness);
     }
 
     public function setLastDraftedStepAttribute(string $value): void
@@ -25,10 +33,8 @@ trait Completable
         $this->setAttribute('completeness', $completeness);
     }
 
-    /**
-     * Get Dictionary for Completed Stages
-     *
-     * @return array
-     */
-    abstract public static function getCompletenessDictionary();
+    public static function modelCompleteness()
+    {
+        return (new static)->getCompletenessDictionary();
+    }
 }

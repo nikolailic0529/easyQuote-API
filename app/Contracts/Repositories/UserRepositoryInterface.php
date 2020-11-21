@@ -17,7 +17,7 @@ use App\Models\{
 };
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection as IlluminateCollection;
+use Illuminate\Database\Eloquent\Collection as DbCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\LazyCollection;
 
@@ -92,6 +92,16 @@ interface UserRepositoryInterface
     public function updateWhere(array $attributes, array $where = []): int;
 
     /**
+     * Pluck user attributes by specific clause.
+     *
+     * @param  array $where
+     * @param  string $column
+     * @param  string|null $key
+     * @return array
+     */
+    public function pluckWhere(array $where, $column, $key = null): array;
+
+    /**
      * Increment the given user attribute.
      *
      * @param string $id
@@ -110,12 +120,20 @@ interface UserRepositoryInterface
     public function updateOwnProfile(UpdateProfileRequest $request): User;
 
     /**
-     * Get Collaboration User by id.
+     * Find the User by id.
      *
      * @param string $id
      * @return \App\Models\User
      */
     public function find(string $id): User;
+
+    /**
+     * Find the User by id and lock a record for update.
+     * 
+     * @param  string $id
+     * @return User|null
+     */
+    public function findWithLock(string $id): ?User;
 
     /**
      * Find User by specified Email.
@@ -137,9 +155,9 @@ interface UserRepositoryInterface
      * Retrieve many users by specified ids.
      *
      * @param array $ids
-     * @return IlluminateCollection
+     * @return DbCollection
      */
-    public function findMany(array $ids): IlluminateCollection;
+    public function findMany(array $ids): DbCollection;
 
     /**
      * Retrieve users by specific roles.
@@ -156,6 +174,14 @@ interface UserRepositoryInterface
      * @return \App\Models\User
      */
     public function random(): User;
+
+    /**
+     * Retrieve authenticated users with the same ip.
+     *
+     * @param  string $ip
+     * @return DbCollection
+     */
+    public function findAuthenticatedUsersByIp(string $ip, array $columns = ['*']): DbCollection;
 
     /**
      * Determine that user with the same ip is authenticated.
@@ -249,9 +275,9 @@ interface UserRepositoryInterface
     /**
      * Retrieve All Users who have Administrator role.
      *
-     * @return IlluminateCollection
+     * @return DbCollection
      */
-    public function administrators(): IlluminateCollection;
+    public function administrators(): DbCollection;
 
     /**
      * Reset Password for specified User.

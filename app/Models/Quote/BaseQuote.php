@@ -2,6 +2,7 @@
 
 namespace App\Models\Quote;
 
+use App\Casts\GroupDescription;
 use App\Contracts\{
     ActivatableInterface,
     HasOrderedScope
@@ -49,8 +50,11 @@ use Illuminate\Database\Eloquent\{
     Model
 };
 use Illuminate\Support\Traits\Tappable;
-use Str;
+use Illuminate\Support\Str;
 
+/**
+ * @property \Illuminate\Support\Collection $group_description
+ */
 abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableInterface
 {
     use Uuid,
@@ -109,6 +113,7 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
         'contract_template_id',
         'pricing_document',
         'service_agreement_id',
+        'hpe_contract_number',
         'system_handle',
         'checkbox_status',
         'closing_date'
@@ -124,10 +129,11 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
     ];
 
     protected $casts = [
-        'margin_data' => 'array',
-        'checkbox_status' => 'json',
+        'group_description'    => GroupDescription::class,
+        'margin_data'          => 'array',
+        'checkbox_status'      => 'json',
         'calculate_list_price' => 'boolean',
-        'buy_price' => 'float'
+        'buy_price'            => 'float',
     ];
 
     protected $hidden = [
@@ -240,11 +246,11 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
             'customer_source'           => $this->customer->source,
 
             'user_fullname'             => optional($this->user)->fullname,
-            'created_at'                => optional($this->created_at)->format(config('date.format_time'))
+            'created_at'                => optional($this->created_at)->format(config('date.format'))
         ];
     }
 
-    public static function getCompletenessDictionary()
+    public function getCompletenessDictionary()
     {
         return __('quote.stages');
     }

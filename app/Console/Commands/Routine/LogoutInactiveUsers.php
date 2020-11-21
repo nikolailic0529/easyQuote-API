@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands\Routine;
 
-use App\Contracts\Repositories\UserRepositoryInterface as Users;
+use App\Services\UserActivityService;
 use Illuminate\Console\Command;
 
 class LogoutInactiveUsers extends Command
@@ -36,16 +36,13 @@ class LogoutInactiveUsers extends Command
      *
      * @return mixed
      */
-    public function handle(Users $users)
+    public function handle(UserActivityService $service)
     {
-        $time = now()->subMinutes(config('activity.expires_in', 60));
+        $count = $service->logoutInactive();
 
-        $affected = $users->updateWhere(
-            ['already_logged_in' => false],
-            [['last_activity_at', '<=', $time], ['already_logged_in', '=', true]]
-        );
-
-        report_logger(['message' => sprintf('Logged out %s inactive users.', $affected)]);
+        if ($count > 0) {
+            customlog(['message' => sprintf('Logged out %s inactive users.', $count)]);
+        }
 
         return 0;
     }

@@ -30,18 +30,19 @@ class CompaniesSeeder extends Seeder
             $defaultVendorId = Vendor::whereShortCode($company['default_vendor'])->firstOrFail()->id;
 
             DB::table('companies')->insert([
-                'id' => $companyId,
-                'name' => $company['name'],
-                'vat' => $company['vat'],
-                'type' => $company['type'],
+                'id'                => $companyId,
+                'name'              => $company['name'],
+                'short_code'        => $company['short_code'],
+                'vat'               => $company['vat'],
+                'type'              => $company['type'],
                 'default_vendor_id' => $defaultVendorId,
-                'email' => $company['email'],
-                'phone' => $company['phone'],
-                'website' => $company['website'],
-                'is_system' => true,
-                'created_at' => now()->toDateTimeString(),
-                'updated_at' => now()->toDateTimeString(),
-                'activated_at' => now()->toDateTimeString()
+                'email'             => $company['email'],
+                'phone'             => $company['phone'],
+                'website'           => $company['website'],
+                'is_system'         => true,
+                'created_at'        => now()->toDateTimeString(),
+                'updated_at'        => now()->toDateTimeString(),
+                'activated_at'      => now()->toDateTimeString()
             ]);
 
             $createdCompany = Company::whereId($companyId)->firstOrFail();
