@@ -41,13 +41,13 @@ class AuthService implements AuthServiceInterface
 
     public function authenticate(array $request)
     {
-        $this->currentAttempt = $this->attempts->retrieveOrCreate($request);
+        // $this->currentAttempt = $this->attempts->retrieveOrCreate($request);
 
         $this->checkCredentials(Arr::only($request, ['email', 'password']));
 
         $token = $this->generateToken($request);
 
-        $this->currentAttempt->markAsSuccessful($token);
+        // $this->currentAttempt->markAsSuccessful($token);
 
         return $this->response($token);
     }
@@ -141,7 +141,8 @@ class AuthService implements AuthServiceInterface
             /**
              * Once user logged in we are freshing the last activity timestamp and writing the related activity.
              */
-            $user->markAsLoggedIn($this->currentAttempt->ip);
+            // $user->markAsLoggedIn($this->currentAttempt->ip);
+            $user->markAsLoggedIn();
             $user->freshActivity();
 
             /**
