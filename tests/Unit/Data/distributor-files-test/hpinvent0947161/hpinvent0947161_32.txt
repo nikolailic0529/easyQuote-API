@@ -1,0 +1,97 @@
+Detail for Support Account ID:                                  ANZ-MN
+
+                                                                                        Service Agreement ID: 1086 5485            6896
+
+              Support Quotation                                                         System Handle: ANZ-UK-02
+
+              Agreement No.                                                             UK
+
+              Your PO Reference:                                                        HPE Reference No.: 56972845
+
+              Equipment Address:                                                        Software Update Address:
+
+              Australia And New Zealand                                                 Australia And New Zealand
+
+              Banking Group Ltd                                                         Banking Group Ltd
+
+              40 Bank Street, Canary Wharf                                              40 Bank Street, Canary Wharf
+
+              London                                                                    London
+
+              E14 5EJ                                                                   E14 5EJ
+
+              Hardware Contact:                                                         Software Contact:
+
+              Graham Wood                                                               Graham Wood
+
+              Tel: 0203229 2222                                                         Tel: 0203229 2222
+
+              Fax:                                                                      Fax:
+
+              This quote is valid until 31.10.2020
+
+              Coverage from: 01.11.2020 to: 31.10.2023
+
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
+
+                                                                                                            from:          to:
+
+        H1K92AC               HPE Proactive Care 24x7 SVC
+
+        *** Environmental ***
+
+                              HPE COE for SAP HANA SVC
+
+                                                                                         Environmental Services Subtotal                                0.00
+
+        *** Hardware ***
+
+                              HPE Hardware Maintenance Onsite Support
+
+                                       Hardware Problem Diagnosis
+
+                                       Onsite Support
+
+                                       Parts and Material provided
+
+                                       4 Hr Onsite Response
+
+                                       24 Hrs Std Office Days
+
+                                       24 hrs, Day 6
+
+                                       24 hrs, Day 7
+
+                                       Holidays Covered
+
+                                       No Usage Limitation
+
+                                       Remote Delivery SVC Advanced
+
+                                       Access to Adv Tech Specialists
+
+        735151-B21            HP BL460c Gen8 E5-v2 10Gb FLB CTO Blade              CZJ4060606                                             1            72.00
+
+        641016-B21            HP BL460c Gen8 10/20Gb FLB CTO Blade                 CZJ336005N                                             1            72.00
+
+        641016-B21            HP BL460c Gen8 10/20Gb FLB CTO Blade                 CZJ336005J                                             1            72.00
+
+        641016-B21            HP BL460c Gen8 10/20Gb FLB CTO Blade                 CZJ336005L                                             1            72.00
+
+        641016-B21            HP BL460c Gen8 10/20Gb FLB CTO Blade                 CZJ3350DFX                                             1            72.00
+
+        641016-B21            HP BL460c Gen8 10/20Gb FLB CTO Blade                 CZJ3350DFS                                             1            72.00
+
+        641016-B21            HP BL460c Gen8 10/20Gb FLB CTO Blade                 CZJ32512NL                                             1            72.00
+
+        641016-B21            HP BL460c Gen8 10/20Gb FLB CTO Blade                 CZJ32512NK                                             1            72.00
+
+        641016-B21            HP BL460c Gen8 10/20Gb FLB CTO Blade                 CZJ24200PY                                             1            72.00
+
+        641016-B21            HP BL460c Gen8 10/20Gb FLB CTO Blade                 CZJ24200Q0                                             1            72.00
+
+      The Prices shown will be invoiced yearly in advance.
+
+          Printed on: 04.12.2020                                Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT   Page: 32 / 35
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

@@ -19,5 +19,12 @@
         "company": "THG",
         "vendor": "HPE",
         "countries": ["CH"]
+    },
+    {
+        "id": "f2cf45d2-b364-42a7-9c24-573413013c89",
+        "name": "TCH-ARUBA-CH",
+        "company": "THG",
+        "vendor": "ARU",
+        "countries": ["CH"]
     }
 ]

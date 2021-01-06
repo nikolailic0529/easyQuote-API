@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\Enum\Lock;
 use App\Http\Requests\{
     PasswordResetRequest as AppPasswordResetRequest,
     StoreResetPasswordRequest,
@@ -13,7 +14,7 @@ use App\Models\{User, Role, Collaboration\Invitation, PasswordReset, Permission}
 use App\Notifications\{PasswordResetRequest, PasswordResetSuccess};
 use Illuminate\Database\Eloquent\{Model, Builder, Collection};
 use Illuminate\Support\{Arr, Facades\DB, Facades\Hash, Facades\Cache, LazyCollection};
-use Illuminate\Contracts\Cache\Lock;
+use Illuminate\Contracts\Cache\Lock as LockContract;
 use Closure;
 
 class UserRepository extends SearchableRepository implements UserRepositoryInterface
@@ -42,9 +43,9 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
         $this->passwordReset = $passwordReset;
     }
 
-    public static function lock(string $key, $seconds = 0, $owner = null): Lock
+    public static function lock(string $key, $seconds = 0, $owner = null): LockContract
     {
-        return Cache::lock("user-{$key}-update", $seconds, $owner);
+        return Cache::lock(Lock::UPDATE_USER($key), $seconds, $owner);
     }
 
     public function userQuery(): Builder
@@ -390,13 +391,13 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
     protected function filterQueryThrough(): array
     {
         return [
-            \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\User\OrderByEmail::class,
             \App\Http\Query\User\OrderByName::class,
             \App\Http\Query\User\OrderByFirstname::class,
             \App\Http\Query\User\OrderByLastname::class,
-            \App\Http\Query\User\OrderByRole::class
+            \App\Http\Query\User\OrderByRole::class,
+            \App\Http\Query\DefaultOrderBy::class,
         ];
     }
 

@@ -4,16 +4,16 @@ namespace App\Http\Controllers\API\Templates;
 
 use App\Contracts\Repositories\QuoteTemplate\HpeContractTemplate as Templates;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\QuoteTemplate\{
-    DeleteTemplate,
+use App\Http\Requests\HpeContractTemplate\{
     FilterHpeTemplates,
     HpeTemplateDesign,
     StoreHpeContractTemplate,
     UpdateHpeContractTemplate,
+    DeleteHpeContractTemplate,
 };
 use App\Http\Resources\TemplateRepository\TemplateCollection;
 use App\Http\Resources\TemplateRepository\TemplateResourceWithIncludes;
-use App\Models\QuoteTemplate\HpeContractTemplate;
+use App\Models\Template\HpeContractTemplate;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Services\ProfileHelper;
@@ -71,7 +71,7 @@ class HpeContractTemplateController extends Controller
      * Retrieve data for template designer.
      *
      * @param  HpeTemplateDesign $request
-     * @param  \App\Models\QuoteTemplate\HpeContractTemplate $hpeContractTemplate
+     * @param  \App\Models\Template\HpeContractTemplate $hpeContractTemplate
      * @return \Illuminate\Http\JsonResponse
      */
     public function designer(HpeTemplateDesign $request, HpeContractTemplate $hpeContractTemplate)
@@ -84,7 +84,7 @@ class HpeContractTemplateController extends Controller
     /**
      * Create a duplicate of the specified resource in repository.
      *
-     * @param \App\Models\QuoteTemplate\ContractTemplate $hpeContractTemplate
+     * @param \App\Models\Template\ContractTemplate $hpeContractTemplate
      * @return \Illuminate\Http\Response
      */
     public function copy(HpeContractTemplate $hpeContractTemplate)
@@ -113,7 +113,7 @@ class HpeContractTemplateController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\QuoteTemplate\HpeContractTemplate  $hpeContractTemplate
+     * @param  \App\Models\Template\HpeContractTemplate  $hpeContractTemplate
      * @return \Illuminate\Http\JsonResponse
      */
     public function show(HpeContractTemplate $hpeContractTemplate)
@@ -127,7 +127,7 @@ class HpeContractTemplateController extends Controller
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\QuoteTemplate\HpeContractTemplate  $hpeContractTemplate
+     * @param  \App\Models\Template\HpeContractTemplate  $hpeContractTemplate
      * @return \Illuminate\Http\JsonResponse
      */
     public function update(UpdateHpeContractTemplate $request, HpeContractTemplate $hpeContractTemplate)
@@ -142,11 +142,11 @@ class HpeContractTemplateController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  DeleteTemplate $request
-     * @param  \App\Models\QuoteTemplate\HpeContractTemplate  $hpeContractTemplate
+     * @param  DeleteHpeContractTemplate $request
+     * @param  \App\Models\Template\HpeContractTemplate  $hpeContractTemplate
      * @return \Illuminate\Http\JsonResponse
      */
-    public function destroy(DeleteTemplate $request, HpeContractTemplate $hpeContractTemplate)
+    public function destroy(DeleteHpeContractTemplate $request, HpeContractTemplate $hpeContractTemplate)
     {
         return response()->json(
             tap(

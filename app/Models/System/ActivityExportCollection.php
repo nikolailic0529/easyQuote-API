@@ -2,21 +2,21 @@
 
 namespace App\Models\System;
 
-use Arr;
+use Illuminate\Support\{Arr, Collection};
 
 class ActivityExportCollection
 {
     /**
      * Summary data.
      *
-     * @var array
+     * @var \Illuminate\Support\Collection
      */
     public $summary;
 
     /**
      * Activity data.
      *
-     * @var array
+     * @var \Illuminate\Support\Collection
      */
     public $collection;
 
@@ -36,16 +36,16 @@ class ActivityExportCollection
 
     public function __construct(iterable $summary, iterable $collection, int $limit, bool $isSpecifiedSubject = false)
     {
-        if (!collect($collection)->first() instanceof Activity) {
+        if (!Collection::wrap($collection)->first() instanceof Activity) {
             throw new \Exception('The 2 argument must contain the Activities');
         }
 
-        $this->summary = collect($summary);
+        $this->summary = Collection::wrap($summary);
         $this->collection = $this->prepareCollection($collection);
         $this->limit = $limit;
 
         if ($isSpecifiedSubject) {
-            $this->subjectName = $collection->first()->subject->item_name ?? null;
+            $this->subjectName = Collection::wrap($collection)->first()->subject->item_name ?? null;
         }
     }
 

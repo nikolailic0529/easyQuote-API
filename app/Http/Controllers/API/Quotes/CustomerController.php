@@ -59,7 +59,7 @@ class CustomerController extends Controller
 
         $quote = $quoteState->create(EqCustomerService::retrieveQuoteAttributes($customer));
 
-        return response()->json($quote, Response::HTTP_CREATED);
+        return response()->json($quote->load('customer:id,name,rfq'), Response::HTTP_CREATED);
     }
 
     /**

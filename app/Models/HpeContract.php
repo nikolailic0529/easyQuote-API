@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Casts\{HpeContactCast, HpeServicesCast};
-use App\Models\QuoteTemplate\HpeContractTemplate;
+use App\Models\Template\HpeContractTemplate;
 use App\Traits\{Uuid, Activatable, BelongsToCompany, BelongsToCountry, BelongsToUser, Completable, Submittable, Auth\Multitenantable};
 use Illuminate\Database\Eloquent\{Model, SoftDeletes, Relations\BelongsTo, Relations\HasMany};
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
@@ -11,6 +11,7 @@ use App\DTO\HpeContractContact;
 use App\Models\Quote\Contract;
 use App\Scopes\ContractTypeScope;
 use App\Traits\Activity\LogsActivity;
+use App\Traits\Search\Searchable;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
 
@@ -36,6 +37,7 @@ class HpeContract extends Model
         HasRelationships,
         LogsActivity,
         Activatable,
+        Searchable,
         Submittable;
 
     protected $fillable = [
@@ -137,13 +139,43 @@ class HpeContract extends Model
         return $this->hasMany(HpeContractData::class, 'hpe_contract_file_id', 'hpe_contract_file_id');
     }
 
-    public function contract(): HasOne
-    {
-        return $this->hasOne(Contract::class)->withoutGlobalScope(ContractTypeScope::class)->withDefault();
-    }
-
     public function getCompletenessDictionary()
     {
         return __('hpecontract.stages');
+    }
+
+    public function toSearchArray()
+    {
+        $this->loadMissing(
+            'company:id,name',
+            'user:id,first_name,last_name'
+        );
+
+        return [
+            'company_name'           => $this->company->name,
+            'contract_number'        => $this->contract_number,
+            'customer_name'          => $this->sold_contact->org_name,
+            'customer_rfq'           => $this->contract_number,
+            'customer_valid_until'   => null,
+            'customer_support_start' => null,
+            'customer_support_end'   => null,
+            'user_fullname'          => optional($this->user)->fullname,
+            'created_at'             => optional($this->created_at)->format(config('date.format')),
+        ];
+    }
+
+    public function getItemNameAttribute()
+    {
+        return "HPE Contract ({$this->contract_number})";
+    }
+
+    public function getSearchIndex()
+    {
+        return 'contracts';
+    }
+
+    public function getSearchType()
+    {
+        return 'contracts';
     }
 }

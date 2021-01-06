@@ -10,21 +10,21 @@ use App\Contracts\Repositories\{
 };
 use App\Contracts\{
     Services\QuoteState,
-    Services\QuoteServiceInterface as QuoteService,
+    Services\QuoteView as QuoteService,
 };
 use App\DTO\RowsGroup;
+use App\Enum\Lock;
 use App\Models\{
     Quote\Quote,
     Quote\BaseQuote,
     Quote\Discount as QuoteDiscount,
     QuoteFile\QuoteFile,
     QuoteFile\ImportableColumn,
-    QuoteTemplate\TemplateField,
+    Template\TemplateField,
     User
 };
 use App\Http\Requests\{
     Quote\StoreQuoteStateRequest,
-    MappingReviewRequest
 };
 use App\Http\Requests\Quote\TryDiscountsRequest;
 use App\Http\Resources\QuoteReviewResource;
@@ -39,10 +39,8 @@ use App\Repositories\Concerns\{
 };
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Query\Builder as QueryBuilder;
-use Illuminate\Database\Query\JoinClause;
-use DB, Arr, Str;
-use Closure;
+use Illuminate\Support\{Arr, Str, Facades\Cache, Facades\DB};
+use Throwable;
 
 class QuoteStateProcessor implements QuoteState
 {
@@ -90,8 +88,19 @@ class QuoteStateProcessor implements QuoteState
 
     public function storeState(StoreQuoteStateRequest $request)
     {
-        return DB::transaction(function () use ($request) {
-            $quote = $request->quote();
+        $lock = null;
+
+        $quote = $request->quote();
+
+        if ($quote->exists) {
+            $lock = Cache::lock(Lock::UPDATE_QUOTE($quote->getKey()), 10);
+        }
+
+        optional($lock)->block(30);
+
+        DB::beginTransaction();
+
+        try {
             $version = $this->createNewVersionIfNonCreator($quote);
 
             /**
@@ -103,14 +112,14 @@ class QuoteStateProcessor implements QuoteState
             $state = $request->validatedData();
             $quoteData = $request->validatedQuoteData();
 
-            $version->fill($quoteData)->markAsDrafted();
+            $version->fill($quoteData)->save();
 
             $this->draftOrSubmit($state, $quote);
 
             /**
              * We are attaching passed Files to Quote only when a new version has not been created.
              */
-            $quote->wasNotCreatedNewVersion && $this->storeQuoteFilesState($state, $version);
+            !$quote->wasCreatedNewVersion && $this->storeQuoteFilesState($state, $version);
 
             $this->detachScheduleIfRequested($state, $version);
             $this->attachColumnsToFields($state, $version);
@@ -121,16 +130,26 @@ class QuoteStateProcessor implements QuoteState
              * We are selecting imported rows only when a new version has not been created.
              * Rows will be selected when replicating the version.
              */
-            $quote->wasNotCreatedNewVersion && $this->markRowsAsSelectedOrUnSelected($state, $version);
+            !$quote->wasCreatedNewVersion && $this->markRowsAsSelectedOrUnSelected($state, $version);
 
             $this->setMargin($state, $version);
             $this->setDiscounts($state, $version);
 
+            DB::commit();
+
+            optional($lock)->release();
+
             /**
              * We are always returning original Quote Id regardless of the versions.
              */
-            return ['id' => $version->parent_id];
-        }, 3);
+            return ['id' => $quote->getKey()];
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            optional($lock)->release();
+
+            throw $e;
+        }
     }
 
     public function userQuery(): Builder
@@ -152,13 +171,15 @@ class QuoteStateProcessor implements QuoteState
         return $this->quote->whereId($id)->firstOrFail();
     }
 
-    public function findVersion($quote): BaseQuote
+    public function findVersion($model): BaseQuote
     {
-        if ($quote instanceof QuoteVersion) {
-            return $quote;
+        if ($model instanceof QuoteVersion) {
+            return $model;
         }
 
-        return $this->resolveModel($quote)->usingVersion;
+        $quote = $this->resolveModel($model);
+
+        return $quote->activeVersionOrCurrent;
     }
 
     public function create(array $attributes): Quote
@@ -169,52 +190,6 @@ class QuoteStateProcessor implements QuoteState
     public function make(array $array)
     {
         return $this->quote->make($array);
-    }
-
-    public function retrieveRows(BaseQuote $quote, $criteria = [])
-    {
-        $subQuery = $this->mappedRowsQuery($quote);
-        $query = DB::query()->fromSub($subQuery, 'mapped_rows');
-
-        $mapping = $quote->fieldsColumns;
-        $columns = $mapping->pluck('templateField.name');
-
-        $query->addSelect('id', 'replicated_row_id', 'is_selected', 'group_name', ...$columns);
-
-        /** Sorting by columns. */
-        $mapping->each(
-            fn ($map) =>
-            /** Except the price column to be able calculate price. */
-            $query->when($map->templateField->name !== 'price', fn (QueryBuilder $query) => $query->addSelect($map->templateField->name))
-                ->when(filled($map->sort), fn (QueryBuilder $query) => $query->orderBy($map->templateField->name, $map->sort))
-        );
-
-        /** An optional criteria for query. */
-        if ($criteria instanceof Closure) {
-            call_user_func($criteria, $query);
-        }
-
-        if (is_array($criteria)) {
-            $query->where($criteria);
-        }
-
-        return MappedRows::make($query->get());
-    }
-
-    public function calculateListPrice(BaseQuote $quote): float
-    {
-        return $this->mappedRowsQuery($quote)->sum('price');
-    }
-
-    public function calculateTotalPrice(BaseQuote $quote): float
-    {
-        return DB::query()->fromSub($this->mappedRowsQuery($quote), 'mapped_rows')
-            ->when(
-                $quote->groupsReady(),
-                fn (QueryBuilder $query) => $query->whereIn('id', $quote->groupedRows()),
-                fn (QueryBuilder $query) => $query->whereIsSelected(true)
-            )
-            ->sum('price');
     }
 
     public function discounts(string $id)
@@ -297,7 +272,7 @@ class QuoteStateProcessor implements QuoteState
         return QuoteReviewResource::make($quote->enableReview());
     }
 
-    public function setVersion(string $version_id, $quote): bool
+    public function setVersion(string $versionId, $quote): bool
     {
         if (is_string($quote)) {
             $quote = $this->find($quote);
@@ -307,33 +282,39 @@ class QuoteStateProcessor implements QuoteState
             return false;
         }
 
-        $oldVersion = $quote->usingVersion;
+        $lock = Cache::lock(Lock::UPDATE_QUOTE($quote->getKey()), 10);
 
-        if ($oldVersion->id === $version_id) {
-            return false;
-        }
+        return $lock->block(30, function () use ($quote, $versionId) {
+            $oldVersion = $quote->activeVersionOrCurrent;
 
-        $pass = DB::transaction(function () use ($quote, $version_id) {
-            $quote->versions()->where('version_id', '!=', $version_id)->update(['is_using' => false]);
-            return $quote->id === $version_id
-                || $quote->versions()->where('version_id', $version_id)->update(['is_using' => true]);
+            if ($oldVersion->getKey() === $versionId) {
+                return false;
+            }
+
+            if ($quote->getKey() === $versionId) {
+                $quote->activeVersion()->dissociate();
+            } else {
+                $quote->activeVersion()->associate($versionId);
+            }
+
+            $pass = $quote->save();
+
+            $newVersion = $quote->refresh()->activeVersionOrCurrent;
+
+            activity()
+                ->on($quote)
+                ->withAttribute(
+                    'using_version',
+                    $newVersion->versionName,
+                    $oldVersion->versionName
+                )
+                ->queueWhen('updated', $pass);
+
+            return $pass;
         });
-
-        $newVersion = $quote->load('usingVersion')->usingVersion;
-
-        activity()
-            ->on($quote)
-            ->withAttribute(
-                'using_version',
-                $newVersion->versionName,
-                $oldVersion->versionName
-            )
-            ->queueWhen('updated', $pass);
-
-        return $pass;
     }
 
-    public function createNewVersionIfNonCreator(Quote $quote): QuoteVersion
+    public function createNewVersionIfNonCreator(Quote $quote): BaseQuote
     {
         /**
          * Create replicated version from using version in the following case:
@@ -343,14 +324,17 @@ class QuoteStateProcessor implements QuoteState
          *
          * If an editing version (which is using version) belongs to editor, the system shouldn't create a new version and continue modify current version.
          */
-        if ($quote->exists && $quote->usingVersion->user_id !== auth()->id()) {
-            $replicatedVersion = $this->replicateVersion($quote, $quote->usingVersion);
+        if ($quote->exists && $quote->activeVersionOrCurrent->user_id !== auth()->id()) {
+            $replicatedVersion = $this->replicateVersion($quote, $quote->activeVersionOrCurrent, auth()->user());
 
-            $quote->attachNewVersion($replicatedVersion);
-            $quote->load('usingVersion');
+            $quote->activeVersion()->associate($replicatedVersion)->save();
+
+            $quote->wasCreatedNewVersion = true;
+
+            $quote->load('activeVersion');
         }
 
-        return $quote->usingVersion;
+        return $quote->activeVersionOrCurrent;
     }
 
     public function model(): string
@@ -358,31 +342,43 @@ class QuoteStateProcessor implements QuoteState
         return Quote::class;
     }
 
-    public function replicateDiscounts(string $sourceId, string $targetId): void
+    public function replicateDiscounts(BaseQuote $source, BaseQuote $target): void
     {
-        DB::table('quote_discount')->insertUsing(
-            ['quote_id', 'discount_id', 'duration'],
-            DB::table('quote_discount')->select(
-                DB::raw("'{$targetId}' as quote_id"),
+        $sourceTable = $source instanceof QuoteVersion ? 'quote_version_discount' : 'quote_discount';
+        $sourceForeignKeyName = $source instanceof QuoteVersion ? 'quote_version_id' : 'quote_id';
+
+        $targetTable = $target instanceof QuoteVersion ? 'quote_version_discount' : 'quote_discount';
+        $targetForeignKeyName = $target instanceof QuoteVersion ? 'quote_version_id' : 'quote_id';
+
+        DB::table($targetTable)->insertUsing(
+            [$targetForeignKeyName, 'discount_id', 'duration'],
+            DB::table($sourceTable)->select(
+                DB::raw("'{$target->getKey()}' as $targetForeignKeyName"),
                 'discount_id',
                 'duration'
             )
-                ->where('quote_id', $sourceId)
+                ->where($sourceForeignKeyName, $source->getKey())
         );
     }
 
-    public function replicateMapping(string $sourceId, string $targetId): void
+    public function replicateMapping(BaseQuote $source, BaseQuote $target): void
     {
-        DB::table('quote_field_column')->insertUsing(
-            ['quote_id', 'template_field_id', 'importable_column_id', 'is_default_enabled', 'sort'],
-            DB::table('quote_field_column')->select(
-                DB::raw("'{$targetId}' as quote_id"),
+        $sourceTable = $source instanceof QuoteVersion ? 'quote_version_field_column' : 'quote_field_column';
+        $sourceForeignKeyName = $source instanceof QuoteVersion ? 'quote_version_id' : 'quote_id';
+
+        $targetTable = $target instanceof QuoteVersion ? 'quote_version_field_column' : 'quote_field_column';
+        $targetForeignKeyName = $target instanceof QuoteVersion ? 'quote_version_id' : 'quote_id';
+
+        DB::table($targetTable)->insertUsing(
+            [$targetForeignKeyName, 'template_field_id', 'importable_column_id', 'is_default_enabled', 'sort'],
+            DB::table($sourceTable)->select(
+                DB::raw("'{$target->getKey()}' as $targetForeignKeyName"),
                 'template_field_id',
                 'importable_column_id',
                 'is_default_enabled',
                 'sort'
             )
-                ->where('quote_id', $sourceId)
+                ->where($sourceForeignKeyName, $source->getKey())
         );
     }
 
@@ -393,89 +389,6 @@ class QuoteStateProcessor implements QuoteState
         $access = implode(',', array_map('trim', $permissions));
 
         return implode('.', [$base, $access, $quote->id]);
-    }
-
-    protected function mappedRowsQuery(BaseQuote $quote): QueryBuilder
-    {
-        $query = DB::table('imported_rows')
-            ->join('quote_files', 'quote_files.id', '=', 'imported_rows.quote_file_id')
-            ->join('customers', fn (JoinClause $join) => $join->where('customers.id', $quote->customer_id))
-            ->whereNull('quote_files.deleted_at')
-            ->whereNull('imported_rows.deleted_at')
-            ->whereNotNull('imported_rows.columns_data')
-            ->where('quote_files.quote_id', $quote->id)
-            ->where('quote_files.file_type', QFT_PL)
-            ->whereColumn('imported_rows.page', '>=', 'quote_files.imported_page');
-
-        $mapping = $quote->fieldsColumns;
-
-        $exchangeRate = $quote->convertExchangeRate(1);
-
-        $customerAttributesMap = ['date_from' => 'customers.support_start', 'date_to' => 'customers.support_end'];
-
-        $query->select('imported_rows.id', 'imported_rows.replicated_row_id', 'imported_rows.is_selected', 'imported_rows.is_one_pay', 'imported_rows.group_name', 'imported_rows.columns_data', 'customers.support_start as customer_support_start', 'customers.support_end as customer_support_end');
-
-        $mapping->each(function ($map) use ($query, $customerAttributesMap) {
-            if (!$map->is_default_enabled) {
-                $this->unpivotJsonColumn($query, 'columns_data', "$.\"{$map->importable_column_id}\".value", $map->templateField->name);
-                return true;
-            }
-
-            switch ($map->templateField->name) {
-                case 'date_from':
-                case 'date_to':
-                    $defaultCustomerDate = optional($customerAttributesMap)[$map->templateField->name];
-                    $query->selectRaw("DATE_FORMAT({$defaultCustomerDate}, '%d/%m/%Y') as {$map->templateField->name}");
-                    break;
-                case 'qty':
-                    $query->selectRaw("1 as {$map->templateField->name}");
-                    break;
-            }
-        });
-
-        $query = DB::query()->fromSub($query, 'imported_rows')->addSelect('id', 'replicated_row_id', 'is_selected', 'is_one_pay', 'columns_data', 'group_name');
-
-        $defaults = collect(['price' => 0, 'date_from' => '`customer_support_start`', 'date_to' => '`customer_support_end`']);
-
-        $mapping->each(function ($map) use ($query, $defaults, $exchangeRate) {
-            if ($map->is_default_enabled) {
-                $query->addSelect($map->templateField->name);
-                return true;
-            }
-
-            switch ($map->templateField->name) {
-                case 'price':
-                    $query->selectRaw('CAST(ExtractDecimal(`price`) * ? AS DECIMAL(15,2)) as `price`', [$exchangeRate]);
-                    break;
-                case 'date_from':
-                case 'date_to':
-                    $this->parseColumnDate($query, $map->templateField->name, $defaults->get($map->templateField->name));
-                    break;
-                case 'qty':
-                    $query->selectRaw("GREATEST(CAST(`qty` AS UNSIGNED), 1) AS `qty`");
-                    break;
-                default:
-                    $query->addSelect($map->templateField->name);
-                    break;
-            }
-        });
-
-        /** Select default values when the related mapping doesn't exist. */
-        $defaults->each(
-            fn ($value, $column) =>
-            $query->unless($mapping->contains('templateField.name', $column), fn (QueryBuilder $query) => $query->selectRaw("{$value} AS `{$column}`"))
-        );
-
-        $query = DB::query()->fromSub($query, 'rows');
-
-        $columns = $mapping->pluck('templateField.name')->flip()->except('price')->flip();
-        $query->addSelect('id', 'replicated_row_id', 'is_selected', 'columns_data', 'group_name', ...$columns);
-
-        /** Calculating price based on date_from & date_to when related option is selected. */
-        $query->when($quote->calculate_list_price, fn (QueryBuilder $query) => $query->selectRaw("(CAST(IF(`is_one_pay`, `price`, `price` / 30 * GREATEST(DATEDIFF(STR_TO_DATE(`date_to`, '%d/%m/%Y'), STR_TO_DATE(`date_from`, '%d/%m/%Y')), 0)) AS DECIMAL(15,2))) as `price`"))
-            ->unless($quote->calculate_list_price, fn (QueryBuilder $query) => $query->addSelect('price'));
-
-        return $query;
     }
 
     protected function hideFields(Collection $state, BaseQuote $quote): void
@@ -493,8 +406,6 @@ class QuoteStateProcessor implements QuoteState
             $query->whereNotIn('name', $hidden);
         })
             ->update(['is_preview_visible' => true]);
-
-        $quote->forgetCachedComputableRows();
     }
 
     protected function sortFields(Collection $state, BaseQuote $quote): void
@@ -516,7 +427,6 @@ class QuoteStateProcessor implements QuoteState
                 ->update(['sort' => $direction]);
         });
 
-        $quote->forgetCachedComputableRows();
         $quote->forgetCachedMappingReview();
     }
 
@@ -531,44 +441,175 @@ class QuoteStateProcessor implements QuoteState
         $this->setDiscounts(collect(compact('discounts')), $quote);
     }
 
-    protected function replicateVersion(Quote $parent, QuoteVersion $version, ?User $user = null): BaseQuote
+    protected function transitQuoteToVersion(Quote $quote, ?User $user = null)
     {
-        return DB::transaction(function () use ($parent, $version, $user) {
-            $replicatedVersion = $version->replicate(['laravel_through_key']);
+        $attributes = $quote->getAttributes();
 
-            $versionNumber = $this->countVersionNumber($parent, $replicatedVersion);
-
-            $replicatedVersion->forceFill([
-                'is_version' => true,
-                'version_number' => $versionNumber
+        return (new QuoteVersion)
+            ->setRawAttributes([
+                'user_id'                => optional($user)->getKey(),
+                'quote_id'               => $quote->getKey(),
+                'customer_id'            => Arr::get($attributes, 'customer_id'),
+                'distributor_file_id'    => Arr::get($attributes, 'distributor_file_id'),
+                'schedule_file_id'       => Arr::get($attributes, 'schedule_file_id'),
+                'company_id'             => Arr::get($attributes, 'company_id'),
+                'vendor_id'              => Arr::get($attributes, 'vendor_id'),
+                'country_id'             => Arr::get($attributes, 'country_id'),
+                'quote_template_id'      => Arr::get($attributes, 'quote_template_id'),
+                'country_margin_id'      => Arr::get($attributes, 'country_margin_id'),
+                'source_currency_id'     => Arr::get($attributes, 'source_currency_id'),
+                'target_currency_id'     => Arr::get($attributes, 'target_currency_id'),
+                'completeness'           => Arr::get($attributes, 'completeness'),
+                'group_description'      => Arr::get($attributes, 'group_description'),
+                'sort_group_description' => Arr::get($attributes, 'sort_group_description'),
+                'custom_discount'        => Arr::get($attributes, 'custom_discount'),
+                'buy_price'              => Arr::get($attributes, 'buy_price'),
+                'exchange_rate_margin'   => Arr::get($attributes, 'exchange_rate_margin'),
+                'calculate_list_price'   => Arr::get($attributes, 'calculate_list_price'),
+                'use_groups'             => Arr::get($attributes, 'use_groups'),
+                // 'version_number'         => Arr::get($attributes, '____________'),
+                'pricing_document'       => Arr::get($attributes, 'pricing_document'),
+                'service_agreement_id'   => Arr::get($attributes, 'service_agreement_id'),
+                'system_handle'          => Arr::get($attributes, 'system_handle'),
+                'additional_details'     => Arr::get($attributes, 'additional_details'),
+                'additional_notes'       => Arr::get($attributes, 'additional_notes'),
+                'closing_date'           => Arr::get($attributes, 'closing_date'),
+                'previous_state'         => Arr::get($attributes, 'previous_state'),
+                'checkbox_status'        => Arr::get($attributes, 'checkbox_status'),
             ]);
+    }
+
+    protected function transitVersionToQuote(QuoteVersion $version, Quote $quote)
+    {
+        $versionAttributes = $version->getAttributes();
+        $quoteAttributes = $quote->getAttributes();
+
+        return (new Quote)
+            ->setRawAttributes([
+
+                // 'active_version_id'      => Arr::get($attributes, '___'),
+                'user_id'                => Arr::get($versionAttributes, 'user_id'),
+                'quote_template_id'      => Arr::get($versionAttributes, 'quote_template_id'),
+                'contract_template_id'   => Arr::get($quoteAttributes, 'contract_template_id'),
+                'company_id'             => Arr::get($versionAttributes, 'company_id'),
+                'vendor_id'              => Arr::get($versionAttributes, 'vendor_id'),
+                'country_id'             => Arr::get($versionAttributes, 'country_id'),
+                'customer_id'            => Arr::get($versionAttributes, 'customer_id'),
+                'schedule_file_id'       => Arr::get($versionAttributes, 'schedule_file_id'),
+                'distributor_file_id'    => Arr::get($versionAttributes, 'distributor_file_id'),
+                'previous_state'         => Arr::get($versionAttributes, 'previous_state'),
+                'country_margin_id'      => Arr::get($versionAttributes, 'country_margin_id'),
+                'completeness'           => Arr::get($versionAttributes, 'completeness'),
+                'pricing_document'       => Arr::get($versionAttributes, 'pricing_document'),
+                'service_agreement_id'   => Arr::get($versionAttributes, 'service_agreement_id'),
+                'system_handle'          => Arr::get($versionAttributes, 'system_handle'),
+                'additional_details'     => Arr::get($versionAttributes, 'additional_details'),
+                'checkbox_status'        => Arr::get($versionAttributes, 'checkbox_status'),
+                'closing_date'           => Arr::get($versionAttributes, 'closing_date'),
+                'additional_notes'       => Arr::get($versionAttributes, 'additional_notes'),
+                'calculate_list_price'   => Arr::get($versionAttributes, 'calculate_list_price'),
+                'buy_price'              => Arr::get($versionAttributes, 'buy_price'),
+                'exchange_rate_margin'   => Arr::get($versionAttributes, 'exchange_rate_margin'),
+                'custom_discount'        => Arr::get($versionAttributes, 'custom_discount'),
+                'group_description'      => Arr::get($versionAttributes, 'group_description'),
+                'use_groups'             => Arr::get($versionAttributes, 'use_groups'),
+                'sort_group_description' => Arr::get($versionAttributes, 'sort_group_description'),
+                'source_currency_id'     => Arr::get($versionAttributes, 'source_currency_id'),
+                'target_currency_id'     => Arr::get($versionAttributes, 'target_currency_id'),
+                'created_at'             => Arr::get($versionAttributes, 'created_at'),
+                'updated_at'             => Arr::get($quoteAttributes, 'updated_at'),
+                'deleted_at'             => Arr::get($quoteAttributes, 'deleted_at'),
+                'activated_at'           => Arr::get($quoteAttributes, 'activated_at'),
+                'submitted_at'           => Arr::get($quoteAttributes, 'submitted_at'),
+                'assets_migrated_at'     => Arr::get($quoteAttributes, 'assets_migrated_at'),
+            ]);
+    }
+
+    public function replicateQuote(Quote $quote): Quote
+    {
+        try {
+            $version = $quote->activeVersionOrCurrent;
+
+            $replicatedQuote = $version instanceof QuoteVersion
+                ? $this->transitVersionToQuote($version, $quote)
+                : $version->replicate(['is_active']);
+
+            // Deactivate the quote.
+            $quote->forceFill(['activated_at' => null])->save();
+
+            // Unravel the replicated quote.
+            $replicatedQuote->forceFill(['submitted_at' => null])->save();
+
+            $this->replicateDiscounts($version, $replicatedQuote);
+            $this->replicateMapping($version, $replicatedQuote);
+
+            if ($version->priceList->exists) {
+                $priceListFile = $this->quoteFileRepository->replicatePriceList($version->priceList);
+
+                $replicatedQuote->distributor_file_id = $priceListFile->getKey();
+            }
+
+            if ($version->paymentSchedule->exists) {
+                tap($version->paymentSchedule->replicate(), function ($schedule) use ($replicatedQuote, $version) {
+                    $schedule->save();
+                    $schedule->scheduleData()->save($version->paymentSchedule->scheduleData->replicate());
+                    $replicatedQuote->schedule_file_id = $schedule->getKey();
+                });
+            }
+
+            $replicatedQuote->save();
+
+            activity()
+                ->on($replicatedQuote)
+                ->withProperties(['old' => Quote::logChanges($version), 'attributes' => Quote::logChanges($replicatedQuote)])
+                ->by(request()->user())
+                ->queue('copied');
+
+            return $replicatedQuote;
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            throw $e;
+        }
+    }
+
+    protected function replicateVersion(Quote $parent, BaseQuote $version, ?User $user = null): BaseQuote
+    {
+        DB::beginTransaction();
+
+        try {
+            /** @var QuoteVersion */
+            $replicatedVersion = $version instanceof QuoteVersion
+                ? $version->replicate()
+                : $this->transitQuoteToVersion($version, $user);
 
             if (isset($user)) {
                 $replicatedVersion->user()->associate($user);
             }
 
+            $replicatedVersion->version_number = $this->countVersionNumber($parent, $replicatedVersion);
+
             $pass = $replicatedVersion->save();
 
             /** Discounts Replication. */
-            $this->replicateDiscounts($version->id, $replicatedVersion->id);
+            $this->replicateDiscounts($version, $replicatedVersion);
 
             /** Mapping Replication. */
-            $this->replicateMapping($version->id, $replicatedVersion->id);
+            $this->replicateMapping($version, $replicatedVersion);
 
-            $version->quoteFiles()->get()->each(function ($quoteFile) use ($replicatedVersion) {
-                switch ($quoteFile->file_type) {
-                    case QFT_PL:
-                        $this->quoteFileRepository->replicatePriceList($quoteFile, $replicatedVersion->id);
-                        break;
-                    case QFT_PS:
-                        tap($quoteFile->replicate(), function ($schedule) use ($replicatedVersion, $quoteFile) {
-                            $schedule->quote()->associate($replicatedVersion);
-                            $schedule->save();
-                            $schedule->scheduleData()->save($quoteFile->scheduleData->replicate());
-                        });
-                        break;
-                }
-            });
+            if ($version->priceList->exists) {
+                $priceListFile = $this->quoteFileRepository->replicatePriceList($version->priceList);
+
+                $replicatedVersion->distributor_file_id = $priceListFile->getKey();
+            }
+
+            if ($version->paymentSchedule->exists) {
+                tap($version->paymentSchedule->replicate(), function ($schedule) use ($replicatedVersion, $version) {
+                    $schedule->save();
+                    $schedule->scheduleData()->save($version->paymentSchedule->scheduleData->replicate());
+                    $replicatedVersion->schedule_file_id = $schedule->getKey();
+                });
+            }
 
             if ($version->group_description->isNotEmpty()) {
                 $rowsIds = $replicatedVersion->groupedRows();
@@ -581,9 +622,9 @@ class QuoteStateProcessor implements QuoteState
 
                     $group->rows_ids = $rowsIds->toArray();
                 });
-
-                $replicatedVersion->save();
             }
+
+            $pass = $replicatedVersion->save();
 
             if ($pass) {
                 activity()
@@ -592,8 +633,14 @@ class QuoteStateProcessor implements QuoteState
                     ->queue('created_version');
             }
 
+            DB::commit();
+
             return $replicatedVersion;
-        });
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            throw $e;
+        }
     }
 
     protected function setMargin(Collection $state, BaseQuote $quote): void
@@ -619,8 +666,8 @@ class QuoteStateProcessor implements QuoteState
         }
 
         $quote->countryMargin()->associate($countryMargin);
-        $quote->margin_data = array_merge($countryMargin->only('value', 'method', 'is_fixed'), ['type' => 'By Country']);
-        $quote->type = data_get($state, 'margin.quote_type');
+        // $quote->margin_data = array_merge($countryMargin->only('value', 'method', 'is_fixed'), ['type' => 'By Country']);
+        // $quote->type = data_get($state, 'margin.quote_type');
         $quote->save();
 
         /**
@@ -730,11 +777,6 @@ class QuoteStateProcessor implements QuoteState
          * Clear Cache Mapping Review Data when Selected Rows were changed.
          */
         $quote->forgetCachedMappingReview();
-
-        /**
-         * Clear Cache Computable Rows when Selected Rows were changed.
-         */
-        $quote->forgetCachedComputableRows();
     }
 
     protected function attachColumnsToFields(Collection $state, BaseQuote $quote): void
@@ -774,11 +816,6 @@ class QuoteStateProcessor implements QuoteState
          * Clear Cache Mapping Review Data when Mapping was changed.
          */
         $quote->forgetCachedMappingReview();
-
-        /**
-         * Clear Cache Computable Rows when Mapping was changed.
-         */
-        $quote->forgetCachedComputableRows();
     }
 
     protected function storeQuoteFilesState(Collection $state, BaseQuote $quote): void
@@ -787,22 +824,33 @@ class QuoteStateProcessor implements QuoteState
             return;
         }
 
-        $existingQuoteFiles = $quote->quoteFiles->pluck('id');
-        $stateFiles = $stateFiles->diff($existingQuoteFiles);
+        $distributorFileKey = $quote->getAttribute($quote->priceList()->getForeignKeyName());
+        $paymentScheduleFileKey = $quote->getAttribute($quote->paymentSchedule()->getForeignKeyName());
 
-        if (blank($stateFiles)) {
+        $stateQuoteFiles = QuoteFile::whereKey($stateFiles->all())->get()->keyBy('file_type');
+        $stateDistributorFile = $stateQuoteFiles->get(QFT_PL);
+        $statePaymentScheduleFile = $stateQuoteFiles->get(QFT_PS);
+
+        if (
+            $stateDistributorFile === $distributorFileKey
+            && $statePaymentScheduleFile === $paymentScheduleFileKey
+        ) {
             return;
         }
 
-        $oldQuoteFiles = $quote->quoteFiles;
+        $originalQuoteFiles = collect([$quote->priceList, $quote->paymentSchedule])->pluck('original_file_name')->filter()->implode(', ');
+        $newQuoteFiles = $stateQuoteFiles->pluck('original_file_name')->filter()->implode(', ');
+        
+        $quote->priceList()->associate($stateDistributorFile);
+        $quote->paymentSchedule()->associate($statePaymentScheduleFile);
+        $quote->save();
 
-        $this->quoteFile->whereIn('id', $stateFiles)->update(['quote_id' => $quote->id]);
-
-        $newQuoteFiles = $quote->load('quoteFiles')->quoteFiles;
+        $quote->setRelation('priceList', $stateDistributorFile);
+        $quote->setRelation('paymentSchedule', $statePaymentScheduleFile);
 
         activity()
             ->performedOn($quote)
-            ->withAttribute('quote_files', $newQuoteFiles->toString('original_file_name'), $oldQuoteFiles->toString('original_file_name'))
+            ->withAttribute('quote_files', $newQuoteFiles, $originalQuoteFiles)
             ->queue('updated');
     }
 
@@ -812,24 +860,29 @@ class QuoteStateProcessor implements QuoteState
             return;
         }
 
-        $quote->quoteFiles()->paymentSchedules()->delete();
+        $quote->paymentSchedule()->dissociate()->save();
     }
 
     protected function setComputableRows(BaseQuote $quote): void
     {
-        $quote->computableRows = $this->retrieveRows($quote, ['is_selected' => true]);
+        $rows = (new QuoteQueries)->mappedOrderedRowsQuery($quote)->where('is_selected', true)->get();
+        $rows = MappedRows::make($rows);
+
+        $quote->computableRows = $rows;
     }
 
     private function countVersionNumber(Quote $quote, QuoteVersion $version): int
     {
         $count = $quote->versions()->where('user_id', $version->user_id)->count();
 
+        logger([$count, $version->user_id]);
+
         /**
          * We are incrementing a new version on 2 point if parent author equals a new version author as we are not record original version to the pivot table.
          * Incrementing number equals 1 if there is a new version from non-author.
          */
         if ($quote->user_id === $version->user_id) {
-            $count += 1;
+            $count++;
         }
 
         return ++$count;

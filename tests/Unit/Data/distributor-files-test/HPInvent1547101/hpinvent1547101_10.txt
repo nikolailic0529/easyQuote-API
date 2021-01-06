@@ -1,0 +1,53 @@
+Service Agreement ID: 1086 6360          0626
+
+      Support Quotation                                                               System Handle: SPWBOU-FR03
+
+      Agreement No.                                                                   France
+
+      Your PO Reference:                                                              HPE Reference No.: 56943481
+
+       Product No.           Description                                         Serial No.              Coverage Period            Qty         Price/GBP
+
+                                                                                                         from:         to:
+
+                                                                                       Software Subtotal                                          72.76
+
+                                                                                       Discounts                                                  -13.70
+
+                                                                                       Total                                                      59.06
+
+                             HPE Software Updates SVC
+
+                                      License to Use & SW Updates
+
+                                      HPE Recommended SW Upd Method
+
+                                      HPE Recommended Doc Upd Method
+
+       P9U14A                VMw vSOM EntPlus 1P 3yr SW                         Y2DHAETH9EEA             01.02.2022                   1           36.38
+
+       P9U14A                VMw vSOM EntPlus 1P 3yr SW                         4HE6AETH946A                                          1           36.38
+
+                                                                                       Software Subtotal                                          72.76
+
+                                                                                       Discounts                                                  -13.70
+
+                                                                                       Total                                                      59.06
+
+       Discount Summary
+
+       Ch Mngd Con Hdr Dis% -18%                                                                                                                  26.20-
+
+       Pre Payment HdrDisc% -1%                                                                                                                    1.20-
+
+                                                                      Software Total                                                             145.52
+
+                                                                      Discount Total                                                              -27.40
+
+                                                                      Contract Total                                                             118.12
+
+      Single Payment for Duration.
+
+          Printed on: 24.11.2020                              Please Note: This is not an invoice, charges shown are exclusive of VAT           Page: 10 / 15
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

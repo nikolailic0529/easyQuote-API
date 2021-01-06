@@ -31,7 +31,7 @@ class GetQuoteTemplatesRequest extends FormRequest
             'company_id'        => ['required', 'string', 'uuid', Rule::exists('companies', 'id')->whereNull('deleted_at')],
             'vendor_id'         => ['nullable', 'string', 'uuid', Rule::exists('vendors', 'id')->whereNull('deleted_at')],
             'country_id'        => ['nullable', 'string', 'uuid', Rule::exists('countries', 'id')->whereNull('deleted_at')],
-            'quote_template_id' => ['nullable', 'string', 'uuid', Rule::exists('quote_templates', 'id')->whereNull('deleted_at')->where('type', QT_TYPE_QUOTE)],
+            'quote_template_id' => ['nullable', 'string', 'uuid', Rule::exists('quote_templates', 'id')->whereNull('deleted_at')],
             'type'              => ['nullable', 'string', Rule::in(QT_TYPES)]
         ];
     }

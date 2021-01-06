@@ -2,16 +2,18 @@
 
 namespace Tests\Unit\User;
 
-use App\Http\Middleware\PerformUserActivity;
 use Tests\TestCase;
+use Tests\Unit\Traits\WithFakeUser;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Tests\Unit\Traits\WithFakeUser;
 use Illuminate\Support\{Str, Arr};
 
+/**
+ * @group build
+ */
 class AuthTest extends TestCase
 {
-    use WithFakeUser;
+    use WithFakeUser, DatabaseTransactions;
 
     protected bool $dontAuthenticate = true;
 
@@ -81,6 +83,8 @@ class AuthTest extends TestCase
      */
     public function testAuthUserWithoutLocalIp()
     {
+        $this->markTestSkipped('Skipped since IP detection has been disabled');
+
         $user = factory(User::class)->create();
 
         $attributes = [
@@ -125,7 +129,7 @@ class AuthTest extends TestCase
      */
     public function testLogoutDueInactivity()
     {
-        $this->user->setLastActivityAt(now()->subHour());
+        $this->user->freshActivity(now()->subHour());
 
         $this->authenticate()->getJson(url('api/auth/user'))
             ->assertUnauthorized()

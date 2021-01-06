@@ -31,5 +31,14 @@
             "GB", "US", "BE", "CA", "DK", "FR", "NL", "SE", "DE", "AT", "IE", "NO", "ZA", "CH"
         ],
         "logo": "/database/seeds/models/images/cisco.png"
+    },
+    {
+        "name": "Aruba",
+        "short_code": "ARU",
+        "countries": [
+            "GB", "US", "BE", "CA", "DK", "FR", "NL", "SE", "DE", "AT", "IE", "NO", "ZA", "CH"
+        ],
+        "logo": "/database/seeds/models/images/aruba.png",
+        "svg_logo": "/database/seeds/models/images/aruba.svg"
     }
 ]

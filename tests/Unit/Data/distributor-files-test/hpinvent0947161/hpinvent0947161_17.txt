@@ -1,0 +1,93 @@
+Service Agreement ID: 1086 5485            2355
+
+      Support Quotation                                                                 System Handle: ANZ-GB05
+
+      Agreement No.                                                                     London
+
+      Your PO Reference:                                                                HPE Reference No.: 56972844
+
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
+
+                                                                                                            from:          to:
+
+                              HPE Collaborative Remote Support
+
+                                       Basic Software Phone Support
+
+                                       Collaborative Call Managemnt
+
+                                       24 Hours, Day 1-7 Phone Supp
+
+                                       Standard Response Time
+
+        641016-B21            HP BL460c Gen8 10/20Gb FLB CTO Blade                 CZJ336005H                                             1             3.00
+
+        641016-B21            HP BL460c Gen8 10/20Gb FLB CTO Blade                 CZJ336005K                                             1             3.00
+
+        641016-B21            HP BL460c Gen8 10/20Gb FLB CTO Blade                 CZJ336005M                                             1             3.00
+
+        641016-B21            HP BL460c Gen8 10/20Gb FLB CTO Blade                 CZJ3350DFV                                             1             3.00
+
+        641016-B21            HP BL460c Gen8 10/20Gb FLB CTO Blade                 CZJ24200QZ                                             1             3.00
+
+        727021-B21            HP BL460c Gen9 10Gb/20Gb FLB CTO Blade               CZ26210355                                             1             4.00
+
+        652063-B21            HP ML350pR08 SFF CTO Server                          CZ2451122Z                                             1             4.00
+
+                                                                                         Hardware Subtotal                                             23.00
+
+                                                                                         Discounts                                                     -5.22
+
+                                                                                         Total                                                         17.78
+
+        Discount Summary
+
+        Multi-Year Hdr Disc% -4%                                                                                                                      22.72-
+
+        Ch Mngd Con Hdr Dis% -18%                                                                                                                    102.24-
+
+        Pre Payment HdrDisc% -1%                                                                                                                       4.40-
+
+        *** Software ***
+
+                              HPE Software Technical Unlimited Support
+
+                                       SW Technical Support
+
+                                       SW Electronic Support
+
+                                       24 Hrs Std Office Days
+
+                                       24 Hrs Day 6
+
+                                       24 Hrs Day 7
+
+                                       Holidays Covered
+
+                                       Standard Response
+
+                                       Access to Adv Tech Specialists
+
+                                                                                         Software Subtotal                                              0.00
+
+                              HPE Software Updates SVC
+
+                                       License to Use & SW Updates
+
+                                       HPE Recommended SW Upd Method
+
+                                       HPE Recommended Doc Upd Method
+
+                                                                                         Software Subtotal                                              0.00
+
+                                                                        Hardware Total                                                               568.00
+
+                                                                        Discount Total                                                               -129.36
+
+                                                                        Contract Total                                                               438.64
+
+      The Prices shown will be invoiced yearly in advance.
+
+          Printed on: 04.12.2020                                Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT   Page: 17 / 35
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

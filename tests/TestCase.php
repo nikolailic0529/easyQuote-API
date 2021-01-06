@@ -3,15 +3,16 @@
 namespace Tests;
 
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Tests\Unit\Traits\{
     AssertsModelAttributes,
-    TruncatesDatabaseTables,
     WithClientCredentials,
     WithFakeQuote,
     WithFakeQuoteFile,
     WithFakeUser
 };
+use App\Models\User;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -25,10 +26,6 @@ abstract class TestCase extends BaseTestCase
     protected function setUpTraits()
     {
         $uses = parent::setUpTraits();
-
-        if (isset($uses[TruncatesDatabaseTables::class])) {
-            $this->truncateDatabaseTables();
-        }
 
         if (isset($uses[WithClientCredentials::class])) {
             $this->setUpClientCredentials();
@@ -58,7 +55,7 @@ abstract class TestCase extends BaseTestCase
      */
     protected function authenticateApi(?Authenticatable $user = null)
     {
-        $user ??= \App\Models\User::role(R_SUPER)->first();
+        $user ??= factory(User::class)->create();
 
         $this->withoutMiddleware(\App\Http\Middleware\PerformUserActivity::class);
         

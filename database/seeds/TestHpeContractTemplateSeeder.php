@@ -1,7 +1,7 @@
 <?php
 
 use App\Contracts\Repositories\CurrencyRepositoryInterface;
-use App\Models\QuoteTemplate\HpeContractTemplate;
+use App\Models\Template\HpeContractTemplate;
 use Illuminate\Database\Seeder;
 use App\Models\{Company, Vendor, Data\Country,};
 use App\Services\ThumbnailManager;

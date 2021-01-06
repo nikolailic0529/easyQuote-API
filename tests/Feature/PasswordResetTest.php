@@ -6,12 +6,16 @@ use Tests\TestCase;
 use Tests\Unit\Traits\WithFakeUser;
 use App\Models\User;
 use App\Notifications\PasswordResetRequest;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Notification;
 
+/**
+ * @group build
+ */
 class PasswordResetTest extends TestCase
 {
-    use WithFakeUser;
+    use WithFakeUser, DatabaseTransactions;
 
     /**
      * Test a new password request.

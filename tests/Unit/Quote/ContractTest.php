@@ -2,27 +2,27 @@
 
 namespace Tests\Unit\Quote;
 
-use App\DTO\RowsGroup;
-use App\Models\Quote\Contract;
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\{
     AssertsListing,
-    TruncatesDatabaseTables,
     WithFakeUser
 };
+use App\DTO\RowsGroup;
+use App\Models\Quote\Contract;
 use App\Models\Quote\Quote;
 use App\Models\QuoteFile\DataSelectSeparator;
-use App\Models\QuoteFile\ImportedRow;
 use App\Models\QuoteFile\QuoteFileFormat;
-use App\Models\QuoteTemplate\ContractTemplate;
-use App\Models\QuoteTemplate\QuoteTemplate;
+use App\Models\Template\ContractTemplate;
+use App\Models\Template\QuoteTemplate;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
-use App\Models\Role;
 
+/**
+ * @group build
+ */
 class ContractTest extends TestCase
 {
-    use WithFakeUser, AssertsListing;
+    use WithFakeUser, AssertsListing, DatabaseTransactions;
 
     protected static $assertableAttributes = [
         'id',
@@ -57,7 +57,6 @@ class ContractTest extends TestCase
         'use_groups',
         'sort_group_description',
         'has_group_description',
-        'is_version',
         'version_number',
         'hidden_fields',
         'sort_fields',
@@ -118,7 +117,7 @@ class ContractTest extends TestCase
         /** @var Quote */
         $quote = tap(factory(Quote::class)->create())->submit();
 
-        $quote->quoteFiles()->create([
+        $priceList = $quote->priceList()->create([
             'original_file_path' => Str::random(),
             'original_file_name' => Str::random(),
             'file_type' => 'Distributor Price List',
@@ -128,18 +127,15 @@ class ContractTest extends TestCase
             'imported_page' => 1
         ]);
 
-        /** @var \App\Models\QuoteFile\QuoteFile */
-        $priceList = $quote->quoteFiles->first();
+        $quote->priceList()->associate($priceList)->save();
 
         $priceList->rowsData()->createMany([
             [
                 'page' => 1,
-                'user_id' => auth()->id(),
                 'columns_data' => []
             ],
             [
                 'page' => 1,
-                'user_id' => auth()->id(),
                 'columns_data' => []
             ]
         ]);
@@ -333,10 +329,10 @@ class ContractTest extends TestCase
 
     protected function createFakeContract(): Contract
     {
-        /** @var \App\Models\QuoteTemplate\QuoteTemplate */
+        /** @var \App\Models\Template\QuoteTemplate */
         $quoteTemplate = factory(QuoteTemplate::class)->create();
 
-        /** @var \App\Models\QuoteTemplate\ContractTemplate */
+        /** @var \App\Models\Template\ContractTemplate */
         $contractTemplate = factory(ContractTemplate::class)->create();
 
         $attributes = ['contract_template_id' => $contractTemplate->getKey()];

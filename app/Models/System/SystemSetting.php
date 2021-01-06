@@ -35,10 +35,6 @@ class SystemSetting extends Model
         'is_read_only' => 'boolean'
     ];
 
-    protected $types = [
-        'string', 'integer', 'boolean', 'float', 'decimal', 'array', 'datetime'
-    ];
-
     protected $appends = [
         'label', 'field_title', 'field_type'
     ];

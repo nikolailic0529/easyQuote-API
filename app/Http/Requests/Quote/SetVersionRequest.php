@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Quote;
 
+use App\Rules\ValidQuoteVersionKey;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -15,12 +16,7 @@ class SetVersionRequest extends FormRequest
     public function rules()
     {
         return [
-            'version_id' => [
-                'required',
-                'string',
-                'uuid',
-                Rule::exists('quotes', 'id')->where(fn ($query) => $query->where('is_version', true)->orWhere('id', $this->quote->id))
-            ]
+            'version_id' => ['bail', 'required', 'uuid', (new ValidQuoteVersionKey($this->quote))],
         ];
     }
 }

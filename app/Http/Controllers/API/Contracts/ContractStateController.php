@@ -5,8 +5,10 @@ namespace App\Http\Controllers\API\Contracts;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Contracts\Services\ContractState;
-use App\Contracts\Services\QuoteServiceInterface as QuoteService;
+use App\Contracts\Services\ContractView;
+use App\Contracts\Services\QuoteView as QuoteService;
 use App\Http\Requests\Quote\StoreContractStateRequest;
+use App\Http\Resources\ContractReview;
 use App\Models\Quote\Contract;
 use App\Http\Resources\ContractVersionResource;
 use App\Http\Resources\QuoteReviewResource;
@@ -60,17 +62,17 @@ class ContractStateController extends Controller
      * Display the specified resource prepared for review.
      *
      * @param  \App\Models\Quote\Contract $contract
-     * @param  \App\Contracts\Services\QuoteServiceInterface $service
+     * @param  \App\Contracts\Services\ContractView $service
      * @return \Illuminate\Http\Response
      */
-    public function review(Contract $contract, QuoteService $service)
+    public function review(Contract $contract, ContractView $service)
     {
         $this->authorize('view', $contract);
 
-        $service->prepareQuoteReview($contract->usingVersion);
+        $service->prepareContractReview($contract);
 
         return response()->json(
-            QuoteReviewResource::make($contract->usingVersion->enableReview())
+            ContractReview::make($contract->enableReview())
         );
     }
 

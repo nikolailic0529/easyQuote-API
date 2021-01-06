@@ -7,15 +7,16 @@ use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface as 
 use Illuminate\Support\Collection;
 use Smalot\PdfParser\Parser as SmalotPdfParser;
 use Spatie\PdfToText\Pdf as SpatiePdfParser;
-use Illuminate\Support\LazyCollection;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
-use Storage;
+use Illuminate\Support\{
+    Arr,
+    Str,
+    LazyCollection,
+    Facades\Storage,
+};
 
 class PdfParser implements PdfParserInterface
 {
-    const CONTENT_OPTIONS = ['layout', 'eol unix', 'table'];
-
+    const CONTENT_OPTIONS = ['layout', 'eol unix', 'table', 'fixed 3.4'];
     const CONTENT_OPTIONS_FB = ['layout', 'eol unix'];
 
     const DT_FROM = 'date_from', DT_TO = 'date_to';
@@ -40,11 +41,9 @@ class PdfParser implements PdfParserInterface
         $this->spatiePdfParser = $spatiePdfParser;
     }
 
-    public function getText(string $path, bool $storage = true)
+    public function getText(string $filePath)
     {
-        $filePath = $storage ? Storage::path($path) : $path;
-
-        $count = $this->countPages($path, $storage);
+        $count = $this->countPages($filePath);
 
         $rawPages = collect()->times($count, function ($page) use ($filePath) {
             $content = $this->getPageContent($filePath, $page);
@@ -86,8 +85,10 @@ class PdfParser implements PdfParserInterface
 
             $attributes = $this->findPriceAttributes($content, $attributes);
 
-            if (blank($matches = $this->fetchPricePage($content, $page))) {
-                return compact('page', 'rows');
+            [$matches, $previousPageLineAttributes] = $this->parseDistributorFilePage($content, $page);
+
+            if (blank($matches)) {
+                return ['page' => $page, 'rows' => [], 'previous_page_line_attributes' => []];
             }
 
             static::cacheExactDatesMatches($matches);
@@ -99,11 +100,15 @@ class PdfParser implements PdfParserInterface
 
             $rows = $this->mapColumns($matches);
 
-            return compact('page', 'rows');
+            return ['page' => $page, 'rows' => $rows, 'previous_page_line_attributes' => $previousPageLineAttributes];
         });
 
-        $pages = collect($pages->all())
-            ->map(function ($page) {
+        $pages = $pages->all();
+
+        $pages = $this->mapMovedPageLineAttributes($pages);
+
+        $pages = collect($pages)
+            ->map(function (array $page) {
                 $rows = collect(static::setExactDatesMatches($page['rows']))
                     ->map(fn ($row) => Arr::set($row, PdfOptions::SYSTEM_HEADER_ONE_PAY, static::seekColumnsForOnePay($row)))
                     ->toArray();
@@ -115,17 +120,42 @@ class PdfParser implements PdfParserInterface
         return compact('pages', 'attributes');
     }
 
+    protected function mapMovedPageLineAttributes(array $pages): array
+    {
+        $mappedPages = [];
+
+        foreach ($pages as $key => $page) {
+            if (empty($page['previous_page_line_attributes']) || !isset($mappedPages[$key - 1]) || empty($mappedPages[$key - 1]['rows'])) {
+                $mappedPages[] = $page;
+
+                continue;
+            }
+            
+            $lastRowKey = last(array_keys($mappedPages[$key - 1]['rows']));
+
+            $mappedPages[$key - 1]['rows'][$lastRowKey] = array_map(function ($column) use (&$page) {
+                if (!is_null($column)) {
+                    return $column;
+                }
+                
+                return array_shift($page['previous_page_line_attributes']);
+            }, $mappedPages[$key - 1]['rows'][$lastRowKey]);
+
+            $mappedPages[] = $page;
+        }
+
+        return $mappedPages;
+    }
+
     public function parseSchedule(array $array)
     {
-        $filePath = $array['file_path'];
-
-        $content = Storage::get($filePath);
+        $content = $array['content'];
 
         $matches = $this->findPaymentDates($content) + ['payments' => $this->findTotalPayments($content)];
         $matches = $this->filterScheduleMatches($matches);
 
         if (!$matches->has(PdfOptions::SCHEDULE_MATCHES)) {
-            error_abort(QFNS_01, 'QFNS_01', 422);
+            return [];
         }
 
         $payments = $matches->get('payments', []);
@@ -143,10 +173,8 @@ class PdfParser implements PdfParserInterface
         return $schedule;
     }
 
-    public function countPages(string $path, bool $storage = true)
+    public function countPages(string $filePath)
     {
-        $filePath = $storage ? Storage::path($path) : $path;
-
         $document = $this->smalotPdfParser->parseFile($filePath);
 
         return count($document->getPages());
@@ -161,14 +189,51 @@ class PdfParser implements PdfParserInterface
         return static::$columnNames = $this->importableColumns->allNames();
     }
 
-    private function fetchPricePage(string $content, $page = null): array
+    private function parseDistributorFilePage(string $content, $page = null): array
     {
-        $matches = collect([PdfOptions::REGEXP_PRICE_LINES_01, PdfOptions::REGEXP_PRICE_LINES_02, PdfOptions::REGEXP_PRICE_LINES_03, PdfOptions::REGEXP_PRICE_LINES_04])
+        /** @var \Illuminate\Support\Collection<\Illuminate\Support\Collection> */
+        $matches = collect([
+            PdfOptions::REGEXP_PRICE_LINES_01,
+            PdfOptions::REGEXP_PRICE_LINES_02,
+            PdfOptions::REGEXP_PRICE_LINES_03,
+            PdfOptions::REGEXP_PRICE_LINES_04,
+            PdfOptions::REGEXP_PRICE_LINES_05,
+            PdfOptions::REGEXP_PRICE_LINES_06,
+            PdfOptions::REGEXP_PRICE_LINES_SP,
+        ])
             ->reduce(function (Collection $matches, $regexp) use ($content) {
                 preg_match_all($regexp, $content, $lines, PREG_UNMATCHED_AS_NULL, 0);
+
                 return $matches->mergeRecursive(Arr::only($lines, $this->getColumnNames()));
             }, collect());
 
+        $dropPaymentMatches = [];
+
+        foreach ($matches->get('description', []) as $key => $desc) {
+            if (preg_match('/(\d{2}\.\d{2}\.\d{4})|(^\h*\d+\.?\d*\h*$)/', $desc)) {
+                array_push($dropPaymentMatches, $key);
+            }
+        }
+
+        $matches->transform(function ($column) use ($dropPaymentMatches) {
+            foreach ($dropPaymentMatches as $key) {
+                unset($column[$key]);
+            }
+
+            return $column;
+        });
+
+        // There can be a case when a serial number is moved to the page from the previous page.
+        // We need to match the table header, and ensure if the first line does not have a product number.
+        $previousPageLineAttributes = with($content, function ($content) {
+            preg_match_all('/Product.+Description.+Serial.+Coverage.+Qty.+Price.+\s+from.+to.+\n+\h{20,}(.+)/im', $content, $matches);
+
+            if (empty($matches[1])) {
+                return [];
+            }
+
+            return preg_split('/\h{5,}/', $matches[1][0]);
+        });        
 
         /**
          * Sometimes PDF pages contain unexpected gaps inside the line decription column.
@@ -225,7 +290,7 @@ class PdfParser implements PdfParserInterface
         $searchable = array_fill(0, $count, $said);
         $matches->put('searchable', $searchable);
 
-        return $matches->toArray();
+        return [$matches->toArray(), $previousPageLineAttributes];
     }
 
     private function findPriceAttributes(string $content, array $attributes): array
@@ -295,10 +360,17 @@ class PdfParser implements PdfParserInterface
     {
         $rows = [];
 
-        foreach ($columns as $column => $values) {
-            foreach ($values as $key => $value) {
-                $rows[$key][$column] = $this->handleColumnValue($value);
+        // Count the lines by product_no column as it must be always present.
+        $linesCount = count(Arr::get($columns, 'product_no') ?? []);
+
+        for ($i = 0; $i < $linesCount; $i++) {
+            $row = [];
+
+            foreach (PdfOptions::PRICE_COLS as $column) {
+                $row[$column] = $this->handleColumnValue(Arr::get($columns, "$column.$i"));
             }
+
+            $rows[] = $row;
         }
 
         return $rows;

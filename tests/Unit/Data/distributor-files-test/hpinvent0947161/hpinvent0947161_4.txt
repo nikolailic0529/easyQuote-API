@@ -1,0 +1,97 @@
+Detail for Support Account ID: ANZ-MN
+
+                                                                                        Service Agreement ID: 1086 5485            2295
+
+              Support Quotation                                                         System Handle: ANZ-DE-02
+
+              Agreement No.                                                             Germany
+
+              Your PO Reference:                                                        HPE Reference No.: 56972840
+
+              Equipment Address:                                                        Software Update Address:
+
+              Australia & New Zealand Bank                                              Australia & New Zealand Bank
+
+              Frankfurt Branch                                                          Frankfurt Branch
+
+              Friedrich-Ebert-Anlage 35-37,                                             Friedrich-Ebert-Anlage 35-37,
+
+              D-60327 FRANKFURT/MAIN                                                    D-60327 FRANKFURT/MAIN
+
+              Hardware Contact:                                                         Software Contact:
+
+              Graham Wood                                                               Graham Wood
+
+              Tel:                                                                      Tel:
+
+              Fax:                                                                      Fax:
+
+              This quote is valid until 31.10.2020
+
+              Coverage from: 01.11.2020 to: 31.10.2023
+
+              To log a call please telephone our Customer Care           Reception    on: 0845 603 7571
+
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
+
+                                                                                                            from:          to:
+
+        H1K92AC               HPE Proactive Care 24x7 SVC
+
+        *** Environmental ***
+
+                              HPE COE for SAP HANA SVC
+
+                                                                                         Environmental Services Subtotal                                0.00
+
+        *** Hardware ***
+
+                              HPE Hardware Maintenance Onsite Support
+
+                                       Hardware Problem Diagnosis
+
+                                       Onsite Support
+
+                                       Parts and Material provided
+
+                                       4 Hr Onsite Response
+
+                                       24 Hrs Std Office Days
+
+                                       24 hrs, Day 6
+
+                                       24 hrs, Day 7
+
+                                       Holidays Covered
+
+                                       No Usage Limitation
+
+                                       Remote Delivery SVC Advanced
+
+                                       Access to Adv Tech Specialists
+
+        654081-B21            HP DL360p Gen8 8-SFF CTO Server                      CZJ3350VP5                                             1            95.13
+
+        654081-B21            HP DL360p Gen8 8-SFF CTO Server                      CZJ416000D                                             1            95.13
+
+        719064-B21            HPE DL380 Gen9 8SFF CTO Server                       CZJ6370JRC               01.10.2021                    1          145.32
+
+                                                                                         Hardware Subtotal                                           335.58
+
+                                                                                         Discounts                                                    -76.44
+
+                                                                                         Total                                                       259.14
+
+                              HPE Collaborative Remote Support
+
+                                       Basic Software Phone Support
+
+                                       Collaborative Call Managemnt
+
+                                       24 Hours, Day 1-7 Phone Supp
+
+      The Prices shown will be invoiced yearly in advance.
+
+          Printed on: 04.12.2020                                Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT    Page: 4 / 35
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

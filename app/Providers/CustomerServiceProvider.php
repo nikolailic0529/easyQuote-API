@@ -3,11 +3,11 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Contracts\Support\DeferrableProvider;
-use App\Contracts\Repositories\Customer\CustomerRepositoryInterface;
 use App\Contracts\Services\CustomerFlow;
 use App\Repositories\Customer\CustomerRepository;
+use Illuminate\Contracts\Support\DeferrableProvider;
 use App\Services\CustomerFlow as ServicesCustomerFlow;
+use App\Contracts\Repositories\Customer\CustomerRepositoryInterface;
 
 class CustomerServiceProvider extends ServiceProvider implements DeferrableProvider
 {
@@ -23,6 +23,7 @@ class CustomerServiceProvider extends ServiceProvider implements DeferrableProvi
         $this->app->singleton(CustomerFlow::class, ServicesCustomerFlow::class);
 
         $this->app->alias(CustomerRepositoryInterface::class, 'customer.repository');
+
     }
 
     public function provides()

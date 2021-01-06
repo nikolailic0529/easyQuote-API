@@ -2,37 +2,14 @@
 
 namespace App\Console\Commands;
 
-use App\Contracts\ReindexQuery;
-use Illuminate\Console\Command;
-use Elasticsearch\Client as ElasticsearchClient;
-use App\Models\{
-    Task,
-    Address,
-    Asset,
-    User,
-    Role,
-    Company,
-    Vendor,
-    Contact,
-    Quote\Quote,
-    Quote\Contract,
-    QuoteTemplate\QuoteTemplate,
-    QuoteTemplate\TemplateField,
-    Quote\Margin\CountryMargin,
-    Quote\Discount\MultiYearDiscount,
-    Quote\Discount\PrePayDiscount,
-    Quote\Discount\PromotionalDiscount,
-    Quote\Discount\SND,
-    Collaboration\Invitation,
-    System\Activity,
-    Data\Country,
-    QuoteFile\ImportableColumn,
-};
-use App\Models\QuoteTemplate\ContractTemplate;
-use App\Models\QuoteTemplate\HpeContractTemplate;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
-use Throwable;
+use Illuminate\Console\Command;
+use App\Contracts\ReindexQuery;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Elasticsearch\Client as ElasticsearchClient;
+use Elasticsearch\Common\Exceptions\NoNodesAvailableException;
+
 
 class ReindexCommand extends Command
 {
@@ -67,50 +44,35 @@ class ReindexCommand extends Command
      */
     public function handle(ElasticsearchClient $elasticsearch)
     {
-        /**
-         * Perform deleting on all indices
-         */
+        $start = now();
+
+        if (app()->runningUnitTests()) {
+            $this->info('Running testing environment. Reindexing is skipped.');
+
+            return 0;
+        }
+        
+        // Perform deleting on all indices.
         $this->info("Deleting all indexes...");
 
         try {
             $elasticsearch->indices()->delete(['index' => '_all']);
-        } catch (Throwable $exception) {
-            $this->error($exception->getMessage());
-            $this->error("Reindexing will be skipped.");
+        } catch (NoNodesAvailableException $e) {
+            $this->error($e->getMessage());
+            $this->error("Reindexing is skipped.");
 
-            return false;
+            return 2;
         }
 
-        $this->handleModels(
-            [
-                User::class,
-                Role::class,
-                Quote::class,
-                Contract::reindexQuery(),
-                QuoteTemplate::class,
-                ContractTemplate::class,
-                HpeContractTemplate::class,
-                TemplateField::class,
-                CountryMargin::class,
-                MultiYearDiscount::class,
-                PrePayDiscount::class,
-                PromotionalDiscount::class,
-                SND::class,
-                Company::class,
-                Vendor::class,
-                Invitation::class,
-                Activity::class,
-                Address::class,
-                Contact::class,
-                Country::class,
-                Asset::class,
-                ImportableColumn::regular(),
-            ]
-        );
+        $this->handleModels(config('elasticsearch.reindex_models'));
 
-        $this->info('Reindex has been successfully finished!');
+        $elapsedTime = now()->diffInMilliseconds($start);
+        $indiciesCount = $elasticsearch->count(['index' => '_all'])['count'] ?? 0;
 
-        return true;
+        $this->comment("<options=bold>Indicies:</>  <fg=green;options=bold>$indiciesCount</>");
+        $this->comment("<options=bold>Time:</>      $elapsedTime ms");
+
+        return 0;
     }
 
     private function handleModels(array $models)
@@ -118,42 +80,36 @@ class ReindexCommand extends Command
         /** @var ElasticsearchClient */
         $elasticsearch = app(ElasticsearchClient::class);
 
-        foreach ($models as &$model) {
+        foreach ($models as $model) {
             [$model, $query] = static::modelQuery($model);
-
-            $model->unsetEventDispatcher();
-            $model->setConnection(MYSQL_UNBUFFERED);
 
             $plural = Str::plural(class_basename($model));
 
             $this->comment("Indexing all {$plural}...");
 
-            $bar = $this->output->createProgressBar($query->count());
+            $this->output->progressStart($query->count());
 
-            $cursor = $query->cursor();
+            $query->chunk(1000, function (Collection $chunk) use ($elasticsearch) {
+                $params = ['body' => []];
 
-            /** Limited indexing for testing environment. */
-            if (app()->runningUnitTests()) {
-                $cursor = $cursor->take(10);
-            }
+                foreach ($chunk as $entry) {
+                    $params['body'][] = [
+                        'index' => [
+                            '_index' => $entry->getSearchIndex(),
+                            '_type' => $entry->getSearchType(),
+                            '_id' => $entry->getKey(),
+                        ]
+                    ];
 
-            rescue(
-                fn () =>
-                $cursor->each(function ($entry) use ($bar, $elasticsearch) {
-                    $elasticsearch->index([
-                        'id'    => $entry->getKey(),
-                        'index' => $entry->getSearchIndex(),
-                        'body'  => $entry->toSearchArray()
-                    ]);
+                    $params['body'][] = $entry->toSearchArray();
+                }
 
-                    $bar->advance();
-                }),
-                fn (Throwable $exception) => $this->error($exception->getMessage())
-            );
+                $elasticsearch->bulk($params);
 
-            $bar->finish();
+                $this->output->progressAdvance($chunk->count());
+            });
 
-            $this->info("\nDone!");
+            $this->output->progressFinish();
         }
     }
 

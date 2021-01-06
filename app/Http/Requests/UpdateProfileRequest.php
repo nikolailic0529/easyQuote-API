@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Company;
 use App\Models\Data\Country;
 use App\Models\Data\Timezone;
-use App\Models\QuoteTemplate\HpeContractTemplate;
+use App\Models\Template\HpeContractTemplate;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Traits\Request\PreparesNullValues;
 use Illuminate\Validation\Rule;
@@ -32,7 +32,7 @@ class UpdateProfileRequest extends FormRequest
             'country_id'                    => ['uuid', Rule::exists(Country::class, 'id')->whereNull('deleted_at')],
             
             'company_id'                    => ['nullable', 'uuid', Rule::exists(Company::class, 'id')->where('type', Company::INT_TYPE)->whereNull('deleted_at')],
-            'hpe_contract_template_id'      => ['nullable', 'uuid', Rule::exists(HpeContractTemplate::class, 'id')->where('type', QT_TYPE_HPE_CONTRACT)->whereNull('deleted_at')],
+            'hpe_contract_template_id'      => ['nullable', 'uuid', Rule::exists(HpeContractTemplate::class, 'id')->whereNull('deleted_at')],
 
             'picture'                       => 'image|max:2048',
             'delete_picture'                => 'nullable|boolean',

@@ -6,6 +6,7 @@ use App\Contracts\Repositories\{
     Quote\QuoteSubmittedRepositoryInterface as QuoteSubmittedRepository,
     Customer\CustomerRepositoryInterface as CustomerRepository
 };
+use App\Contracts\Services\QuoteView;
 use App\Events\RfqReceived;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\S4\StoreContractRequest;
@@ -31,12 +32,10 @@ class S4QuoteController extends Controller
      * @param  string  $rfq
      * @return \Illuminate\Http\Response
      */
-    public function show(string $rfq)
+    public function show(string $rfq, QuoteView $quoteViewService)
     {
-        $quote = $this->quote->rfq($rfq, true);
-
         return response()->json(
-            QuoteResource::make($quote)
+            QuoteResource::make($quoteViewService->requestForQuote($rfq, request('client_name', 'Service')))
         );
     }
 
@@ -72,9 +71,11 @@ class S4QuoteController extends Controller
      * @param string $rfq
      * @return \Illuminate\Http\Response
      */
-    public function pdf(string $rfq)
+    public function pdf(string $rfq, QuoteView $quoteViewService)
     {
-        return $this->quote->pdf($rfq);
+        $quote = $this->quote->findByRFQ($rfq);
+
+        return $quoteViewService->export($quote);
     }
 
     /**

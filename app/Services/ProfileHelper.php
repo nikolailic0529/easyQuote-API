@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\QuoteTemplate\HpeContractTemplate;
+use App\Models\Template\HpeContractTemplate;
 use App\Models\Role;
 use App\Models\User;
 use Closure;

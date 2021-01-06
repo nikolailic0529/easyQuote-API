@@ -4,24 +4,25 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Contracts\Support\DeferrableProvider;
-use App\Contracts\Repositories\Quote\Margin\MarginRepositoryInterface;
-use App\Contracts\Repositories\Quote\QuoteDraftedRepositoryInterface;
-use App\Contracts\Repositories\Quote\QuoteSubmittedRepositoryInterface;
-use App\Contracts\Repositories\QuoteFile\DataSelectSeparatorRepositoryInterface;
-use App\Contracts\Repositories\QuoteFile\FileFormatRepositoryInterface;
-use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface;
-use App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface;
-use App\Contracts\Services\QuoteServiceInterface;
+use App\Contracts\Services\QuoteView;
 use App\Contracts\Services\QuoteState;
-use App\Repositories\Quote\Margin\MarginRepository;
+use App\Services\QuoteViewService;
+use App\Services\QuoteStateProcessor;
 use App\Repositories\Quote\QuoteDraftedRepository;
 use App\Repositories\Quote\QuoteSubmittedRepository;
-use App\Repositories\QuoteFile\DataSelectSeparatorRepository;
+use App\Repositories\Quote\Margin\MarginRepository;
+use App\Repositories\QuoteFile\QuoteFileRepository;
 use App\Repositories\QuoteFile\FileFormatRepository;
 use App\Repositories\QuoteFile\ImportableColumnRepository;
-use App\Repositories\QuoteFile\QuoteFileRepository;
-use App\Services\QuoteService;
-use App\Services\QuoteStateProcessor;
+use App\Repositories\QuoteFile\DataSelectSeparatorRepository;
+use App\Contracts\Repositories\Quote\QuoteDraftedRepositoryInterface;
+use App\Contracts\Repositories\Quote\QuoteSubmittedRepositoryInterface;
+use App\Contracts\Repositories\Quote\Margin\MarginRepositoryInterface;
+use App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface;
+use App\Contracts\Repositories\QuoteFile\FileFormatRepositoryInterface;
+use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface;
+use App\Contracts\Repositories\QuoteFile\DataSelectSeparatorRepositoryInterface;
+use App\Services\QuoteQueries;
 
 class QuoteServiceProvider extends ServiceProvider implements DeferrableProvider
 {
@@ -44,13 +45,15 @@ class QuoteServiceProvider extends ServiceProvider implements DeferrableProvider
 
         $this->app->singleton(MarginRepositoryInterface::class, MarginRepository::class);
 
-        $this->app->singleton(QuoteServiceInterface::class, QuoteService::class);
+        $this->app->singleton(QuoteView::class, QuoteViewService::class);
 
         $this->app->singleton(QuoteDraftedRepositoryInterface::class, QuoteDraftedRepository::class);
 
         $this->app->singleton(QuoteSubmittedRepositoryInterface::class, QuoteSubmittedRepository::class);
 
-        $this->app->alias(QuoteServiceInterface::class, 'quote.service');
+        $this->app->singleton(QuoteQueries::class);
+
+        $this->app->alias(QuoteView::class, 'quote.service');
 
         $this->app->alias(QuoteState::class, 'quote.state');
 
@@ -75,7 +78,7 @@ class QuoteServiceProvider extends ServiceProvider implements DeferrableProvider
             'importablecolumn.repository',
             QuoteState::class,
             'quote.state',
-            QuoteServiceInterface::class,
+            QuoteView::class,
             'quote.service',
             DataSelectSeparatorRepositoryInterface::class,
             MarginRepositoryInterface::class,
@@ -83,6 +86,7 @@ class QuoteServiceProvider extends ServiceProvider implements DeferrableProvider
             QuoteDraftedRepositoryInterface::class,
             'quote.drafted.repository',
             QuoteSubmittedRepositoryInterface::class,
+            
         ];
     }
 }

@@ -2,16 +2,14 @@
 
 namespace App\Http\Controllers\API\Quotes;
 
+use App\Collections\MappedRows;
 use App\Http\Controllers\Controller;
 use App\Contracts\{
     Services\QuoteState,
     Repositories\Quote\Margin\MarginRepositoryInterface as MarginRepository,
     Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface as QuoteTemplateRepository,
-    Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository,
     Repositories\UserRepositoryInterface as Users,
-    Repositories\RoleRepositoryInterface as Roles,
 };
-use App\Contracts\Services\QuoteServiceInterface as QuoteService;
 use App\Http\Requests\{
     Quote\StoreQuoteStateRequest,
     GetQuoteTemplatesRequest,
@@ -22,7 +20,6 @@ use App\Http\Requests\{
 };
 use App\Http\Requests\Quote\{
     FirstStep,
-    GiveModulePermission,
     GivePermissionRequest,
     SelectGroupDescriptionRequest,
     SetVersionRequest,
@@ -34,7 +31,9 @@ use App\Http\Resources\{
     TemplateRepository\TemplateResourceListing,
 };
 use App\Models\Quote\Quote;
-use Setting;
+use App\Services\QuoteFileService;
+use App\Services\QuotePermissionRegistar;
+use App\Services\QuoteQueries;
 
 class QuoteController extends Controller
 {
@@ -42,19 +41,15 @@ class QuoteController extends Controller
 
     protected QuoteTemplateRepository $quoteTemplates;
 
-    protected QuoteFileRepository $quoteFiles;
-
     protected MarginRepository $margins;
 
     public function __construct(
         QuoteState $processor,
         QuoteTemplateRepository $quoteTemplates,
-        QuoteFileRepository $quoteFiles,
         MarginRepository $margins
     ) {
         $this->processor = $processor;
         $this->quoteTemplates = $quoteTemplates;
-        $this->quoteFiles = $quoteFiles;
         $this->margins = $margins;
     }
 
@@ -94,19 +89,22 @@ class QuoteController extends Controller
         return response()->json($request->data());
     }
 
-    public function step2(MappingReviewRequest $request)
+    public function step2(MappingReviewRequest $request, QuoteQueries $quoteQueries)
     {
         $this->authorize('view', $quote = $request->getQuote());
 
         if ($request->has('search')) {
             return response()->json(
-                $this->processor->searchRows($quote->usingVersion, $request->search, $request->group_id)
+                $quoteQueries->searchRowsQuery(
+                    $quote->activeVersionOrCurrent,
+                    $request->search,
+                    $request->group_id
+                )->get()
             );
         }
 
-        $rows = cache()->sear(
-            $quote->usingVersion->mappingReviewCacheKey,
-            fn () => $this->processor->retrieveRows($quote->usingVersion)
+        $rows = MappedRows::make(
+            $quoteQueries->mappedOrderedRowsQuery($quote->activeVersionOrCurrent)->get()
         );
 
         return response()->json(MappedRow::collection($rows));
@@ -123,7 +121,7 @@ class QuoteController extends Controller
         $this->authorize('view', $quote);
 
         return response()->json(
-            $this->processor->retrieveRowsGroups($quote->usingVersion)
+            $this->processor->retrieveRowsGroups($quote->activeVersionOrCurrent)
         );
     }
 
@@ -293,18 +291,11 @@ class QuoteController extends Controller
      * @param string $fileType
      * @return \Illuminate\Http\Response
      */
-    public function downloadQuoteFile(Quote $quote, string $fileType)
+    public function downloadQuoteFile(Quote $quote, string $fileType, QuoteFileService $service)
     {
         $this->authorize('downloadFile', [$quote, $fileType]);
 
-        $quoteFile = $this->quoteFiles->findByClause([
-            'quote_id' => $quote->usingVersion->id,
-            'file_type' => $this->quoteFiles->resolveFileType($fileType)
-        ]);
-
-        $filepath = $this->quoteFiles->resolveFilepath($quoteFile);
-
-        return response()->download($filepath, $quoteFile->original_file_name);
+        return $service->downloadQuoteFile($quote, $fileType);
     }
 
     /**
@@ -326,17 +317,6 @@ class QuoteController extends Controller
     }
 
     /**
-     * Give module permissions to specific roles.
-     *
-     * @param  GiveModulePermission $request
-     * @return \Illuminate\Http\Response
-     */
-    public function giveModulePermission(GiveModulePermission $request, Roles $roles)
-    {
-        // 
-    }
-
-    /**
      * Give read/update permission to specific quote resource.
      *
      * @param GivePermissionRequest $request
@@ -344,7 +324,7 @@ class QuoteController extends Controller
      * @param Users $users User repository
      * @return \Illuminate\Http\Response
      */
-    public function givePermissionToQuote(GivePermissionRequest $request, QuoteService $service, Quote $quote, Users $users)
+    public function givePermissionToQuote(GivePermissionRequest $request, QuotePermissionRegistar $permissionRegistar, Quote $quote, Users $users)
     {
         $this->authorize('grantPermission', $quote);
 
@@ -352,7 +332,7 @@ class QuoteController extends Controller
 
         $authorized = $users->syncUsersPermission($request->users, $permission);
 
-        $service->handleQuoteGrantedUsers($quote, $authorized);
+        $permissionRegistar->handleQuoteGrantedUsers($quote, $authorized);
 
         return response()->json(true);
     }

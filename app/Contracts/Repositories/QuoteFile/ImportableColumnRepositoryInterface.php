@@ -92,6 +92,16 @@ interface ImportableColumnRepositoryInterface
     public function findByName(string $name): ImportableColumn;
 
     /**
+     * Find an Importable Column having the exactly matching alias.
+     *
+     * @param string $alias
+     * @param array|null $excludeKeys
+     * @param array $columns
+     * @return \App\Models\QuoteFile\ImportableColumn|null
+     */
+    public function findByExactAlias(string $alias, ?array $excludeKeys = null, array $columns = ['*']);
+
+    /**
      * Retrieve the first Importable Column matching the attributes or create it.
      *
      * @param array $attributes
@@ -108,6 +118,16 @@ interface ImportableColumnRepositoryInterface
      * @return \App\Models\QuoteFile\ImportableColumn
      */
     public function create(array $attributes): ImportableColumn;
+
+    /**
+     * Create a new temporary Importable Column.
+     * Audit will be disabled.
+     *
+     * @param  string $header
+     * @param  array $aliases
+     * @return \App\Models\QuoteFile\ImportableColumn
+     */
+    public function createTemporaryColumn(string $header, array $aliases);
 
     /**
      * Update the specified Importable Column with the given attributes.

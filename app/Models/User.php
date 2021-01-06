@@ -11,7 +11,7 @@ use App\Models\{
     Role,
     Collaboration\Invitation
 };
-use App\Models\QuoteTemplate\HpeContractTemplate;
+use App\Models\Template\HpeContractTemplate;
 use App\Traits\{
     Activatable,
     HasCountry,

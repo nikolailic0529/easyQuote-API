@@ -3,15 +3,18 @@
 namespace Tests\Unit;
 
 use Tests\TestCase;
-use App\Models\Data\Country;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\WithFakeUser;
-use Arr;
+use App\Models\Data\Country;
+use Illuminate\Support\Arr;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 
+/**
+ * @group build
+ */
 class CountryTest extends TestCase
 {
-    use WithFakeUser;
+    use WithFakeUser, DatabaseTransactions;
 
     protected static $assertableAttributes = [
         'id', 'name', 'iso_3166_2', 'currency_name', 'currency_code', 'currency_symbol', 'default_currency'

@@ -14,7 +14,7 @@ use Intervention\Image\ImageManagerStatic as ImageIntervention;
 use App\Models\Image;
 use Illuminate\Support\{Arr, Collection, Str, Facades\Storage};
 use Illuminate\Database\Eloquent\Model;
-use File;
+use Illuminate\Support\Facades\File;
 
 class ThumbnailManager
 {
@@ -87,9 +87,7 @@ class ThumbnailManager
         }
 
         $withKeys = (bool) ($flags & static::WITH_KEYS);
-
         $absPath = (bool) ($flags & static::ABS_PATH);
-
         $preferSvg = (bool) ($flags & static::PREFER_SVG);
 
         $name = Str::snake(class_basename($classname));
@@ -99,7 +97,7 @@ class ThumbnailManager
 
         $filtered = $thumbnails
             ->when(
-                true === $preferSvg,
+                $preferSvg,
                 fn (Collection $thumbs) => static::filterCollectionKeysStartingWith($thumbs, 'svg'),
                 fn (Collection $thumbs) => $thumbs->only(array_keys($properties))
             )

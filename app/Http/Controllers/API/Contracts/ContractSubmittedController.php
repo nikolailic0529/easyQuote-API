@@ -4,8 +4,10 @@ namespace App\Http\Controllers\API\Contracts;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\Contract\ContractSubmittedRepositoryInterface as Contracts;
+use App\Contracts\Services\ContractState;
 use App\Http\Resources\Contract\SubmittedCollection;
 use App\Models\Quote\Contract;
+use Illuminate\Http\Request;
 
 class ContractSubmittedController extends Controller
 {
@@ -21,12 +23,13 @@ class ContractSubmittedController extends Controller
     /**
      * Display a listing of the Submitted Contracts.
      *
+     * @param  \Illuminate\Http\Request
      * @return \Illuminate\Http\Response
      */
-    public function index()
-    {       
+    public function index(Request $request)
+    {
         $resource = request()->filled('search')
-            ? $this->contracts->search(request('search'))
+            ? $this->contracts->search($request->query('search'))
             : $this->contracts->paginate();
 
         return response()->json(

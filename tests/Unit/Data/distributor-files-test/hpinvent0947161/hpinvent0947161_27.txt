@@ -1,0 +1,99 @@
+Service Agreement ID: 1086 5485 6896
+
+      Support Quotation                                                                 System Handle: ANZ-UK-02
+
+      Agreement No.                                                                     UK
+
+      Your PO Reference:                                                                HPE Reference No.: 56896735
+
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
+
+                                                                                                            from:          to:
+
+        867959-B21            HPE DL360 Gen10 8SFF CTO Server                      CZ201908Z8                                             1          124.00
+
+                                                                                         Hardware Subtotal                                          1,289.00
+
+                                                                                         Discounts                                                   -442.93
+
+                                                                                         Total                                                       846.07
+
+                                                                                         Subtotal During Warranty                                      73.00
+
+                                                                                         Discounts                                                    -25.08
+
+                                                                                         Total During Warranty                                         47.92
+
+                              HPE Collaborative Remote Support
+
+                                       Basic Software Phone Support
+
+                                       Collaborative Call Managemnt
+
+                                       24 Hours, Day 1-7 Phone Supp
+
+                                       Standard Response Time
+
+        681844-B21            HP BLc7000 CTO 3 IN LCD Plat Enclosure               CZJ45101MZ                                             1             2.00
+
+        508664-B21            HP BLc3000 4 AC-6 Fan Full ICE                       CZ2204023Z                                             1             2.00
+
+                              HP ZMOD HP IC Environment BL 8 LIC
+
+        727021-B21            HP BL460c Gen9 10Gb/20Gb FLB CTO Blade               CZ26210354                                             1             4.00
+
+        654081-B21            HP DL360p Gen8 8-SFF CTO Server                      CZJ43504CB                                             1             5.00
+
+        494329-B21            HP OEM DL380G6 CTO Server                            CZ2031B9S5                                             1             7.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ2638009H               01.10.2021                    1             4.00
+
+        719064-B21            HPE DL380 Gen9 8SFF CTO Server                       CZJ6370JRD               01.10.2021                    1             7.00
+
+        755258-B21            HP DL360 Gen9 8SFF CTO Server                        CZJ81303R8                                             1             5.00
+
+        867959-B21            HPE DL360 Gen10 8SFF CTO Server                      CZ201908Z8                                             1             7.00
+
+                                                                                         Hardware Subtotal                                             43.00
+
+                                                                                         Discounts                                                    -14.79
+
+                                                                                         Total                                                         28.21
+
+        Discount Summary
+
+        Multi-Year Hdr Disc% -4%                                                                                                                      56.20-
+
+        Ch Mngd Con Hdr Dis% -18%                                                                                                                    252.90-
+
+        Special Neg HdrDisc% -15%                                                                                                                    164.40-
+
+        Pre Payment HdrDisc% -1%                                                                                                                       9.30-
+
+        *** Software ***
+
+                              HPE Software Technical Unlimited Support
+
+                                       SW Technical Support
+
+                                       SW Electronic Support
+
+                                       24 Hrs Std Office Days
+
+                                       24 Hrs Day 6
+
+                                       24 Hrs Day 7
+
+                                       Holidays Covered
+
+                                       Standard Response
+
+                                       Access to Adv Tech Specialists
+
+        437787-B23            HP ZMOD HP IC Environment BL 8 LIC                   CZ2204023Z                             30.04.2021      1            30.00
+
+      The Prices shown will be invoiced yearly in advance.
+
+          Printed on: 04.12.2020                                Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT   Page: 27 / 35
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

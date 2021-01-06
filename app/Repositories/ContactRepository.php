@@ -67,7 +67,6 @@ class ContactRepository extends SearchableRepository implements ContactRepositor
     protected function filterQueryThrough(): array
     {
         return [
-            \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\Contact\OrderByEmail::class,
             \App\Http\Query\Contact\OrderByFirstName::class,
@@ -75,7 +74,8 @@ class ContactRepository extends SearchableRepository implements ContactRepositor
             \App\Http\Query\Contact\OrderByIsVerified::class,
             \App\Http\Query\Contact\OrderByJobTitle::class,
             \App\Http\Query\Contact\OrderByMobile::class,
-            \App\Http\Query\Contact\OrderByPhone::class
+            \App\Http\Query\Contact\OrderByPhone::class,
+            \App\Http\Query\DefaultOrderBy::class,
         ];
     }
 

@@ -8,10 +8,9 @@ use App\Models\Task;
 use Illuminate\Database\Eloquent\{
     Builder,
     Model,
-    Collection as DbCollection,
-    Relations\MorphToMany,
+    Collection as DbCollection
 };
-use Arr, DB;
+use Illuminate\Support\{Arr, Facades\DB};
 use Carbon\Carbon;
 use Closure;
 
@@ -115,8 +114,8 @@ class TaskRepository implements TaskRepositoryInterface
     protected function filterQueryThrough(): array
     {
         return [
-            \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class,
+            \App\Http\Query\DefaultOrderBy::class,
         ];
     }
 }

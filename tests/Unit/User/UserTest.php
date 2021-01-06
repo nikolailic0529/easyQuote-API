@@ -2,19 +2,21 @@
 
 namespace Tests\Unit\User;
 
-use App\Models\User;
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\{
     WithFakeUser,
-    AssertsListing,
-    TruncatesDatabaseTables
+    AssertsListing
 };
-use Str;
+use App\Models\User;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Str;
 
+/**
+ * @group build
+ */
 class UserTest extends TestCase
 {
-    use WithFakeUser, AssertsListing, TruncatesDatabaseTables;
+    use WithFakeUser, AssertsListing, DatabaseTransactions;
 
     protected $truncatableTables = ['users'];
 

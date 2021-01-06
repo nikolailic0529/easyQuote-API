@@ -15,16 +15,19 @@ use Tests\Unit\Traits\{
     WithFakeUser,
 };
 use App\Models\Task;
-use App\Notifications\Task\TaskAssigned as AssignedNotification;
 use App\Notifications\Task\TaskRevoked as RevokedNotification;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\{
     Facades\Event,
     Facades\Notification,
 };
 
+/**
+ * @group build
+ */
 class QuoteTaskTest extends TestCase
 {
-    use AssertsListing, WithFakeUser, WithFakeQuote;
+    use AssertsListing, WithFakeUser, WithFakeQuote, DatabaseTransactions;
 
     /**
      * Test quote tasks listing.
@@ -33,7 +36,9 @@ class QuoteTaskTest extends TestCase
      */
     public function testQuoteTaskListing()
     {
-        $response = $this->getJson(url('api/quotes/tasks/' . $this->quote->getKey()));
+        $quote = $this->createQuote($this->user);
+
+        $response = $this->getJson(url('api/quotes/tasks/' . $quote->getKey()));
 
         $this->assertListing($response);
     }
@@ -45,13 +50,14 @@ class QuoteTaskTest extends TestCase
      */
     public function testQuoteTaskCreating()
     {
+        $quote = $this->createQuote($this->user);
         Event::fake(TaskCreated::class);
 
         Event::hasListeners(TaskEventSubscriber::class);
 
         $attributes = factory(Task::class)->state('users')->raw();
 
-        $response = $this->postJson(url('api/quotes/tasks/' . $this->quote->id), $attributes)
+        $response = $this->postJson(url('api/quotes/tasks/' . $quote->id), $attributes)
             ->assertCreated()
             ->assertJsonStructure(['id', 'name', 'content', 'taskable_id', 'user_id']);
 
@@ -67,9 +73,10 @@ class QuoteTaskTest extends TestCase
      */
     public function testQuoteTaskCreatingWithoutUsers()
     {
+        $quote = $this->createQuote($this->user);
         $attributes = factory(Task::class)->raw();
 
-        $this->postJson(url('api/quotes/tasks/' . $this->quote->id), $attributes)
+        $this->postJson(url('api/quotes/tasks/' . $quote->id), $attributes)
             ->assertCreated()
             ->assertJsonStructure(['id', 'name', 'content', 'taskable_id', 'user_id']);
     }
@@ -81,18 +88,19 @@ class QuoteTaskTest extends TestCase
      */
     public function testQuoteTaskUpdating()
     {
+        $quote = $this->createQuote($this->user);
         Event::fake(TaskUpdated::class);
 
         Event::hasListeners(TaskEventSubscriber::class);
 
         $task = factory(Task::class)->create([
-            'taskable_id' => $this->quote->id,
-            'taskable_type' => $this->quote->getMorphClass()
+            'taskable_id' => $quote->id,
+            'taskable_type' => $quote->getMorphClass()
         ]);
 
         $attributes = factory(Task::class)->state('users')->raw();
 
-        $this->patchJson(url('api/quotes/tasks/' . $this->quote->id . '/' . $task->id), $attributes)
+        $this->patchJson(url('api/quotes/tasks/' . $quote->id . '/' . $task->id), $attributes)
             ->assertOk()
             ->assertJsonStructure(['id', 'name', 'content', 'taskable_id', 'user_id'])
             ->assertJsonFragment(['content' => $attributes['content']]);
@@ -107,11 +115,12 @@ class QuoteTaskTest extends TestCase
      */
     public function testQuoteTaskRevokeUsers()
     {
+        $quote = $this->createQuote($this->user);
         Notification::fake();
 
         $task = factory(Task::class)->create([
-            'taskable_id' => $this->quote->id,
-            'taskable_type' => $this->quote->getMorphClass()
+            'taskable_id' => $quote->id,
+            'taskable_type' => $quote->getMorphClass()
         ]);
 
         $usersCount = $task->users->count();
@@ -120,7 +129,7 @@ class QuoteTaskTest extends TestCase
 
         $attributes = factory(Task::class)->raw();
 
-        $this->patchJson(url('api/quotes/tasks/' . $this->quote->id . '/' . $task->id), $attributes)
+        $this->patchJson(url('api/quotes/tasks/' . $quote->id . '/' . $task->id), $attributes)
             ->assertOk()
             ->assertJsonStructure(['id', 'name', 'content', 'taskable_id', 'user_id'])
             ->assertJsonFragment(['content' => $attributes['content']]);
@@ -137,16 +146,17 @@ class QuoteTaskTest extends TestCase
      */
     public function testQuoteTaskDeleting()
     {
+        $quote = $this->createQuote($this->user);
         Event::fake(TaskDeleted::class);
 
         Event::hasListeners(TaskEventSubscriber::class);
 
         $task = factory(Task::class)->create([
-            'taskable_id' => $this->quote->id,
-            'taskable_type' => $this->quote->getMorphClass()
+            'taskable_id' => $quote->id,
+            'taskable_type' => $quote->getMorphClass()
         ]);
 
-        $this->deleteJson(url('api/quotes/tasks/' . $this->quote->id . '/' . $task->id))
+        $this->deleteJson(url('api/quotes/tasks/' . $quote->id . '/' . $task->id))
             ->assertOk()
             ->assertExactJson([true]);
 

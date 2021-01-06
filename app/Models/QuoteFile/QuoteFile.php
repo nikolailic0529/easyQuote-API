@@ -7,10 +7,10 @@ use App\Models\{
     QuoteFile\ImportedRow,
     QuoteFile\DataSelectSeparator
 };
+use App\Models\Quote\Quote;
 use App\Traits\{
     Auth\Multitenantable,
     BelongsToUser,
-    BelongsToQuote,
     HasFileFormat,
     Draftable,
     Handleable,
@@ -20,7 +20,6 @@ use App\Traits\{
     Misc\GeneratesException,
     Uuid
 };
-use App\Contracts\HasOrderedScope;
 use Illuminate\Database\Eloquent\{
     Model,
     Builder,
@@ -29,18 +28,21 @@ use Illuminate\Database\Eloquent\{
     Relations\HasMany,
 };
 
-class QuoteFile extends Model implements HasOrderedScope
+/**
+ * @property string $original_file_path
+ * @property string $original_file_name
+ * @property int $imported_page
+ */
+class QuoteFile extends Model
 {
     use Uuid,
         Multitenantable,
         Automappable,
         HasScheduleData,
-        BelongsToQuote,
         BelongsToUser,
         HasFileFormat,
         HasMetaAttributes,
         Handleable,
-        Draftable,
         GeneratesException,
         SoftDeletes;
 
@@ -51,14 +53,8 @@ class QuoteFile extends Model implements HasOrderedScope
         'pages',
         'quote_file_format_id',
         'data_select_separator_id',
-        'quote_id',
         'imported_page'
     ];
-
-    public function scopeOrdered($query)
-    {
-        return $query->orderByDesc('created_at');
-    }
 
     public function rowsData(): HasMany
     {

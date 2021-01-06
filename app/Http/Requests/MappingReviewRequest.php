@@ -33,7 +33,7 @@ class MappingReviewRequest extends FormRequest
         ];
     }
 
-    public function getQuote()
+    public function getQuote(): Quote
     {
         if (isset($this->quote)) {
             return $this->quote;

@@ -5,12 +5,18 @@ namespace Tests\Unit\User;
 use App\Console\Commands\Routine\Notifications\PasswordExpiration;
 use App\Models\User;
 use App\Notifications\PasswordExpiration as PwdExpiredNotification;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
+/**
+ * @group build
+ */
 class UserServiceTest extends TestCase
 {
+    use DatabaseTransactions;
+    
     /**
      * Test user password expiry notification.
      *

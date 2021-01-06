@@ -5,13 +5,10 @@ namespace App\Traits\CachesRelations;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\CachedRelation\{
     CachedRelationWrapper,
-    CachedRelation
 };
-use App\Models\Customer\Customer;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 
 trait CachesRelations
 {
@@ -91,13 +88,16 @@ trait CachesRelations
 
     protected function fillCachedRelations(Collection $cachedRelations, bool $save = false): void
     {
-        $this->withoutEvents(function () use ($cachedRelations, $save) {
-            $this->forceFill([
-                'cached_relations' => $cachedRelations
-            ]);
+        $this->forceFill([
+            'cached_relations' => $cachedRelations
+        ]);
 
-            $save && $this->save();
-        });
+        if ($save) {
+            $this->setKeysForSaveQuery($this->newModelQuery())->toBase()
+                ->update(['cached_relations' => $cachedRelations->toJson()]);
+
+            $this->syncOriginalAttribute('cached_relations');
+        }
     }
 
     protected function getRelationsCache(): Collection

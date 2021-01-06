@@ -3,7 +3,7 @@
 namespace App\Repositories\System;
 
 use App\Contracts\Repositories\System\ClientCredentialsInterface;
-use Arr;
+use Illuminate\Support\Arr;
 
 class ClientCredentialsRepository implements ClientCredentialsInterface
 {

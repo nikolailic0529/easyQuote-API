@@ -1,0 +1,99 @@
+Detail for Support Account ID: ANZ-MN
+
+                                                                                        Service Agreement ID: 1086 5485 2355
+
+              Support Quotation                                                         System Handle: ANZ-GB05
+
+              Agreement No.                                                             London
+
+              Your PO Reference:                                                        HPE Reference No.: 56896733
+
+              Equipment Address:                                                        Software Update Address:
+
+              SunGard Availability Services (UK)                                        SunGard Availability Services (UK)
+
+               Hounslow                                                                  Hounslow
+
+              Unit B Heathrow Corporate Park Gree                                       Unit B Heathrow Corporate Park Gree
+
+               Middlesex                                                                 Middlesex
+
+              TW4 6ER                                                                   TW4 6ER
+
+              Hardware Contact:                                                         Software Contact:
+
+              David Cooke                                                               David Cooke
+
+              Tel: 020 3229 2300                                                        Tel: 020 3229 2300
+
+              Fax:                                                                      Fax:
+
+              This quote is valid until 31.10.2020
+
+              Coverage from: 01.11.2020 to: 31.10.2023
+
+              To log a call please telephone our Customer Care           Reception    on: 0845 603 7571
+
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
+
+                                                                                                            from:          to:
+
+        H1K93AC               HPE Proactive Care 24x7 wDMR SVC
+
+        *** Hardware ***
+
+                              HPE Hardware Maintenance Onsite Support
+
+                                       Hardware Problem Diagnosis
+
+                                       Onsite Support
+
+                                       Parts and Material provided
+
+                                       4 Hr Onsite Response
+
+                                       24 Hrs Std Office Days
+
+                                       24 hrs, Day 6
+
+                                       24 hrs, Day 7
+
+                                       Holidays Covered
+
+                                       Defective Media Retention
+
+                                       No Usage Limitation
+
+                                       Remote Delivery SVC Advanced
+
+                                       Access to Adv Tech Specialists
+
+        681842-B21            HP BLc7000 1PH 6PS 10Fan 16 IC Encl                  CZ3336MSWY                                             1          174.00
+
+                              HP ZMOD IC Environment CTO Nm BL 16 Lic
+
+        681842-B21            HP BLc7000 1PH 6PS 10Fan 16 IC Encl                  CZ3335M7DR                                             1          174.00
+
+                              HP ZMOD IC Environment CTO Nm BL 16 Lic
+
+        508664-B21            HP BLc3000 4 AC-6 Fan Full ICE                       CZ220708DH                                             1          149.00
+
+                              HP ZMOD HP IC Environment BL 8 LIC
+
+        863442-B21            HPE BL460c Gen10 10Gb/20Gb FLB CTO Blade             CZ2850092V                             15.01.2022      1            45.00
+
+                              HW Support During Warranty
+
+        863442-B21            HPE BL460c Gen10 10Gb/20Gb FLB CTO Blade             CZ2850092V               16.01.2022                    1            77.00
+
+        863442-B21            HPE BL460c Gen10 10Gb/20Gb FLB CTO Blade             CZ2850092Z                             15.01.2022      1            45.00
+
+                              HW Support During Warranty
+
+        863442-B21            HPE BL460c Gen10 10Gb/20Gb FLB CTO Blade             CZ2850092Z               16.01.2022                    1            77.00
+
+      The Prices shown will be invoiced yearly in advance.
+
+          Printed on: 04.12.2020                                Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT    Page: 8 / 35
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

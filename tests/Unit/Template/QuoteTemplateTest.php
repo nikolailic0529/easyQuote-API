@@ -2,19 +2,22 @@
 
 namespace Tests\Unit\Template;
 
-use App\Models\QuoteTemplate\QuoteTemplate;
-use Illuminate\Database\Eloquent\Builder;
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\{
     WithFakeUser,
     AssertsListing
 };
-use Str, Arr;
+use App\Models\Template\QuoteTemplate;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\{Str, Arr};
 
+/**
+ * @group build
+ */
 class QuoteTemplateTest extends TestCase
 {
-    use WithFakeUser, AssertsListing;
+    use WithFakeUser, AssertsListing, DatabaseTransactions;
 
     protected static $assertableAttributes = ['name', 'company_id', 'vendor_id', 'currency_id', 'form_data'];
 

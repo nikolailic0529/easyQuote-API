@@ -45,10 +45,6 @@ trait HasGroupDescriptionAttribute
     {
         $value = (bool) $value;
 
-        if ((bool) $this->use_groups !== $value) {
-            $this->forgetCachedComputableRows();
-        }
-
         $this->attributes['use_groups'] = $value;
     }
 

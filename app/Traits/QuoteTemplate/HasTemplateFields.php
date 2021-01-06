@@ -2,7 +2,7 @@
 
 namespace App\Traits\QuoteTemplate;
 
-use App\Models\QuoteTemplate\TemplateField;
+use App\Models\Template\TemplateField;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 trait HasTemplateFields

@@ -1,7 +1,7 @@
 <?php namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Setting;
+use App\Facades\Setting;
 
 class StoreQuoteFileRequest extends FormRequest
 {

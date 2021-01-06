@@ -1,0 +1,63 @@
+Service Agreement ID: 1086 6358          5045
+
+      Support Quotation                                                               System Handle: SPWBOU-FR
+
+      Agreement No.                                                                   France
+
+      Your PO Reference:                                                              HPE Reference No.: 56943475
+
+       Product No.           Description                                         Serial No.              Coverage Period            Qty         Price/GBP
+
+                                                                                                         from:         to:
+
+       G3J31A                RHEL Svr 2 Sckt/2 Gst 3yr 9x5 LTU                  PR23LLQLZY               17.01.2021                   1           20.67
+
+       G3J31A                RHEL Svr 2 Sckt/2 Gst 3yr 9x5 LTU                  PR29P982EJ               17.01.2021                   1           20.67
+
+       G3J31A                RHEL Svr 2 Sckt/2 Gst 3yr 9x5 LTU                  PR8W20J9Z4               17.01.2021                   1           20.67
+
+       G5J65A                RHEL Svr 2 Sckt 4 Gst 3yr 9x5 LTU                  PRW73FBMNA               05.01.2021                   1           30.60
+
+       G5J65A                RHEL Svr 2 Sckt 4 Gst 3yr 9x5 LTU                  PRTJW9P03E               01.02.2021                   1           30.60
+
+       G5J65A                RHEL Svr 2 Sckt 4 Gst 3yr 9x5 LTU                  PRRS9M9CPA               05.01.2021                   1           30.60
+
+       G5J65A                RHEL Svr 2 Sckt 4 Gst 3yr 9x5 LTU                  PR97NK7HVU               05.01.2021                   1           30.60
+
+       G3J31A                RHEL Svr 2 Sckt/2 Gst 3yr 9x5 LTU                  PR4MPYW6EX               01.11.2021                   1           20.67
+
+       G3J31A                RHEL Svr 2 Sckt/2 Gst 3yr 9x5 LTU                  PRJRTPHCZR               16.11.2021                   1           20.67
+
+       G3J31A                RHEL Svr 2 Sckt/2 Gst 3yr 9x5 LTU                  PRTP4BC1UX               15.11.2021                   1           20.67
+
+       G3J31A                RHEL Svr 2 Sckt/2 Gst 3yr 9x5 LTU                  PR54WKSYZ2               15.11.2021                   1           20.67
+
+       G3J31A                RHEL Svr 2 Sckt/2 Gst 3yr 9x5 LTU                  PRKD32YBEF               17.10.2021                   1           20.67
+
+       G3J31A                RHEL Svr 2 Sckt/2 Gst 3yr 9x5 LTU                  PR8TKXYVER               15.11.2021                   1           20.67
+
+       G3J31A                RHEL Svr 2 Sckt/2 Gst 3yr 9x5 LTU                  PR0YXKFHA5               01.02.2021                   1           20.67
+
+       G3J31A                RHEL Svr 2 Sckt/2 Gst 3yr 9x5 LTU                  PR838FT0ZF               05.01.2021                   1           20.67
+
+                                                                                       Software Subtotal                                         759.12
+
+                                                                                       Discounts                                                -136.66
+
+                                                                                       Total                                                     622.46
+
+       Discount Summary
+
+       Ch Mngd Con Hdr Dis% -18%                                                                                                                367.98-
+
+                                                                      Software Total                                                           2,044.06
+
+                                                                      Discount Total                                                            -367.98
+
+                                                                      Contract Total                                                           1,676.08
+
+      Single Payment for Duration.
+
+          Printed on: 24.11.2020                              PleaseNote: This is not an invoice, charges shown are exclusive of VAT             Page: 4 / 15
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. RegisteredNo: 690597

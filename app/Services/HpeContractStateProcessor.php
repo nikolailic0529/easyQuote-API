@@ -40,7 +40,7 @@ class HpeContractStateProcessor implements HpeContractState
             /** @var HpeContract */
             $hpeContract ??= $this->initiateHpeContractInstance();
 
-            tap($hpeContract->fill($state)->save(), fn () => $this->reflectHpeContractState($hpeContract));
+            $hpeContract->fill($state)->save();
 
             return $hpeContract;
         }, DB_TA);
@@ -66,7 +66,6 @@ class HpeContractStateProcessor implements HpeContractState
         return DB::transaction(function () use ($hpeContract) {
             /** @var HpeContractFile */
             $newContractFile = tap($hpeContract->hpeContractFile->replicate(['user_id']))->save();
-
             /**
              * Replicating HPE Contract File Imported Data.
              */
@@ -89,22 +88,26 @@ class HpeContractStateProcessor implements HpeContractState
              * Replicating the HPE Contract Instance and association with the new one HPE Contract File.
              */
             $newHpeContract = tap(
-                $hpeContract->replicate(['user_id', 'hpe_contract_file_id', 'hpeContractFile']),
+                $hpeContract->replicate(['user_id', 'hpe_contract_file_id', 'hpeContractFile', 'is_active']),
                 function (HpeContract $newHpeContract) use ($newContractFile) {
+                    $sequenceNumber = $this->getHighestNumber() + 1;
+
+                    $newHpeContract->forceFill([
+                        'contract_number' => static::giveContractNumber($sequenceNumber),
+                        'sequence_number' => $sequenceNumber,
+                        'submitted_at' => null,
+                    ]);
+
                     $newHpeContract->save();
 
                     $this->associateHpeContractFile($newHpeContract, $newContractFile);
-                    $this->reflectHpeContractState($newHpeContract);
                 }
             );
 
-            /**
-             * Finally we unravel the copyable contract.
-             */
-            tap($hpeContract->unsubmit(), fn () => $this->reflectHpeContractState($hpeContract));
+            $hpeContract->forceFill(['activated_at' => null])->save();
 
             return [$newHpeContract->getKeyName() => $newHpeContract->getKey()];
-        }, DB_TA);
+        });
     }
 
     /**
@@ -121,10 +124,7 @@ class HpeContractStateProcessor implements HpeContractState
 
         $hpeContract->forceFill(['last_drafted_step' => 'Complete']);
 
-        return DB::transaction(fn () => tap(
-            $hpeContract->submit(),
-            fn () => $this->reflectHpeContractState($hpeContract)
-        ), DB_TA);
+        return DB::transaction(fn () => $hpeContract->submit(), DB_TA);
     }
 
     /**
@@ -139,10 +139,7 @@ class HpeContractStateProcessor implements HpeContractState
             return false;
         }
 
-        return DB::transaction(fn () => tap(
-            $hpeContract->unsubmit(),
-            fn () => $this->reflectHpeContractState($hpeContract)
-        ), DB_TA);
+        return DB::transaction(fn () => $hpeContract->unsubmit(), DB_TA);
     }
 
     /**
@@ -157,10 +154,7 @@ class HpeContractStateProcessor implements HpeContractState
             return false;
         }
 
-        return DB::transaction(fn () => tap(
-            $hpeContract->activate(),
-            fn () => $this->reflectHpeContractState($hpeContract)
-        ), DB_TA);
+        return DB::transaction(fn () => $hpeContract->activate(), DB_TA);
     }
 
     /**
@@ -175,10 +169,7 @@ class HpeContractStateProcessor implements HpeContractState
             return false;
         }
 
-        return DB::transaction(fn () => tap(
-            $hpeContract->deactivate(),
-            fn () => $this->reflectHpeContractState($hpeContract)
-        ), DB_TA);
+        return DB::transaction(fn () => $hpeContract->deactivate(), DB_TA);
     }
 
     /**
@@ -190,7 +181,7 @@ class HpeContractStateProcessor implements HpeContractState
     public function delete(HpeContract $hpeContract): bool
     {
         return DB::transaction(function () use ($hpeContract) {
-            return $hpeContract->delete() && $hpeContract->contract()->delete();
+            return $hpeContract->delete();
         }, DB_TA);
     }
 
@@ -451,43 +442,12 @@ class HpeContractStateProcessor implements HpeContractState
         }, DB_TA);
     }
 
-    protected function reflectHpeContractState(HpeContract $hpeContract): Contract
-    {
-        $reflect = $hpeContract->contract()->getQuery()->withoutGlobalScope(ContractTypeScope::class)
-            ->firstOrNew(['document_type' => Q_TYPE_HPE_CONTRACT]);
-
-        $reflect->timestamps = false;
-
-        /** Set Customer relation instance to cache in schemaless attributes. */
-        $reflect->setRelation('customer', Customer::make(['rfq' => $hpeContract->contract_number, 'name' => $hpeContract->sold_contact->org_name]));
-
-        $reflect->forceFill([
-            'hpe_contract_id'            => $hpeContract->getKey(),
-            'document_type'              => Q_TYPE_HPE_CONTRACT,
-            'user_id'                    => $hpeContract->user_id,
-            'company_id'                 => $hpeContract->company_id,
-            'quote_template_id'          => $hpeContract->quote_template_id,
-            'hpe_contract_number'        => $hpeContract->contract_number,
-            'hpe_contract_customer_name' => $hpeContract->sold_contact->org_name,
-            'last_drafted_step'          => $hpeContract->last_drafted_step,
-            'created_at'                 => $hpeContract->getRawOriginal('created_at'),
-            'updated_at'                 => $hpeContract->getRawOriginal('updated_at'),
-            'submitted_at'               => $hpeContract->getRawOriginal('submitted_at'),
-            'activated_at'               => $hpeContract->getRawOriginal('activated_at'),
-        ]);
-
-        return tap($reflect, function (Contract $reflect) {
-            $reflect->save();
-            $reflect->timestamps = true;
-        });
-    }
-
     protected function buildHpeContractAssetsQuery(HpeContract $hpeContract): Builder
     {
         return $hpeContract->hpeContractData()
             ->getQuery()
-            ->whereIn('asset_type', ['Hardware', 'Software'])
-            ->whereNotNull('serial_number')
+            ->whereIn('asset_type', ['Hardware', 'Software', 'JW'])
+            // ->whereNotNull('serial_number')
             ->addSelect(
                 'id',
                 'support_account_reference',

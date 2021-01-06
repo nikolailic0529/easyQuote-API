@@ -7,7 +7,7 @@ use App\Http\Requests\QuoteTemplate\{
     StoreQuoteTemplateRequest,
     UpdateQuoteTemplateRequest
 };
-use App\Models\QuoteTemplate\QuoteTemplate;
+use App\Models\Template\QuoteTemplate;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use \Closure;
@@ -50,7 +50,7 @@ interface QuoteTemplateRepositoryInterface
      * Get Quote Template by id.
      *
      * @param string $id
-     * @return \App\Models\QuoteTemplate\QuoteTemplate
+     * @return \App\Models\Template\QuoteTemplate
      */
     public function find(string $id): QuoteTemplate;
 
@@ -59,7 +59,7 @@ interface QuoteTemplateRepositoryInterface
      *
      * @param int $limit
      * @param Closure $scope
-     * @return \App\Models\QuoteTemplate\QuoteTemplate|\Illuminate\Database\Eloquent\Collection|null
+     * @return \App\Models\Template\QuoteTemplate|\Illuminate\Database\Eloquent\Collection|null
      */
     public function random(int $limit = 1, ?Closure $scope = null);
 
@@ -83,7 +83,7 @@ interface QuoteTemplateRepositoryInterface
      * Create Quote Template.
      *
      * @param \App\Http\Requests\QuoteTemplate\StoreQuoteTemplateRequest|array $request
-     * @return \App\Models\QuoteTemplate\QuoteTemplate
+     * @return \App\Models\Template\QuoteTemplate
      */
     public function create($request): QuoteTemplate;
 
@@ -92,7 +92,7 @@ interface QuoteTemplateRepositoryInterface
      *
      * @param \App\Http\Requests\QuoteTemplate\UpdateQuoteTemplateRequest $request
      * @param string $id
-     * @return \App\Models\QuoteTemplate\QuoteTemplate
+     * @return \App\Models\Template\QuoteTemplate
      */
     public function update(UpdateQuoteTemplateRequest $request, string $id): QuoteTemplate;
 

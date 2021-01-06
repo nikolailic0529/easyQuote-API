@@ -13,16 +13,15 @@ interface WordParserInterface
      * @param bool $storage
      * @return $this
      */
-    public function load(string $path, bool $storage = true);
+    public function load(string $path);
 
     /**
-     * Extract and return raw text from Word file
+     * Parse Docx Distributor File.
      *
-     * @param string $path
-     * @param bool $storage
+     * @param  string $filePath
      * @return array
      */
-    public function getText(string $path, bool $storage = true);
+    public function parseAsDistributorFile(string $filePath): array;
 
     /**
      * Extract all first level tables from DOCX format file

@@ -1,0 +1,79 @@
+Overview for Support Account ID:                                       ANZ-MN
+
+              Support Quotation
+
+               Customer Address:                                                           HPE Address:
+
+               SUPPORT WAREHOUSE LTD                                                       Hewlett-Packard Limited
+
+               INTERNATIONAL DEVELOPMENT CENTRE                                            Cain Road
+
+               VALLEY DRIVE                                                                Bracknell, Berkshire
+
+               ILKLEY WEST YORKSHIRE                                                       RG12 1HN
+
+               Yorkshire
+
+               LS29 8PB
+
+              Customer Contact:                                                            HPE contact:
+
+              Chris Cann                                                                   Elena Cojan
+
+              E-mail chris.cann@supportwarehouse.com                                       E-mail elena.cojan@hpe.com
+
+              This quote is valid until 31.10.2020
+
+      This order is governed by the specific agreement referenced below in the comment section.
+
+      If none is identified, then Hewlett Packard Enterprise's standard terms will apply.
+
+      Either one is the "Agreement".
+
+         Standard Terms:      www.hpe.com/docs/customerterms
+
+         Datasheets: www.hpe.com/info/mktlibrary
+
+      Your Support Access Options for Service Agreement Customers:
+
+         To manage your service agreement online visit, https:/s360.hpe.com                   OR https://esam.hpe.com
+
+         To access HPE Support Centre visit, www.hpe.com/support/hpesc
+
+      Please have your Service Agreement ID and Product/Serial available to expedite your support experience.
+
+              - 0810 00 2000
+
+       System Handle                  Service            Coverage Period         Description                                                 Contract Total/GBP
+
+                                      Agreement ID       From:       To:
+
+       ANZ-DE-02                      108654852295       01.11.2020 31.10.2023   Germany                                                              -1,172.49
+
+       ANZ-DE-02                      108654852295       01.11.2020 31.10.2023   Germany                                                               8,432.95
+
+       ANZ-FR-01                      108654852705       01.11.2020 31.10.2023   France                                                                2,247.84
+
+       ANZ-GB05                       108654852355       01.11.2020 31.10.2023   London                                                               45,353.61
+
+       ANZ-GB05                       108654852355       01.11.2020 31.10.2023   London                                                                9,667.14
+
+       ANZ-GB05                       108654852355       01.11.2020 31.10.2023   London                                                               15,791.04
+
+       ANZ-GB10                       108654852415       01.11.2020 31.10.2023   United Kingdom                                                       16,044.34
+
+       ANZ-GB10                       108654852415       01.11.2020 31.10.2023   United Kingdom                                                       21,573.36
+
+       ANZ-UK-02                      108654856896       01.11.2020 31.10.2023   UK                                                                   28,901.74
+
+       ANZ-UK-02                      108654856896       01.11.2020 31.10.2023   UK                                                                    7,256.16
+
+       ANZ-UK-02                      108654856896       01.11.2020 31.10.2023   UK                                                                   20,851.20
+
+       Full Contract price for United kingdom                                                                                                        174,946.89
+
+       The Prices shown will be invoiced yearly in advance.
+
+        Print Date 04.12.2020                                          This is not an Invoice, charges shown are exclusive of VAT                        Page 1 / 35
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

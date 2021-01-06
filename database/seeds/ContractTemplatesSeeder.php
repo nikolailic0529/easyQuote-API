@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\QuoteTemplate\ContractTemplate;
+use App\Models\Template\ContractTemplate;
 use Illuminate\Database\Seeder;
 use App\Models\{
     Company,

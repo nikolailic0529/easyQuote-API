@@ -4,8 +4,8 @@
 
 use App\Models\Company;
 use Faker\Generator as Faker;
-use App\Models\QuoteTemplate\QuoteTemplate;
-use App\Models\QuoteTemplate\TemplateDesign;
+use App\Models\Template\QuoteTemplate;
+use App\Models\Template\TemplateDesign;
 use App\Models\Vendor;
 use App\Services\ThumbnailManager;
 

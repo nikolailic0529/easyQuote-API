@@ -6,9 +6,12 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 use Tests\Unit\Traits\WithFakeUser;
 
+/**
+ * @group build
+ */
 class CustomerTest extends TestCase
 {
-    use WithFakeUser;
+    use WithFakeUser, DatabaseTransactions;
 
     /** @var array */
     protected static $assertableAttributes = ['id', 'name', 'rfq', 'valid_until', 'support_start', 'support_end'];

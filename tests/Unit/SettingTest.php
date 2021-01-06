@@ -2,19 +2,22 @@
 
 namespace Tests\Unit;
 
+use Tests\TestCase;
+use Tests\Unit\Traits\WithFakeUser;
 use App\Models\System\SystemSetting;
 use App\Models\User;
-use Tests\TestCase;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Tests\Unit\Traits\WithFakeUser;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Arr;
-use Setting;
+use Illuminate\Support\Collection;
+use App\Facades\Setting;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 
+/**
+ * @group build
+ */
 class SettingTest extends TestCase
 {
-    use WithFakeUser;
+    use WithFakeUser, DatabaseTransactions;
 
     protected static array $assertableAttributes = [
         'id',
@@ -146,7 +149,7 @@ class SettingTest extends TestCase
             ['quote_file' => $file, 'file_type' => QFT_PL],
             $this->authorizationHeader
         )
-            ->assertOk()
+            ->assertSuccessful()
             ->assertJsonMissingValidationErrors('quote_file');
     }
 }

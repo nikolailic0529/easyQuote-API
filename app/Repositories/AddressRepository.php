@@ -88,14 +88,14 @@ class AddressRepository extends SearchableRepository implements AddressRepositor
     protected function filterQueryThrough(): array
     {
         return [
-            \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\OrderByCountry::class,
             \App\Http\Query\Address\OrderByAddressType::class,
             \App\Http\Query\Address\OrderByCity::class,
             \App\Http\Query\Address\OrderByPostCode::class,
             \App\Http\Query\Address\OrderByState::class,
-            \App\Http\Query\Address\OrderByStreetAddress::class
+            \App\Http\Query\Address\OrderByStreetAddress::class,
+            \App\Http\Query\DefaultOrderBy::class,
         ];
     }
 

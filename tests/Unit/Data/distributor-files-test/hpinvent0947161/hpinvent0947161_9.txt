@@ -1,0 +1,105 @@
+Service Agreement ID: 1086 5485            2355
+
+      Support Quotation                                                                 System Handle: ANZ-GB05
+
+      Agreement No.                                                                     London
+
+      Your PO Reference:                                                                HPE Reference No.: 56896733
+
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
+
+                                                                                                            from:          to:
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ282202N2               09.06.2023                    1            94.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ2638009G                                             1            94.00
+
+        755258-B21            HP DL360 Gen9 8SFF CTO Server                        CZJ7330TP2                                             1          119.00
+
+        755258-B21            HP DL360 Gen9 8SFF CTO Server                        CZJ7330TP3                                             1          119.00
+
+        719061-B21            HP DL380 Gen9 12LFF CTO Server                       CZJ6370JT8                                             1          163.00
+
+        755258-B21            HP DL360 Gen9 8SFF CTO Server                        CZJ8380384                                             1          119.00
+
+        755258-B21            HP DL360 Gen9 8SFF CTO Server                        CZJ8380385                                             1          119.00
+
+        603251R-B21           HP BL460c G7 X5670 12G 1P Reman Svr                  CZ3226MSYH                                             1            88.00
+
+        654081-B21            HP DL360p Gen8 8-SFF CTO Server                      CZJ43504CC                                             1          115.00
+
+        727021-B21            HP BL460c Gen9 10Gb/20Gb FLB CTO Blade               CZ3548NYNM               27.12.2020                    1            94.00
+
+        755258-B21            HP DL360 Gen9 8SFF CTO Server                        CZJ54808G9               27.12.2020                    1          119.00
+
+        755258-B21            HP DL360 Gen9 8SFF CTO Server                        CZJ54808GB               27.12.2020                    1          119.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ282202N3               09.06.2023                    1            94.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ282202N1               09.06.2023                    1            94.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ282202N4               09.06.2023                    1            94.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ282202N5               09.06.2023                    1            94.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ282202N0               09.06.2023                    1            94.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ282202MZ               09.06.2023                    1            94.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ282202MY               09.06.2023                    1            94.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ282202MX               09.06.2023                    1            94.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ282202MW               09.06.2023                    1            94.00
+
+                                                                                         Hardware Subtotal                                          2,859.00
+
+                                                                                         Discounts                                                   -982.41
+
+                                                                                         Total                                                      1,876.59
+
+                                                                                         Subtotal During Warranty                                      90.00
+
+                                                                                         Discounts                                                    -30.94
+
+                                                                                         Total During Warranty                                         59.06
+
+                              HPE Collaborative Remote Support
+
+                                       Basic Software Phone Support
+
+                                       Collaborative Call Managemnt
+
+                                       24 Hours, Day 1-7 Phone Supp
+
+                                       Standard Response Time
+
+        681842-B21            HP BLc7000 1PH 6PS 10Fan 16 IC Encl                  CZ3336MSWY                                             1             2.00
+
+                              HP ZMOD IC Environment CTO Nm BL 16 Lic
+
+        681842-B21            HP BLc7000 1PH 6PS 10Fan 16 IC Encl                  CZ3335M7DR                                             1             2.00
+
+                              HP ZMOD IC Environment CTO Nm BL 16 Lic
+
+        508664-B21            HP BLc3000 4 AC-6 Fan Full ICE                       CZ220708DH                                             1             2.00
+
+                              HP ZMOD HP IC Environment BL 8 LIC
+
+        863442-B21            HPE BL460c Gen10 10Gb/20Gb FLB CTO Blade             CZ2850092V                                             1             4.00
+
+        863442-B21            HPE BL460c Gen10 10Gb/20Gb FLB CTO Blade             CZ2850092Z                                             1             4.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ282202N2               09.06.2023                    1             4.00
+
+        813198-B21            HPE BL460c G9 E5v4 10/20Gb FLB CTO Blade             CZ2638009G                                             1             4.00
+
+        755258-B21            HP DL360 Gen9 8SFF CTO Server                        CZJ7330TP2                                             1             5.00
+
+        755258-B21            HP DL360 Gen9 8SFF CTO Server                        CZJ7330TP3                                             1             5.00
+
+      The Prices shown will be invoiced yearly in advance.
+
+          Printed on: 04.12.2020                                Please Note: This is notan invoice, charges shown are monthly & exclusive of VAT     Page: 9 / 35
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

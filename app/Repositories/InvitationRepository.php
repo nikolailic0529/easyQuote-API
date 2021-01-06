@@ -47,11 +47,11 @@ class InvitationRepository extends SearchableRepository implements InvitationRep
     protected function filterQueryThrough(): array
     {
         return [
-            \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\Invitation\OrderByEmail::class,
             \App\Http\Query\Invitation\OrderByRole::class,
-            \App\Http\Query\Invitation\OrderByExpiresAt::class
+            \App\Http\Query\Invitation\OrderByExpiresAt::class,
+            \App\Http\Query\DefaultOrderBy::class,
         ];
     }
 

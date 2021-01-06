@@ -16,7 +16,7 @@ use Devengine\PhpWord\{
 };
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\{Arr, Str, Collection as SupportCollection};
-use Storage;
+use Illuminate\Support\Facades\Storage;
 use voku\helper\ASCII;
 
 class WordParser implements WordParserInterface
@@ -42,22 +42,18 @@ class WordParser implements WordParserInterface
         $this->importableColumns = $importableColumns;
     }
 
-    public function load(string $path, bool $storage = true)
+    public function load(string $path)
     {
-        $path = $storage ? Storage::path($path) : $path;
-
         $this->phpWord = IOFactory::load($path);
 
         return $this;
     }
 
-    public function getText(string $filePath, bool $storage = true)
+    public function parseAsDistributorFile(string $filePath): array
     {
         $columns = $this->importableColumns->allSystem();
 
-        $rows = $this->load($filePath, $storage)->getTables()->getRows($columns);
-
-        error_abort_if(empty($rows), QFNC_01, 'QFNC_01', 422);
+        $rows = $this->load($filePath)->getTables()->getRows($columns);
 
         $page = 1;
         $content = null;

@@ -5,7 +5,7 @@ namespace App\Repositories\QuoteTemplate;
 use App\Contracts\Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface;
 use App\Http\Requests\GetQuoteTemplatesRequest;
 use App\Repositories\SearchableRepository;
-use App\Models\QuoteTemplate\QuoteTemplate;
+use App\Models\Template\QuoteTemplate;
 use App\Http\Requests\QuoteTemplate\UpdateQuoteTemplateRequest;
 use Illuminate\Database\Eloquent\{
     Model,
@@ -13,13 +13,14 @@ use Illuminate\Database\Eloquent\{
     Collection
 };
 use Illuminate\Support\Collection as SupportCollection;
-use Arr, \Closure;
+use Illuminate\Support\Arr;
+use Closure;
 
 class QuoteTemplateRepository extends SearchableRepository implements QuoteTemplateRepositoryInterface
 {
     const DESIGN_ATTRIBUTES = ['form_data', 'complete_design'];
 
-    /** @var \App\Models\QuoteTemplate\QuoteTemplate */
+    /** @var \App\Models\Template\QuoteTemplate */
     protected QuoteTemplate $quoteTemplate;
 
     public function __construct(QuoteTemplate $quoteTemplate)
@@ -143,7 +144,7 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
                 ->queue('updated');
         }
 
-        return $quoteTemplate->load('company', 'vendor', 'countries', 'templateFields', 'currency')->makeVisible(['form_data', 'form_values_data']);
+        return $quoteTemplate->load('company', 'vendor', 'countries', 'currency')->makeVisible(['form_data', 'form_values_data']);
     }
 
     public function delete(string $id): bool
@@ -168,11 +169,10 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
         $replicatableTemplate = $this->find($id);
         $template = $replicatableTemplate->replicate(['user', 'countries', 'templateFields']);
         $countries = $replicatableTemplate->countries->pluck('id')->toArray();
-        $templateFields = $replicatableTemplate->templateFields->pluck('id')->toArray();
 
         $copied = $template->save();
 
-        $copied && $template->syncCountries($countries) && $template->syncTemplateFields($templateFields);
+        $copied && $template->syncCountries($countries);
 
         activity()->enableLogging();
 
@@ -190,11 +190,11 @@ class QuoteTemplateRepository extends SearchableRepository implements QuoteTempl
     protected function filterQueryThrough(): array
     {
         return [
-            \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\OrderByName::class,
             \App\Http\Query\QuoteTemplate\OrderByCompanyName::class,
-            \App\Http\Query\QuoteTemplate\OrderByVendorName::class
+            \App\Http\Query\QuoteTemplate\OrderByVendorName::class,
+            \App\Http\Query\DefaultOrderBy::class,
         ];
     }
 

@@ -17,7 +17,7 @@ use App\Imports\Concerns\{
     MapsHeaders,
     LimitsHeaders
 };
-use Maatwebsite\Excel\Concerns\{ToModel, WithBatchInserts, WithLimit, WithStartRow, WithCalculatedFormulas, WithColumnLimit, };
+use Maatwebsite\Excel\Concerns\{ToModel, WithBatchInserts, WithLimit, WithStartRow, WithColumnLimit, };
 use App\Models\{QuoteFile\QuoteFile, QuoteFile\ImportedRow};
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Webpatser\Uuid\Uuid;
@@ -38,9 +38,6 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
 
     /** @var \App\Models\QuoteFile\QuoteFile */
     protected $quoteFile;
-
-    /** @var \App\Models\User */
-    protected $user;
 
     /** @var \Illuminate\Database\Eloquent\Collection */
     protected $systemImportableColumns;
@@ -74,7 +71,6 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
     public function __construct(QuoteFile $quoteFile)
     {
         $this->quoteFile = $quoteFile;
-        $this->user = $quoteFile->user;
         $this->systemImportableColumns = $this->importRepository()->allSystem();
 
         HeadingRowFormatter::
@@ -176,10 +172,6 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
 
     protected function afterImport(): void
     {
-        if ($this->rowsCount < 1) {
-            tap($this->quoteFile)->setException(QFNRF_01, 'QFNRF_01')->markAsUnHandled();
-        }
-
         $this->quoteFile->storeMetaAttributes($this->priceAttributes);
     }
 
@@ -285,8 +277,7 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
 
         return [
             'id'            => Uuid::generate(4)->string,
-            'user_id'       => $this->user->id,
-            'quote_file_id' => $this->quoteFile->id,
+            'quote_file_id' => $this->quoteFile->getKey(),
             'page'          => $this->activeSheetIndex,
             'columns_data'  => $columnsData,
             static::C_OP    => $onePay,

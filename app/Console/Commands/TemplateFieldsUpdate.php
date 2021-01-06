@@ -3,11 +3,12 @@
 namespace App\Console\Commands;
 
 use App\Models\{
-    QuoteTemplate\QuoteTemplate,
-    QuoteTemplate\TemplateField,
-    QuoteTemplate\TemplateFieldType
+    Template\QuoteTemplate,
+    Template\TemplateField,
+    Template\TemplateFieldType
 };
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 class TemplateFieldsUpdate extends Command
 {
@@ -46,7 +47,7 @@ class TemplateFieldsUpdate extends Command
 
         activity()->disableLogging();
 
-        \DB::transaction(function () {
+        DB::transaction(function () {
             $templateFieldsData = json_decode(file_get_contents(database_path('seeds/models/template_fields.json')), true);
 
             $templateFields = collect($templateFieldsData)->map(function ($field) {
@@ -63,8 +64,6 @@ class TemplateFieldsUpdate extends Command
 
                 return $templateField->id;
             });
-
-            QuoteTemplate::all('id')->each(fn (QuoteTemplate $template) => $template->templateFields()->syncWithoutDetaching($templateFields));
         });
 
         activity()->enableLogging();

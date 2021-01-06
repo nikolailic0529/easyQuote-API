@@ -57,16 +57,10 @@ class ConditionalCast implements CastsAttributes
      */
     public function set($model, $key, $value, $attributes)
     {
-        switch ($attributes['type'] ?? null) {
-            case 'array':
-                return is_array($value) ? json_encode($value) : $value;
-                break;
-            case 'datetime':
-                return (string) Carbon::parse($value);
-                break;
-            default:
-                return $value;
-                break;
-        }
+        if (is_array($value)) {
+            return json_encode($value);
+        }       
+
+        return $value;
     }
 }

@@ -1,0 +1,37 @@
+Service Agreement ID: 1086 5485            2415
+
+      Support Quotation                                                                 System Handle: ANZ-GB10
+
+      Agreement No.                                                                     United Kingdom
+
+      Your PO Reference:                                                                HPE Reference No.: 56896734
+
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
+
+                                                                                                            from:          to:
+
+                                                                        Hardware Total                                                               470.00
+
+                                                                        Discount Total                                                               -161.56
+
+                                                                        Contract Total                                                               308.44
+
+                                                                        Contract During Warranty Subtotal                                            135.00
+
+                                                                        Total During Warranty Discounts                                              -46.41
+
+                                                                        Contract During Warranty Total                                                88.59
+
+        Hardware products under warranty
+
+        863442-B21            HPE BL460c Gen10 10Gb/20Gb FLB CTO Blade             CZ2850092X               16.01.2019    15.01.2022      1
+
+        863442-B21            HPE BL460c Gen10 10Gb/20Gb FLB CTO Blade             CZ2850092Y               16.01.2019    15.01.2022      1
+
+        863442-B21            HPE BL460c Gen10 10Gb/20Gb FLB CTO Blade             CZ2850092T               16.01.2019    15.01.2022      1
+
+      The Prices shown will be invoiced yearly in advance.
+
+          Printed on: 04.12.2020                                Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT   Page: 22 / 35
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

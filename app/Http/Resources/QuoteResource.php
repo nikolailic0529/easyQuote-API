@@ -16,13 +16,12 @@ class QuoteResource extends JsonResource
      */
     public function toArray($request)
     {
-        $this->loadMissing('quoteFiles');
         $this->customer->loadMissing('addresses', 'contacts');
 
         return [
             'pdf_file'                  => $this->when($this->customer->rfq, fn () => route('s4.pdf', ['rfq' => $this->customer->rfq])),
-            'price_list_file'           => $this->when($this->resolveQuoteFile(QFT_PL)->original_file_path && $this->customer->rfq, fn () => route('s4.price', ['rfq' => $this->customer->rfq])),
-            'payment_schedule_file'     => $this->when($this->resolveQuoteFile(QFT_PS)->original_file_path && $this->customer->rfq, fn () => route('s4.schedule', ['rfq' => $this->customer->rfq])),
+            'price_list_file'           => $this->when($this->priceList->exists && $this->customer->rfq, fn () => route('s4.price', ['rfq' => $this->customer->rfq])),
+            'payment_schedule_file'     => $this->when($this->paymentSchedule->exists && $this->customer->rfq, fn () => route('s4.schedule', ['rfq' => $this->customer->rfq])),
             'quote_data' => [
                 'first_page' => [
                     'template_name'         => $this->quoteTemplate->name,

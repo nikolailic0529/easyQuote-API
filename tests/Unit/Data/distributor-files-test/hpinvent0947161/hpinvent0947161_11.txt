@@ -1,0 +1,97 @@
+Service Agreement ID: 1086 5485 2355
+
+      Support Quotation                                                                 System Handle: ANZ-GB05
+
+      Agreement No.                                                                     London
+
+      Your PO Reference:                                                                HPE Reference No.: 56896733
+
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
+
+                                                                                                            from:          to:
+
+                              HPE Software Updates SVC
+
+                                       License to Use & SW Updates
+
+                                       HPE Recommended SW Upd Method
+
+                                       HPE Recommended Doc Upd Method
+
+        651910-B21            HP ZMOD IC Environment CTO Nm BL 16 Lic              CZ3336MSWY                             30.04.2021      1            55.00
+
+                              Please note HP can no longer support this item from: 30.04.2021
+
+        651910-B21            HP ZMOD IC Environment CTO Nm BL 16 Lic              CZ3335M7DR                             30.04.2021      1            55.00
+
+                              Please note HP can no longer support this item from: 30.04.2021
+
+        437787-B23            HP ZMOD HP IC Environment BL 8 LIC                   CZ220708DH                             30.04.2021      1            26.00
+
+                              Please note HP can no longer support this item from: 30.04.2021
+
+                                                                                         Software Subtotal                                           136.00
+
+                                                                                         Discounts                                                    -46.73
+
+                                                                                         Total                                                         89.27
+
+        Discount Summary
+
+        Multi-Year Hdr Disc% -4%                                                                                                                      11.28-
+
+        Ch Mngd Con Hdr Dis% -18%                                                                                                                     50.76-
+
+        Special Neg HdrDisc% -15%                                                                                                                     33.01-
+
+        Pre Payment HdrDisc% -1%                                                                                                                       1.85-
+
+        *** Hardware ***
+
+        H5UN7AC               Collaborative Support Upgrade                                                               25.09.2021                   -7.00
+
+                                                                                         Hardware Subtotal                                             -7.00
+
+                                                                                         Discounts                                                      2.41
+
+                                                                                         Total                                                         -4.59
+
+        H5UN7AC               Collaborative Support Upgrade                                                               30.09.2021                  -14.00
+
+                                                                                         Hardware Subtotal                                            -14.00
+
+                                                                                         Discounts                                                      4.81
+
+                                                                                         Total                                                         -9.19
+
+        U9087AC               Hardware Support Upgrade                                                                    25.09.2021                 -157.00
+
+                                                                                         Hardware Subtotal                                           -157.00
+
+                                                                                         Discounts                                                     53.95
+
+                                                                                         Total                                                       -103.05
+
+        U9087AC               Hardware Support Upgrade                                                                    30.09.2021                 -319.00
+
+                                                                                         Hardware Subtotal                                           -319.00
+
+                                                                                         Discounts                                                   109.62
+
+                                                                                         Total                                                       -209.38
+
+        U9087AC               Hardware Support Upgrade                                                      01.10.2021    19.10.2021                 -110.00
+
+                                                                                         Hardware Subtotal                                           -110.00
+
+                                                                                         Discounts                                                     37.80
+
+                                                                                         Total                                                        -72.20
+
+        H5UN7AC               Collaborative Support Upgrade                                                               25.08.2022                  -10.00
+
+      The Prices shown will be invoiced yearly in advance.
+
+          Printed on: 04.12.2020                                Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT   Page: 11 / 35
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

@@ -40,7 +40,7 @@
         "phone": "+41 43 555 0 200",
         "website": "https://www.tesedi.com",
         "vendors": [
-            "HPE", "LEN", "IBM", "CIS"
+            "HPE", "LEN", "IBM", "CIS", "ARU"
         ],
         "logo": "/database/seeds/models/images/tesedi.png",
         "svg_logo": "/database/seeds/models/images/tesedi.svg"

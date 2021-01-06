@@ -4,6 +4,9 @@ namespace App\Console\Commands;
 
 use App\Models\QuoteFile\ImportableColumn;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+use PhpParser\Node\Expr\Throw_;
+use Throwable;
 
 class ImportableColumnsUpdate extends Command
 {
@@ -41,24 +44,32 @@ class ImportableColumnsUpdate extends Command
             return compact('country_id') + $attributes;
         });
 
-        \DB::transaction(function () use ($importableColumns) {
+        DB::beginTransaction();
+
+        try {
             $importableColumns->each(function ($attributes) {
                 $importableColumn = ImportableColumn::firstOrCreate(
                     ['name' => $attributes['name'], 'is_system' => true],
                     $attributes
                 );
-
+    
                 $importableColumn->update($attributes);
-
+    
                 collect($attributes['aliases'])->unique()->each(
                     fn ($alias) => $importableColumn->aliases()->firstOrCreate(compact('alias'))
                 );
-
+    
                 $this->deleteDuplicatedAliases($importableColumn);
-
+    
                 $this->output->write('.');
             });
-        });
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            throw $e;
+        }
+
+        DB::commit();
 
         activity()->enableLogging();
 

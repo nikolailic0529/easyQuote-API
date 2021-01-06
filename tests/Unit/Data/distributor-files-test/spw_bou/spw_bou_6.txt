@@ -1,0 +1,59 @@
+Service Agreement ID: 1086 6360            0402
+
+      Support Quotation                                                                 System Handle: SPWBOU-FR02
+
+      Agreement No.                                                                     France
+
+      Your PO Reference:                                                                HPE Reference No.: 56943479
+
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
+
+                                                                                                            from:          to:
+
+        BD715A                VMw vSphere EntPlus 1P 3yr SW                                                                               1            28.94
+
+                                                                                   5N600-481U6-F8K4A-AT3HK-AH911
+
+        R1T83A                VMw vRealize Ops Std /CPU 3yr LTU                                                                           1             9.92
+
+                                                                                   5N600-481U6-F8K4A-AT3HK-AH911
+
+        BD715A                VMw vSphere EntPlus 1P 3yr SW                                                                               1            28.94
+
+                                                                                   1N21K-083L4-U8V4A-AV30M-3M3J1
+
+        R1T83A                VMw vRealize Ops Std /CPU 3yr LTU                                                                           1             9.92
+
+                                                                                   1N21K-083L4-U8V4A-AV30M-3M3J1
+
+        BD715A                VMw vSphere EntPlus 1P 3yr SW                                                                               1            28.94
+
+                                                                                   HJ20K-4X0PP-U8U32-A29A0-3J9M1
+
+        R1T83A                VMw vRealize Ops Std /CPU 3yr LTU                                                                           1             9.92
+
+                                                                                   HJ20K-4X0PP-U8U32-A29A0-3J9M1
+
+                                                                                         Software Subtotal                                           116.58
+
+                                                                                         Discounts                                                    -21.96
+
+                                                                                         Total                                                         94.62
+
+        Discount Summary
+
+        Ch Mngd Con Hdr Dis% -18%                                                                                                                     42.00-
+
+        Pre Payment HdrDisc% -1%                                                                                                                       1.92-
+
+                                                                        Software Total                                                               233.16
+
+                                                                        Discount Total                                                                -43.92
+
+                                                                        Contract Total                                                               189.24
+
+      Single Payment for Duration
+
+          Printed on: 17.12.2020                                PleaseNote: This is not an invoice, charges shown are monthly & exclusive of VAT     Page: 6 / 13
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

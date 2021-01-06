@@ -2,10 +2,10 @@
 
 namespace App\Http\Requests\QuoteTemplate;
 
-use App\Models\QuoteTemplate\BaseQuoteTemplate;
+use App\Models\Template\QuoteTemplate;
+use App\Services\QuoteTemplateQueries;
 use Illuminate\Foundation\Http\FormRequest;
-use App\Services\RelationUsage;
-use Illuminate\Support\Str;
+use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
 class DeleteTemplate extends FormRequest
 {
@@ -16,28 +16,16 @@ class DeleteTemplate extends FormRequest
      */
     public function authorize()
     {
-        /** @var \App\Models\QuoteTemplate\BaseQuoteTemplate */
+        /** @var \App\Models\Template\QuoteTemplate */
         $template = head($this->route()->parameters());
 
-        if (!$template instanceof BaseQuoteTemplate) {
+        if (!$template instanceof QuoteTemplate) {
             return true;
         }
 
-        $usage = RelationUsage::templateUsage($template);
-
-        $relationName = Str::plural(static::detectRelationName($template), $usage);
-
-        validator(
-            [
-                'usage_count' => $usage
-            ],
-            [
-                'usage_count' => 'exclude_if:is_system,true|integer|size:0',
-            ],
-            [
-                'usage_count.*' => sprintf('You could not delete the Template as %s %s %s it.', $usage, $relationName, Str::plural('use', $usage !== 1))
-            ]
-        )->validate();
+        if ((new QuoteTemplateQueries)->referencedQuery($template->getKey())->exists()) {
+            throw new UnprocessableEntityHttpException("You can't delete the Quote Template used in Quotes or Quote Versions.");
+        }
 
         return true;
     }
@@ -52,13 +40,5 @@ class DeleteTemplate extends FormRequest
         return [
             //
         ];
-    }
-
-    protected static function detectRelationName(BaseQuoteTemplate $template)
-    {
-        return (string) Str::of(class_basename($template))
-            ->before('Template')
-            ->replaceMatches('/([a-z]*)([A-Z]*?)([A-Z][a-z]+)/', '$1 $2$3')
-            ->trim();
     }
 }

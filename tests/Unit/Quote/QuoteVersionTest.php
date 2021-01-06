@@ -3,7 +3,6 @@
 namespace Tests\Unit\Quote;
 
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\{
     WithFakeQuote,
     WithFakeUser
@@ -11,12 +10,16 @@ use Tests\Unit\Traits\{
 use App\Models\Quote\Quote;
 use App\Http\Resources\QuoteVersionResource;
 use App\Models\Quote\Margin\CountryMargin;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Arr;
 
+/**
+ * @group build
+ */
 class QuoteVersionTest extends TestCase
 {
-    use WithFakeUser, WithFakeQuote;
+    use WithFakeUser, WithFakeQuote, DatabaseTransactions;
 
     /**
      * Test a new Version creating when non-author user is editing a Quote.
@@ -25,9 +28,11 @@ class QuoteVersionTest extends TestCase
      */
     public function testVersionCreatingByNonAuthor()
     {
-        $this->updateQuoteStateFromNewUser();
+        $quote = $this->createQuote($this->user);
+        
+        $this->updateQuoteStateFromNewUser($quote);
 
-        $versionsCount = $this->quote->versions()->count();
+        $versionsCount = $quote->versions()->count();
         $this->assertGreaterThan(0, $versionsCount);
     }
 
@@ -38,12 +43,14 @@ class QuoteVersionTest extends TestCase
      */
     public function testVersionCreatingByAuthor()
     {
+        $quote = $this->createQuote($this->user);
+
         $state = $this->makeGenericQuoteAttributes();
-        $state['quote_id'] = $this->quote->id;
+        $state['quote_id'] = $quote->id;
 
         $this->postJson(url('api/quotes/state'), $state);
 
-        $versionsCount = $this->quote->versions()->count();
+        $versionsCount = $quote->versions()->count();
         $this->assertEquals(0, $versionsCount);
     }
 
@@ -54,11 +61,13 @@ class QuoteVersionTest extends TestCase
      */
     public function testVersionCreatingFromDifferentCausers()
     {
+        $quote = $this->createQuote($this->user);
+
         $expectedVersionsCount = 3;
 
-        collect()->times($expectedVersionsCount)->each(fn () => $this->updateQuoteStateFromNewUser());
+        collect()->times($expectedVersionsCount)->each(fn () => $this->updateQuoteStateFromNewUser($quote));
 
-        $actualVersionsCount = $this->quote->versions()->count();
+        $actualVersionsCount = $quote->versions()->count();
 
         $this->assertEquals($expectedVersionsCount, $actualVersionsCount);
     }
@@ -70,19 +79,19 @@ class QuoteVersionTest extends TestCase
      */
     public function testVersionSet()
     {
-        $this->updateQuoteStateFromNewUser();
+        $quote = $this->createQuote($this->user);
 
-        $nonUsingVersion = $this->quote->versionsSelection->firstWhere('is_using', '===', false);
+        $this->updateQuoteStateFromNewUser($quote);
 
-        $version_id = $nonUsingVersion['id'];
+        $inactiveVersion = $quote->refresh()->versionsSelection->firstWhere('is_using', '===', false);
 
-        $response = $this->patchJson(url("api/quotes/version/{$this->quote->id}"), compact('version_id'));
+        $response = $this->patchJson(url("api/quotes/version/{$quote->id}"), ['version_id' => $inactiveVersion['id']]);
 
         $response->assertOk()->assertExactJson([true]);
 
-        $actualUsingVersion = $this->quote->load('usingVersion')->usingVersion;
+        $actualActiveVersion = $quote->refresh()->activeVersionOrCurrent;
 
-        $this->assertEquals($version_id, $actualUsingVersion->id);
+        $this->assertEquals($inactiveVersion['id'], $actualActiveVersion->getKey());
     }
 
     /**
@@ -92,9 +101,11 @@ class QuoteVersionTest extends TestCase
      */
     public function testVersionDeleting()
     {
-        $this->updateQuoteStateFromNewUser();
+        $quote = $this->createQuote($this->user);
 
-        $version = $this->quote->versions()->first();
+        $this->updateQuoteStateFromNewUser($quote);
+
+        $version = $quote->versions()->first();
 
         $response = $this->deleteJson(url("api/quotes/drafted/version/{$version->id}"));
 
@@ -110,25 +121,26 @@ class QuoteVersionTest extends TestCase
      */
     public function testVersionUpdatingWithNewAttributes()
     {
+        $quote = $this->createQuote($this->user);
+
         $user = tap($this->createUser(), fn ($user) => $this->actingAs($user, 'api'));
 
-        $state = transform(static::makeState(), fn ($state) =>
-        Arr::set($state, 'quote_id', $this->quote->id));
+        $state = transform(static::makeState(), fn ($state) => Arr::set($state, 'quote_id', $quote->id));
 
-        $this->postJson(url('api/quotes/state'), $state)->assertOk()->assertExactJson(['id' => $this->quote->id]);
+        $this->postJson(url('api/quotes/state'), $state)->assertOk()->assertExactJson(['id' => $quote->id]);
 
         Arr::set($state, 'quote_data.closing_date', Carbon::createFromFormat('Y-m-d', Arr::get($state, 'quote_data.closing_date'))->format('d/m/Y'));
 
-        $resource = QuoteVersionResource::make($this->quote->refresh())->resolve();
+        $resource = QuoteVersionResource::make($quote->refresh())->resolve();
 
         collect($state['quote_data'])->each(fn ($value, $attribute) => $this->assertEquals($value, Arr::get($resource, $attribute)));
         collect($state['margin'])->each(fn ($value, $attribute) => $this->assertEquals($value, Arr::get($resource, 'country_margin.' . $attribute)));
     }
 
-    protected function updateQuoteStateFromNewUser(): void
+    protected function updateQuoteStateFromNewUser(Quote $quote): void
     {
         $state = $this->makeGenericQuoteAttributes();
-        $state['quote_id'] = $this->quote->id;
+        $state['quote_id'] = $quote->id;
 
         $this->be($this->createUser(), 'api');
 

@@ -8,12 +8,18 @@ use App\Contracts\{
     Repositories\QuoteFile\QuoteFileRepositoryInterface as QuoteFiles,
 };
 use App\DTO\RowsGroup;
+use App\Enum\Lock;
 use App\Models\Quote\{
+    BaseQuote,
     Quote,
-    Contract
+    Contract,
+    QuoteVersion
 };
 use App\Repositories\Concerns\ResolvesImplicitModel;
-use DB, Arr;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class ContractStateProcessor implements ContractState
 {
@@ -29,11 +35,10 @@ class ContractStateProcessor implements ContractState
 
     protected QuoteFiles $quoteFiles;
 
-    public function __construct(Contract $contract, QuoteState $quoteState, QuoteFiles $quoteFiles)
+    public function __construct(Contract $contract, QuoteFiles $quoteFiles)
     {
         $this->contract = $contract;
         $this->quoteFiles = $quoteFiles;
-        $this->quoteState = $quoteState;
     }
 
     public function find(string $id)
@@ -55,66 +60,129 @@ class ContractStateProcessor implements ContractState
     {
         $contract = $this->resolveModel($contract);
 
-        DB::transaction(function () use ($contract, $state) {
-            $contract->usingVersion->update($state);
-        }, 3);
+        $lock = Cache::lock(Lock::UPDATE_CONTRACT($contract->getKey()), 10);
+
+        $lock->block(30, fn () => $contract->update($state));
 
         return $contract;
     }
 
+    public function replicateMappingFromQuote(BaseQuote $source, Contract $target)
+    {
+        $sourceTable = $source instanceof QuoteVersion ? 'quote_version_field_column' : 'quote_field_column';
+        $sourceForeignKeyName = $source instanceof QuoteVersion ? 'quote_version_id' : 'quote_id';
+        
+        $targetTable = 'contract_field_column';
+        $targetForeignKeyName = 'contract_id';
+
+        DB::table($targetTable)->insertUsing(
+            [$targetForeignKeyName, 'template_field_id', 'importable_column_id', 'is_default_enabled', 'sort'],
+            DB::table($sourceTable)->select(
+                DB::raw("'{$target->getKey()}' as $targetForeignKeyName"),
+                'template_field_id',
+                'importable_column_id',
+                'is_default_enabled',
+                'sort'
+            )
+                ->where($sourceForeignKeyName, $source->getKey())
+        );
+    }
+
+    protected function mapQuoteAttributesToContract(BaseQuote $quote)
+    {
+        $attributes = $quote->getAttributes();
+
+        return [
+            "id"                     => Arr::get($attributes, 'id'),
+            "user_id"                => Arr::get($attributes, 'user_id'),
+            "contract_template_id"   => Arr::get($attributes, 'contract_template_id'),
+            "company_id"             => Arr::get($attributes, 'company_id'),
+            "vendor_id"              => Arr::get($attributes, 'vendor_id'),
+            "country_id"             => Arr::get($attributes, 'country_id'),
+            "customer_id"            => Arr::get($attributes, 'customer_id'),
+            "schedule_file_id"       => Arr::get($attributes, 'schedule_file_id'),
+            "distributor_file_id"    => Arr::get($attributes, 'distributor_file_id'),
+            "previous_state"         => Arr::get($attributes, 'previous_state'),
+            "completeness"           => Arr::get($attributes, 'completeness'),
+            "pricing_document"       => Arr::get($attributes, 'pricing_document'),
+            "service_agreement_id"   => Arr::get($attributes, 'service_agreement_id'),
+            "system_handle"          => Arr::get($attributes, 'system_handle'),
+            "contract_date"          => Arr::get($attributes, 'closing_date'),
+            "additional_notes"       => Arr::get($attributes, 'additional_notes'),
+            "group_description"      => Arr::get($attributes, 'group_description'),
+            "use_groups"             => Arr::get($attributes, 'use_groups'),
+            "sort_group_description" => Arr::get($attributes, 'sort_group_description'),
+            'customer_name'          => $quote->customer->name,
+            'contract_number'        => Str::replaceFirst('CQ', 'CT', $quote->customer->rfq),
+        ];
+    }
+
     public function createFromQuote(Quote $quote, array $attributes = [])
     {
-        $contractAttributes = $attributes + Arr::except($quote->usingVersion->getAttributes(), ['additional_notes', 'closing_date']);
+        $contractAttributes = $attributes + $this->mapQuoteAttributesToContract($quote->activeVersionOrCurrent);
 
-        return DB::transaction(function () use ($quote, $attributes, $contractAttributes) {
-            $quote->update($attributes);
+        $lock = Cache::lock(Lock::UPDATE_QUOTE($quote->getKey()), 10);
 
-            /** We are updating relation attributes if the contract already exists. */
-            if ($quote->contract()->exists()) {
-                return tap($quote->contract)->update($attributes);
-            }
+        $lock->block(30);
+        
+        $quote->update($attributes);
 
-            $version = $quote->usingVersion;
+        /** We are updating relation attributes if the contract already exists. */
+        if ($quote->contract()->exists()) {
+            $contractLock = Cache::lock(Lock::UPDATE_CONTRACT($quote->contract->getKey()), 10);
 
-            $contract = tap($this->make($contractAttributes), function ($contract) use ($quote) {
-                $contract->quote()->associate($quote);
-                $contract->user()->associate(auth()->user());
-                tap($contract)->unSubmit()->save();
-            });
+            return $contractLock->block(30, fn () => tap($quote->contract)->update($attributes));
+        }
 
-            $this->quoteState->replicateDiscounts($version->id, $contract->id);
-            $this->quoteState->replicateMapping($version->id, $contract->id);
+        $version = $quote->activeVersionOrCurrent;
 
-            $version->quoteFiles()->get()->each(function ($quoteFile) use ($contract) {
-                switch ($quoteFile->file_type) {
-                    case QFT_PL:
-                        $contract->quoteFiles()->save($this->quoteFiles->replicatePriceList($quoteFile));
-                        break;
-                    case QFT_PS:
-                        tap($quoteFile->replicate(['scheduleData']), function ($schedule) use ($contract, $quoteFile) {
-                            $contract->quoteFiles()->save($schedule);
-                            $schedule->scheduleData()->save($quoteFile->scheduleData->replicate());
-                        });
-                        break;
-                }
-            });
+        $contract = tap($this->make($contractAttributes), function ($contract) use ($quote) {
+            $contract->quote()->associate($quote);
+            $contract->user()->associate(auth()->user());
 
-            if ($version->group_description->isNotEmpty()) {
-                $rowsIds = $contract->groupedRows();
+            $contractLock = Cache::lock(Lock::CREATE_CONTRACT($quote->getKey()), 10);
 
-                /** @var \Illuminate\Database\Eloquent\Collection */
-                $replicatedRows = $contract->rowsData()->getQuery()->toBase()->whereIn('imported_rows.replicated_row_id', $rowsIds)->get(['imported_rows.id', 'imported_rows.replicated_row_id']);
-
-                $contract->group_description->each(function (RowsGroup $group) use ($replicatedRows) {
-                    $rowsIds = $replicatedRows->whereIn('replicated_row_id', $group->rows_ids)->pluck('id');
-
-                    $group->rows_ids = $rowsIds->toArray();
-                });
-
+            $contractLock->block(30, function () use ($contract) {
+                $contract->unSubmit();
                 $contract->save();
-            }
+            });
+        });
 
-            return $contract;
-        }, 3);
+        $this->replicateMappingFromQuote($version, $contract);
+
+        if ($version->priceList->exists) {
+            $priceListFile = $this->quoteFiles->replicatePriceList($version->priceList);
+
+            $contract->distributor_file_id = $priceListFile->getKey();
+        }
+
+        if ($version->paymentSchedule->exists) {
+            tap($version->paymentSchedule->replicate(), function ($schedule) use ($contract, $version) {
+                $schedule->save();
+                $schedule->scheduleData()->save($version->paymentSchedule->scheduleData->replicate());
+                $contract->schedule_file_id = $schedule->getKey();
+            });
+        }
+
+        $contract->save();
+
+        if ($version->group_description->isNotEmpty()) {
+            $rowsIds = $contract->groupedRows();
+
+            /** @var \Illuminate\Database\Eloquent\Collection */
+            $replicatedRows = $contract->rowsData()->getQuery()->toBase()->whereIn('imported_rows.replicated_row_id', $rowsIds)->get(['imported_rows.id', 'imported_rows.replicated_row_id']);
+
+            $contract->group_description->each(function (RowsGroup $group) use ($replicatedRows) {
+                $rowsIds = $replicatedRows->whereIn('replicated_row_id', $group->rows_ids)->pluck('id');
+
+                $group->rows_ids = $rowsIds->toArray();
+            });
+
+            $contract->save();
+        }
+
+        $lock->release();
+
+        return $contract;
     }
 }

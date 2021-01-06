@@ -2,6 +2,10 @@
 
 namespace Tests\Unit;
 
+use Tests\TestCase;
+use Tests\Unit\Traits\{
+    WithFakeUser
+};
 use App\Contracts\Services\LocationService;
 use App\Contracts\Services\Stats;
 use App\DTO\Summary;
@@ -14,15 +18,14 @@ use App\Services\StatsAggregator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Carbon\CarbonPeriod;
-use Tests\TestCase;
-use Tests\Unit\Traits\{
-    TruncatesDatabaseTables,
-    WithFakeUser
-};
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 
+/**
+ * @group build
+ */
 class StatsTest extends TestCase
 {
-    use WithFakeUser, TruncatesDatabaseTables;
+    use WithFakeUser, DatabaseTransactions;
 
     protected array $truncatableTables = ['quote_totals'];
 

@@ -5,6 +5,9 @@ namespace Tests\Feature;
 use Tests\TestCase;
 use Tests\Unit\Traits\WithFakeUser;
 
+/**
+ * @group build
+ */
 class DashboardTest extends TestCase
 {
     use WithFakeUser;

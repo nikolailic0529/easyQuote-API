@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Database\Seeder;
-use App\Models\QuoteTemplate\TemplateFieldType;
+use App\Models\Template\TemplateFieldType;
 
 class TemplateFieldsSeeder extends Seeder
 {

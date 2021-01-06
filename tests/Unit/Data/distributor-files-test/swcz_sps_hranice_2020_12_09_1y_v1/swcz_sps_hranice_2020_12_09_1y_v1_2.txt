@@ -1,0 +1,79 @@
+Soupis podporovaných produkt
+
+              Identifikacní císlo           smlouvy       SWCZ-STREDNI                  Identifikacní císlo smlouvy: 1086 6565 3153
+
+              Cenová nabídka                                                            Identifikacní císlo systému CZ-STREDNI-LL
+
+              Vase objednávka c.
+
+                                                                                        Objednávka HPE c. 56981167
+
+              Adresa místa instalace                                                    Adresa pro zasílání SW dokumentace
+
+              STREDNI PRMYSLOVA                                                         STREDNI PRMYSLOVA
+
+              SKOLA HRANICE                                                             SKOLA HRANICE
+
+              Studentska 1384                                                           Studentska 1384
+
+              753 01 Hranice                                                            753 01 Hranice
+
+              Kontaktní osoba pro     HW                                                Kontaktní osoba pro     SW
+
+              Petr Skrabal                                                              Petr Skrabal
+
+              Tel 425 745 062                                                           Tel 425 745 062
+
+              Fax                                                                       Fax
+
+              Navrzené ceny maji platnost do 28.12.2020
+
+              Doba platnosti od: 29.12.2020              do: 28.12.2021
+
+              - V pípad HW ci SW závady volejte prosím: +420-239018792
+
+        Produkt c.            Popis                                                 Výrobní císlo           Doba   platnosti         Mnozství         Cena/Kc
+
+                                                                                                            od:            do:
+
+        H7J32AC               HPE Foundation     Care  NBD   SVC
+
+        *** Hardware    ***
+
+                              HPE   Hardware Maintenance Onsite Support
+
+                                       Hardware Problem Diagnosis
+
+                                       Onsite Support
+
+                                       Parts and Material provided
+
+                                       Next Cov Day Onsite Response
+
+                                       Std Office Hrs Std Office Days
+
+        719064-B21            HPE   DL380 Gen9 8SFF CTO Server                     CZJ53406B9                                             1        1.789,87
+
+                              HPE   Collaborative Remote Support
+
+                                       Basic Software Phone Support
+
+                                       Collaborative Call Managemnt
+
+                                       24 Hours, Day 1-7     Phone Supp
+
+                                       Standard Response Time
+
+        719064-B21            HPE   DL380 Gen9 8SFF CTO Server                     CZJ53406B9                                             1          168,30
+
+        *** Hardware    ***
+
+        UJ558AC               HW RTS Changed                                                                              28.01.2021               5.967,37
+
+                              There is a Return to Support fee applicable   for this contract and the amount
+
+                              is included in your first month invoice
+
+      Ceny za sluzby budou          fakturovány    msícn.
+
+          Datum vystavení 09.12.2020                            Toto není faktura. Cástky jsou uvedeny bez DPH.                                   Strana 2/ 3

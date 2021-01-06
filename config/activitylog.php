@@ -72,8 +72,8 @@ return [
         'vendor' => \App\Models\Vendor::class,
         'company' => \App\Models\Company::class,
         'template' => [
-            \App\Models\QuoteTemplate\QuoteTemplate::class,
-            \App\Models\QuoteTemplate\ContractTemplate::class
+            \App\Models\Template\QuoteTemplate::class,
+            \App\Models\Template\ContractTemplate::class
         ],
         'country' => \App\Models\Data\Country::class,
         'address' => \App\Models\Address::class,

@@ -3,7 +3,8 @@
 namespace App\Imports\Concerns;
 
 use App\Models\QuoteFile\QuoteFile;
-use Str;
+use Illuminate\Support\Str;
+use ValueError;
 
 trait LimitsHeaders
 {
@@ -11,9 +12,7 @@ trait LimitsHeaders
     {
         if ($quoteFile->isCsv()) {
             if (Str::length($header) > 100) {
-                $quoteFile->setException(QFWS_01, 'QFWS_01');
-                $quoteFile->markAsUnHandled();
-                $quoteFile->throwExceptionIfExists();
+                throw new ValueError('An invalid data delimiter selected');
             }
         }
 

@@ -2,16 +2,18 @@
 
 namespace Tests\Unit;
 
-use App\Models\Asset;
-use Illuminate\Support\Collection;
 use Tests\TestCase;
 use Tests\Unit\Traits\AssertsListing;
-use Tests\Unit\Traits\TruncatesDatabaseTables;
 use Tests\Unit\Traits\WithFakeUser;
+use App\Models\Asset;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 
+/**
+ * @group build
+ */
 class AssetTest extends TestCase
 {
-    use WithFakeUser, AssertsListing, TruncatesDatabaseTables;
+    use WithFakeUser, AssertsListing, DatabaseTransactions;
 
     protected array $truncatableTables = [
         'assets'

@@ -7,11 +7,12 @@ use App\Models\{
     Company,
     Data\Country,
     Data\Currency,
-    QuoteTemplate\QuoteTemplate,
-    QuoteTemplate\TemplateField
+    Template\QuoteTemplate,
+    Template\TemplateField
 };
 use Illuminate\Console\Command;
-use Setting, Str;
+use Illuminate\Support\Facades\DB;
+use App\Facades\Setting, Illuminate\Support\Str;
 
 class TemplatesUpdate extends Command
 {
@@ -50,11 +51,10 @@ class TemplatesUpdate extends Command
 
         activity()->disableLogging();
 
-        \DB::transaction(function () {
+        DB::transaction(function () {
             $templates = json_decode(file_get_contents(database_path('seeds/models/quote_templates.json')), true);
             $design = file_get_contents(database_path('seeds/models/template_designs.json'));
-            $currency_id = Currency::whereCode(Setting::get('base_currency'))->firstOrFail()->id;
-            $templateFields = TemplateField::system()->pluck('id')->toArray();
+            $currency = Currency::whereCode(Setting::get('base_currency'))->first();
 
             foreach ($templates as $templateData) {
 
@@ -64,23 +64,34 @@ class TemplatesUpdate extends Command
 
                     foreach ($templateData['vendors'] as $vendorCode) {
                         $vendor = Vendor::whereShortCode($vendorCode)->firstOrFail();
-                        $vendor_id = $vendor->id;
-                        $company_id = $company->id;
-                        $is_system = true;
 
-                        $companyShortCode = Str::short($company->name);
                         $name = "{$company->acronym}-{$vendor->short_code}-{$templateData['new_name']}";
                         $countries = Country::whereIn('iso_3166_2', $templateData['countries'])->pluck('id')->toArray();
 
                         $designData = array_merge($vendor->logoSelectionWithKeys, $company->logoSelectionWithKeys);
-                        $parsedDesign = $this->parseDesign($design, $designData);
+                        $templateSchema = $this->parseDesign($design, $designData);
 
-                        $template = QuoteTemplate::updateOrCreate(
-                            compact('name', 'company_id', 'vendor_id', 'is_system'),
-                            array_merge(compact('name', 'company_id', 'vendor_id', 'currency_id', 'is_system'), $parsedDesign)
-                        );
+                        $template = QuoteTemplate::firstOrNew([
+                            'name' => $name,
+                            'company_id' => $company->getKey(),
+                            'vendor_id' => $vendor->getKey(),
+                            'is_system' => true,
+                        ]);
 
-                        $template->templateFields()->syncWithoutDetaching($templateFields);
+                        if ($template->exists) {
+                            $template->timestamps = false;
+                        }
+
+                        $template->forceFill([
+                            'name' => $name,
+                            'company_id' => $company->getKey(),
+                            'vendor_id' => $vendor->getKey(),
+                            'currency_id' => $currency->getKey(),
+                            'is_system' => true,
+                            'form_data' => $templateSchema['form_data'],
+                            'form_values_data' => $templateSchema['form_values_data'],
+                        ])->save();
+
                         $template->countries()->sync($countries);
 
                         $this->output->write('.');

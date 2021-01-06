@@ -142,6 +142,8 @@ Route::group(['middleware' => 'auth:api'], function () {
             Route::put('templates/activate/{template}', 'QuoteTemplateController@activate');
             Route::put('templates/deactivate/{template}', 'QuoteTemplateController@deactivate');
             Route::put('templates/copy/{template}', 'QuoteTemplateController@copy');
+
+            Route::post('templates/filter', 'QuoteTemplateController@filterTemplates');
         });
 
         Route::group(['namespace' => 'Templates', 'middleware' => THROTTLE_RATE_01], function () {

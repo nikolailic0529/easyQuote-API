@@ -11,7 +11,7 @@ interface PdfParserInterface
      * @param bool $storage
      * @return array
      */
-    public function getText(string $path, bool $storage = true);
+    public function getText(string $path);
 
     /**
      * Parse PDF text by columns.
@@ -36,5 +36,5 @@ interface PdfParserInterface
      * @param bool $storage
      * @return int
      */
-    public function countPages(string $path, bool $storage = true);
+    public function countPages(string $path);
 }

@@ -2,18 +2,20 @@
 
 namespace Tests\Unit\Template;
 
-use Carbon\CarbonInterval;
-use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\TestCase;
 use Tests\Unit\Traits\{
     WithFakeUser,
     AssertsListing
 };
-use Str, Arr;
+use Illuminate\Support\{Str, Arr};
 
+/**
+ * @group build
+ */
 class ContractTemplateTest extends TestCase
 {
-    use WithFakeUser, AssertsListing;
+    use WithFakeUser, AssertsListing, DatabaseTransactions;
 
     protected static array $assertableAttributes = ['name', 'company_id', 'vendor_id', 'currency_id', 'form_data'];
 

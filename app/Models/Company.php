@@ -10,7 +10,7 @@ use App\Contracts\{
 };
 use App\Models\{
     Data\Country,
-    QuoteTemplate\QuoteTemplate,
+    Template\QuoteTemplate,
 };
 use App\Models\Customer\CustomerTotal;
 use App\Traits\{

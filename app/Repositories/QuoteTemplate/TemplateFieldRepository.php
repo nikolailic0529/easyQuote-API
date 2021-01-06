@@ -7,7 +7,7 @@ use App\Http\Requests\QuoteTemplate\{
     StoreTemplateFieldRequest,
     UpdateTemplateFieldRequest
 };
-use App\Models\QuoteTemplate\{
+use App\Models\Template\{
     TemplateField,
     TemplateFieldType
 };
@@ -88,8 +88,8 @@ class TemplateFieldRepository extends SearchableRepository implements TemplateFi
     protected function filterQueryThrough(): array
     {
         return [
+            \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\DefaultOrderBy::class,
-            \App\Http\Query\OrderByCreatedAt::class
         ];
     }
 

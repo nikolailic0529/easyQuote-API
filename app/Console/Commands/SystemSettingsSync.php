@@ -2,8 +2,11 @@
 
 namespace App\Console\Commands;
 
+use App\Models\System\SystemSetting;
 use Illuminate\Console\Command;
-use Str, Arr;
+use Illuminate\Support\{Str, Arr};
+use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class SystemSettingsSync extends Command
 {
@@ -34,12 +37,14 @@ class SystemSettingsSync extends Command
 
         $settings = json_decode(file_get_contents(database_path('seeds/models/system_settings.json')), true);
 
-        \DB::transaction(function () use ($settings) {
+        DB::beginTransaction();
+
+        try {
             collect($settings)->each(function ($setting) {
                 $key = $setting['key'];
                 $value = $this->formatValue($key, $setting['value']);
                 $possibleValues = $this->formatPossibleValues(optional($setting)['possible_values']);
-
+    
                 $attributes = [
                     'key'               => $key,
                     'value'             => $value,
@@ -51,19 +56,22 @@ class SystemSettingsSync extends Command
                     'order'             => $setting['order'] ?? 1,
                     'validation'        => $setting['validation'] ?? null
                 ];
-
-                $setting = setting()->firstOrCreate(
-                    compact('key'),
-                    $attributes
-                );
-
-                if (!$setting->wasRecentlyCreated) {
-                    $setting->update(Arr::except($attributes, 'value'));
+    
+                $setting = SystemSetting::firstOrNew(['key' => $key]);
+                
+                if (!$setting->exists) {
+                    $setting->forceFill($attributes)->save();
                 }
-
+    
                 $this->output->write('.');
             });
-        });
+        
+            DB::commit();
+        } catch (Throwable $e) {
+            DB::rollBack();
+
+            throw $e;
+        }
 
         activity()->enableLogging();
 

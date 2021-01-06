@@ -7,23 +7,20 @@ use App\Http\Requests\{
     StoreQuoteFileRequest,
     HandleQuoteFileRequest
 };
-use App\Contracts\{
-    Repositories\QuoteFile\QuoteFileRepositoryInterface,
-    Services\ParserServiceInterface
-};
-use App\Models\Quote\Quote;
+use App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface;
+use App\Contracts\Services\ManagesDocumentProcessors;
+use App\Contracts\Services\QuoteState;
 use App\Models\QuoteFile\QuoteFile;
+use App\Services\QuoteFileService;
+use Illuminate\Http\Response;
 
 class QuoteFilesController extends Controller
 {
     protected $quoteFile;
 
-    protected $parserService;
-
-    public function __construct(QuoteFileRepositoryInterface $quoteFile, ParserServiceInterface $parserService)
+    public function __construct(QuoteFileRepositoryInterface $quoteFile)
     {
         $this->quoteFile = $quoteFile;
-        $this->parserService = $parserService;
 
         $this->authorizeResource(QuoteFile::class, 'file');
     }
@@ -42,21 +39,26 @@ class QuoteFilesController extends Controller
         );
     }
 
-    public function store(StoreQuoteFileRequest $request)
+    public function store(StoreQuoteFileRequest $request, QuoteFileService $service)
     {
-        $quoteFile = $this->quoteFile->create(
-            $this->parserService->preHandle($request)
-        );
-
         return response()->json(
-            $quoteFile
+            $service->storeQuoteFile($request->file('quote_file'), $request->user(), $request->input('file_type')),
+            Response::HTTP_CREATED
         );
     }
 
-    public function handle(HandleQuoteFileRequest $request)
+    public function handle(HandleQuoteFileRequest $request, ManagesDocumentProcessors $service, QuoteState $quoteProcessor)
     {
-        $this->authorize('handle', $this->quoteFile->find($request->quote_file_id));
+        $this->authorize('handle', $request->getQuoteFile());
 
-        return $this->parserService->handle($request);
+        $quoteProcessor->createNewVersionIfNonCreator($request->getQuote());
+
+        return response()->json(
+            $service->performProcess(
+                $request->getQuote(),
+                $request->getQuoteFile(),
+                $request->input('page')
+            )
+        );
     }
 }

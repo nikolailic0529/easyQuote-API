@@ -8,10 +8,7 @@ use App\Models\{
 };
 use App\Services\ThumbnailManager;
 use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Str;
-use Illuminate\Support\Stringable;
+use Illuminate\Support\Facades\DB;
 
 class VendorsUpdate extends Command
 {
@@ -46,30 +43,41 @@ class VendorsUpdate extends Command
      */
     public function handle()
     {
-        $this->info("Updating System Defined Vendors...");
+        $this->output->title("Updating System Defined Vendors...");
 
         activity()->disableLogging();
 
-        \DB::transaction(function () {
-            $vendors = json_decode(file_get_contents(database_path('seeds/models/vendors.json')), true);
+        $vendors = json_decode(file_get_contents(database_path('seeds/models/vendors.json')), true);
 
-            collect($vendors)->each(function ($vendorData) {
-                /** @var Vendor */
-                $vendor = Vendor::whereShortCode($vendorData['short_code'])->first();
-                $countries = Country::whereIn('iso_3166_2', $vendorData['countries'])->get();
-                $vendor->countries()->sync($countries);
-                $vendor->createLogo($vendorData['logo'], true);
+        DB::beginTransaction();
 
-                if (isset($vendorData['svg_logo'])) {
-                    ThumbnailManager::updateModelSvgThumbnails($vendor, base_path($vendorData['svg_logo']));
-                }
+        $this->output->progressStart(count($vendors));
 
-                $this->output->write('.');
-            });
+        collect($vendors)->each(function ($data) {
+            /** @var Vendor */
+            $vendor = Vendor::firstOrNew(['short_code' => $data['short_code']], ['name' => $data['name'], 'is_system' => true]);
+
+            $vendor->save();
+
+            $countries = Country::whereIn('iso_3166_2', $data['countries'])->get();
+
+            $vendor->countries()->sync($countries);
+
+            $vendor->createLogo($data['logo'], true);
+
+            if (isset($data['svg_logo'])) {
+                ThumbnailManager::updateModelSvgThumbnails($vendor, base_path($data['svg_logo']));
+            }
+
+            $this->output->progressAdvance();
         });
+
+        $this->output->progressFinish();
+
+        DB::commit();
 
         activity()->enableLogging();
 
-        $this->info("\nSystem Defined Vendors were updated!");
+        $this->info("System Defined Vendors were updated!");
     }
 }

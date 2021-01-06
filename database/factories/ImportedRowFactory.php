@@ -5,9 +5,10 @@
 use App\Models\{
     QuoteFile\ImportableColumn,
     QuoteFile\ImportedRow,
-    QuoteTemplate\TemplateField,
+    Template\TemplateField,
 };
 use Faker\Generator as Faker;
+use Illuminate\Support\Str;
 
 $factory->define(ImportedRow::class, function (Faker $faker) {
     $templateFields = TemplateField::where('is_system', true)->pluck('id', 'name');
@@ -24,7 +25,6 @@ $factory->define(ImportedRow::class, function (Faker $faker) {
             $templateFields->get('qty') => ['value' => 1, 'header' => 'Quantity', 'importable_column_id' => $importableColumns->get('qty')],
             $templateFields->get('price') => ['value' => $faker->randomFloat(2, 100, 20000), 'header' => 'Price', 'importable_column_id' => $importableColumns->get('price')],
         ]),
-        'group_name'    => $faker->word,
         'page'          => mt_rand(2, 4)
     ];
 });

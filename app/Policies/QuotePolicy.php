@@ -70,7 +70,7 @@ class QuotePolicy
      */
     public function state(User $user, Quote $quote)
     {
-        if ($quote->isSubmitted()) {
+        if (!is_null($quote->submitted_at)) {
             return $this->deny(QSU_01);
         }
 
@@ -168,7 +168,7 @@ class QuotePolicy
             return false;
         }
 
-        if ($quote->isSubmitted() && $quote->contract->exists) {
+        if (!is_null($quote->submitted_at) && (!is_null($quote->contract_id) || $quote->contract->exists)) {
             return $this->deny(QCE_UN_01);
         }
 
@@ -208,7 +208,7 @@ class QuotePolicy
      */
     public function delete(User $user, Quote $quote)
     {
-        if ($quote->isSubmitted() && $quote->contract->exists) {
+        if (!is_null($quote->submitted_at) && (!is_null($quote->contract_id) || $quote->contract->exists)) {
             return $this->deny(QCE_D_01);
         }
 
@@ -235,7 +235,7 @@ class QuotePolicy
      */
     public function deleteVersion(User $user, Quote $quote, QuoteVersion $version)
     {
-        if ($quote->isSubmitted()) {
+        if (!is_null($quote->submitted_at)) {
             return $this->deny(QV_SD_01);
         }
 

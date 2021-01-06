@@ -1,99 +1,99 @@
 Detail for Support Account ID: SUPWARE-ADS
 
-                                                                                                 Service Agreement ID: 1086 5144 4970
+                                                                                        Service Agreement ID: 1086 5144 4970
 
-Support Quotation                                                                                System Handle: SUPWARE-ADS-AE-3PAR
+              Support Quotation                                                         System Handle: SUPWARE-ADS-AE-3PAR
 
-Agreement No.                                                                                    UAE
+              Agreement No.                                                             UAE
 
-Your PO Reference:                                                                               HPE Reference No.: 56777559
+              Your PO Reference:                                                        HPE Reference No.: 56777559
 
-Equipment Address:                                                                               Software Update Address:
+              Equipment Address:                                                        Software Update Address:
 
-Ads Securities                                                                                   Ads Securities
+              Ads Securities                                                            Ads Securities
 
-8Th Floor, Ci Tower, Corniche Rd                                                                 8Th Floor, Ci Tower, Corniche                         Rd
+              8Th Floor, Ci Tower, Corniche Rd                                          8Th Floor, Ci Tower, Corniche         Rd
 
-93894 ABU DHABI                                                                                  93894 ABU DHABI
+              93894 ABU DHABI                                                           93894 ABU DHABI
 
-UNIT.ARAB EMIR.                                                                                  UNIT.ARAB EMIR.
+              UNIT.ARAB EMIR.                                                           UNIT.ARAB EMIR.
 
-Hardware Contact:                                                                                Software Contact:
+              Hardware Contact:                                                         Software Contact:
 
-Amith Chandran                                                                                   Amith Chandran
+              Amith Chandran                                                            Amith Chandran
 
-Tel: +971 2 6572 371                                                                             Tel: +971 2 6572 371
+              Tel: +971 2 6572 371                                                      Tel: +971 2 6572 371
 
-Fax:                                                                                             Fax:
+              Fax:                                                                      Fax:
 
-This quote is valid until 31.08.2020
+              This quote is valid until 31.08.2020
 
-Coverage from: 01.09.2020 to: 31.08.2021
+              Coverage from: 01.09.2020 to: 31.08.2021
 
-To log a call please telephone our Customer Care                                      Reception  on: 0845 161 0050
+              To log a call please telephone our Customer Care           Reception    on: 0845 161 0050
 
-Product No.             Description                                                   Serial No.                    Coverage Period                        Qty  Price/GBP
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
 
-                                                                                                                    from:                         to:
+                                                                                                            from:          to:
 
-H7J32AC                 HPE Foundation Care NBD SVC
+        H7J32AC               HPE Foundation Care NBD SVC
 
-*** Hardware ***
+        *** Hardware ***
 
-                        HPE Hardware Maintenance Onsite Support
+                              HPE Hardware Maintenance Onsite Support
 
-                             Hardware Problem Diagnosis
+                                       Hardware Problem Diagnosis
 
-                             Onsite Support
+                                       Onsite Support
 
-                             Parts and Material provided
+                                       Parts and Material provided
 
-                             Next Cov Day Onsite Response
+                                       Next Cov Day Onsite Response
 
-                             Std Office Hrs Std Office Days
+                                       Std Office Hrs Std Office Days
 
-QR482A                  HP 3PAR StoreServ 7200 2-N Storage Base                       CZ34464236                                                           1    53.62
+        QR482A                HP 3PAR StoreServ 7200 2-N Storage Base              CZ34464236                                             1            53.62
 
-                        Please note HP can no longer support this item from: 31.10.2022
+                              Please note HP can no longer support this item from: 31.10.2022
 
-E7W54B                  HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD                       2Y8445N03L                                                           1    9.60
+        E7W54B                HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD              2Y8445N03L                                             1             9.60
 
-E7W54B                  HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD                       2Y8445N03T                                                           1    9.60
+        E7W54B                HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD              2Y8445N03T                                             1             9.60
 
-E7W54B                  HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD                       2Y8445N04H                                                           1    9.60
+        E7W54B                HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD              2Y8445N04H                                             1             9.60
 
-E7W54B                  HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD                       2Y8445N04I                                                           1    9.60
+        E7W54B                HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD              2Y8445N04I                                             1             9.60
 
-E7W54B                  HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD                       2Y8445N04Y                                                           1    9.60
+        E7W54B                HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD              2Y8445N04Y                                             1             9.60
 
-E7W54B                  HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD                       2Y8445N04Z                                                           1    9.60
+        E7W54B                HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD              2Y8445N04Z                                             1             9.60
 
-E7W54B                  HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD                       2Y8445N05C                                                           1    9.60
+        E7W54B                HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD              2Y8445N05C                                             1             9.60
 
-E7W54B                  HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD                       2Y8445N05D                                                           1    9.60
+        E7W54B                HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD              2Y8445N05D                                             1             9.60
 
-E7W54B                  HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD                       2Y8445N05G                                                           1    9.60
+        E7W54B                HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD              2Y8445N05G                                             1             9.60
 
-E7W54B                  HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD                       2Y8445N05H                                                           1    9.60
+        E7W54B                HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD              2Y8445N05H                                             1             9.60
 
-E7W54B                  HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD                       2Y8445N068                                                           1    9.60
+        E7W54B                HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD              2Y8445N068                                             1             9.60
 
-E7W54B                  HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD                       2Y8445N06S                                                           1    9.60
+        E7W54B                HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD              2Y8445N06S                                             1             9.60
 
-                                                                                                 Hardware Subtotal                                              168.82
+                                                                                         Hardware Subtotal                                           168.82
 
-                                                                                                 Discounts                                                      -26.74
+                                                                                         Discounts                                                    -26.74
 
-                                                                                                 Total                                                          142.08
+                                                                                         Total                                                       142.08
 
-Discount Summary
+        Discount Summary
 
-Special Neg HdrDisc% -15%                                                                                                                                       25.32-
+        Special Neg HdrDisc% -15%                                                                                                                     25.32-
 
-Pre Payment HdrDisc% -1%                                                                                                                                        1.42-
+        Pre Payment HdrDisc% -1%                                                                                                                       1.42-
 
-Single Payment for Duration
+      Single Payment for Duration
 
-Printed on: 06.08.2020                                         Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT                Page: 5 / 7
+          Printed on: 06.08.2020                                Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT    Page: 5 / 7
 
-Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN.  Registered No: 690597
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN.Registered No: 690597

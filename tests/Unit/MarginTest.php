@@ -2,19 +2,21 @@
 
 namespace Tests\Unit;
 
-use App\Models\Quote\Margin\CountryMargin;
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\{
     WithFakeUser,
     AssertsListing,
-    TruncatesDatabaseTables
 };
-use Str;
+use App\Models\Quote\Margin\CountryMargin;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Str;
 
+/**
+ * @group build
+ */
 class MarginTest extends TestCase
 {
-    use TruncatesDatabaseTables, WithFakeUser, AssertsListing;
+    use WithFakeUser, AssertsListing, DatabaseTransactions;
 
     protected array $truncatableTables = [
         'country_margins'

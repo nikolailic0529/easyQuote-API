@@ -75,6 +75,12 @@ return [
 
         'client_id' => env('VS_API_CLIENT_ID'),
         'client_secret' => env('VS_API_CLIENT_SECRET'),
-    ]
+    ],
+
+    'document_api' => [
+        'url' => env('DOCUMENT_API_URL'),
+        'client_id' => env('DOCUMENT_API_CLIENT_ID'),
+        'client_secret' => env('DOCUMENT_API_CLIENT_SECRET'),
+    ],
 
 ];

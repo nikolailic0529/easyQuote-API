@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Enum\Lock;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -16,6 +17,8 @@ use App\Models\{
     QuoteFile\QuoteFile
 };
 use App\Repositories\Concerns\ManagesSchemalessAttributes;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 
 class RetrievePriceAttributes implements ShouldQueue
 {
@@ -50,7 +53,7 @@ class RetrievePriceAttributes implements ShouldQueue
             ->join(
                 'template_fields',
                 fn (JoinClause $join) =>
-                $join->on('template_fields.id', '=', 'quote_field_column.template_field_id')
+                $join->on('template_fields.id', '=', $this->quote->fieldsColumns()->getQuery()->qualifyColumn('template_field_id'))
                     ->whereIn('template_fields.name', BaseQuote::PRICE_ATTRIBUTES_MAPPING)
             )
             ->toBase()
@@ -81,8 +84,19 @@ class RetrievePriceAttributes implements ShouldQueue
             )
         ), $attributes);
 
-        $priceList->storeMetaAttributes($attributes);
+        $fileLock = Cache::lock(Lock::UPDATE_QUOTE_FILE($priceList->getKey()), 10);
+        $quoteLock = Cache::lock(Lock::UPDATE_QUOTE($this->quote->getKey()), 10);
 
-        $this->quote->withoutEvents(fn () => $this->quote->fill($priceList->formatted_meta_attributes)->saveOrFail());
+        $quoteLock->block(60, function () use ($attributes) {
+            $quoteAttributes = [
+                'pricing_document' => implode(', ', Arr::get($attributes, 'pricing_document')),
+                'system_handle' => implode(', ', Arr::get($attributes, 'system_handle')),
+                'service_agreement_id' => implode(', ', Arr::get($attributes, 'service_agreement_id')),
+            ];
+
+            $this->quote->whereKey($this->quote->getKey())->toBase()->update($quoteAttributes);
+        });
+
+        $fileLock->block(60, fn () => $priceList->forceFill(['meta_attributes' => json_encode($attributes)])->save());
     }
 }

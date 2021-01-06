@@ -2,14 +2,17 @@
 
 namespace Tests\Unit;
 
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 use Tests\Unit\Traits\WithFakeUser;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Arr;
+use Illuminate\Support\Arr;
 
+/**
+ * @group build
+ */
 class CustomerTest extends TestCase
 {
-    use WithFakeUser;
+    use WithFakeUser, DatabaseTransactions;
 
     protected static $assertableAttributes = ['id', 'name', 'rfq', 'valid_until', 'support_start', 'support_end', 'created_at'];
 

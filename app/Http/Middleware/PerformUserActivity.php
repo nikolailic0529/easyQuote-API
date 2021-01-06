@@ -45,6 +45,6 @@ class PerformUserActivity
             return;
         }
 
-        UserRepository::lock($user->getKey(), 2)->get(fn () => $user->freshActivity());
+        $user->freshActivity();
     }
 }

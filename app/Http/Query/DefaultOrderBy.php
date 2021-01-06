@@ -7,23 +7,35 @@ class DefaultOrderBy
 {
     protected string $column;
 
-    public function __construct(string $column = 'created_at')
+    protected string $ignore;
+
+    public function __construct(string $column = 'created_at', string $ignore = 'activated_at IS NULL')
     {
         $this->column = $column;
+        $this->ignore = $ignore;
     }
 
-    public function handle($request, Closure $next)
+    /**
+     * Handle the builder instance.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $builder
+     * @param \Closure $next
+     * @return void
+     */
+    public function handle($builder, Closure $next)
     {
-        $builder = $next($request);
-
         $orders = $builder instanceof Builder
             ? $builder->getQuery()->orders
             : $builder->orders;
 
-        if (filled($orders)) {
+        $orders = array_filter($orders ?? [], fn ($order) => !isset($order['sql']) || !str_contains($order['sql'], $this->ignore));
+
+        if (!empty($orders)) {
             return $builder;
         }
 
-        return $builder->orderBy($this->column, 'desc');
+        // $column = $builder instanceof Builder ? $builder->qualifyColumn($this->column) : $this->column;
+
+        return $next($builder->orderBy($this->column, 'desc'));
     }
 }

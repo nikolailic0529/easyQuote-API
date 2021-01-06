@@ -6,9 +6,9 @@ use App\Contracts\Repositories\VendorRepositoryInterface as Vendors;
 use App\Contracts\Services\HpeExporter;
 use App\DTO\HpeContractExportFile;
 use App\DTO\PreviewHpeContractData;
-use App\Models\QuoteTemplate\HpeContractTemplate;
+use App\Models\Template\HpeContractTemplate;
 use Barryvdh\Snappy\PdfWrapper;
-use File;
+use Illuminate\Support\Facades\File;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\{Arr, Str};
 use Illuminate\Support\Collection;
@@ -24,20 +24,18 @@ class HpeContractExporter implements HpeExporter
 
     protected Disk $disk;
 
-    protected string $exportView;
-
-    public function __construct(Vendors $vendors, DiskFactory $diskFactory,  string $exportView = 'hpecontracts.pdf')
+    public function __construct(Vendors $vendors, DiskFactory $diskFactory)
     {
         $this->vendors = $vendors;
         $this->disk = $diskFactory->disk();
-        $this->exportView = $exportView;
     }
 
     public function export(HpeContractTemplate $template, PreviewHpeContractData $data)
     {
         $form = Collection::wrap($template->form_data);
-
         $form = static::sortFormPages($form);
+
+        $exportView = $this->resolveExportView($template);
 
         $data->images = Collection::wrap($this->retrieveTemplateImages($template, ThumbnailManager::PREFER_SVG))->pluck('abs_src', 'id')->toArray();
 
@@ -53,13 +51,13 @@ class HpeContractExporter implements HpeExporter
             ->setPaper('letter', 'Portrait')
             ->setOption('margin-left', 26)
             ->setOption('margin-right', 26)
-            ->loadView($this->exportView, ['form' => $form->only('first_page', 'contract_summary'), 'data' => $data, 'orientation' => 'P'])
+            ->loadView($exportView, ['form' => $form->only('first_page', 'contract_summary'), 'data' => $data, 'orientation' => 'P'])
             ->save($portraitPages, true);
 
         $this->pdfWrapper()
             ->setPaper('letter', 'Landscape')
             ->setOption('enable-javascript', true)
-            ->loadView($this->exportView, ['form' => $form->except('first_page', 'contract_summary'), 'data' => $data, 'orientation' => 'L'])
+            ->loadView($exportView, ['form' => $form->except('first_page', 'contract_summary'), 'data' => $data, 'orientation' => 'L'])
             ->save($landscapePages, true);
 
         $pdfMerger = $this->pdfMerger()->init();
@@ -85,9 +83,9 @@ class HpeContractExporter implements HpeExporter
 
     public function retrieveTemplateImages(HpeContractTemplate $template, int $flags = 0): array
     {
-        $hpe = $this->vendors->findByCode('HPE');
+        $vendor = $template->vendor;
 
-        return Collection::wrap([$template->company, $hpe])
+        return Collection::wrap([$template->company, $vendor])
             ->whereInstanceOf(Model::class)
             ->reduce(function (Collection $carry, Model $model) use ($flags) {
                 $images = ThumbnailManager::retrieveLogoDimensions(
@@ -101,6 +99,14 @@ class HpeContractExporter implements HpeExporter
             }, Collection::make())
             ->filter()
             ->toArray();
+    }
+
+    protected function resolveExportView(HpeContractTemplate $template): string
+    {
+        return [
+            'HPE' => 'hpecontracts.hpe-pdf',
+            'ARU' => 'hpecontracts.aruba-pdf',
+        ][$template->vendor->short_code] ?? 'hpecontracts.aruba-pdf';
     }
 
     protected function pdfWrapper(): PdfWrapper

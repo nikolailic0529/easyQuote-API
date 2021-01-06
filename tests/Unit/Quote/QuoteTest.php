@@ -2,28 +2,33 @@
 
 namespace Tests\Unit\Quote;
 
-use App\DTO\RowsGroup;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Collection;
 use Tests\TestCase;
 use Tests\Unit\Traits\{
-    TruncatesDatabaseTables,
     WithFakeQuote,
     WithFakeQuoteFile,
     WithFakeUser,
 };
+use App\DTO\RowsGroup;
+use Illuminate\Support\Collection;
 use App\Models\{
     QuoteFile\QuoteFile,
     QuoteFile\ImportableColumn,
     QuoteFile\ImportedRow,
-    QuoteTemplate\TemplateField,
+    Template\TemplateField,
 };
+use App\Models\Quote\Quote;
 use Illuminate\Database\Eloquent\JsonEncodingException;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\{Str, Arr};
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
+/**
+ * @group build
+ */
 class QuoteTest extends TestCase
 {
-    use WithFakeUser, WithFakeQuote, WithFakeQuoteFile, TruncatesDatabaseTables;
+    use WithFakeUser, WithFakeQuote, WithFakeQuoteFile, DatabaseTransactions;
 
     protected ?QuoteFile $quoteFile = null;
 
@@ -33,11 +38,14 @@ class QuoteTest extends TestCase
         'quotes'
     ];
 
-    protected function setUp(): void
+    public function testDraftedQuotesListing()
     {
-        parent::{__FUNCTION__}();
+        $this->get('api/quotes/drafted')->assertOk();
+    }
 
-        $this->quoteFile = $this->createFakeQuoteFile($this->quote);
+    public function testSubmittedQuotesListing()
+    {
+        $this->get('api/quotes/submitted')->assertOk();
     }
 
     /**
@@ -47,9 +55,10 @@ class QuoteTest extends TestCase
      */
     public function testUpdatingSubmittedQuote()
     {
-        $this->quote->submit();
+        $quote = $this->createQuote($this->user);
+        $quote->submit();
 
-        $state = ['quote_id' => $this->quote->id];
+        $state = ['quote_id' => $quote->id];
 
         $this->postJson(url('api/quotes/state'), $state)
             ->assertForbidden()
@@ -65,13 +74,14 @@ class QuoteTest extends TestCase
      */
     public function testUpdatingDraftedQuote()
     {
-        $this->quote->unSubmit();
+        $quote = $this->createQuote($this->user);
+        $quote->unSubmit();
 
-        $state = ['quote_id' => $this->quote->id];
+        $state = ['quote_id' => $quote->id];
 
         $this->postJson(url('api/quotes/state'), $state)
             ->assertOk()
-            ->assertExactJson(['id' => $this->quote->id]);
+            ->assertExactJson(['id' => $quote->id]);
     }
 
     /**
@@ -79,15 +89,16 @@ class QuoteTest extends TestCase
      *
      * @return void
      */
-    public function testUnsubmitQuote()
+    public function testUnravelQuote()
     {
-        $this->quote->submit();
+        $quote = $this->createQuote($this->user);
+        $quote->submit();
 
-        $this->putJson(url("api/quotes/submitted/unsubmit/{$this->quote->id}"), [])
+        $this->putJson(url("api/quotes/submitted/unsubmit/{$quote->id}"), [])
             ->assertOk()
             ->assertExactJson([true]);
 
-        $this->assertNull($this->quote->refresh()->submitted_at);
+        $this->assertNull($quote->refresh()->submitted_at);
     }
 
     /**
@@ -97,14 +108,15 @@ class QuoteTest extends TestCase
      */
     public function testSubmittedQuoteCopying()
     {
-        $this->quote->submit();
+        $quote = $this->createQuote($this->user);
+        $quote->submit();
 
-        $this->putJson(url("api/quotes/submitted/copy/{$this->quote->id}"), [])
+        $this->putJson(url("api/quotes/submitted/copy/{$quote->id}"), [])
             ->assertOk()
             ->assertExactJson([true]);
 
         // The copied original Quote should be deactivated after copying.
-        $this->assertNull($this->quote->refresh()->activated_at);
+        $this->assertNull($quote->refresh()->activated_at);
     }
 
 
@@ -115,15 +127,17 @@ class QuoteTest extends TestCase
      */
     public function testGroupDescriptionCreating()
     {
-        $attributes = $this->makeGenericGroupDescriptionAttributes();
+        $quote = $this->createQuote($this->user);
+        $quoteFile = $this->createFakeQuoteFile($quote);
+        $attributes = $this->generateGroupDescription($quoteFile);
 
-        $this->postJson(url("api/quotes/groups/{$this->quote->id}"), $attributes)
+        $this->postJson(url("api/quotes/groups/{$quote->id}"), $attributes)
             ->assertOk()
             ->assertJsonStructure([
                 'id', 'name', 'search_text'
             ]);
 
-        $gd = $this->quote->refresh()->group_description;
+        $gd = $quote->refresh()->group_description;
 
         $this->assertInstanceOf(Collection::class, $gd);
 
@@ -137,6 +151,7 @@ class QuoteTest extends TestCase
      */
     public function testGroupDescriptionSetter()
     {
+        $quote = $this->createQuote($this->user);
         $groups = collect()->times(100, fn () => new RowsGroup([
             'id' => (string) Str::uuid(),
             'name' => 'Group',
@@ -145,9 +160,9 @@ class QuoteTest extends TestCase
             'rows_ids' => collect()->times(600, fn () => (string) Str::uuid())->toArray()
         ]));
 
-        $this->quote->group_description = $groups;
+        $quote->group_description = $groups;
 
-        $this->assertTrue($this->quote->save());
+        $this->assertTrue($quote->save());
 
         /**
          * All Groups must be instance of RowsGroup.
@@ -165,9 +180,9 @@ class QuoteTest extends TestCase
         $this->expectException(JsonEncodingException::class);
         $this->expectExceptionMessageMatches('/The Collection must contain only values instance of/i');
 
-        $this->quote->group_description = $groups;
+        $quote->group_description = $groups;
 
-        $this->assertTrue($this->quote->save());
+        $this->assertTrue($quote->save());
 
         /**
          * It is allowed to set Groups Collection as Json string.
@@ -180,9 +195,9 @@ class QuoteTest extends TestCase
             'rows_ids' => collect()->times(600, fn () => (string) Str::uuid())->toArray()
         ]))->toJson();
 
-        $this->quote->group_description = $groups;
+        $quote->group_description = $groups;
 
-        $this->assertTrue($this->quote->save());
+        $this->assertTrue($quote->save());
     }
 
     /**
@@ -192,15 +207,17 @@ class QuoteTest extends TestCase
      */
     public function testGroupDescriptionUpdating()
     {
-        $group = $this->createFakeGroupDescription();
+        $quote = $this->createQuote($this->user);
+        $quoteFile = $this->createFakeQuoteFile($quote);
+        $group = $this->createFakeGroupDescription($quote, $quoteFile);
 
-        $attributes = $this->makeGenericGroupDescriptionAttributes();
+        $attributes = $this->generateGroupDescription($quoteFile);
 
-        $this->patchJson(url("api/quotes/groups/{$this->quote->id}/{$group->id}"), $attributes)
+        $this->patchJson(url("api/quotes/groups/{$quote->id}/{$group->id}"), $attributes)
             ->assertOk()
             ->assertExactJson([true]);
 
-        $gd = $this->quote->refresh()->group_description;
+        $gd = $quote->refresh()->group_description;
 
         $this->assertInstanceOf(Collection::class, $gd);
 
@@ -214,9 +231,11 @@ class QuoteTest extends TestCase
      */
     public function testGroupDescriptionDeleting()
     {
-        $group = $this->createFakeGroupDescription();
+        $quote = $this->createQuote($this->user);
+        $quoteFile = $this->createFakeQuoteFile($quote);
+        $group = $this->createFakeGroupDescription($quote, $quoteFile);
 
-        $this->deleteJson(url("api/quotes/groups/{$this->quote->id}/{$group->id}"), [])
+        $this->deleteJson(url("api/quotes/groups/{$quote->id}/{$group->id}"), [])
             ->assertOk()
             ->assertExactJson([true]);
     }
@@ -228,7 +247,9 @@ class QuoteTest extends TestCase
      */
     public function testGroupDescriptionMovingRows()
     {
-        $groups = collect()->times(2)->transform(fn () => $this->createFakeGroupDescription());
+        $quote = $this->createQuote($this->user);
+        $quoteFile = $this->createFakeQuoteFile($quote);
+        $groups = collect()->times(2)->transform(fn () => $this->createFakeGroupDescription($quote, $quoteFile));
 
         /** @var RowsGroup */
         $fromGroup = $groups->shift();
@@ -242,11 +263,11 @@ class QuoteTest extends TestCase
             'rows' => $fromGroup->rows_ids
         ];
 
-        $response = $this->putJson(url("api/quotes/groups/{$this->quote->id}"), $attributes)->assertOk();
+        $response = $this->putJson(url("api/quotes/groups/{$quote->id}"), $attributes)->assertOk();
 
         $this->assertIsBool(json_decode($response->getContent(), true));
 
-        $gd = $this->quote->refresh()->group_description;
+        $gd = $quote->refresh()->group_description;
 
         $this->assertInstanceOf(Collection::class, $gd);
 
@@ -260,9 +281,11 @@ class QuoteTest extends TestCase
      */
     public function testGroupDisplaying()
     {
-        $group = $this->createFakeGroupDescription();
+        $quote = $this->createQuote($this->user);
+        $quoteFile = $this->createFakeQuoteFile($quote);
+        $group = $this->createFakeGroupDescription($quote, $quoteFile);
 
-        $this->getJson(url("api/quotes/groups/{$this->quote->id}/{$group->id}"))
+        $this->getJson(url("api/quotes/groups/{$quote->id}/{$group->id}"))
             ->assertOk()
             ->assertJsonStructure([
                 'id', 'name', 'search_text', 'total_count', 'total_price', 'rows'
@@ -276,11 +299,13 @@ class QuoteTest extends TestCase
      */
     public function testGroupDescriptionListing()
     {
+        $quote = $this->createQuote($this->user);
+        $quoteFile = $this->createFakeQuoteFile($quote);
         $count = 10;
 
-        collect()->times($count)->each(fn () => $this->createFakeGroupDescription());
+        collect()->times($count)->each(fn () => $this->createFakeGroupDescription($quote, $quoteFile));
 
-        $response = $this->getJson(url("api/quotes/groups/{$this->quote->id}"))->assertOk();
+        $response = $this->getJson(url("api/quotes/groups/{$quote->id}"))->assertOk();
 
         $collection = collect($response->json());
 
@@ -298,16 +323,18 @@ class QuoteTest extends TestCase
      */
     public function testGroupDescriptionSelecting()
     {
+        $quote = $this->createQuote($this->user);
+        $quoteFile = $this->createFakeQuoteFile($quote);
         $count = 10;
 
-        $groups = collect()->times($count)->map(fn ($group) => $this->createFakeGroupDescription());
+        $groups = collect()->times($count)->map(fn ($group) => $this->createFakeGroupDescription($quote, $quoteFile));
 
         $selected = $groups->random(mt_rand(1, $count))->keyBy('id');
 
-        $this->putJson(url("api/quotes/groups/{$this->quote->id}/select"), $selected->pluck('id')->toArray())
+        $this->putJson(url("api/quotes/groups/{$quote->id}/select"), $selected->pluck('id')->toArray())
             ->assertOk();
 
-        $groups = Collection::wrap($this->quote->refresh()->group_description);
+        $groups = Collection::wrap($quote->refresh()->group_description);
 
         /**
          * Assert that groups actual is_selected attribute is matching to selected groups.
@@ -317,9 +344,9 @@ class QuoteTest extends TestCase
         /**
          * Assert that quote review endpoint is displaying selected groups.
          */
-        $this->quote->update(['use_groups' => true]);
+        $quote->update(['use_groups' => true]);
 
-        $response = $this->get(url("api/quotes/review/{$this->quote->id}"));
+        $response = $this->get(url("api/quotes/review/{$quote->id}"));
 
         $reviewData = $response->json();
 
@@ -335,11 +362,73 @@ class QuoteTest extends TestCase
      */
     public function testSubmittedQuoteExport()
     {
-        $this->quote->submit();
+        $quote = $this->createQuote($this->user);
+        $quote->submit();
 
-        $response = $this->getJson(url("api/quotes/submitted/pdf/{$this->quote->id}"));
+        $response = $this->getJson(url("api/quotes/submitted/pdf/{$quote->id}"));
 
         $response->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+    }
+
+    /**
+     * Test download quote distributor file.
+     *
+     * @return void
+     */
+    public function testDownloadQuoteDistributorFile()
+    {
+        $quote = $this->createQuote($this->user);
+
+        Storage::fake();
+
+        $filePath = $this->user->quote_files_directory . '/' . Str::random(40) . '.pdf';
+
+        Storage::put($filePath, file_get_contents(base_path('tests/Unit/Data/distributor-files-test/HPInvent1547101.pdf')));
+
+        $distributorFile = QuoteFile::create([
+            'quote_file_format_id' => DB::table('quote_file_formats')->where('extension', 'pdf')->value('id'),
+            'original_file_name' => 'HPInvent1547101.pdf',
+            'original_file_path' => $filePath,
+            'file_type' => QFT_PL,
+        ]);
+
+        $quote->priceList()->associate($distributorFile)->save();
+
+        $this->get("api/quotes/get/$quote->id/quote-files/price")
+            ->assertOk()
+            ->assertHeader('content-disposition', 'attachment; filename=HPInvent1547101.pdf')
+            ->assertHeader('content-type', 'application/pdf');
+    }
+
+
+    /**
+     * Test download quote payment schedule file.
+     *
+     * @return void
+     */
+    public function testDownloadQuoteScheduleFile()
+    {
+        $quote = $this->createQuote($this->user);
+
+        Storage::fake();
+
+        $filePath = $this->user->quote_files_directory . '/' . Str::random(40) . '.pdf';
+
+        Storage::put($filePath, file_get_contents(base_path('tests/Unit/Data/distributor-files-test/HPInvent1547101.pdf')));
+
+        $distributorFile = QuoteFile::create([
+            'quote_file_format_id' => DB::table('quote_file_formats')->where('extension', 'pdf')->value('id'),
+            'original_file_name' => 'HPInvent1547101.pdf',
+            'original_file_path' => $filePath,
+            'file_type' => QFT_PS,
+        ]);
+
+        $quote->paymentSchedule()->associate($distributorFile)->save();
+
+        $this->get("api/quotes/get/$quote->id/quote-files/schedule")
+            ->assertOk()
+            ->assertHeader('content-disposition', 'attachment; filename=HPInvent1547101.pdf')
             ->assertHeader('content-type', 'application/pdf');
     }
 
@@ -350,7 +439,9 @@ class QuoteTest extends TestCase
      */
     public function testQuoteRetrievingWithEnabledDefaultTemplateFields()
     {
-        $rows = factory(ImportedRow::class, 200)->create(['quote_file_id' => $this->quoteFile->id, 'user_id' => $this->user->id]);
+        $quote = $this->createQuote($this->user);
+        $quoteFile = $this->createFakeQuoteFile($quote);
+        $rows = factory(ImportedRow::class, 200)->create(['quote_file_id' => $quoteFile->id]);
 
         $templateFields = TemplateField::where('is_system', true)->pluck('id', 'name');
         $importableColumns = ImportableColumn::where('is_system', true)->pluck('id', 'name');
@@ -359,11 +450,11 @@ class QuoteTest extends TestCase
 
         $map = $templateFields->flip()->map(fn ($name, $id) => ['importable_column_id' => $importableColumns->get($name), 'is_default_enabled' => Arr::get($defaults, $name, false)]);
 
-        $this->quote->templateFields()->sync($map->toArray());
+        $quote->templateFields()->sync($map->toArray());
 
-        $this->putJson('/api/quotes/get/' . $this->quote->id)->assertOk();
+        $this->putJson('/api/quotes/get/' . $quote->id)->assertOk();
 
-        $this->getJson('api/quotes/review/' . $this->quote->id)->assertOk();
+        $this->getJson('api/quotes/review/' . $quote->id)->assertOk();
     }
 
     /**
@@ -373,34 +464,48 @@ class QuoteTest extends TestCase
      */
     public function testQuoteRetrievingWithFullMappedColumns()
     {
-        $rows = factory(ImportedRow::class, 200)->create(['quote_file_id' => $this->quoteFile->id, 'user_id' => $this->user->id]);
+        $quote = $this->createQuote($this->user);
+        $quoteFile = $this->createFakeQuoteFile($quote);
+        $rows = factory(ImportedRow::class, 20)->create(['quote_file_id' => $quoteFile->id, 'is_selected' => true]);
 
         $templateFields = TemplateField::where('is_system', true)->pluck('id', 'name');
         $importableColumns = ImportableColumn::where('is_system', true)->pluck('id', 'name');
 
         $map = $templateFields->flip()->map(fn ($name, $id) => ['importable_column_id' => $importableColumns->get($name)]);
 
-        $this->quote->templateFields()->sync($map->toArray());
+        $quote->templateFields()->sync($map->toArray());
 
-        $response = $this->putJson('/api/quotes/get/' . $this->quote->id)->assertOk();
+        $this->putJson('/api/quotes/get/' . $quote->id)->assertOk();
 
-        $response = $this->getJson('api/quotes/review/' . $this->quote->id)->assertOk();
+        $this->getJson('api/quotes/review/' . $quote->id)
+            ->assertOk()
+            ->assertJsonStructure([
+                'first_page',
+                'last_page',
+                'data_pages' => [
+                    'rows_header' => ['product_no', 'description', 'serial_no', 'date_from', 'date_to', 'qty', 'price', 'searchable'],
+                    'rows' => [
+                        '*' => ['id', 'is_selected', 'product_no', 'serial_no', 'description', 'date_from', 'date_to', 'qty', 'price', 'searchable']
+                    ]
+                ],
+                'payment_schedule'
+            ]);
     }
 
-    protected function createFakeGroupDescription(): RowsGroup
+    protected function createFakeGroupDescription(Quote $quote, QuoteFile $quoteFile): RowsGroup
     {
-        $attributes = $this->makeGenericGroupDescriptionAttributes();
+        $attributes = $this->generateGroupDescription($quoteFile);
         /** @var \App\DTO\RowsGroup */
-        $group = $this->quoteRepository->createGroupDescription($attributes, $this->quote);
+        $group = $this->quoteRepository->createGroupDescription($attributes, $quote);
 
         return tap($group, fn () => $group->rows_ids = $attributes['rows']);
     }
 
-    protected function makeGenericGroupDescriptionAttributes(): array
+    protected function generateGroupDescription(QuoteFile $quoteFile): array
     {
         $group_name = $this->faker->unique()->sentence(3);
 
-        $rows = factory(ImportedRow::class, 4)->create(compact('group_name') + ['quote_file_id' => $this->quoteFile->id, 'user_id' => $this->user->id]);
+        $rows = factory(ImportedRow::class, 4)->create(['quote_file_id' => $quoteFile->id]);
 
         return [
             'name'          => $group_name,

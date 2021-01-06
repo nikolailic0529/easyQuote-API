@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Quote\Quote;
 use Illuminate\Console\Command;
+use App\Models\Quote\Quote;
 use Illuminate\Support\Collection;
 
 class FreshQuotesGroupDescription extends Command
@@ -39,14 +39,12 @@ class FreshQuotesGroupDescription extends Command
      */
     public function handle()
     {
-        $query = Quote::on(MYSQL_UNBUFFERED)
-            ->withoutGlobalScopes()
-            ->whereNotNull('group_description')
+        $query = Quote::whereNotNull('group_description')
             ->whereRaw('group_description->"$[0].is_selected" is null');
 
         $bar = $this->output->createProgressBar((clone $query)->count());
 
-        $query->cursor()->each(function (Quote $quote) use ($bar) {
+        $query->cursor()->each(function ($quote) use ($bar) {
             $quote->timestamps;
 
             $groups = Collection::wrap($quote->group_description)->map(fn ($group) => array_merge($group, ['is_selected' => true]));
@@ -57,5 +55,6 @@ class FreshQuotesGroupDescription extends Command
         });
 
         $bar->finish();
+        $this->output->newLine(2);
     }
 }

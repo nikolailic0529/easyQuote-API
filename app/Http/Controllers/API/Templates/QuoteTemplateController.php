@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface as QuoteTemplateRepository;
 use App\Http\Requests\QuoteTemplate\{
     DeleteTemplate,
+    FilterQuoteTemplatesByMultipleVendors,
     StoreQuoteTemplateRequest,
     UpdateQuoteTemplateRequest
 };
@@ -14,7 +15,8 @@ use App\Http\Resources\TemplateRepository\{
     TemplateResourceListing,
     TemplateResourceWithIncludes
 };
-use App\Models\QuoteTemplate\QuoteTemplate;
+use App\Models\Template\QuoteTemplate;
+use App\Services\QuoteTemplateQueries;
 
 class QuoteTemplateController extends Controller
 {
@@ -55,6 +57,25 @@ class QuoteTemplateController extends Controller
         $resource = $this->quoteTemplate->country($country);
 
         return response()->json(TemplateResourceListing::collection($resource));
+    }
+
+    /**
+     * Filter Quote Templates by multiple vendors.
+     *
+     * @param FilterQuoteTemplatesByMultipleVendors $request
+     * @return \Illuminate\Http\Response
+     */
+    public function filterTemplates(FilterQuoteTemplatesByMultipleVendors $request, QuoteTemplateQueries $queries)
+    {
+        $this->authorize('viewAny', QuoteTemplate::class);
+
+        return response()->json(
+            $queries->filterQuoteTemplatesQuery(
+                $request->input('company_id'),
+                $request->input('vendors'),
+                $request->input('country_id')
+            )->get()
+        );
     }
 
     /**

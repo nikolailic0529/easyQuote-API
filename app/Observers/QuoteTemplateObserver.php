@@ -2,17 +2,19 @@
 
 namespace App\Observers;
 
-use App\Models\QuoteTemplate\BaseQuoteTemplate;
+use App\Models\Template\QuoteTemplate;
+use App\Models\Template\ContractTemplate;
+use App\Models\Template\HpeContractTemplate;
 
 class QuoteTemplateObserver
 {
     /**
      * Handle the Template "relicating" event.
      *
-     * @param \App\Models\QuoteTemplate\BaseQuoteTemplate $quoteTemplate
+     * @param QuoteTemplate|ContractTemplate|HpeContractTemplate $quoteTemplate
      * @return void
      */
-    public function replicating(BaseQuoteTemplate $template)
+    public function replicating($template)
     {
         $template->name = "{$template->name} [copy]";
     }

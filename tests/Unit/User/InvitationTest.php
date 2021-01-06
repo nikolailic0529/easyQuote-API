@@ -15,11 +15,15 @@ use App\Contracts\Repositories\{
     RoleRepositoryInterface as Roles,
     UserRepositoryInterface as Users,
 };
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\{Arr, Str};
 
+/**
+ * @group build
+ */
 class InvitationTest extends TestCase
 {
-    use WithFakeUser, AssertsListing;
+    use WithFakeUser, AssertsListing, DatabaseTransactions;
 
     protected ?Roles $roleRepository = null;
 

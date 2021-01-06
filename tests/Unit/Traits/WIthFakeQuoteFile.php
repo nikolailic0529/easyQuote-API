@@ -3,7 +3,7 @@
 namespace Tests\Unit\Traits;
 
 use App\Contracts\Services\{
-    ParserServiceInterface,
+    ManagesDocumentProcessors,
     PdfParserInterface,
     WordParserInterface
 };
@@ -11,6 +11,7 @@ use App\Models\{
     Quote\Quote,
     QuoteFile\QuoteFile
 };
+use App\Services\QuoteFileService;
 use Illuminate\Support\{
     Str,
     Facades\File,
@@ -24,34 +25,34 @@ trait WithFakeQuoteFile
     /**
      * Main Parser Service.
      *
-     * @var \App\Services\ParserService
+     * @var ManagesDocumentProcessors
      */
     protected $parser;
 
     /**
      * PdfParser Wrapper.
      *
-     * @var \App\Services\PdfParser\PdfParser
+     * @var PdfParser
      */
     protected $pdfParser;
 
     /**
      * WordParser wrapper.
      *
-     * @var \App\Services\WordParser
+     * @var WordParser
      */
     protected $wordParser;
 
     /**
      * QuoteFile Repository.
      *
-     * @var \App\Repositories\QuoteFile\QuoteFileRepository
+     * @var QuoteFileRepository
      */
     protected $quoteFileRepository;
 
     protected function setUpFakeQuoteFile()
     {
-        $this->parser = app(ParserServiceInterface::class);
+        $this->parser = app(ManagesDocumentProcessors::class);
         $this->pdfParser = app(PdfParserInterface::class);
         $this->wordParser = app(WordParserInterface::class);
         $this->quoteFileRepository = app('quotefile.repository');
@@ -59,34 +60,35 @@ trait WithFakeQuoteFile
 
     protected function createQuoteFile(string $relativePath, Quote $quote, string $fileType = 'Distributor Price List'): QuoteFile
     {
+        Storage::persistentFake();
+
         $originalFileName = File::name($relativePath);
         $extension = File::extension($relativePath);
         $filename = Str::random(40) . '.' . File::extension($relativePath);
-        $filepath = "{$quote->user->quoteFilesDirectory}/{$filename}";
+        $filePath =  "{$quote->user->quoteFilesDirectory}/{$filename}";
 
         Storage::makeDirectory($quote->user->quoteFilesDirectory);
 
-        File::copy(base_path($relativePath), Storage::path($filepath));
+        File::copy(base_path($relativePath), Storage::path($filePath));
 
         $quoteFile = $quote->user->quoteFiles()->create([
             'quote_id'              => $quote->id,
-            'original_file_path'    => Storage::path($filepath),
+            'original_file_path'    => $filePath,
             'quote_file_format_id'  => $this->determineFileFormat($extension),
             'file_type'             => $fileType,
-            'pages'                 => $this->parser->countPages($filepath, true),
+            'pages'                 => (new QuoteFileService)->countPages(base_path($relativePath)),
             'imported_page'         => 1,
             'original_file_name'    => $originalFileName
         ]);
 
-        $this->preHandle($quoteFile);
+        $quote->priceList()->associate($quoteFile)->save();
 
         return $quoteFile;
     }
 
     protected function createFakeQuoteFile(Quote $quote): QuoteFile
     {
-        return $quote->user->quoteFiles()->create([
-            'quote_id'              => $quote->id,
+        $quoteFile = $quote->user->quoteFiles()->create([
             'original_file_path'    => Str::random(40) . '.pdf',
             'quote_file_format_id'  => DB::table('quote_file_formats')->where('extension', 'pdf')->value('id'),
             'file_type'             => 'Distributor Price List',
@@ -94,25 +96,10 @@ trait WithFakeQuoteFile
             'imported_page'         => 1,
             'original_file_name'    => Str::random(40) . '.pdf'
         ]);
-    }
 
-    protected function preHandle(QuoteFile $quoteFile): void
-    {
-        switch ($quoteFile->format->extension) {
-            case 'pdf':
-                $text = $this->pdfParser->getText($quoteFile->original_file_path, false);
-                $this->quoteFileRepository->createRawData($quoteFile, $text);
-                break;
-            case 'docx':
-            case 'doc':
-                $text = $this->wordParser->getText($quoteFile->original_file_path, false);
-                $this->quoteFileRepository->createRawData($quoteFile, $text);
-                break;
-        }
+        $quote->priceList()->associate($quoteFile)->save();
 
-        if ($quoteFile->isCsv()) {
-            $quoteFile->fullPath = true;
-        }
+        return $quoteFile;
     }
 
     /**

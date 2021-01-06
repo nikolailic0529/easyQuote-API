@@ -13,9 +13,12 @@ use Tests\Unit\Traits\{
 use Illuminate\Testing\TestResponse;
 use App\Models\Quote\Quote;
 
+/**
+ * @group build
+ */
 class S4QuoteGetRequestTest extends TestCase
 {
-    use WithFakeUser, WithFakeQuote, WithFakeQuoteFile, WithClientCredentials;
+    use WithFakeUser, WithFakeQuote, WithFakeQuoteFile, WithClientCredentials, DatabaseTransactions;
 
     /**
      * Submit the Quote and check availability using request.
@@ -24,11 +27,14 @@ class S4QuoteGetRequestTest extends TestCase
      */
     public function testRequestWithSubmittedActivatedQuote(): void
     {
-        $this->importQuoteFile();
-        $this->submitQuote($this->quote);
-        $this->activateQuote($this->quote);
+        $quote = $this->createQuote($this->user);
+        
+        $this->importQuoteFile($quote);
+        $this->submitQuote($quote);
+        $this->activateQuote($quote);
 
-        $this->requestQuoteByRfq($this->quote)
+        $this->requestQuoteByRfq($quote)
+            ->assertOk()
             ->assertJsonStructure([
                 'price_list_file',
                 'pdf_file',
@@ -43,12 +49,14 @@ class S4QuoteGetRequestTest extends TestCase
 
     public function testRequestWithSubmittedActivatedDeletedQuote(): void
     {
-        $this->importQuoteFile();
-        $this->submitQuote($this->quote);
-        $this->activateQuote($this->quote);
-        $this->deleteQuote($this->quote);
+        $quote = $this->createQuote($this->user);
 
-        $response = $this->requestQuoteByRfq($this->quote);
+        $this->importQuoteFile($quote);
+        $this->submitQuote($quote);
+        $this->activateQuote($quote);
+        $this->deleteQuote($quote);
+
+        $response = $this->requestQuoteByRfq($quote);
 
         $this->assertQuoteNotFoundResponse($response);
     }
@@ -60,11 +68,13 @@ class S4QuoteGetRequestTest extends TestCase
      */
     public function testRequestWithUnSubmittedActivatedQuote(): void
     {
-        $this->importQuoteFile();
-        $this->unSubmitQuote($this->quote);
-        $this->activateQuote($this->quote);
+        $quote = $this->createQuote($this->user);
 
-        $response = $this->requestQuoteByRfq($this->quote);
+        $this->importQuoteFile($quote);
+        $this->unSubmitQuote($quote);
+        $this->activateQuote($quote);
+
+        $response = $this->requestQuoteByRfq($quote);
 
         $this->assertQuoteNotFoundResponse($response);
     }
@@ -76,29 +86,52 @@ class S4QuoteGetRequestTest extends TestCase
      */
     public function testRequestWithUnSubmittedDeactivatedQuote(): void
     {
-        $this->importQuoteFile();
-        $this->unSubmitQuote($this->quote);
-        $this->deactivateQuote($this->quote);
+        $quote = $this->createQuote($this->user);
 
-        $response = $this->requestQuoteByRfq($this->quote);
+        $this->importQuoteFile($quote);
+        $this->unSubmitQuote($quote);
+        $this->deactivateQuote($quote);
+
+        $response = $this->requestQuoteByRfq($quote);
 
         $this->assertQuoteNotFoundResponse($response);
     }
 
     /**
-     * * Test Request by RFQ Response when Quote was submitted & deactivated.
+     * Test Request by RFQ Response when Quote was submitted & deactivated.
      *
      * @return void
      */
     public function testRequestWithSubmittedDeactivatedQuote(): void
     {
-        $this->importQuoteFile();
-        $this->submitQuote($this->quote);
-        $this->deactivateQuote($this->quote);
+        $quote = $this->createQuote($this->user);
 
-        $response = $this->requestQuoteByRfq($this->quote);
+        $this->importQuoteFile($quote);
+        $this->submitQuote($quote);
+        $this->deactivateQuote($quote);
+
+        $response = $this->requestQuoteByRfq($quote);
 
         $this->assertQuoteNotFoundResponse($response);
+    }
+
+    /**
+     * Test Request by RFQ Distributor PDF File.
+     *
+     * @return void
+     */
+    public function testRequestQuoteDistributorPDFFileByRFQ()
+    {
+        $quote = $this->createQuote($this->user);
+
+        $this->importQuoteFile($quote);
+        $this->submitQuote($quote);
+        $this->activateQuote($quote);
+
+        $this->get("/api/s4/quotes/{$quote->customer->rfq}/pdf", $this->clientAuthHeader)
+            ->assertOk()
+            ->assertHeader('content-disposition')
+            ->assertHeader('content-type', 'application/pdf');
     }
 
     protected function assertQuoteNotFoundResponse(TestResponse $response): void
@@ -114,11 +147,11 @@ class S4QuoteGetRequestTest extends TestCase
         return $this->getJson(url("/api/s4/quotes/{$quote->customer->rfq}"), $this->clientAuthHeader);
     }
 
-    protected function importQuoteFile(): void
+    protected function importQuoteFile(Quote $quote): void
     {
-        $quoteFile = $this->createQuoteFile('tests/Unit/Parser/data/prices/UK/HPEUK.pdf', $this->quote);
+        $quoteFile = $this->createQuoteFile('tests/Unit/Data/distributor-files-test/UK/HPEUK.pdf', $quote);
 
-        $this->parser->routeParser($quoteFile);
+        $this->parser->forwardProcessor($quoteFile);
     }
 
     protected function submitQuote(Quote $quote): void

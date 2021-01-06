@@ -2,7 +2,7 @@
 
 namespace App\Traits;
 
-use App\Models\QuoteTemplate\TemplateField;
+use App\Models\Template\TemplateField;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 

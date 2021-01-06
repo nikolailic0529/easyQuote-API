@@ -7,6 +7,6 @@ class OrderByCompanyName extends Query
 {
     public function applyQuery($builder, string $table)
     {
-        return $builder->orderByCachedRelation('company.name', $this->value);
+        return $builder->orderBy('company_name', $this->value);
     }
 }

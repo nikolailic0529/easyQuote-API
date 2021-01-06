@@ -3,8 +3,11 @@
 namespace Tests\Unit\Discount;
 
 use App\Models\Quote\Discount\PrePayDiscount;
-use Str;
+use Illuminate\Support\Str;
 
+/**
+ * @group build
+ */
 class PrePayDiscountTest extends DiscountTest
 {
     public function testDiscountListing()

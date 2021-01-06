@@ -2,15 +2,19 @@
 
 namespace Tests\Unit\Template;
 
-use App\Models\QuoteTemplate\HpeContractTemplate;
 use Tests\TestCase;
 use Tests\Unit\Traits\AssertsListing;
 use Tests\Unit\Traits\WithFakeUser;
+use App\Models\Template\HpeContractTemplate;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
 
+/**
+ * @group build
+ */
 class HpeContractTemplateTest extends TestCase
 {
-    use WithFakeUser, AssertsListing;
+    use WithFakeUser, AssertsListing, DatabaseTransactions;
 
     protected static array $assertableAttributes = ['id', 'name', 'company_id', 'vendor_id', 'currency_id', 'form_data', 'data_headers', 'countries'];
 

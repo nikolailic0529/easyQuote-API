@@ -9,10 +9,16 @@ use App\Models\{
     Customer\Customer,
     ModelNotification,
 };
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Artisan;
 
+/**
+ * @group build
+ */
 class QuoteServiceTest extends TestCase
 {
+    use DatabaseTransactions;
+    
     /**
      * Test quote expiry notification.
      *

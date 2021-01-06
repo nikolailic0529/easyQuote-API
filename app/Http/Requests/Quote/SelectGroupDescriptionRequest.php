@@ -16,7 +16,7 @@ class SelectGroupDescriptionRequest extends FormRequest
     public function rules()
     {
         /** @var \App\Models\Quote\BaseQuote */
-        $version = $this->route('quote')->usingVersion;
+        $version = $this->route('quote')->activeVersion ?? $this->route('quote');
 
         return [
             '*' => ['string', 'uuid', Rule::in($version->group_description->pluck('id')->toArray())]

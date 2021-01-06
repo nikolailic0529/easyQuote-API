@@ -2,7 +2,7 @@
 
 namespace App\Policies;
 
-use App\Models\QuoteTemplate\ContractTemplate;
+use App\Models\Template\ContractTemplate;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
@@ -31,7 +31,7 @@ class ContractTemplatePolicy
      * Determine whether the user can view the contract template.
      *
      * @param  \App\Models\User  $user
-     * @param  \App\Models\QuoteTemplate\ContractTemplate  $contractTemplate
+     * @param  \App\Models\Template\ContractTemplate  $contractTemplate
      * @return mixed
      */
     public function view(User $user, ContractTemplate $contractTemplate)
@@ -66,7 +66,7 @@ class ContractTemplatePolicy
      * Determine whether the user can update the contract template.
      *
      * @param  \App\Models\User  $user
-     * @param  \App\Models\QuoteTemplate\ContractTemplate  $contractTemplate
+     * @param  \App\Models\Template\ContractTemplate  $contractTemplate
      * @return mixed
      */
     public function update(User $user, ContractTemplate $contractTemplate)
@@ -91,7 +91,7 @@ class ContractTemplatePolicy
      * Determine whether the user can delete the contract template.
      *
      * @param  \App\Models\User  $user
-     * @param  \App\Models\QuoteTemplate\ContractTemplate  $contractTemplate
+     * @param  \App\Models\Template\ContractTemplate  $contractTemplate
      * @return mixed
      */
     public function delete(User $user, ContractTemplate $contractTemplate)
@@ -116,7 +116,7 @@ class ContractTemplatePolicy
      * Determine whether the user can make copy of the template.
      *
      * @param \App\Models\User $user
-     * @param \App\Models\QuoteTemplate\ContractTemplate $contractTemplate
+     * @param \App\Models\Template\ContractTemplate $contractTemplate
      * @return mixed
      */
     public function copy(User $user, ContractTemplate $contractTemplate)

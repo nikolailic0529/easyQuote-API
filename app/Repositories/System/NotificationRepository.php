@@ -138,9 +138,9 @@ class NotificationRepository extends SearchableRepository implements Notificatio
     protected function filterQueryThrough(): array
     {
         return [
-            \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\OrderByPriority::class,
+            \App\Http\Query\DefaultOrderBy::class,
         ];
     }
 

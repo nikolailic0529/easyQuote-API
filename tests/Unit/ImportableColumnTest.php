@@ -4,13 +4,17 @@ namespace Tests\Unit;
 
 use App\Models\QuoteFile\ImportableColumn;
 use App\Models\QuoteFile\ImportableColumnAlias;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 use Tests\Unit\Traits\AssertsListing;
 use Tests\Unit\Traits\WithFakeUser;
 
+/**
+ * @group build
+ */
 class ImportableColumnTest extends TestCase
 {
-    use WithFakeUser, AssertsListing;
+    use WithFakeUser, AssertsListing, DatabaseTransactions;
 
     protected static array $assertableAttributes = ['id', 'header', 'name', 'type', 'is_system', 'country_id', 'country', 'aliases', 'created_at', 'activated_at'];
 

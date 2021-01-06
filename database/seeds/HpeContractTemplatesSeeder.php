@@ -1,10 +1,11 @@
 <?php
 
 use App\Contracts\Repositories\CurrencyRepositoryInterface;
-use App\Models\QuoteTemplate\HpeContractTemplate;
+use App\Models\Template\HpeContractTemplate;
 use Illuminate\Database\Seeder;
 use App\Models\{Company, Vendor, Data\Country,};
 use App\Services\ThumbnailManager;
+use Illuminate\Support\Facades\DB;
 
 class HpeContractTemplatesSeeder extends Seeder
 {
@@ -18,17 +19,26 @@ class HpeContractTemplatesSeeder extends Seeder
      */
     public function run()
     {
-        $templates = json_decode(file_get_contents(__DIR__ . '/models/hpe_contract_templates.json'), true);
-        $this->design = file_get_contents(database_path('seeds/models/hpe_contract_template_design.json'));
+        DB::beginTransaction();
 
-        \DB::transaction(
-            fn () => collect($templates)->each(
-                fn ($attributes) => $this->createTemplate($attributes)
-            )
-        );
+        $templates = json_decode(file_get_contents(__DIR__ . '/models/hpe_contract_templates.json'), true);
+        $hpeTemplateSchema = file_get_contents(database_path('seeds/models/hpe_contract_template_design.json'));
+        $arubaTemplateSchema = file_get_contents(database_path('seeds/models/aruba_contract_template_design.json'));
+
+        foreach ($templates as $template) {
+            if ($template['vendor'] === 'ARU') {
+                $templateSchema = $arubaTemplateSchema;
+            } else {
+                $templateSchema = $hpeTemplateSchema;
+            }
+
+            $this->createTemplate($template, $templateSchema);
+        }
+
+        DB::commit();
     }
 
-    protected function createTemplate(array $attributes): void
+    protected function createTemplate(array $attributes, $templateSchema): void
     {
         $company = Company::query()->system()->whereShortCode($attributes['company'])->first();
         $vendor = Vendor::query()->whereShortCode($attributes['vendor'])->first();
@@ -38,7 +48,7 @@ class HpeContractTemplatesSeeder extends Seeder
 
         $images = ThumbnailManager::retrieveLogoFromModels([$company, $vendor], ThumbnailManager::WITH_KEYS);
 
-        $formData = $this->parseDesign($this->design, $images);
+        $formData = $this->parseTemplateSchema($templateSchema, $images);
 
         /** @var CurrencyRepositoryInterface */
         $currencies = app(CurrencyRepositoryInterface::class);
@@ -59,7 +69,7 @@ class HpeContractTemplatesSeeder extends Seeder
         $template->countries()->sync($countries);
     }
 
-    protected function parseDesign(string $design, array $attributes): array
+    protected function parseTemplateSchema(string $design, array $attributes): array
     {
         $design = preg_replace_callback('/{{(.*)}}/m', fn ($item) => data_get($attributes, last($item)), $design);
 

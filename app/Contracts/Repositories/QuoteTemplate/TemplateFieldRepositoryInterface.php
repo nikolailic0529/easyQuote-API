@@ -7,7 +7,7 @@ use App\Http\Requests\QuoteTemplate\{
     StoreTemplateFieldRequest,
     UpdateTemplateFieldRequest
 };
-use App\Models\QuoteTemplate\TemplateField;
+use App\Models\Template\TemplateField;
 use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 

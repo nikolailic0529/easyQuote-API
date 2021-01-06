@@ -3,17 +3,20 @@
 namespace Tests\Unit\S4;
 
 use Tests\TestCase;
-use App\Models\Customer\Customer;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\{
     WithFakeUser,
     WithClientCredentials,
 };
-use Str, DB;
+use App\Models\Customer\Customer;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\{Str, Facades\DB};
 
+/**
+ * @group build
+ */
 class S4ContractPostRequestTest extends TestCase
 {
-    use WithFakeUser, WithClientCredentials;
+    use WithFakeUser, WithClientCredentials, DatabaseTransactions;
 
     /**
      * Test Storing S4 Contract with valid attributes.

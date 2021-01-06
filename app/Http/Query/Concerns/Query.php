@@ -1,13 +1,25 @@
 <?php namespace App\Http\Query\Concerns;
 
-use Closure, Str;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
+use Closure;
+use Illuminate\Http\Request;
 
+/**
+ * @property-read string $value
+ */
 abstract class Query
 {
+    protected Request $request;
+
+    public function __construct(Request $request = null)
+    {
+        $this->request ??= app()['request'];
+    }
+
     public function handle($request, Closure $next)
     {
-        if(!request()->has($this->queryName())) {
+        if(!$this->request->has($this->queryName())) {
             return $next($request);
         }
 
@@ -15,7 +27,7 @@ abstract class Query
             return $next($request);
         }
 
-        return $this->applyQuery($next($request), $this->modelTable($next($request)));
+        return $next($this->applyQuery($request, $this->modelTable($request)));
     }
 
     public function __get($key)
@@ -31,7 +43,7 @@ abstract class Query
 
     public function getValue()
     {
-        return request($this->queryName());
+        return $this->request->input($this->queryName());
     }
 
     protected function queryName()

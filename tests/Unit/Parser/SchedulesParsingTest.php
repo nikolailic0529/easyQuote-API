@@ -3,11 +3,17 @@
 namespace Tests\Unit\Parser;
 
 use App\Models\QuoteFile\QuoteFile;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Collection;
-use Arr;
+use Illuminate\Support\Arr;
 
+/**
+ * @group build
+ */
 class SchedulesParsingTest extends ParsingTest
 {
+    use DatabaseTransactions;
+    
     /**
      * Test Austria Payment Schedules Processing.
      *
@@ -65,7 +71,7 @@ class SchedulesParsingTest extends ParsingTest
 
     protected function filesDirPath(): string
     {
-        return 'tests/Unit/Parser/data/schedules';
+        return 'tests/Unit/Data/schedule-files-test';
     }
 
     protected function performFileAssertions(QuoteFile $quoteFile): void
@@ -89,6 +95,6 @@ class SchedulesParsingTest extends ParsingTest
 
     protected function mapping(): Collection
     {
-        return collect(json_decode(file_get_contents('tests/Unit/Parser/data/schedules/mapping.json'), true));
+        return collect(json_decode(file_get_contents('tests/Unit/Data/schedule-files-test/mapping.json'), true));
     }
 }

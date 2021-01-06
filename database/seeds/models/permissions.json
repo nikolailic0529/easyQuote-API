@@ -30,6 +30,17 @@
     "update_quotes",
     "delete_quotes",
     "submit_quotes",
+
+    "view_own_ww_quotes", 
+    "create_ww_quotes",
+    "update_own_ww_quotes",
+    "delete_own_ww_quotes",
+
+    "view_own_ww_quote_files",
+    "create_ww_quote_files",
+    "update_own_ww_quote_files",
+    "handle_own_ww_quote_files",
+    "delete_own_ww_quote_files",
     
     "download_quote_pdf",
     "download_quote_price",

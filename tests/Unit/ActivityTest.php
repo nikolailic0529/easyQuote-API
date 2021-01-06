@@ -2,18 +2,20 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\TestCase;
 use Tests\Unit\Traits\{
     WithFakeUser,
     AssertsListing,
-    TruncatesDatabaseTables
 };
-use Str;
+use Illuminate\Support\Str;
 
+/**
+ * @group build
+ */
 class ActivityTest extends TestCase
 {
-    use WithFakeUser, AssertsListing, TruncatesDatabaseTables;
+    use WithFakeUser, AssertsListing, DatabaseTransactions;
 
     protected $truncatableTables = ['activity_log'];
 

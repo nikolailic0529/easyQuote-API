@@ -3,10 +3,11 @@
 namespace App\Repositories\QuoteFile;
 
 use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface;
-use App\Models\QuoteFile\ImportableColumn;
 use App\Repositories\SearchableRepository;
+use App\Models\QuoteFile\{ImportableColumn, ImportableColumnAlias};
 use Illuminate\Database\Eloquent\{Builder, Model};
-use Illuminate\Support\{Arr, Facades\DB, Collection};
+use Illuminate\Support\{Arr, Facades\DB, Collection, Str};
+use Webpatser\Uuid\Uuid;
 use Closure;
 
 class ImportableColumnRepository extends SearchableRepository implements ImportableColumnRepositoryInterface
@@ -78,6 +79,17 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
         return $this->importableColumn->system()->whereName($name)->firstOrFail();
     }
 
+    public function findByExactAlias(string $alias, ?array $excludeKeys = null, array $columns = ['*'])
+    {
+        return $this->importableColumn->query()
+            ->whereHas('aliases', fn (Builder $query) => $query->where('alias', $alias))
+            // Excluding allocated importable columns.
+            ->when($excludeKeys, fn (Builder $query) => $query->whereKeyNot($excludeKeys))
+            ->orderByDesc('is_system')
+            ->orderBy('is_temp')
+            ->first($columns);
+    }
+
     public function firstOrCreate(array $attributes, array $values = [], ?Closure $scope = null): ImportableColumn
     {
         $query = $this->importableColumn->query();
@@ -113,6 +125,33 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
             activity()->on($importableColumn)
                 ->withProperty('attributes', $importableColumn->logChanges($importableColumn))
                 ->queue('created');
+        });
+    }
+
+    public function createTemporaryColumn(string $header, array $aliases)
+    {
+        return DB::transaction(function () use ($header, $aliases) {
+            $column = $this->importableColumn->make([
+                'header' => $header,
+                'name' => Str::slug($header, '_'),
+                'is_temp' => true,
+            ]);
+
+            $column->disableLogging();
+            $column->disableReindex();
+            $column->save();
+
+            $columnAliases = array_map(fn ($alias) => [
+                'id' => (string) Uuid::generate(4),
+                'importable_column_id' => $column->getKey(),
+                'alias' => $alias,
+                'created_at' => now()->toDateTimeString(),
+                'updated_at' => now()->toDateTimeString(),
+            ], $aliases);
+
+            ImportableColumnAlias::insert($columnAliases);
+
+            return $column;
         });
     }
 
@@ -185,10 +224,10 @@ class ImportableColumnRepository extends SearchableRepository implements Importa
     protected function filterQueryThrough(): array
     {
         return [
-            \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\ImportableColumn\OrderByHeader::class,
             \App\Http\Query\ImportableColumn\OrderByType::class,
-            \App\Http\Query\ImportableColumn\OrderByCountryName::class
+            \App\Http\Query\ImportableColumn\OrderByCountryName::class,
+            \App\Http\Query\DefaultOrderBy::class,
         ];
     }
 

@@ -35,41 +35,6 @@ interface QuoteState
     public function create(array $attributes): Quote;
 
     /**
-     * Retrieve mapped imported rows.
-     *
-     * @param \App\Models\Quote\BaseQuote $quote
-     * @param array|Closuse $criteria
-     * @return mixed
-     */
-    public function retrieveRows(BaseQuote $quote, $criteria = []);
-
-    /**
-     * Find Rows by query.
-     *
-     * @param \App\Models\Quote\BaseQuote $quote
-     * @param string $query
-     * @param string|null $groupId
-     * @return \Illuminate\Support\Collection
-     */
-    public function searchRows(BaseQuote $quote, string $query = '', ?string $groupId = null): Collection;
-
-    /**
-     * Calculate list price based on current mapping.
-     *
-     * @param \App\Models\Quote\BaseQuote $quote
-     * @return float
-     */
-    public function calculateListPrice(BaseQuote $quote): float;
-
-    /**
-     * Calculate list price based on current mapping and selected rows & groups.
-     *
-     * @param \App\Models\Quote\BaseQuote $quote
-     * @return float
-     */
-    public function calculateTotalPrice(BaseQuote $quote): float;
-
-    /**
      * Get User's Quotes Query.
      *
      * @return \Illuminate\Database\Eloquent\Builder
@@ -195,27 +160,35 @@ interface QuoteState
      * Create a new Quote Version if an authenticated user is not the initial Quote creator.
      *
      * @param Quote $quote
-     * @return QuoteVersion
+     * @return BaseQuote
      */
-    public function createNewVersionIfNonCreator(Quote $quote): QuoteVersion;
+    public function createNewVersionIfNonCreator(Quote $quote): BaseQuote;
 
     /**
      * Replicate Discounts from Source Quote to Target Quote.
      *
-     * @param string $sourceId
-     * @param string $targetId
+     * @param BaseQuote $source
+     * @param QuoteVersion $target
      * @return void
      */
-    public function replicateDiscounts(string $sourceId, string $targetId): void;
+    public function replicateDiscounts(BaseQuote $source, QuoteVersion $target): void;
 
     /**
      * Replicate Mapping from Source Quote to Target Quote.
      *
-     * @param string $sourceId
-     * @param string $targetId
+     * @param BaseQuote $source
+     * @param QuoteVersion $target
      * @return void
      */
-    public function replicateMapping(string $sourceId, string $targetId): void;
+    public function replicateMapping(BaseQuote $source, QuoteVersion $target): void;
+
+    /**
+     * Replicate an entire quote model.
+     *
+     * @param Quote $quote
+     * @return Quote
+     */
+    public function replicateQuote(Quote $quote): Quote;
 
     /**
      * Get wildcard quote permission.

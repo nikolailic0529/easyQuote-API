@@ -2,7 +2,7 @@
 
 namespace App\Traits\Quote;
 
-use App\Models\QuoteTemplate\BaseQuoteTemplate;
+use App\Models\Template\BaseQuoteTemplate;
 
 trait SwitchesMode
 {
@@ -41,7 +41,7 @@ trait SwitchesMode
         return $this->mode === $type;
     }
 
-    public function getModeTemplateAttribute(): BaseQuoteTemplate
+    public function getModeTemplateAttribute()
     {
         throw_unless(isset(QT_TYPES[$this->mode]), new \InvalidArgumentException(INV_QT_TYPE));
 

@@ -3,17 +3,20 @@
 namespace Tests\Unit;
 
 use App\Models\Vendor;
-use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\TestCase;
 use Tests\Unit\Traits\{
     WithFakeUser,
     AssertsListing
 };
-use Str, Arr;
+use Illuminate\Support\{Str, Arr};
 
+/**
+ * @group build
+ */
 class VendorTest extends TestCase
 {
-    use WithFakeUser, AssertsListing;
+    use WithFakeUser, AssertsListing, DatabaseTransactions;
 
     /**
      * Test Vendor Listing.

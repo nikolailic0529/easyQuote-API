@@ -69,14 +69,14 @@ class AssetService
     {
         try {
             /** @var \App\Collections\MappedRows */
-            $rows = $this->quoteState->retrieveRows(
-                $quote->usingVersion
-            );
+            $rows = (new QuoteQueries)
+                ->mappedOrderedRowsQuery($quote)
+                ->get();
 
             DB::transaction(function () use ($quote, $rows) {
                 $rows
                     ->filter(fn (object $row) => filled(optional($row)->product_no) && filled(optional($row)->serial_no))
-                    ->each(fn (object $row) => $this->handleQuoteAsset($row, $quote->usingVersion));
+                    ->each(fn (object $row) => $this->handleQuoteAsset($row, $quote->activeVersionOrCurrent));
 
                 $quote->markAsMigrated('assets_migrated_at');
             });

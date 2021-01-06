@@ -7,12 +7,14 @@ use App\Contracts\{
     Services\ContractState,
     Repositories\Quote\QuoteSubmittedRepositoryInterface as Repository
 };
+use App\Contracts\Services\QuoteView;
+use App\Contracts\Services\QuoteState;
 use App\Http\Requests\Quote\Copy;
 use App\Http\Requests\Quote\CreateQuoteContractRequest;
 use App\Http\Resources\ContractVersionResource;
 use App\Models\{
     Quote\Quote,
-    QuoteTemplate\ContractTemplate
+    Template\ContractTemplate
 };
 
 class QuoteSubmittedController extends Controller
@@ -105,12 +107,14 @@ class QuoteSubmittedController extends Controller
      * @param \App\Models\Quote\Quote $submitted
      * @return \Illuminate\Http\Response
      */
-    public function copy(Copy $request, Quote $submitted)
+    public function copy(Copy $request, Quote $submitted, QuoteState $quoteProcessor)
     {
         $this->authorize('copy', $submitted);
 
+        $quoteProcessor->replicateQuote($submitted);
+
         return response()->json(
-            $this->repository->copy($submitted)
+            true
         );
     }
 
@@ -151,11 +155,11 @@ class QuoteSubmittedController extends Controller
      * @param \App\Models\Quote\Quote $submitted
      * @return \Illuminate\Http\Response
      */
-    public function pdf(Quote $submitted)
+    public function pdf(Quote $submitted, QuoteView $quoteViewService)
     {
         $this->authorize('downloadPdf', $submitted);
 
-        return $this->repository->exportPdf($submitted, QT_TYPE_QUOTE);
+        return $quoteViewService->export($submitted->activeVersionOrCurrent, QT_TYPE_QUOTE);
     }
 
     /**
@@ -164,11 +168,11 @@ class QuoteSubmittedController extends Controller
      * @param \App\Models\Quote\Quote $submitted
      * @return \Illuminate\Http\Response
      */
-    public function contractPdf(Quote $submitted)
+    public function contractPdf(Quote $submitted, QuoteView $quoteViewService)
     {
         $this->authorize('downloadContractPdf', $submitted);
 
-        return $this->repository->exportPdf($submitted, QT_TYPE_CONTRACT);
+        return $quoteViewService->export($submitted->activeVersionOrCurrent, QT_TYPE_CONTRACT);
     }
 
     /**

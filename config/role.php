@@ -1,6 +1,11 @@
 <?php
 
 return [
+    'privileges' => [
+        $R = 'Read Only',
+        $CRU = 'Read & Write',
+        $CRUD = 'Read, Write and Delete',
+    ],
     'properties' => [
         'download_quote_pdf',
         'download_quote_price',
@@ -8,23 +13,18 @@ return [
         'download_contract_pdf',
         'download_hpe_contract_pdf'
     ],
-    'privileges' => [
-        'Read Only',
-        'Read & Write',
-        'Read, Write and Delete'
-    ],
     'submodules' => [
         'Quotes' => [
             'External Quotes' => [
-                'Read Only' => [
+                $R => [
                     'view_own_external_quotes'
                 ],
-                'Read & Write' => [
+                $CRU => [
                     'view_own_external_quotes',
                     'create_external_quotes',
                     'update_own_external_quotes'
                 ],
-                'Read, Write and Delete' => [
+                $CRUD => [
                     'view_own_external_quotes',
                     'create_external_quotes',
                     'update_own_external_quotes',
@@ -32,15 +32,15 @@ return [
                 ]
             ],
             'Internal Quotes' => [
-                'Read Only' => [
+                $R => [
                     'view_own_internal_quotes'
                 ],
-                'Read & Write' => [
+                $CRU => [
                     'view_own_internal_quotes',
                     'create_internal_quotes',
                     'update_own_internal_quotes'
                 ],
-                'Read, Write and Delete' => [
+                $CRUD => [
                     'view_own_internal_quotes',
                     'create_internal_quotes',
                     'update_own_internal_quotes',
@@ -50,15 +50,15 @@ return [
         ],
         'Contracts' => [
             'HPE Contracts' => [
-                'Read Only' => [
+                $R => [
                     'view_own_hpe_contracts'
                 ],
-                'Read & Write' => [
+                $CRU => [
                     'view_own_hpe_contracts',
                     'create_hpe_contracts',
                     'update_own_hpe_contracts'
                 ],
-                'Read, Write and Delete' => [
+                $CRUD => [
                     'view_own_hpe_contracts',
                     'create_hpe_contracts',
                     'update_own_hpe_contracts',
@@ -66,15 +66,15 @@ return [
                 ]
             ],
             'Quote Based Contracts' => [
-                'Read Only' => [
+                $R => [
                     'view_own_quote_contracts'
                 ],
-                'Read & Write' => [
+                $CRU => [
                     'view_own_quote_contracts',
                     'create_quote_contracts',
                     'update_own_quote_contracts'
                 ],
-                'Read, Write and Delete' => [
+                $CRUD => [
                     'view_own_quote_contracts',
                     'create_quote_contracts',
                     'update_own_quote_contracts',
@@ -84,15 +84,15 @@ return [
         ],
         'Templates' => [
             'Quote Templates' => [
-                'Read Only' => [
+                $R => [
                     'view_own_quote_templates'
                 ],
-                'Read & Write' => [
+                $CRU => [
                     'view_own_quote_templates',
                     'create_quote_templates',
                     'update_own_quote_templates'
                 ],
-                'Read, Write and Delete' => [
+                $CRUD => [
                     'view_own_quote_templates',
                     'create_quote_templates',
                     'update_own_quote_templates',
@@ -100,15 +100,15 @@ return [
                 ]
             ],
             'Contract Templates' => [
-                'Read Only' => [
+                $R => [
                     'view_own_contract_templates'
                 ],
-                'Read & Write' => [
+                $CRU => [
                     'view_own_contract_templates',
                     'create_contract_templates',
                     'update_own_contract_templates'
                 ],
-                'Read, Write and Delete' => [
+                $CRUD => [
                     'view_own_contract_templates',
                     'create_contract_templates',
                     'update_own_contract_templates',
@@ -116,15 +116,15 @@ return [
                 ]
             ],
             'HPE Contract Templates' => [
-                'Read Only' => [
+                $R => [
                     'view_own_hpe_contract_templates'
                 ],
-                'Read & Write' => [
+                $CRU => [
                     'view_own_hpe_contract_templates',
                     'create_hpe_contract_templates',
                     'update_own_hpe_contract_templates'
                 ],
-                'Read, Write and Delete' => [
+                $CRUD => [
                     'view_own_hpe_contract_templates',
                     'create_hpe_contract_templates',
                     'update_own_hpe_contract_templates',
@@ -132,10 +132,10 @@ return [
                 ]
             ],
             'Quote Task Template' => [
-                'Read Only' => [
+                $R => [
                     'view_quote_task_template'
                 ],
-                'Read & Write' => [
+                $CRU => [
                     'view_quote_task_template',
                     'update_quote_task_template'
                 ],
@@ -143,15 +143,15 @@ return [
         ],
         'Users' => [
             'Roles' => [
-                'Read Only' => [
+                $R => [
                     'view_roles'
                 ],
-                'Read & Write' => [
+                $CRU => [
                     'view_roles',
                     'create_roles',
                     'update_roles',
                 ],
-                'Read, Write and Delete' => [
+                $CRUD => [
                     'view_roles',
                     'create_roles',
                     'update_roles',
@@ -159,15 +159,15 @@ return [
                 ]
             ],
             'Invitations' => [
-                'Read Only' => [
+                $R => [
                     'view_invitations'
                 ],
-                'Read & Write' => [
+                $CRU => [
                     'view_invitations',
                     'create_invitations',
                     'update_invitations',
                 ],
-                'Read, Write and Delete' => [
+                $CRUD => [
                     'view_invitations',
                     'create_invitations',
                     'update_invitations',
@@ -177,15 +177,15 @@ return [
         ],
         'Discounts' => [
             'Special Negotiation Discounts' => [
-                'Read Only' => [
+                $R => [
                     'view_sn_discounts'
                 ],
-                'Read & Write' => [
+                $CRU => [
                     'view_sn_discounts',
                     'create_sn_discounts',
                     'update_sn_discounts',
                 ],
-                'Read, Write and Delete' => [
+                $CRUD => [
                     'view_sn_discounts',
                     'create_sn_discounts',
                     'update_sn_discounts',
@@ -193,15 +193,15 @@ return [
                 ]
             ],
             'Promotional Discounts' => [
-                'Read Only' => [
+                $R => [
                     'view_promo_discounts'
                 ],
-                'Read & Write' => [
+                $CRU => [
                     'view_promo_discounts',
                     'create_promo_discounts',
                     'update_promo_discounts',
                 ],
-                'Read, Write and Delete' => [
+                $CRUD => [
                     'view_promo_discounts',
                     'create_promo_discounts',
                     'update_promo_discounts',
@@ -209,15 +209,15 @@ return [
                 ]
             ],
             'Pre-Pay Discounts' => [
-                'Read Only' => [
+                $R => [
                     'view_prepay_discounts'
                 ],
-                'Read & Write' => [
+                $CRU => [
                     'view_prepay_discounts',
                     'create_prepay_discounts',
                     'update_prepay_discounts',
                 ],
-                'Read, Write and Delete' => [
+                $CRUD => [
                     'view_prepay_discounts',
                     'create_prepay_discounts',
                     'update_prepay_discounts',
@@ -225,15 +225,15 @@ return [
                 ]
             ],
             'Multi-Year Discounts' => [
-                'Read Only' => [
+                $R => [
                     'view_multiyear_discounts'
                 ],
-                'Read & Write' => [
+                $CRU => [
                     'view_multiyear_discounts',
                     'create_multiyear_discounts',
                     'update_multiyear_discounts',
                 ],
-                'Read, Write and Delete' => [
+                $CRUD => [
                     'view_multiyear_discounts',
                     'create_multiyear_discounts',
                     'update_multiyear_discounts',
@@ -244,83 +244,83 @@ return [
     ],
     'modules' => [
         'Addresses' => [
-            'Read Only' => [
+            $R => [
                 'view_addresses'
             ],
-            'Read & Write' => [
+            $CRU => [
                 'view_addresses',
                 'create_addresses', 'update_addresses'
             ],
-            'Read, Write and Delete' => [
+            $CRUD => [
                 'view_addresses',
                 'create_addresses', 'update_addresses', 'delete_addresses'
             ]
         ],
         'Contacts' => [
-            'Read Only' => [
+            $R => [
                 'view_contacts'
             ],
-            'Read & Write' => [
+            $CRU => [
                 'view_contacts',
                 'create_contacts', 'update_contacts'
             ],
-            'Read, Write and Delete' => [
+            $CRUD => [
                 'view_contacts',
                 'create_contacts', 'update_contacts', 'delete_contacts'
             ]
         ],
         'Assets' => [
-            'Read Only' => [
+            $R => [
                 'view_assets'
             ],
-            'Read & Write' => [
+            $CRU => [
                 'view_assets',
                 'create_assets', 'update_assets'
             ],
-            'Read, Write and Delete' => [
+            $CRUD => [
                 'view_assets',
                 'create_assets', 'update_assets', 'delete_assets'
             ]
         ],
         'Settings' => [
-            'Read Only' => [
+            $R => [
                 'view_system_settings'
             ],
-            'Read & Write' => [
+            $CRU => [
                 'view_system_settings',
                 'update_system_settings'
             ]
         ],
         'Audit' => [
-            'Read Only' => [
+            $R => [
                 'view_activities'
             ]
         ],
         'Users' => [
-            'Read Only' => [
+            $R => [
                 'view_users'
             ],
-            'Read & Write' => [
+            $CRU => [
                 'view_users',
                 'invite_collaboration_users', 'update_users', 'reset_users_password'
             ],
-            'Read, Write and Delete' => [
+            $CRUD => [
                 'view_users',
                 'invite_collaboration_users', 'update_users', 'reset_users_password',
                 'delete_users'
             ]
         ],
         'Quotes' => [
-            'Read Only' => [
+            $R => [
                 'view_own_quotes', 'view_quote_files'
             ],
-            'Read & Write' => [
+            $CRU => [
                 'view_own_quotes',
                 'view_quote_files',
                 'create_quotes', 'update_own_quotes',
                 'create_quote_files', 'update_quote_files', 'handle_quote_files',
             ],
-            'Read, Write and Delete' => [
+            $CRUD => [
                 'view_own_quotes',
                 'create_quotes', 'update_own_quotes', 'delete_own_quotes',
                 'view_quote_files',
@@ -329,92 +329,92 @@ return [
             ]
         ],
         'Countries' => [
-            'Read Only' => [
+            $R => [
                 'view_countries'
             ],
-            'Read & Write' => [
+            $CRU => [
                 'view_countries',
                 'create_countries', 'update_countries'
             ],
-            'Read, Write and Delete' => [
+            $CRUD => [
                 'view_countries',
                 'create_countries', 'update_countries', 'delete_countries'
             ]
         ],
         'Contracts' => [
-            'Read Only' => [
+            $R => [
                 'view_own_contracts'
             ],
-            'Read & Write' => [
+            $CRU => [
                 'view_own_contracts',
                 'create_contracts', 'update_own_contracts'
             ],
-            'Read, Write and Delete' => [
+            $CRUD => [
                 'view_own_contracts',
                 'create_contracts', 'update_own_contracts', 'delete_own_contracts'
             ]
         ],
         'Templates' => [
-            'Read Only' => [
+            $R => [
                 'view_templates'
             ],
-            'Read & Write' => [
+            $CRU => [
                 'view_templates',
                 'create_templates', 'update_templates'
             ],
-            'Read, Write and Delete' => [
+            $CRUD => [
                 'view_templates',
                 'create_templates', 'update_templates', 'delete_templates'
             ]
         ],
         'Companies' => [
-            'Read Only' => [
+            $R => [
                 'view_companies'
             ],
-            'Read & Write' => [
+            $CRU => [
                 'view_companies',
                 'create_companies', 'update_companies'
             ],
-            'Read, Write and Delete' => [
+            $CRUD => [
                 'view_companies',
                 'create_companies', 'update_companies', 'delete_companies'
             ]
         ],
         'Vendors' => [
-            'Read Only' => [
+            $R => [
                 'view_vendors'
             ],
-            'Read & Write' => [
+            $CRU => [
                 'view_vendors',
                 'create_vendors', 'update_vendors'
             ],
-            'Read, Write and Delete' => [
+            $CRUD => [
                 'view_vendors',
                 'create_vendors', 'update_vendors', 'delete_vendors'
             ]
         ],
         'Margins' => [
-            'Read Only' => [
+            $R => [
                 'view_margins'
             ],
-            'Read & Write' => [
+            $CRU => [
                 'view_margins',
                 'create_margins', 'update_margins'
             ],
-            'Read, Write and Delete' => [
+            $CRUD => [
                 'view_margins',
                 'create_margins', 'update_margins', 'delete_margins'
             ]
         ],
         'Discounts' => [
-            'Read Only' => [
+            $R => [
                 'view_discounts'
             ],
-            'Read & Write' => [
+            $CRU => [
                 'view_discounts',
                 'create_discounts', 'update_discounts'
             ],
-            'Read, Write and Delete' => [
+            $CRUD => [
                 'view_discounts',
                 'create_discounts', 'update_discounts', 'delete_discounts'
             ]

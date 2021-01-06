@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\{
 use Illuminate\Support\Collection;
 use League\Csv\Writer as CsvWriter;
 use Illuminate\Support\Carbon;
-use Str;
+use Illuminate\Support\Str;
 
 class ActivityRepository extends SearchableRepository implements ActivityRepositoryInterface
 {
@@ -194,13 +194,13 @@ class ActivityRepository extends SearchableRepository implements ActivityReposit
     protected function filterQueryThrough(): array
     {
         return [
-            \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\Activity\Types::class,
             \App\Http\Query\Activity\Period::class,
             \App\Http\Query\Activity\CustomPeriod::class,
             \App\Http\Query\Activity\CauserId::class,
-            \App\Http\Query\Activity\SubjectTypes::class
+            \App\Http\Query\Activity\SubjectTypes::class,
+            \App\Http\Query\DefaultOrderBy::class,
         ];
     }
 

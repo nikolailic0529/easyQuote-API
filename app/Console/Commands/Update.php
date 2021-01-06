@@ -74,8 +74,6 @@ class Update extends Command
         $this->call(CreatePersonalAccessClient::class);
         $this->call(CreateClientCredentials::class);
         $this->call(ReindexCommand::class);
-        $this->call(CacheRelations::class);
-        $this->call(UpdateQuoteGroupDescription::class);
 
         $this->call('cache:clear');
         $this->call('optimize:clear');

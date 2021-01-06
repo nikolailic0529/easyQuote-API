@@ -11,7 +11,7 @@ use App\Contracts\Repositories\{
 use App\Models\User;
 use App\Models\Quote\Quote;
 use App\Models\Quote\Margin\CountryMargin;
-use App\Models\QuoteTemplate\QuoteTemplate;
+use App\Models\Template\QuoteTemplate;
 use App\Models\Vendor;
 use Faker\Generator as Faker;
 use Illuminate\Support\Arr;
@@ -61,7 +61,7 @@ $factory->define(Quote::class, function (Faker $faker) {
 
     $customer = app(Customers::class)->list()->random();
 
-    $user = User::firstOr(fn () => factory(User::class)->create());
+    $user = factory(User::class)->create();
 
     return [
         'user_id'               => $user->id,

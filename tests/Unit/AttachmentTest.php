@@ -9,10 +9,14 @@ use Illuminate\Support\{
     Facades\File,
 };
 use App\Models\Attachment;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 
+/**
+ * @group build
+ */
 class AttachmentTest extends TestCase
 {
-    use WithFakeUser;
+    use WithFakeUser, DatabaseTransactions;
     /**
      * Test attachment store.
      *

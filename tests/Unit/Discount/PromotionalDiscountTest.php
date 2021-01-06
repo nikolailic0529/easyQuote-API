@@ -3,8 +3,11 @@
 namespace Tests\Unit\Discount;
 
 use App\Models\Quote\Discount\PromotionalDiscount;
-use Str;
+use Illuminate\Support\Str;
 
+/**
+ * @group build
+ */
 class PromotionalDiscountTest extends DiscountTest
 {
     public function testDiscountListing()

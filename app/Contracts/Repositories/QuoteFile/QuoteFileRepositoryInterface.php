@@ -32,15 +32,6 @@ interface QuoteFileRepositoryInterface
     public function create(array $attributes);
 
     /**
-     * Create a new Generated PDF Quote File.
-     *
-     * @param Quote $quote
-     * @param array $attributes
-     * @return \App\Models\QuoteFile\QuoteFile|null
-     */
-    public function createPdf(Quote $quote, array $attributes);
-
-    /**
      * Store Imported Raw Data by QuoteFile
      *
      * @param QuoteFile $quoteFile
@@ -48,15 +39,6 @@ interface QuoteFileRepositoryInterface
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function createRawData(QuoteFile $quoteFile, array $array);
-
-    /**
-     * Store Parsed Column Data by QuoteFile
-     * And mark QuoteFile as handled
-     * @param QuoteFile $quoteFile
-     * @param array $array
-     * @return \Illuminate\Support\Collection
-     */
-    public function createRowsData(QuoteFile $quoteFile, array $array);
 
     /**
      * Store Parsed Payment Schedule Data by QuoteFile
@@ -110,53 +92,12 @@ interface QuoteFileRepositoryInterface
     public function findByClause(array $clause);
 
     /**
-     * Resolve filepath for the given quote file.
-     *
-     * @param QuoteFile|null $quoteFile
-     * @return string
-     * @throws NotFoundHttpException
-     */
-    public function resolveFilepath(?QuoteFile $quoteFile): string;
-
-    /**
-     * Resolve file type by given needle.
-     *
-     * @param string $needle
-     * @return string|null
-     */
-    public function resolveFileType(string $needle): ?string;
-
-    /**
      * Check for existing
      *
      * @param string $id
      * @return void
      */
     public function exists(string $id);
-
-    /**
-     * Delete all Quote Files by type from Quote excepting passed
-     *
-     * @param QuoteFile $quoteFile
-     * @return void
-     */
-    public function deleteExcept(QuoteFile $quoteFile);
-
-    /**
-     * Delete all Quote Files with Payment Schedules type from Quote excepting passed
-     *
-     * @param QuoteFile $quoteFile
-     * @return void
-     */
-    public function deletePaymentSchedulesExcept(QuoteFile $quoteFile);
-
-    /**
-     * Delete all Quote Files with type Distributor Price List from Quote excepting passed
-     *
-     * @param QuoteFile $quoteFile
-     * @return void
-     */
-    public function deletePriceListsExcept(QuoteFile $quoteFile);
 
     /**
      * Full replicates a provided QuoteFile and its all Imported Data.

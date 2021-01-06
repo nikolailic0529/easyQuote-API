@@ -2,19 +2,18 @@
 
 namespace Tests\Unit\Discount;
 
-use Tests\TestCase;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\TestCase;
 use Tests\Unit\Traits\{
     WithFakeUser,
     AssertsListing,
-    TruncatesDatabaseTables,
     WithFakeQuote
 };
-use Arr;
+use Illuminate\Support\Arr;
 
 abstract class DiscountTest extends TestCase
 {
-    use TruncatesDatabaseTables, WithFakeUser, WithFakeQuote, AssertsListing;
+    use WithFakeUser, WithFakeQuote, AssertsListing, DatabaseTransactions;
 
     protected $truncatableTables = [
         'multi_year_discounts', 'sn_discounts', 'pre_pay_discounts', 'promotional_discounts'
@@ -86,7 +85,9 @@ abstract class DiscountTest extends TestCase
      */
     public function testDiscountActivating()
     {
-        $attributes = ['country_id' => $this->quote->country_id, 'vendor_id' => $this->quote->vendor_id];
+        $quote = $this->createQuote($this->user);
+
+        $attributes = ['country_id' => $quote->country_id, 'vendor_id' => $quote->vendor_id];
         $discount = tap(factory($this->model())->create($attributes))->deactivate();
 
         $this->putJson(url("api/discounts/{$this->resource()}/activate/{$discount->id}"))
@@ -98,7 +99,7 @@ abstract class DiscountTest extends TestCase
         /**
          * Test availability at the acceptable discounts endpoint.
          */
-        $this->getJson(url("api/quotes/discounts/{$this->quote->id}"))
+        $this->getJson(url("api/quotes/discounts/{$quote->id}"))
             ->assertOk()
             ->assertJsonFragment(['id' => $discount->id]);
     }
@@ -110,6 +111,8 @@ abstract class DiscountTest extends TestCase
      */
     public function testDiscountDeactivating()
     {
+        $quote = $this->createQuote($this->user);
+        
         $discount = factory($this->model())->create();
 
         $this->putJson(url("api/discounts/{$this->resource()}/deactivate/{$discount->id}"))
@@ -121,7 +124,7 @@ abstract class DiscountTest extends TestCase
         /**
          * Test no availability at the acceptable discounts endpoint.
          */
-        $this->getJson(url("api/quotes/discounts/{$this->quote->id}"))
+        $this->getJson(url("api/quotes/discounts/{$quote->id}"))
             ->assertOk()
             ->assertJsonMissing(['id' => $discount->id]);
     }

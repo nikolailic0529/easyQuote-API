@@ -58,7 +58,18 @@
             "view_own_quote_contracts",
             "create_quote_contracts",
             "update_own_quote_contracts",
-            "delete_own_quote_contracts"
+            "delete_own_quote_contracts",
+
+            "view_own_ww_quotes", 
+            "create_ww_quotes",
+            "update_own_ww_quotes",
+            "delete_own_ww_quotes",
+        
+            "view_own_ww_quote_files",
+            "create_ww_quote_files",
+            "update_own_ww_quote_files",
+            "handle_own_ww_quote_files",
+            "delete_own_ww_quote_files"
         ],
         "privileges": {
             "Addresses": "Read, Write and Delete",

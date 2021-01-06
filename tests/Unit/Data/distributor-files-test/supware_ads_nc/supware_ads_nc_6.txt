@@ -1,79 +1,79 @@
 Service Agreement ID: 1086 5144 4970
 
-Support Quotation                                                                                     System Handle: SUPWARE-ADS-AE-3PAR
+      Support Quotation                                                                 System Handle: SUPWARE-ADS-AE-3PAR
 
-Agreement No.                                                                                         UAE
+      Agreement No.                                                                     UAE
 
-Your PO Reference:                                                                                    HPE Reference No.: 56777559
+      Your PO Reference:                                                                HPE Reference No.: 56777559
 
-Product No.             Description                                                   Serial No.                         Coverage Period               Qty  Price/GBP
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
 
-                                                                                                                         from:                    to:
+                                                                                                            from:          to:
 
-*** Software ***
+        *** Software ***
 
-                        HPE Software Technical Unlimited Support
+                              HPE Software Technical Unlimited Support
 
-                             SW Technical Support
+                                       SW Technical Support
 
-                             SW Electronic Support
+                                       SW Electronic Support
 
-                             Std Office Hrs Std Office Days
+                                       Std Office Hrs Std Office Days
 
-                             Standard Response
+                                       Standard Response
 
-BC745B                  HP 3PAR 7200 OS Suite Base LTU                                                                                                 1    28.01
+        BC745B                HP 3PAR 7200 OS Suite Base LTU                                                                              1            28.01
 
-                        Please note HP can no longer support this item from: 31.10.2022
+                              Please note HP can no longer support this item from: 31.10.2022
 
-BC746A                  HP 3PAR 7200 OS Suite Drive LTU                                                                                                12   8.40
+        BC746A                HP 3PAR 7200 OS Suite Drive LTU                                                                            12             8.40
 
-                        Please note HP can no longer support this item from: 31.10.2022
+                              Please note HP can no longer support this item from: 31.10.2022
 
-                                                                                                      Software Subtotal                                     36.41
+                                                                                         Software Subtotal                                             36.41
 
-                                                                                                      Discounts                                             -5.88
+                                                                                         Discounts                                                     -5.88
 
-                                                                                                      Total                                                 30.53
+                                                                                         Total                                                         30.53
 
-                        HPE Software Updates SVC
+                              HPE Software Updates SVC
 
-                             License to Use & SW Updates
+                                       License to Use & SW Updates
 
-                             HPE Recommended SW Upd Method
+                                       HPE Recommended SW Upd Method
 
-                             HPE Recommended Doc Upd Method
+                                       HPE Recommended Doc Upd Method
 
-BC745B                  HP 3PAR 7200 OS Suite Base LTU                                                                                                 1    28.01
+        BC745B                HP 3PAR 7200 OS Suite Base LTU                                                                              1            28.01
 
-                        Please note HP can no longer support this item from: 31.10.2022
+                              Please note HP can no longer support this item from: 31.10.2022
 
-BC746A                  HP 3PAR 7200 OS Suite Drive LTU                                                                                                12   8.40
+        BC746A                HP 3PAR 7200 OS Suite Drive LTU                                                                            12             8.40
 
-                        Please note HP can no longer support this item from: 31.10.2022
+                              Please note HP can no longer support this item from: 31.10.2022
 
-                                                                                                      Software Subtotal                                     36.41
+                                                                                         Software Subtotal                                             36.41
 
-                                                                                                      Discounts                                             -5.88
+                                                                                         Discounts                                                     -5.88
 
-                                                                                                      Total                                                 30.53
+                                                                                         Total                                                         30.53
 
-Discount Summary
+        Discount Summary
 
-Special Neg HdrDisc% -15%                                                                                                                                   11.04-
+        Special Neg HdrDisc% -15%                                                                                                                     11.04-
 
-Pre Payment HdrDisc% -1%                                                                                                                                    0.72-
+        Pre Payment HdrDisc% -1%                                                                                                                       0.72-
 
-                                                                                      Hardware Total                                                        168.82
+                                                                        Hardware Total                                                               168.82
 
-                                                                                      Software Total                                                        72.82
+                                                                        Software Total                                                                 72.82
 
-                                                                                      Discount Total                                                        -38.50
+                                                                        Discount Total                                                                -38.50
 
-                                                                                      Contract Total                                                        203.14
+                                                                        Contract Total                                                               203.14
 
-Single Payment for Duration
+      Single Payment for Duration
 
-Printed on: 06.08.2020                                         Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT            Page: 6 / 7
+          Printed on: 06.08.2020                                Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT    Page: 6 / 7
 
-Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN.  Registered No: 690597
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN.Registered No: 690597

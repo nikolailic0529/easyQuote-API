@@ -2,16 +2,20 @@
 
 namespace Tests\Unit;
 
-use App\Models\System\Notification;
 use Tests\TestCase;
 use Tests\Unit\Traits\{
     WithFakeUser,
     AssertsListing
 };
+use App\Models\System\Notification;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 
+/**
+ * @group build
+ */
 class NotificationTest extends TestCase
 {
-    use WithFakeUser, AssertsListing;
+    use WithFakeUser, AssertsListing, DatabaseTransactions;
 
     /**
      * Test Notification listing.

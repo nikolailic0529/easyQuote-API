@@ -2,7 +2,6 @@
 
 namespace Tests\Unit;
 
-use App\Contracts\Repositories\CompanyRepositoryInterface;
 use App\Models\Company;
 use Illuminate\Database\Eloquent\Builder;
 use Tests\TestCase;
@@ -13,9 +12,12 @@ use Tests\Unit\Traits\{
 };
 use Illuminate\Support\{Arr, Str};
 
+/**
+ * @group build
+ */
 class CompanyTest extends TestCase
 {
-    use WithFakeUser, AssertsListing;
+    use WithFakeUser, AssertsListing, DatabaseTransactions;
 
     /**
      * Test Company listing.

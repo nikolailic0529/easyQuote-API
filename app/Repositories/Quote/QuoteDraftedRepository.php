@@ -11,13 +11,16 @@ use Illuminate\Database\Eloquent\{
     Collection
 };
 use App\Models\{
+    Company,
     User,
     Quote\Quote,
     Quote\QuoteVersion
 };
+use App\Models\QuoteFile\QuoteFile;
+use Illuminate\Database\Query\JoinClause;
+use Illuminate\Support\LazyCollection;
 use Carbon\CarbonInterval;
 use Closure;
-use Illuminate\Support\LazyCollection;
 
 class QuoteDraftedRepository extends SearchableRepository implements QuoteDraftedRepositoryInterface
 {
@@ -55,8 +58,7 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
         /** @var \App\Models\User */
         $user = auth()->user();
 
-        return $this->quote
-            ->query()
+        return Quote::query()
             ->when(
                 /** If user is not super-admin we are retrieving the user's own quotes */
                 $user->cant('view_quotes'),
@@ -65,13 +67,49 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
                     ->orWhereIn('id', $user->getPermissionTargets('quotes.read'))
                     ->orWhereIn('user_id', $user->getModulePermissionProviders('quotes.read'))
             )
-            ->with(
-                'versions:id,quotes.user_id,version_number,completeness,created_at,updated_at,drafted_at',
-                'versions.user:id,first_name,last_name',
-                'quoteFiles:id,quote_id,file_type,quote_id,original_file_name',
-                'usingVersion.quoteFiles:id,quote_id,file_type,quote_id,original_file_name'
+            ->select(
+                'quotes.id',
+                'quotes.active_version_id',
+                'quotes.user_id',
+                'quotes.company_id',
+                'quotes.customer_id',
+                'quotes.completeness',
+                'quotes.distributor_file_id',
+                'quotes.schedule_file_id',
+                'quotes.created_at',
+                'quotes.updated_at',
+                'quotes.activated_at'
             )
-            ->drafted();
+            ->join('customers', function (JoinClause $join) {
+                $join->on('customers.id', 'quotes.customer_id');
+            })
+            ->addSelect([
+                'company_name' => Company::select('name')->whereColumn('companies.id', 'quotes.company_id'),
+                'user_fullname' => User::select('user_fullname')->whereColumn('users.id', 'quotes.user_id')->limit(1),
+
+                'customers.name as customer_name',
+                'customers.rfq as customer_rfq_number',
+                'customers.source as customer_source',
+                'customers.valid_until as customer_valid_until_date',
+                'customers.support_start as customer_support_start_date',
+                'customers.support_end as customer_support_end_date',
+
+                'price_list_original_file_name' => QuoteFile::select('original_file_name')->whereColumn('quote_files.id', 'quotes.distributor_file_id')->limit(1),
+                'payment_schedule_original_file_name' => QuoteFile::select('original_file_name')->whereColumn('quote_files.id', 'quotes.schedule_file_id')->limit(1),
+
+            ])
+            ->with([
+                'versions' => fn ($query) => $query->select('id', 'quote_id', 'user_id', 'company_id', 'version_number', 'completeness', 'updated_at')
+                    ->addSelect(['user_fullname' => User::select('user_fullname')->whereColumn('users.id', 'quote_versions.user_id')->limit(1)]),
+
+                'activeVersion' => fn ($query) => $query->select('id', 'quote_id', 'user_id', 'distributor_file_id', 'schedule_file_id', 'company_id', 'version_number', 'completeness', 'updated_at')
+                    ->addSelect([
+                        'company_name' => Company::select('name')->whereColumn('companies.id', 'quote_versions.company_id')->limit(1),
+                        'price_list_original_file_name' => QuoteFile::select('original_file_name')->whereColumn('quote_files.id', 'quote_versions.distributor_file_id')->limit(1),
+                        'payment_schedule_original_file_name' => QuoteFile::select('original_file_name')->whereColumn('quote_files.id', 'quote_versions.schedule_file_id')->limit(1)
+                    ]),
+            ])
+            ->whereNull('quotes.submitted_at');
     }
 
     public function toCollection($resource): DraftedCollection
@@ -132,7 +170,7 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
 
     public function find(string $id): Quote
     {
-        return $this->userQuery()->whereId($id)->firstOrFail();
+        return $this->quote->whereKey($id)->firstOrFail();
     }
 
     public function findVersion(string $id): QuoteVersion
@@ -163,7 +201,7 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
     protected function filterQueryThrough(): array
     {
         return [
-            app(\App\Http\Query\DefaultOrderBy::class, ['column' => 'updated_at']),
+            new \App\Http\Query\ActiveFirst('quotes.is_active'),
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\Quote\OrderByName::class,
             \App\Http\Query\Quote\OrderByCompanyName::class,
@@ -171,16 +209,14 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
             \App\Http\Query\Quote\OrderByValidUntil::class,
             \App\Http\Query\Quote\OrderBySupportStart::class,
             \App\Http\Query\Quote\OrderBySupportEnd::class,
-            \App\Http\Query\Quote\OrderByCompleteness::class
+            \App\Http\Query\Quote\OrderByCompleteness::class,
+            new \App\Http\Query\DefaultOrderBy('quotes.updated_at'),
         ];
     }
 
     protected function filterableQuery()
     {
-        return [
-            $this->userQuery()->runPaginationCountQueryUsing($this->userQuery())->activated(),
-            $this->userQuery()->runPaginationCountQueryUsing($this->userQuery())->deactivated()
-        ];
+        return $this->userQuery();
     }
 
     protected function searchableModel(): Model

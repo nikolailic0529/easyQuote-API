@@ -1,0 +1,89 @@
+Service Agreement ID: 1086 5485 6896
+
+      Support Quotation                                                                 System Handle: ANZ-UK-02
+
+      Agreement No.                                                                     UK
+
+      Your PO Reference:                                                                HPE Reference No.: 56896735
+
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
+
+                                                                                                            from:          to:
+
+                              Please note HP can no longer support this item from: 30.04.2021
+
+                                                                                         Software Subtotal                                             30.00
+
+                                                                                         Discounts                                                    -10.31
+
+                                                                                         Total                                                         19.69
+
+                              HPE Software Updates SVC
+
+                                       License to Use & SW Updates
+
+                                       HPE Recommended SW Upd Method
+
+                                       HPE Recommended Doc Upd Method
+
+        437787-B23            HP ZMOD HP IC Environment BL 8 LIC                   CZ2204023Z                             30.04.2021      1            26.00
+
+                              Please note HP can no longer support this item from: 30.04.2021
+
+                                                                                         Software Subtotal                                             26.00
+
+                                                                                         Discounts                                                     -8.93
+
+                                                                                         Total                                                         17.07
+
+        Discount Summary
+
+        Multi-Year Hdr Disc% -4%                                                                                                                       2.24-
+
+        Ch Mngd Con Hdr Dis% -18%                                                                                                                     10.08-
+
+        Special Neg HdrDisc% -15%                                                                                                                      6.55-
+
+        Pre Payment HdrDisc% -1%                                                                                                                       0.37-
+
+        *** Hardware ***
+
+        H5UN7AC               Collaborative Support Upgrade                                                               30.09.2021                  -11.00
+
+                                                                                         Hardware Subtotal                                            -11.00
+
+                                                                                         Discounts                                                      3.78
+
+                                                                                         Total                                                         -7.22
+
+        U9087AC               Hardware Support Upgrade                                                                    30.09.2021                 -248.00
+
+                                                                                         Hardware Subtotal                                           -248.00
+
+                                                                                         Discounts                                                     85.22
+
+                                                                                         Total                                                       -162.78
+
+        UJ558AC               HPE Ind Std Svrs Return to HW Supp                                                          30.11.2020                1,707.49
+
+                                                                                         Hardware Subtotal                                          1,707.49
+
+                                                                                         Discounts                                                   -517.37
+
+                                                                                         Total                                                      1,190.12
+
+        Discount Summary
+
+        Multi-Year Hdr Disc% -4%                                                                                                                       10.36
+
+        Ch Mngd Con Hdr Dis% -18%                                                                                                                    260.73-
+
+        Special Neg HdrDisc% -15%                                                                                                                    179.71-
+
+        Pre Payment HdrDisc% -1%                                                                                                                        1.71
+
+      The Prices shown will be invoiced yearly in advance.
+
+          Printed on: 04.12.2020                                Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT   Page: 28 / 35
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN. Registered No: 690597

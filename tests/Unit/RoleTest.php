@@ -3,17 +3,20 @@
 namespace Tests\Unit;
 
 use Tests\TestCase;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\Unit\Traits\{
     AssertsListing,
     WithFakeUser
 };
 use App\Models\Role;
-use Str, Arr;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\{Str, Arr};
 
+/**
+ * @group build
+ */
 class RoleTest extends TestCase
 {
-    use WithFakeUser, AssertsListing;
+    use WithFakeUser, AssertsListing, DatabaseTransactions;
 
     /**
      * Test Role listing.

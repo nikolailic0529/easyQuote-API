@@ -2,52 +2,36 @@
 
 namespace App\Traits\User;
 
-use Carbon\{
-    Carbon,
-    CarbonInterval,
-};
+use App\Services\UserActivityService;
+use Illuminate\Support\Carbon;
 
 trait PerformsActivity
 {
-    protected static int $activityExpiresIn;
-
-    protected static int $refreshActivityExpiresIn;
+    public static int $activityExpiresIn; // minutes
 
     protected static function bootPerformsActivity()
     {
         static::$activityExpiresIn = config('activity.expires_in', 60);
-        static::$refreshActivityExpiresIn = config('activity.refresh_expires_in', 50);
     }
 
     public function initializePerformsActivity()
     {
-        $this->fillable = array_merge($this->fillable, ['last_activity_at']);
-        $this->dates = array_merge($this->dates, ['last_activity_at', 'logged_in_at']);
+        $this->dates = array_merge($this->dates, ['logged_in_at']);
     }
 
-    public function freshActivity(): bool
+    public function freshActivity(Carbon $time = null): void
     {
-        /** Perform Activity only if the last User's activity expires earlier than the specified time in minutes. */
-        if ($this->lastActivityExpiresIn()->minutes > static::$refreshActivityExpiresIn) {
-            return false;
-        }
-
-        return $this->withoutEvents(function () {
-            $usesTimestamps = $this->usesTimestamps();
-            $this->timestamps = false;
-
-            return tap($this->forceFill(['last_activity_at' => now()])->saveOrFail(), fn () => $this->timestamps = $usesTimestamps);
-        });
+        UserActivityService::updateUserActivity($this->getKey(), $time);
     }
 
-    public function setLastActivityAt(Carbon $time): bool
+    public function getLastActivity(): Carbon
     {
-        return $this->withoutEvents(function () use ($time) {
-            $usesTimestamps = $this->usesTimestamps();
-            $this->timestamps = false;
+        return UserActivityService::getUserActivity($this->getKey());
+    }
 
-            return tap($this->forceFill(['last_activity_at' => $time])->saveOrFail(), fn () => $this->timestamps = $usesTimestamps);
-        });
+    public function getActivityCacheKey()
+    {
+        return UserActivityService::userActivityCacheKey($this->getKey());
     }
 
     public function freshLoggedIn(): bool
@@ -56,25 +40,18 @@ trait PerformsActivity
             $usesTimestamps = $this->usesTimestamps();
             $this->timestamps = false;
 
-            return tap($this->forceFill(['logged_in_at' => now()])->saveOrFail(), fn () => $this->timestamps = $usesTimestamps);
+            return tap($this->forceFill(['logged_in_at' => Carbon::now()])->saveOrFail(), fn () => $this->timestamps = $usesTimestamps);
         });
     }
 
-    public function activityExpiresAt(): Carbon
+    public static function activityExpiresAt(): Carbon
     {
-        return now()->subMinutes(self::$activityExpiresIn);
-    }
-
-    public function lastActivityExpiresIn(): CarbonInterval
-    {
-        return $this->hasRecentActivity()
-            ? $this->activityExpiresAt()->diffAsCarbonInterval($this->last_activity_at)
-            : CarbonInterval::create(0);
+        return Carbon::now()->subMinutes(static::$activityExpiresIn);
     }
 
     public function hasRecentActivity(): bool
     {
-        return !is_null($this->last_activity_at) && $this->last_activity_at->gte($this->activityExpiresAt());
+        return UserActivityService::userHasRecentActivity($this->getKey());
     }
 
     public function doesntHaveRecentActivity(): bool

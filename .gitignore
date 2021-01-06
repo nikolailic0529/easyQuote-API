@@ -19,3 +19,4 @@ uuid('timezone_id')
 @templates
 @templates_edited
 _ide_helper.php
+xpdf-tools

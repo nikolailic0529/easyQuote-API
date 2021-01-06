@@ -3,7 +3,7 @@
 namespace App\Repositories\QuoteTemplate;
 
 use App\Contracts\Repositories\QuoteTemplate\HpeContractTemplate as Contract;
-use App\Models\QuoteTemplate\HpeContractTemplate;
+use App\Models\Template\HpeContractTemplate;
 use App\Repositories\SearchableRepository;
 use App\Repositories\Concerns\ResolvesImplicitModel;
 use Illuminate\Database\Eloquent\{Builder, Collection, Model};
@@ -163,19 +163,19 @@ class HpeContractTemplateRepository extends SearchableRepository implements Cont
     protected function filterQueryThrough(): array
     {
         return [
-            \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\OrderByName::class,
             \App\Http\Query\QuoteTemplate\OrderByCompanyName::class,
-            \App\Http\Query\QuoteTemplate\OrderByVendorName::class
+            \App\Http\Query\QuoteTemplate\OrderByVendorName::class,
+            \App\Http\Query\DefaultOrderBy::class,
         ];
     }
 
     protected function filterableQuery()
     {
         $query = $this->template->query()
-            ->select(...$this->qualifyColumns('id', 'name', 'is_system', 'company_id', 'created_at', 'activated_at'))
-            ->with('company:id,name', 'countries:id,name');
+            ->select(...$this->qualifyColumns('id', 'name', 'is_system', 'vendor_id', 'company_id', 'created_at', 'activated_at'))
+            ->with('company:id,name', 'countries:id,name', 'vendor:id,name');
 
         return [
             (clone $query)->activated(),
@@ -191,15 +191,15 @@ class HpeContractTemplateRepository extends SearchableRepository implements Cont
     protected function searchableFields(): array
     {
         return [
-            'name^5', 'countries.name^4', 'company.name^4', 'created_at^3'
+            'name^5', 'countries.name^4', 'vendor.name^4', 'company.name^4', 'created_at^3'
         ];
     }
 
     protected function searchableScope($query)
     {
         return $query
-            ->select('id', 'name', 'is_system', 'company_id', 'created_at', 'activated_at')
-            ->with('company:id,name', 'countries:id,name');
+            ->select('id', 'name', 'is_system', 'vendor_id', 'company_id', 'created_at', 'activated_at')
+            ->with('company:id,name', 'countries:id,name', 'vendor:id,name');
     }
 
     protected function qualifyColumns(string ...$columns): array

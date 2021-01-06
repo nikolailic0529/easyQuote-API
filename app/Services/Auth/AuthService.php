@@ -85,7 +85,7 @@ class AuthService implements AuthServiceInterface
         /** @var \App\Models\User */
         $user ??= auth()->user();
 
-        UserRepository::lock($user->getKey())->block(30, function () use ($user) {
+        UserRepository::lock($user->getKey(), 10)->block(30, function () use ($user) {
             $user->revokeTokens();
             $user->markAsLoggedOut();
         });
@@ -111,7 +111,7 @@ class AuthService implements AuthServiceInterface
         $user = $this->retrieveUserFromCredentials($credentials);
 
         if (!is_null($user)) {
-            UserRepository::lock($user->getKey())->block(30, function () use ($user) {
+            UserRepository::lock($user->getKey(), 10)->block(30, function () use ($user) {
                 $this->incrementUserFailedAttempts($user);
                 $this->deactivateUserWhenAttemptsExceeded($user);
             });
@@ -125,7 +125,7 @@ class AuthService implements AuthServiceInterface
         /** @var \App\Models\User */
         $user = request()->user();
 
-        UserRepository::lock($user->getKey())->block(30, function () use ($user) {
+        UserRepository::lock($user->getKey(), 10)->block(30, function () use ($user) {
             /**
              * If the User has expired tokens the System will mark the User as Logged Out.
              */

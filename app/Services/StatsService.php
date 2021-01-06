@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Contracts\{
     Services\Stats,
-    Services\QuoteServiceInterface as QuoteService,
     Repositories\Customer\CustomerRepositoryInterface as Customers,
     Repositories\Quote\QuoteDraftedRepositoryInterface as DraftedQuotes,
     Repositories\Quote\QuoteSubmittedRepositoryInterface as SubmittedQuotes,
@@ -27,7 +26,6 @@ use Illuminate\Database\{
     Eloquent\Builder,
     Eloquent\Collection as DbCollection,
 };
-use Illuminate\Database\Query\Builder as DbBuilder;
 use Illuminate\Support\{
     Collection,
     Facades\DB,
@@ -46,8 +44,6 @@ class StatsService implements Stats
 
     protected AssetTotal $assetTotal;
 
-    protected QuoteService $quoteService;
-
     protected DraftedQuotes $draftedQuotes;
 
     protected SubmittedQuotes $submittedQuotes;
@@ -61,7 +57,6 @@ class StatsService implements Stats
         QuoteLocationTotal $quoteLocationTotal,
         CustomerTotal $customerTotal,
         AssetTotal $assetTotal,
-        QuoteService $quoteService,
         DraftedQuotes $draftedQuotes,
         SubmittedQuotes $submittedQuotes,
         Assets $assets,
@@ -72,7 +67,6 @@ class StatsService implements Stats
         $this->customerTotal = $customerTotal;
         $this->assetTotal = $assetTotal;
         $this->assets = $assets;
-        $this->quoteService = $quoteService;
         $this->draftedQuotes = $draftedQuotes;
         $this->submittedQuotes = $submittedQuotes;
         $this->customers = $customers;
@@ -89,13 +83,13 @@ class StatsService implements Stats
             $this->quoteTotal->query()->delete();
 
             $this->draftedQuotes->cursor(
-                fn (Builder $q) => $q->with('countryMargin', 'usingVersion')
+                fn (Builder $q) => $q->with('countryMargin', 'activeVersion')
                     ->has('customer.equipmentLocation')
             )
                 ->each(fn (Quote $quote) => $this->handleQuote($quote));
 
             $this->submittedQuotes->cursor(
-                fn (Builder $q) => $q->with('countryMargin', 'usingVersion')
+                fn (Builder $q) => $q->with('countryMargin', 'activeVersion')
                     ->has('customer.equipmentLocation')
             )
                 ->each(fn (Quote $quote) => $this->handleQuote($quote));
@@ -245,7 +239,7 @@ class StatsService implements Stats
                 return false;
             }
 
-            $version = $quote->usingVersion;
+            $version = $quote->activeVersionOrCurrent;
 
             $totalPrice = $version->totalPrice / $version->margin_divider * $version->base_exchange_rate;
 

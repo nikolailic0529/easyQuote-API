@@ -14,6 +14,7 @@ use App\Models\{
 };
 use App\Models\Data\Timezone;
 use App\Notifications\Task\TaskExpired as ExpiredNotification;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Event;
@@ -21,6 +22,8 @@ use Illuminate\Support\Facades\Notification;
 
 class TaskServiceTest extends TestCase
 {
+    use DatabaseTransactions;
+    
     /**
      * Test task expiry notification.
      *

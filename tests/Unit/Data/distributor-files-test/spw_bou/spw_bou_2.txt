@@ -1,0 +1,101 @@
+Detail for Support Account                              ID:     SPW-BOU
+
+                                                                                        Service Agreement ID: 1086 6360            0276
+
+              Support Quotation                                                         System Handle: SPWBOU-FR01
+
+              Agreement No.                                                             France
+
+              Your PO Reference:                                                        HPE Reference No.: 56943477
+
+              Equipment Address:                                                        Software Update Address:
+
+              Bouygues Telecom                                                          Bouygues Telecom
+
+              13-15 Avenue Du Maréchal Juin                                             13-15 Avenue Du Maréchal Juin
+
+              F-92360 MEUDON LA FORÊT                                                   F-92360 MEUDON LA FORÊT
+
+              Hardware Contact:                                                         Software Contact:
+
+              Chris Cann                                                                Chris Cann
+
+              Tel: 0800 072 0950                                                        Tel: 0800 072 0950
+
+              Fax:                                                                      Fax:
+
+              This quote is valid until 20.06.2021
+
+              Coverage from: 21.06.2021 to: 31.12.2022
+
+              To log a call please telephone our Customer Care Reception on: 0845 161 0050
+
+        Product No.           Description                                          Serial No.               Coverage Period             Qty         Price/GBP
+
+                                                                                                            from:          to:
+
+        H7J34AC               HPE Foundation Care 24x7 SVC
+
+        *** Software ***
+
+                              HPE Software Technical Unlimited Support
+
+                                       SW Technical Support
+
+                                       SW Electronic Support
+
+                                       24 Hrs Std Office Days
+
+                                       24 Hrs Day 6
+
+                                       24 Hrs Day 7
+
+                                       Holidays Covered
+
+                                       Standard Response
+
+        BD715A                VMw vSphere EntPlus 1P 3yr SW                                                                               1            28.94
+
+                                                                                   1H210-083L4-F8U42-A22RP-3MLL5
+
+        R1T83A                VMw vRealize Ops Std /CPU 3yr LTU                                                                           1             9.92
+
+                                                                                   1H210-083L4-F8U42-A22RP-3MLL5
+
+        BD715A                VMw vSphere EntPlus 1P 3yr SW                                                                               1            28.94
+
+                                                                                   5N28K-48LKM-Y8K43-ALC0K-C19L1
+
+        R1T83A                VMw vRealize Ops Std /CPU 3yr LTU                                                                           1             9.92
+
+                                                                                   5N28K-48LKM-Y8K43-ALC0K-C19L1
+
+        BD715A                VMw vSphere EntPlus 1P 3yr SW                                                                               1            28.94
+
+                                                                                   5J690-08JLM-A8K4A-A222H-3E1J1
+
+        R1T83A                VMw vRealize Ops Std /CPU 3yr LTU                                                                           1             9.92
+
+                                                                                   5J690-08JLM-A8K4A-A222H-3E1J1
+
+        BD715A                VMw vSphere EntPlus 1P 3yr SW                                                                               1            28.94
+
+                                                                                   5N600-483Q6-A8K4C-ALA0H-2RV31
+
+        R1T83A                VMw vRealize Ops Std /CPU 3yr LTU                                                                           1             9.92
+
+                                                                                   5N600-483Q6-A8K4C-ALA0H-2RV31
+
+        BD715A                VMw vSphere EntPlus 1P 3yr SW                                                                               1            28.94
+
+                                                                                   5J29H-081QP-Y8K4C-AHCHH-2NC35
+
+        R1T83A                VMw vRealize Ops Std /CPU 3yr LTU                                                                           1             9.92
+
+                                                                                   5J29H-081QP-Y8K4C-AHCHH-2NC35
+
+      Single Payment for Duration
+
+          Printed on: 17.12.2020                                Please Note: This is not an invoice, charges shown are monthly & exclusive of VAT    Page: 2 / 13
+
+      Registered Office: Cain Road, Bracknell, Berkshire, RG12 1HN.Registered No: 690597

@@ -2,7 +2,7 @@
 
 namespace App\Contracts\Repositories\QuoteTemplate;
 
-use App\Models\QuoteTemplate\ContractTemplate;
+use App\Models\Template\ContractTemplate;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
@@ -44,7 +44,7 @@ interface ContractTemplateRepositoryInterface
      * Find Contract Template by given id.
      *
      * @param string $id
-     * @return \App\Models\QuoteTemplate\ContractTemplate
+     * @return \App\Models\Template\ContractTemplate
      *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
@@ -55,7 +55,7 @@ interface ContractTemplateRepositoryInterface
      *
      * @param int $limit
      * @param Closure $scope
-     * @return \App\Models\QuoteTemplate\ContractTemplate|\Illuminate\Database\Eloquent\Collection|null
+     * @return \App\Models\Template\ContractTemplate|\Illuminate\Database\Eloquent\Collection|null
      */
     public function random(int $limit = 1, ?Closure $scope = null);
 
@@ -79,7 +79,7 @@ interface ContractTemplateRepositoryInterface
      * Create a new Contract Template with provided attributes.
      *
      * @param array $attributes
-     * @return \App\Models\QuoteTemplate\ContractTemplate
+     * @return \App\Models\Template\ContractTemplate
      */
     public function create(array $attributes): ContractTemplate;
 
@@ -88,7 +88,7 @@ interface ContractTemplateRepositoryInterface
      *
      * @param array $attributes
      * @param string $id
-     * @return \App\Models\QuoteTemplate\ContractTemplate
+     * @return \App\Models\Template\ContractTemplate
      */
     public function update(array $attributes, string $id): ContractTemplate;
 

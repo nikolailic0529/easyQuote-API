@@ -5,16 +5,16 @@ namespace App\Http\Controllers\API\Templates;
 use App\Contracts\Repositories\QuoteTemplate\ContractTemplateRepositoryInterface as Repository;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\QuoteTemplate\{
-    DeleteTemplate,
     StoreQuoteTemplateRequest,
     UpdateQuoteTemplateRequest
 };
+use App\Http\Requests\ContractTemplate\DeleteContractTemplate;
 use App\Http\Resources\TemplateRepository\{
     TemplateCollection,
     TemplateResourceListing,
     TemplateResourceWithIncludes
 };
-use App\Models\QuoteTemplate\ContractTemplate;
+use App\Models\Template\ContractTemplate;
 
 class ContractTemplateController extends Controller
 {
@@ -71,7 +71,7 @@ class ContractTemplateController extends Controller
     /**
      * Display the specified Contract Template.
      *
-     * @param  \App\Models\QuoteTemplate\ContractTemplate $template
+     * @param  \App\Models\Template\ContractTemplate $template
      * @return \Illuminate\Http\Response
      */
     public function show(ContractTemplate $contract_template)
@@ -83,7 +83,7 @@ class ContractTemplateController extends Controller
      * Update the specified Contract Template in storage.
      *
      * @param  \App\Http\Requests\QuoteTemplate\UpdateQuoteTemplateRequest  $request
-     * @param  \App\Models\QuoteTemplate\ContractTemplate $template
+     * @param  \App\Models\Template\ContractTemplate $template
      * @return \Illuminate\Http\Response
      */
     public function update(UpdateQuoteTemplateRequest $request, ContractTemplate $contract_template)
@@ -96,11 +96,11 @@ class ContractTemplateController extends Controller
     /**
      * Remove the specified Contract Template from storage.
      *
-     * @param  DeleteTemplate $request
-     * @param  \App\Models\QuoteTemplate\ContractTemplate $contract_template
+     * @param  DeleteContractTemplate $request
+     * @param  \App\Models\Template\ContractTemplate $contract_template
      * @return \Illuminate\Http\Response
      */
-    public function destroy(DeleteTemplate $request, ContractTemplate $contract_template)
+    public function destroy(DeleteContractTemplate $request, ContractTemplate $contract_template)
     {
         return response()->json(
             $this->contractTemplate->delete($contract_template->id)
@@ -110,7 +110,7 @@ class ContractTemplateController extends Controller
     /**
      * Activate the specified Contract Template from storage.
      *
-     * @param  \App\Models\QuoteTemplate\ContractTemplate $contract_template
+     * @param  \App\Models\Template\ContractTemplate $contract_template
      * @return \Illuminate\Http\Response
      */
     public function activate(ContractTemplate $contract_template)
@@ -125,7 +125,7 @@ class ContractTemplateController extends Controller
     /**
      * Deactivate the specified Contract Template from storage.
      *
-     * @param  \App\Models\QuoteTemplate\ContractTemplate $contract_template
+     * @param  \App\Models\Template\ContractTemplate $contract_template
      * @return \Illuminate\Http\Response
      */
     public function deactivate(ContractTemplate $contract_template)
@@ -140,7 +140,7 @@ class ContractTemplateController extends Controller
     /**
      * Get Data for Template Designer.
      *
-     * @param \App\Models\QuoteTemplate\ContractTemplate $contract_template
+     * @param \App\Models\Template\ContractTemplate $contract_template
      * @return \Illuminate\Http\Response
      */
     public function designer(ContractTemplate $contract_template)
@@ -155,7 +155,7 @@ class ContractTemplateController extends Controller
     /**
      * Create copy of the specified Contract Template.
      *
-     * @param \App\Models\QuoteTemplate\ContractTemplate $contract_template
+     * @param \App\Models\Template\ContractTemplate $contract_template
      * @return \Illuminate\Http\Response
      */
     public function copy(ContractTemplate $contract_template)

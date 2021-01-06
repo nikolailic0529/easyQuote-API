@@ -136,10 +136,10 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
     protected function filterQueryThrough(): array
     {
         return [
-            \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\OrderByName::class,
-            \App\Http\Query\Vendor\OrderByShortCode::class
+            \App\Http\Query\Vendor\OrderByShortCode::class,
+            \App\Http\Query\DefaultOrderBy::class,
         ];
     }
 

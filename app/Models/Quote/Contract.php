@@ -2,39 +2,93 @@
 
 namespace App\Models\Quote;
 
-use App\Contracts\ReindexQuery;
-use App\Models\HpeContract;
-use App\Scopes\{
-    AnyContractTypeScope,
-    ContractTypeScope,
-    NonVersionScope
+use App\Casts\GroupDescription;
+use App\Models\{
+    QuoteFile\ImportedRow,
+    QuoteFile\QuoteFile,
+    QuoteFile\ScheduleData
 };
+use App\Traits\{
+    Activatable,
+    BelongsToUser,
+    BelongsToCustomer,
+    BelongsToCompany,
+    BelongsToVendor,
+    BelongsToCountry,
+    Submittable,
+    Reviewable,
+    Completable,
+    Search\Searchable,
+    Quote\SwitchesMode,
+    Quote\HasGroupDescriptionAttribute,
+    Quote\HasAdditionalHtmlAttributes,
+    QuoteTemplate\BelongsToContractTemplate,
+    Activity\LogsActivity,
+    Auth\Multitenantable,
+    SavesPreviousState,
+    Uuid
+};
+use Illuminate\Database\Eloquent\{
+    SoftDeletes,
+    Model
+};
+use Illuminate\Support\Traits\Tappable;
+use App\Models\Template\TemplateField;
 use App\Traits\{
     BelongsToQuote,
     NotifiableModel,
-    Quote\HasVersions
 };
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Str;
-use Illuminate\Support\Stringable;
+use Illuminate\Support\Collection as BaseCollection;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Contract extends BaseQuote implements ReindexQuery
+class Contract extends Model
 {
-    const REG_CUSTOMER_RFQ_PREFIX = 'CQ';
+    use Uuid,
+        Multitenantable,
+        Searchable,
+        BelongsToUser,
+        BelongsToCustomer,
+        BelongsToCompany,
+        BelongsToVendor,
+        BelongsToCountry,
+        BelongsToContractTemplate,
+        Submittable,
+        Activatable,
+        SoftDeletes,
+        HasGroupDescriptionAttribute,
+        LogsActivity,
+        HasAdditionalHtmlAttributes,
+        Reviewable,
+        Completable,
+        SwitchesMode,
+        SavesPreviousState,
+        Tappable,
+        BelongsToQuote,
+        NotifiableModel;
 
-    const QB_CUSTOMER_RFQ_PREFIX = 'CT';
 
-    use HasVersions, BelongsToQuote, NotifiableModel;
-
-    protected $attributes = [
-        'document_type' => Q_TYPE_CONTRACT
+    protected $fillable = [
+        'customer_id',
+        'distributor_file_id',
+        'schedule_file_id',
+        'company_id',
+        'vendor_id',
+        'country_id',
+        'last_drafted_step',
+        'completeness',
+        'contract_template_id',
+        'pricing_document',
+        'service_agreement_id',
+        'customer_name',
+        'contract_number',
+        'system_handle',
+        'contract_date'
     ];
 
-    protected static function booted()
-    {
-        static::addGlobalScope(new NonVersionScope);
-        static::addGlobalScope(new ContractTypeScope);
-    }
+    protected $casts = [
+        'group_description' => GroupDescription::class,
+    ];
 
     public function toSearchArray()
     {
@@ -44,12 +98,10 @@ class Contract extends BaseQuote implements ReindexQuery
             'user:id,first_name,last_name'
         );
 
-        $customerName = $this->document_type === Q_TYPE_HPE_CONTRACT ? $this->hpe_contract_customer_name : $this->customer->name;
-
         return [
             'company_name'           => $this->company->name,
             'contract_number'        => $this->contract_number,
-            'customer_name'          => $customerName,
+            'customer_name'          => $this->customer_name,
             'customer_rfq'           => $this->customer->rfq,
             'customer_valid_until'   => $this->customer->valid_until,
             'customer_support_start' => $this->customer->support_start,
@@ -59,9 +111,47 @@ class Contract extends BaseQuote implements ReindexQuery
         ];
     }
 
-    public static function reindexQuery(): Builder
+    public function templateFields(): BelongsToMany
     {
-        return static::query()->withoutGlobalScope(ContractTypeScope::class)->withGlobalScope(AnyContractTypeScope::class, new AnyContractTypeScope);
+        return $this->belongsToMany(TemplateField::class, 'contract_field_column', 'contract_id');
+    }
+
+    public function getSortFieldsAttribute(): BaseCollection
+    {
+        return $this->fieldsColumns->whereNotNull('sort')->map(
+            fn ($column) => ['name' => $column->templateField->name, 'direction' => $column->sort]
+        )->values();
+    }
+
+    public function importableColumns(): BelongsToMany
+    {
+        return $this->belongsToMany(ImportableColumn::class, 'contract_field_column', $this->getForeignKey());
+    }
+
+    public function fieldsColumns(): HasMany
+    {
+        return $this->hasMany(ContractFieldColumn::class)->with('templateField');
+    }
+
+    public function scheduleData()
+    {
+        return $this->hasOneThrough(ScheduleData::class, QuoteFile::class, 'id', null, 'schedule_file_id')->withDefault();
+    }
+
+    public function priceList()
+    {
+        return $this->belongsTo(QuoteFile::class, 'distributor_file_id', 'id')->withDefault();
+    }
+
+    public function paymentSchedule()
+    {
+        return $this->belongsTo(QuoteFile::class, 'schedule_file_id', 'id')->withDefault();
+    }
+
+    public function rowsData()
+    {
+        return $this->hasManyThrough(ImportedRow::class, QuoteFile::class, 'id', null, 'distributor_file_id')
+            ->whereColumn('imported_rows.page', '>=', 'quote_files.imported_page');
     }
 
     public function getItemNameAttribute()
@@ -69,21 +159,8 @@ class Contract extends BaseQuote implements ReindexQuery
         return "Contract ({$this->contract_number})";
     }
 
-    public function getContractNumberAttribute()
-    {
-        if ($this->document_type === Q_TYPE_HPE_CONTRACT) {
-            return $this->hpe_contract_number;
-        }
-
-        return (string) Str::of($this->customer->rfq)->replaceFirst(static::REG_CUSTOMER_RFQ_PREFIX, static::QB_CUSTOMER_RFQ_PREFIX);
-    }
-
     public function getCompletenessDictionary()
     {
-        if ($this->document_type === Q_TYPE_HPE_CONTRACT) {
-            return HpeContract::modelCompleteness();
-        }
-
-        return parent::getCompletenessDictionary();
+        return __('quote.stages');
     }
 }

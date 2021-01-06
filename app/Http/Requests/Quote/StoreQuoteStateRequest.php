@@ -55,7 +55,7 @@ class StoreQuoteStateRequest extends FormRequest
     public function rules()
     {
         return [
-            'quote_id' => ['uuid', Rule::exists(Quote::class, 'id')->where('is_version', false)->whereNull('deleted_at')],
+            'quote_id' => ['bail', 'uuid', Rule::exists(Quote::class, 'id')->whereNull('deleted_at')],
 
             'quote_data.customer_id' => [
                 $this->customerRequired(),
@@ -86,12 +86,12 @@ class StoreQuoteStateRequest extends FormRequest
 
             'quote_data.quote_template_id' => [
                 'uuid',
-                Rule::exists('quote_templates', 'id')->whereNull('deleted_at')->where('type', QT_TYPE_QUOTE)
+                Rule::exists('quote_templates', 'id')->whereNull('deleted_at')
             ],
 
             'quote_data.contract_template_id' => [
                 'uuid',
-                Rule::exists('quote_templates', 'id')->whereNull('deleted_at')->where('type', QT_TYPE_CONTRACT)
+                Rule::exists('contract_templates', 'id')->whereNull('deleted_at')
             ],
 
             'quote_data.source_currency_id' => ['nullable', 'string', 'uuid', Rule::exists('currencies', 'id')],
@@ -250,7 +250,7 @@ class StoreQuoteStateRequest extends FormRequest
     {
         return is_null($this->quote()->customer_id)
             && $this->missing('quote_data.customer_id')
-            ? 'required' : null;
+            ? 'required' : '';
     }
 
     protected function submitting(): bool

@@ -3,8 +3,11 @@
 namespace Tests\Unit\Discount;
 
 use App\Models\Quote\Discount\MultiYearDiscount;
-use Str;
+use Illuminate\Support\Str;
 
+/**
+ * @group build
+ */
 class MultiYearDiscountTest extends DiscountTest
 {
     public function testDiscountListing()

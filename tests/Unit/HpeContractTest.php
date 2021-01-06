@@ -2,22 +2,29 @@
 
 namespace Tests\Unit;
 
+use Tests\TestCase;
 use App\Contracts\Services\HpeContractState;
 use App\Models\HpeContract;
 use App\Models\HpeContractFile;
+use App\Models\Template\HpeContractTemplate;
+use App\Services\HpeContractExporter;
 use App\Services\HpeContractFileService;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\{Arr, Str};
-use Tests\TestCase;
-use Storage;
-use File;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\Testing\File as TestingFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
+/**
+ * @group build
+ */
 class HpeContractTest extends TestCase
 {
-    use WithFaker;
+    use WithFaker, DatabaseTransactions;
 
     /**
      * Test HPE Contract File Uploading.
@@ -44,6 +51,60 @@ class HpeContractTest extends TestCase
         $this->assertEquals($response->json('original_file_name'), $file->name);
 
         Storage::disk('hpe_contract_files')->assertExists($response->json('original_file_path'));
+    }
+
+    public function testHpeContract_20201210130642_39516_GB_S4_Import()
+    {
+        $filePath = static::contractFiles()['20201210130642_39516_GB_S4'];
+
+        $file = static::createUploadedFile($filePath);
+        
+        /** @var HpeContractFileService */
+        $fileService = app(HpeContractFileService::class);
+
+        /** @var HpeContractFile */
+        $hpeContractFile = $fileService->store($file);
+
+        $response = $fileService->processImport($hpeContractFile);
+
+        $this->assertFalse($response->failed());
+
+        /** @var HpeContractState */
+        $stateProcessor = app(HpeContractState::class);
+
+        /** @var HpeContract */
+        $hpeContract = factory(HpeContract::class)->create();
+
+        $this->assertTrue(
+            $stateProcessor->processHpeContractData($hpeContract, $hpeContractFile, $response)
+        );
+
+        $data = $stateProcessor->retrieveContractData($hpeContract);
+
+        $assets = $data->pluck('assets')->collapse()
+            ->map(fn ($asset) => Arr::only($asset, [
+                'product_quantity',
+                'product_number',
+                'product_description',
+                'serial_number',
+                'support_start_date',
+                'support_end_date',
+                'support_account_reference',
+                'contract_number'
+            ]));
+
+        $this->assertCount(1, $assets);
+
+        $this->assertContainsEquals([
+            'product_quantity' => 1,
+            'product_number' => 'H1SR4AS',
+            'product_description' => 'HPE Service Credit',
+            'support_start_date' => '01/12/2020',
+            'support_end_date' => '30/11/2025',
+            'support_account_reference' => '1000460771_00028',
+            'contract_number' => '4000029201',
+            'serial_number' => null,
+        ], $assets);
     }
 
     public function test20200928124822123534GBS4Importing()
@@ -78,6 +139,84 @@ class HpeContractTest extends TestCase
 
         $this->assertContains("HPE Software Updates SVC", $serviceDescription);
         $this->assertContains("HPE Software Technical Unlimited Support", $serviceDescription);
+    }
+
+    public function testHpeContract2020112512245839516GBS4Importing()
+    {
+        $this->authenticateApi();
+
+        $filePath = static::contractFiles()['20201125122458_39516_GB_S4'];
+
+        $file = static::createUploadedFile($filePath);
+
+        /** @var HpeContractFileService */
+        $fileService = app(HpeContractFileService::class);
+
+        /** @var HpeContractFile */
+        $hpeContractFile = $fileService->store($file);
+
+        $response = $fileService->processImport($hpeContractFile);
+
+        $this->assertFalse($response->failed());
+
+        /** @var HpeContractState */
+        $stateProcessor = app(HpeContractState::class);
+
+        /** @var HpeContract */
+        $hpeContract = factory(HpeContract::class)->create();
+
+        $this->assertTrue(
+            $stateProcessor->processHpeContractData($hpeContract, $hpeContractFile, $response)
+        );
+
+        $data = $stateProcessor->retrieveContractData($hpeContract);
+
+        $assets = $data->pluck('assets')->collapse()
+            ->map(fn ($asset) => Arr::only($asset, [
+                'product_quantity',
+                'product_number',
+                'product_description',
+                'serial_number',
+                'support_start_date',
+                'support_end_date',
+                'support_account_reference',
+                'contract_number'
+            ]));
+
+        $this->assertCount(3, $assets);
+
+        $this->assertContainsEquals([
+            "product_quantity" => 1,
+            "product_number" => "J9821A",
+            "product_description" => "HP 5406R zl2 Switch",
+            "serial_number" => "SG05G490G3",
+            "support_start_date" => "28/10/2020",
+            "support_end_date" => "27/10/2025",
+            "support_account_reference" => "1000819644_00003",
+            "contract_number" => "4000024672",
+        ], $assets);
+
+        $this->assertContainsEquals([
+            "product_quantity" => 1,
+            "product_number" => "J9821A",
+            "product_description" => "HP 5406R zl2 Switch",
+            "serial_number" => "SG05G490G3",
+            "support_start_date" => "28/10/2020",
+            "support_end_date" => "27/10/2025",
+            "support_account_reference" => "1000819644_00003",
+            "contract_number" => "4000024672",
+        ], $assets);
+
+        $this->assertContainsEquals([
+            "product_quantity" => 1,
+            "product_number" => "J9821A",
+            "product_description" => "HP 5406R zl2 Switch",
+            "serial_number" => "SG05G490G3",
+            "support_start_date" => "28/10/2020",
+            "support_end_date" => "27/10/2025",
+            "support_account_reference" => "1000819644_00003",
+            "contract_number" => "4000024672",
+        ], $assets);
     }
 
     public function testHpeContract20200817083029123286GBS4Importing()
@@ -324,7 +463,6 @@ class HpeContractTest extends TestCase
         $id = $response->json('id');
 
         $this->assertDatabaseHas('hpe_contracts', ['id' => $id, 'deleted_at' => null]);
-        $this->assertDatabaseHas('quotes', ['hpe_contract_id' => $id, 'deleted_at' => null]);
     }
 
     /**
@@ -342,12 +480,9 @@ class HpeContractTest extends TestCase
 
         $hpeContract = $processor->processState(['last_drafted_step' => 'Initiated']);
 
-        $hpeContract->load('contract');
-
         $this->deleteJson('api/hpe-contracts/' . $hpeContract->getKey())->assertOk();
 
         $this->assertSoftDeleted($hpeContract);
-        $this->assertSoftDeleted($hpeContract->contract);
     }
 
     /**
@@ -370,7 +505,6 @@ class HpeContractTest extends TestCase
         $this->patchJson('api/hpe-contracts/' . $hpeContract->getKey() . '/activate')->assertOk();
 
         $this->assertNotNull($hpeContract->refresh()->activated_at);
-        $this->assertNotNull($hpeContract->contract->refresh()->activated_at);
     }
 
 
@@ -394,7 +528,6 @@ class HpeContractTest extends TestCase
         $this->patchJson('api/hpe-contracts/' . $hpeContract->getKey() . '/deactivate')->assertOk();
 
         $this->assertNull($hpeContract->refresh()->activated_at);
-        $this->assertNull($hpeContract->contract->refresh()->activated_at);
     }
 
     /**
@@ -416,6 +549,31 @@ class HpeContractTest extends TestCase
         $response->assertHeader('content-disposition', 'attachment; filename=' . $hpeContract->purchase_order_no . '.pdf');
     }
 
+    /**
+     * Test replicating a newly created submitted HPE Contract.
+     *
+     * @return void
+     */
+    public function testHpeContractReplicating()
+    {
+        $this->authenticateApi();
+
+        /** @var HpeContractState */
+        $processor = app(HpeContractState::class);
+
+        $hpeContract = $processor->processState(['last_drafted_step' => 'Initiated']);
+
+        $hpeContract->forceFill(['submitted_at' => now(), 'activated_at' => now()])->save();
+
+        DB::table('hpe_contracts')->whereNull('submitted_at')->delete();
+        $this->assertDatabaseMissing('hpe_contracts', ['submitted_at' => null]);
+
+        $this->put('api/hpe-contracts/'.$hpeContract->getKey().'/copy')->assertOk();
+
+        $this->assertDatabaseHas('hpe_contracts', ['id' => $hpeContract->getKey(), 'activated_at' => null, ['submitted_at', '!=', null]]);
+        $this->assertDatabaseHas('hpe_contracts', [['activated_at', '!=', null], 'submitted_at' => null ]);
+    }
+
     protected static function createUploadedFile(string $filePath): TestingFile
     {
         return UploadedFile::fake()->createWithContent(File::basename($filePath), File::get($filePath));
@@ -429,6 +587,8 @@ class HpeContractTest extends TestCase
             '20200626125911_123286_GB_S4' => base_path('tests/Unit/Data/hpe-contract-test/20200626125911_123286_GB_S4.txt'),
             '20200817083029_123286_GB_S4' => base_path('tests/Unit/Data/hpe-contract-test/20200817083029_123286_GB_S4.txt'),
             '20200928124822_123534_GB_S4' => base_path('tests/Unit/Data/hpe-contract-test/20200928124822_123534_GB_S4.txt'),
+            '20201125122458_39516_GB_S4' => base_path('tests/Unit/Data/hpe-contract-test/20201125122458_39516_GB_S4.txt'),
+            '20201210130642_39516_GB_S4' => base_path('tests/Unit/Data/hpe-contract-test/20201210130642_39516_GB_S4.txt'),
         ];
     }
 }

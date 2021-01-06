@@ -3,7 +3,8 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
-use Str;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class RequestQueryFilter
 {
@@ -12,16 +13,17 @@ class RequestQueryFilter
         $request ??= request();
         $availableIncludes = optional($resource)->availableIncludes ?? [];
 
-        return tap(
-            $resource,
-            fn ($resource) => $this->getRequestIncludes($request, $availableIncludes)
-                ->each(fn ($include) => $resource->load($include))
-        );
+        $requestIncludes = $this->getRequestIncludes($request, $availableIncludes)->all();
+
+        $resource->load($requestIncludes);
+
+        return $resource;
     }
-    protected function getRequestIncludes(Request $request, array $availableIncludes = [])
+    protected function getRequestIncludes(Request $request, array $availableIncludes = []): Collection
     {
         return collect(data_get($request->input(), 'include', []))
             ->transform(fn ($include) => Str::camel($include))
-            ->intersect($availableIncludes);
+            ->intersect($availableIncludes)
+            ->values();
     }
 }

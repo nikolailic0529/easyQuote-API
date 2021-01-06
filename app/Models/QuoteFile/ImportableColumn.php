@@ -2,8 +2,8 @@
 
 namespace App\Models\QuoteFile;
 
+use App\Contracts\{HasOrderedScope, ReindexQuery};
 use App\Models\QuoteFile\ImportableColumnAlias;
-use App\Contracts\HasOrderedScope;
 use App\Models\Quote\FieldColumn;
 use App\Traits\{
     Activatable,
@@ -24,9 +24,9 @@ use Illuminate\Database\Eloquent\{
     Relations\BelongsTo,
     Relations\HasMany,
 };
-use Str;
+use Illuminate\Support\Str;
 
-class ImportableColumn extends Model implements HasOrderedScope
+class ImportableColumn extends Model implements HasOrderedScope, ReindexQuery
 {
     use Uuid,
         BelongsToUser,
@@ -62,6 +62,11 @@ class ImportableColumn extends Model implements HasOrderedScope
     public function scopeRegular(Builder $query): Builder
     {
         return $query->where('is_temp', false);
+    }
+
+    public static function reindexQuery(): Builder
+    {
+        return static::regular();
     }
 
     public function aliases(): HasMany

@@ -203,7 +203,6 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
     protected function filterQueryThrough(): array
     {
         return [
-            app(\App\Http\Query\DefaultOrderBy::class, ['column' => 'total_quoted_value']),
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\OrderByName::class,
             \App\Http\Query\Company\OrderByVat::class,
@@ -213,6 +212,7 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
             \App\Http\Query\Company\OrderByType::class,
             \App\Http\Query\Company\OrderByCategory::class,
             \App\Http\Query\Company\OrderByTotalQuotedValue::class,
+            app(\App\Http\Query\DefaultOrderBy::class, ['column' => 'total_quoted_value']),
         ];
     }
 

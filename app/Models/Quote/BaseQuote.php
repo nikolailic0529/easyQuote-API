@@ -7,7 +7,6 @@ use App\Contracts\{
     ActivatableInterface,
     HasOrderedScope
 };
-use App\Http\Resources\ImportedRow\ImportedRowResource;
 use App\Models\{
     QuoteFile\ImportedRow,
     QuoteFile\QuoteFile,
@@ -37,7 +36,6 @@ use App\Traits\{
     Quote\HasAdditionalHtmlAttributes,
     QuoteTemplate\BelongsToQuoteTemplate,
     QuoteTemplate\BelongsToContractTemplate,
-    CachesRelations\CachesRelations,
     Activity\LogsActivity,
     Currency\ConvertsCurrency,
     Auth\Multitenantable,
@@ -60,7 +58,7 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
     use Uuid,
         Multitenantable,
         Searchable,
-        HasQuoteFiles,
+        // HasQuoteFiles,
         BelongsToUser,
         BelongsToCustomer,
         BelongsToCompany,
@@ -69,9 +67,9 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
         BelongsToMargin,
         BelongsToQuoteTemplate,
         BelongsToContractTemplate,
-        Draftable,
-        Submittable,
-        Activatable,
+        // Draftable,
+        // Submittable,
+        // Activatable,
         SoftDeletes,
         HasMorphableDiscounts,
         HasMarginPercentageAttribute,
@@ -80,7 +78,6 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
         HasCustomDiscountAttribute,
         HasGroupDescriptionAttribute,
         LogsActivity,
-        CachesRelations,
         HasAdditionalHtmlAttributes,
         Reviewable,
         Completable,
@@ -97,23 +94,20 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
 
     const TYPES = ['New', 'Renewal'];
 
-    protected $connection = 'mysql';
-
     protected $fillable = [
-        'type',
         'customer_id',
         'eq_customer_id',
+        'distributor_file_id',
+        'schedule_file_id',
         'company_id',
         'vendor_id',
         'country_id',
         'last_drafted_step',
         'completeness',
-        'language_id',
         'quote_template_id',
         'contract_template_id',
         'pricing_document',
         'service_agreement_id',
-        'hpe_contract_number',
         'system_handle',
         'checkbox_status',
         'closing_date'
@@ -130,14 +124,14 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
 
     protected $casts = [
         'group_description'    => GroupDescription::class,
-        'margin_data'          => 'array',
+        // 'margin_data'          => 'array',
         'checkbox_status'      => 'json',
         'calculate_list_price' => 'boolean',
         'buy_price'            => 'float',
     ];
 
     protected $hidden = [
-        'deleted_at', 'cached_relations'
+        'deleted_at'
     ];
 
     protected $table = 'quotes';
@@ -170,19 +164,7 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
 
     protected static $submitEmptyLogs = false;
 
-    protected static $cacheRelations = ['user', 'customer', 'company'];
-
     protected static $saveStateAttributes = ['service_agreement_id'];
-
-    public function scopeNewType($query)
-    {
-        return $query->whereType('New');
-    }
-
-    public function scopeRenewalType($query)
-    {
-        return $query->whereType('Renewal');
-    }
 
     public function scopeOrdered($query)
     {
@@ -196,41 +178,28 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
 
     public function scheduleData()
     {
-        return $this->hasOneThrough(ScheduleData::class, QuoteFile::class)->withDefault();
-    }
-
-    public function selectedRowsData()
-    {
-        return $this->rowsData()->selected();
+        return $this->hasOneThrough(ScheduleData::class, QuoteFile::class, 'id', null, 'schedule_file_id')->withDefault();
     }
 
     public function priceList()
     {
-        return $this->hasOne(QuoteFile::class)->priceLists()->withDefault();
+        return $this->belongsTo(QuoteFile::class, 'distributor_file_id', 'id')->withDefault();
     }
 
     public function paymentSchedule()
     {
-        return $this->hasOne(QuoteFile::class)->paymentSchedules()->withDefault();
+        return $this->belongsTo(QuoteFile::class, 'schedule_file_id', 'id')->withDefault();
     }
 
     public function rowsData()
     {
-        return $this->hasManyThrough(ImportedRow::class, QuoteFile::class)
-            ->where('quote_files.file_type', QFT_PL)
+        return $this->hasManyThrough(ImportedRow::class, QuoteFile::class, 'id', null, 'distributor_file_id')
             ->whereColumn('imported_rows.page', '>=', 'quote_files.imported_page');
     }
 
-    public function getRowsDataAttribute()
+    public function firstRow()
     {
-        return ImportedRowResource::collection(
-            $this->rowsData()->oldest()->limit(1)->get()
-        );
-    }
-
-    public function detachQuoteFile(QuoteFile $quoteFile)
-    {
-        return $this->quoteFiles()->detach($quoteFile->id);
+        return $this->rowsData()->limit(1)->oldest();
     }
 
     public function toSearchArray()
@@ -297,6 +266,19 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
     public function getForeignKey()
     {
         return Str::snake(Str::after(class_basename(self::class), 'Base')) . '_' . $this->getKeyName();
+    }
+
+    public function getVersionNameAttribute(): string
+    {
+        $userName = !is_null($this->user_fullname) ? $this->user_fullname : "{$this->user->first_name} {$this->user->last_name}";
+
+        if (blank($userName)) {
+            $userName ??= "[USER DELETED]";
+        }
+
+        $versionNumber = $this->version_number ?? 1;
+
+        return "{$userName} {$versionNumber}";
     }
 
     protected function defaultRelationships(): array

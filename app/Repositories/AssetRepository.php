@@ -136,7 +136,6 @@ class AssetRepository extends SearchableRepository implements Contract
     protected function filterQueryThrough(): array
     {
         return [
-            \App\Http\Query\DefaultOrderBy::class,
             \App\Http\Query\OrderByCreatedAt::class,
             \App\Http\Query\OrderByProductNumber::class,
             \App\Http\Query\OrderBySerialNumber::class,
@@ -149,6 +148,7 @@ class AssetRepository extends SearchableRepository implements Contract
             \App\Http\Query\OrderByAssetCategory::class,
             \App\Http\Query\OrderByQuoteId::class,
             \App\Http\Query\FilterByLocation::class,
+            \App\Http\Query\DefaultOrderBy::class,
         ];
     }
 
