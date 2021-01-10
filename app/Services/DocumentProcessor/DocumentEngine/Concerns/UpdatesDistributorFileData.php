@@ -2,18 +2,18 @@
 
 namespace App\Services\DocumentProcessor\DocumentEngine\Concerns;
 
-use App\Models\QuoteFile\QuoteFile;
-use App\Models\QuoteFile\ImportedRow;
+use App\Enum\Lock;
 use App\Models\QuoteFile\ImportableColumn;
 use App\Models\QuoteFile\ImportableColumnAlias;
-use App\Enum\Lock;
-use Webpatser\Uuid\Uuid;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
+use App\Models\QuoteFile\ImportedRow;
+use App\Models\QuoteFile\QuoteFile;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Throwable;
+use Webpatser\Uuid\Uuid;
 
 trait UpdatesDistributorFileData
 {
@@ -70,12 +70,12 @@ trait UpdatesDistributorFileData
                 $columns = $columns->merge(
                     collect($attributes)->keys()
                         ->mapWithKeys(
-                            fn ($key) => [$key => (string) Str::of($key)->title()->replace('_', ' ')]
+                            fn($key) => [$key => (string)Str::of($key)->title()->replace('_', ' ')]
                         )
                 );
             }
 
-            $pageRows = array_map(fn ($row) => $row + $attributes, $pageRows);
+            $pageRows = array_map(fn($row) => $row + $attributes, $pageRows);
 
             $allocatedColumns = [];
 
@@ -89,7 +89,7 @@ trait UpdatesDistributorFileData
                 });
 
             foreach ($pageRows as $row) {
-                $columnsData = collect($row)->mapWithKeys(fn ($value, $key) => [
+                $columnsData = collect($row)->mapWithKeys(fn($value, $key) => [
                     $columns[$key] => [
                         'importable_column_id' => $columns[$key],
                         'header' => $header[$key] ?? $key,
@@ -98,7 +98,7 @@ trait UpdatesDistributorFileData
                 ]);
 
                 $rows[] = [
-                    'id' => (string) Uuid::generate(4),
+                    'id' => (string)Uuid::generate(4),
                     'quote_file_id' => $quoteFile->getKey(),
                     'page' => $currentPage,
                     'columns_data' => $columnsData->toJson(),
@@ -116,7 +116,7 @@ trait UpdatesDistributorFileData
 
     protected function isOnePayLine(array $line)
     {
-        return (bool) preg_grep(static::$reOnePay, Arr::flatten($line));
+        return (bool)preg_grep(static::$reOnePay, Arr::flatten($line));
     }
 
     protected function collateColumn(string $header, array $allocatedColumns = null)
@@ -124,8 +124,8 @@ trait UpdatesDistributorFileData
         $alias = Str::of($header)->trim()->lower();
 
         // Looking for an importable column with exact alias matching.
-        $column = ImportableColumn::whereHas('aliases', fn (Builder $query) => $query->where('alias', $alias))
-            ->when($allocatedColumns, fn (Builder $query) => $query->whereKeyNot($allocatedColumns))
+        $column = ImportableColumn::whereHas('aliases', fn(Builder $query) => $query->where('alias', $alias))
+            ->when($allocatedColumns, fn(Builder $query) => $query->whereKeyNot($allocatedColumns))
             ->orderByDesc('is_system')
             ->orderBy('is_temp')
             ->first(['id']);
@@ -143,11 +143,13 @@ trait UpdatesDistributorFileData
             $column->disableReindex();
             $column->save();
 
-            ImportableColumnAlias::make([
-                'id' => (string) Uuid::generate(4),
-                'importable_column_id' => $column->getKey(),
-                'alias' => $alias,
-            ])->save();
+            tap(new ImportableColumnAlias(), function (ImportableColumnAlias $columnAlias) use ($column, $alias) {
+                $columnAlias->id = (string)Uuid::generate(4);
+                $columnAlias->importable_column_id = $column->getKey();
+                $columnAlias->alias = $alias;
+
+                $columnAlias->save();
+            });
         }
 
         // Add allocated importable column id to array.

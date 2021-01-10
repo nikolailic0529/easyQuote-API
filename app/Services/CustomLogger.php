@@ -13,7 +13,7 @@ class CustomLogger implements Logger
 
     protected static array $errorKeys = ['ErrorCode', 'error'];
 
-    public function log(): void
+    public function log($message, $context = []): void
     {
         $arguments = collect(func_get_args());
 

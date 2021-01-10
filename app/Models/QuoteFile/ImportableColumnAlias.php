@@ -8,6 +8,11 @@ use App\Traits\{
 };
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property mixed importable_column_id
+ * @property mixed|string id
+ * @property \Illuminate\Support\Stringable|mixed alias
+ */
 class ImportableColumnAlias extends Model
 {
     use Uuid, BelongsToImportableColumn;

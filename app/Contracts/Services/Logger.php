@@ -9,9 +9,11 @@ interface Logger
     /**
      * Format and log all given data.
      *
+     * @param array $message
+     * @param array $context
      * @return void
      */
-    public function log(): void;
+    public function log($message, $context = []): void;
 
     /**
      * Format an error with exception.

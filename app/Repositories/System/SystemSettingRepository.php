@@ -101,7 +101,7 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
             return $systemSettings->reduce(function (BaseCollection $carry, $systemSetting) use ($attributes) {
                 $value = data_get($attributes->get($systemSetting->id), 'value');
                 $systemSetting->fill(compact('value'));
-                
+
                 return $carry->push($systemSetting->save());
             }, collect());
         }, 3);
@@ -122,13 +122,6 @@ class SystemSettingRepository implements SystemSettingRepositoryInterface
         $value = $this->get('notification_time', false);
 
         return \Carbon\CarbonInterval::create(0, 0, $value);
-    }
-
-    protected function getFailureReportRecipientsSetting()
-    {
-        $value = $this->get('failure_report_recipients', false) ?? [];
-
-        return app('user.repository')->findMany($value);
     }
 
     protected function getSupportedFileTypesSetting()
