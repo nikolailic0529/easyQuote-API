@@ -13,7 +13,7 @@ use Illuminate\Support\Arr;
 class SchedulesParsingTest extends ParsingTest
 {
     use DatabaseTransactions;
-    
+
     /**
      * Test Austria Payment Schedules Processing.
      *
@@ -71,7 +71,7 @@ class SchedulesParsingTest extends ParsingTest
 
     protected function filesDirPath(): string
     {
-        return 'tests/Unit/Data/schedule-files-test';
+        return base_path('tests/Unit/Data/schedule-files-test');
     }
 
     protected function performFileAssertions(QuoteFile $quoteFile): void

@@ -13,7 +13,7 @@ interface QuoteView
      * Prepare a quote for an external request.
      *
      * @param string $RFQNumber
-     * @param string $clientName
+     * @param string|null $clientName
      * @return BaseQuote
      */
     public function requestForQuote(string $RFQNumber, string $clientName = null): BaseQuote;
@@ -23,15 +23,15 @@ interface QuoteView
      *
      * @param BaseQuote $quote
      * @param mixed $model
-     * @return $this
+     * @return void
      */
     public function interact(BaseQuote $quote, $model);
 
     /**
-     * Interact with all posible BaseQuote Models
+     * Interact with all possible BaseQuote Models
      *
      * @param BaseQuote $quote
-     * @return $this
+     * @return void
      */
     public function interactWithModels(BaseQuote $quote);
 
@@ -40,7 +40,7 @@ interface QuoteView
      *
      * @param BaseQuote $quote
      * @param CountryMargin $countryMargin
-     * @return $this
+     * @return void
      */
     public function interactWithCountryMargin(BaseQuote $quote, CountryMargin $countryMargin);
 
@@ -48,7 +48,7 @@ interface QuoteView
      * Interact with User's Margin and Possible Country Margin
      *
      * @param BaseQuote $quote
-     * @return $this
+     * @return void
      */
     public function interactWithMargin(BaseQuote $quote);
 
@@ -56,7 +56,7 @@ interface QuoteView
      * Set computable rows to given quote instance.
      *
      * @param BaseQuote $quote
-     * @return $this
+     * @return void
      */
     public function setComputableRows(BaseQuote $quote);
 
@@ -64,7 +64,7 @@ interface QuoteView
      * Calculate Schedule Prices based on Margin Percentage
      *
      * @param BaseQuote $quote
-     * @return $this
+     * @return void
      */
     public function calculateSchedulePrices(BaseQuote $quote);
 
@@ -73,7 +73,7 @@ interface QuoteView
      *
      * @param BaseQuote $quote
      * @param mixed $discount
-     * @return $this
+     * @return void
      */
     public function interactWithDiscount(BaseQuote $quote, $discount);
 
@@ -82,7 +82,7 @@ interface QuoteView
      * Retrieving Selected Rows Data, Interactions with Margins, Discounts, Calculation Total List Price.
      *
      * @param BaseQuote $quote
-     * @return $this
+     * @return void
      */
     public function prepareQuoteReview(BaseQuote $quote);
 
@@ -90,7 +90,7 @@ interface QuoteView
      * Format Computable Rows.
      *
      * @param BaseQuote $quote
-     * @return $this
+     * @return void
      */
     public function prepareRows(BaseQuote $quote);
 
@@ -98,7 +98,7 @@ interface QuoteView
      * Format Payment Schedule.
      *
      * @param BaseQuote $quote
-     * @return $this
+     * @return void
      */
     public function prepareSchedule(BaseQuote $quote);
 

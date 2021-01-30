@@ -110,7 +110,7 @@ abstract class SearchableRepository
             ->queryString(
                 Str::of(ElasticsearchQuery::escapeReservedChars($query))->start('*')->finish('*')
             );
-        
+
         try {
             return $this->elasticsearch()->search($esQuery->toArray());
         } catch (Throwable $e) {

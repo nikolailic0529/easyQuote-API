@@ -3,6 +3,7 @@
 namespace App\Models\System;
 
 use Illuminate\Support\{Arr, Collection};
+use Exception;
 
 class ActivityExportCollection
 {
@@ -34,12 +35,16 @@ class ActivityExportCollection
      */
     public $subjectName = null;
 
+    /**
+     * ActivityExportCollection constructor.
+     * @param iterable $summary
+     * @param iterable $collection
+     * @param int $limit
+     * @param bool $isSpecifiedSubject
+     * @throws Exception
+     */
     public function __construct(iterable $summary, iterable $collection, int $limit, bool $isSpecifiedSubject = false)
     {
-        if (!Collection::wrap($collection)->first() instanceof Activity) {
-            throw new \Exception('The 2 argument must contain the Activities');
-        }
-
         $this->summary = Collection::wrap($summary);
         $this->collection = $this->prepareCollection($collection);
         $this->limit = $limit;
@@ -49,14 +54,23 @@ class ActivityExportCollection
         }
     }
 
-    public static function create(...$args)
+    /**
+     * ActivityExportCollection constructor.
+     * @param iterable $summary
+     * @param iterable $collection
+     * @param int $limit
+     * @param bool $isSpecifiedSubject
+     * @return ActivityExportCollection
+     * @throws Exception
+     */
+    public static function create(iterable $summary, iterable $collection, int $limit, bool $isSpecifiedSubject = false): ActivityExportCollection
     {
-        return new static(...$args);
+        return new static($summary, $collection, $limit, $isSpecifiedSubject);
     }
 
     public function __get($key)
     {
-        $method = 'get' . ucfirst($key);
+        $method = 'get'.ucfirst($key);
 
         if (!method_exists($this, $method)) {
             return;
@@ -86,7 +100,7 @@ class ActivityExportCollection
     public function prepend(...$args)
     {
         if (is_string($args[0]) && func_num_args() < 2) {
-            throw new \Exception('You must pass the value for prependable data');
+            throw new Exception('You must pass the value for prependable data');
         }
 
         if (is_string($args[0])) {

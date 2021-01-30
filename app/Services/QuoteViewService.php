@@ -6,27 +6,24 @@ use App\Collections\MappedRows;
 use App\Contracts\Repositories\Quote\QuoteSubmittedRepositoryInterface;
 use App\Contracts\Services\QuoteView;
 use App\Http\Resources\QuoteResource;
-use App\Models\{
-    Quote\BaseQuote,
-    Quote\Quote,
-    Quote\Discount,
-    Quote\QuoteVersion,
-    Quote\Margin\CountryMargin,
-};
+use App\Models\{Quote\BaseQuote, Quote\Discount, Quote\Margin\CountryMargin, Quote\Quote, Quote\QuoteVersion,};
 use App\Repositories\Concerns\FetchesGroupDescription;
-use Illuminate\Support\{Str, Collection};
+use Illuminate\Support\{Collection};
 
 class QuoteViewService implements QuoteView
 {
-    use FetchesGroupDescription;
-
     const QUOTE_EXPORT_VIEW = 'quotes.pdf';
+
+    use FetchesGroupDescription;
 
     protected QuoteSubmittedRepositoryInterface $submittedRepository;
 
-    public function __construct(QuoteSubmittedRepositoryInterface $submittedRepository)
+    protected QuoteQueries $quoteQueries;
+
+    public function __construct(QuoteSubmittedRepositoryInterface $submittedRepository, QuoteQueries $quoteQueries)
     {
         $this->submittedRepository = $submittedRepository;
+        $this->quoteQueries = $quoteQueries;
     }
 
     public function requestForQuote(string $RFQnumber, string $clientName = null): BaseQuote
@@ -58,12 +55,14 @@ class QuoteViewService implements QuoteView
         }
 
         if (is_iterable($interactable)) {
-            Collection::wrap($interactable)->each(fn ($entity) => $this->interact($quote, $entity));
+            Collection::wrap($interactable)->each(fn($entity) => $this->interact($quote, $entity));
         }
     }
 
     public function interactWithModels(BaseQuote $quote)
     {
+        $quote->applicableDiscounts = 0;
+
         /**
          * Possible interaction with Margin percentage.
          */
@@ -72,9 +71,8 @@ class QuoteViewService implements QuoteView
         /**
          * Possible interaction with Discounts.
          */
-        $quote->applicableDiscounts = 0;
 
-        $this->interact($quote, $this->interactableDiscounts($quote));
+        $this->interact($quote, $quote->discounts);
 
         return $this;
     }
@@ -101,125 +99,166 @@ class QuoteViewService implements QuoteView
 
     public function interactWithMargin(BaseQuote $quote)
     {
-        if (!isset($quote->computableRows) || !isset($quote->countryMargin)) {
-            return $this;
+        $marginDivider = $this->getMarginDivider($quote);
+
+        $quote->finalTotalPrice = $quote->totalPrice / $marginDivider;
+
+        if (is_null($quote->custom_discount) || (float)$quote->custom_discount === 0.0) {
+            return;
         }
 
-        $divider = $quote->margin_divider;
+        $marginPercentage = $this->calculateMarginPercentage($quote->totalPrice, (float)$quote->buy_price);
 
-        $quote->totalPrice = 0.0;
+        $bottomUpDivider = 1 - (($marginPercentage - (float)$quote->custom_discount) / 100);
 
-        $quote->computableRows->transform(function ($row) use ($divider, $quote) {
-            $row->price = round($row->price ?? 0 / $divider, 2);
-            $quote->totalPrice += $row->price;
-            return $row;
+        if ($bottomUpDivider > 0) {
+            $buyPriceAfterCustomDiscount = (float)$quote->buy_price / $bottomUpDivider;
+
+            $quote->applicableDiscounts = (float)$quote->totalPrice - $buyPriceAfterCustomDiscount;
+        }
+    }
+
+    public function getMarginDivider(BaseQuote $quote): float
+    {
+        /** @var float $countryMarginValue */
+        $countryMarginValue = with($quote->countryMargin, function (?CountryMargin $margin): float {
+            if (is_null($margin)) {
+                return 0.0;
+            }
+
+            return (float)$margin->value;
         });
 
-        return $this;
+        $marginValue = ($countryMarginValue - (float)$quote->custom_discount) / 100;
+
+        if ($marginValue >= 1) {
+            return 1 / ($marginValue + 1);
+        }
+
+        return 1 - $marginValue;
+    }
+
+    public function calculateMarginPercentage(float $totalPrice, float $buyPrice): float
+    {
+        if ($totalPrice === 0.0) {
+            return 0.0;
+        }
+
+        return (($totalPrice - (float)$buyPrice) / $totalPrice) * 100;
+    }
+
+    public function applyPredefinedDiscounts(BaseQuote $quote): void
+    {
+        foreach ($quote->discounts as $discount) {
+            $applicableDiscountValue = $this->calculateDiscountValue($discount, $quote->finalTotalPrice, $quote->totalPrice);
+
+            $quote->applicableDiscounts += $applicableDiscountValue;
+
+            $quote->finalTotalPrice -= $applicableDiscountValue;
+        }
+
     }
 
     public function interactWithDiscount(BaseQuote $quote, $discount)
     {
         if (!isset($quote->computableRows) || (is_numeric($discount) && $discount == 0)) {
-            return $this;
+            return;
         }
 
-        if (is_numeric($discount)) {
-            if ($quote->bottomUpDivider == 0) {
-                $quote->totalPrice = 0;
-                return $this;
-            }
+        $applicableDiscountValue = $this->calculateDiscountValue($discount, $quote->totalPrice, $quote->totalPrice);
 
-            $buyPriceAfterDiscount = $quote->buy_price / $quote->bottomUpDivider;
-            $quote->applicableDiscounts += $quote->totalPrice - $buyPriceAfterDiscount;
-
-            return $this;
-        }
-
-        $quote->computableRows->transform(function ($row) use ($discount, $quote) {
-            if (!isset($row->computablePrice)) {
-                $row->computablePrice = $row->price;
-            }
-
-            $value = $this->calculateDiscountValue($discount, (float) $row->computablePrice, (float) $quote->totalPrice);
-            $quote->applicableDiscounts += $value;
-            $row->computablePrice -= $value;
-
-            return $row;
-        });
+        $quote->applicableDiscounts += $applicableDiscountValue;
 
         if (!$discount instanceof Discount) {
-            return $this;
+            return;
         }
 
         $listPriceAfterDiscount = $quote->totalPrice - $quote->applicableDiscounts;
 
-        $discount->margin_percentage = (float) $listPriceAfterDiscount != 0
-            ? round((($listPriceAfterDiscount - $quote->buy_price) / $listPriceAfterDiscount) * 100, 2) : 0;
+        $marginPercentageAfterDiscount = $this->calculateMarginPercentage($listPriceAfterDiscount, $quote->buy_price);
 
-        return $this;
+        $discount->margin_percentage = number_format($marginPercentageAfterDiscount, 2, '.', '');
     }
 
     public function calculateSchedulePrices(BaseQuote $quote)
     {
-        if (!isset($quote->scheduleData->value)) {
-            return $this;
+        if (is_null($quote->scheduleData) || is_null($quote->scheduleData->value)) {
+            return;
         }
 
-        if ($quote->bottomUpDivider == 0) {
-            data_set($quote->scheduleData->value, '*.price', 0.0);
-            return $this;
-        }
-
-        $targetExchangeRate = $quote->targetExchangeRate;
-
-        /** @var \Illuminate\Support\Collection */
         $payments = Collection::wrap($quote->scheduleData->value);
 
-        $payments = $payments->map(fn ($payment) => data_set($payment, 'price', (float) data_get($payment, 'price')));
+        $totalPayments = $payments->reduce(function (float $totalPayments, array $payment) {
+            $price = $payment['price'] ?? 0.0;
+            $price = is_float($price) ? $price : static::parsePriceValue($price);
 
-        $initialTotalPayments = $payments->sum('price') * $targetExchangeRate;
+            return $totalPayments + $price;
+        }, 0.0);
 
-        if ($initialTotalPayments == 0) {
-            return $this;
+        if ($quote->finalTotalPrice === 0.0) {
+            $quote->scheduleData->value = $payments->map(function (array $payment) {
+                $payment['price'] = 0.0;
+
+                return $payment;
+            });
+
+
+            return;
         }
 
-        $reverseMultiplier = $quote->finalPrice / $initialTotalPayments;
+        $paymentsPriceCoeff = $quote->finalTotalPrice / $totalPayments;
 
-        $quote->scheduleData->value = $payments->map(function ($payment) use ($targetExchangeRate, $reverseMultiplier) {
-            $price = data_get($payment, 'price', 0.0);
-            return data_set($payment, 'price', Str::price($price) * $targetExchangeRate * $reverseMultiplier);
+        $quote->scheduleData->value = $payments->map(function (array $payment) use ($paymentsPriceCoeff) {
+            $price = $payment['price'] ?? 0.0;
+            $price = is_float($price) ? $price : static::parsePriceValue($price);
+
+            $payment['price'] = $price * $paymentsPriceCoeff;
+
+            return $payment;
         });
-
-        return $this;
     }
 
-    public function setComputableRows(BaseQuote $quote)
+    private static function parsePriceValue(string $value): float
     {
-        $rows = (new QuoteQueries)
+        $cleanString = preg_replace('/([^0-9.,])/i', '', $value);
+        $onlyNumbersString = preg_replace('/([^0-9])/i', '', $value);
+
+        $separatorsCountToBeErased = strlen($cleanString) - strlen($onlyNumbersString) - 1;
+
+        $stringWithCommaOrDot = preg_replace('/([,.])/', '', $cleanString, $separatorsCountToBeErased);
+        $removedThousandSeparator = preg_replace('/([.,])(?=[0-9]{3,}$)/', '', $stringWithCommaOrDot);
+
+        return (float)str_replace(',', '.', $removedThousandSeparator);
+    }
+
+    public function setComputableRows(BaseQuote $quote): void
+    {
+        $rows = $this->quoteQueries
             ->mappedSelectedRowsQuery($quote, true)
             ->get();
 
         $quote->computableRows = MappedRows::make($rows);
-
-        return $this;
     }
 
     public function prepareQuoteReview(BaseQuote $quote)
     {
-        $quote->enableExchangeRateConversion();
+        $quote->totalPrice = (float)$this->quoteQueries
+            ->mappedSelectedRowsQuery($quote)
+            ->sum('price');
 
         $this->setComputableRows($quote);
 
-        /**
-         * Possible Interactions with Margins and Discounts
-         */
-        $this->interactWithModels($quote);
+        $this->interactWithMargin($quote);
 
-        /**
-         * Calculate Schedule Total Prices based on Margin Percentage
-         */
+        $this->applyPredefinedDiscounts($quote);
+
         $this->calculateSchedulePrices($quote);
+
+        if ($quote->finalTotalPrice > 0.0) {
+            $quote->priceCoef = (float)$quote->target_exchange_rate * ($quote->finalTotalPrice / $quote->totalPrice);
+        }
+
+        $quote->buy_price = (float)$quote->target_exchange_rate * (float)$quote->buy_price;
 
         $this->prepareRows($quote);
 
@@ -243,30 +282,36 @@ class QuoteViewService implements QuoteView
 
     public function prepareRows(BaseQuote $quote)
     {
-        $quote->computableRows = $quote->computableRows->exceptHeaders($quote->hiddenFields);
-        $quote->renderableRows = $quote->computableRows->exceptHeaders($quote->systemHiddenFields);
+        $quote->computableRows->multiplePriceValue($quote->priceCoef);
+        $quote->computableRows->exceptHeaders($quote->hiddenFields);
+        $quote->renderableRows = (new MappedRows($quote->computableRows))->exceptHeaders($quote->systemHiddenFields);
 
         if ($quote->groupsReady()) {
             $this->formatGroupDescription($quote);
-            return $this;
+
+            return;
         }
 
         if ($quote->isMode(QT_TYPE_QUOTE)) {
             $this->formatLinePrices($quote);
         }
-
-        return $this;
     }
 
     public function prepareSchedule(BaseQuote $quote)
     {
-        if (!isset($quote->scheduleData->value)) {
-            return $this;
+        if (is_null($quote->scheduleData) || is_null($quote->scheduleData->value)) {
+            return;
         }
 
-        $quote->scheduleData->value = MappedRows::make($quote->scheduleData->value)->setCurrency($quote->currencySymbol);
+        $quote->scheduleData->value = Collection::wrap($quote->scheduleData->value)->map(function (array $payment) use ($quote) {
+            $price = $payment['price'] ?? 0.0;
 
-        return $this;
+            $price = is_float($price) ? $price : static::parsePriceValue($price);
+
+            $payment['price'] = sprintf("%s %.2f", $quote->currencySymbol, $price);
+
+            return $payment;
+        });
     }
 
     protected function prepareQuoteExport(BaseQuote $baseQuote): array
@@ -315,28 +360,11 @@ class QuoteViewService implements QuoteView
         $renderHiddenHeaders = $quote->isMode(QT_TYPE_CONTRACT) ? ['total_price'] : [];
 
         $quote->renderableRows = $quote->computableRows->exceptHeaders([...$quote->systemHiddenFields, ...$renderHiddenHeaders]);
-
-        return $this;
     }
 
     protected function formatLinePrices(BaseQuote $quote)
     {
         $quote->renderableRows = $quote->renderableRows->setCurrency($quote->currencySymbol);
-
-        return $this;
-    }
-
-    protected function interactableDiscounts(BaseQuote $quote): Collection
-    {
-        if (filled($quote->discounts)) {
-            return collect($quote->discounts);
-        }
-
-        if ($quote->custom_discount > 0) {
-            return collect($quote->custom_discount);
-        }
-
-        return collect();
     }
 
     protected function calculateDiscountValue($discount, float $price, float $list_price): float
@@ -354,7 +382,7 @@ class QuoteViewService implements QuoteView
 
     private function makePdfFilename(BaseQuote $quote): string
     {
-        $hash = md5($quote->customer->rfq . time());
+        $hash = md5($quote->customer->rfq.time());
 
         return "{$quote->customer->rfq}_{$hash}.pdf";
     }

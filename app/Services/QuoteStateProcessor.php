@@ -64,6 +64,8 @@ class QuoteStateProcessor implements QuoteState
 
     protected QuoteDiscount $morphDiscount;
 
+    protected QuoteQueries $quoteQueries;
+
     public function __construct(
         Quote $quote,
         QuoteService $quoteService,
@@ -73,7 +75,8 @@ class QuoteStateProcessor implements QuoteState
         MarginRepository $margin,
         TemplateField $templateField,
         ImportableColumn $importableColumn,
-        QuoteDiscount $morphDiscount
+        QuoteDiscount $morphDiscount,
+        QuoteQueries $quoteQueries
     ) {
         $this->quote = $quote;
         $this->quoteFile = $quoteFile;
@@ -84,6 +87,7 @@ class QuoteStateProcessor implements QuoteState
         $this->importableColumn = $importableColumn;
         $this->quoteService = $quoteService;
         $this->morphDiscount = $morphDiscount;
+        $this->quoteQueries = $quoteQueries;
     }
 
     public function storeState(StoreQuoteStateRequest $request)
@@ -241,6 +245,10 @@ class QuoteStateProcessor implements QuoteState
          * We are reassigning the Quote Discounts Relation for Calculation new Margin Percentage after provided Discounts applying.
          */
         $quote->discounts = $providedDiscounts;
+
+        $quote->totalPrice = (float)$this->quoteQueries
+            ->mappedSelectedRowsQuery($quote)
+            ->sum('price');
 
         $this->setComputableRows($quote);
 
@@ -840,7 +848,7 @@ class QuoteStateProcessor implements QuoteState
 
         $originalQuoteFiles = collect([$quote->priceList, $quote->paymentSchedule])->pluck('original_file_name')->filter()->implode(', ');
         $newQuoteFiles = $stateQuoteFiles->pluck('original_file_name')->filter()->implode(', ');
-        
+
         $quote->priceList()->associate($stateDistributorFile);
         $quote->paymentSchedule()->associate($statePaymentScheduleFile);
         $quote->save();

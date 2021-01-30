@@ -63,7 +63,7 @@ return [
 
     'vs' => [
         'url' => env('VS_API_URL'),
-        
+
         'token_route' => 'api/oauth/token',
 
         'service_routes' => [
@@ -79,8 +79,8 @@ return [
 
     'document_api' => [
         'url' => env('DOCUMENT_API_URL'),
-        'client_id' => env('DOCUMENT_API_CLIENT_ID'),
-        'client_secret' => env('DOCUMENT_API_CLIENT_SECRET'),
+        'client_username' => env('DOCUMENT_API_CLIENT_USERNAME'),
+        'client_password' => env('DOCUMENT_API_CLIENT_PASSWORD'),
     ],
 
 ];

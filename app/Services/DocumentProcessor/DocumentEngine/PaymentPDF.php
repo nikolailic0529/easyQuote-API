@@ -7,10 +7,10 @@ use App\Enum\Lock;
 use App\Models\QuoteFile\QuoteFile;
 use App\Services\DocumentEngine\ParsePaymentPDF;
 use App\Services\DocumentProcessor\DocumentEngine\Concerns\UpdatesDistributorFileData;
+use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Database\ConnectionInterface;
+use Illuminate\Filesystem\FilesystemManager;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -20,15 +20,24 @@ class PaymentPDF implements ProcessesQuoteFile
 
     protected LoggerInterface $logger;
 
-    public function __construct(LoggerInterface $logger)
+    protected ConnectionInterface $connection;
+
+    protected LockProvider $lockProvider;
+
+    protected FilesystemManager $filesystem;
+
+    public function __construct(LoggerInterface $logger, ConnectionInterface $connection, LockProvider $lockProvider, FilesystemManager $filesystem)
     {
         $this->logger = $logger;
+        $this->connection = $connection;
+        $this->lockProvider = $lockProvider;
+        $this->filesystem = $filesystem;
     }
 
     public function process(QuoteFile $quoteFile)
     {
         $response = (new ParsePaymentPDF($this->logger))
-            ->filePath(Storage::path($quoteFile->original_file_path))
+            ->filePath($this->filesystem->disk()->path($quoteFile->original_file_path))
             ->page($quoteFile->imported_page)
             ->process();
 
@@ -39,13 +48,16 @@ class PaymentPDF implements ProcessesQuoteFile
         }
     }
 
-    protected function updatePaymentQuoteFileData(QuoteFile $quoteFile, array $value)
+    protected function updatePaymentQuoteFileData(QuoteFile $quoteFile, array $value): void
     {
-        $lock = Cache::lock(Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()), 10);
+        $lock = $this->lockProvider->lock(
+            Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()),
+            10
+        );
 
         $lock->block(30);
 
-        DB::beginTransaction();
+        $this->connection->beginTransaction();
 
         try {
             if ($quoteFile->scheduleData()->exists()) {
@@ -55,13 +67,12 @@ class PaymentPDF implements ProcessesQuoteFile
             $scheduleData = $quoteFile->scheduleData()->make(['value' => $value]);
             $scheduleData->save();
 
-            $quoteFile->markAsHandled();
+            $quoteFile->handled_at = now();
+            $quoteFile->save();
 
-            DB::commit();
-
-            return $scheduleData;
+            $this->connection->commit();
         } catch (Throwable $e) {
-            DB::rollBack();
+            $this->connection->rollBack();
 
             throw $e;
         } finally {
@@ -79,7 +90,7 @@ class PaymentPDF implements ProcessesQuoteFile
 
         foreach ($response as $payment) {
             if (!Arr::has($payment, ['from_date', 'to_date', 'value'])) {
-                customlog(['error' => "Unprocessable data. Expected keys 'from_date', 'to_date', 'value'."], $payment ?? []);
+                $this->logger->error("Unprocessable data. Expected keys 'from_date', 'to_date', 'value'.", $payment ?? []);
 
                 continue;
             }

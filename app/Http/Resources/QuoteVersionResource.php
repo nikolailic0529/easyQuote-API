@@ -3,8 +3,9 @@
 namespace App\Http\Resources;
 
 use App\Http\Resources\ImportedRow\ImportedRowResource;
-use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\TemplateRepository\TemplateResourceDesign;
+use App\Models\Quote\Quote;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 class QuoteVersionResource extends JsonResource
 {
@@ -18,6 +19,8 @@ class QuoteVersionResource extends JsonResource
      */
     public function toArray($request)
     {
+        /** @var Quote|QuoteVersionResource $this */
+
         return [
             'id'                                        => $this->id,
             'user_id'                                   => $this->activeVersionOrCurrent->user_id,
@@ -48,9 +51,9 @@ class QuoteVersionResource extends JsonResource
             'checkbox_status'                           => $this->activeVersionOrCurrent->checkbox_status,
             'closing_date'                              => optional($this->activeVersionOrCurrent->closing_date)->format(config('date.format_ui')),
             'additional_notes'                          => $this->activeVersionOrCurrent->additional_notes,
-            'list_price'                                => $this->activeVersionOrCurrent->list_price,
-            'calculate_list_price'                      => $this->activeVersionOrCurrent->calculate_list_price,
-            'buy_price'                                 => $this->activeVersionOrCurrent->buy_price,
+            'list_price'                                => $this->asDecimal((float)$this->activeVersionOrCurrent->totalPrice),
+            'calculate_list_price'                      => (bool)$this->activeVersionOrCurrent->calculate_list_price,
+            'buy_price'                                 => $this->asDecimal((float)$this->activeVersionOrCurrent->buy_price),
             'group_description'                         => $this->activeVersionOrCurrent->group_description,
             'use_groups'                                => $this->activeVersionOrCurrent->use_groups && $this->activeVersionOrCurrent->has_group_description,
             'sort_group_description'                    => $this->activeVersionOrCurrent->sort_group_description,
@@ -63,7 +66,7 @@ class QuoteVersionResource extends JsonResource
             'margin_percentage_without_country_margin'  => $this->activeVersionOrCurrent->margin_percentage_without_country_margin,
             'margin_percentage_without_discounts'       => $this->activeVersionOrCurrent->margin_percentage_without_discounts,
             'user_margin_percentage'                    => $this->activeVersionOrCurrent->user_margin_percentage,
-            'custom_discount'                           => $this->activeVersionOrCurrent->custom_discount,
+            'custom_discount'                           => transform($this->activeVersionOrCurrent->custom_discount, fn($value) => $this->asDecimal((float)$value)),
             'quote_files'                               => collect([$this->activeVersionOrCurrent->priceList, $this->activeVersionOrCurrent->paymentSchedule])->filter(fn ($file) => $file->exists)->values(),
             'quote_template'                            => TemplateResourceDesign::make($this->activeVersionOrCurrent->quoteTemplate),
             'contract_template'                         => TemplateResourceDesign::make($this->whenLoaded('contractTemplate')),
@@ -88,9 +91,15 @@ class QuoteVersionResource extends JsonResource
             'company'                                   => CompanyResource::make($this->activeVersionOrCurrent->company),
             'template_fields'                           => $this->activeVersionOrCurrent->templateFields,
             'fields_columns'                            => $this->activeVersionOrCurrent->fields_columns,
-            'versions_selection'                        => $this->versions_selection,
+//            'versions_selection'                        => $this->versions_selection,
             'created_at'                                => $this->activeVersionOrCurrent->created_at,
-            'submitted_at'                              => $this->activeVersionOrCurrent->submitted_at
+            'submitted_at'                              => $this->activeVersionOrCurrent->submitted_at,
+            'activated_at'                              => $this->activeVersionOrCurrent->activated_at,
         ];
+    }
+
+    private function asDecimal(float $value): string
+    {
+        return number_format($value, 2, '.', '');
     }
 }

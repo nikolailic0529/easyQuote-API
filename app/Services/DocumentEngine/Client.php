@@ -2,27 +2,20 @@
 
 namespace App\Services\DocumentEngine;
 
-use Illuminate\Support\Facades\Http;
-use App\Services\Exceptions\FileNotFound;
 use App\Services\Dummy\Logger;
+use App\Services\Exceptions\FileNotFound;
+use Illuminate\Support\Facades\Http;
 use Psr\Log\LoggerInterface;
 
 abstract class Client
 {
-    /** @var string */
-    protected $filePath;
+    protected string $filePath = '';
 
-    /** @var integer */
-    protected $firstPage;
+    protected ?int $firstPage = null;
 
-    /** @var integer */
-    protected $lastPage;
+    protected ?int $lastPage = null;
 
-    /** @var integer */
-    protected $page;
-
-    /** @var integer */
-    protected $tries;
+    protected ?int $page = null;
 
     protected LoggerInterface $logger;
 
@@ -33,21 +26,28 @@ abstract class Client
         $this->logger = $logger;
     }
 
-    abstract protected function endpoint();
+    abstract protected function endpoint(): string;
 
-    final public function process()
+    /**
+     * @return array|mixed|null
+     * @throws FileNotFound
+     */
+    final public function process(): ?array
     {
         if (!file_exists($this->filePath)) {
             throw FileNotFound::filePath($this->filePath);
         }
 
-        $response = Http::baseUrl($this->baseUrl())
+        $response = Http::baseUrl($this->getBaseUrl())
             ->withHeaders([
                 'Accept-Encoding' => 'gzip',
             ])
+            ->withBasicAuth(
+                $this->getClientUsername(),
+                $this->getClientPassword()
+            )
             ->acceptJson()
             ->attach('file', file_get_contents($this->filePath), basename($this->filePath))
-            ->retry($this->tries ?? 2, 100)
             ->post($this->endpoint(), $this->buildParameters());
 
         if ($response->failed()) {
@@ -61,65 +61,80 @@ abstract class Client
 
     final protected function buildParameters(): array
     {
-        $parameters = [];
-
-        if (isset($this->page)) {
-            $parameters['page'] = $this->page;
-        }
-
-        if (isset($this->firstPage)) {
-            $parameters['first_page'] = $this->firstPage;
-        }
-
-        if (isset($this->lastPage)) {
-            $parameters['last_page'] = $this->lastPage;
-        }
-
-        return $parameters;
+        return array_filter([
+            'page' => $this->page,
+            'first_page' => $this->firstPage,
+            'last_page' => $this->lastPage,
+        ], fn($value) => !is_null($value));
     }
 
-    /** @return $this */
-    final public function retry(int $tries)
+    /**
+     * @param int $tries
+     * @return $this
+     */
+    final public function retry(int $tries): Client
     {
         $this->tries = $tries;
 
         return $this;
     }
 
-    /** @return $this */
-    final public function filePath(string $filePath)
+    /**
+     * @param string $filePath
+     * @return $this
+     */
+    final public function filePath(string $filePath): Client
     {
         $this->filePath = $filePath;
 
         return $this;
     }
 
-    /** @return $this */
-    final public function page(int $page)
+    /**
+     * @param int $page
+     * @return $this
+     */
+    final public function page(int $page): Client
     {
         $this->page = $page;
 
         return $this;
     }
 
-    /** @return $this */
-    final public function firstPage(int $firstPage)
+    /**
+     * @param int $firstPage
+     * @return $this
+     */
+    final public function firstPage(int $firstPage): Client
     {
         $this->firstPage = $firstPage;
 
         return $this;
     }
 
-    /** @return $this */
-    final public function lastPage(int $lastPage)
+    /**
+     * @param int $lastPage
+     * @return $this
+     */
+    final public function lastPage(int $lastPage): Client
     {
         $this->lastPage = $lastPage;
 
         return $this;
     }
 
-    final protected function baseUrl()
+    protected function getBaseUrl(): string
     {
-        return config('services.document_api.url');
+        return config('services.document_api.url') ?? '';
+    }
+
+    protected function getClientUsername(): string
+    {
+        return config('services.document_api.client_username') ?? '';
+    }
+
+    protected function getClientPassword(): string
+    {
+        return config('services.document_api.client_password') ?? '';
     }
 }

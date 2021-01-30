@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\ServiceProvider;
 use App\Repositories\CountryRepository;
 use App\Services\StatsAggregator;
@@ -26,6 +28,10 @@ class CacheServiceProvider extends ServiceProvider
             ->give(fn ($app) => $app['config']['cache.default'] === 'redis'
                 ? (new CacheManager($app))->driver()->tags(CountryRepository::CACHE_TAG)
                 : (new CacheManager($app))->driver());
+
+        $this->app->singleton(LockProvider::class, function () {
+            return $this->app['cache']->driver('redis')->getStore();
+        });
     }
 
     /**

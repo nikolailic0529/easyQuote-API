@@ -18,13 +18,12 @@ use App\Http\Requests\{
     Quote\StoreGroupDescriptionRequest,
     Quote\UpdateGroupDescriptionRequest
 };
-use App\Http\Requests\Quote\{
-    FirstStep,
+use App\Http\Requests\Quote\{FirstStep,
     GivePermissionRequest,
     SelectGroupDescriptionRequest,
     SetVersionRequest,
-    TryDiscountsRequest,
-};
+    ShowQuoteState,
+    TryDiscountsRequest};
 use App\Http\Resources\{
     QuoteVersionResource,
     ImportedRow\MappedRow,
@@ -53,9 +52,11 @@ class QuoteController extends Controller
         $this->margins = $margins;
     }
 
-    public function quote(Quote $quote)
+    public function quote(ShowQuoteState $request, Quote $quote)
     {
         $this->authorize('view', $quote);
+
+        $request->includeModelAttributes($quote);
 
         return response()->json(
             filter(QuoteVersionResource::make($quote))

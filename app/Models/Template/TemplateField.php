@@ -32,15 +32,14 @@ class TemplateField extends Model implements HasOrderedScope, ActivatableInterfa
         BelongsToUser,
         BelongsToTemplateFieldType,
         Systemable,
-        Searchable,
-        SoftDeletes;
+        Searchable;
 
     protected $table = 'template_fields';
 
     protected $fillable = [
         'header',
         'name',
-        'is_requred',
+        'is_required',
         'is_system',
         'is_column',
         'order',
@@ -51,7 +50,6 @@ class TemplateField extends Model implements HasOrderedScope, ActivatableInterfa
     protected $hidden = [
         'created_at',
         'updated_at',
-        'deleted_at',
         'activated_at',
         'drafted_at',
         'is_system',

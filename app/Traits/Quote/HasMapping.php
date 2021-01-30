@@ -2,6 +2,7 @@
 
 namespace App\Traits\Quote;
 
+use App\Collections\MappedRows;
 use App\Models\{
     Quote\FieldColumn,
     QuoteFile\ImportableColumn,
@@ -21,9 +22,9 @@ use Illuminate\Support\Collection;
  */
 trait HasMapping
 {
-    protected ?Collection $computableRows = null;
+    public ?MappedRows $computableRows = null;
 
-    protected ?Collection $renderableRows = null;
+    public ?MappedRows $renderableRows = null;
 
     /**
      * Template Fields which will be displayed only for S4 Service.
@@ -38,26 +39,6 @@ trait HasMapping
      * @var array
      */
     protected array $contractHiddenFields = ['price', 'searchable'];
-
-    public function getComputableRowsAttribute(): ?Collection
-    {
-        return $this->computableRows;
-    }
-
-    public function setComputableRowsAttribute($value): void
-    {
-        $this->computableRows = $value;
-    }
-
-    public function getRenderableRowsAttribute(): ?Collection
-    {
-        return $this->renderableRows;
-    }
-
-    public function setRenderableRowsAttribute($value): void
-    {
-        $this->renderableRows = $value;
-    }
 
     public function fieldsColumns(): HasMany
     {
@@ -74,7 +55,7 @@ trait HasMapping
         return $this->belongsToMany(ImportableColumn::class, 'quote_field_column', 'quote_id');
     }
 
-    public function defaultTemplateFields(): Builder
+    public function defaultTemplateFields(): BelongsToMany
     {
         return $this->templateFields()->with('systemImportableColumn')->where('is_default_enabled', true);
     }

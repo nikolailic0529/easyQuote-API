@@ -2,84 +2,289 @@
 
 namespace Tests\Unit;
 
+use App\Models\Quote\Quote;
+use App\Models\System\Activity;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Spatie\Activitylog\ActivityLogStatus;
 use Tests\TestCase;
-use Tests\Unit\Traits\{
-    WithFakeUser,
-    AssertsListing,
-};
-use Illuminate\Support\Str;
 
 /**
  * @group build
  */
 class ActivityTest extends TestCase
 {
-    use WithFakeUser, AssertsListing, DatabaseTransactions;
-
-    protected $truncatableTables = ['activity_log'];
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        activity()->log('test');
-    }
+    use DatabaseTransactions;
 
     /**
-     * Test Activity listing.
+     * Test an ability to view activity by the specified subject.
      *
      * @return void
      */
-    public function testActivityListing()
+    public function testCanViewPaginatedActivityBySubject()
     {
-        $response = $this->postJson(url('api/activities'));
+        $this->authenticateApi();
 
-        $this->assertListing($response);
+        $this->app[ActivityLogStatus::class]->disable();
 
-        $response = $this->postJson(url('api/activities'), [
-            'order_by_created' => 'asc',
-            'search' => Str::random(10)
+        $activitySubject = factory(Quote::class)->create();
+
+        factory(Activity::class)->create([
+            'description' => 'created',
+            'subject_id' => $activitySubject->getKey(),
+            'subject_type' => get_class($activitySubject),
         ]);
 
-        $this->assertListing($response);
+        factory(Activity::class, 2)->create([
+            'description' => 'updated',
+            'subject_id' => $activitySubject->getKey(),
+            'subject_type' => get_class($activitySubject),
+        ]);
+
+        $this->getJson('api/activities/subject/'.$activitySubject->getKey().'?per_page=20&page=1&order_by_created_at=desc')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'log_name',
+                        'description',
+                        'subject_id',
+                        'subject_type',
+                        'causer_name',
+                        'changes' => [
+                            'old',
+                            'attributes'
+                        ],
+                        'created_at'
+                    ]
+                ],
+                'current_page',
+                'from',
+                'last_page',
+                'path',
+                'per_page',
+                'to',
+                'total',
+                'summary' => [
+                    '*' => [
+                        'type', 'count'
+                    ]
+                ],
+                'subject_name'
+            ]);
     }
 
     /**
-     * Test Activity listing by specified types.
+     * Test an ability to view paginated existing activity.
      *
      * @return void
      */
-    public function testActivityListingByTypes()
+    public function testCanViewPaginatedActivity()
     {
+        $this->authenticateApi();
+
+        factory(Activity::class, 30)->create();
+
+        $this->postJson('api/activities')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'log_name',
+                        'description',
+                        'subject_id',
+                        'subject_type',
+                        'causer_name',
+                        'changes' => [
+                            'old',
+                            'attributes'
+                        ],
+                        'created_at'
+                    ]
+                ],
+                'current_page',
+                'from',
+                'last_page',
+                'path',
+                'per_page',
+//                'first_page_url',
+//                'last_page_url',
+//                'next_page_url',
+//                'prev_page_url',
+                'to',
+                'total',
+                'summary' => [
+                    '*' => [
+                        'type', 'count'
+                    ]
+                ]
+            ]);
+    }
+
+    /**
+     * Test an ability to filter activity by types.
+     *
+     * @return void
+     */
+    public function testCanViewPaginatedActivityByTypes()
+    {
+        $this->authenticateApi();
+
+        factory(Activity::class, 30)->create();
+
         $types = config('activitylog.types');
 
-        collect($types)->each(function ($type) {
-            $response = $this->postJson(url('api/activities'), ['types' => [$type]]);
-            $this->assertListing($response);
-        });
+        $this->postJson('api/activities', ['types' => $types])
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'log_name',
+                        'description',
+                        'subject_id',
+                        'subject_type',
+                        'causer_name',
+                        'changes' => [
+                            'old',
+                            'attributes'
+                        ],
+                        'created_at'
+                    ]
+                ],
+                'current_page',
+                'from',
+                'last_page',
+                'path',
+                'per_page',
+                'to',
+                'total',
+                'summary' => [
+                    '*' => [
+                        'type', 'count'
+                    ]
+                ]
+            ]);
 
-        $response = $this->postJson(url('api/activities'), compact('types'));
-
-        $this->assertListing($response);
+        foreach ($types as $type) {
+            $this->postJson('api/activities', ['types' => [$type]])
+                ->assertOk()
+                ->assertJsonStructure([
+                    'data' => [
+                        '*' => [
+                            'id',
+                            'log_name',
+                            'description',
+                            'subject_id',
+                            'subject_type',
+                            'causer_name',
+                            'changes' => [
+                                'old',
+                                'attributes'
+                            ],
+                            'created_at'
+                        ]
+                    ],
+                    'current_page',
+                    'from',
+                    'last_page',
+                    'path',
+                    'per_page',
+                    'to',
+                    'total',
+                    'summary' => [
+                        '*' => [
+                            'type', 'count'
+                        ]
+                    ]
+                ]);
+        }
     }
 
     /**
-     * Test Activity listing by specified subject types.
+     * Test an ability to view activity by subject types.
      *
      * @return void
      */
-    public function testActivityListingBySubjectTypes()
+    public function testCanViewActivityBySubjectTypes()
     {
-        $subject_types = array_keys(config('activitylog.subject_types'));
+        $this->authenticateApi();
 
-        collect($subject_types)->each(function ($type) {
-            $response = $this->postJson(url('api/activities'), ['subject_types' => [$type]]);
-            $this->assertListing($response);
-        });
+        $subjects = array_keys(config('activitylog.subject_types'));
 
-        $response = $this->postJson(url('api/activities'), compact('subject_types'));
-        $this->assertListing($response);
+        factory(Activity::class, 30)->create();
+
+
+        $this->postJson('api/activities', [
+            'subject_types' => $subjects
+        ])
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'log_name',
+                        'description',
+                        'subject_id',
+                        'subject_type',
+                        'causer_name',
+                        'changes' => [
+                            'old',
+                            'attributes'
+                        ],
+                        'created_at'
+                    ]
+                ],
+                'current_page',
+                'from',
+                'last_page',
+                'path',
+                'per_page',
+                'to',
+                'total',
+                'summary' => [
+                    '*' => [
+                        'type', 'count'
+                    ]
+                ]
+            ]);
+
+        foreach ($subjects as $subject) {
+            $this->postJson('api/activities', ['subject_types' => [$subject]])
+                ->assertOk()
+                ->assertJsonStructure([
+                    'data' => [
+                        '*' => [
+                            'id',
+                            'log_name',
+                            'description',
+                            'subject_id',
+                            'subject_type',
+                            'causer_name',
+                            'changes' => [
+                                'old',
+                                'attributes'
+                            ],
+                            'created_at'
+                        ]
+                    ],
+                    'current_page',
+                    'from',
+                    'last_page',
+                    'path',
+                    'per_page',
+                    'to',
+                    'total',
+                    'summary' => [
+                        '*' => [
+                            'type', 'count'
+                        ]
+                    ]
+                ]);
+        }
     }
 
     /**
@@ -87,35 +292,72 @@ class ActivityTest extends TestCase
      *
      * @return void
      */
-    public function testActivityListingByPeriods()
+    public function testCanFilterActivityByPeriods()
     {
-        collect(config('activitylog.periods'))->each(function ($period) {
-            $response = $this->postJson(url('api/activities'), compact('period'));
-            $this->assertListing($response);
-        });
+        $this->authenticateApi();
+
+        foreach (config('activitylog.periods') as $period) {
+            $this->postJson('api/activities', [
+                'period' => $period
+            ])
+                ->assertOk()
+                ->assertJsonStructure([
+                    'data' => [
+                        '*' => [
+                            'id',
+                            'log_name',
+                            'description',
+                            'subject_id',
+                            'subject_type',
+                            'causer_name',
+                            'changes' => [
+                                'old',
+                                'attributes'
+                            ],
+                            'created_at'
+                        ]
+                    ],
+                    'current_page',
+                    'from',
+                    'last_page',
+                    'path',
+                    'per_page',
+                    'to',
+                    'total',
+                    'summary' => [
+                        '*' => [
+                            'type', 'count'
+                        ]
+                    ]
+                ]);
+        }
     }
 
     /**
-     * Test Activity Export as PDF.
+     * Test an ability to export activity to pdf.
      *
      * @return void
      */
-    public function testActivityExportPdf()
+    public function testCanExportActivityReportToPdf()
     {
-        $this->post(url('api/activities/export/pdf'))
+        $this->authenticateApi();
+
+        $this->postJson('api/activities/export/pdf')
             ->assertOk()
             ->assertHeader('content-type', 'application/pdf');
     }
 
     /**
-     * Test Activity Export as CSV.
+     * Test an ability to export activity to csv.
      *
      * @return void
      */
-    public function testActivityExportCsv()
+    public function testCanExportActivityReportToCsv()
     {
-        $this->post(url('api/activities/export/csv'))
+        $this->authenticateApi();
+
+        $this->postJson('api/activities/export/csv')
             ->assertOk()
-            ->assertHeader('content-type', 'text/plain');
+            ->assertHeader('content-type', 'text/plain; charset=UTF-8');
     }
 }

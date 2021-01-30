@@ -17,7 +17,7 @@ use Illuminate\Support\{Carbon, Facades\Event};
 class MaintenanceTest extends TestCase
 {
     use DatabaseTransactions;
-    
+
     /**
      * Test Maintenance Scheduling.
      *
@@ -25,6 +25,8 @@ class MaintenanceTest extends TestCase
      */
     public function testMaintenanceScheduling()
     {
+        $this->markTestSkipped();
+
         config(['services.slack.enabled' => true]);
 
         $startTime = Carbon::now()->addMinute();

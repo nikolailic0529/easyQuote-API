@@ -2,7 +2,7 @@
 
 return [
 
-    'document_engine_parameters' => env('DE_DOCUMENT_PARAMETERS', null),
+    'document_engine_parameters' => env('DE_DOCUMENT_PARAMETERS'),
 
     'default_drivers' => [
 

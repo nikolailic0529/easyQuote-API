@@ -7,28 +7,20 @@ use App\Contracts\{
     ActivatableInterface,
     HasOrderedScope
 };
-use App\Models\{
-    QuoteFile\ImportedRow,
-    QuoteFile\QuoteFile,
-    QuoteFile\ScheduleData
-};
+use App\Services\QuoteQueries;
+use App\Models\{Quote\Margin\CountryMargin, QuoteFile\ImportedRow, QuoteFile\QuoteFile, QuoteFile\ScheduleData};
 use App\Traits\{
-    Activatable,
-    HasQuoteFiles,
     BelongsToUser,
     BelongsToCustomer,
     BelongsToCompany,
     BelongsToVendor,
     BelongsToCountry,
     BelongsToMargin,
-    Draftable,
-    Submittable,
     Reviewable,
     Completable,
     Search\Searchable,
     Discount\HasMorphableDiscounts,
     Margin\HasMarginPercentageAttribute,
-    Quote\HasPricesAttributes,
     Quote\HasMapping,
     Quote\SwitchesMode,
     Quote\HasCustomDiscountAttribute,
@@ -42,23 +34,31 @@ use App\Traits\{
     SavesPreviousState,
     Uuid
 };
-use Illuminate\Database\Eloquent\{
+use Illuminate\Database\Eloquent\{Collection,
+    Relations\BelongsTo,
+    Relations\HasManyThrough,
+    Relations\HasOneThrough,
     SoftDeletes,
     Builder,
-    Model
-};
+    Model};
 use Illuminate\Support\Traits\Tappable;
 use Illuminate\Support\Str;
 
 /**
  * @property \Illuminate\Support\Collection $group_description
+ * @property CountryMargin|null $countryMargin
+ * @property float|null $custom_discount
+ * @property Collection<Discount>|Discount[] $discounts
+ * @property float|null $target_exchange_rate
+ * @property float|null $buy_price
+ * @property ScheduleData|null $scheduleData
+ * @property string|null $currencySymbol
  */
 abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableInterface
 {
     use Uuid,
         Multitenantable,
         Searchable,
-        // HasQuoteFiles,
         BelongsToUser,
         BelongsToCustomer,
         BelongsToCompany,
@@ -67,13 +67,9 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
         BelongsToMargin,
         BelongsToQuoteTemplate,
         BelongsToContractTemplate,
-        // Draftable,
-        // Submittable,
-        // Activatable,
         SoftDeletes,
         HasMorphableDiscounts,
         HasMarginPercentageAttribute,
-        HasPricesAttributes,
         HasMapping,
         HasCustomDiscountAttribute,
         HasGroupDescriptionAttribute,
@@ -94,6 +90,14 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
 
     const TYPES = ['New', 'Renewal'];
 
+    public float $applicableDiscounts = 0.0;
+
+    public float $totalPrice = 0.0;
+
+    public float $finalTotalPrice = 0.0;
+
+    public float $priceCoef = 1.0;
+
     protected $fillable = [
         'customer_id',
         'eq_customer_id',
@@ -110,7 +114,9 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
         'service_agreement_id',
         'system_handle',
         'checkbox_status',
-        'closing_date'
+        'closing_date',
+        'calculate_list_price',
+        'buy_price'
     ];
 
     protected $attributes = [
@@ -124,7 +130,6 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
 
     protected $casts = [
         'group_description'    => GroupDescription::class,
-        // 'margin_data'          => 'array',
         'checkbox_status'      => 'json',
         'calculate_list_price' => 'boolean',
         'buy_price'            => 'float',
@@ -176,28 +181,28 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
         return $query->whereHas('customer', fn (Builder $query) => $query->whereRfq($rfq));
     }
 
-    public function scheduleData()
+    public function scheduleData(): HasOneThrough
     {
         return $this->hasOneThrough(ScheduleData::class, QuoteFile::class, 'id', null, 'schedule_file_id')->withDefault();
     }
 
-    public function priceList()
+    public function priceList(): BelongsTo
     {
         return $this->belongsTo(QuoteFile::class, 'distributor_file_id', 'id')->withDefault();
     }
 
-    public function paymentSchedule()
+    public function paymentSchedule(): BelongsTo
     {
         return $this->belongsTo(QuoteFile::class, 'schedule_file_id', 'id')->withDefault();
     }
 
-    public function rowsData()
+    public function rowsData(): HasManyThrough
     {
         return $this->hasManyThrough(ImportedRow::class, QuoteFile::class, 'id', null, 'distributor_file_id')
             ->whereColumn('imported_rows.page', '>=', 'quote_files.imported_page');
     }
 
-    public function firstRow()
+    public function firstRow(): HasManyThrough
     {
         return $this->rowsData()->limit(1)->oldest();
     }
@@ -206,7 +211,7 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
     {
         return [
             'company_name'              => optional($this->company)->name,
-            
+
             'customer_name'             => $this->customer->name,
             'customer_rfq'              => $this->customer->rfq,
             'customer_valid_until'      => $this->customer->quotation_valid_until,
@@ -237,32 +242,6 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
             ?? null;
     }
 
-    public function withAppends(...$attributes)
-    {
-        $attributes = array_merge($attributes, [
-            'list_price',
-            'hidden_fields',
-            'sort_fields',
-            'field_column',
-            'rows_data',
-            'margin_percentage_without_country_margin',
-            'margin_percentage_without_discounts',
-            'user_margin_percentage'
-        ]);
-
-        return $this->append($attributes);
-    }
-
-    public function scopeWithDefaultRelations(Builder $query): Builder
-    {
-        return $query->with($this->defaultRelationships());
-    }
-
-    public function loadDefaultRelations(): self
-    {
-        return $this->loadMissing($this->defaultRelationships());
-    }
-
     public function getForeignKey()
     {
         return Str::snake(Str::after(class_basename(self::class), 'Base')) . '_' . $this->getKeyName();
@@ -281,16 +260,19 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
         return "{$userName} {$versionNumber}";
     }
 
-    protected function defaultRelationships(): array
+    public function getBuyPriceAttribute($value): float
     {
-        return [
-            'quoteFiles' => fn ($query) => $query->isNotHandledSchedule(),
-            'quoteTemplate',
-            'countryMargin',
-            'discounts',
-            'customer',
-            'country',
-            'vendor'
-        ];
+        return $this->convertExchangeRate((float) $value);
+    }
+
+    public function getTotalPriceAttribute(): float
+    {
+        if (isset($this->totalPrice)) {
+            return $this->totalPrice;
+        }
+
+        return $this->totalPrice = (new QuoteQueries)
+            ->mappedSelectedRowsQuery($this)
+            ->sum('price');
     }
 }

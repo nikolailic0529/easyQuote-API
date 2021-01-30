@@ -5,7 +5,7 @@ use App\Models \ {
     Company,
     Vendor,
     Data\Country,
-    QuoteTemplate\TemplateField
+    Template\TemplateField
 };
 use App\Models\Data\Currency;
 use App\Facades\Setting;

@@ -54,11 +54,12 @@ class TemplateFieldsUpdate extends Command
                 $template_field_type_id = TemplateFieldType::whereName($field['type'])->value('id');
                 $field = array_merge($field, compact('template_field_type_id'));
 
-                $templateField = TemplateField::firstOrCreate(['name' => $field['name'], 'is_system' => true], $field);
+                $templateField = TemplateField::updateOrCreate(['name' => $field['name'], 'is_system' => true], [
+                    'is_required' => $field['is_required'],
+                    'is_system' => $field['is_system'],
+                    'order' => $field['order']
+                ]);
 
-                if (!$templateField->wasRecentlyCreated) {
-                    $templateField->update($field);
-                }
 
                 $this->output->write('.');
 
