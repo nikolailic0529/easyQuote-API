@@ -89,6 +89,6 @@ class QuoteResource extends JsonResource
     private function asDecimal(float $value): string
     {
 
-        return number_format($value, 2, '.', '');
+        return number_format($value, 2);
     }
 }
