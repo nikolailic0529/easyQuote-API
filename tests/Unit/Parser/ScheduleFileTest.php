@@ -7,6 +7,35 @@ use Tests\TestCase;
 
 class ScheduleFileTest extends TestCase
 {
+    /**
+     * Test parses ZQMN 57097547.pdf
+     *
+     * @return void
+     */
+    public function test_parses_zqmn_57097547_pdf()
+    {
+        $filePath = base_path('tests/Unit/Data/schedule-files-test/ZQMN 57097547.pdf');
+
+        $page = $this->app[PdfParserInterface::class]->getText($filePath)[3];
+
+        $result = $this->app[PdfParserInterface::class]->parseSchedule($page);
+
+        $this->assertCount(2, $result);
+
+        $this->assertContainsEquals([
+            'from' => '01.03.2021',
+            'to' => '28.02.2022',
+            'price' => 460.44
+        ], $result);
+
+        $this->assertContainsEquals([
+            'from' => '01.03.2022',
+            'to' => '28.02.2023',
+            'price' => 460.44
+        ], $result);
+    }
+
+
      /**
      * Test parses SWCZ-Nemocnice Sumperk-3Y_v1.pdf
      *

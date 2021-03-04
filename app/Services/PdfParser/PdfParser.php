@@ -147,8 +147,9 @@ class PdfParser implements PdfParserInterface
     {
         $content = $array['content'];
 
-        $matches = $this->findPaymentDates($content) + ['payments' => $this->findTotalPayments($content)];
-        $matches = $this->filterScheduleMatches($matches);
+        $paymentDateMatches = $this->findPaymentDates($content);
+        $paymentPriceMatches = $this->findTotalPayments($content);
+        $matches = $this->filterScheduleMatches($paymentDateMatches + ['payments' => $paymentPriceMatches]);
 
         if (!$matches->has(PdfOptions::SCHEDULE_MATCHES)) {
             return [];
@@ -331,6 +332,23 @@ class PdfParser implements PdfParserInterface
 
             preg_match_all(PdfOptions::REGEXP_SCHEDULE_PRICE, $totals, $payments, PREG_UNMATCHED_AS_NULL, 0);
         };
+
+        if (empty($payments)) {
+            $contentLines = explode("\n", $content);
+
+            foreach ($contentLines as $line) {
+                preg_match_all(PdfOptions::REGEXP_SCHEDULE_PRICE, $line, $payments, PREG_UNMATCHED_AS_NULL, 0);
+
+                // Continue prices lookup if the payment dates are found as prices.
+                $priceMatches = array_filter($payments['price'] ?? [], fn(string $priceMatch) => substr_count($priceMatch, '.') < 2);
+
+                if (!empty($priceMatches)) {
+                    $payments['price'] = $priceMatches;
+
+                    break;
+                }
+            }
+        }
 
         return data_get($payments, 'price', []);
     }
