@@ -2,24 +2,15 @@
 
 namespace App\Models\System;
 
+use App\Contracts\SearchableEntity;
 use App\Models\User;
-use App\Traits\{
-    Uuid,
-    Search\Searchable,
-};
-use Illuminate\Support\{
-    Arr,
-    Collection
-};
-use Illuminate\Database\Eloquent\{
-    Model,
-    Builder,
-    Relations\MorphTo
-};
-use Spatie\Activitylog\Contracts\Activity as ActivityContract;
+use App\Traits\{Search\Searchable, Uuid,};
+use Illuminate\Database\Eloquent\{Builder, Model, Relations\MorphTo};
+use Illuminate\Support\{Arr, Collection};
 use Illuminate\Support\Str;
+use Spatie\Activitylog\Contracts\Activity as ActivityContract;
 
-class Activity extends Model implements ActivityContract
+class Activity extends Model implements ActivityContract, SearchableEntity
 {
     use Uuid, Searchable;
 
@@ -30,7 +21,7 @@ class Activity extends Model implements ActivityContract
     ];
 
     protected $hidden = [
-        'properties'
+        'properties',
     ];
 
     protected $dateTimeFormat = 'm/d/y, h:i A';
@@ -114,15 +105,15 @@ class Activity extends Model implements ActivityContract
         return $query->whereHasMorph('causer', User::class);
     }
 
-    public function toSearchArray()
+    public function toSearchArray(): array
     {
         return [
-            'log_name'           => $this->log_name,
-            'description'        => $this->description,
+            'log_name' => $this->log_name,
+            'description' => $this->description,
             'changed_properties' => $this->readableChanges->collapse()->pluck('attribute')->unique()->toArray(),
-            'causer_name'        => $this->causer_name,
-            'subject_name'       => $this->subject_name,
-            'created_at'         => optional($this->created_at)->format(config('date.format')),
+            'causer_name' => $this->causer_name,
+            'subject_name' => $this->subject_name,
+            'created_at' => optional($this->created_at)->format(config('date.format')),
         ];
     }
 
@@ -146,7 +137,7 @@ class Activity extends Model implements ActivityContract
                     $value = $value ? 'Yes' : 'No';
                 }
 
-                $value = blank($value) ? null : (string) $value;
+                $value = blank($value) ? null : (string)$value;
 
                 return compact('attribute', 'value');
             })->values();

@@ -157,7 +157,7 @@ class ContractTemplateRepository extends SearchableRepository implements Contrac
         activity()->disableLogging();
 
         $replicatableTemplate = $this->find($id);
-        $template = $replicatableTemplate->replicate(['user', 'countries', 'templateFields']);
+        $template = $replicatableTemplate->replicate(['user', 'countries', 'templateFields', 'is_active']);
         $countries = $replicatableTemplate->countries->pluck('id')->toArray();
 
         $copied = $template->save();

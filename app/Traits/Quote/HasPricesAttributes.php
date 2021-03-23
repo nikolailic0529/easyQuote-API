@@ -2,7 +2,7 @@
 
 namespace App\Traits\Quote;
 
-use App\Services\QuoteQueries;
+use App\Queries\QuoteQueries;
 use Illuminate\Support\Str;
 
 trait HasPricesAttributes

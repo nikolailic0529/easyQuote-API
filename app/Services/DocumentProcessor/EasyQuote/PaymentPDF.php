@@ -7,38 +7,29 @@ use App\Contracts\Services\ProcessesQuoteFile;
 use App\Enum\Lock;
 use App\Models\QuoteFile\QuoteFile;
 use App\Models\QuoteFile\ScheduleData;
-use Illuminate\Filesystem\FilesystemManager;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class PaymentPDF implements ProcessesQuoteFile
 {
     protected PdfParserInterface $parser;
 
-    protected FilesystemManager $filesystem;
-
-    public function __construct(PdfParserInterface $parser, FilesystemManager $filesystem)
+    public function __construct(PdfParserInterface $parser)
     {
         $this->parser = $parser;
-        $this->filesystem = $filesystem;
     }
 
     public function process(QuoteFile $quoteFile)
     {
-        $textData = $this->parser->getText($this->filesystem->disk()->path($quoteFile->original_file_path));
+        // TODO: implement continuous pages parsing.
 
-        $pagesData = array_filter($textData, function (array $pageData) use ($quoteFile) {
-            return $pageData['page'] >= $quoteFile->imported_page;
-        });
+        $rawData = $this->parser->getText(Storage::path($quoteFile->original_file_path));
 
-        $parsedData = array_reduce($pagesData, function (array $parsedData, array $pageData) {
+        $pageData = collect($rawData)->firstWhere('page', $quoteFile->imported_page);
 
-            $pageResult = $this->parser->parseSchedule($pageData);
-
-            return array_merge($parsedData, $pageResult);
-
-        }, []);
+        $parsedData = $this->parser->parseSchedule($pageData);
 
         $this->updateScheduleQuoteFileData($quoteFile, $parsedData);
     }

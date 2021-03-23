@@ -4,7 +4,7 @@ namespace App\Http\Requests\HpeContractTemplate;
 
 use App\Contracts\Services\HpeExporter;
 use App\Models\Template\HpeContractTemplate;
-use App\Models\Template\TemplateDesign;
+use App\Models\Template\TemplateSchema;
 use Illuminate\Foundation\Http\FormRequest;
 
 class HpeTemplateDesign extends FormRequest
@@ -28,7 +28,7 @@ class HpeTemplateDesign extends FormRequest
         ];
     }
 
-    public function getDesign(): array
+    public function getTemplateSchema(): array
     {
         if (!($template = $this->route('hpe_contract_template')) instanceof HpeContractTemplate) {
             return [];
@@ -37,7 +37,7 @@ class HpeTemplateDesign extends FormRequest
         $images = $this->exporter->retrieveTemplateImages($template);
 
         return transform(
-            TemplateDesign::getPages(TemplateDesign::HPE_CONTRACT),
+            TemplateSchema::getPages(TemplateSchema::HPE_CONTRACT),
             fn ($pages) => collect($pages)->map(fn ($page) => array_merge($page, $images))->toArray()
         );
     }

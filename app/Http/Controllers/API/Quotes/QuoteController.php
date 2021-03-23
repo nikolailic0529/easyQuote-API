@@ -3,19 +3,16 @@
 namespace App\Http\Controllers\API\Quotes;
 
 use App\Collections\MappedRows;
-use App\Http\Controllers\Controller;
-use App\Contracts\{
-    Services\QuoteState,
-    Repositories\Quote\Margin\MarginRepositoryInterface as MarginRepository,
-    Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface as QuoteTemplateRepository,
+use App\Contracts\{Repositories\Quote\Margin\MarginRepositoryInterface as MarginRepository,
     Repositories\UserRepositoryInterface as Users,
+    Services\QuoteState,
 };
-use App\Http\Requests\{
-    Quote\StoreQuoteStateRequest,
-    GetQuoteTemplatesRequest,
+use App\Http\Controllers\Controller;
+use App\Http\Requests\{GetQuoteTemplatesRequest,
     MappingReviewRequest,
     Quote\MoveGroupDescriptionRowsRequest,
     Quote\StoreGroupDescriptionRequest,
+    Quote\StoreQuoteStateRequest,
     Quote\UpdateGroupDescriptionRequest
 };
 use App\Http\Requests\Quote\{FirstStep,
@@ -23,32 +20,28 @@ use App\Http\Requests\Quote\{FirstStep,
     SelectGroupDescriptionRequest,
     SetVersionRequest,
     ShowQuoteState,
-    TryDiscountsRequest};
-use App\Http\Resources\{
-    QuoteVersionResource,
-    ImportedRow\MappedRow,
-    TemplateRepository\TemplateResourceListing,
+    TryDiscountsRequest,
 };
+use App\Http\Resources\{ImportedRow\MappedRow, QuoteVersionResource, TemplateRepository\TemplateResourceListing,};
 use App\Models\Quote\Quote;
+use App\Queries\QuoteQueries;
 use App\Services\QuoteFileService;
 use App\Services\QuotePermissionRegistar;
-use App\Services\QuoteQueries;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\JsonResponse;
 
 class QuoteController extends Controller
 {
     protected QuoteState $processor;
 
-    protected QuoteTemplateRepository $quoteTemplates;
-
     protected MarginRepository $margins;
 
     public function __construct(
         QuoteState $processor,
-        QuoteTemplateRepository $quoteTemplates,
         MarginRepository $margins
-    ) {
+    )
+    {
         $this->processor = $processor;
-        $this->quoteTemplates = $quoteTemplates;
         $this->margins = $margins;
     }
 
@@ -56,10 +49,10 @@ class QuoteController extends Controller
     {
         $this->authorize('view', $quote);
 
-        $request->includeModelAttributes($quote);
-
         return response()->json(
-            filter(QuoteVersionResource::make($quote))
+            QuoteVersionResource::make(
+                $request->loadQuoteAttributes($quote)
+            )
         );
     }
 
@@ -115,9 +108,10 @@ class QuoteController extends Controller
      * Show Grouped Rows.
      *
      * @param Quote $quote
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function rowsGroups(Quote $quote)
+    public function rowsGroups(Quote $quote): JsonResponse
     {
         $this->authorize('view', $quote);
 
@@ -126,11 +120,13 @@ class QuoteController extends Controller
         );
     }
 
-    public function templates(GetQuoteTemplatesRequest $request)
+    public function templates(GetQuoteTemplatesRequest $request): JsonResponse
     {
-        $resource = $request->repository()->findByCompanyVendorCountry($request);
-
-        return response()->json(TemplateResourceListing::collection($resource));
+        return response()->json(
+            TemplateResourceListing::collection(
+                $request->getTemplatesQuery()->get()
+            )
+        );
     }
 
     public function step3()

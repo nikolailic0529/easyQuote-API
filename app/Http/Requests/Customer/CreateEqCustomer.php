@@ -2,19 +2,22 @@
 
 namespace App\Http\Requests\Customer;
 
+use App\DTO\EQCustomer\EQCustomerData;
 use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Customer\Customer;
-use App\Models\Data\Country;
 use App\Models\InternalCompany;
 use App\Models\Vendor;
 use App\Services\EqCustomerService;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class CreateEqCustomer extends FormRequest
 {
+    protected ?EQCustomerData $eqCustomerData = null;
+
     protected EqCustomerService $eqCustomerService;
 
     protected ?InternalCompany $internalCompany = null;
@@ -34,7 +37,6 @@ class CreateEqCustomer extends FormRequest
         return [
             'int_company_id'                    => ['required', 'uuid', Rule::exists(Company::class, 'id')->where('type', Company::INT_TYPE)->whereNull('deleted_at')],
 
-            // 'ext_company_id'                    => ['nullable', 'uuid', Rule::exists(Company::class, 'id')->where('type', Company::EXT_TYPE)->whereNull('deleted_at')],
             'customer_name'                     => 'required|string|min:2',
 
             'service_levels'                    => 'nullable|array',
@@ -46,7 +48,6 @@ class CreateEqCustomer extends FormRequest
 
             'invoicing_terms'                   => 'bail|required|string|min:2|max:2500',
 
-            // 'country_id'                        => ['required', 'uuid', Rule::exists(Country::class, 'id')->whereNull('deleted_at')],
             'addresses'                         => 'array',
             'addresses.*'                       => ['bail', 'required', 'uuid', Rule::exists(Address::class, 'id')->whereNull('deleted_at')],
             'contacts'                          => 'array',
@@ -63,26 +64,42 @@ class CreateEqCustomer extends FormRequest
 
     public function getCompany(): InternalCompany
     {
-        if (isset($this->internalCompany)) {
-            return $this->internalCompany;
-        }
-
-        return $this->internalCompany = InternalCompany::findOrFail($this->int_company_id);
+        return $this->internalCompany ??= InternalCompany::findOrFail($this->int_company_id);
     }
-    
-    public function validated()
+
+    public function getEQCustomerData(): EQCustomerData
     {
-        $company = $this->getCompany();
+        return $this->eqCustomerData ??= with(true, function () {
+            $company = $this->getCompany();
+            
+            $rfqNumber = $this->eqCustomerService->giveNumber($company);
+            $highestNumber = $this->eqCustomerService->getHighestNumber();
 
-        $rfqNumber = $this->eqCustomerService->giveNumber($company);
-        $highestNumber = $this->eqCustomerService->getHighestNumber();
+            return new EQCustomerData([
+                'int_company_id' => $this->input('int_company_id'),
+                'customer_name' => $this->input('customer_name'),
 
-        $attributes = [
-            'rfq_number' => $rfqNumber,
-            'source' => Customer::EQ_SOURCE,
-            'sequence_number' => ++$highestNumber
-        ];
+                'rfq_number' => $rfqNumber,
+                'sequence_number' => $highestNumber,
 
-        return $attributes + parent::validated();
+                'service_levels' => $this->input('service_levels'),
+                'quotation_valid_until' => transform($this->input('quotation_valid_until'), function ($date) {
+                    return Carbon::createFromFormat('Y-m-d', $date);
+                }),
+                'support_start_date' => transform($this->input('support_start_date'), function ($date) {
+                    return Carbon::createFromFormat('Y-m-d', $date);
+                }),
+                'support_end_date' => transform($this->input('support_end_date'), function ($date) {
+                    return Carbon::createFromFormat('Y-m-d', $date);
+                }),
+                'invoicing_terms' => $this->input('invoicing_terms'),
+                'address_keys' => $this->input('addresses'),
+                'contact_keys' => $this->input('contacts'),
+                'vendor_keys' => $this->input('vendors') ?? [],
+                'email' => $this->input('email'),
+                'vat' => $this->input('vat'),
+                'email' => $this->input('email')
+            ]);
+        });
     }
 }

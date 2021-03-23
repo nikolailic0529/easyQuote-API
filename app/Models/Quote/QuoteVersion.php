@@ -2,6 +2,7 @@
 
 namespace App\Models\Quote;
 
+use App\Models\QuoteFile\ImportableColumn;
 use App\Models\Template\TemplateField;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;

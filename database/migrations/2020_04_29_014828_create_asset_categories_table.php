@@ -25,8 +25,8 @@ class CreateAssetCategoriesTable extends Migration
             $table->unique(['name', 'deleted_at']);
         });
 
-        $seeds = collect(json_decode(file_get_contents(database_path('seeds/models/asset_categories.json')), true));
-        
+        $seeds = collect(json_decode(file_get_contents(database_path('seeders/models/asset_categories.json')), true));
+
         $seeds->each(fn ($seed) => AssetCategory::make($seed)->saveOrFail());
     }
 
@@ -36,7 +36,7 @@ class CreateAssetCategoriesTable extends Migration
      * @return void
      */
     public function down()
-    {   
+    {
         Schema::disableForeignKeyConstraints();
 
         Schema::dropIfExists('asset_categories');

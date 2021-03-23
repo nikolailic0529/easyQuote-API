@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Queries\QuoteQueries;
 use App\Contracts\{
     Services\QuoteState,
     Repositories\Quote\QuoteSubmittedRepositoryInterface as SubmittedQuotes,
@@ -57,7 +58,7 @@ class AssetService
             $this->setProgressBar($bar, fn () => (clone $query)->count());
 
             $query
-                ->chunk(50, fn (Collection $chunk) => 
+                ->chunk(50, fn (Collection $chunk) =>
                 $chunk->each(fn (Quote $quote) => $this->migrateQuoteAssets($quote))
             );
         });

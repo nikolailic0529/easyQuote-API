@@ -2,12 +2,11 @@
 
 namespace App\Console\Commands\Routine\Notifications;
 
-use App\Contracts\Repositories\TaskRepositoryInterface as Tasks;
-use App\Models\Task;
 use App\Events\Task\TaskExpired;
+use App\Models\Task;
+use App\Queries\TaskQueries;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
-use Closure;
 
 class TaskExpiration extends Command
 {
@@ -40,12 +39,20 @@ class TaskExpiration extends Command
     /**
      * Execute the console command.
      *
+     * @param TaskQueries $queries
      * @return mixed
      */
-    public function handle(Tasks $tasks)
+    public function handle(TaskQueries $queries)
     {
-        $tasks->getExpired(static::scope())
-            ->each(fn (Task $task) => $this->handleTask($task));
+        $tasks = $queries->expiredTasksQuery()
+            ->whereHasMorph('taskable', Task::TASKABLES)
+            ->whereDoesntHave(
+                'notifications',
+                fn (Builder $query) => $query->where('notification_key', static::NOTIFICATION_KEY)
+            )
+            ->get();
+
+        $tasks->each(fn (Task $task) => $this->handleTask($task));
     }
 
     protected function handleTask(Task $task)
@@ -53,16 +60,5 @@ class TaskExpiration extends Command
         event(new TaskExpired($task));
 
         $task->notifications()->create(['notification_key' => static::NOTIFICATION_KEY]);
-    }
-
-    protected static function scope(): Closure
-    {
-        return fn (Builder $query) =>
-        $query
-            ->whereHasMorph('taskable', Task::TASKABLES)
-            ->whereDoesntHave(
-                'notifications',
-                fn (Builder $query) => $query->whereNotificationKey(static::NOTIFICATION_KEY)
-            );
     }
 }

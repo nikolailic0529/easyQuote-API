@@ -7,7 +7,9 @@ return [
     'default_drivers' => [
 
         'distributor_price_list_pdf' => App\Services\DocumentProcessor\EasyQuote\DistributorPDF::class,
+        'worldwide_distributor_price_list_pdf' => \App\Services\DocumentProcessor\EasyQuote\DistributorPDF::class,
         'distributor_price_list_excel' => App\Services\DocumentProcessor\EasyQuote\DistributorExcel::class,
+        'worldwide_distributor_price_list_excel' => \App\Services\DocumentProcessor\EasyQuote\DistributorExcel::class,
         'distributor_price_list_csv' => App\Services\DocumentProcessor\EasyQuote\DistributorCSV::class,
         'distributor_price_list_word' => App\Services\DocumentProcessor\EasyQuote\DistributorWord::class,
         'payment_schedule_pdf' => App\Services\DocumentProcessor\EasyQuote\PaymentPDF::class,
@@ -17,6 +19,7 @@ return [
 
     'document_engine_drivers' => [
 
+        'worldwide_distributor_price_list_pdf' => \App\Services\DocumentProcessor\DocumentEngine\WorldwideDistributorPDF::class,
         'distributor_price_list_pdf' => App\Services\DocumentProcessor\DocumentEngine\DistributorPDF::class,
         'distributor_price_list_word' => App\Services\DocumentProcessor\DocumentEngine\DistributorWord::class,
 

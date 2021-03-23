@@ -2,43 +2,39 @@
 
 namespace App\Models\QuoteFile;
 
-use App\Models\{
-    QuoteFile\ImportedRawData,
-    QuoteFile\ImportedRow,
-    QuoteFile\DataSelectSeparator
-};
-use App\Models\Quote\Quote;
-use App\Traits\{
-    Auth\Multitenantable,
+use App\Traits\{Auth\Multitenantable,
     BelongsToUser,
-    HasFileFormat,
-    Draftable,
     Handleable,
+    HasFileFormat,
     HasMetaAttributes,
-    HasScheduleData,
     Import\Automappable,
     Misc\GeneratesException,
-    Uuid
-};
-use Illuminate\Database\Eloquent\{
+    Uuid};
+use Illuminate\Database\Eloquent\{Builder,
+    Collection,
     Model,
-    Builder,
-    SoftDeletes,
     Relations\BelongsTo,
     Relations\HasMany,
-};
+    Relations\HasOne,
+    SoftDeletes};
 
 /**
- * @property string $original_file_path
- * @property string $original_file_name
- * @property int $imported_page
+ * @property string|null $quote_file_format_id
+ * @property string|null $file_type
+ * @property string|null $original_file_path
+ * @property string|null $original_file_name
+ * @property int|null $pages
+ * @property int|null $imported_page
+ *
+ * @property ScheduleData|null scheduleData
+ * @property Collection<MappedRow>|MappedRow[] $mappedRows
+ * @property Collection<ImportedRow>|ImportedRow[] $rowsData
  */
 class QuoteFile extends Model
 {
     use Uuid,
         Multitenantable,
         Automappable,
-        HasScheduleData,
         BelongsToUser,
         HasFileFormat,
         HasMetaAttributes,
@@ -53,12 +49,22 @@ class QuoteFile extends Model
         'pages',
         'quote_file_format_id',
         'data_select_separator_id',
-        'imported_page'
+        'imported_page',
     ];
+
+    public function scheduleData(): HasOne
+    {
+        return $this->hasOne(ScheduleData::class);
+    }
 
     public function rowsData(): HasMany
     {
         return $this->hasMany(ImportedRow::class);
+    }
+
+    public function mappedRows(): HasMany
+    {
+        return $this->hasMany(MappedRow::class);
     }
 
     public function importedRawData(): HasMany
@@ -102,7 +108,7 @@ class QuoteFile extends Model
 
     public function scopeIsNotHandledSchedule($query): Builder
     {
-        return $query->where(fn ($query) => $query->where('file_type', QFT_PS)->handled())->orWhere('file_type', QFT_PL);
+        return $query->where(fn($query) => $query->where('file_type', QFT_PS)->handled())->orWhere('file_type', QFT_PL);
     }
 
     public function setImportedPage(?int $imported_page)
@@ -136,7 +142,7 @@ class QuoteFile extends Model
             return false;
         }
 
-        return $this->imported_page !== (int) $page;
+        return $this->imported_page !== (int)$page;
     }
 
     public function getItemNameAttribute()

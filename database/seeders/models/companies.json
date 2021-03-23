@@ -1,0 +1,51 @@
+[
+    {
+        "id": "a79dd54d-0963-40cd-b878-58ccfe672016",
+        "name": "Support Warehouse Ltd",
+        "short_code": "SWH",
+        "vat": "GB758501125",
+        "type": "Internal",
+        "default_vendor": "HPE",
+        "default_country": "GB",
+        "email": "us@supportwarehouse.com",
+        "phone": "1-866-607-0019",
+        "website": "https://www.supportwarehouse.com",
+        "vendors": [
+            "HPE", "LEN", "IBM", "CIS"
+        ],
+        "logo": "/database/seeders/models/images/swh.png"
+    },
+    {
+        "id": "b86170d9-ceca-4f58-8a04-99ed2b0acb87",
+        "name": "Europlus Direct",
+        "short_code": "EPD",
+        "vat": "GB847657576",
+        "type": "Internal",
+        "default_vendor": "LEN",
+        "default_country": "GB",
+        "email": "contact@europlusdirect.com",
+        "phone": "+44 (0) 113 887 8650",
+        "website": "https://europlusdirect.com",
+        "vendors": [
+            "HPE", "LEN", "IBM", "CIS"
+        ],
+        "logo": "/database/seeders/models/images/epd.png"
+    },
+    {
+        "id": "ad8b3b8d-44ef-4c97-8b6d-cd69f030fb17",
+        "name": "Tesedi Holding Gmbh",
+        "short_code": "THG",
+        "vat": "CHE109482812",
+        "type": "Internal",
+        "default_vendor": "HPE",
+        "default_country": "CH",
+        "email": "info@tesedi.com",
+        "phone": "+41 43 555 0 200",
+        "website": "https://www.tesedi.com",
+        "vendors": [
+            "HPE", "LEN", "IBM", "CIS", "ARU"
+        ],
+        "logo": "/database/seeders/models/images/tesedi.png",
+        "svg_logo": "/database/seeders/models/images/tesedi.svg"
+    }
+]

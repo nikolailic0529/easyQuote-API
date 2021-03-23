@@ -2,25 +2,35 @@
 
 namespace App\Mail;
 
-use App\Factories\Failure\FailureHelp;
 use Illuminate\Mail\Mailable;
+use App\Factories\Failure\FailureHelp;
+use Illuminate\Database\Eloquent\Collection;
 
 class FailureReportMail extends Mailable
 {
-    protected FailureHelp $failure;
+    /**
+     * FailureHelp instance.
+     *
+     * @var \App\Factories\Failure\FailureHelp
+     */
+    protected $failure;
 
-    protected array $recipients;
+    /**
+     * Failure Report recepients.
+     *
+     * @var \Illuminate\Database\Eloquent\Collection
+     */
+    protected $recepients;
 
     /**
      * Create a new message instance.
      *
-     * @param FailureHelp $failure
-     * @param array $recipients
+     * @return void
      */
-    public function __construct(FailureHelp $failure, array $recipients)
+    public function __construct(FailureHelp $failure, Collection $recepients)
     {
         $this->failure = $failure;
-        $this->recipients = $recipients;
+        $this->recepients = $recepients;
     }
 
     /**
@@ -30,7 +40,7 @@ class FailureReportMail extends Mailable
      */
     public function build()
     {
-        return $this->to($this->recipients)
+        return $this->to($this->recepients)
             ->subject(__('mail.subjects.failure'))
             ->markdown('emails.failure')
             ->with(['failure' => $this->failure]);

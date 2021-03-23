@@ -14,7 +14,7 @@ class PromotionalDiscount extends Discount
     protected $fillable = ['country_id', 'vendor_id', 'name', 'minimum_limit'];
 
     protected $casts = [
-        'minimum_limit' => 'decimal,2'
+        'minimum_limit' => 'decimal:2'
     ];
 
     protected static $logAttributes = [

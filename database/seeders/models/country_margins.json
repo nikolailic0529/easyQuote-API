@@ -1,0 +1,82 @@
+[
+    {
+        "vendor": "HPE",
+        "quote_type": "New",
+        "value": 18,
+        "is_fixed": false,
+        "method": "No Margin",
+        "countries": [
+            "GB"
+        ]
+    },
+    {
+        "vendor": "HPE",
+        "quote_type": "New",
+        "value": 20,
+        "is_fixed": false,
+        "method": "No Margin",
+        "countries": [
+            "FR"
+        ]
+    },
+    {
+        "vendor": "HPE",
+        "quote_type": "Renewal",
+        "value": 15,
+        "is_fixed": false,
+        "method": "No Margin",
+        "countries": [
+            "FR"
+        ]
+    },
+    {
+        "vendor": "HPE",
+        "quote_type": "New",
+        "value": 15,
+        "is_fixed": false,
+        "method": "No Margin",
+        "countries": [
+            "NL", "SE"
+        ]
+    },
+    {
+        "vendor": "HPE",
+        "quote_type": "New",
+        "value": 10,
+        "is_fixed": false,
+        "method": "No Margin",
+        "countries": [
+            "AT", "BE"
+        ]
+    },
+    {
+        "vendor": "HPE",
+        "quote_type": "New",
+        "value": 16,
+        "is_fixed": false,
+        "method": "No Margin",
+        "countries": [
+            "IE"
+        ]
+    },
+    {
+        "vendor": "HPE",
+        "quote_type": "New",
+        "value": 18,
+        "is_fixed": false,
+        "method": "No Margin",
+        "countries": [
+            "NO", "DK", "US"
+        ]
+    },
+    {
+        "vendor": "HPE",
+        "quote_type": "New",
+        "value": 20,
+        "is_fixed": false,
+        "method": "No Margin",
+        "countries": [
+            "CA"
+        ]
+    }
+]

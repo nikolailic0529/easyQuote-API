@@ -27,8 +27,8 @@ class AttachmentTest extends TestCase
         $attributes = factory(Attachment::class)->state('file')->raw();
 
         $response = $this->postJson(url('api/attachments'), $attributes)
-            ->assertJsonStructure(['id', 'type', 'filepath', 'filename', 'extension', 'size', 'created_at'])
-            ->assertOk();
+            ->assertOk()
+            ->assertJsonStructure(['id', 'type', 'filepath', 'filename', 'extension', 'size', 'created_at']);
 
         $filepath = $response->json('filepath');
         $filename = File::basename($filepath);

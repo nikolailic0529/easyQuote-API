@@ -30,6 +30,22 @@ use Staudenmeir\EloquentHasManyDeep\{
     HasRelationships,
 };
 
+/**
+ * @property string $name
+ * @property string $support_start
+ * @property string $support_end
+ * @property string $rfq
+ * @property string $sequence_number
+ * @property string $source
+ * @property string $valid_until
+ * @property string $payment_terms
+ * @property string $invoicing_terms
+ * @property \Illuminate\Support\Collection $service_levels
+ * @property string $vat
+ * @property string $email
+ * @property string $phone
+ * @property string $int_company_id
+ */
 class Customer extends Model
 {
     public const S4_SOURCE = 'S4', EQ_SOURCE = 'EQ';

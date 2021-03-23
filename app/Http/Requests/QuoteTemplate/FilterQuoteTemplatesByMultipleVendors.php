@@ -19,10 +19,10 @@ class FilterQuoteTemplatesByMultipleVendors extends FormRequest
     public function rules()
     {
         return [
-            'company_id'        => ['required', 'uuid', Rule::exists(Company::class, 'id')->whereNull('deleted_at')->whereNotNull('activated_at')],
-            'vendors'           => ['present'],
-            'vendors.*'         => ['uuid', Rule::exists(Vendor::class, 'id')->whereNull('deleted_at')->whereNotNull('activated_at')],
-            'country_id'        => ['nullable', 'uuid', Rule::exists(Country::class, 'id')->whereNull('deleted_at')],
+            'company_id' => ['required', 'uuid', Rule::exists(Company::class, 'id')->whereNull('deleted_at')->whereNotNull('activated_at')],
+            'vendors' => ['present', 'array'],
+            'vendors.*' => ['uuid', Rule::exists(Vendor::class, 'id')->whereNull('deleted_at')->whereNotNull('activated_at')],
+            'country_id' => ['nullable', 'uuid', Rule::exists(Country::class, 'id')->whereNull('deleted_at')],
         ];
     }
 }

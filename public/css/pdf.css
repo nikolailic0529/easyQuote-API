@@ -64,10 +64,10 @@ tr {
     border-bottom: 0
 }
 
-.border-right {
-    border-right: 1px solid;
-    border-color: #eee
-}
+/*.border-right {*/
+/*    border-right: 1px solid;*/
+/*    border-color: #eee*/
+/*}*/
 
 .blue {
     color: #1876BD !important;

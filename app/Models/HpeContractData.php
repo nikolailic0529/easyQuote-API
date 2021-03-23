@@ -6,15 +6,7 @@ use App\Traits\Uuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Carbon;
 
-/**
- * Class HpeContractData
- *
- * @property Carbon|null $support_start_date
- * @property Carbon|null $support_end_date
- * @package App\Models
- */
 class HpeContractData extends Model
 {
     public $timestamps = false;
@@ -39,7 +31,7 @@ class HpeContractData extends Model
         'service_code_2',
         'service_description_2',
         'service_levels',
-
+        
         'hw_delivery_contact_name',
         'hw_delivery_contact_phone',
         'sw_delivery_contact_name',

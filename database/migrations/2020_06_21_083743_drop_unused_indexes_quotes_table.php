@@ -26,7 +26,7 @@ class DropUnusedIndexesQuotesTable extends Migration
         $indexes = collect(array_keys($schemaManager->listTableIndexes('quotes')));
 
         DB::transaction(
-            fn () => DB::update("UPDATE `quotes` SET `document_type` = CASE WHEN `document_type` = 'contract' THEN ? ELSE ? END", [Q_TYPE_CONTRACT, Q_TYPE_QUOTE])
+            fn () => DB::update("UPDATE `quotes` SET `document_type` = CASE WHEN `document_type` = 'contract' THEN ? ELSE ? END", [2, 1])
         );
 
         Schema::table('quotes', function (Blueprint $table) use ($indexes) {

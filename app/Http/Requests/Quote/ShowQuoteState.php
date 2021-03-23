@@ -3,7 +3,8 @@
 namespace App\Http\Requests\Quote;
 
 use App\Models\Quote\Quote;
-use App\Services\QuoteQueries;
+use App\Models\Template\QuoteTemplate;
+use App\Models\Template\TemplateField;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ShowQuoteState extends FormRequest
@@ -20,12 +21,18 @@ class ShowQuoteState extends FormRequest
         ];
     }
 
-    public function includeModelAttributes(Quote $quote): Quote
+    public function loadQuoteAttributes(Quote $quote): Quote
     {
-        $quoteQueries = $this->container[QuoteQueries::class];
+        return tap($quote, function (Quote $quote) {
+            filter($quote);
 
-        $quote->activeVersionOrCurrent->totalPrice = (float)$quoteQueries->mappedSelectedRowsQuery($quote->activeVersionOrCurrent)->sum('price');
+            $templateFields = TemplateField::with('templateFieldType')->orderBy('order')->get();
 
-        return $quote;
+            $quote->activeVersionOrCurrent->quoteTemplate->setAttribute('template_fields', $templateFields);
+
+            if ($quote->relationLoaded('contractTemplate')) {
+                $quote->contractTemplate->setAttribute('template_fields', $templateFields);
+            }
+        });
     }
 }

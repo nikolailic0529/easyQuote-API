@@ -4,19 +4,20 @@ namespace App\Http\Controllers\API\Templates;
 
 use App\Contracts\Repositories\QuoteTemplate\HpeContractTemplate as Templates;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\HpeContractTemplate\{
+use App\Http\Requests\HpeContractTemplate\{DeleteHpeContractTemplate,
     FilterHpeTemplates,
     HpeTemplateDesign,
     StoreHpeContractTemplate,
     UpdateHpeContractTemplate,
-    DeleteHpeContractTemplate,
 };
 use App\Http\Resources\TemplateRepository\TemplateCollection;
 use App\Http\Resources\TemplateRepository\TemplateResourceWithIncludes;
 use App\Models\Template\HpeContractTemplate;
+use App\Queries\HpeContractTemplateQueries;
+use App\Services\ProfileHelper;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use App\Services\ProfileHelper;
 
 class HpeContractTemplateController extends Controller
 {
@@ -25,19 +26,24 @@ class HpeContractTemplateController extends Controller
     public function __construct(Templates $templates)
     {
         $this->templates = $templates;
-
-        $this->authorizeResource(HpeContractTemplate::class);
     }
 
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @param Request $request
+     * @param HpeContractTemplateQueries $queries
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function index(Request $request)
+    public function paginateTemplates(Request $request, HpeContractTemplateQueries $queries): JsonResponse
     {
+        $this->authorize('viewAny', HpeContractTemplate::class);
+
         return response()->json(
-            TemplateCollection::make($this->templates->paginate($request->query('search')))
+            TemplateCollection::make(
+                $queries->paginateHpeContractTemplatesQuery($request)->apiPaginate()
+            )
         );
     }
 
@@ -45,10 +51,12 @@ class HpeContractTemplateController extends Controller
      * Filter Hpe Contract Templates by specified clause.
      *
      * @param FilterHpeTemplates $request
-     * @return void
+     * @return JsonResponse
      */
-    public function filterTemplates(FilterHpeTemplates $request)
+    public function filterTemplates(FilterHpeTemplates $request): JsonResponse
     {
+//        $this->authorize('viewAny', HpeContractTemplate::class);
+
         return response()->json(
             $request->getFilteredTemplates()
         );
@@ -57,11 +65,13 @@ class HpeContractTemplateController extends Controller
     /**
      * Display a listing of the resource by specified country.
      *
-     * @param  string $country
-     * @return \Illuminate\Http\JsonResponse
+     * @param string $country
+     * @return JsonResponse
      */
-    public function country(string $country)
+    public function filterTemplatesByCountry(string $country): JsonResponse
     {
+//        $this->authorize('viewAny', HpeContractTemplate::class);
+
         return response()->json(
             $this->templates->findByCountry($country)
         );
@@ -70,25 +80,32 @@ class HpeContractTemplateController extends Controller
     /**
      * Retrieve data for template designer.
      *
-     * @param  HpeTemplateDesign $request
-     * @param  \App\Models\Template\HpeContractTemplate $hpeContractTemplate
-     * @return \Illuminate\Http\JsonResponse
+     * @param HpeTemplateDesign $request
+     * @param HpeContractTemplate $hpeContractTemplate
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function designer(HpeTemplateDesign $request, HpeContractTemplate $hpeContractTemplate)
+    public function showTemplateSchema(HpeTemplateDesign $request, HpeContractTemplate $hpeContractTemplate): JsonResponse
     {
+        $this->authorize('view', $hpeContractTemplate);
+
         return response()->json(
-            $request->getDesign()
+            $request->getTemplateSchema()
         );
     }
 
     /**
      * Create a duplicate of the specified resource in repository.
      *
-     * @param \App\Models\Template\ContractTemplate $hpeContractTemplate
-     * @return \Illuminate\Http\Response
+     * @param HpeContractTemplate $hpeContractTemplate
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function copy(HpeContractTemplate $hpeContractTemplate)
+    public function replicateTemplate(HpeContractTemplate $hpeContractTemplate): JsonResponse
     {
+        $this->authorize('view', $hpeContractTemplate);
+        $this->authorize('create', HpeContractTemplate::class);
+
         return response()->json(
             $this->templates->copy($hpeContractTemplate)
         );
@@ -97,12 +114,15 @@ class HpeContractTemplateController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param StoreHpeContractTemplate $request
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function store(StoreHpeContractTemplate $request)
+    public function storeTemplate(StoreHpeContractTemplate $request): JsonResponse
     {
-        $resource = $this->templates->create($request->validated(), JsonResponse::HTTP_CREATED);
+        $this->authorize('create', HpeContractTemplate::class);
+
+        $resource = $this->templates->create($request->validated());
 
         return response()->json(
             TemplateResourceWithIncludes::make($resource),
@@ -113,11 +133,14 @@ class HpeContractTemplateController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\Template\HpeContractTemplate  $hpeContractTemplate
-     * @return \Illuminate\Http\JsonResponse
+     * @param HpeContractTemplate $hpeContractTemplate
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function show(HpeContractTemplate $hpeContractTemplate)
+    public function showTemplate(HpeContractTemplate $hpeContractTemplate): JsonResponse
     {
+        $this->authorize('view', $hpeContractTemplate);
+
         return response()->json(
             TemplateResourceWithIncludes::make($hpeContractTemplate)
         );
@@ -126,12 +149,15 @@ class HpeContractTemplateController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Template\HpeContractTemplate  $hpeContractTemplate
-     * @return \Illuminate\Http\JsonResponse
+     * @param UpdateHpeContractTemplate $request
+     * @param HpeContractTemplate $hpeContractTemplate
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function update(UpdateHpeContractTemplate $request, HpeContractTemplate $hpeContractTemplate)
+    public function updateTemplate(UpdateHpeContractTemplate $request, HpeContractTemplate $hpeContractTemplate): JsonResponse
     {
+        $this->authorize('update', $hpeContractTemplate);
+
         return response()->json(
             TemplateResourceWithIncludes::make(
                 $this->templates->update($hpeContractTemplate, $request->validated())
@@ -142,16 +168,19 @@ class HpeContractTemplateController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  DeleteHpeContractTemplate $request
-     * @param  \App\Models\Template\HpeContractTemplate  $hpeContractTemplate
-     * @return \Illuminate\Http\JsonResponse
+     * @param DeleteHpeContractTemplate $request
+     * @param HpeContractTemplate $hpeContractTemplate
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function destroy(DeleteHpeContractTemplate $request, HpeContractTemplate $hpeContractTemplate)
+    public function destroyTemplate(DeleteHpeContractTemplate $request, HpeContractTemplate $hpeContractTemplate): JsonResponse
     {
+        $this->authorize('delete', $hpeContractTemplate);
+
         return response()->json(
             tap(
                 $this->templates->delete($hpeContractTemplate),
-                fn () => ProfileHelper::flushHpeContractTemplateProfiles($hpeContractTemplate)
+                fn() => ProfileHelper::flushHpeContractTemplateProfiles($hpeContractTemplate)
             )
         );
     }
@@ -159,11 +188,14 @@ class HpeContractTemplateController extends Controller
     /**
      * Mark as activated the specified resource in storage.
      *
-     * @param  HpeContractTemplate $hpeContractTemplate
-     * @return \Illuminate\Http\JsonResponse
+     * @param HpeContractTemplate $hpeContractTemplate
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function activate(HpeContractTemplate $hpeContractTemplate)
+    public function activateTemplate(HpeContractTemplate $hpeContractTemplate): JsonResponse
     {
+        $this->authorize('update', $hpeContractTemplate);
+
         return response()->json(
             $this->templates->activate($hpeContractTemplate)
         );
@@ -172,15 +204,18 @@ class HpeContractTemplateController extends Controller
     /**
      * Mark as deactivated the specified resource in storage.
      *
-     * @param  HpeContractTemplate $hpeContractTemplate
-     * @return \Illuminate\Http\JsonResponse
+     * @param HpeContractTemplate $hpeContractTemplate
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function deactivate(HpeContractTemplate $hpeContractTemplate)
+    public function deactivateTemplate(HpeContractTemplate $hpeContractTemplate): JsonResponse
     {
+        $this->authorize('update', $hpeContractTemplate);
+
         return response()->json(
             tap(
                 $this->templates->deactivate($hpeContractTemplate),
-                fn () => ProfileHelper::flushHpeContractTemplateProfiles($hpeContractTemplate, 'deactivated')
+                fn() => ProfileHelper::flushHpeContractTemplateProfiles($hpeContractTemplate, 'deactivated')
             )
         );
     }

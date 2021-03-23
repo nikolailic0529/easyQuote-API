@@ -9,11 +9,16 @@ use App\Traits\{
     Selectable,
     Uuid
 };
+use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\{
     Model,
     SoftDeletes,
 };
 
+/**
+ * @property Collection|null $columns_data
+ * @property bool|null $is_one_pay
+ */
 class ImportedRow extends Model
 {
     use Uuid, BelongsToQuoteFile, Draftable, Selectable, SoftDeletes;

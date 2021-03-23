@@ -42,6 +42,7 @@ class ServiceLookup
      * @param string $serial
      * @param string|null $sku
      * @return ServiceData|null
+     * @throws \Psr\SimpleCache\InvalidArgumentException
      */
     public function getService(Vendor $vendor, string $serial, ?string $sku = null): ?ServiceData
     {
@@ -52,23 +53,23 @@ class ServiceLookup
                 [$serial, $sku]
             );
 
-        $cacheKey = static::serviceResponseCacheKey((string) $url);
+        $cacheKey = static::serviceResponseCacheKey((string)$url);
 
         if ($this->cache->has($cacheKey)) {
-            customlog(['message' => SL_CRE_01], ['url' => (string) $url, 'cache_ttl' => static::SERVICE_RESPONSE_CACHE_TTL]);
+            customlog(['message' => SL_CRE_01], ['url' => (string)$url, 'cache_ttl' => static::SERVICE_RESPONSE_CACHE_TTL]);
 
             return $this->cache->get($cacheKey);
         }
 
-        customlog(['message' => sprintf(SL_REQ_01, (string) $url)], ['parameters' => ['vendor' => $vendor->short_code, 'serial' => $serial, 'sku' => $sku]]);
+        customlog(['message' => sprintf(SL_REQ_01, (string)$url)], ['parameters' => ['vendor' => $vendor->short_code, 'serial' => $serial, 'sku' => $sku]]);
 
-        $response = Http::withToken($this->issueServiceToken())->get((string) $url);
+        $response = Http::withToken($this->issueServiceToken())->get((string)$url);
 
         /**
          * Refresh the client token in the cache when the external service responded with 401 error code.
          */
         if ($response->status() === Response::HTTP_UNAUTHORIZED) {
-            $response = Http::withToken($this->issueServiceToken(true))->get((string) $url);
+            $response = Http::withToken($this->issueServiceToken(true))->get((string)$url);
         }
 
         if ($response->failed()) {
@@ -80,7 +81,7 @@ class ServiceLookup
         try {
             return tap(
                 ServiceData::create($response->json()),
-                fn (ServiceData $data) => $this->cache->put($cacheKey, $data, static::SERVICE_RESPONSE_CACHE_TTL)
+                fn(ServiceData $data) => $this->cache->put($cacheKey, $data, static::SERVICE_RESPONSE_CACHE_TTL)
             );
         } catch (Throwable $e) {
             customlog(['ErrorCode' => 'SL_UR_02'], ['ErrorDetails' => SL_UR_02, 'Exception' => $e->getMessage()]);
@@ -95,9 +96,9 @@ class ServiceLookup
             return $this->cache->get(static::SERVICE_TOKEN_CACHE_KEY);
         }
 
-        $url = static::serviceBaseUrl() . config('services.vs.token_route');
+        $url = static::serviceBaseUrl().config('services.vs.token_route');
 
-        $res = Http::asForm()->post((string) $url, [
+        $res = Http::asForm()->post((string)$url, [
             'client_id' => config('services.vs.client_id'),
             'client_secret' => config('services.vs.client_secret'),
             'grant_type' => 'client_credentials',
@@ -109,13 +110,13 @@ class ServiceLookup
 
         return tap(
             $accessToken,
-            fn () => $this->cache->put(static::SERVICE_TOKEN_CACHE_KEY, $accessToken, $expiresIn)
+            fn() => $this->cache->put(static::SERVICE_TOKEN_CACHE_KEY, $accessToken, $expiresIn)
         );
     }
 
     protected static function resolveVendorRoute(string $name): string
     {
-        $key = 'services.vs.service_routes.' . $name;
+        $key = 'services.vs.service_routes.'.$name;
 
         if (!config()->has($key)) {
             ServiceLookupRoute::invalidName();
@@ -126,11 +127,11 @@ class ServiceLookup
 
     protected static function serviceBaseUrl(): string
     {
-        return (string) Str::of(config('services.vs.url'))->finish('/');
+        return (string)Str::of(config('services.vs.url'))->finish('/');
     }
 
     protected static function serviceResponseCacheKey(string $url): string
     {
-        return static::SERVICE_RESPONSE_CACHE_KEY . '.' . $url;
+        return static::SERVICE_RESPONSE_CACHE_KEY.'.'.$url;
     }
 }

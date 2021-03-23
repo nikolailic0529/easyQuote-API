@@ -22,8 +22,8 @@ class CreateQuoteLocationTotalsTable extends Migration
             $table->string('location_address');
             $table->point('location_coordinates')->spatialIndex();
 
-            $table->double('lat')->storedAs(DB::raw('ST_Y(`location_coordinates`)'));
-            $table->double('lng')->storedAs(DB::raw('ST_X(`location_coordinates`)'));
+            $table->double('lat')->storedAs(DB::raw('Y(`location_coordinates`)'));
+            $table->double('lng')->storedAs(DB::raw('X(`location_coordinates`)'));
 
             $table->unsignedBigInteger('total_drafted_count')->default(0);
             $table->unsignedBigInteger('total_submitted_count')->default(0);

@@ -3,7 +3,6 @@
 namespace App\Http\Resources;
 
 use App\Http\Resources\ImportedRow\MappedRow;
-use App\Models\Quote\BaseQuote;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Collection;
 
@@ -17,8 +16,6 @@ class QuoteResource extends JsonResource
      */
     public function toArray($request)
     {
-        /** @var BaseQuote|QuoteResource $this */
-
         $this->customer->loadMissing('addresses', 'contacts');
 
         return [
@@ -38,9 +35,9 @@ class QuoteResource extends JsonResource
                     'valid_until'           => $this->when($this->isReview, $this->customer->valid_until_date, $this->customer->valid_until),
                     'quotation_number'      => $this->customer->rfq,
                     'service_levels'        => $this->when($this->isReview, $this->customer->service_levels_formatted, $this->customer->service_levels),
-                    'list_price'            => $this->currencySymbol.' '.$this->asDecimal($this->totalPrice),
-                    'applicable_discounts'  => $this->currencySymbol.' '.$this->asDecimal($this->applicableDiscounts),
-                    'final_price'           => $this->currencySymbol.' '.$this->asDecimal($this->finalTotalPrice),
+                    'list_price'            => $this->list_price_formatted,
+                    'applicable_discounts'  => $this->applicable_discounts_formatted,
+                    'final_price'           => $this->final_price_formatted,
                     'invoicing_terms'       => $this->customer->invoicing_terms,
                     'full_name'             => $this->user->full_name,
                     'date'                  => $this->updated_at,
@@ -83,12 +80,5 @@ class QuoteResource extends JsonResource
                 )
             ]
         ];
-    }
-
-
-    private function asDecimal(float $value): string
-    {
-
-        return number_format($value, 2);
     }
 }

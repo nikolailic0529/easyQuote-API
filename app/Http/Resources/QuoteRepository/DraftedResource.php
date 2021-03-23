@@ -50,7 +50,7 @@ class DraftedResource extends JsonResource
             'last_drafted_step'         => $this->activeVersionOrCurrent->last_drafted_step,
             'completeness'              => $this->activeVersionOrCurrent->completeness,
             'is_author'                 => $this->user_id === auth()->id(),
-            
+
             'has_price_list'            => !is_null($this->activeVersionOrCurrent->distributor_file_id),
             'price_list_filename'       => $this->activeVersionOrCurrent->price_list_original_file_name,
             'has_payment_schedule'      => !is_null($this->activeVersionOrCurrent->schedule_file_id),

@@ -2,14 +2,14 @@
 
 namespace Tests\Unit\Parser;
 
+use Tests\TestCase;
 use App\Contracts\Services\{ManagesDocumentProcessors, PdfParserInterface, WordParserInterface};
 use App\Imports\ImportExcel;
-use App\Models\{Quote\Quote, QuoteFile\QuoteFileFormat, User};
+use App\Models\{User, Quote\Quote, QuoteFile\QuoteFileFormat};
 use App\Models\QuoteFile\QuoteFile;
-use App\Services\QuoteQueries;
+use App\Queries\QuoteQueries;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\{Arr, Facades\File, Facades\Storage, Str};
-use Tests\TestCase;
+use Illuminate\Support\{Arr, Str, Facades\File, Facades\Storage};
 
 /**
  * @group build
@@ -18,279 +18,8 @@ class DistributorFileTest extends TestCase
 {
     use DatabaseTransactions;
 
-    /**
-     * @group distributor-file-pdf
-     */
-    public function test_parses_quote_renewal_71_c25934_pdf()
-    {
-        $filePath = base_path('tests/Unit/Data/distributor-files-test/quote (renewal) 71-C25934 25.01.2021 1010 [TePr].pdf');
-
-        $content = $this->app[PdfParserInterface::class]->getText($filePath);
-
-        $result = $this->app[PdfParserInterface::class]->parse($content)['pages'];
-
-        $this->assertEmpty($result[0]['rows']);
-
-        $this->assertCount(5, $result[1]['rows']);
-
-        $this->assertContainsEquals([
-            "product_no" => "507015-B21",
-            "description" => "HP BLc7000 1PH 6PS10Fan Fl ROHS 16IC",
-            "serial_no" => "GB8950CE55",
-            "date_from" => null,
-            "date_to" => null,
-            "qty" => "1",
-            "price" => "75.24",
-            "searchable" => null,
-            "_one_pay" => false,
-        ], $result[1]['rows']);
-        $this->assertContainsEquals([
-            "product_no" => "418241-B23",
-            "description" => "HP ZMOD HP IC Environment BL 16 LIC",
-            "serial_no" => "GB8950CE55",
-            "date_from" => "30.04.2021",
-            "date_to" => null,
-            "qty" => "1",
-            "price" => "27.72",
-            "searchable" => null,
-            "_one_pay" => false,
-        ], $result[1]['rows']);
-        $this->assertContainsEquals([
-            "product_no" => "418241-B23",
-            "description" => "HP ZMOD HP IC Environment BL 16 LIC",
-            "serial_no" => "GB8950CE55",
-            "date_from" => "30.04.2021",
-            "date_to" => null,
-            "qty" => "1",
-            "price" => "53.46",
-            "searchable" => null,
-            "_one_pay" => false,
-        ], $result[1]['rows']);
-        $this->assertContainsEquals([
-            "product_no" => "507015-B21",
-            "description" => "HP BLc7000 1PH 6PS10Fan Fl ROHS 16IC",
-            "serial_no" => "GB8950CE55",
-            "date_from" => null,
-            "date_to" => null,
-            "qty" => "1",
-            "price" => "1.98",
-            "searchable" => null,
-            "_one_pay" => false,
-        ], $result[1]['rows']);
-        $this->assertContainsEquals([
-            "product_no" => "H7J32AC",
-            "description" => "HPE Foundation Care NBD Service",
-            "serial_no" => null,
-            "date_from" => null,
-            "date_to" => null,
-            "qty" => null,
-            "price" => null,
-            "searchable" => null,
-            "_one_pay" => false,
-        ], $result[1]['rows']);
-
-        $this->assertCount(2, $result[2]['rows']);
-
-        $this->assertContainsEquals([
-            "product_no" => "UJ558AC",
-            "description" => "HPE Ind Std Svrs Return to HW Supp",
-            "serial_no" => null,
-            "date_from" => "03.03.2021",
-            "date_to" => null,
-            "qty" => "1",
-            "price" => "1'365.00",
-            "searchable" => null,
-            "_one_pay" => true,
-        ], $result[2]['rows']);
-
-        $this->assertContainsEquals([
-            "product_no" => "UC255AC",
-            "description" => "SW Updates - Return to Support",
-            "serial_no" => null,
-            "date_from" => "03.03.2021",
-            "date_to" => null,
-            "qty" => "1",
-            "price" => "1'998.00",
-            "searchable" => null,
-            "_one_pay" => true,
-        ], $result[2]['rows']);
-
-    }
-
-    public function test_parses_supportware_gb_pdf()
-    {
-        $filePath = base_path("tests/Unit/Data/distributor-files-test/SUPPORTWARE-GB.pdf");
-
-        $content = $this->app[PdfParserInterface::class]->getText($filePath);
-
-        $result = $this->app[PdfParserInterface::class]->parse($content)['pages'];
-
-        $this->assertEmpty($result[0]['rows']);
-
-        $this->assertCount(14, $result[1]['rows']);
-
-        $this->assertContainsEquals(array(
-            'product_no' => 'E7W54B',
-            'description' => 'HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD',
-            'serial_no' => '2Y8445N04Z',
-            'date_from' => NULL,
-            'date_to' => NULL,
-            'qty' => '1',
-            'price' => '8.72',
-            'searchable' => '1086 7032 0290',
-            '_one_pay' => false,
-        ), $result[1]['rows']);
-        $this->assertContainsEquals(array(
-            'product_no' => 'E7W54B',
-            'description' => 'HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD',
-            'serial_no' => '2Y8445N068',
-            'date_from' => NULL,
-            'date_to' => NULL,
-            'qty' => '1',
-            'price' => '8.72',
-            'searchable' => '1086 7032 0290',
-            '_one_pay' => false,
-        ), $result[1]['rows']);
-        $this->assertContainsEquals(array(
-            'product_no' => 'E7W54B',
-            'description' => 'HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD',
-            'serial_no' => '2Y8445N04H',
-            'date_from' => NULL,
-            'date_to' => NULL,
-            'qty' => '1',
-            'price' => '8.72',
-            'searchable' => '1086 7032 0290',
-            '_one_pay' => false,
-        ), $result[1]['rows']);
-        $this->assertContainsEquals(array(
-            'product_no' => 'E7W54B',
-            'description' => 'HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD',
-            'serial_no' => '2Y8445N04Y',
-            'date_from' => NULL,
-            'date_to' => NULL,
-            'qty' => '1',
-            'price' => '8.72',
-            'searchable' => '1086 7032 0290',
-            '_one_pay' => false,
-        ), $result[1]['rows']);
-        $this->assertContainsEquals(array(
-            'product_no' => 'E7W54B',
-            'description' => 'HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD',
-            'serial_no' => '2Y8445N04I',
-            'date_from' => NULL,
-            'date_to' => NULL,
-            'qty' => '1',
-            'price' => '8.72',
-            'searchable' => '1086 7032 0290',
-            '_one_pay' => false,
-        ), $result[1]['rows']);
-        $this->assertContainsEquals(array(
-            'product_no' => 'E7W54B',
-            'description' => 'HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD',
-            'serial_no' => '2Y8445N03L',
-            'date_from' => NULL,
-            'date_to' => NULL,
-            'qty' => '1',
-            'price' => '8.72',
-            'searchable' => '1086 7032 0290',
-            '_one_pay' => false,
-        ), $result[1]['rows']);
-        $this->assertContainsEquals(array(
-            'product_no' => 'E7W54B',
-            'description' => 'HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD',
-            'serial_no' => '2Y8445N03T',
-            'date_from' => NULL,
-            'date_to' => NULL,
-            'qty' => '1',
-            'price' => '8.72',
-            'searchable' => '1086 7032 0290',
-            '_one_pay' => false,
-        ), $result[1]['rows']);
-        $this->assertContainsEquals(array(
-            'product_no' => 'E7W54B',
-            'description' => 'HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD',
-            'serial_no' => '2Y8445N05D',
-            'date_from' => NULL,
-            'date_to' => NULL,
-            'qty' => '1',
-            'price' => '8.72',
-            'searchable' => '1086 7032 0290',
-            '_one_pay' => false,
-        ), $result[1]['rows']);
-        $this->assertContainsEquals(array(
-            'product_no' => 'E7W54B',
-            'description' => 'HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD',
-            'serial_no' => '2Y8445N06S',
-            'date_from' => NULL,
-            'date_to' => NULL,
-            'qty' => '1',
-            'price' => '8.72',
-            'searchable' => '1086 7032 0290',
-            '_one_pay' => false,
-        ), $result[1]['rows']);
-        $this->assertContainsEquals(array(
-            'product_no' => 'E7W54B',
-            'description' => 'HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD',
-            'serial_no' => '2Y8445N05G',
-            'date_from' => NULL,
-            'date_to' => NULL,
-            'qty' => '1',
-            'price' => '8.72',
-            'searchable' => '1086 7032 0290',
-            '_one_pay' => false,
-        ), $result[1]['rows']);
-        $this->assertContainsEquals(array(
-            'product_no' => 'E7W54B',
-            'description' => 'HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD',
-            'serial_no' => '2Y8445N05C',
-            'date_from' => NULL,
-            'date_to' => NULL,
-            'qty' => '1',
-            'price' => '8.72',
-            'searchable' => '1086 7032 0290',
-            '_one_pay' => false,
-        ), $result[1]['rows']);
-        $this->assertContainsEquals(array(
-            'product_no' => 'E7W54B',
-            'description' => 'HP M6710 480GB 6G SAS 2.5in MLC 5yr SSD',
-            'serial_no' => '2Y8445N05H',
-            'date_from' => NULL,
-            'date_to' => NULL,
-            'qty' => '1',
-            'price' => '8.72',
-            'searchable' => '1086 7032 0290',
-            '_one_pay' => false,
-        ), $result[1]['rows']);
-        $this->assertContainsEquals(array(
-            'product_no' => 'QR482A',
-            'description' => 'HP 3PAR StoreServ 7200 2-N Storage Base',
-            'serial_no' => 'CZ34464236',
-            'date_from' => NULL,
-            'date_to' => NULL,
-            'qty' => '1',
-            'price' => '40.42',
-            'searchable' => '1086 7032 0290',
-            '_one_pay' => false,
-        ), $result[1]['rows']);
-        $this->assertContainsEquals(array(
-            'product_no' => 'H7J33AC',
-            'description' => 'HPE Foundation Care NBD wDMR SVC',
-            'serial_no' => '24 Hours, Day 1-7 Phone Supp',
-            'date_from' => NULL,
-            'date_to' => NULL,
-            'qty' => NULL,
-            'price' => NULL,
-            'searchable' => '1086 7032 0290',
-            '_one_pay' => false,
-        ), $result[1]['rows']);
-
-        $this->assertEmpty($result[2]['rows']);
-        $this->assertEmpty($result[3]['rows']);
-
-    }
-
     /** @group distributor-file-pdf */
-    public function test_parses_spw_bou_pdf()
+    public function test_can_parse_spw_bou_pdf()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/SPW-BOU.pdf');
 
@@ -1125,7 +854,7 @@ class DistributorFileTest extends TestCase
         $this->assertContains([
             "product_no" => "BD715A",
             "description" => "VMw vSphere EntPlus 1P 3yr SW",
-            "serial_no" => "H069H-083P4-F8K43-AL30H-2J315",
+            "serial_no" => null,
             "date_from" => null,
             "date_to" => null,
             "qty" => "1",
@@ -1392,7 +1121,6 @@ class DistributorFileTest extends TestCase
             "searchable" => "1086 6360 0856",
             "_one_pay" => false,
         ], $result[9]['rows']);
-
         $this->assertContains([
             "product_no" => "H7J34AC",
             "description" => "HPE Foundation Care 24x7 SVC",
@@ -1630,7 +1358,7 @@ class DistributorFileTest extends TestCase
         $this->assertContains([
             "product_no" => "BD715A",
             "description" => "VMw vSphere EntPlus 1P 3yr SW",
-            "serial_no" => "H020K-081VP-F8V42-A922H-2X935",
+            "serial_no" => null,
             "date_from" => null,
             "date_to" => null,
             "qty" => "1",
@@ -1747,7 +1475,6 @@ class DistributorFileTest extends TestCase
     /** @group distributor-file-docx */
     public function testWidexV2DOCX()
     {
-        $this->markTestSkipped();
         $filePath = base_path('tests/Unit/Data/distributor-files-test/Denmark/Widex V2.docx');
 
         $result = app(WordParserInterface::class)->parseAsDistributorFile($filePath);
@@ -1770,8 +1497,7 @@ UJ558AC\tHPE Ind Std Svrs Return to HW Supp\t\t\t12.04.2020\t\t1 1 . 879 , 3 0\t
 843374-425\tHPE DL360 Gen9 E5-2620v4 1P 16G Svr/TV\tCZJ7140CBL\t07.04.2017\t06.06.2020\t1\t\t
 843374-425\tHPE DL360 Gen9 E5-2620v4 1P 16G Svr/TV\tCZJ72102LD\t24.06.2017\t23.06.2020\t1\t\t
 875839-425\tHPE DL360 Gen10 4114 Svr/TV\tCZJ7450953\t10.12.2017\t09.12.2020\t1\t\t
-CONTENT
-        );
+CONTENT);
     }
 
     /** @group distributor-file-pdf */
@@ -1785,7 +1511,7 @@ CONTENT
 
         $this->assertCount(0, $result[0]['rows']);
 
-        $this->assertCount(4, $result[1]['rows']);
+        $this->assertCount(3, $result[1]['rows']);
 
         $this->assertContainsEquals([
             "product_no" => "UJ558AC",
@@ -1822,18 +1548,6 @@ CONTENT
             "searchable" => null,
             "_one_pay" => false,
         ], $result[1]['rows']);
-
-        $this->assertContainsEquals([
-            "product_no" => "H7J32AC",
-            "description" => "HPE Foundation Care NBD SVC",
-            "serial_no" => null,
-            "date_from" => null,
-            "date_to" => null,
-            "qty" => null,
-            "price" => null,
-            "searchable" => null,
-            "_one_pay" => false,
-        ], $result[1]['rows']);
     }
 
     /** @group distributor-file-pdf */
@@ -1847,7 +1561,7 @@ CONTENT
 
         $this->assertCount(0, $result[0]['rows']);
 
-        $this->assertCount(4, $result[1]['rows']);
+        $this->assertCount(3, $result[1]['rows']);
 
         $this->assertCount(0, $result[2]['rows']);
         $this->assertCount(0, $result[3]['rows']);
@@ -1884,18 +1598,6 @@ CONTENT
             "date_to" => null,
             "qty" => "1",
             "price" => "1.771,79",
-            "searchable" => null,
-            "_one_pay" => false,
-        ], $result[1]['rows']);
-
-        $this->assertContainsEquals([
-            "product_no" => "H7J32AC",
-            "description" => "HPE Foundation Care NBD SVC",
-            "serial_no" => null,
-            "date_from" => null,
-            "date_to" => null,
-            "qty" => null,
-            "price" => null,
             "searchable" => null,
             "_one_pay" => false,
         ], $result[1]['rows']);
@@ -2023,7 +1725,7 @@ CONTENT
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/quote (renewal) 71-C896312 27.11.2020 0947 [TePr].pdf');
 
-        $content = $this->pdfParser()->getText($filePath);
+        $content = $this->pdfParser()->getText($filePath, false);
 
         $result = $this->pdfParser()->parse($content);
 
@@ -2132,7 +1834,6 @@ CONTENT
             "searchable" => null,
             "_one_pay" => false,
         ], $result[1]['rows']);
-
         $this->assertContainsEquals([
             "product_no" => "UJ558AC",
             "description" => "HPE Ind Std Svrs Return to HW Supp",
@@ -2147,11 +1848,11 @@ CONTENT
     }
 
     /** @group distributor-file-pdf */
-    public function test_parses_56946475_1_year_pdf()
+    public function test569464751YEAR()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/56946475 1 YEAR.pdf');
 
-        $pagesContent = $this->pdfParser()->getText($filePath);
+        $pagesContent = $this->pdfParser()->getText($filePath, false);
 
         $result = $this->pdfParser()->parse($pagesContent)['pages'];
 
@@ -2159,7 +1860,7 @@ CONTENT
     }
 
     /** @group distributor-file-excel */
-    public function test_parses_support_warehouse_ltd_jbt_foodtech_4976610509302020_xlsx()
+    public function testSupportWarehouseLtdJbtFoodtech4976610509302020xlsx()
     {
         $this->be(factory(User::class)->create(), 'api');
 
@@ -2167,12 +1868,12 @@ CONTENT
         $quote = factory(Quote::class)->create();
 
         $quoteFile = QuoteFile::create([
-            'original_file_path' => Str::random(),
-            'original_file_name' => Str::random(),
-            'file_type' => 'Distributor Price List',
-            'pages' => 2,
+            'original_file_path'   => Str::random(),
+            'original_file_name'   => Str::random(),
+            'file_type'            => 'Distributor Price List',
+            'pages'                => 2,
             'quote_file_format_id' => QuoteFileFormat::value('id'),
-            'imported_page' => 1,
+            'imported_page'        => 1
         ]);
 
         $quote->update(['distributor_file_id' => $quoteFile->getKey()]);
@@ -2181,13 +1882,13 @@ CONTENT
 
         (new ImportExcel($quoteFile))->import($filePath);
 
-        $importedRows = $quoteFile->rowsData->pluck('columns_data')->map(fn($row) => collect($row)->pluck('value', 'header')->all())->all();
+        $importedRows = $quoteFile->rowsData->pluck('columns_data')->map(fn ($row) => collect($row)->pluck('value', 'header')->all())->all();
 
         $this->assertCount(5, $importedRows);
     }
 
     /** @group distributor-file-excel */
-    public function test_parses_support_warehouse_kromann_reumenrt_xlsx()
+    public function testSupportWarehouseKromannReumenrtXlsx()
     {
         $this->be(factory(User::class)->create(), 'api');
 
@@ -2195,12 +1896,12 @@ CONTENT
         $quote = factory(Quote::class)->create();
 
         $quoteFile = QuoteFile::create([
-            'original_file_path' => Str::random(),
-            'original_file_name' => Str::random(),
-            'file_type' => 'Distributor Price List',
-            'pages' => 2,
+            'original_file_path'   => Str::random(),
+            'original_file_name'   => Str::random(),
+            'file_type'            => 'Distributor Price List',
+            'pages'                => 2,
             'quote_file_format_id' => QuoteFileFormat::value('id'),
-            'imported_page' => 1,
+            'imported_page'        => 1
         ]);
 
         $quote->update(['distributor_file_id' => $quoteFile->getKey()]);
@@ -2209,13 +1910,13 @@ CONTENT
 
         (new ImportExcel($quoteFile))->import($filePath);
 
-        $importedRows = $quoteFile->rowsData->pluck('columns_data')->map(fn($row) => collect($row)->pluck('value', 'header')->all())->all();
+        $importedRows = $quoteFile->rowsData->pluck('columns_data')->map(fn ($row) => collect($row)->pluck('value', 'header')->all())->all();
 
         $this->assertCount(7, $importedRows);
     }
 
     /** @group distributor-file-excel */
-    public function test_parses_support_warehouse_ltd_select_administrative_services_4969805508272020_xlsx()
+    public function testSupportWarehouseLtdSelectAdministrativeServices4969805508272020xlsx()
     {
         // Support Warehouse Ltd-SELECT ADMINISTRATIVE SERVICES-49698055-08272020.xlsx
 
@@ -2225,12 +1926,12 @@ CONTENT
         $quote = factory(Quote::class)->create();
 
         $quoteFile = QuoteFile::create([
-            'original_file_path' => Str::random(),
-            'original_file_name' => Str::random(),
-            'file_type' => 'Distributor Price List',
-            'pages' => 2,
+            'original_file_path'   => Str::random(),
+            'original_file_name'   => Str::random(),
+            'file_type'            => 'Distributor Price List',
+            'pages'                => 2,
             'quote_file_format_id' => QuoteFileFormat::value('id'),
-            'imported_page' => 1,
+            'imported_page'        => 1
         ]);
 
         $quote->update(['distributor_file_id' => $quoteFile->getKey()]);
@@ -2241,118 +1942,118 @@ CONTENT
 
         $assertRows = [
             [
-                'Qty' => 1,
-                'Monthly List Price' => 100,
-                'Description' => 'HP DL360 Gen9 E5-2630v3 SAS Reman Svr',
-                'Reseller cost' => 461.9306000000001,
+                'Qty'                  => 1,
+                'Monthly List Price'   => 100,
+                'Description'          => 'HP DL360 Gen9 E5-2630v3 SAS Reman Svr',
+                'Reseller cost'        => 461.9306000000001,
                 'Coverage Period From' => '11/01/2020',
-                'Line Item Price' => 563.33,
-                'Serial No.' => '2M41539PTP',
-                'Product No.' => '755262R-B21',
-                'Coverage Period To' => NULL,
+                'Line Item Price'      => 563.33,
+                'Serial No.'           => '2M41539PTP',
+                'Product No.'          => '755262R-B21',
+                'Coverage Period To'   => NULL,
             ],
             [
-                'Qty' => 1,
-                'Monthly List Price' => 100,
-                'Description' => 'HPE DL360 Gen9 E5-2630v3 Base SAS Svr',
-                'Reseller cost' => 492.00000000000006,
+                'Qty'                  => 1,
+                'Monthly List Price'   => 100,
+                'Description'          => 'HPE DL360 Gen9 E5-2630v3 Base SAS Svr',
+                'Reseller cost'        => 492.00000000000006,
                 'Coverage Period From' => NULL,
-                'Line Item Price' => 600,
-                'Serial No.' => 'MXQ52805JL',
-                'Product No.' => '755262-B21',
-                'Coverage Period To' => NULL,
+                'Line Item Price'      => 600,
+                'Serial No.'           => 'MXQ52805JL',
+                'Product No.'          => '755262-B21',
+                'Coverage Period To'   => NULL,
             ],
             [
-                'Qty' => 1,
-                'Monthly List Price' => 133,
-                'Description' => 'HP DL380 Gen9 E5-2640v3 US Svr/S-Buy',
-                'Reseller cost' => 654.36,
+                'Qty'                  => 1,
+                'Monthly List Price'   => 133,
+                'Description'          => 'HP DL380 Gen9 E5-2640v3 US Svr/S-Buy',
+                'Reseller cost'        => 654.36,
                 'Coverage Period From' => NULL,
-                'Line Item Price' => 798,
-                'Serial No.' => 'MXQ54006RP',
-                'Product No.' => '777338-S01',
-                'Coverage Period To' => NULL,
+                'Line Item Price'      => 798,
+                'Serial No.'           => 'MXQ54006RP',
+                'Product No.'          => '777338-S01',
+                'Coverage Period To'   => NULL,
             ],
             [
-                'Qty' => 1,
-                'Monthly List Price' => 100,
-                'Description' => 'HPE DL360 Gen9 E5-2630v3 Base SAS Svr',
-                'Reseller cost' => 492.00000000000006,
+                'Qty'                  => 1,
+                'Monthly List Price'   => 100,
+                'Description'          => 'HPE DL360 Gen9 E5-2630v3 Base SAS Svr',
+                'Reseller cost'        => 492.00000000000006,
                 'Coverage Period From' => NULL,
-                'Line Item Price' => 600,
-                'Serial No.' => 'MXQ5420101',
-                'Product No.' => '755262-B21',
-                'Coverage Period To' => NULL,
+                'Line Item Price'      => 600,
+                'Serial No.'           => 'MXQ5420101',
+                'Product No.'          => '755262-B21',
+                'Coverage Period To'   => NULL,
             ],
             [
-                'Qty' => 1,
-                'Monthly List Price' => 5,
-                'Description' => 'HPE DL360 G9 E5-2609v3 SAS US Svr/S-Buy',
-                'Reseller cost' => 24.4606,
+                'Qty'                  => 1,
+                'Monthly List Price'   => 5,
+                'Description'          => 'HPE DL360 G9 E5-2609v3 SAS US Svr/S-Buy',
+                'Reseller cost'        => 24.4606,
                 'Coverage Period From' => '10/21/2020',
-                'Line Item Price' => 29.83,
-                'Serial No.' => 'MXQ53804YL',
-                'Product No.' => '780017-S01',
-                'Coverage Period To' => NULL,
+                'Line Item Price'      => 29.83,
+                'Serial No.'           => 'MXQ53804YL',
+                'Product No.'          => '780017-S01',
+                'Coverage Period To'   => NULL,
             ],
             [
-                'Qty' => 1,
-                'Monthly List Price' => 7,
-                'Description' => 'HP DL380 Gen9 E5-2640v3 US Svr/S-Buy',
-                'Reseller cost' => 34.440000000000005,
+                'Qty'                  => 1,
+                'Monthly List Price'   => 7,
+                'Description'          => 'HP DL380 Gen9 E5-2640v3 US Svr/S-Buy',
+                'Reseller cost'        => 34.440000000000005,
                 'Coverage Period From' => NULL,
-                'Line Item Price' => 42,
-                'Serial No.' => 'MXQ54006RP',
-                'Product No.' => '777338-S01',
-                'Coverage Period To' => NULL,
+                'Line Item Price'      => 42,
+                'Serial No.'           => 'MXQ54006RP',
+                'Product No.'          => '777338-S01',
+                'Coverage Period To'   => NULL,
             ],
             [
-                'Qty' => 1,
-                'Monthly List Price' => 6,
-                'Description' => 'HP DL360 Gen9 E5-2630v3 SAS Reman Svr',
-                'Reseller cost' => 27.716,
+                'Qty'                  => 1,
+                'Monthly List Price'   => 6,
+                'Description'          => 'HP DL360 Gen9 E5-2630v3 SAS Reman Svr',
+                'Reseller cost'        => 27.716,
                 'Coverage Period From' => '11/01/2020',
-                'Line Item Price' => 33.8,
-                'Serial No.' => '2M41539PTP',
-                'Product No.' => '755262R-B21',
-                'Coverage Period To' => NULL,
+                'Line Item Price'      => 33.8,
+                'Serial No.'           => '2M41539PTP',
+                'Product No.'          => '755262R-B21',
+                'Coverage Period To'   => NULL,
             ],
             [
-                'Qty' => 1,
-                'Monthly List Price' => 6,
-                'Description' => 'HPE DL360 Gen9 E5-2630v3 Base SAS Svr',
-                'Reseller cost' => 29.520000000000003,
+                'Qty'                  => 1,
+                'Monthly List Price'   => 6,
+                'Description'          => 'HPE DL360 Gen9 E5-2630v3 Base SAS Svr',
+                'Reseller cost'        => 29.520000000000003,
                 'Coverage Period From' => NULL,
-                'Line Item Price' => 36,
-                'Serial No.' => 'MXQ52805JL',
-                'Product No.' => '755262-B21',
-                'Coverage Period To' => NULL,
+                'Line Item Price'      => 36,
+                'Serial No.'           => 'MXQ52805JL',
+                'Product No.'          => '755262-B21',
+                'Coverage Period To'   => NULL,
             ],
             [
-                'Qty' => 1,
-                'Monthly List Price' => 100,
-                'Description' => 'HPE DL360 G9 E5-2609v3 SAS US Svr/S-Buy',
-                'Reseller cost' => 489.2694,
+                'Qty'                  => 1,
+                'Monthly List Price'   => 100,
+                'Description'          => 'HPE DL360 G9 E5-2609v3 SAS US Svr/S-Buy',
+                'Reseller cost'        => 489.2694,
                 'Coverage Period From' => '10/21/2020',
-                'Line Item Price' => 596.67,
-                'Serial No.' => 'MXQ53804YL',
-                'Product No.' => '780017-S01',
-                'Coverage Period To' => NULL,
+                'Line Item Price'      => 596.67,
+                'Serial No.'           => 'MXQ53804YL',
+                'Product No.'          => '780017-S01',
+                'Coverage Period To'   => NULL,
             ],
             [
-                'Qty' => 1,
-                'Monthly List Price' => 6,
-                'Description' => 'HPE DL360 Gen9 E5-2630v3 Base SAS Svr',
-                'Reseller cost' => 29.520000000000003,
+                'Qty'                  => 1,
+                'Monthly List Price'   => 6,
+                'Description'          => 'HPE DL360 Gen9 E5-2630v3 Base SAS Svr',
+                'Reseller cost'        => 29.520000000000003,
                 'Coverage Period From' => NULL,
-                'Line Item Price' => 36,
-                'Serial No.' => 'MXQ5420101',
-                'Product No.' => '755262-B21',
-                'Coverage Period To' => NULL,
+                'Line Item Price'      => 36,
+                'Serial No.'           => 'MXQ5420101',
+                'Product No.'          => '755262-B21',
+                'Coverage Period To'   => NULL,
             ],
         ];
 
-        $importedRows = $quoteFile->rowsData->pluck('columns_data')->map(fn($row) => collect($row)->pluck('value', 'header')->all())->all();
+        $importedRows = $quoteFile->rowsData->pluck('columns_data')->map(fn ($row) => collect($row)->pluck('value', 'header')->all())->all();
 
         foreach ($assertRows as $row) {
             $this->assertContainsEquals($row, $importedRows);
@@ -2360,7 +2061,7 @@ CONTENT
     }
 
     /** @group distributor-file-docx */
-    public function test_parses_renewal_support_warehouse_van_bael_bellis_fc24x7_docx()
+    public function testRenewalSupportWarehouseVanBaelBellisFc24x7docx()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/Renewal Support Warehouse Van Bael  Bellis FC 24x7.docx');
 
@@ -2372,7 +2073,7 @@ CONTENT
 
         array_shift($lines);
 
-        $rows = collect($lines)->map(fn($line) => array_map(fn($value) => filled($value) ? $value : null, preg_split('/\t/', $line)));
+        $rows = collect($lines)->map(fn ($line) => array_map(fn ($value) => filled($value) ? $value : null, preg_split('/\t/', $line)));
 
         // $this->assertArrayHasEqualValues(
         //     $rows[0],
@@ -2528,13 +2229,13 @@ CONTENT
         //     ]
         // );
 
-        $filePathCsv = base_path('tests/Unit/Data/distributor-files-test/'.Str::slug('Renewal Support Warehouse Van Bael  Bellis FC 24x7', '-').'.csv');
+        $filePathCsv = base_path('tests/Unit/Data/distributor-files-test/' . Str::slug('Renewal Support Warehouse Van Bael  Bellis FC 24x7', '-') . '.csv');
 
         // file_put_contents($filePathCsv, $pagesResult[0]['content']);
     }
 
     /** @group distributor-file-pdf */
-    public function test_parses_supp_inba_1_year_pdf()
+    public function test_supp_inba_1_year_pdf()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/SUPP-INBA_1 year.pdf');
 
@@ -2544,15 +2245,15 @@ CONTENT
 
         $pagesResult = $result['pages'];
 
-        $pagesWithRows = collect($pagesResult)->filter(fn($page) => filled(array_filter($page['rows'])))->pluck('page');
+        $pagesWithRows = collect($pagesResult)->filter(fn ($page) => filled(array_filter($page['rows'])))->pluck('page');
 
         $pagesContainLines = [3, 4, 5, 6, 7, 8, 9, 10];
 
-        $pagesWithRows->each(fn($number) => $this->assertContains($number, $pagesContainLines));
+        $pagesWithRows->each(fn ($number) => $this->assertContains($number, $pagesContainLines));
     }
 
     /** @group distributor-file-pdf */
-    public function test_parses_supp_inba_2_years_pdf()
+    public function testSuppInba2Years()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/SUPP-INBA_2 years.pdf');
 
@@ -2882,7 +2583,7 @@ CONTENT
     }
 
     /** @group distributor-file-pdf */
-    public function test_parses_support_warehouse_tata_tryg_dl_380G92_pdf()
+    public function testSupportWarehouseTataTrygDL380G92PDF()
     {
         $filepath = base_path('tests/Unit/Data/distributor-files-test/SupportWarehouse_TATA_Tryg_DL380G9-2.pdf');
 
@@ -2935,7 +2636,7 @@ CONTENT
     }
 
     /** @group distributor-file-pdf */
-    public function test_parses_surware_ads_nc_pdf()
+    public function testSurwareAdsNc()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/SUPWARE-ADS - NC.pdf');
 
@@ -2946,10 +2647,10 @@ CONTENT
         $result = $this->pdfParser()->parse($pagesContent);
 
         /**
-         * The sixth page contain lines without serial number.
+         * The sixh page contain lines without serial number.
          * This case must be handled.
          */
-        $page = Arr::first($result['pages'] ?? [], fn($text) => $text['page'] === 6, []);
+        $page = Arr::first($result['pages'] ?? [], fn ($text) => $text['page'] === 6, []);
 
         $this->assertCount(4, $page['rows']);
 
@@ -3003,19 +2704,19 @@ CONTENT
     }
 
     /** @group distributor-file-excel */
-    public function test_parses_317052_support_warehouse_ltd_ph_lex_global_xlsx()
+    public function test317052SupportWarehouseLtdPhlexglobalL()
     {
         $this->be(factory(User::class)->create(), 'api');
 
         $quote = factory(Quote::class)->create();
 
         $quoteFile = QuoteFile::create([
-            'original_file_path' => Str::random(),
-            'original_file_name' => Str::random(),
-            'file_type' => 'Distributor Price List',
-            'pages' => 2,
+            'original_file_path'   => Str::random(),
+            'original_file_name'   => Str::random(),
+            'file_type'            => 'Distributor Price List',
+            'pages'                => 2,
             'quote_file_format_id' => QuoteFileFormat::value('id'),
-            'imported_page' => 2,
+            'imported_page'        => 2
         ]);
 
         $quote->update(['distributor_file_id' => $quoteFile->getKey()]);
@@ -3028,7 +2729,7 @@ CONTENT
     }
 
     /** @group distributor-file-excel */
-    public function test_parses_copy_of_support_warehouse_limited_algonquin_lakeshore_07062020_xlsx()
+    public function testCopyOfSupportWarehouseLimitedAlgonquinLakeshore07062020()
     {
         $this->be(factory(User::class)->create(), 'api');
 
@@ -3038,12 +2739,12 @@ CONTENT
         $quote = factory(Quote::class)->create();
 
         $quoteFile = QuoteFile::create([
-            'original_file_path' => $filePath,
-            'original_file_name' => Str::random(),
-            'file_type' => 'Distributor Price List',
-            'pages' => 1,
+            'original_file_path'   => $filePath,
+            'original_file_name'   => Str::random(),
+            'file_type'            => 'Distributor Price List',
+            'pages'                => 1,
             'quote_file_format_id' => QuoteFileFormat::whereExtension('xls')->value('id'),
-            'imported_page' => 1,
+            'imported_page'        => 1
         ]);
 
         $quote->update(['distributor_file_id' => $quoteFile->getKey()]);
@@ -3065,310 +2766,310 @@ CONTENT
             ->mappedOrderedRowsQuery($quote)
             ->get();
 
-        $rows = $rows->map(fn($row) => Arr::except((array)$row, ['id', 'replicated_row_id']))->toArray();
+        $rows = $rows->map(fn ($row) => Arr::except((array) $row, ['id', 'replicated_row_id']))->toArray();
 
         $assertRows = [
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '582633-B21',
-                'date_to' => '30/04/2021',
-                'description' => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
-                'price' => '21.10',
-                'serial_no' => null,
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '582633-B21',
+                'date_to'       => '30/04/2021',
+                'description'   => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
+                'price'         => '21.10',
+                'serial_no'     => null,
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '582633-B21',
-                'date_to' => '30/04/2021',
-                'description' => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
-                'price' => '21.10',
-                'serial_no' => null,
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '582633-B21',
+                'date_to'       => '30/04/2021',
+                'description'   => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
+                'price'         => '21.10',
+                'serial_no'     => null,
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '582633-B21',
-                'date_to' => '30/04/2021',
-                'description' => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
-                'price' => '21.10',
-                'serial_no' => null,
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '582633-B21',
+                'date_to'       => '30/04/2021',
+                'description'   => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
+                'price'         => '21.10',
+                'serial_no'     => null,
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '582633-B21',
-                'date_to' => '30/04/2021',
-                'description' => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
-                'price' => '21.10',
-                'serial_no' => null,
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '582633-B21',
+                'date_to'       => '30/04/2021',
+                'description'   => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
+                'price'         => '21.10',
+                'serial_no'     => null,
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '582633-B21',
-                'date_to' => '30/04/2021',
-                'description' => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
-                'price' => '21.10',
-                'serial_no' => null,
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '582633-B21',
+                'date_to'       => '30/04/2021',
+                'description'   => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
+                'price'         => '21.10',
+                'serial_no'     => null,
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '582633-B21',
-                'date_to' => '30/04/2021',
-                'description' => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
-                'price' => '21.10',
-                'serial_no' => null,
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '582633-B21',
+                'date_to'       => '30/04/2021',
+                'description'   => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
+                'price'         => '21.10',
+                'serial_no'     => null,
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '582633-B21',
-                'date_to' => '30/04/2021',
-                'description' => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
-                'price' => '49.23',
-                'serial_no' => null,
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '582633-B21',
+                'date_to'       => '30/04/2021',
+                'description'   => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
+                'price'         => '49.23',
+                'serial_no'     => null,
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '582633-B21',
-                'date_to' => '30/04/2021',
-                'description' => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
-                'price' => '49.23',
-                'serial_no' => null,
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '582633-B21',
+                'date_to'       => '30/04/2021',
+                'description'   => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
+                'price'         => '49.23',
+                'serial_no'     => null,
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '582633-B21',
-                'date_to' => '30/04/2021',
-                'description' => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
-                'price' => '49.23',
-                'serial_no' => null,
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '582633-B21',
+                'date_to'       => '30/04/2021',
+                'description'   => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
+                'price'         => '49.23',
+                'serial_no'     => null,
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '582633-B21',
-                'date_to' => '30/04/2021',
-                'description' => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
-                'price' => '49.23',
-                'serial_no' => null,
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '582633-B21',
+                'date_to'       => '30/04/2021',
+                'description'   => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
+                'price'         => '49.23',
+                'serial_no'     => null,
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '582633-B21',
-                'date_to' => '30/04/2021',
-                'description' => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
-                'price' => '49.23',
-                'serial_no' => null,
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '582633-B21',
+                'date_to'       => '30/04/2021',
+                'description'   => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
+                'price'         => '49.23',
+                'serial_no'     => null,
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '582633-B21',
-                'date_to' => '30/04/2021',
-                'description' => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
-                'price' => '49.23',
-                'serial_no' => null,
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '582633-B21',
+                'date_to'       => '30/04/2021',
+                'description'   => 'HP ZMOD ICE 1-SRV ML/DL Bundle',
+                'price'         => '49.23',
+                'serial_no'     => null,
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '670633-S01',
-                'date_to' => '30/09/2021',
-                'description' => 'HP DL360p Gen8 S-Buy E5-2620 Base US Svr',
-                'price' => '84.93',
-                'serial_no' => 'MXQ3300CHR',
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '670633-S01',
+                'date_to'       => '30/09/2021',
+                'description'   => 'HP DL360p Gen8 S-Buy E5-2620 Base US Svr',
+                'price'         => '84.93',
+                'serial_no'     => 'MXQ3300CHR',
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '670633-S01',
-                'date_to' => '30/09/2021',
-                'description' => 'HP DL360p Gen8 S-Buy E5-2620 Base US Svr',
-                'price' => '849.33',
-                'serial_no' => 'MXQ3300CHR',
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '670633-S01',
+                'date_to'       => '30/09/2021',
+                'description'   => 'HP DL360p Gen8 S-Buy E5-2620 Base US Svr',
+                'price'         => '849.33',
+                'serial_no'     => 'MXQ3300CHR',
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '670853-S01',
-                'date_to' => '30/09/2021',
-                'description' => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
-                'price' => '97.07',
-                'serial_no' => '2M231601DK',
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '670853-S01',
+                'date_to'       => '30/09/2021',
+                'description'   => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
+                'price'         => '97.07',
+                'serial_no'     => '2M231601DK',
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '670853-S01',
-                'date_to' => '30/09/2021',
-                'description' => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
-                'price' => '97.07',
-                'serial_no' => '2M231601DN',
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '670853-S01',
+                'date_to'       => '30/09/2021',
+                'description'   => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
+                'price'         => '97.07',
+                'serial_no'     => '2M231601DN',
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '670853-S01',
-                'date_to' => '30/09/2021',
-                'description' => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
-                'price' => '97.07',
-                'serial_no' => '2M233402QL',
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '670853-S01',
+                'date_to'       => '30/09/2021',
+                'description'   => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
+                'price'         => '97.07',
+                'serial_no'     => '2M233402QL',
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '670853-S01',
-                'date_to' => '30/09/2021',
-                'description' => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
-                'price' => '97.07',
-                'serial_no' => '2M233402QN',
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '670853-S01',
+                'date_to'       => '30/09/2021',
+                'description'   => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
+                'price'         => '97.07',
+                'serial_no'     => '2M233402QN',
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '670853-S01',
-                'date_to' => '30/09/2021',
-                'description' => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
-                'price' => '97.07',
-                'serial_no' => '2M241301ZP',
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '670853-S01',
+                'date_to'       => '30/09/2021',
+                'description'   => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
+                'price'         => '97.07',
+                'serial_no'     => '2M241301ZP',
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '670853-S01',
-                'date_to' => '30/09/2021',
-                'description' => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
-                'price' => '97.07',
-                'serial_no' => '2M241301ZQ',
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '670853-S01',
+                'date_to'       => '30/09/2021',
+                'description'   => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
+                'price'         => '97.07',
+                'serial_no'     => '2M241301ZQ',
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '670853-S01',
-                'date_to' => '30/09/2021',
-                'description' => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
-                'price' => '1092.00',
-                'serial_no' => '2M231601DK',
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '670853-S01',
+                'date_to'       => '30/09/2021',
+                'description'   => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
+                'price'         => '1092.00',
+                'serial_no'     => '2M231601DK',
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '670853-S01',
-                'date_to' => '30/09/2021',
-                'description' => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
-                'price' => '1092.00',
-                'serial_no' => '2M231601DN',
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '670853-S01',
+                'date_to'       => '30/09/2021',
+                'description'   => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
+                'price'         => '1092.00',
+                'serial_no'     => '2M231601DN',
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '670853-S01',
-                'date_to' => '30/09/2021',
-                'description' => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
-                'price' => '1092.00',
-                'serial_no' => '2M233402QL',
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '670853-S01',
+                'date_to'       => '30/09/2021',
+                'description'   => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
+                'price'         => '1092.00',
+                'serial_no'     => '2M233402QL',
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '670853-S01',
-                'date_to' => '30/09/2021',
-                'description' => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
-                'price' => '1092.00',
-                'serial_no' => '2M233402QN',
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '670853-S01',
+                'date_to'       => '30/09/2021',
+                'description'   => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
+                'price'         => '1092.00',
+                'serial_no'     => '2M233402QN',
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '670853-S01',
-                'date_to' => '30/09/2021',
-                'description' => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
-                'price' => '1092.00',
-                'serial_no' => '2M241301ZP',
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '670853-S01',
+                'date_to'       => '30/09/2021',
+                'description'   => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
+                'price'         => '1092.00',
+                'serial_no'     => '2M241301ZP',
             ],
             [
-                'is_selected' => 0,
-                'group_name' => null,
-                'date_from' => '01/10/2020',
-                'qty' => 1,
-                'product_no' => '670853-S01',
-                'date_to' => '30/09/2021',
-                'description' => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
-                'price' => '1092.00',
-                'serial_no' => '2M241301ZQ',
-            ],
+                'is_selected'   => 0,
+                'group_name'    => null,
+                'date_from'     => '01/10/2020',
+                'qty'           => 1,
+                'product_no'    => '670853-S01',
+                'date_to'       => '30/09/2021',
+                'description'   => 'HP DL380p Gen8 E5-2660 US Svr/S-Buy',
+                'price'         => '1092.00',
+                'serial_no'     => '2M241301ZQ',
+            ]
         ];
 
         $this->assertCount(count($assertRows), $rows);
     }
 
     /** @group distributor-file-pdf */
-    public function test_parses_hp_invent_1547101_pdf()
+    public function testHPInvent1547101PDF()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/HPInvent1547101.pdf');
 
-        $pagesContent = $this->pdfParser()->getText($filePath);
+        $pagesContent = $this->pdfParser()->getText($filePath, false);
 
         $result = $this->pdfParser()->parse($pagesContent);
 
-        $fourthPage = Arr::first($result['pages'], fn($page) => $page['page'] === 4);
+        $fourthPage = Arr::first($result['pages'], fn ($page) => $page['page'] === 4);
 
         $this->assertCount(15, $fourthPage['rows']);
 
@@ -3553,7 +3254,7 @@ CONTENT
             "_one_pay" => false,
         ], $fourthPage['rows']);
 
-        $sixthPage = Arr::first($result['pages'], fn($page) => $page['page'] === 6);
+        $sixthPage = Arr::first($result['pages'], fn ($page) => $page['page'] === 6);
 
         $this->assertCount(2, $sixthPage['rows']);
 
@@ -3583,7 +3284,7 @@ CONTENT
     }
 
     /** @group distributor-file-pdf */
-    public function test_parses_hp_invent0947161_pdf()
+    public function testHPInvent0947161PDF()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/HPInvent0947161.pdf');
 
@@ -3743,7 +3444,7 @@ CONTENT
 
         //   26, 26, 27, 29, 31, 34 -- CZJ81303R8
 
-        $rowsCZJ81303R8 = array_filter($result[25]['rows'], fn($row) => $row['serial_no'] === 'CZJ81303R8');
+        $rowsCZJ81303R8 = array_filter($result[25]['rows'], fn ($row) => $row['serial_no'] === 'CZJ81303R8');
 
         $this->assertCount(2, $rowsCZJ81303R8);
 
@@ -3771,7 +3472,7 @@ CONTENT
             "_one_pay" => false,
         ], $rowsCZJ81303R8);
 
-        $rowsCZJ81303R8 = array_filter($result[26]['rows'], fn($row) => $row['serial_no'] === 'CZJ81303R8');
+        $rowsCZJ81303R8 = array_filter($result[26]['rows'], fn ($row) => $row['serial_no'] === 'CZJ81303R8');
 
         $this->assertCount(1, $rowsCZJ81303R8);
         $this->assertContainsEquals([
@@ -3786,7 +3487,7 @@ CONTENT
             "_one_pay" => false,
         ], $rowsCZJ81303R8);
 
-        $rowsCZJ81303R8 = array_filter($result[28]['rows'], fn($row) => $row['serial_no'] === 'CZJ81303R8');
+        $rowsCZJ81303R8 = array_filter($result[28]['rows'], fn ($row) => $row['serial_no'] === 'CZJ81303R8');
 
         $this->assertCount(1, $rowsCZJ81303R8);
 
@@ -3802,7 +3503,7 @@ CONTENT
             "_one_pay" => false,
         ], $rowsCZJ81303R8);
 
-        $rowsCZJ81303R8 = array_filter($result[30]['rows'], fn($row) => $row['serial_no'] === 'CZJ81303R8');
+        $rowsCZJ81303R8 = array_filter($result[30]['rows'], fn ($row) => $row['serial_no'] === 'CZJ81303R8');
 
         $this->assertCount(1, $rowsCZJ81303R8);
 
@@ -3818,7 +3519,7 @@ CONTENT
             "_one_pay" => false,
         ], $rowsCZJ81303R8);
 
-        $rowsCZJ81303R8 = array_filter($result[33]['rows'], fn($row) => $row['serial_no'] === 'CZJ81303R8');
+        $rowsCZJ81303R8 = array_filter($result[33]['rows'], fn ($row) => $row['serial_no'] === 'CZJ81303R8');
 
         $this->assertCount(1, $rowsCZJ81303R8);
 

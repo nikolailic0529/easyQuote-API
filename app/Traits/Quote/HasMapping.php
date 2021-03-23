@@ -2,13 +2,12 @@
 
 namespace App\Traits\Quote;
 
-use App\Collections\MappedRows;
 use App\Models\{
     Quote\FieldColumn,
     QuoteFile\ImportableColumn,
     Template\TemplateField
 };
-use App\Services\QuoteQueries;
+use App\Queries\QuoteQueries;
 use Illuminate\Database\Eloquent\{
     Builder,
     Collection as EloquentCollection,
@@ -22,9 +21,9 @@ use Illuminate\Support\Collection;
  */
 trait HasMapping
 {
-    public ?MappedRows $computableRows = null;
+    protected ?Collection $computableRows = null;
 
-    public ?MappedRows $renderableRows = null;
+    protected ?Collection $renderableRows = null;
 
     /**
      * Template Fields which will be displayed only for S4 Service.
@@ -39,6 +38,26 @@ trait HasMapping
      * @var array
      */
     protected array $contractHiddenFields = ['price', 'searchable'];
+
+    public function getComputableRowsAttribute(): ?Collection
+    {
+        return $this->computableRows;
+    }
+
+    public function setComputableRowsAttribute($value): void
+    {
+        $this->computableRows = $value;
+    }
+
+    public function getRenderableRowsAttribute(): ?Collection
+    {
+        return $this->renderableRows;
+    }
+
+    public function setRenderableRowsAttribute($value): void
+    {
+        $this->renderableRows = $value;
+    }
 
     public function fieldsColumns(): HasMany
     {
@@ -55,7 +74,7 @@ trait HasMapping
         return $this->belongsToMany(ImportableColumn::class, 'quote_field_column', 'quote_id');
     }
 
-    public function defaultTemplateFields(): BelongsToMany
+    public function defaultTemplateFields(): Builder
     {
         return $this->templateFields()->with('systemImportableColumn')->where('is_default_enabled', true);
     }

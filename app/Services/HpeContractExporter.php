@@ -6,17 +6,18 @@ use App\Contracts\Repositories\VendorRepositoryInterface as Vendors;
 use App\Contracts\Services\HpeExporter;
 use App\DTO\HpeContractExportFile;
 use App\DTO\PreviewHpeContractData;
+use App\Foundation\TemporaryDirectory;
 use App\Models\Template\HpeContractTemplate;
 use Barryvdh\Snappy\PdfWrapper;
-use Illuminate\Support\Facades\File;
+use Illuminate\Contracts\Filesystem\Factory as DiskFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Filesystem\FilesystemAdapter as Disk;
 use Illuminate\Support\{Arr, Str};
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\File;
 use LynX39\LaraPdfMerger\PdfManage;
-use Illuminate\Filesystem\FilesystemAdapter as Disk;
-use Illuminate\Contracts\Filesystem\Factory as DiskFactory;
-use Spatie\PdfToText\Pdf as PdfToText;
 use Smalot\PdfParser\Parser as PdfParser;
+use Spatie\PdfToText\Pdf as PdfToText;
 
 class HpeContractExporter implements HpeExporter
 {
@@ -37,14 +38,16 @@ class HpeContractExporter implements HpeExporter
 
         $exportView = $this->resolveExportView($template);
 
-        $data->images = Collection::wrap($this->retrieveTemplateImages($template, ThumbnailManager::PREFER_SVG))->pluck('abs_src', 'id')->toArray();
+        $templateImages = $this->retrieveTemplateImages($template, ThumbHelper::PREFER_SVG | ThumbHelper::ABS_PATH);
+
+        $data->images = Collection::wrap($templateImages)->pluck('src', 'id')->all();
 
         $data->translations = $template->data_headers->pluck('value', 'key')->toArray();
 
         $tempDir = (new TemporaryDirectory)->create();
 
         $portraitPages = $tempDir->path('portrait-pages.pdf');
-        
+
         $landscapePages = $tempDir->path('landscape-pages.pdf');
 
         $this->pdfWrapper()
@@ -88,7 +91,7 @@ class HpeContractExporter implements HpeExporter
         return Collection::wrap([$template->company, $vendor])
             ->whereInstanceOf(Model::class)
             ->reduce(function (Collection $carry, Model $model) use ($flags) {
-                $images = ThumbnailManager::retrieveLogoDimensions(
+                $images = ThumbHelper::getLogoDimensionsFromImage(
                     $model->image,
                     $model->thumbnailProperties(),
                     get_class($model),

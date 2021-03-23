@@ -2,37 +2,27 @@
 
 namespace App\Models\QuoteFile;
 
-use App\Contracts\{HasOrderedScope, ReindexQuery};
-use App\Models\QuoteFile\ImportableColumnAlias;
+use App\Contracts\{HasOrderedScope, ReindexQuery, SearchableEntity};
 use App\Models\Quote\FieldColumn;
-use App\Traits\{
-    Activatable,
-    HasColumnsData,
-    BelongsToUser,
-    Systemable,
+use App\Traits\{Activatable,
     Activity\LogsActivity,
-    Search\Searchable,
     Auth\Multitenantable,
     BelongsToCountry,
+    BelongsToUser,
+    Search\Searchable,
+    Systemable,
     Uuid
 };
 use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
-use Illuminate\Database\Eloquent\{
-    Model,
-    Builder,
-    SoftDeletes,
-    Relations\BelongsTo,
-    Relations\HasMany,
-};
+use Illuminate\Database\Eloquent\{Builder, Model, Relations\BelongsTo, Relations\HasMany, SoftDeletes,};
 use Illuminate\Support\Str;
 
-class ImportableColumn extends Model implements HasOrderedScope, ReindexQuery
+class ImportableColumn extends Model implements HasOrderedScope, ReindexQuery, SearchableEntity
 {
     use Uuid,
         BelongsToUser,
         BelongsToCountry,
         Multitenantable,
-        HasColumnsData,
         Systemable,
         LogsActivity,
         SoftDeletes,
@@ -93,13 +83,13 @@ class ImportableColumn extends Model implements HasOrderedScope, ReindexQuery
         return $this->aliases->pluck('alias')->implode(', ');
     }
 
-    public function toSearchArray()
+    public function toSearchArray(): array
     {
         return [
-            'header'        => $this->header,
-            'type'          => $this->type,
-            'country_name'  => $this->country->name,
-            'aliases'       => $this->aliases->pluck('alias')->toArray()
+            'header' => $this->header,
+            'type' => $this->type,
+            'country_name' => $this->country->name,
+            'aliases' => $this->aliases->pluck('alias')->toArray()
         ];
     }
 

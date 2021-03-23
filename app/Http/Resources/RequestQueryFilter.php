@@ -8,20 +8,26 @@ use Illuminate\Support\Str;
 
 class RequestQueryFilter
 {
-    public function attach($resource, Request $request = null)
+    protected Request $request;
+
+    public function __construct(Request $request)
     {
-        $request ??= request();
+        $this->request = $request;
+    }
+
+    public function attach($resource)
+    {
         $availableIncludes = optional($resource)->availableIncludes ?? [];
 
-        $requestIncludes = $this->getRequestIncludes($request, $availableIncludes)->all();
+        $requestIncludes = $this->getRequestIncludes($availableIncludes)->all();
 
         $resource->load($requestIncludes);
 
         return $resource;
     }
-    protected function getRequestIncludes(Request $request, array $availableIncludes = []): Collection
+    protected function getRequestIncludes(array $availableIncludes = []): Collection
     {
-        return collect(data_get($request->input(), 'include', []))
+        return collect(data_get($this->request->input(), 'include', []))
             ->transform(fn ($include) => Str::camel($include))
             ->intersect($availableIncludes)
             ->values();

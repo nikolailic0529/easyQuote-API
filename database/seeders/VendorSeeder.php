@@ -1,0 +1,60 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+
+class VendorSeeder extends Seeder
+{
+    /**
+     * Run the database seeders.
+     *
+     * @return void
+     * @throws \Throwable
+     */
+    public function run()
+    {
+        $vendors = json_decode(file_get_contents(__DIR__.'/models/vendors.json'), true);
+
+        $connection = $this->container['db.connection'];
+
+        $vendors = array_map(function (array $vendor) use ($connection) {
+            $countryModelKeys = $connection->table('countries')
+                ->whereIn('iso_3166_2', $vendor['countries'])
+                ->pluck('id')
+                ->all();
+
+            return array_merge($vendor, [
+                'country_model_keys' => $countryModelKeys
+            ]);
+        }, $vendors);
+
+        $connection->transaction(function () use ($connection, $vendors) {
+
+            foreach ($vendors as $vendor) {
+                $connection->table('vendors')
+                    ->insertOrIgnore([
+                        'id' => $vendor['id'],
+                        'name' => $vendor['name'],
+                        'short_code' => $vendor['short_code'],
+                        'is_system' => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                        'activated_at' => now()
+                    ]);
+
+                foreach ($vendor['country_model_keys'] as $countryModelKey) {
+
+                    $connection->table('country_vendor')
+                        ->insertOrIgnore([
+                            'vendor_id' => $vendor['id'],
+                            'country_id' => $countryModelKey
+                        ]);
+
+                }
+
+            }
+
+        });
+    }
+}

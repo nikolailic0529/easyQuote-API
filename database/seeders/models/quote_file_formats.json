@@ -1,0 +1,30 @@
+[
+    {
+        "name": "PDF",
+        "extension": "pdf"
+    },
+    {
+        "name": "Excel",
+        "extension": "xlsx"
+    },
+    {
+        "name": "Excel",
+        "extension": "xls"
+    },
+    {
+        "name": "CSV",
+        "extension": "csv"
+    },
+    {
+        "name": "Word",
+        "extension": "docx"
+    },
+    {
+        "name": "Word",
+        "extension": "doc"
+    },
+    {
+        "name": "Word",
+        "extension": "rtf"
+    }
+]

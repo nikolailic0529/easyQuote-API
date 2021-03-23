@@ -2,18 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Http\Middleware\EnforceChangePassword;
+use App\Models\Quote\Quote;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 use Tests\Unit\Traits\WithFakeUser;
-use App\Http\Middleware\EnforceChangePassword;
-use App\Http\Middleware\PerformUserActivity;
-use Illuminate\Support\Facades\DB;
 
-/**
- * @group build
- */
 class PerformanceTest extends TestCase
 {
-    use WithFakeUser;
+    use WithFakeUser, DatabaseTransactions;
 
     /**
      * Test Submitted Quotes Querying Performance.
@@ -21,7 +19,11 @@ class PerformanceTest extends TestCase
      * @return void
      */
     public function testSubmittedQuotesListingPerformance()
-    {        
+    {
+        $this->markTestSkipped();
+
+        factory(Quote::class, 100)->create();
+
         $this->authenticate();
 
         $this->withoutMiddleware([EnforceChangePassword::class]);
@@ -46,6 +48,10 @@ class PerformanceTest extends TestCase
      */
     public function testDraftedQuotesListingPerformance()
     {
+        $this->markTestSkipped();
+
+        factory(Quote::class, 100)->create();
+
         $this->authenticate();
 
         $this->withoutMiddleware([EnforceChangePassword::class]);

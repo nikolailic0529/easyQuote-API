@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Contracts\{
     Services\Stats,
-    Repositories\Customer\CustomerRepositoryInterface as Customers,
     Repositories\Quote\QuoteDraftedRepositoryInterface as DraftedQuotes,
     Repositories\Quote\QuoteSubmittedRepositoryInterface as SubmittedQuotes,
     Repositories\AssetRepository as Assets,
@@ -50,8 +49,6 @@ class StatsService implements Stats
 
     protected Assets $assets;
 
-    protected Customers $customers;
-
     public function __construct(
         QuoteTotal $quoteTotal,
         QuoteLocationTotal $quoteLocationTotal,
@@ -59,8 +56,7 @@ class StatsService implements Stats
         AssetTotal $assetTotal,
         DraftedQuotes $draftedQuotes,
         SubmittedQuotes $submittedQuotes,
-        Assets $assets,
-        Customers $customers
+        Assets $assets
     ) {
         $this->quoteTotal = $quoteTotal;
         $this->quoteLocationTotal = $quoteLocationTotal;
@@ -69,7 +65,6 @@ class StatsService implements Stats
         $this->assets = $assets;
         $this->draftedQuotes = $draftedQuotes;
         $this->submittedQuotes = $submittedQuotes;
-        $this->customers = $customers;
     }
 
     public function calculateQuoteTotals(): void

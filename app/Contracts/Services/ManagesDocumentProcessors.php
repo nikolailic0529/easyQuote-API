@@ -2,10 +2,9 @@
 
 namespace App\Contracts\Services;
 
+use App\DTO\MappedRowSettings;
+use App\DTO\RowMapping;
 use App\Models\QuoteFile\QuoteFile;
-use App\Http\Requests\{
-    HandleQuoteFileRequest
-};
 use App\Models\Quote\Quote;
 
 interface ManagesDocumentProcessors
@@ -36,4 +35,15 @@ interface ManagesDocumentProcessors
      * @return void
      */
     public function mapColumnsToFields(Quote $quote, QuoteFile $quoteFile);
+
+    /**
+     * Transit imported rows to mapped rows.
+     *
+     * @param \App\Models\QuoteFile\QuoteFile $quoteFile
+     * @param \App\DTO\RowMapping $rowMapping
+     * @param MappedRowSettings|null $rowSettings
+     * @return void
+     * @poaram \App\DTO\MappedRowDefaults $defaults
+     */
+    public function transitImportedRowsToMappedRows(QuoteFile $quoteFile, RowMapping $rowMapping, ?MappedRowSettings $rowSettings = null);
 }

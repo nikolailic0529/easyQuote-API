@@ -3,58 +3,41 @@
 namespace App\Models\Quote;
 
 use App\Casts\GroupDescription;
-use App\Contracts\{
-    ActivatableInterface,
-    HasOrderedScope
-};
-use App\Services\QuoteQueries;
-use App\Models\{Quote\Margin\CountryMargin, QuoteFile\ImportedRow, QuoteFile\QuoteFile, QuoteFile\ScheduleData};
-use App\Traits\{
-    BelongsToUser,
-    BelongsToCustomer,
+use App\Contracts\{ActivatableInterface, HasOrderedScope, SearchableEntity};
+use App\Models\{QuoteFile\ImportedRow, QuoteFile\QuoteFile, QuoteFile\ScheduleData};
+use App\Traits\{Activity\LogsActivity,
+    Auth\Multitenantable,
     BelongsToCompany,
-    BelongsToVendor,
     BelongsToCountry,
+    BelongsToCustomer,
     BelongsToMargin,
-    Reviewable,
+    BelongsToUser,
+    BelongsToVendor,
     Completable,
-    Search\Searchable,
+    Currency\ConvertsCurrency,
     Discount\HasMorphableDiscounts,
     Margin\HasMarginPercentageAttribute,
-    Quote\HasMapping,
-    Quote\SwitchesMode,
+    Quote\HasAdditionalHtmlAttributes,
     Quote\HasCustomDiscountAttribute,
     Quote\HasGroupDescriptionAttribute,
-    Quote\HasAdditionalHtmlAttributes,
-    QuoteTemplate\BelongsToQuoteTemplate,
+    Quote\HasMapping,
+    Quote\HasPricesAttributes,
+    Quote\SwitchesMode,
     QuoteTemplate\BelongsToContractTemplate,
-    Activity\LogsActivity,
-    Currency\ConvertsCurrency,
-    Auth\Multitenantable,
+    QuoteTemplate\BelongsToQuoteTemplate,
+    Reviewable,
     SavesPreviousState,
+    Search\Searchable,
     Uuid
 };
-use Illuminate\Database\Eloquent\{Collection,
-    Relations\BelongsTo,
-    Relations\HasManyThrough,
-    Relations\HasOneThrough,
-    SoftDeletes,
-    Builder,
-    Model};
-use Illuminate\Support\Traits\Tappable;
+use Illuminate\Database\Eloquent\{Builder, Model, SoftDeletes};
 use Illuminate\Support\Str;
+use Illuminate\Support\Traits\Tappable;
 
 /**
  * @property \Illuminate\Support\Collection $group_description
- * @property CountryMargin|null $countryMargin
- * @property float|null $custom_discount
- * @property Collection<Discount>|Discount[] $discounts
- * @property float|null $target_exchange_rate
- * @property float|null $buy_price
- * @property ScheduleData|null $scheduleData
- * @property string|null $currencySymbol
  */
-abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableInterface
+abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableInterface, SearchableEntity
 {
     use Uuid,
         Multitenantable,
@@ -70,6 +53,7 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
         SoftDeletes,
         HasMorphableDiscounts,
         HasMarginPercentageAttribute,
+        HasPricesAttributes,
         HasMapping,
         HasCustomDiscountAttribute,
         HasGroupDescriptionAttribute,
@@ -83,20 +67,12 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
         Tappable;
 
     const PRICE_ATTRIBUTES_MAPPING = [
-        'pricing_document'      => 'pricing_document',
-        'system_handle'         => 'system_handle',
-        'service_agreement_id'  => 'searchable'
+        'pricing_document' => 'pricing_document',
+        'system_handle' => 'system_handle',
+        'service_agreement_id' => 'searchable',
     ];
 
     const TYPES = ['New', 'Renewal'];
-
-    public float $applicableDiscounts = 0.0;
-
-    public float $totalPrice = 0.0;
-
-    public float $finalTotalPrice = 0.0;
-
-    public float $priceCoef = 1.0;
 
     protected $fillable = [
         'customer_id',
@@ -115,28 +91,26 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
         'system_handle',
         'checkbox_status',
         'closing_date',
-        'calculate_list_price',
-        'buy_price'
     ];
 
     protected $attributes = [
         'completeness' => 1,
-        'calculate_list_price' => false
+        'calculate_list_price' => false,
     ];
 
     protected $appends = [
-        'last_drafted_step'
+        'last_drafted_step',
     ];
 
     protected $casts = [
-        'group_description'    => GroupDescription::class,
-        'checkbox_status'      => 'json',
+        'group_description' => GroupDescription::class,
+        'checkbox_status' => 'json',
         'calculate_list_price' => 'boolean',
-        'buy_price'            => 'float',
+        'buy_price' => 'float',
     ];
 
     protected $hidden = [
-        'deleted_at'
+        'deleted_at',
     ];
 
     protected $table = 'quotes';
@@ -162,7 +136,7 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
         'buy_price',
         'sourceCurrency.code',
         'targetCurrency.code',
-        'exchange_rate_margin'
+        'exchange_rate_margin',
     ];
 
     protected static $logOnlyDirty = true;
@@ -178,49 +152,49 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
 
     public function scopeRfq($query, ?string $rfq)
     {
-        return $query->whereHas('customer', fn (Builder $query) => $query->whereRfq($rfq));
+        return $query->whereHas('customer', fn(Builder $query) => $query->whereRfq($rfq));
     }
 
-    public function scheduleData(): HasOneThrough
+    public function scheduleData()
     {
         return $this->hasOneThrough(ScheduleData::class, QuoteFile::class, 'id', null, 'schedule_file_id')->withDefault();
     }
 
-    public function priceList(): BelongsTo
+    public function priceList()
     {
         return $this->belongsTo(QuoteFile::class, 'distributor_file_id', 'id')->withDefault();
     }
 
-    public function paymentSchedule(): BelongsTo
+    public function paymentSchedule()
     {
         return $this->belongsTo(QuoteFile::class, 'schedule_file_id', 'id')->withDefault();
     }
 
-    public function rowsData(): HasManyThrough
+    public function rowsData()
     {
         return $this->hasManyThrough(ImportedRow::class, QuoteFile::class, 'id', null, 'distributor_file_id')
             ->whereColumn('imported_rows.page', '>=', 'quote_files.imported_page');
     }
 
-    public function firstRow(): HasManyThrough
+    public function firstRow()
     {
         return $this->rowsData()->limit(1)->oldest();
     }
 
-    public function toSearchArray()
+    public function toSearchArray(): array
     {
         return [
-            'company_name'              => optional($this->company)->name,
+            'company_name' => optional($this->company)->name,
 
-            'customer_name'             => $this->customer->name,
-            'customer_rfq'              => $this->customer->rfq,
-            'customer_valid_until'      => $this->customer->quotation_valid_until,
-            'customer_support_start'    => $this->customer->support_start_date,
-            'customer_support_end'      => $this->customer->support_end_date,
-            'customer_source'           => $this->customer->source,
+            'customer_name' => $this->customer->name,
+            'customer_rfq' => $this->customer->rfq,
+            'customer_valid_until' => $this->customer->quotation_valid_until,
+            'customer_support_start' => $this->customer->support_start_date,
+            'customer_support_end' => $this->customer->support_end_date,
+            'customer_source' => $this->customer->source,
 
-            'user_fullname'             => optional($this->user)->fullname,
-            'created_at'                => optional($this->created_at)->format(config('date.format'))
+            'user_fullname' => optional($this->user)->fullname,
+            'created_at' => optional($this->created_at)->format(config('date.format')),
         ];
     }
 
@@ -244,35 +218,17 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
 
     public function getForeignKey()
     {
-        return Str::snake(Str::after(class_basename(self::class), 'Base')) . '_' . $this->getKeyName();
+        return Str::snake(Str::after(class_basename(self::class), 'Base')).'_'.$this->getKeyName();
     }
 
     public function getVersionNameAttribute(): string
     {
-        $userName = !is_null($this->user_fullname) ? $this->user_fullname : "{$this->user->first_name} {$this->user->last_name}";
-
-        if (blank($userName)) {
-            $userName ??= "[USER DELETED]";
-        }
+        $userName = $this->user_fullname ?? transform($this->user, function () {
+                return "{$this->user->first_name} {$this->user->last_name}";
+            }, "[USER DELETED]");
 
         $versionNumber = $this->version_number ?? 1;
 
         return "{$userName} {$versionNumber}";
-    }
-
-    public function getBuyPriceAttribute($value): float
-    {
-        return $this->convertExchangeRate((float) $value);
-    }
-
-    public function getTotalPriceAttribute(): float
-    {
-        if (isset($this->totalPrice)) {
-            return $this->totalPrice;
-        }
-
-        return $this->totalPrice = (new QuoteQueries)
-            ->mappedSelectedRowsQuery($this)
-            ->sum('price');
     }
 }

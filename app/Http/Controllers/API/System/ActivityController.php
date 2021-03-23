@@ -3,136 +3,106 @@
 namespace App\Http\Controllers\API\System;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Activity\ShowActivityMeta;
 use App\Http\Requests\System\GetActivitiesRequest;
-use App\Http\Resources\ActivityCollection;
+use App\Http\Resources\UserListResource;
+use App\Contracts\Repositories\{
+    System\ActivityRepositoryInterface as Activities,
+    UserRepositoryInterface as Users
+};
 use App\Models\System\Activity;
-use App\Queries\ActivityQueries;
-use App\Queries\UserQueries;
-use App\Services\Activity\ActivityExporter;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
 
 class ActivityController extends Controller
 {
-    public function __construct()
+    protected Activities $activity;
+
+    protected Users $user;
+
+    public function __construct(Activities $activity, Users $user)
     {
+        $this->activity = $activity;
+        $this->user = $user;
         $this->authorizeResource(Activity::class, 'activity');
     }
 
     /**
      * Display a listing of the Activities.
      *
-     * @param GetActivitiesRequest $request
-     * @param ActivityQueries $queries
-     * @return ActivityCollection
+     * @param \App\Http\Requests\System\GetActivitiesRequest $request
+     * @return \Illuminate\Http\Response
      */
-    public function index(GetActivitiesRequest $request, ActivityQueries $queries): ActivityCollection
+    public function index(GetActivitiesRequest $request)
     {
-        $paginator = $queries->paginateActivityQuery($request)->apiPaginate();
-
-        return tap(new ActivityCollection($paginator), function (ActivityCollection $collection) use ($paginator, $queries) {
-            $collection->additional([
-                'summary' => $queries->activitySummaryQuery()->get(),
-            ]);
-
-            $collection->additional($collection->additional + [
-                    'current_page' => $paginator->currentPage(),
-                    'from' => $paginator->firstItem(),
-                    'to' => $paginator->lastItem(),
-                    'last_page' => $paginator->lastPage(),
-                    'path' => $paginator->path(),
-                    'per_page' => $paginator->perPage(),
-                    'total' => $paginator->total(),
-                ]);
-        });
+        return response()->json(
+            request()->filled('search')
+                ? $this->activity->search(request('search'))
+                : $this->activity->all()
+        );
     }
 
     /**
-     * Show a listing of activity by the specified subject.
+     * Display a listing of the Activities in the specified Subject.
      *
-     * @param GetActivitiesRequest $request
-     * @param ActivityQueries $queries
-     * @param string $subject
-     * @return ActivityCollection
-     * @throws AuthorizationException
+     * @param \App\Http\Requests\System\GetActivitiesRequest $request
+     * @return \Illuminate\Http\Response
      */
-    public function subject(GetActivitiesRequest $request, ActivityQueries $queries, string $subject): ActivityCollection
+    public function subject(GetActivitiesRequest $request, string $subject)
     {
         $this->authorize('viewAny', Activity::class);
 
-        $paginator = $queries->paginateActivityBySubjectQuery($subject, $request)->apiPaginate();
-
-        return tap(new ActivityCollection($paginator), function (ActivityCollection $collection) use ($paginator, $subject, $queries) {
-            $collection->additional([
-                'summary' => $queries->activitySummaryBySubjectQuery($subject)->get(),
-            ])->appendSubjectName();
-
-            $collection->additional($collection->additional + [
-                    'current_page' => $paginator->currentPage(),
-                    'from' => $paginator->firstItem(),
-                    'to' => $paginator->lastItem(),
-                    'last_page' => $paginator->lastPage(),
-                    'path' => $paginator->path(),
-                    'per_page' => $paginator->perPage(),
-                    'total' => $paginator->total(),
-                ]);
-        });
+        return response()->json(
+            request()->filled('search')
+                ? $this->activity->searchSubjectActivities($subject, request('search'))
+                : $this->activity->subjectActivities($subject)
+        );
     }
 
     /**
      * Export a listing of the Activities in specified format.
      *
-     * @param GetActivitiesRequest $request
-     * @param ActivityExporter $exporter
+     * @param \App\Http\Requests\System\GetActivitiesRequest $request
      * @param string $type
-     * @return Response
-     * @throws AuthorizationException
-     * @throws \Exception
+     * @return \Illuminate\Http\Response
      */
-    public function export(GetActivitiesRequest $request, ActivityExporter $exporter, string $type): Response
+    public function export(GetActivitiesRequest $request, string $type)
     {
         $this->authorize('viewAny', Activity::class);
 
-        return $exporter->export($type);
+        return response()->download(
+            $this->activity->export($type)
+        );
     }
 
     /**
      * Export a list of the Activities for specified subject in specified format.
      *
-     * @param GetActivitiesRequest $request
-     * @param ActivityExporter $exporter
+     * @param \App\Http\Requests\System\GetActivitiesRequest $request
      * @param string $subject
      * @param string $type
-     * @return Response
-     * @throws AuthorizationException
-     * @throws \Exception
+     * @return \Illuminate\Http\Response
      */
-    public function exportSubject(GetActivitiesRequest $request,
-                                  ActivityExporter $exporter,
-                                  string $subject,
-                                  string $type): Response
+    public function exportSubject(GetActivitiesRequest $request, string $subject, string $type)
     {
         $this->authorize('viewAny', Activity::class);
 
-        return $exporter->exportSubject($type, $subject);
+        return response()->download(
+            $this->activity->exportSubject($subject, $type)
+        );
     }
 
     /**
      * Display the meta information for activities filtering.
      *
-     * @param ShowActivityMeta $request
-     * @param UserQueries $userQueries
-     * @return JsonResponse
-     * @throws AuthorizationException
+     * @return \Illuminate\Http\Response
      */
-    public function meta(ShowActivityMeta $request, UserQueries $userQueries): JsonResponse
+    public function meta()
     {
         $this->authorize('viewAny', Activity::class);
 
+        $meta = $this->activity->meta();
+        $users = UserListResource::collection($this->user->list());
+
         return response()->json(
-            $request->getActivityMetaData()
+            $meta + compact('users')
         );
     }
 }

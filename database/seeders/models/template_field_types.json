@@ -1,0 +1,32 @@
+[
+    {
+        "id" : "1a4a6d59-cd66-40f7-aaa0-d4a2690cbe7d",
+        "title" : "Currency Field",
+        "name" : "currency"
+    },
+    {
+        "id" : "2909ea4a-796b-4b66-89bc-2ba78b0b52f0",
+        "title" : "Logo Image",
+        "name" : "image"
+    },
+    {
+        "id" : "a9cd9d3e-d470-4749-a620-c569a65fa4eb",
+        "title" : "Text Field (Single Line)",
+        "name" : "textbox"
+    },
+    {
+        "id" : "ab18090f-9528-47ca-8d5b-6c90cc0d9636",
+        "title" : "Email Field",
+        "name" : "email"
+    },
+    {
+        "id" : "b9436617-ba7e-4d5b-98bd-6bfc33d838eb",
+        "title" : "Date \/ Time Field",
+        "name" : "date"
+    },
+    {
+        "id" : "bac2fd8c-28d2-435b-ad86-346e89fe4647",
+        "title" : "Text Field (Multiple Line)",
+        "name" : "textarea"
+    }
+]

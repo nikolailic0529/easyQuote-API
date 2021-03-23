@@ -10,16 +10,6 @@ class UpdateContactRequest extends FormRequest
     use PreparesNullValues;
 
     /**
-     * Determine if the user is authorized to make this request.
-     *
-     * @return bool
-     */
-    public function authorize()
-    {
-        return true;
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      *
      * @return array
@@ -27,14 +17,15 @@ class UpdateContactRequest extends FormRequest
     public function rules()
     {
         return [
-            'first_name'    => 'required|string|filled|alpha',
-            'last_name'     => 'required|string|filled|alpha',
-            'phone'         => 'nullable|string|phone',
-            'mobile'        => 'nullable|string',
-            'email'         => 'nullable|string|email',
-            'job_title'     => 'nullable|string',
-            'picture'       => 'nullable|file|image|max:2048',
-            'is_verified'   => 'nullable|boolean'
+            'contact_type' => 'required|string|in:Hardware,Software,Invoice',
+            'first_name' => 'required|string|filled',
+            'last_name' => 'required|string|filled',
+            'phone' => 'nullable|string|phone',
+            'mobile' => 'nullable|string',
+            'email' => 'nullable|string|email',
+            'job_title' => 'nullable|string',
+            'picture' => 'nullable|file|image|max:2048',
+            'is_verified' => 'nullable|boolean'
         ];
     }
 
@@ -42,9 +33,9 @@ class UpdateContactRequest extends FormRequest
     {
         $this->prepareNullValues();
 
-        $is_verified = (bool) $this->is_verified;
-
-        $this->merge(compact('is_verified'));
+        $this->merge([
+            'is_verified' => $this->boolean('is_verified'),
+        ]);
     }
 
     protected function nullValues(): array

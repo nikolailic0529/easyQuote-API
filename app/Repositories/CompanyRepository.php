@@ -169,7 +169,10 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
                 $company->update($attributes);
 
                 $company->createLogo(Arr::get($attributes, 'logo'));
-                $company->deleteImageWhen(Arr::get($attributes, 'delete_logo'));
+
+                if ($attributes['delete_logo'] ?? false) {
+                    $company->image()->flushQueryCache()->delete();
+                }
 
                 $company->syncVendors(Arr::get($attributes, 'vendors'));
 

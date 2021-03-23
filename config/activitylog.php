@@ -55,6 +55,8 @@ return [
             \App\Models\Quote\Quote::class,
             \App\Models\Quote\QuoteVersion::class
         ],
+        'worldwide_quote' => \App\Models\Quote\WorldwideQuote::class,
+        'opportunity' => \App\Models\Opportunity::class,
         'quote_note' => \App\Models\Quote\QuoteNote::class,
         'task' => \App\Models\Task::class,
         'contract' => [

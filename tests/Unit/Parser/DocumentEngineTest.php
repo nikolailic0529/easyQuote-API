@@ -2,6 +2,9 @@
 
 namespace Tests\Unit\Parser;
 
+use App\Services\DocumentProcessor\DocumentEngine\DistributorFileDataMapper;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 use Webpatser\Uuid\Uuid;
 use Illuminate\Support\Arr;
@@ -53,6 +56,37 @@ class DocumentEngineTest extends TestCase
     }
 
     /**
+     *
+     * Test processes distributor file and updates quote file rows.
+     *
+     * @return void
+     */
+    public function testDoesNotFailOnUnexpectedDocumentEngineResponse()
+    {
+        $this->markTestSkipped();
+
+        config(['documentparse.default' => 'document_api']);
+        config(['services.document_api.url' => 'http://18.134.146.232:1337']);
+
+        $storage = Storage::persistentFake();
+
+        $fileName = Str::random(40).'.pdf';
+
+        $storage->put($fileName, file_get_contents(base_path('tests/Unit/Data/distributor-files-test/wmhFl0YtLIwxQdYc6W3a0M6UsSUQKjed53iZQoAb.pdf')));
+
+//            $storage->put($fileName, file_get_contents(base_path('tests/Unit/Data/distributor-files-test/SUPP-INBA_1 year.pdf')));
+
+        $quoteFile = factory(QuoteFile::class)->create([
+            'original_file_path' => $fileName
+        ]);
+
+        (new DistributorPDF($this->app->make(LoggerInterface::class)))
+            ->process($quoteFile);
+
+        $this->assertTrue(true);
+    }
+
+    /**
      * Test Payment Schedule File Processor.
      *
      * @return void
@@ -83,10 +117,10 @@ class DocumentEngineTest extends TestCase
      *
      * @return void
      */
-    public function testDistributorResponseMapping()
+    public function testMapsDistributorFileResponse()
     {
         /** @var DistributorPDF */
-        $parser = $this->app->make(DistributorPDF::class);
+        $parser = $this->app->make(DistributorFileDataMapper::class);
 
         $class = new ReflectionClass($parser);
         $method = $class->getMethod('mapDistributorResponse');
@@ -141,6 +175,8 @@ class DocumentEngineTest extends TestCase
         foreach ($mappedRows as $row) {
             $this->assertFalse($row['is_one_pay']);
         }
+
+//        $mappedRows = $method->invokeArgs($parser, [$quoteFile, static::$distrResponse2]);
     }
 
     /**
@@ -411,6 +447,180 @@ class DocumentEngineTest extends TestCase
         [
             "attributes" => [
                 "pricing_document" => "56784797",
+                "system_handle" => "SUPPINBA-UK KINGDOM",
+                "service_agreement_id" => "1086 5193 2250",
+            ],
+            "header" => [
+                "product_no" => "Product No.",
+                "description" => "Description",
+                "serial_no" => "Serial No.",
+                "from" => "from:",
+                "coverage_period_to" => "Coverage Period to:",
+                "qty" => "Qty",
+                "price_gbp" => "Price/GBP"
+            ],
+            "rows" => [
+                [
+                    "product_no" => "H7J33AC",
+                    "description" => "HPE Foundation Care NBD wDMR SVC",
+                    "serial_no" => "",
+                    "from" => "",
+                    "coverage_period_to" => "",
+                    "qty" => "",
+                    "price_gbp" => ""
+                ],
+                [
+                    "product_no" => "661189-B21",
+                    "description" => "HP DL360e Gen8 8SFF CTO Server",
+                    "serial_no" => "CZJ3020539",
+                    "from" => "",
+                    "coverage_period_to" => "",
+                    "qty" => "",
+                    "price_gbp" => "42.14"
+                ],
+                [
+                    "product_no" => "661189-B21",
+                    "description" => "HP DL360e Gen8 8SFF CTO Server",
+                    "serial_no" => "CZJ3020539",
+                    "from" => "",
+                    "coverage_period_to" => "",
+                    "qty" => "",
+                    "price_gbp" => "6.02"
+                ]
+            ]
+        ]
+    ];
+
+    protected static $distrResponse2 = [
+        [
+            "attributes" => [
+                "pricing_document" => null,
+                "system_handle" => "SUPPINBA-UK KINGDOM",
+                "service_agreement_id" => "1086 5193 2250",
+            ],
+            "header" => null,
+            "rows" => null
+        ],
+        [
+            "attributes" => [
+                "pricing_document" => null,
+                "system_handle" => null,
+                "service_agreement_id" => null,
+            ],
+            "header" => [
+                "product_no" => "Product No.",
+                "description" => "Description",
+                "serial_no" => "Serial No.",
+                "from" => "from:",
+                "coverage_period_to" => "Coverage Period to:",
+                "qty" => "Qty",
+                "price_gbp" => "Price/GBP"
+            ],
+            "rows" => [
+                [
+                    "product_no" => "H7J33AC",
+                    "description" => "HPE Foundation Care NBD wDMR SVC",
+                    "serial_no" => "",
+                    "from" => "",
+                    "coverage_period_to" => "",
+                    "qty" => "",
+                    "price_gbp" => ""
+                ],
+                [
+                    "product_no" => "661189-B21",
+                    "description" => "HP DL360e Gen8 8SFF CTO Server",
+                    "serial_no" => "CZ3323FBRL",
+                    "from" => "",
+                    "coverage_period_to" => "",
+                    "qty" => "",
+                    "price_gbp" => "25.89"
+                ],
+                [
+                    "product_no" => "661189-B21",
+                    "description" => "HP DL360e Gen8 8SFF CTO Server",
+                    "serial_no" => "CZ3323FBRL",
+                    "from" => "",
+                    "coverage_period_to" => "",
+                    "qty" => "",
+                    "price_gbp" => "4.89"
+                ],
+                [
+                    "product_no" => "UJ558AC",
+                    "description" => "HPE Ind Std Svrs Return to HW Supp",
+                    "serial_no" => "",
+                    "from" => "",
+                    "coverage_period_to" => "19.06.2019",
+                    "qty" => "",
+                    "price_gbp" => "1,290.00",
+                ]
+            ]
+        ],
+        [
+            "attributes" => [
+                "pricing_document" => null,
+                "system_handle" => "SUPPINBA-UK KINGDOM",
+                "service_agreement_id" => "1086 5193 2250",
+            ],
+            "header" => null,
+            "rows" => null
+        ],
+        [
+            "attributes" => [
+                "pricing_document" => null,
+                "system_handle" => "SUPPINBA-UK KINGDOM",
+                "service_agreement_id" => "1086 5193 2250",
+            ],
+            "header" => [
+                "product_no" => "Product No.",
+                "description" => "Description",
+                "serial_no" => "Serial No.",
+                "from" => "from:",
+                "coverage_period_to" => "Coverage Period to:",
+                "qty" => "Qty",
+                "price_gbp" => "Price/GBP"
+            ],
+            "rows" => [
+                [
+                    "product_no" => "H7J33AC",
+                    "description" => "HPE Foundation Care NBD wDMR SVC",
+                    "serial_no" => "",
+                    "from" => "",
+                    "coverage_period_to" => "",
+                    "qty" => "",
+                    "price_gbp" => ""
+                ],
+                [
+                    "product_no" => "661189-B21",
+                    "description" => "HP DL360e Gen8 8SFF CTO Server",
+                    "serial_no" => "CZJ302051C",
+                    "from" => "",
+                    "coverage_period_to" => "",
+                    "qty" => "",
+                    "price_gbp" => "33.17"
+                ],
+                [
+                    "product_no" => "661189-B21",
+                    "description" => "HP DL360e Gen8 8SFF CTO Server",
+                    "serial_no" => "CZJ302051C",
+                    "from" => "",
+                    "coverage_period_to" => "",
+                    "qty" => "",
+                    "price_gbp" => "5.87"
+                ]
+            ]
+        ],
+        [
+            "attributes" => [
+                "pricing_document" => null,
+                "system_handle" => "SUPPINBA-UK KINGDOM",
+                "service_agreement_id" => "1086 5193 2250",
+            ],
+            "header" => null,
+            "rows" => null
+        ],
+        [
+            "attributes" => [
+                "pricing_document" => null,
                 "system_handle" => "SUPPINBA-UK KINGDOM",
                 "service_agreement_id" => "1086 5193 2250",
             ],

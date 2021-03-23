@@ -3,7 +3,6 @@
 namespace App\Http\Resources\Contract;
 
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\QuoteCustomerResource;
 use Illuminate\Support\Carbon;
 
 class DraftedResource extends JsonResource

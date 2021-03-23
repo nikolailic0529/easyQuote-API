@@ -3,11 +3,8 @@
 namespace App\Models\Quote;
 
 use App\Casts\GroupDescription;
-use App\Models\{
-    QuoteFile\ImportedRow,
-    QuoteFile\QuoteFile,
-    QuoteFile\ScheduleData
-};
+use App\Contracts\SearchableEntity;
+use App\Models\{QuoteFile\ImportableColumn, QuoteFile\ImportedRow, QuoteFile\QuoteFile, QuoteFile\ScheduleData};
 use App\Traits\{
     Activatable,
     BelongsToUser,
@@ -42,7 +39,7 @@ use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Contract extends Model
+class Contract extends Model implements SearchableEntity
 {
     use Uuid,
         Multitenantable,
@@ -90,7 +87,7 @@ class Contract extends Model
         'group_description' => GroupDescription::class,
     ];
 
-    public function toSearchArray()
+    public function toSearchArray(): array
     {
         $this->loadMissing(
             'customer:id,rfq,valid_until,name,support_start,support_end,valid_until',

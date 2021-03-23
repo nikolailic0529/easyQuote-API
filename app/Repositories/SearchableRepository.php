@@ -16,10 +16,6 @@ use Throwable;
 
 abstract class SearchableRepository
 {
-    const QUERY_MIN_SCORE = 3;
-
-    const QUERY_SIZE = 500;
-
     use FiltersQuery;
 
     public function all()
@@ -110,7 +106,7 @@ abstract class SearchableRepository
             ->queryString(
                 Str::of(ElasticsearchQuery::escapeReservedChars($query))->start('*')->finish('*')
             );
-
+        
         try {
             return $this->elasticsearch()->search($esQuery->toArray());
         } catch (Throwable $e) {

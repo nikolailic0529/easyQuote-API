@@ -3,6 +3,7 @@
 namespace App\Models\Quote\Discount;
 
 use App\Contracts\ActivatableInterface;
+use App\Contracts\SearchableEntity;
 use App\Models\{
     Quote\BaseQuote,
     Quote\Discount as QuoteDiscount
@@ -21,9 +22,9 @@ use Illuminate\Database\Eloquent\{
     Model,
     SoftDeletes,
 };
-use Arr;
+use Illuminate\Support\Arr;
 
-abstract class Discount extends Model implements ActivatableInterface
+abstract class Discount extends Model implements ActivatableInterface, SearchableEntity
 {
     use Uuid,
         Multitenantable,
@@ -53,7 +54,7 @@ abstract class Discount extends Model implements ActivatableInterface
         });
     }
 
-    public function toSearchArray()
+    public function toSearchArray(): array
     {
         $this->load('country', 'vendor');
 

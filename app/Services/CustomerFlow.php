@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Contracts\Repositories\Customer\CustomerRepositoryInterface as Customers;
 use App\Contracts\Services\CustomerFlow as Contract;
 use App\Models\{
     Address,
@@ -22,15 +21,12 @@ class CustomerFlow implements Contract
 
     protected Customer $customer;
 
-    protected Customers $customers;
-
     protected Company $company;
 
     protected ContactService $contactService;
 
-    public function __construct(Customer $customer, Company $company, Customers $customers, ContactService $contactService)
+    public function __construct(Customer $customer, Company $company, ContactService $contactService)
     {
-        $this->customers = $customers;
         $this->customer = $customer;
         $this->company = $company;
         $this->contactService = $contactService;

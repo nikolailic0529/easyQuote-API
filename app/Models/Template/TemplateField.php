@@ -2,56 +2,36 @@
 
 namespace App\Models\Template;
 
-use App\Contracts\{
-    ActivatableInterface,
-    HasOrderedScope
-};
 use App\Models\{
     QuoteFile\ImportableColumn,
     Quote\FieldColumn
 };
 use App\Traits\{
-    Activatable,
-    BelongsToUser,
-    BelongsToTemplateFieldType,
     Systemable,
-    Search\Searchable,
     Uuid
 };
-use Illuminate\Database\Eloquent\{
-    Model,
-    SoftDeletes,
-    Relations\BelongsToMany,
-    Relations\HasOne,
-};
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class TemplateField extends Model implements HasOrderedScope, ActivatableInterface
+class TemplateField extends Model
 {
-    use Uuid,
-        BelongsToUser,
-        BelongsToTemplateFieldType,
-        Systemable,
-        Searchable;
+    use Uuid, Systemable;
+
+    public $timestamps = false;
 
     protected $table = 'template_fields';
 
     protected $fillable = [
         'header',
         'name',
-        'is_required',
+        'is_requred',
         'is_system',
-        'is_column',
         'order',
-        'default_value',
         'template_field_type_id'
     ];
 
     protected $hidden = [
-        'created_at',
-        'updated_at',
-        'activated_at',
-        'drafted_at',
         'is_system',
         'user_id',
         'template_field_type_id',
@@ -67,8 +47,12 @@ class TemplateField extends Model implements HasOrderedScope, ActivatableInterfa
     protected $casts = [
         'is_system' => 'boolean',
         'is_required' => 'boolean',
-        'is_column' => 'boolean'
     ];
+
+    public function templateFieldType(): BelongsTo
+    {
+        return $this->belongsTo(TemplateFieldType::class);
+    }
 
     public function fieldColumn(): HasOne
     {
@@ -80,17 +64,6 @@ class TemplateField extends Model implements HasOrderedScope, ActivatableInterfa
         return $this->hasOne(ImportableColumn::class, 'name', 'name')->system();
     }
 
-    public function quoteTemplates(): BelongsToMany
-    {
-        return $this->belongsToMany(QuoteTemplate::class);
-    }
-
-    public function userQuoteTemplates(): BelongsToMany
-    {
-        return $this->belongsToMany(QuoteTemplate::class)
-            ->currentUser();
-    }
-
     public function scopeOrdered($query)
     {
         return $query->orderBy('order', 'asc');
@@ -99,19 +72,5 @@ class TemplateField extends Model implements HasOrderedScope, ActivatableInterfa
     public function getTypeAttribute()
     {
         return optional($this->templateFieldType)->name;
-    }
-
-    public function setHeaderAttribute($value)
-    {
-        $this->attributes['header'] = $value;
-
-        if (!isset($this->attributes['name'])) {
-            $this->attributes['name'] = Str::slug($value, '_');
-        }
-    }
-
-    public function isAttached()
-    {
-        return $this->quoteTemplates()->exists();
     }
 }

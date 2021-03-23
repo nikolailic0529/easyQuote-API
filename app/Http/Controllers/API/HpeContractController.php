@@ -5,14 +5,10 @@ namespace App\Http\Controllers\API;
 use App\Contracts\Services\{HpeContractState, HpeExporter};
 use App\DTO\ImportResponse;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\HpeContract\{Export, ImportHpeContract, ImportStep, SelectAssets, StoreState, Submit};
+use App\Http\Requests\HpeContract\{Export, ImportStep, SelectAssets, StoreState, Submit};
 use App\Http\Resources\HpeContract\HpeContract as Resource;
 use App\Models\{HpeContract, HpeContractFile};
 use App\Services\HpeContractFileService;
-use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Contracts\Support\Responsable;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
 
 class HpeContractController extends Controller
 {
@@ -26,12 +22,22 @@ class HpeContractController extends Controller
     }
 
     /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index()
+    {
+        //
+    }
+
+    /**
      * Display the data required for the first import step.
      *
      * @param  ImportStep $request
-     * @return JsonResponse
+     * @return \Illuminate\Http\Response
      */
-    public function showImportStepData(ImportStep $request): JsonResponse
+    public function showImportStepData(ImportStep $request)
     {
         return response()->json(
             $request->getData()
@@ -42,9 +48,9 @@ class HpeContractController extends Controller
      * Store a newly created resource in storage.
      *
      * @param  StoreState $request
-     * @return JsonResponse
+     * @return \Illuminate\Http\Response
      */
-    public function store(StoreState $request): JsonResponse
+    public function store(StoreState $request)
     {
         $resource = $this->processor->processState($request->validated());
 
@@ -56,33 +62,28 @@ class HpeContractController extends Controller
     /**
      * Associate the specified HPE Contract File with HPE Contract and process import.
      *
-     * @param ImportHpeContract $request
-     * @param HpeContract $hpeContract
-     * @param HpeContractFile $hpeContractFile
-     * @param HpeContractFileService $fileService
-     * @return ImportResponse
-     * @throws AuthorizationException
+     * @param  HpeContract $hpeContract
+     * @param  HpeContractFile $hpeContractFile
+     * @return \Illuminate\Http\Response
      */
-    public function importHpeContract(ImportHpeContract $request,
-                                      HpeContract $hpeContract,
-                                      HpeContractFile $hpeContractFile,
-                                      HpeContractFileService $fileService): ImportResponse
+    public function importHpeContract(HpeContract $hpeContract, HpeContractFile $hpeContractFile, HpeContractFileService $fileService)
     {
         $this->authorize('update', $hpeContract);
 
-        return tap($fileService->processImport($hpeContractFile, $request->getImportData()), function (ImportResponse $response) use ($hpeContractFile, $hpeContract) {
-            $this->processor->processHpeContractData($hpeContract, $hpeContractFile, $response);
-        });
+        return tap(
+            $fileService->processImport($hpeContractFile),
+            fn (ImportResponse $importResponse) =>
+            $this->processor->processHpeContractData($hpeContract, $hpeContractFile, $importResponse)
+        );
     }
 
     /**
      * Retrieve and aggregate HPE Contract Data.
      *
      * @param HpeContract $hpeContract
-     * @return JsonResponse
-     * @throws AuthorizationException
+     * @return \Illuminate\Http\Response
      */
-    public function reviewHpeContractData(HpeContract $hpeContract): JsonResponse
+    public function reviewHpeContractData(HpeContract $hpeContract)
     {
         $this->authorize('view', $hpeContract);
 
@@ -92,13 +93,12 @@ class HpeContractController extends Controller
     }
 
     /**
-     * Display summarized HPE Contract Data.
+     * Display summaried HPE Contract Data.
      *
-     * @param HpeContract $hpeContract
-     * @return JsonResponse
-     * @throws AuthorizationException
+     * @param  HpeContract $hpeContract
+     * @return \Illuminate\Http\Response
      */
-    public function previewHpeContract(HpeContract $hpeContract): JsonResponse
+    public function previewHpeContract(HpeContract $hpeContract)
     {
         $this->authorize('view', $hpeContract);
 
@@ -112,9 +112,9 @@ class HpeContractController extends Controller
      *
      * @param  Submit $request
      * @param  HpeContract $hpeContract
-     * @return JsonResponse
+     * @return \Illuminate\Http\Response
      */
-    public function submitHpeContract(Submit $request, HpeContract $hpeContract): JsonResponse
+    public function submitHpeContract(Submit $request, HpeContract $hpeContract)
     {
         $this->authorize('update', $hpeContract);
 
@@ -126,11 +126,10 @@ class HpeContractController extends Controller
     /**
      * Unravel the specified HPE Contract.
      *
-     * @param HpeContract $hpeContract
-     * @return JsonResponse
-     * @throws AuthorizationException
+     * @param  HpeContract $hpeContract
+     * @return \Illuminate\Http\Response
      */
-    public function unsubmitHpeContract(HpeContract $hpeContract): JsonResponse
+    public function unsubmitHpeContract(HpeContract $hpeContract)
     {
         $this->authorize('update', $hpeContract);
 
@@ -142,11 +141,10 @@ class HpeContractController extends Controller
     /**
      * Validate and activate the specified HPE Contract.
      *
-     * @param HpeContract $hpeContract
-     * @return JsonResponse
-     * @throws AuthorizationException
+     * @param  HpeContract $hpeContract
+     * @return \Illuminate\Http\Response
      */
-    public function activateHpeContract(HpeContract $hpeContract): JsonResponse
+    public function activateHpeContract(HpeContract $hpeContract)
     {
         $this->authorize('update', $hpeContract);
 
@@ -158,11 +156,10 @@ class HpeContractController extends Controller
     /**
      * Deactivate the specified HPE Contract.
      *
-     * @param HpeContract $hpeContract
-     * @return JsonResponse
-     * @throws AuthorizationException
+     * @param  HpeContract $hpeContract
+     * @return \Illuminate\Http\Response
      */
-    public function deactivateHpeContract(HpeContract $hpeContract): JsonResponse
+    public function deactivateHpeContract(HpeContract $hpeContract)
     {
         $this->authorize('update', $hpeContract);
 
@@ -174,11 +171,10 @@ class HpeContractController extends Controller
     /**
      * Make a new copy of the specified HPE Contract in repository.
      *
-     * @param HpeContract $hpeContract
-     * @return JsonResponse
-     * @throws AuthorizationException
+     * @param  HpeContract $hpeContract
+     * @return \Illuminate\Http\Response
      */
-    public function copyHpeContract(HpeContract $hpeContract): JsonResponse
+    public function copyHpeContract(HpeContract $hpeContract)
     {
         $this->authorize('copy', $hpeContract);
 
@@ -190,10 +186,10 @@ class HpeContractController extends Controller
     /**
      * Display the specified resource.
      *
-     * @param HpeContract $hpeContract
-     * @return JsonResponse
+     * @param  \App\Models\HpeContract  $hpeContract
+     * @return \Illuminate\Http\Response
      */
-    public function show(HpeContract $hpeContract): JsonResponse
+    public function show(HpeContract $hpeContract)
     {
         return response()->json(
             filter(Resource::make($hpeContract))
@@ -204,10 +200,10 @@ class HpeContractController extends Controller
      * Update the specified resource in storage.
      *
      * @param  StoreState  $request
-     * @param HpeContract $hpeContract
-     * @return JsonResponse
+     * @param  \App\Models\HpeContract  $hpeContract
+     * @return \Illuminate\Http\Response
      */
-    public function update(StoreState $request, HpeContract $hpeContract): JsonResponse
+    public function update(StoreState $request, HpeContract $hpeContract)
     {
         $resource = $this->processor->processState($request->validated(), $hpeContract);
 
@@ -221,9 +217,9 @@ class HpeContractController extends Controller
      *
      * @param  SelectAssets $request
      * @param  HpeContract $hpeContract
-     * @return JsonResponse
+     * @return \Illuminate\Http\Response
      */
-    public function selectAssets(SelectAssets $request, HpeContract $hpeContract): JsonResponse
+    public function selectAssets(SelectAssets $request, HpeContract $hpeContract)
     {
         return response()->json(
             $this->processor->selectAssets(
@@ -240,9 +236,9 @@ class HpeContractController extends Controller
      * @param  Export $request
      * @param  HpeContract $hpeContract
      * @param  HpeExporter $exporter
-     * @return Responsable
+     * @return \Illuminate\Http\Response
      */
-    public function exportHpeContract(Export $request, HpeContract $hpeContract, HpeExporter $exporter): Responsable
+    public function exportHpeContract(Export $request, HpeContract $hpeContract, HpeExporter $exporter)
     {
         return $exporter->export(
             $hpeContract->hpeContractTemplate,
@@ -256,9 +252,9 @@ class HpeContractController extends Controller
      * @param  Export $request
      * @param  HpeContract $hpeContract
      * @param  HpeExporter $exporter
-     * @return Responsable
+     * @return \Illuminate\Http\Response
      */
-    public function viewHpeContract(Export $request, HpeContract $hpeContract, HpeExporter $exporter): Responsable
+    public function viewHpeContract(Export $request, HpeContract $hpeContract, HpeExporter $exporter)
     {
         return $exporter->export(
             $hpeContract->hpeContractTemplate,
@@ -269,10 +265,10 @@ class HpeContractController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param HpeContract $hpeContract
-     * @return JsonResponse
+     * @param  \App\Models\HpeContract  $hpeContract
+     * @return \Illuminate\Http\Response
      */
-    public function destroy(HpeContract $hpeContract): JsonResponse
+    public function destroy(HpeContract $hpeContract)
     {
         return response()->json(
             $this->processor->delete($hpeContract)

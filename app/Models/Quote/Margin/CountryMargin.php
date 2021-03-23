@@ -2,25 +2,21 @@
 
 namespace App\Models\Quote\Margin;
 
-use App\Traits\{
-    BelongsToCountry,
-    Search\Searchable,
-    Activity\LogsActivity
-};
+use App\Contracts\SearchableEntity;
 use App\Models\Quote\BaseQuote as Quote;
+use App\Traits\{Activity\LogsActivity, BelongsToCountry, Search\Searchable};
 use Illuminate\Database\Eloquent\Builder;
-use Arr;
 
-class CountryMargin extends Margin
+class CountryMargin extends Margin implements SearchableEntity
 {
     use BelongsToCountry, Searchable, LogsActivity;
 
     protected $fillable = [
-        'value', 'is_fixed', 'quote_type', 'method', 'country_id', 'vendor_id'
+        'value', 'is_fixed', 'quote_type', 'method', 'country_id', 'vendor_id',
     ];
 
     protected static $logAttributes = [
-        'value', 'is_fixed', 'quote_type', 'method', 'country.name', 'vendor.name'
+        'value', 'is_fixed', 'quote_type', 'method', 'country.name', 'vendor.name',
     ];
 
     protected static $logOnlyDirty = true;
@@ -33,12 +29,14 @@ class CountryMargin extends Margin
             ->whereCountryId($quote->country_id);
     }
 
-    public function toSearchArray()
+    public function toSearchArray(): array
     {
-        $value = strval($this->value);
-        $this->load('country', 'vendor');
-
-        return array_merge(Arr::except($this->toArray(), ['vendor.logo']), compact('value'));
+        return [
+            'value' => (string)$this->value,
+            'vendor_name' => $this->vendor->name,
+            'quote_type' => $this->quote_type,
+            'country_name' => $this->country->name,
+        ];
     }
 
     public function getFormattedValueAttribute()

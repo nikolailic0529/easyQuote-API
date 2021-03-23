@@ -28,7 +28,7 @@ class Thumbnails implements CastsAttributes
             $value = $model->fromJson($value ?? []);
         }
 
-        return Collection::wrap($value)->map(fn ($thumb) => Str::contains($thumb, ['svg+xml', 'http']) ? $thumb : asset("storage/{$thumb}"))->toArray();
+        return Collection::wrap($value)->map(fn ($thumb) => Str::contains($thumb, ['svg+xml', 'http']) ? $thumb : asset("storage/{$thumb}"))->all();
     }
 
     /**

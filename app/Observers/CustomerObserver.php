@@ -4,17 +4,9 @@ namespace App\Observers;
 
 use App\Events\RfqDeleted;
 use App\Models\Customer\Customer;
-use App\Contracts\Repositories\Customer\CustomerRepositoryInterface as Customers;
 
 class CustomerObserver
 {
-    protected Customers $customers;
-
-    public function __construct(Customers $customers)
-    {
-        $this->customers = $customers;
-    }
-
     /**
      * Handle the customer "created" event.
      *
@@ -23,7 +15,7 @@ class CustomerObserver
      */
     public function created(Customer $customer)
     {
-        $this->customers->flushListingCache();
+        // 
     }
 
     /**
@@ -34,8 +26,6 @@ class CustomerObserver
      */
     public function deleted(Customer $customer)
     {
-        $this->customers->flushListingCache();
-
         event(new RfqDeleted($customer));
     }
 }

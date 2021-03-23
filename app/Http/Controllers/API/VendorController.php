@@ -4,6 +4,8 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\VendorRepositoryInterface as VendorRepository;
+use App\Queries\VendorQueries;
+use Illuminate\Http\JsonResponse;
 use App\Http\Requests\Vendor\{
     StoreVendorRequest,
     UpdateVendorRequest
@@ -31,6 +33,22 @@ class VendorController extends Controller
             request()->filled('search')
                 ? $this->vendor->search(request('search'))
                 : $this->vendor->all()
+        );
+    }
+
+    /**
+     * Show the vendors listing.
+     *
+     * @param VendorQueries $queries
+     * @return JsonResponse
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
+    public function showVendorsList(VendorQueries $queries): JsonResponse
+    {
+        $this->authorize('viewAny', Vendor::class);
+
+        return response()->json(
+            $queries->listingQuery()->get()
         );
     }
 

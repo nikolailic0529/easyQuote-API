@@ -33,7 +33,7 @@ trait HasDataHeaders
         $this->attributes['data_headers'] = json_encode($value);
     }
 
-    public function dataHeader(string $key, ?string $fallback = null): string
+    public function dataHeader(string $key, ?string $fallback = null): ?string
     {
         $headers = $this->data_headers;
         $default = data_get(static::dataHeadersDictionary(), "{$key}.value");

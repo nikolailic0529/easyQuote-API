@@ -3,9 +3,9 @@
 namespace App\Services;
 
 use App\Collections\MappedRows;
+use App\Queries\QuoteQueries;
 use App\Contracts\Repositories\{
     Quote\Margin\MarginRepositoryInterface as MarginRepository,
-    QuoteTemplate\QuoteTemplateRepositoryInterface as QuoteTemplateRepository,
     QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
 };
 use App\Contracts\{
@@ -56,38 +56,30 @@ class QuoteStateProcessor implements QuoteState
 
     protected MarginRepository $margin;
 
-    protected QuoteTemplateRepository $quoteTemplate;
-
     protected TemplateField $templateField;
 
     protected ImportableColumn $importableColumn;
 
     protected QuoteDiscount $morphDiscount;
 
-    protected QuoteQueries $quoteQueries;
-
     public function __construct(
         Quote $quote,
         QuoteService $quoteService,
         QuoteFile $quoteFile,
-        QuoteTemplateRepository $quoteTemplate,
         QuoteFileRepository $quoteFileRepository,
         MarginRepository $margin,
         TemplateField $templateField,
         ImportableColumn $importableColumn,
-        QuoteDiscount $morphDiscount,
-        QuoteQueries $quoteQueries
+        QuoteDiscount $morphDiscount
     ) {
         $this->quote = $quote;
         $this->quoteFile = $quoteFile;
         $this->quoteFileRepository = $quoteFileRepository;
         $this->margin = $margin;
-        $this->quoteTemplate = $quoteTemplate;
         $this->templateField = $templateField;
         $this->importableColumn = $importableColumn;
         $this->quoteService = $quoteService;
         $this->morphDiscount = $morphDiscount;
-        $this->quoteQueries = $quoteQueries;
     }
 
     public function storeState(StoreQuoteStateRequest $request)
@@ -245,10 +237,6 @@ class QuoteStateProcessor implements QuoteState
          * We are reassigning the Quote Discounts Relation for Calculation new Margin Percentage after provided Discounts applying.
          */
         $quote->discounts = $providedDiscounts;
-
-        $quote->totalPrice = (float)$this->quoteQueries
-            ->mappedSelectedRowsQuery($quote)
-            ->sum('price');
 
         $this->setComputableRows($quote);
 
@@ -611,7 +599,7 @@ class QuoteStateProcessor implements QuoteState
                 $replicatedVersion->distributor_file_id = $priceListFile->getKey();
             }
 
-            if ($version->paymentSchedule->exists) {
+            if (!is_null($version->paymentSchedule) && $version->paymentSchedule->exists && !is_null($version->paymentSchedule->scheduleData)) {
                 tap($version->paymentSchedule->replicate(), function ($schedule) use ($replicatedVersion, $version) {
                     $schedule->save();
                     $schedule->scheduleData()->save($version->paymentSchedule->scheduleData->replicate());

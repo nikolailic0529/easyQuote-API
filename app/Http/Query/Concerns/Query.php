@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 
 /**
- * @property-read mixed $value
+ * @property-read string $value
  */
 abstract class Query
 {

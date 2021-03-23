@@ -18,7 +18,7 @@ trait BelongsToTemplateFields
 
     public function templateFields(): BelongsToMany
     {
-        return $this->belongsToMany(TemplateField::class, 'quote_template_template_field')->ordered();
+        return $this->belongsToMany(TemplateField::class, 'quote_template_template_field')->orderBy('template_fields.order');
     }
 
     public function syncTemplateFields(?array $templateFields): void

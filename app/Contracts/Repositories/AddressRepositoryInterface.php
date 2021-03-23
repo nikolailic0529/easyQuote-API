@@ -52,14 +52,6 @@ interface AddressRepositoryInterface
     public function firstOrCreate(array $attributes, array $values = []): Address;
 
     /**
-     * Find or create many addresses.
-     *
-     * @param array $attributes
-     * @return Collection
-     */
-    public function findOrCreateMany(array $attributes): Collection;
-
-    /**
      * Store a new Address.
      *
      * @param StoreAddressRequest $request

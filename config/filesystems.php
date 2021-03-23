@@ -103,6 +103,13 @@ return [
             'visibility' => 'public',
         ],
 
+        'ww_asset_files' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/ww_quote_files'),
+            'url' => env('APP_URL').'/storage/ww_quote_files',
+            'visibility' => 'public'
+        ]
+
     ],
 
 ];

@@ -2,18 +2,23 @@
 
 namespace App\Models;
 
+use App\Contracts\SearchableEntity;
 use App\Casts\{HpeContactCast, HpeServicesCast};
-use App\Models\Template\HpeContractTemplate;
-use App\Traits\{Uuid, Activatable, BelongsToCompany, BelongsToCountry, BelongsToUser, Completable, Submittable, Auth\Multitenantable};
-use Illuminate\Database\Eloquent\{Model, SoftDeletes, Relations\BelongsTo, Relations\HasMany};
-use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 use App\DTO\HpeContractContact;
-use App\Models\Quote\Contract;
-use App\Scopes\ContractTypeScope;
+use App\Models\Template\HpeContractTemplate;
+use App\Traits\{Activatable,
+    Auth\Multitenantable,
+    BelongsToCompany,
+    BelongsToCountry,
+    BelongsToUser,
+    Completable,
+    Submittable,
+    Uuid};
 use App\Traits\Activity\LogsActivity;
 use App\Traits\Search\Searchable;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\{Model, Relations\BelongsTo, Relations\HasMany, SoftDeletes};
 use Illuminate\Support\Collection;
+use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 /**
  * @property HpeContractContact $hw_delivery_contact
@@ -24,9 +29,8 @@ use Illuminate\Support\Collection;
  * @property HpeContractContact $sold_contact
  * @property HpeContractContact $bill_contact
  * @property Collection $services
- * @property HpeContractTemplate|null $hpeContractTemplate
  */
-class HpeContract extends Model
+class HpeContract extends Model implements SearchableEntity
 {
     use Uuid,
         BelongsToCompany,
@@ -78,27 +82,27 @@ class HpeContract extends Model
         'last_drafted_step',
         'completeness',
         'checkbox_status',
-        'contract_date'
+        'contract_date',
     ];
 
     protected $dates = [
-        'purchase_order_date', 'contract_date'
+        'purchase_order_date', 'contract_date',
     ];
 
     protected $casts = [
-        'hw_delivery_contact'       => HpeContactCast::class,
-        'sw_delivery_contact'       => HpeContactCast::class,
-        'pr_support_contact'        => HpeContactCast::class,
-        'entitled_party_contact'    => HpeContactCast::class,
-        'end_customer_contact'      => HpeContactCast::class,
-        'sold_contact'              => HpeContactCast::class,
-        'bill_contact'              => HpeContactCast::class,
+        'hw_delivery_contact' => HpeContactCast::class,
+        'sw_delivery_contact' => HpeContactCast::class,
+        'pr_support_contact' => HpeContactCast::class,
+        'entitled_party_contact' => HpeContactCast::class,
+        'end_customer_contact' => HpeContactCast::class,
+        'sold_contact' => HpeContactCast::class,
+        'bill_contact' => HpeContactCast::class,
 
-        'services'                  => HpeServicesCast::class,
+        'services' => HpeServicesCast::class,
 
-        'contract_numbers'          => 'array',
-        'orders_authorization'      => 'array',
-        'checkbox_status'           => 'array'
+        'contract_numbers' => 'array',
+        'orders_authorization' => 'array',
+        'checkbox_status' => 'array',
     ];
 
     protected static $logAttributes = [
@@ -118,7 +122,7 @@ class HpeContract extends Model
 
         'last_drafted_step',
         'completeness',
-        'contract_date'
+        'contract_date',
     ];
 
     protected static $logOnlyDirty = true;
@@ -145,7 +149,7 @@ class HpeContract extends Model
         return __('hpecontract.stages');
     }
 
-    public function toSearchArray()
+    public function toSearchArray(): array
     {
         $this->loadMissing(
             'company:id,name',
@@ -153,15 +157,15 @@ class HpeContract extends Model
         );
 
         return [
-            'company_name'           => $this->company->name,
-            'contract_number'        => $this->contract_number,
-            'customer_name'          => $this->sold_contact->org_name,
-            'customer_rfq'           => $this->contract_number,
-            'customer_valid_until'   => null,
+            'company_name' => $this->company->name,
+            'contract_number' => $this->contract_number,
+            'customer_name' => $this->sold_contact->org_name,
+            'customer_rfq' => $this->contract_number,
+            'customer_valid_until' => null,
             'customer_support_start' => null,
-            'customer_support_end'   => null,
-            'user_fullname'          => optional($this->user)->fullname,
-            'created_at'             => optional($this->created_at)->format(config('date.format')),
+            'customer_support_end' => null,
+            'user_fullname' => optional($this->user)->fullname,
+            'created_at' => optional($this->created_at)->format(config('date.format')),
         ];
     }
 
@@ -170,7 +174,7 @@ class HpeContract extends Model
         return "HPE Contract ({$this->contract_number})";
     }
 
-    public function getSearchIndex()
+    public function getSearchIndex(): string
     {
         return 'contracts';
     }

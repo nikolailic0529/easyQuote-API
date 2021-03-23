@@ -2,77 +2,65 @@
 
 namespace App\Models;
 
-use App\Contracts\{
-    ActivatableInterface,
-    WithImage
-};
+use App\Contracts\{ActivatableInterface, HasImagesDirectory, SearchableEntity};
 use App\Facades\Permission;
-use App\Models\{
-    Role,
-    Collaboration\Invitation
-};
+use App\Models\{Collaboration\Invitation};
 use App\Models\Template\HpeContractTemplate;
-use App\Traits\{
-    Activatable,
-    HasCountry,
-    BelongsToTimezone,
-    HasQuoteFilesDirectory,
-    HasQuoteFiles,
-    HasQuotes,
-    HasImportableColumns,
-    Margin\HasCountryMargins,
-    Discount\HasDiscounts,
-    Vendor\HasVendors,
-    Company\HasCompanies,
-    QuoteTemplate\HasQuoteTemplates,
-    QuoteTemplate\HasTemplateFields,
-    Collaboration\HasInvitations,
-    Search\Searchable,
-    Image\HasImage,
-    Image\HasPictureAttribute,
-    Auth\Loginable,
-    Auth\HasApiTokens,
-    User\EnforceableChangePassword,
-    User\PerformsActivity,
+use App\Traits\{Activatable,
     Activity\LogsActivity,
+    Auth\HasApiTokens,
+    Auth\Loginable,
     BelongsToCompany,
     BelongsToCountry,
-    Permission\HasPermissionTargets,
-    Permission\HasModulePermissions,
+    BelongsToTimezone,
+    Collaboration\HasInvitations,
+    Discount\HasDiscounts,
+    HasImportableColumns,
+    HasQuoteFiles,
+    HasQuoteFilesDirectory,
+    HasQuotes,
+    Margin\HasCountryMargins,
     Notifiable,
+    Permission\HasModulePermissions,
+    Permission\HasPermissionTargets,
+    QuoteTemplate\HasQuoteTemplates,
+    QuoteTemplate\HasTemplateFields,
+    Search\Searchable,
+    User\EnforceableChangePassword,
+    User\PerformsActivity,
     Uuid,
+    Vendor\HasVendors,
 };
-use App\Traits\QuoteTemplate\BelongsToQuoteTemplate;
-use Illuminate\Database\Eloquent\{
-    Builder,
-    Collection,
-    Model,
-    SoftDeletes,
-};
-use Spatie\Permission\Traits\HasRoles;
-use Illuminate\Foundation\Auth\Access\Authorizable;
-use Illuminate\Contracts\Auth\{
+use Illuminate\Auth\{Authenticatable, MustVerifyEmail, Passwords\CanResetPassword};
+use Illuminate\Contracts\Auth\{Access\Authorizable as AuthorizableContract,
     Authenticatable as AuthenticatableContract,
-    Access\Authorizable as AuthorizableContract,
     CanResetPassword as CanResetPasswordContract
 };
-use Illuminate\Auth\{
-    Authenticatable,
-    MustVerifyEmail,
-    Passwords\CanResetPassword
-};
-use Arr;
+use Illuminate\Database\Eloquent\{Builder, Model, SoftDeletes,};
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Foundation\Auth\Access\Authorizable;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\ImageManagerStatic;
+use Spatie\Permission\Traits\HasRoles;
 use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
+/**
+ * @property string|null $team_id
+ * @property string|null $first_name
+ * @property string|null $last_name
+ * @property string|null $email
+ * @property string|null $timezone_id
+ */
 class User extends Model implements
     ActivatableInterface,
     AuthenticatableContract,
     AuthorizableContract,
     CanResetPasswordContract,
-    WithImage
+    HasImagesDirectory,
+    SearchableEntity
 {
     use Uuid,
         Authenticatable,
@@ -97,11 +85,9 @@ class User extends Model implements
         HasVendors,
         HasQuoteTemplates,
         HasTemplateFields,
-        HasPictureAttribute,
         Activatable,
         Searchable,
         SoftDeletes,
-        HasImage,
         LogsActivity,
         Loginable,
         PerformsActivity,
@@ -118,6 +104,7 @@ class User extends Model implements
         'middle_name',
         'last_name',
         'role_id',
+        'team_id',
         'timezone_id',
         'country_id',
         'company_id',
@@ -136,7 +123,7 @@ class User extends Model implements
      * @var array
      */
     protected $hidden = [
-        'password', 'remember_token', 'roles', 'updated_at', 'deleted_at', 'image'
+        'password', 'remember_token', 'roles', 'updated_at', 'deleted_at', 'image',
     ];
 
     /**
@@ -145,11 +132,11 @@ class User extends Model implements
      * @var array
      */
     protected $casts = [
-        'email_verified_at' => 'datetime'
+        'email_verified_at' => 'datetime',
     ];
 
     protected static $logAttributes = [
-        'first_name', 'middle_name', 'last_name', 'email', 'phone', 'role.name', 'timezone.text'
+        'first_name', 'middle_name', 'last_name', 'email', 'phone', 'role.name', 'team.name', 'timezone.text',
     ];
 
     protected static $logOnlyDirty = true;
@@ -159,10 +146,10 @@ class User extends Model implements
     protected static $recordEvents = ['created', 'updated', 'deleted'];
 
     public function companies(): HasManyDeep
-    {      
+    {
         return $this->hasManyDeep(
             Company::class,
-            ['model_has_roles', Role::class, ModelHasRoles::class . ' as model_roles'],
+            ['model_has_roles', Role::class, ModelHasRoles::class.' as model_roles'],
             [['model_type', 'model_id'], 'id', 'role_id', 'id'],
             ['id', 'role_id', 'id', ['model_type', 'model_id']],
         );
@@ -185,7 +172,7 @@ class User extends Model implements
 
     public function scopeNonAdministrators(Builder $query): Builder
     {
-        return $query->whereDoesntHave('roles', fn ($query) => $query->whereName('Administrator'));
+        return $query->whereDoesntHave('roles', fn($query) => $query->whereName('Administrator'));
     }
 
     public function scopeEmail(Builder $query, string $email): Builder
@@ -245,7 +232,7 @@ class User extends Model implements
         return "images/users";
     }
 
-    public function toSearchArray()
+    public function toSearchArray(): array
     {
         return Arr::except($this->toArray(), ['email_verified_at', 'must_change_password', 'timezone_id', 'role_id', 'picture']);
     }
@@ -265,5 +252,57 @@ class User extends Model implements
         $appends = ['role_id', 'role_name', 'picture', 'privileges', 'role_properties', 'must_change_password'];
 
         return $this->append(array_merge($appends, $attributes));
+    }
+
+    public function image()
+    {
+        return $this->morphOne(Image::class, 'imageable')->cacheForever();
+    }
+
+    public function createImage($file, array $properties = [])
+    {
+        if (!$file instanceof UploadedFile || !$this instanceof HasImagesDirectory) {
+            return $this;
+        }
+
+        $modelImagesDir = $this->imagesDirectory();
+
+        $image = ImageManagerStatic::make($file->get());
+
+        if (filled($properties) && isset($properties['width']) && isset($properties['height'])) {
+            $image->resize($properties['width'], $properties['height'], function ($constraint) {
+                $constraint->aspectRatio();
+                $constraint->upsize();
+            });
+        }
+
+        $storageDir = "public/{$modelImagesDir}";
+
+        !Storage::exists($storageDir) && Storage::makeDirectory($storageDir);
+
+        $original = "{$modelImagesDir}/{$file->hashName()}";
+        $image->save(Storage::path("public/{$original}"));
+
+        $this->image()->delete();
+
+        $this->image()->create(compact('original'));
+
+        $this->image()->flushQueryCache();
+
+        return $this->load('image');
+    }
+
+    public function getPictureAttribute()
+    {
+        if (!isset($this->image->original_image)) {
+            return null;
+        }
+
+        return asset('storage/'.$this->image->original_image);
+    }
+
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(Team::class);
     }
 }

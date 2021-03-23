@@ -2,68 +2,76 @@
 
 namespace App\Providers;
 
-use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
-
-use App\Models\Role;
-use App\Models\Task;
-use App\Models\User;
-use App\Models\Asset;
-use App\Models\Vendor;
 use App\Models\Address;
+use App\Models\Asset;
+use App\Models\Collaboration\Invitation;
 use App\Models\Company;
 use App\Models\Contact;
-use App\Models\HpeContract;
-use App\Models\Quote\Quote;
-use App\Models\Data\Country;
-use App\Models\Quote\Contract;
-use App\Models\Quote\QuoteNote;
-use App\Models\System\Activity;
 use App\Models\Customer\Customer;
+use App\Models\Data\Country;
+use App\Models\HpeContract;
+use App\Models\Opportunity;
+use App\Models\Quote\Contract;
+use App\Models\Quote\Discount\MultiYearDiscount;
+use App\Models\Quote\Discount\PrePayDiscount;
+use App\Models\Quote\Discount\PromotionalDiscount;
 use App\Models\Quote\Discount\SND;
 use App\Models\Quote\Margin\Margin;
+use App\Models\Quote\Quote;
+use App\Models\Quote\QuoteNote;
+use App\Models\Quote\WorldwideDistribution;
+use App\Models\Quote\WorldwideQuote;
+use App\Models\Quote\WorldwideQuoteNote;
+use App\Models\QuoteFile\ImportableColumn;
 use App\Models\QuoteFile\QuoteFile;
+use App\Models\Role;
+use App\Models\SalesOrder;
+use App\Models\System\Activity;
 use App\Models\System\Notification;
 use App\Models\System\SystemSetting;
-use App\Models\Template\QuoteTemplate;
-use App\Models\Collaboration\Invitation;
+use App\Models\Task;
 use App\Models\Template\ContractTemplate;
-use App\Models\QuoteFile\ImportableColumn;
 use App\Models\Template\HpeContractTemplate;
-use App\Models\Quote\Discount\PrePayDiscount;
-use App\Models\Quote\Discount\MultiYearDiscount;
-use App\Models\Quote\Discount\PromotionalDiscount;
-
-use App\Policies\SNDPolicy;
-use App\Policies\RolePolicy;
-use App\Policies\TaskPolicy;
-use App\Policies\UserPolicy;
-use App\Policies\AssetPolicy;
-use App\Policies\QuotePolicy;
-use App\Policies\MarginPolicy;
-use App\Policies\VendorPolicy;
+use App\Models\Template\QuoteTemplate;
+use App\Models\User;
+use App\Models\Vendor;
+use App\Policies\ActivityPolicy;
 use App\Policies\AddressPolicy;
+use App\Policies\AssetPolicy;
 use App\Policies\CompanyPolicy;
 use App\Policies\ContactPolicy;
-use App\Policies\CountryPolicy;
-use App\Policies\ActivityPolicy;
 use App\Policies\ContractPolicy;
+use App\Policies\ContractTemplatePolicy;
+use App\Policies\CountryPolicy;
 use App\Policies\CustomerPolicy;
+use App\Policies\HpeContractPolicy;
+use App\Policies\HpeContractTemplatePolicy;
+use App\Policies\ImportableColumnPolicy;
+use App\Policies\InvitationPolicy;
+use App\Policies\MarginPolicy;
+use App\Policies\MultiYearDiscountPolicy;
+use App\Policies\NotificationPolicy;
+use App\Policies\OpportunityPolicy;
+use App\Policies\PrePayDiscountPolicy;
+use App\Policies\PromotionalDiscountPolicy;
 use App\Policies\QuoteFilePolicy;
 use App\Policies\QuoteNotePolicy;
-use App\Policies\InvitationPolicy;
-use App\Policies\HpeContractPolicy;
-use App\Policies\NotificationPolicy;
-use App\Policies\QuoteTemplatePolicy;
-use App\Policies\SystemSettingPolicy;
-use App\Policies\PrePayDiscountPolicy;
-use App\Policies\ContractTemplatePolicy;
-use App\Policies\ImportableColumnPolicy;
-use App\Policies\MultiYearDiscountPolicy;
+use App\Policies\QuotePolicy;
 use App\Policies\QuoteTaskTemplatePolicy;
-use App\Policies\HpeContractTemplatePolicy;
-use App\Policies\PromotionalDiscountPolicy;
-use Laravel\Passport\{Passport, Client, PersonalAccessClient};
+use App\Policies\QuoteTemplatePolicy;
+use App\Policies\RolePolicy;
+use App\Policies\SalesOrderPolicy;
+use App\Policies\SNDPolicy;
+use App\Policies\SystemSettingPolicy;
+use App\Policies\TaskPolicy;
+use App\Policies\UserPolicy;
+use App\Policies\VendorPolicy;
+use App\Policies\WorldwideDistributionPolicy;
+use App\Policies\WorldwideQuoteNotePolicy;
+use App\Policies\WorldwideQuotePolicy;
+use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use Laravel\Passport\{Client, Passport, PersonalAccessClient};
 use Webpatser\Uuid\Uuid;
 
 class AuthServiceProvider extends ServiceProvider
@@ -106,6 +114,14 @@ class AuthServiceProvider extends ServiceProvider
         ImportableColumn::class         => ImportableColumnPolicy::class,
         Asset::class                    => AssetPolicy::class,
         HpeContract::class              => HpeContractPolicy::class,
+
+        WorldwideQuote::class           => WorldwideQuotePolicy::class,
+        WorldwideDistribution::class    => WorldwideDistributionPolicy::class,
+        WorldwideQuoteNote::class       => WorldwideQuoteNotePolicy::class,
+
+        Opportunity::class              => OpportunityPolicy::class,
+
+        SalesOrder::class               => SalesOrderPolicy::class,
     ];
 
     public function register()

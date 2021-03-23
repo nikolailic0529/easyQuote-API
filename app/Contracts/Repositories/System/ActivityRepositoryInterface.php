@@ -2,6 +2,7 @@
 
 namespace App\Contracts\Repositories\System;
 
+use App\Builder\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -9,11 +10,43 @@ use Illuminate\Support\Collection;
 interface ActivityRepositoryInterface
 {
     /**
+     * Retrieve all activities.
+     *
+     * @return mixed
+     */
+    public function all();
+
+    /**
+     * Search over all activities.
+     *
+     * @param string $query
+     * @return mixed
+     */
+    public function search(string $query = '');
+
+    /**
      * Meta data for activities.
      *
      * @return array
      */
     public function meta(): array;
+
+    /**
+     * Retrieve the activites by specified subject.
+     *
+     * @param string $subject
+     * @return mixed
+     */
+    public function subjectActivities(string $subject);
+
+    /**
+     * Search over the activities by specified subject.
+     *
+     * @param string $subject
+     * @param string $query
+     * @return mixed
+     */
+    public function searchSubjectActivities(string $subject, string $query = '');
 
     /**
      * Query Builder instance for activities.
@@ -48,7 +81,6 @@ interface ActivityRepositoryInterface
     /**
      * Export the subject activities in PDF/CSV.
      *
-     * @param string $type
      * @return mixed
      */
     public function export(string $type);
@@ -57,7 +89,6 @@ interface ActivityRepositoryInterface
      * Export the subject activities in PDF/CSV.
      *
      * @param string $subject_id
-     * @param string $type
      * @return void
      */
     public function exportSubject(string $subject_id, string $type);

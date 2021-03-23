@@ -4,7 +4,6 @@ namespace App\Contracts\Services;
 
 use App\DTO\PreviewHpeContractData;
 use App\Models\Template\HpeContractTemplate;
-use Illuminate\Contracts\Support\Responsable;
 
 interface HpeExporter
 {
@@ -13,7 +12,7 @@ interface HpeExporter
      *
      * @param HpeContractTemplate $template
      * @param PreviewHpeContractData $data
-     * @return Responsable
+     * @return mixed
      */
     public function export(HpeContractTemplate $template, PreviewHpeContractData $data);
 

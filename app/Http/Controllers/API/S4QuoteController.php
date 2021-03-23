@@ -4,10 +4,9 @@ namespace App\Http\Controllers\API;
 
 use App\Contracts\Repositories\{
     Quote\QuoteSubmittedRepositoryInterface as QuoteSubmittedRepository,
-    Customer\CustomerRepositoryInterface as CustomerRepository
 };
+use App\Contracts\Services\CustomerState;
 use App\Contracts\Services\QuoteView;
-use App\Events\RfqReceived;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\S4\StoreContractRequest;
 use App\Http\Resources\CustomerResponseResource;
@@ -18,10 +17,9 @@ class S4QuoteController extends Controller
 {
     protected $quote;
 
-    public function __construct(QuoteSubmittedRepository $quote, CustomerRepository $customer)
+    public function __construct(QuoteSubmittedRepository $quote)
     {
         $this->quote = $quote;
-        $this->customer = $customer;
 
         $this->middleware('client:s4,proteus,triton,epd');
     }
@@ -84,14 +82,12 @@ class S4QuoteController extends Controller
      * @param StoreContractRequest $request
      * @return \Illuminate\Http\Response
      */
-    public function store(StoreContractRequest $request)
+    public function store(StoreContractRequest $request, CustomerState $processor)
     {
-        $resource = tap(
-            $this->customer->create($request->validated()),
-            fn (Customer $customer) => dispatch(
-                fn () => event(new RfqReceived($customer, $request->get('client_name', 'service')))
-            )->afterResponse()
-        );
+        $resource = tap($processor->createFromS4Data($request->getS4CustomerData()), function (Customer $customer) use ($request) {
+            $customer->load('country', 'addresses');
+            $request->dispatchReceivedEvent($customer);
+        });
 
         return response()->json(
             CustomerResponseResource::make($resource)

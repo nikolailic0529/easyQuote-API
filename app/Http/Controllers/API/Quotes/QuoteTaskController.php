@@ -3,57 +3,55 @@
 namespace App\Http\Controllers\API\Quotes;
 
 use App\Http\Controllers\Controller;
-use App\Contracts\Repositories\TaskRepositoryInterface as Tasks;
+use App\Http\Requests\{Task\CreateTaskRequest, Task\UpdateTaskRequest, TaskTemplate\UpdateTaskTemplateRequest,};
+use App\Http\Resources\{Task\TaskCollection, Task\TaskResource,};
+use App\Models\{Quote\Quote, Quote\WorldwideQuote, Task};
+use App\Queries\TaskQueries;
 use App\Repositories\TaskTemplate\QuoteTaskTemplateStore as Template;
-use App\Events\Task\{
-    TaskCreated,
-    TaskDeleted,
-    TaskUpdated,
-};
-use App\Http\Requests\{
-    Task\CreateTaskRequest,
-    Task\UpdateTaskRequest,
-    TaskTemplate\UpdateTaskTemplateRequest,
-};
-use App\Http\Resources\{
-    Task\TaskCollection,
-    Task\TaskResource,
-};
-use App\Models\{
-    Quote\Quote,
-    Task,
-};
-use App\Policies\QuoteTaskTemplatePolicy;
-use Illuminate\Http\{
-    Request,
-    Response,
-};
-use Illuminate\Support\Facades\Gate;
+use App\Services\Exceptions\ValidationException;
+use App\Services\TaskService;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\{JsonResponse, Request, Response};
 
 class QuoteTaskController extends Controller
 {
-    protected Tasks $tasks;
-
     protected Template $template;
 
-    public function __construct(Tasks $tasks, Template $template)
+    public function __construct(Template $template)
     {
-        $this->tasks = $tasks;
         $this->template = $template;
     }
 
     /**
-     * Display a listing of the resource.
+     * Paginate the existing Tasks on the specified Rescue Quote.
      *
      * @param Request $request
      * @param Quote $quote
-     * @return \Illuminate\Http\Response
+     * @param TaskQueries $queries
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function index(Request $request, Quote $quote)
+    public function paginateRescueQuoteTasks(Request $request, Quote $quote, TaskQueries $queries): JsonResponse
     {
         $this->authorize('view', $quote);
 
-        $resource = $this->tasks->paginate(['taskable_id' => $quote->getKey()], $request->query('search'));
+        $resource = $queries->paginateTaskableTasksQuery($quote->getKey(), $request)->apiPaginate();
+
+        return response()->json(TaskCollection::make($resource));
+    }
+
+    /**
+     * @param Request $request
+     * @param WorldwideQuote $worldwideQuote
+     * @param TaskQueries $queries
+     * @return JsonResponse
+     * @throws AuthorizationException
+     */
+    public function paginateWorldwideQuoteTasks(Request $request, WorldwideQuote $worldwideQuote, TaskQueries $queries): JsonResponse
+    {
+        $this->authorize('view', $worldwideQuote);
+
+        $resource = $queries->paginateTaskableTasksQuery($worldwideQuote->getKey(), $request)->apiPaginate();
 
         return response()->json(TaskCollection::make($resource));
     }
@@ -61,9 +59,10 @@ class QuoteTaskController extends Controller
     /**
      * Show the form for creating a new resource.
      *
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function create()
+    public function showTemplate(): JsonResponse
     {
         $this->authorize('view_quote_task_template');
 
@@ -74,26 +73,28 @@ class QuoteTaskController extends Controller
      * Update the task template for quotes.
      *
      * @param UpdateTaskTemplateRequest $request
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function updateTemplate(UpdateTaskTemplateRequest $request)
+    public function updateTemplate(UpdateTaskTemplateRequest $request): JsonResponse
     {
         $this->authorize('update_quote_task_template');
 
         return response()->json(
-            $this->template->setContent($request->form_data)
+            $this->template->setContent($request->input('form_data'))
         );
     }
 
     /**
      * Reset the task template for quotes to default.
      *
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function resetTemplate()
+    public function resetTemplate(): JsonResponse
     {
         $this->authorize('update_quote_task_template');
-        
+
         return response()->json(
             $this->template->reset()
         );
@@ -102,30 +103,69 @@ class QuoteTaskController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  CreateTaskRequest  $request
-     * @param  Quote $quote
-     * @return \Illuminate\Http\Response
+     * @param CreateTaskRequest $request
+     * @param Quote $quote
+     * @param TaskService $service
+     * @return JsonResponse
+     * @throws AuthorizationException
+     * @throws ValidationException
      */
-    public function store(CreateTaskRequest $request, Quote $quote)
+    public function storeRescueQuoteTask(CreateTaskRequest $request, Quote $quote, TaskService $service): JsonResponse
     {
         $this->authorize('update', $quote);
 
-        $resource = tap(
-            $this->tasks->create($request->validated(), $quote),
-            fn (Task $task) => event(new TaskCreated($task))
-        );
+        $resource = $service->createTaskForTaskable($request->getCreateTaskData(), $quote);
 
-        return response()->json(TaskResource::make($resource->load('user', 'users', 'attachments')), Response::HTTP_CREATED);
+        return response()->json(TaskResource::make(
+            $resource->load('user', 'users', 'attachments')
+        ), Response::HTTP_CREATED);
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param CreateTaskRequest $request
+     * @param WorldwideQuote $worldwideQuote
+     * @param TaskService $service
+     * @return JsonResponse
+     * @throws AuthorizationException
+     * @throws ValidationException
+     */
+    public function storeWorldwideQuoteTask(CreateTaskRequest $request, WorldwideQuote $worldwideQuote, TaskService $service): JsonResponse
+    {
+        $this->authorize('update', $worldwideQuote);
+
+        $resource = $service->createTaskForTaskable($request->getCreateTaskData(), $worldwideQuote);
+
+        return response()->json(TaskResource::make(
+            $resource->load('user', 'users', 'attachments')
+        ), Response::HTTP_CREATED);
     }
 
     /**
      * Display the specified resource.
      *
-     * @param  Quote $quote
-     * @param  Task  $task
-     * @return \Illuminate\Http\Response
+     * @param Quote $quote
+     * @param Task $task
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function show(Quote $quote, Task $task)
+    public function showRescueQuoteTask(Quote $quote, Task $task): JsonResponse
+    {
+        $this->authorize('view', [$task, $quote]);
+
+        return response()->json(TaskResource::make($task));
+    }
+
+    /**
+     * Display the specified resource.
+     *
+     * @param Quote $quote
+     * @param Task $task
+     * @return JsonResponse
+     * @throws AuthorizationException
+     */
+    public function showWorldwideQuoteTask(Quote $quote, Task $task): JsonResponse
     {
         $this->authorize('view', [$task, $quote]);
 
@@ -135,41 +175,90 @@ class QuoteTaskController extends Controller
     /**
      * Update the specified resource in storage.
      *
-     * @param  UpdateTaskRequest  $request
-     * @param  Quote $quote
-     * @param  Task  $task
-     * @return \Illuminate\Http\Response
+     * @param UpdateTaskRequest $request
+     * @param Quote $quote
+     * @param Task $task
+     * @param TaskService $service
+     * @return JsonResponse
+     * @throws AuthorizationException
+     * @throws ValidationException
      */
-    public function update(UpdateTaskRequest $request, Quote $quote, Task $task)
+    public function updateRescueQuoteTask(UpdateTaskRequest $request, Quote $quote, Task $task, TaskService $service): JsonResponse
     {
         $this->authorize('update', $quote);
         $this->authorize('update', $task);
 
-        $resource = tap(
-            $this->tasks->update($task->getKey(), $request->validated()),
-            fn (Task $task) => event(new TaskUpdated($task))
-        );
+        $resource = $service->updateTask($task, $request->getUpdateTaskData());
 
-        return response()->json(TaskResource::make($resource->load('user', 'users', 'attachments')));
+        return response()->json(
+            TaskResource::make(
+                $resource->load('user', 'users', 'attachments')
+            ),
+            Response::HTTP_OK
+        );
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param UpdateTaskRequest $request
+     * @param WorldwideQuote $worldwideQuote
+     * @param Task $task
+     * @param TaskService $service
+     * @return JsonResponse
+     * @throws AuthorizationException
+     * @throws ValidationException
+     */
+    public function updateWorldwideQuoteTask(UpdateTaskRequest $request, WorldwideQuote $worldwideQuote, Task $task, TaskService $service): JsonResponse
+    {
+        $this->authorize('update', $worldwideQuote);
+        $this->authorize('update', $task);
+
+        $resource = $service->updateTask($task, $request->getUpdateTaskData());
+
+        return response()->json(
+            TaskResource::make(
+                $resource->load('user', 'users', 'attachments')
+            ),
+            Response::HTTP_OK
+        );
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param  Quote $quote
-     * @param  Task  $task
-     * @return \Illuminate\Http\Response
+     * @param Quote $quote
+     * @param Task $task
+     * @param TaskService $service
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function destroy(Quote $quote, Task $task)
+    public function destroyRescueQuoteTask(Quote $quote, Task $task, TaskService $service): JsonResponse
     {
         $this->authorize('update', $quote);
         $this->authorize('delete', $task);
 
-        $deleted = tap(
-            $this->tasks->delete($task->getKey()),
-            fn () => event(new TaskDeleted($task))
-        );
+        $service->deleteTask($task);
 
-        return response()->json($deleted);
+        return response()->json(true, Response::HTTP_OK);
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param WorldwideQuote $worldwideQuote
+     * @param Task $task
+     * @param TaskService $service
+     * @return JsonResponse
+     * @throws AuthorizationException
+     */
+    public function destroyWorldwideQuoteTask(WorldwideQuote $worldwideQuote, Task $task, TaskService $service): JsonResponse
+    {
+        $this->authorize('update', $worldwideQuote);
+        $this->authorize('delete', $task);
+
+        $service->deleteTask($task);
+
+        return response()->json(true, Response::HTTP_OK);
     }
 }

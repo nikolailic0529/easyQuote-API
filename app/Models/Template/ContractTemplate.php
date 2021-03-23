@@ -3,38 +3,55 @@
 namespace App\Models\Template;
 
 use App\Contracts\ActivatableInterface;
+use App\Contracts\SearchableEntity;
+use App\Models\Company;
 use App\Models\Data\Country;
-use App\Traits\{
-    Uuid,
-    Activatable,
+use App\Traits\{Activatable,
+    Activity\LogsActivity,
+    Auth\Multitenantable,
     BelongsToCompany,
     BelongsToCountries,
     BelongsToCurrency,
     BelongsToUser,
-    BelongsToTemplateFields,
     BelongsToVendor,
     Draftable,
-    Systemable,
-    Search\Searchable,
-    Activity\LogsActivity,
-    QuoteTemplate\HasDataHeaders,
-    Auth\Multitenantable,
     HasContracts,
+    QuoteTemplate\HasDataHeaders,
+    Search\Searchable,
+    Systemable,
+    Uuid,
 };
+use App\Models\Vendor;
 use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
-use Illuminate\Database\Eloquent\{
-    Model,
-    SoftDeletes,
-    Relations\BelongsToMany,
-};
+use Illuminate\Database\Eloquent\{Collection, Model, Relations\BelongsToMany, SoftDeletes};
+use Illuminate\Support\Carbon;
 
-class ContractTemplate extends Model implements ActivatableInterface
+/**
+ * Class ContractTemplate
+ *
+ * @property string|null $id
+ * @property string|null $name
+ * @property string|null $company_id
+ * @property string|null $vendor_id
+ * @property string|null $currency_id
+ * @property bool|null $is_system
+ * @property string|null $company_name
+ * @property string|null $vendor_name
+ * @property array|null $form_data
+ * @property Collection<Country> $countries
+ * @property string|null $activated_at
+ * @property string|null $business_division_id
+ * @property string|null $contract_type_id
+ * @property Company|null $company
+ * @property Vendor|null $vendor
+ * @property Carbon|null $created_at
+ */
+class ContractTemplate extends Model implements ActivatableInterface, SearchableEntity
 {
     use Uuid,
         EloquentJoin,
         Multitenantable,
         BelongsToUser,
-        // BelongsToTemplateFields,
         BelongsToCompany,
         BelongsToVendor,
         BelongsToCountries,
@@ -49,20 +66,20 @@ class ContractTemplate extends Model implements ActivatableInterface
         LogsActivity;
 
     protected $fillable = [
-        'name', 'company_id', 'vendor_id', 'form_data'
+        'name', 'company_id', 'vendor_id', 'form_data',
     ];
 
     protected $hidden = [
-        'deleted_at'
+        'deleted_at',
     ];
 
     protected $casts = [
         'is_system' => 'boolean',
-        'form_data' => 'array'
+        'form_data' => 'array',
     ];
 
     protected static $logAttributes = [
-        'name', 'company.name', 'vendor.name', 'currency.symbol'
+        'name', 'company.name', 'vendor.name', 'currency.symbol',
     ];
 
     protected static $logOnlyDirty = true;
@@ -89,14 +106,14 @@ class ContractTemplate extends Model implements ActivatableInterface
         return $this->contracts()->exists();
     }
 
-    public function toSearchArray()
+    public function toSearchArray(): array
     {
         return [
             'name' => $this->name,
             'countries' => $this->loadMissing('countries')->countries->map->only('name'),
             'vendor' => $this->vendor->toSearchArray(),
             'company' => $this->company->toSearchArray(),
-            'created_at' => (string) $this->created_at
+            'created_at' => (string)$this->created_at,
         ];
     }
 }

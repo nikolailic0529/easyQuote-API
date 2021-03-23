@@ -3,16 +3,10 @@
 namespace App\Models\Quote;
 
 use App\Models\Customer\Customer;
-use App\Traits\{
-    BelongsToCompany,
-    BelongsToCountry,
-    Uuid,
-    BelongsToQuote,
-    BelongsToCustomer,
-    BelongsToLocation,
-};
+use App\Traits\{BelongsToCompany, BelongsToCountry, BelongsToLocation, BelongsToQuote, Uuid,};
 use Grimzy\LaravelMysqlSpatial\Eloquent\SpatialTrait;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class QuoteTotal extends Model
 {

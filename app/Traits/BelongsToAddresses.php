@@ -11,7 +11,7 @@ trait BelongsToAddresses
 {
     public function addresses(): MorphToMany
     {
-        return $this->morphToMany(Address::class, 'addressable');
+        return $this->morphToMany(Address::class, 'addressable')->withPivot('is_default');
     }
 
     public function syncAddresses(?array $addresses, bool $detach = true): void

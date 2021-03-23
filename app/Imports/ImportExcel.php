@@ -2,29 +2,30 @@
 
 namespace App\Imports;
 
-use Maatwebsite\Excel\{
-    Row,
-    Concerns\WithHeadingRow,
-    Concerns\Importable,
-    Concerns\WithEvents,
+use App\Imports\Concerns\{LimitsHeaders, MapsHeaders};
+use App\Models\{QuoteFile\ImportedRow, QuoteFile\QuoteFile};
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\{Arr, Collection as BaseCollection, Str};
+use Maatwebsite\Excel\{Concerns\Importable,
     Concerns\WithChunkReading,
-    Events\BeforeSheet,
+    Concerns\WithEvents,
+    Concerns\WithHeadingRow,
     Events\AfterImport,
-    Imports\HeadingRowFormatter,
+    Events\BeforeSheet,
     Imports\HeadingRowExtractor,
-};
-use App\Imports\Concerns\{
-    MapsHeaders,
-    LimitsHeaders
-};
-use Maatwebsite\Excel\Concerns\{ToModel, WithBatchInserts, WithLimit, WithStartRow, WithColumnLimit, };
-use App\Models\{QuoteFile\QuoteFile, QuoteFile\ImportedRow};
+    Imports\HeadingRowFormatter,
+    Row,};
+use Maatwebsite\Excel\Concerns\{ToModel,
+    WithBatchInserts,
+    WithCalculatedFormulas,
+    WithColumnLimit,
+    WithLimit,
+    WithStartRow};
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use Webpatser\Uuid\Uuid;
-use Illuminate\Support\{Arr, Str, Collection};
 use voku\helper\ASCII;
+use Webpatser\Uuid\Uuid;
 
-class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInserts, WithChunkReading, WithStartRow, WithLimit, WithColumnLimit
+class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInserts, WithChunkReading, WithStartRow, WithLimit, WithColumnLimit, WithCalculatedFormulas
 {
     use Importable, MapsHeaders, LimitsHeaders;
 
@@ -36,24 +37,18 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
 
     const C_OP = 'is_one_pay';
 
-    /** @var \App\Models\QuoteFile\QuoteFile */
-    protected $quoteFile;
+    protected QuoteFile $quoteFile;
 
-    /** @var \Illuminate\Database\Eloquent\Collection */
-    protected $systemImportableColumns;
+    protected Collection $systemImportableColumns;
 
-    /** @var integer */
-    protected $activeSheetIndex = 0;
+    protected int $activeSheetIndex = 0;
 
-    /** @var integer */
-    protected $headingRow = 1;
+    protected int $headingRow = 1;
 
-    /** @var integer */
-    protected $startRow = 2;
+    protected int $startRow = 2;
 
-    /** @var array */
-    protected $requiredHeaders = [
-        'price', 'product_no'
+    protected array $requiredHeaders = [
+        'price', 'product_no',
     ];
 
     /** @var \Illuminate\Support\Collection */
@@ -62,11 +57,9 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
     /** @var \Illuminate\Support\Collection */
     protected $requiredHeadersMapping;
 
-    /** @var integer */
-    protected $rowsCount = 0;
+    protected int $rowsCount = 0;
 
-    /** @var array */
-    protected $priceAttributes = [];
+    protected array $priceAttributes = [];
 
     public function __construct(QuoteFile $quoteFile)
     {
@@ -100,7 +93,7 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
             },
             AfterImport::class => function (AfterImport $event) {
                 $this->afterImport();
-            }
+            },
         ];
     }
 
@@ -159,7 +152,7 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
         $this->mapHeaders();
     }
 
-    protected function getStartRow(Worksheet $sheet): Collection
+    protected function getStartRow(Worksheet $sheet): BaseCollection
     {
         $headingRow = HeadingRowExtractor::extract($sheet, $this);
 
@@ -188,13 +181,13 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
         return $this->requiredHeadersPresent();
     }
 
-    protected function checkColumnsData(Collection $columnsData): bool
+    protected function checkColumnsData(BaseCollection $columnsData): bool
     {
         if ($columnsData->contains(static::C_OP, true)) {
             return true;
         }
 
-        $headerValue = $columnsData->pluck(static::C_VL, static::C_IMPC)->filter(fn ($value) => filled($value));
+        $headerValue = $columnsData->pluck(static::C_VL, static::C_IMPC)->filter(fn($value) => filled($value));
 
         $columnsCount = $headerValue->count();
 
@@ -236,7 +229,7 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
 
         $foundStart = false;
         $foundEnd = false;
-        
+
         foreach ($cellIterator as $cell) {
             if (preg_match($coverageReg, $cell->getValue()) && !$foundStart) {
                 $cell->setValue(__("parser.coverage_period.{$lang}.from"));
@@ -250,7 +243,7 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
             }
 
             if ($foundStart && $foundEnd && $cell->getValue() !== null) {
-                $end = (int) ($foundStart + floor(($foundEnd - $foundStart) / 2) + 1);
+                $end = (int)($foundStart + floor(($foundEnd - $foundStart) / 2) + 1);
                 $worksheet->setCellValueByColumnAndRow($end, $this->headingRow, __("parser.coverage_period.{$lang}.to"));
                 break;
             }
@@ -259,7 +252,7 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
 
     protected function requiredHeadersPresent(): bool
     {
-        return $this->requiredHeadersMapping->reject(fn ($value) => $value)->isEmpty();
+        return $this->requiredHeadersMapping->reject(fn($value) => $value)->isEmpty();
     }
 
     protected function makeRow(array $row): void
@@ -267,7 +260,7 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
         array_push($this->importableSheetData, $row);
     }
 
-    protected function fetchRow(Collection $row): array
+    protected function fetchRow(BaseCollection $row): array
     {
         $now = now()->toDateTimeString();
 
@@ -276,13 +269,13 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
         $onePay = $columnsData->contains(static::C_OP, true);
 
         return [
-            'id'            => Uuid::generate(4)->string,
+            'id' => Uuid::generate(4)->string,
             'quote_file_id' => $this->quoteFile->getKey(),
-            'page'          => $this->activeSheetIndex,
-            'columns_data'  => $columnsData,
-            static::C_OP    => $onePay,
-            'created_at'    => $now,
-            'updated_at'    => $now
+            'page' => $this->activeSheetIndex,
+            'columns_data' => $columnsData,
+            static::C_OP => $onePay,
+            'created_at' => $now,
+            'updated_at' => $now,
         ];
     }
 
@@ -296,21 +289,21 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
         $this->requiredHeadersMapping = collect($this->requiredHeaders)->mapWithKeys(function ($name) {
             $aliases = $this->systemImportableColumns->firstWhere('name', $name)->aliases->pluck('alias');
 
-            $aliasesParts = $aliases->map(fn ($alias) => '(' . preg_quote($alias, '~') . '.*?)')->implode('|');
+            $aliasesParts = $aliases->map(fn($alias) => '('.preg_quote($alias, '~').'.*?)')->implode('|');
             $aliasesExpression = "~^{$aliasesParts}~i";
 
-            $header = Arr::first($this->header, fn ($header) => preg_match($aliasesExpression, $header), null);
+            $header = Arr::first($this->header, fn($header) => preg_match($aliasesExpression, $header), null);
 
             return [$name => $header];
         });
     }
 
-    protected function findPriceAttributes(Collection $row): void
+    protected function findPriceAttributes(BaseCollection $row): void
     {
         $foundAttributes = [
-            'service_agreement_id' => (array) $this->findRowAttribute(ImportExcelOptions::REGEXP_SAID, ImportExcelOptions::REGEXP_SAID_VALUE, $row),
-            'pricing_document'     => (array) $this->findRowAttribute(ImportExcelOptions::REGEXP_PD, ImportExcelOptions::REGEXP_PD_VALUE, $row),
-            'system_handle'        => (array) $this->findRowAttribute(ImportExcelOptions::REGEXP_SH, ImportExcelOptions::REGEXP_SH_VALUE, $row),
+            'service_agreement_id' => (array)$this->findRowAttribute(ImportExcelOptions::REGEXP_SAID, ImportExcelOptions::REGEXP_SAID_VALUE, $row),
+            'pricing_document' => (array)$this->findRowAttribute(ImportExcelOptions::REGEXP_PD, ImportExcelOptions::REGEXP_PD_VALUE, $row),
+            'system_handle' => (array)$this->findRowAttribute(ImportExcelOptions::REGEXP_SH, ImportExcelOptions::REGEXP_SH_VALUE, $row),
         ];
 
         $attributes = array_merge_recursive(array_filter($this->priceAttributes), $foundAttributes);
@@ -320,25 +313,24 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
         }, $attributes);
     }
 
-    private function makeColumnsData($attributes): Collection
+    private function makeColumnsData($attributes): BaseCollection
     {
-        $attributes = Collection::wrap($attributes);
+        $attributes = BaseCollection::wrap($attributes);
 
         $columns = $attributes->map(
-            fn ($value, $header) =>
-            [
-                static::C_IMPC  => $this->headersMapping->get($header),
-                static::C_HDR   => $this->limitHeader($this->quoteFile, $header),
-                static::C_VL    => static::sanitizeColumnValue($value),
+            fn($value, $header) => [
+                static::C_IMPC => $this->headersMapping->get($header),
+                static::C_HDR => $this->limitHeader($this->quoteFile, $header),
+                static::C_VL => static::sanitizeColumnValue($value),
             ]
         )
-            ->filter(fn ($column) => isset($column[static::C_IMPC]) && $column[static::C_HDR] !== $column[static::C_VL])
+            ->filter(fn($column) => isset($column[static::C_IMPC]) && $column[static::C_HDR] !== $column[static::C_VL])
             ->keyBy(static::C_IMPC);
 
-        $hasOnePayColumn = $columns->contains(fn ($column) => preg_match('/return to/i', data_get($column, static::C_VL)));
+        $hasOnePayColumn = $columns->contains(fn($column) => preg_match('/return to/i', data_get($column, static::C_VL)));
 
         if ($hasOnePayColumn && null !== ($priceHeader = $this->requiredHeadersMapping->get('price'))) {
-            $currentPriceColumn = $columns->whereNotNull(static::C_HDR)->first(fn ($column) => trim($column[static::C_HDR]) === trim($priceHeader));
+            $currentPriceColumn = $columns->whereNotNull(static::C_HDR)->first(fn($column) => trim($column[static::C_HDR]) === trim($priceHeader));
 
             if (null !== $currentPriceColumn && !is_null($currentPriceColumn[static::C_VL])) {
                 $currentPriceColumn = array_merge($currentPriceColumn, [static::C_OP => true]);
@@ -350,10 +342,10 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
 
             /**
              * In case if price column is not present in One Pay row, we will assume that price cell is merged with qty.
-             * 
+             *
              * @var array|null
              */
-            $priceColumn = $columns->first(fn ($column) => Str::containsInsensitive(data_get($column, static::C_HDR), 'qty'));
+            $priceColumn = $columns->first(fn($column) => Str::containsInsensitive(data_get($column, static::C_HDR), 'qty'));
 
             if ($priceColumn === null || $priceHeader === $priceColumn[static::C_HDR]) {
                 return $columns;
@@ -370,9 +362,9 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
             $columns->forget($priceColumn[static::C_IMPC]);
 
             $priceColumn = array_merge($priceColumn, [
-                static::C_IMPC  => $columnId = $this->headersMapping->get($priceHeader),
-                static::C_HDR   => $priceHeader,
-                static::C_OP    => true
+                static::C_IMPC => $columnId = $this->headersMapping->get($priceHeader),
+                static::C_HDR => $priceHeader,
+                static::C_OP => true,
             ]);
 
             $columns->put($columnId, $priceColumn);
@@ -381,7 +373,7 @@ class ImportExcel implements ToModel, WithHeadingRow, WithEvents, WithBatchInser
         return $columns;
     }
 
-    private function findRowAttribute(string $regexp, string $cellRegexp, Collection $row)
+    private function findRowAttribute(string $regexp, string $cellRegexp, BaseCollection $row)
     {
         if (filled($matches = preg_grep($regexp, $row->toArray(null, true)))) {
             $cell = head($matches);

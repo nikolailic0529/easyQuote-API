@@ -27,29 +27,35 @@ class FirstStep extends FormRequest
 
     public function data(): array
     {
-        /** @var CompanyRepositoryInterface */
+        /** @var CompanyRepositoryInterface $companies */
         $companies = app(CompanyRepositoryInterface::class);
-        /** @var DataSelectSeparatorRepositoryInterface */
+
+        /** @var DataSelectSeparatorRepositoryInterface $dataSelects */
         $dataSelects = app(DataSelectSeparatorRepositoryInterface::class);
-        /** @var CurrencyRepositoryInterface */
+
+        /** @var CurrencyRepositoryInterface $currencies */
         $currencies = app(CurrencyRepositoryInterface::class);
 
-        /** @var \App\Models\User */
+        /** @var \App\Models\User $user */
         $user = $this->user();
 
         $filteredCompanies = $companies->allInternalWithVendorsAndCountries()
-            ->unless($user->hasRole(R_SUPER), fn (Collection $collection) => $collection->find(ProfileHelper::profileCompaniesIds()))
-            ->prioritize(fn (Company $company) => $company->getKey() === ProfileHelper::defaultCompanyId())
+            ->unless($user->hasRole(R_SUPER), fn(Collection $collection) => $collection->find(ProfileHelper::profileCompaniesIds()))
+            ->when($this->has('prioritize.company'), function (Collection $collection) {
+                return $collection->prioritize(fn(Company $company) => $company->short_code === $this->input('prioritize.company'));
+            }, function (Collection $collection) {
+                return $collection->prioritize(fn(Company $company) => $company->getKey() === ProfileHelper::defaultCompanyId());
+            })
             ->loadMissing('image')
             ->makeHidden('image')
             ->append('logo')
             ->values();
 
         return [
-            'companies'                 => $filteredCompanies,
-            'data_select_separators'    => $dataSelects->all(),
-            'supported_file_types'      => Setting::get('supported_file_types_ui'),
-            'currencies'                => $currencies->allHaveExrate()
+            'companies' => $filteredCompanies,
+            'data_select_separators' => $dataSelects->all(),
+            'supported_file_types' => Setting::get('supported_file_types_ui'),
+            'currencies' => $currencies->allHaveExrate()
         ];
     }
 }

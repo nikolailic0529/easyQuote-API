@@ -26,9 +26,7 @@ class RouteServiceProvider extends ServiceProvider
     {
         //
         
-        parent::boot();
-        
-        Route::bind('eq_customer', fn ($id) => Customer::query()->whereSource(Customer::EQ_SOURCE)->findOrFail($id));
+        parent::boot();        
     }
 
     /**
@@ -70,7 +68,7 @@ class RouteServiceProvider extends ServiceProvider
     {
         Route::prefix('api')
             ->middleware('api')
-            ->namespace($this->namespace)
+            // ->namespace($this->namespace)
             ->group(base_path('routes/api.php'));
     }
 }

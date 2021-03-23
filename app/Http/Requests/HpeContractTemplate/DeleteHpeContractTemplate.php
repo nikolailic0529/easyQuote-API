@@ -3,7 +3,7 @@
 namespace App\Http\Requests\HpeContractTemplate;
 
 use App\Models\Template\HpeContractTemplate;
-use App\Services\HpeContractTemplateQueries;
+use App\Queries\HpeContractTemplateQueries;
 use Illuminate\Foundation\Http\FormRequest;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
@@ -14,7 +14,7 @@ class DeleteHpeContractTemplate extends FormRequest
      *
      * @return bool
      */
-    public function authorize()
+    public function authorize(HpeContractTemplateQueries $queries)
     {
         /** @var \App\Models\Template\HpeContractTemplate */
         $template = head($this->route()->parameters());
@@ -23,7 +23,7 @@ class DeleteHpeContractTemplate extends FormRequest
             return true;
         }
 
-        if ((new HpeContractTemplateQueries)->referencedQuery($template->getKey())->exists()) {
+        if ($queries->referencedQuery($template->getKey())->exists()) {
             throw new UnprocessableEntityHttpException("You can't delete the HPE Contract Template used in HPE Contracts.");
         }
 

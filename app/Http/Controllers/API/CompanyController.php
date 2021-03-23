@@ -2,25 +2,31 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Http\Controllers\Controller;
-use App\Contracts\Repositories\{
-    CompanyRepositoryInterface as CompanyRepository,
+use App\Contracts\Repositories\{CompanyRepositoryInterface as CompanyRepository,
     VendorRepositoryInterface as VendorRepository
 };
-use App\Http\Requests\Company\{
-    StoreCompanyRequest,
-    UpdateCompanyRequest
-};
-use App\Http\Resources\{
-    Company\Company as CompanyResource,
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Company\{StoreCompanyRequest, UpdateCompanyContact, UpdateCompanyRequest};
+use App\Http\Resources\{Company\Company as CompanyResource,
     Company\CompanyCollection,
-};
+    Company\ExternalCompanyList,
+    Company\UpdatedCompany};
 use App\Models\Company;
+use App\Models\Contact;
 use App\Models\Customer\Customer;
+use App\Queries\CompanyQueries;
+use App\Services\CompanyService;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 
 class CompanyController extends Controller
 {
-    protected $company;
+    protected CompanyRepository $company;
+
+    protected VendorRepository $vendor;
 
     public function __construct(CompanyRepository $company, VendorRepository $vendor)
     {
@@ -32,9 +38,9 @@ class CompanyController extends Controller
     /**
      * Display a listing of the Companies.
      *
-     * @return \Illuminate\Http\Response
+     * @return CompanyCollection
      */
-    public function index()
+    public function index(): CompanyCollection
     {
         $resource = request()->filled('search')
             ? $this->company->search(request('search'))
@@ -46,9 +52,9 @@ class CompanyController extends Controller
     /**
      * Data for creating a new Company.
      *
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
      */
-    public function create()
+    public function create(): JsonResponse
     {
         $vendors = $this->vendor->allFlatten();
 
@@ -60,9 +66,9 @@ class CompanyController extends Controller
     /**
      * Display a listing of the existing external companies.
      *
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
      */
-    public function getExternal()
+    public function getExternal(): JsonResponse
     {
         return response()->json(
             $this->company->allExternal(['source' => Customer::EQ_SOURCE])
@@ -70,11 +76,27 @@ class CompanyController extends Controller
     }
 
     /**
+     * Paginate existing external companies.
+     *
+     * @param Request $request
+     * @param CompanyQueries $queries
+     * @return AnonymousResourceCollection
+     */
+    public function paginateExternalCompanies(Request $request, CompanyQueries $queries): AnonymousResourceCollection
+    {
+        $resource = $queries->paginateExternalCompaniesQuery($request)->apiPaginate();
+
+        return ExternalCompanyList::collection(
+            $resource
+        );
+    }
+
+    /**
      * Display a listing of all internal companies.
      *
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
      */
-    public function getInternal()
+    public function getInternal(): JsonResponse
     {
         return response()->json(
             $this->company->allInternal(['id', 'name'])
@@ -84,9 +106,9 @@ class CompanyController extends Controller
     /**
      * Display a listing of companies with related countries.
      *
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
      */
-    public function showCompaniesWithCountries()
+    public function showCompaniesWithCountries(): JsonResponse
     {
         return response()->json(
             $this->company->allInternalWithCountries(['id', 'name', 'short_code'])
@@ -96,58 +118,82 @@ class CompanyController extends Controller
     /**
      * Store a newly created Company in storage.
      *
-     * @param  StoreCompanyRequest  $request
-     * @return \Illuminate\Http\Response
+     * @param StoreCompanyRequest $request
+     * @param CompanyService $service
+     * @return JsonResponse
      */
-    public function store(StoreCompanyRequest $request)
+    public function store(StoreCompanyRequest $request, CompanyService $service): JsonResponse
     {
-        $resource = $this->company->create($request->validated())
-            ->loadMissing(Company::REGULAR_RELATIONSHIPS);
+        $resource = $service->createCompany($request->getCreateCompanyData());
 
         return response()->json(
-            CompanyResource::make($resource)
+            UpdatedCompany::make($resource),
+            Response::HTTP_CREATED
         );
     }
 
     /**
      * Display the specified Company.
      *
-     * @param  \App\Models\Company $company
-     * @return \Illuminate\Http\Response
+     * @param Company $company
+     * @return JsonResponse
      */
-    public function show(Company $company)
+    public function show(Company $company): JsonResponse
     {
-        $company->loadMissing(Company::REGULAR_RELATIONSHIPS);
-
         return response()->json(
-            CompanyResource::make($company)
+            UpdatedCompany::make($company)
         );
     }
 
     /**
      * Update the specified Company in storage.
      *
-     * @param  UpdateCompanyRequest  $request
-     * @param  \App\Models\Company $company
-     * @return \Illuminate\Http\Response
+     * @param UpdateCompanyRequest $request
+     * @param Company $company
+     * @return JsonResponse
      */
-    public function update(UpdateCompanyRequest $request, Company $company)
+    public function update(UpdateCompanyRequest $request, Company $company, CompanyService $service): JsonResponse
     {
-        $resource = $this->company->update($company->id, $request->validated())
-            ->loadMissing(Company::REGULAR_RELATIONSHIPS);
+        $resource = $service->updateCompany($company, $request->getUpdateCompanyData());
 
         return response()->json(
-            CompanyResource::make($resource)
+            UpdatedCompany::make($resource),
+            Response::HTTP_OK
+        );
+    }
+
+    /**
+     * Update a Contact of the Company.
+     *
+     * @param UpdateCompanyContact $request
+     * @param Company $company
+     * @param Contact $contact
+     * @param CompanyService $service
+     * @return JsonResponse
+     * @throws \Throwable
+     */
+    public function updateCompanyContact(UpdateCompanyContact $request,
+                                         Company $company,
+                                         Contact $contact,
+                                         CompanyService $service): JsonResponse
+    {
+        $this->authorize('update', $company);
+
+        $result = $service->updateCompanyContact($company, $contact, $request->getUpdateContactData());
+
+        return response()->json(
+            $result,
+            Response::HTTP_OK
         );
     }
 
     /**
      * Remove the specified Company from storage.
      *
-     * @param  \App\Models\Company $company
-     * @return \Illuminate\Http\Response
+     * @param Company $company
+     * @return JsonResponse
      */
-    public function destroy(Company $company)
+    public function destroy(Company $company): JsonResponse
     {
         return response()->json(
             $this->company->delete($company->id)
@@ -157,10 +203,11 @@ class CompanyController extends Controller
     /**
      * Activate the specified Company from storage.
      *
-     * @param  \App\Models\Company $company
-     * @return \Illuminate\Http\Response
+     * @param Company $company
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function activate(Company $company)
+    public function activate(Company $company): JsonResponse
     {
         $this->authorize('update', $company);
 
@@ -172,10 +219,11 @@ class CompanyController extends Controller
     /**
      * Deactivate the specified Company from storage.
      *
-     * @param  \App\Models\Company $company
-     * @return \Illuminate\Http\Response
+     * @param Company $company
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function deactivate(Company $company)
+    public function deactivate(Company $company): JsonResponse
     {
         $this->authorize('update', $company);
 

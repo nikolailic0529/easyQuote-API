@@ -1,0 +1,110 @@
+[
+    {
+        "id": "8773d5dd-54ed-4cb2-8142-c87a4aff2d28",
+        "header": "Product No",
+        "name": "product_no",
+        "order": 1,
+        "is_required": true,
+        "is_column": true,
+        "type": "textbox"
+    },
+    {
+        "id": "b691b01f-c399-4978-a488-78c9e04897a1",
+        "header": "Service SKU",
+        "name": "service_sku",
+        "order": 2,
+        "is_required": false,
+        "is_column": true,
+        "type": "textbox"
+    },
+    {
+        "id": "f6fb291b-135a-412d-8b4b-674383b8b433",
+        "header": "Description",
+        "name": "description",
+        "order": 3,
+        "is_required": false,
+        "is_column": true,
+        "type": "textbox"
+    },
+    {
+        "id": "b3a133a2-c44e-4df3-8dbd-402f9f587f58",
+        "header": "Serial Number",
+        "name": "serial_no",
+        "order": 4,
+        "is_required": false,
+        "is_column": true,
+        "type": "textbox"
+    },
+    {
+        "id": "744decd2-1a98-45ba-a44f-a7d15b2e4f5b",
+        "header": "From Date",
+        "name": "date_from",
+        "order": 5,
+        "is_required": true,
+        "is_column": true,
+        "type": "date"
+    },
+    {
+        "id": "2c91e692-5519-4494-8ff7-7ad870e001b9",
+        "header": "To Date",
+        "name": "date_to",
+        "order": 6,
+        "is_required": true,
+        "is_column": true,
+        "type": "date"
+    },
+    {
+        "id": "0ebace0a-6889-42af-bfeb-4d8faad118d3",
+        "header": "Quantity",
+        "name": "qty",
+        "order": 7,
+        "is_required": false,
+        "is_column": true,
+        "type": "textbox"
+    },
+    {
+        "id": "de594f8a-b586-405d-8907-8a58ee3ebb15",
+        "header": "Price",
+        "name": "price",
+        "order": 8,
+        "is_required": true,
+        "is_column": true,
+        "type": "textbox"
+    },
+    {
+        "id": "d081c1b5-2a81-45f7-9e78-30fb46ab4ddd",
+        "header": "Pricing Document",
+        "name": "pricing_document",
+        "order": 9,
+        "is_required": false,
+        "is_column": true,
+        "type": "textbox"
+    },
+    {
+        "id": "330a99be-fce8-480a-b85a-c1e6dc1e733d",
+        "header": "System Handle",
+        "name": "system_handle",
+        "order": 10,
+        "is_required": false,
+        "is_column": true,
+        "type": "textbox"
+    },
+    {
+        "id": "b3f6610a-5aeb-4fd2-93f6-76820bc72859",
+        "header": "Searchable",
+        "name": "searchable",
+        "order": 11,
+        "is_required": false,
+        "is_column": true,
+        "type": "textbox"
+    },
+    {
+        "id": "44a1e64d-15be-4ff3-b5a7-dd8ada9d7524",
+        "header": "Service Level Description",
+        "name": "service_level_description",
+        "order": 12,
+        "is_required": false,
+        "is_column": true,
+        "type": "textbox"
+    }
+]

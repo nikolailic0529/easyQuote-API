@@ -45,26 +45,6 @@ class AddressRepository extends SearchableRepository implements AddressRepositor
         return $this->address->firstOrCreate($attributes, $values);
     }
 
-    public function findOrCreateMany(array $addresses): Collection
-    {
-        return DB::transaction(
-            fn () => Collection::wrap($addresses)->map(fn (array $attributes) => $this->firstOrCreate(
-                Arr::only($attributes, [
-                    'address_type',
-                    'address_1',
-                    'address_2',
-                    'city',
-                    'state',
-                    'post_code',
-                    'contact_name',
-                    'contact_number',
-                    'contact_email',
-                    'country_id'
-                ]), $attributes
-            ))
-        );
-    }
-
     public function update(UpdateAddressRequest $request, string $id): Address
     {
         return tap($this->find($id))->update($request->validated());

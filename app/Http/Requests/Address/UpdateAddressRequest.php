@@ -20,11 +20,12 @@ class UpdateAddressRequest extends FormRequest
     {
         return [
             'address_type' => ['required', 'string', Rule::in(Address::TYPES)],
-            'address_1' => 'required|string|min:2',
-            'address_2' => 'nullable|string',
-            'city' => 'nullable|string',
-            'state' => 'nullable|string',
-            'post_code' => 'nullable|string',
+            'address_1' => 'required|string|min:2|max:191',
+            'address_2' => 'nullable|string|max:191',
+            'city' => 'nullable|string|max:191',
+            'state' => 'nullable|string|max:191',
+            'state_code' => 'nullable|string|max:191',
+            'post_code' => 'nullable|string|max:191',
             'country_id' => 'required_without:country_code|string|uuid|exists:countries,id'
         ];
     }

@@ -6,6 +6,7 @@ use App\Contracts\Services\ContractView;
 use App\Models\Quote\Contract;
 use App\Collections\MappedRows;
 use App\Http\Resources\QuoteResource;
+use App\Queries\ContractQueries;
 use Illuminate\Database\Query\Builder;
 use App\Repositories\Concerns\FetchesGroupDescription;
 

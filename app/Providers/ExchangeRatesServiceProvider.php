@@ -5,7 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Contracts\Support\DeferrableProvider;
 use App\Contracts\Repositories\ExchangeRateRepositoryInterface;
-use App\Contracts\Services\ExchangeRateServiceInterface;
+use App\Contracts\Services\ManagesExchangeRates;
 use App\Repositories\{ExchangeRateRepository, RateFileRepository};
 use Illuminate\Contracts\Filesystem\Factory;
 use Illuminate\Contracts\Foundation\Application;
@@ -21,7 +21,7 @@ class ExchangeRatesServiceProvider extends ServiceProvider implements Deferrable
     {
         $this->app->singleton(ExchangeRateRepositoryInterface::class, ExchangeRateRepository::class);
 
-        $this->app->singleton(ExchangeRateServiceInterface::class, ER_SERVICE_CLASS);
+        $this->app->singleton(ManagesExchangeRates::class, ER_SERVICE_CLASS);
 
         $this->app->bind(RateFileRepository::class, function (Application $app) {
             $diskName = $this->app['config']->get('exchange-rates.disk');
@@ -33,7 +33,7 @@ class ExchangeRatesServiceProvider extends ServiceProvider implements Deferrable
 
         $this->app->alias(RateFileRepository::class, 'rate-file.repository');
 
-        $this->app->alias(ExchangeRateServiceInterface::class, 'exchange.service');
+        $this->app->alias(ManagesExchangeRates::class, 'exchange.service');
     }
 
     public function provides()
@@ -42,7 +42,7 @@ class ExchangeRatesServiceProvider extends ServiceProvider implements Deferrable
             RateFileRepository::class,
             'rate-file.repository',
             ExchangeRateRepositoryInterface::class,
-            ExchangeRateServiceInterface::class,
+            ManagesExchangeRates::class,
             'exchange.service',
         ];
     }

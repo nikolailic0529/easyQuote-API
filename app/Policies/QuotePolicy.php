@@ -2,11 +2,7 @@
 
 namespace App\Policies;
 
-use App\Models\{
-    User,
-    Quote\Quote,
-    Quote\QuoteVersion
-};
+use App\Models\{Quote\Quote, Quote\QuoteVersion, User};
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class QuotePolicy
@@ -16,7 +12,7 @@ class QuotePolicy
     /**
      * Determine whether the user can view any quotes.
      *
-     * @param  \App\Models\User  $user
+     * @param \App\Models\User $user
      * @return mixed
      */
     public function viewAny(User $user)
@@ -27,8 +23,8 @@ class QuotePolicy
     /**
      * Determine whether the user can view the quote.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Quote\Quote  $quote
+     * @param \App\Models\User $user
+     * @param \App\Models\Quote\Quote $quote
      * @return mixed
      */
     public function view(User $user, Quote $quote)
@@ -53,7 +49,7 @@ class QuotePolicy
     /**
      * Determine whether the user can create quotes.
      *
-     * @param  \App\Models\User  $user
+     * @param \App\Models\User $user
      * @return mixed
      */
     public function create(User $user)
@@ -64,8 +60,8 @@ class QuotePolicy
     /**
      * Determine whether the user can update the quote state.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Quote\Quote  $quote
+     * @param \App\Models\User $user
+     * @param \App\Models\Quote\Quote $quote
      * @return mixed
      */
     public function state(User $user, Quote $quote)
@@ -94,8 +90,8 @@ class QuotePolicy
     /**
      * Determine whether the user can update the quote.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Quote\Quote  $quote
+     * @param \App\Models\User $user
+     * @param \App\Models\Quote\Quote $quote
      * @return mixed
      */
     public function update(User $user, Quote $quote)
@@ -129,11 +125,6 @@ class QuotePolicy
         if ($user->hasRole(R_SUPER)) {
             return true;
         }
-
-        /**
-         * @todo If user is not super-administrator check owner id. We are checking only parent quote (not any its version)
-         * return $user->id === $quote->user_id
-         */
     }
 
     /**
@@ -141,25 +132,20 @@ class QuotePolicy
      *
      * @param User $user
      * @param Quote $quote
-     * @return void
+     * @return mixed
      */
     public function revokePermission(User $user, Quote $quote)
     {
         if ($user->hasRole(R_SUPER)) {
             return true;
         }
-
-        /**
-         * @todo If user is not super-administrator check owner id. We are checking only parent quote (not any its version)
-         * return $user->id === $quote->user_id
-         */
     }
 
     /**
      * Determine whether the user can unravel the quote.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Quote\Quote  $quote
+     * @param \App\Models\User $user
+     * @param \App\Models\Quote\Quote $quote
      * @return mixed
      */
     public function unravel(User $user, Quote $quote)
@@ -178,8 +164,8 @@ class QuotePolicy
     /**
      * Determine whether the user can activate the quote.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Quote\Quote  $quote
+     * @param \App\Models\User $user
+     * @param \App\Models\Quote\Quote $quote
      * @return mixed
      */
     public function activate(User $user, Quote $quote)
@@ -202,8 +188,8 @@ class QuotePolicy
     /**
      * Determine whether the user can delete the quote.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Quote\Quote  $quote
+     * @param \App\Models\User $user
+     * @param \App\Models\Quote\Quote $quote
      * @return mixed
      */
     public function delete(User $user, Quote $quote)
@@ -294,7 +280,7 @@ class QuotePolicy
      * @param User $user
      * @param Quote $quote
      * @param string $fileType
-     * @return void
+     * @return mixed
      */
     public function downloadFile(User $user, Quote $quote, string $fileType)
     {

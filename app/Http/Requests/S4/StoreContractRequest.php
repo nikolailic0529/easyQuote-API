@@ -2,31 +2,20 @@
 
 namespace App\Http\Requests\S4;
 
-use App\Contracts\Repositories\AddressRepositoryInterface as Addresses;
+use App\DTO\S4\S4Address;
+use App\DTO\S4\S4AddressCollection;
+use App\DTO\S4\S4CustomerData as S4S4CustomerData;
+use App\DTO\S4\S4CustomerData;
+use App\Events\RfqReceived;
 use App\Models\Customer\Customer;
-use App\Services\ContactService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Illuminate\Support\{
-    Arr,
-    Str,
-    Carbon,
-    Collection,
-};
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class StoreContractRequest extends FormRequest
 {
-    protected Addresses $addressRepository;
-
-    protected ContactService $contactService;
-
-    public function __construct(Addresses $addressRepository, ContactService $contactService)
-    {
-        $this->addressRepository = $addressRepository;
-        $this->contactService = $contactService;
-    }
+    protected ?S4CustomerData $s4CustomerData = null;
 
     /**
      * Get the validation rules that apply to the request.
@@ -69,6 +58,11 @@ class StoreContractRequest extends FormRequest
         ];
     }
 
+    public function dispatchReceivedEvent(Customer $customer): void
+    {
+        event(new RfqReceived($customer, $this->get('client_name', 'service')));
+    }
+
     protected function prepareForValidation()
     {
         customlog(['message' => S4_CS_02], $this->toArray());
@@ -89,56 +83,28 @@ class StoreContractRequest extends FormRequest
         parent::{__FUNCTION__}($validator);
     }
 
-    public function validated()
+    public function getS4CustomerData(): S4CustomerData
     {
-        $validated = collect(parent::validated());
+        return $this->s4CustomerData ??= transform(true, function () {
+            $addresses = new S4AddressCollection(S4Address::arrayOf($this->input('addresses') ?? []));
 
-        $countryId = app('country.repository')->findIdByCode($this->country);
-
-        $addresses = $this->getAddresses();
-
-        $contacts = $this->contactService->retrieveContactsFromAddresses($addresses);
-
-        $dates = $this->formatDates();
-
-        $validated = $validated->merge([
-            'country_id' => $countryId,
-            'addresses' => $addresses->modelKeys(),
-            'contacts' => $contacts->modelKeys(),
-            'source' => Customer::S4_SOURCE
-        ])->merge($dates);
-
-        return $validated->toArray();
-    }
-
-    protected function getAddresses(): EloquentCollection
-    {
-        $addresses = $this->addresses;
-        $codes = data_get($addresses, '*.country_code');
-
-        $countries = Collection::wrap(app('country.repository')->findIdByCode($codes));
-
-        $addresses = collect($addresses)->transform(
-            fn ($address) => Arr::set($address, 'country_id', $countries->get(optional($address)['country_code']))
-        )
-            ->toArray();
-
-        return $this->addressRepository->findOrCreateMany($addresses);
-    }
-
-    protected function formatDates(): array
-    {
-        $dates = ['support_start_date', 'support_end_date', 'quotation_valid_until'];
-
-        $formats = collect(Arr::only($this->rules(), $dates))
-            ->map(
-                fn ($rule) => Str::of($rule)->explode('|')->first(fn ($rule) => Str::contains($rule, 'date_format'))
-            )->map(
-                fn ($rule) => Str::after($rule, 'date_format:')
-            );
-
-        return collect($this->only($dates))
-            ->transform(fn ($date, $key) => Carbon::createFromFormat($formats->get($key), $date))
-            ->toArray();
+            return new S4S4CustomerData([
+                'customer_name' => $this->input('customer_name'),
+                'rfq_number' => $this->input('rfq_number'),
+                'service_levels' => $this->input('service_levels'),
+                'quotation_valid_until' => transform($this->input('quotation_valid_until'), function ($date) {
+                    return Carbon::createFromFormat('m/d/Y', $date);
+                }),
+                'support_start_date' => transform($this->input('support_start_date'), function ($date) {
+                    return Carbon::createFromFormat('Y-m-d', $date);
+                }),
+                'support_end_date' => transform($this->input('support_end_date'), function ($date) {
+                    return Carbon::createFromFormat('Y-m-d', $date);
+                }),
+                'invoicing_terms' => $this->input('invoicing_terms'),
+                'country_code' => $this->input('country'),
+                'addresses' => $addresses,
+            ]);
+        });
     }
 }

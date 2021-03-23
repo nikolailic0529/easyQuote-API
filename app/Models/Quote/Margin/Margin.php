@@ -38,7 +38,7 @@ abstract class Margin extends Model implements HasOrderedScope, ActivatableInter
     ];
 
     protected $casts = [
-        'value' => 'decimal,2',
+        'value' => 'decimal:2',
         'is_fixed' => 'boolean'
     ];
 

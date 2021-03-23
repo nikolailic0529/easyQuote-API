@@ -2,102 +2,92 @@
 
 namespace App\Services\ExchangeRate;
 
-use App\Contracts\Services\ExchangeRateServiceInterface;
-use App\Contracts\Repositories\{
-    ExchangeRateRepositoryInterface as Repository,
-    CountryRepositoryInterface as Countries,
-    CurrencyRepositoryInterface as Currencies
-};
+use App\Contracts\Services\ManagesExchangeRates;
+use App\DTO\ExchangeRate\ExchangeRateCollection;
+use App\DTO\ExchangeRate\ExchangeRateData;
 use App\Events\ExchangeRatesUpdated;
 use App\Models\Data\Currency;
-use GuzzleHttp\{
-    Client,
-    RequestOptions
-};
-use Illuminate\Support\{
-    Collection,
-    Facades\Validator,
-};
-use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
+use App\Models\Data\ExchangeRate;
+use App\Services\Exceptions\FileNotFound;
 use Carbon\Carbon;
+use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Contracts\Filesystem\FileNotFoundException;
+use Illuminate\Database\ConnectionInterface;
+use Illuminate\Support\Facades\File;
 use RuntimeException;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-abstract class ExchangeRateService implements ExchangeRateServiceInterface
+abstract class ExchangeRateService implements ManagesExchangeRates
 {
-    /** @var \GuzzleHttp\Client */
-    protected Client $httpClient;
+    protected ConnectionInterface $connection;
 
-    /** @var \App\Contracts\Repositories\ExchangeRateRepositoryInterface */
-    protected Repository $repository;
+    protected Dispatcher $eventsDispatcher;
 
-    /** @var \App\Contracts\Repositories\CountryRepositoryInterface */
-    protected Countries $countries;
+    protected ValidatorInterface $validator;
 
-    /** @var \App\Contracts\Repositories\CurrencyRepositoryInterface */
-    protected Currencies $currencies;
-
-    /** @var \Carbon\Carbon */
-    protected Carbon $time;
-
-    public function __construct(
-        Client $httpClient,
-        Repository $repository,
-        Countries $countries,
-        Currencies $currencies
-    ) {
-        $this->httpClient = $httpClient;
-        $this->repository = $repository;
-        $this->countries = $countries;
-        $this->currencies = $currencies;
-    }
-
-    public function receiveRates(?Carbon $date = null)
+    public function __construct(ConnectionInterface $connection, Dispatcher $eventsDispatcher, ValidatorInterface $validator)
     {
-        $date ??= $this->requestTime();
-
-        $this->time = $date;
-
-        return $this->requestRatesByTime($date);
+        $this->connection = $connection;
+        $this->eventsDispatcher = $eventsDispatcher;
+        $this->validator = $validator;
     }
 
+    /**
+     * @param string $filepath
+     * @param Carbon $date
+     * @return bool
+     * @throws FileNotFound
+     * @throws FileNotFoundException
+     */
     public function updateRatesFromFile(string $filepath, Carbon $date): bool
     {
-        throw_unless(File::exists($filepath), RuntimeException::class, ER_FNE_01);
+        if (!file_exists($filepath)) {
+            throw FileNotFound::filePath($filepath);
+        }
 
-        $this->time = $date;
-
-        $data = $this->fetchRates(File::get($filepath, true));
+        $data = $this->parseRatesData(File::get($filepath, true), $date);
 
         $this->createRates($data);
 
-        event(new ExchangeRatesUpdated);
+        $this->eventsDispatcher->dispatch(new ExchangeRatesUpdated);
 
         return true;
     }
 
     public function updateRates(array $parameters = []): bool
     {
-        if (empty($parameters)) {
-            $data = $this->fetchRates($this->receiveRates());
-        } else {
-            $data = static::parseDates($parameters)
-                ->map(fn (Carbon $date) => $this->fetchRates($this->receiveRates($date)))
-                ->collapse()->toArray();
-        }
+        /** @var ExchangeRateCollection $data */
+        $data = with($parameters, function (array $parameters) {
+            if (empty($parameters)) {
+                return $this->getRatesData(now());
+            }
+
+            $collection = collect(static::parseDates($parameters))
+                ->reduce(function (array $fetchedRates, Carbon $date) {
+                    $collection = $this->getRatesData($date);
+
+                    $ratesArray = [];
+
+                    foreach ($collection as $rateData) {
+                        $ratesArray[] = $rateData;
+                    }
+
+                    return array_merge($fetchedRates, $ratesArray);
+                }, []);
+
+            return new ExchangeRateCollection($collection);
+        });
 
         $this->createRates($data);
 
-        event(new ExchangeRatesUpdated);
+        $this->eventsDispatcher->dispatch(new ExchangeRatesUpdated);
 
         return true;
     }
 
     public function getBaseRate(Currency $source): float
     {
-        if ($source->isServiceBaseCurrency()) {
+        if ($source->code === $this->baseCurrency()) {
             return 1;
         }
 
@@ -106,96 +96,85 @@ abstract class ExchangeRateService implements ExchangeRateServiceInterface
 
     public function getTargetRate(Currency $source, Currency $target, ?int $precision = null): float
     {
-        if ($source->isServiceBaseCurrency()) {
+        if ($source->code === $this->baseCurrency()) {
             return $target->exchangeRate->exchange_rate;
         }
 
-        if ($target->isNotServiceBaseCurrency() && !$target->exchangeRate->exists) {
+        if ($target->code !== $this->baseCurrency() && !$target->exchangeRate->exists) {
             return 1;
         }
 
         $rate = $target->exchangeRate->exchange_rate * (1 / $source->exchangeRate->exchange_rate);
 
-        if (is_int($precision)) {
+        if (!is_null($precision)) {
             return round($rate, $precision);
         }
 
         return $rate;
     }
 
-    protected function createRates($data)
+    protected function createRates(ExchangeRateCollection $data): void
     {
-        return DB::transaction(
-            fn () =>
-            Collection::wrap($data)->map(fn ($attributes) => $this->storeRate($attributes))
-        );
-    }
+        $data->rewind();
 
-    protected function storeRate($attributes)
-    {
-        $values = $attributes;
-
-        if (!$this->validateRateAttributes($attributes)) {
-            return;
-        }
-
-        $attributes = Arr::only($attributes, ['currency_code', 'date']) + ['base_currency' => $this->baseCurrency()];
-
-        $values = $attributes + $values;
-
-        return $this->repository->firstOrCreate($attributes, $values);
-    }
-
-    protected function validateRateAttributes(array $attributes): bool
-    {
-        $validator = Validator::make($attributes, [
-            'currency_id' => 'required'
-        ]);
-
-        return !$validator->fails();
-    }
-
-    protected function requestRatesByTime(Carbon $time)
-    {
-        $this->time = $time;
-        $requestUrl = $this->requestUrl();
-
-        try {
-            $response = Http::get($requestUrl);
-            
-            return (string) $response;
-        } catch (\Throwable $e) {
-            static::requestError($requestUrl);
+        foreach ($data as $rate) {
+            $this->storeRate($rate);
         }
     }
 
-    abstract public function retrieveDateFromFile(string $filepath): Carbon;
-
-    abstract protected function requestTime(): Carbon;
-
-    protected static function parseDates(array $dates): Collection
+    protected function storeRate(ExchangeRateData $data): ?ExchangeRate
     {
-        return collect($dates)->map(fn ($date) => Carbon::parse($date));
+        $violations = $this->validator->validate($data);
+
+        if (count($violations)) {
+            // TODO: log the violations.
+            return null;
+        }
+
+        /** @var ExchangeRate|null $exchangeRate */
+        $exchangeRate = ExchangeRate::query()->where('currency_code', $data->currency_code)
+            ->where('date', $data->date)
+            ->where('base_currency', $this->baseCurrency())
+            ->first();
+
+        if (!is_null($exchangeRate)) {
+            return $exchangeRate;
+        }
+
+        return tap(new ExchangeRate(), function (ExchangeRate $exchangeRate) use ($data, $violations) {
+            $exchangeRate->currency_code = $data->currency_code;
+            $exchangeRate->base_currency = $this->baseCurrency();
+            $exchangeRate->date = $data->date;
+            $exchangeRate->exchange_rate = $data->exchange_rate;
+            $exchangeRate->country_id = $data->country_id;
+            $exchangeRate->currency_id = $data->currency_id;
+
+            $this->connection->transaction(fn() => $exchangeRate->save());
+        });
+    }
+
+    protected static function parseDates(array $dates): array
+    {
+        return array_map(function ($date) {
+            return Carbon::parse($date);
+        }, $dates);
     }
 
     /**
-     * @throws \RuntimeException
+     * @param string $url
      */
     protected static function requestError(string $url)
     {
         throw new RuntimeException(sprintf(ER_RECEIVE_ERR_01, $url));
     }
 
-    /**
-     * @throws \RuntimeException
-     */
     protected function fetchRatesError()
     {
         throw new RuntimeException(ER_PARSE_ERR_01);
     }
 
     /**
-     * @throws \RuntimeException
+     * @param string $filepath
      */
     protected static function fetchDateError(string $filepath)
     {

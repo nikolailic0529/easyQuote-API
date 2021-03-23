@@ -1,0 +1,1076 @@
+<?php
+
+namespace App\Services;
+
+use App\Contracts\Services\{ManagesDocumentProcessors, ManagesExchangeRates, ProcessesWorldwideDistributionState};
+use App\DTO\{Discounts\DistributionDiscountsCollection,
+    DistributionDetailsCollection,
+    DistributionExpiryDateCollection,
+    DistributionMapping,
+    DistributionMappingCollection,
+    DistributionMarginTaxCollection,
+    MappedRow\UpdateMappedRowFieldCollection,
+    MappedRowSettings,
+    ProcessableDistribution,
+    ProcessableDistributionCollection,
+    RowMapping,
+    RowsGroupData,
+    SelectedDistributionRows,
+    SelectedDistributionRowsCollection
+};
+use App\Enum\Lock;
+use App\Events\DistributionProcessed;
+use App\Models\{Data\Country,
+    OpportunitySupplier,
+    Quote\BaseWorldwideQuote,
+    Quote\DistributionFieldColumn,
+    Quote\WorldwideDistribution,
+    QuoteFile\DistributionRowsGroup,
+    QuoteFile\MappedRow,
+    QuoteFile\QuoteFile,
+    QuoteFile\ScheduleData,
+    Template\TemplateField};
+use App\Process\ProcessPool\ProcessPool;
+use App\Queries\WorldwideDistributionQueries;
+use Illuminate\Contracts\{Cache\Lock as LockContract,
+    Cache\LockProvider,
+    Config\Repository as Config,
+    Events\Dispatcher,
+    Filesystem\Filesystem
+};
+use Illuminate\Database\{ConnectionInterface, Eloquent\Builder, Eloquent\Collection, Eloquent\ModelNotFoundException};
+use Illuminate\Filesystem\FilesystemAdapter;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\{Arr, Carbon, Collection as BaseCollection, Facades\App, Facades\Storage, MessageBag, Str};
+use Psr\Log\LoggerInterface;
+use RuntimeException;
+use Symfony\Component\{Process\Process,
+    Validator\Constraints,
+    Validator\Exception\ValidationFailedException,
+    Validator\Validator\ValidatorInterface
+};
+use Throwable;
+
+class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistributionState
+{
+    protected LoggerInterface $logger;
+
+    protected ConnectionInterface $connection;
+
+    protected LockProvider $lockProvider;
+
+    /** @var Filesystem|FilesystemAdapter */
+    protected Filesystem $storage;
+
+    protected Config $config;
+
+    protected Dispatcher $dispatcher;
+
+    protected ValidatorInterface $validator;
+
+    protected ManagesDocumentProcessors $documentProcessor;
+
+    protected ManagesExchangeRates $exchangeRateService;
+
+    protected WorldwideDistributionQueries $distributionQueries;
+
+    public function __construct(
+        LoggerInterface $logger,
+        ConnectionInterface $connection,
+        LockProvider $lockProvider,
+        Filesystem $storage,
+        Config $config,
+        Dispatcher $dispatcher,
+        ValidatorInterface $validator,
+        ManagesDocumentProcessors $documentProcessor,
+        ManagesExchangeRates $exchangeRateService,
+        WorldwideDistributionQueries $distributionQueries
+    )
+    {
+        $this->logger = $logger;
+        $this->connection = $connection;
+        $this->lockProvider = $lockProvider;
+        $this->storage = $storage;
+        $this->config = $config;
+        $this->dispatcher = $dispatcher;
+        $this->validator = $validator;
+        $this->documentProcessor = $documentProcessor;
+        $this->exchangeRateService = $exchangeRateService;
+        $this->distributionQueries = $distributionQueries;
+    }
+
+    public function initializeDistribution(BaseWorldwideQuote $quote, ?string $opportunitySupplierId = null): WorldwideDistribution
+    {
+        /** @var WorldwideDistribution $wwDistribution */
+
+        $constraints = new Constraints\Collection([
+            'worldwideQuoteId' => new Constraints\Uuid(),
+            'opportunitySupplierId' => new Constraints\Uuid()
+        ]);
+
+        $violations = $this->validator->validate($payload = [
+            'worldwideQuoteId' => $quote->getKey(),
+            'opportunitySupplierId' => $opportunitySupplierId
+        ], $constraints);
+
+        if (count($violations)) {
+            throw new ValidationFailedException($payload, $violations);
+        }
+
+        /** @var OpportunitySupplier|null $supplier */
+        $supplier = transform($opportunitySupplierId, function (string $supplierModelKey) {
+            return OpportunitySupplier::query()->find($supplierModelKey);
+        });
+
+        return tap(new WorldwideDistribution(), function (WorldwideDistribution $distribution) use ($quote, $supplier) {
+            $distribution->worldwideQuote()->associate($quote);
+            $distribution->opportunitySupplier()->associate($supplier);
+
+            if (!is_null($supplier)) {
+                $distribution->country()->associate(
+                    Country::query()->where('name', $supplier->country_name)->first()
+                );
+            }
+
+            $templateFields = TemplateField::query()
+                ->where('is_system', true)
+                ->whereIn('name', $this->config->get('quote-mapping.worldwide_quote.fields', []))
+                ->pluck('id');
+
+            $this->connection->transaction(function () use ($templateFields, $distribution) {
+                $distribution->save();
+                $distribution->templateFields()->sync($templateFields);
+            });
+        });
+    }
+
+    public function applyDistributionsDiscount(DistributionDiscountsCollection $collection)
+    {
+        foreach ($collection as $discountsData) {
+            $violations = $this->validator->validate($discountsData);
+
+            if (count($violations)) {
+                throw new ValidationFailedException($discountsData, $violations);
+            }
+        }
+
+        $collection->rewind();
+
+        foreach ($collection as $discountsData) {
+            $model = $discountsData->worldwideDistribution;
+
+            if (!is_null($discountsData->predefinedDiscounts)) {
+                $model->multiYearDiscount()->associate($discountsData->predefinedDiscounts->multiYearDiscount);
+                $model->prePayDiscount()->associate($discountsData->predefinedDiscounts->prePayDiscount);
+                $model->promotionalDiscount()->associate($discountsData->predefinedDiscounts->promotionalDiscount);
+                $model->snDiscount()->associate($discountsData->predefinedDiscounts->snDiscount);
+            } else {
+                $model->multiYearDiscount()->dissociate();
+                $model->prePayDiscount()->dissociate();
+                $model->promotionalDiscount()->dissociate();
+                $model->snDiscount()->dissociate();
+            }
+
+            $model->custom_discount = $discountsData->customDiscount;
+
+            $lock = $this->lockProvider->lock(
+                Lock::UPDATE_WWDISTRIBUTION($discountsData->worldwideDistribution->getKey()),
+                10
+            );
+
+            $lock->block(30, function () use ($model) {
+                $this->connection->transaction(fn() => $model->save());
+            });
+        }
+    }
+
+    public function setDistributionsExpiryDate(DistributionExpiryDateCollection $collection)
+    {
+        foreach ($collection as $distribution) {
+            $violations = $this->validator->validate($distribution);
+
+            if (count($violations)) {
+                throw new ValidationFailedException($distribution, $violations);
+            }
+        }
+
+        $collection->rewind();
+
+        $modelKeys = array_unique(Arr::pluck($collection, 'worldwide_distribution_id'));
+
+        /** @var Collection<WorldwideDistribution>|WorldwideDistribution[] */
+        $distributions = WorldwideDistribution::query()
+            ->whereKey($modelKeys)
+            ->get(['id', 'worldwide_quote_id', 'distribution_expiry_date', 'created_at', 'updated_at'])
+            ->keyBy('id');
+
+        $missingDistributions = array_diff($modelKeys, $distributions->modelKeys());
+
+        if (!empty($missingDistributions)) {
+            throw (new ModelNotFoundException)->setModel(WorldwideDistribution::class, $missingDistributions);
+        }
+
+        foreach ($collection as $distributionData) {
+            /** @var WorldwideDistribution $model */
+            $model = $distributions[$distributionData->worldwide_distribution_id];
+
+            $model->distribution_expiry_date = $distributionData->distribution_expiry_date->toDateString();
+
+            $lock = $this->lockProvider->lock(
+                Lock::UPDATE_WWDISTRIBUTION($model->getKey()),
+                10
+            );
+
+            $lock->block(30, function () use ($model) {
+                $this->connection->transaction(fn() => $model->save());
+            });
+        }
+    }
+
+    public function updateDistributionsDetails(DistributionDetailsCollection $collection)
+    {
+        foreach ($collection as $detailsData) {
+            $violations = $this->validator->validate($detailsData);
+
+            if (count($violations)) {
+                throw new ValidationFailedException($detailsData, $violations);
+            }
+        }
+
+        $collection->rewind();
+
+        foreach ($collection as $detailsData) {
+            $model = $detailsData->worldwide_distribution;
+
+            $model->pricing_document = $detailsData->pricing_document;
+            $model->service_agreement_id = $detailsData->service_agreement_id;
+            $model->system_handle = $detailsData->system_handle;
+            $model->purchase_order_number = $detailsData->purchase_order_number;
+            $model->vat_number = $detailsData->vat_number;
+            $model->additional_details = $detailsData->additional_details;
+
+            $lock = $this->lockProvider->lock(
+                Lock::UPDATE_WWDISTRIBUTION($model->getKey()),
+                10
+            );
+
+            $lock->block(30, function () use ($model) {
+                $this->connection->transaction(fn() => $model->save());
+            });
+        }
+    }
+
+    public function processDistributionsImport(ProcessableDistributionCollection $collection)
+    {
+        foreach ($collection as $distribution) {
+            $violations = $this->validator->validate($distribution);
+
+            if (count($violations)) {
+                throw new ValidationFailedException($distribution, $violations);
+            }
+        }
+
+        $collection->rewind();
+
+        $modelKeys = collect($collection)->pluck('id');
+        $fileKeys = collect($collection)->reduce(function (BaseCollection $keys, ProcessableDistribution $distribution) {
+            $keys->push($distribution->distributor_file_id);
+
+            if (null !== $distribution->schedule_file_id) {
+                $keys->push($distribution->schedule_file_id);
+            }
+
+            return $keys;
+        }, BaseCollection::make());
+
+        /** @var Collection<WorldwideDistribution>|WorldwideDistribution[] $distributions */
+        $distributions = WorldwideDistribution::query()->whereKey($modelKeys)->get()->keyBy('id');
+
+        /** @var Collection */
+        $quoteFiles = QuoteFile::query()->whereKey($fileKeys)->get()->keyBy('id');
+
+        $missingDistributions = $modelKeys->diff($distributions->keys());
+        $missingQuoteFiles = $fileKeys->diff($quoteFiles->keys());
+
+        if ($missingDistributions->isNotEmpty()) {
+            throw (new ModelNotFoundException)->setModel(WorldwideDistribution::class, $missingDistributions->all());
+        }
+
+        if ($missingQuoteFiles->isNotEmpty()) {
+            throw (new ModelNotFoundException)->setModel(QuoteFile::class, $missingDistributions->all());
+        }
+
+        $fileLocks = $quoteFiles->map(function (QuoteFile $file) {
+            return tap($this->lockProvider->lock(Lock::UPDATE_QUOTE_FILE($file->getKey()), 10), function (LockContract $lock) {
+                $lock->block(30);
+            });
+        });
+
+        $distributionLocks = $distributions->map(function (WorldwideDistribution $distribution) {
+            return tap($this->lockProvider->lock(Lock::UPDATE_WWDISTRIBUTION($distribution->getKey()), 10), function (LockContract $lock) {
+                $lock->block(30);
+            });
+        });
+
+        $this->connection->beginTransaction();
+
+        /** @var Process[] */
+        $processes = [];
+
+        try {
+            foreach ($collection as $distribution) {
+                /** @var WorldwideDistribution $model */
+                $model = $distributions->get($distribution->id);
+
+                $distributorFileModel = $quoteFiles->get($distribution->distributor_file_id);
+                $scheduleFileModel = $quoteFiles->get($distribution->schedule_file_id);
+
+                tap($distributorFileModel, function (QuoteFile $file) use ($distribution) {
+                    $file->forceFill(['imported_page' => $distribution->distributor_file_page ?? 1])->save();
+                });
+
+                if (!is_null($scheduleFileModel)) {
+                    tap($scheduleFileModel, function (QuoteFile $file) use ($distribution) {
+                        $file->forceFill(['imported_page' => $distribution->schedule_file_page ?? $file->pages])->save();
+                    });
+                } else {
+                    $model->scheduleFile()->dissociate();
+                }
+
+                with($model, function (WorldwideDistribution $model) use ($distribution) {
+
+                    $model->distribution_expiry_date = $distribution->distribution_expiry_date->toDateString();
+                    $model->country_id = $distribution->country_id;
+                    $model->distribution_currency_id = $distribution->distribution_currency_id;
+                    $model->buy_price = $distribution->buy_price;
+                    $model->calculate_list_price = (bool)$distribution->calculate_list_price;
+
+                    $model->save();
+
+                    $model->vendors()->sync($distribution->vendors);
+
+                });
+
+                $processes[] = $this->compileDistributionImportCommand($model);
+            }
+
+            $this->connection->commit();
+        } catch (Throwable $e) {
+            $this->connection->rollback();
+
+            throw $e;
+        } finally {
+            $fileLocks->each(function (LockContract $lock) {
+                $lock->release();
+            });
+
+            $distributionLocks->each(function (LockContract $lock) {
+                $lock->release();
+            });
+        }
+
+        if (App::runningUnitTests()) {
+            foreach ($distributions as $distribution) {
+                $this->processSingleDistributionImport($distribution->getKey());
+            }
+
+            return;
+        }
+
+        $processIterator = function () use ($processes): \Iterator {
+            foreach ($processes as $process) {
+                yield $process;
+            }
+        };
+
+        (new ProcessPool($processIterator()))
+            ->setConcurrency(4)
+            ->wait();
+    }
+
+    public function validateDistributionsAfterImport(ProcessableDistributionCollection $collection): MessageBag
+    {
+        $collection->rewind();
+
+        $modelKeys = [];
+
+        foreach ($collection as $distribution) {
+            $modelKeys[] = $distribution->id;
+        }
+
+        /** @var Collection<WorldwideDistribution>|WorldwideDistribution[] $distributionModels */
+        $distributionModels = WorldwideDistribution::query()
+            ->whereKey($modelKeys)
+            ->with('distributorFile', 'scheduleFile')
+            ->get(['id', 'worldwide_quote_id', 'distributor_file_id', 'schedule_file_id']);
+
+        $getDistributionName = function (WorldwideDistribution $distribution) {
+            $distributionName = $this->distributionQueries->distributionQualifiedNameQuery($distribution->getKey(), $as = 'qualified_distribution_name')->value($as);
+
+            if (blank($distributionName)) {
+                return $distribution->getKey();
+            }
+
+            return $distributionName;
+        };
+
+        $errors = new MessageBag();
+
+        foreach ($distributionModels as $distribution) {
+            $distributionName = $getDistributionName($distribution);
+
+            if (is_null($distribution->distributorFile)) {
+                $errors->add($distributionName, 'No Distributor File uploaded.');
+            }
+
+            if ($distribution->distributorFile->rowsData()->getBaseQuery()->doesntExist()) {
+                $fileName = $distribution->distributorFile->original_file_name;
+
+                $errors->add($distributionName, "No Rows found in the Distributor File '$fileName'.");
+            }
+
+            if (!is_null($distribution->scheduleFile)) {
+                with($distribution->scheduleFile->scheduleData, function (?ScheduleData $scheduleData) use ($distribution, $distributionName, $errors) {
+                    $fileName = $distribution->scheduleFile->original_file_name;
+
+                    if (is_null($scheduleData)) {
+                        $errors->add($distributionName, "No Payment Data found in the Payment Schedule File '$fileName'.");
+
+                        return;
+                    }
+
+                    $scheduleDataValue = $scheduleData->value;
+
+                    if (empty($scheduleDataValue)) {
+                        $errors->add($distributionName, "No Payment Data found in the Payment Schedule File '$fileName'.");
+                    }
+                });
+            }
+
+        }
+
+        return $errors;
+    }
+
+    protected function compileDistributionImportCommand(WorldwideDistribution $worldwideDistribution): Process
+    {
+        return (new Process(['php', 'artisan', 'eq:process-ww-distribution', $worldwideDistribution->getKey()]))
+            ->setWorkingDirectory(base_path());
+    }
+
+    public function processSingleDistributionImport(string $distributionId)
+    {
+        $this->logger->info(
+            "Try process Worldwide Distribution '$distributionId'..."
+        );
+
+        /** @var WorldwideDistribution $wwDistribution */
+        $wwDistribution = WorldwideDistribution::query()->findOrFail($distributionId, ['id', 'worldwide_quote_id', 'distributor_file_id', 'schedule_file_id']);
+
+        $wwDistribution->templateFields()->sync(TemplateField::query()->where('is_system', true)->pluck('id'));
+
+        $failures = new MessageBag(['distributor_file' => [], 'schedule_file' => []]);
+
+        tap($wwDistribution->distributorFile, function (?QuoteFile $file) use ($wwDistribution, $failures) {
+            if ($file === null) {
+                $this->logger->info("No Distributor File found.", [$wwDistribution->getForeignKey() => $wwDistribution->getKey()]);
+
+                return;
+            }
+
+            try {
+                $this->documentProcessor->forwardProcessor($file);
+
+                $this->logger->info("Distributor File '$file->original_file_name' has been processed.", [$wwDistribution->getForeignKey() => $wwDistribution->getKey()]);
+
+                if ($file->rowsData()->getBaseQuery()->doesntExist()) {
+                    $failures->add('distributor_file', 'No data found in the file.');
+                } else {
+                    $this->guessDistributionMapping($wwDistribution);
+                }
+
+                //
+            } catch (Throwable $e) {
+                report($e);
+
+                $failures->add('distributor_file', 'A system error occurred. Please contact with administrator.');
+            }
+        });
+
+        tap($wwDistribution->scheduleFile, function (?QuoteFile $file) use ($wwDistribution, $failures) {
+            if ($file === null) {
+                $this->logger->info("No Payment Schedule File found.", [$wwDistribution->getForeignKey() => $wwDistribution->getKey()]);
+
+                return;
+            }
+
+            try {
+                $this->documentProcessor->forwardProcessor($file);
+
+                $this->logger->info("Payment Schedule File '$file->original_file_name' has been processed.", [$wwDistribution->getForeignKey() => $wwDistribution->getKey()]);
+
+                if (is_null($file->scheduleData) || BaseCollection::wrap($file->scheduleData->value)->isEmpty()) {
+                    $failures->add('schedule_file', 'No data found in the file');
+                }
+            } catch (Throwable $e) {
+                report($e);
+
+                $failures->add('schedule_file', 'A system error occurred. Please contact with administrator.');
+            }
+        });
+
+        $lock = $this->lockProvider->lock(Lock::UPDATE_WWDISTRIBUTION($wwDistribution->getKey()), 10);
+
+        $wwDistribution->imported_at = now();
+
+        $lock->block(30, function () use ($wwDistribution) {
+
+            $this->connection->transaction(fn() => $wwDistribution->save());
+
+        });
+
+        $this->dispatcher->dispatch(new DistributionProcessed(
+            $wwDistribution->{$wwDistribution->worldwideQuote()->getForeignKeyName()},
+            $wwDistribution->getKey(),
+            $failures
+        ));
+    }
+
+    protected function guessDistributionMapping(WorldwideDistribution $worldwideDistribution): void
+    {
+        $mappingRow = $worldwideDistribution->mappingRow;
+
+        if (is_null($mappingRow) || is_null($mappingRow->columns_data)) {
+            return;
+        }
+
+        $importableColumnKeys = $mappingRow->columns_data->pluck('importable_column_id')->all();
+
+        /** @var Collection<DistributionFieldColumn>|DistributionFieldColumn[] $possibleMappings */
+        $possibleMappings = DistributionFieldColumn::query()
+            ->whereIn('importable_column_id', $importableColumnKeys)
+            ->whereNotNull('importable_column_id')
+            ->groupBy('template_field_id', 'importable_column_id')
+            ->orderByRaw('count(*) desc')
+            ->select('template_field_id', 'importable_column_id')
+            ->get();
+
+        $guessedMapping = [];
+
+        foreach ($importableColumnKeys as $columnKey) {
+            /** @var DistributionFieldColumn|null $possibleMapping */
+            $possibleMapping = $possibleMappings->first(function (DistributionFieldColumn $columnMapping) use ($columnKey) {
+                return $columnMapping->importable_column_id === $columnKey;
+            });
+
+            if (!is_null($possibleMapping)) {
+                $guessedMapping[$possibleMapping->template_field_id] = [
+                    'importable_column_id' => $columnKey
+                ];
+            }
+        }
+
+        if (empty($guessedMapping)) {
+            return;
+        }
+
+        $lock = $this->lockProvider->lock(Lock::UPDATE_WWDISTRIBUTION($worldwideDistribution->getKey()), 10);
+
+        $lock->block(30, function () use ($worldwideDistribution, $guessedMapping) {
+
+            $this->connection->transaction(fn() => $worldwideDistribution->templateFields()->syncWithoutDetaching($guessedMapping));
+
+        });
+    }
+
+    protected function transitDistributionMappingToRowMapping(DistributionMappingCollection $distributionMapping): RowMapping
+    {
+        $mapping = Arr::pluck($distributionMapping, 'importable_column_id', 'template_field_id');
+
+        $templateFields = TemplateField::query()->whereKey(array_keys($mapping))->pluck('name', 'id');
+
+        $rowMapping = [];
+
+        foreach ($templateFields as $key => $name) {
+            $rowMapping[$name] = $mapping[$key] ?? null;
+        }
+
+        return new RowMapping($rowMapping);
+    }
+
+    protected function getMappedRowSettings(WorldwideDistribution $worldwideDistribution): MappedRowSettings
+    {
+        $wwQuote = $worldwideDistribution->worldwideQuote;
+
+        $exchangeRateValue = $this->exchangeRateService->getTargetRate(
+            $worldwideDistribution->getRelationValue('distributionCurrency') ?? $wwQuote->quoteCurrency,
+            $wwQuote->quoteCurrency
+        );
+
+        return new MappedRowSettings([
+            'default_date_from' => transform($wwQuote->opportunity->opportunity_start_date, fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
+            'default_date_to' => transform($wwQuote->opportunity->opportunity_end_date, fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
+            'default_qty' => 1,
+            'calculate_list_price' => (bool)$worldwideDistribution->calculate_list_price,
+            'exchange_rate_value' => $exchangeRateValue,
+        ]);
+    }
+
+    public function processDistributionsMapping(DistributionMappingCollection $collection)
+    {
+        foreach ($collection as $mapping) {
+            $violations = $this->validator->validate($mapping);
+
+            if (count($violations)) {
+                throw new ValidationFailedException($mapping, $violations);
+            }
+        }
+
+        $modelKeys = collect($collection)->pluck('worldwide_distribution_id')->unique();
+
+        /** @var Collection<WorldwideDistribution>|WorldwideDistribution[] $distributions */
+        $distributions = WorldwideDistribution::query()
+            ->whereKey($modelKeys)
+            ->with('worldwideQuote')
+            ->get(['id', 'worldwide_quote_id', 'worldwide_quote_type', 'distributor_file_id', 'distribution_currency_id', 'created_at', 'updated_at']);
+
+        $missingDistributions = $modelKeys->diff($distributions->modelKeys());
+
+        if ($missingDistributions->isNotEmpty()) {
+            throw (new ModelNotFoundException)->setModel(WorldwideDistribution::class, $missingDistributions->all());
+        }
+
+        if ($distributions->unique('worldwide_quote_id')->count() > 1) {
+            throw new RuntimeException("Worldwide Distributions must belong to the same Worldwide Quote");
+        }
+
+        $mapping = collect($collection)->groupBy(fn(DistributionMapping $mapping) => $mapping->worldwide_distribution_id);
+
+        foreach ($distributions as $model) {
+            $lock = $this->lockProvider->lock(
+                Lock::UPDATE_WWDISTRIBUTION($model->getKey()),
+                10
+            );
+
+            $lock->block(30);
+
+            $this->connection->beginTransaction();
+
+            try {
+                /** @var BaseCollection */
+                $distributionMapping = $mapping->get($model->getKey());
+
+                // Filter the mapping related to the distribution.
+                $modelMapping = BaseCollection::wrap($distributionMapping)->mapWithKeys(
+                    fn(DistributionMapping $mapping) => [
+                        $mapping->template_field_id => $mapping->except('worldwide_distribution_id', 'template_field_id')->toArray(),
+                    ]
+                )->all();
+
+                with($model->templateFields()->syncWithoutDetaching($modelMapping), function (array $changes) use ($model, $distributionMapping) {
+                    if (is_null($model->distributorFile)) {
+                        return;
+                    }
+
+                    // Perform imported rows mapping only when any mapping field is changed
+                    // or the mapped rows are not created for the distribution yet.
+                    if (
+                        empty($changes['attached']) && empty($changes['detached']) && empty($changes['updated'])
+                        && $model->mappedRows()->exists()
+                    ) {
+                        return;
+                    }
+
+                    $mappedRowDefaults = $this->getMappedRowSettings($model);
+
+                    $rowMapping = $this->transitDistributionMappingToRowMapping(new DistributionMappingCollection($distributionMapping->all()));
+
+                    $this->documentProcessor->transitImportedRowsToMappedRows($model->distributorFile, $rowMapping, $mappedRowDefaults);
+                });
+
+                $this->connection->commit();
+            } catch (Throwable $e) {
+                $this->connection->rollBack();
+
+                throw $e;
+            } finally {
+                $lock->release();
+            }
+        }
+    }
+
+    public function updateRowsSelection(SelectedDistributionRowsCollection $collection)
+    {
+        foreach ($collection as $selection) {
+            $violations = $this->validator->validate($collection);
+
+            if (count($violations)) {
+                throw new ValidationFailedException($selection, $violations);
+            }
+        }
+
+        /** @var Collection<WorldwideDistribution> */
+        $distributions = WorldwideDistribution::query()
+            ->whereKey(Arr::pluck($collection, 'worldwide_distribution_id'))
+            ->get(['id', 'distributor_file_id', 'created_at', 'updated_at'])
+            ->keyBy('id');
+
+        foreach ($collection as $selection) {
+            /** @var WorldwideDistribution */
+            $model = $distributions->get($selection->worldwide_distribution_id);
+
+            $lock = $this->lockProvider->lock(
+                Lock::UPDATE_WWDISTRIBUTION($model->getKey()),
+                10
+            );
+
+            $lock->block(30);
+
+            $this->connection->beginTransaction();
+
+            try {
+                with($selection, function (SelectedDistributionRows $selection) use ($model) {
+                    if ($selection->use_groups) {
+                        $model->use_groups = true;
+                        $model->sort_rows_groups_column = $selection->sort_rows_groups_column;
+                        $model->sort_rows_groups_direction = $selection->sort_rows_groups_direction;
+
+                        $model->rowsGroups()->update(['is_selected' => false]);
+
+                        $model->rowsGroups()->getQuery()
+                            ->when(
+                                $selection->reject,
+
+                                fn(Builder $builder) => $builder->whereKeyNot($selection->selected_groups),
+                                fn(Builder $builder) => $builder->whereKey($selection->selected_groups),
+                            )
+                            ->update(['is_selected' => true]);
+
+                        $model->save();
+
+                        return;
+                    }
+
+                    $model->use_groups = false;
+
+                    $model->mappedRows()->update(['is_selected' => false]);
+
+                    $model->mappedRows()->getQuery()
+                        ->when(
+                            $selection->reject,
+
+                            fn(Builder $builder) => $builder->whereKeyNot($selection->selected_rows),
+                            fn(Builder $builder) => $builder->whereKey($selection->selected_rows),
+                        )
+                        ->update(['is_selected' => true]);
+
+                    $model->sort_rows_column = $selection->sort_rows_column;
+                    $model->sort_rows_direction = $selection->sort_rows_direction;
+
+                    $model->save();
+                });
+
+                $this->connection->commit();
+            } catch (Throwable $e) {
+                $this->connection->rollBack();
+
+                throw $e;
+            } finally {
+                $lock->release();
+            }
+        }
+    }
+
+    public function createRowsGroup(WorldwideDistribution $distribution, RowsGroupData $data): DistributionRowsGroup
+    {
+        $violations = $this->validator->validate($data);
+
+        if (count($violations)) {
+            throw new ValidationFailedException($data, $violations);
+        }
+
+        $lock = $this->lockProvider->lock(
+            Lock::UPDATE_WWDISTRIBUTION($distribution->getKey()),
+            10
+        );
+
+        $lock->block(30);
+
+        $this->connection->beginTransaction();
+
+        try {
+            /** @var DistributionRowsGroup */
+            $rowsGroup = tap(new DistributionRowsGroup([
+                'worldwide_distribution_id' => $distribution->getKey(),
+                'group_name' => $data->group_name,
+                'search_text' => $data->search_text,
+            ]))->save();
+
+            $rowsGroup->rows()->sync($data->rows);
+
+            $this->connection->commit();
+
+            return $rowsGroup;
+        } catch (Throwable $e) {
+            $this->connection->rollBack();
+
+            throw $e;
+        } finally {
+            $lock->release();
+        }
+    }
+
+    public function updateRowsGroup(WorldwideDistribution $distribution, DistributionRowsGroup $rowsGroup, RowsGroupData $data): DistributionRowsGroup
+    {
+        $violations = $this->validator->validate($data);
+
+        if (count($violations)) {
+            throw new ValidationFailedException($data, $violations);
+        }
+
+        $lock = $this->lockProvider->lock(
+            Lock::UPDATE_WWDISTRIBUTION($distribution->getKey()),
+            10
+        );
+
+        $lock->block(30);
+
+        $this->connection->beginTransaction();
+
+        try {
+            $rowsGroup->forceFill([
+                'group_name' => $data->group_name,
+                'search_text' => $data->search_text,
+            ])->save();
+
+            $rowsGroup->rows()->sync($data->rows);
+
+            $this->connection->commit();
+
+            return $rowsGroup;
+        } catch (Throwable $e) {
+            $this->connection->rollBack();
+
+            throw $e;
+        } finally {
+            $lock->release();
+        }
+    }
+
+    public function deleteRowsGroup(WorldwideDistribution $distribution, DistributionRowsGroup $rowsGroup): void
+    {
+        $lock = $this->lockProvider->lock(
+            Lock::UPDATE_WWDISTRIBUTION($distribution->getKey()),
+            10
+        );
+
+        $lock->block(30);
+
+        $this->connection->beginTransaction();
+
+        try {
+            $rowsGroup->delete();
+
+            $this->connection->commit();
+        } catch (Throwable $e) {
+            $this->connection->rollBack();
+
+            throw $e;
+        } finally {
+            $lock->release();
+        }
+    }
+
+    public function moveRowsBetweenGroups(WorldwideDistribution $distribution, DistributionRowsGroup $outputRowsGroup, DistributionRowsGroup $inputRowsGroup, array $rows): void
+    {
+        $lock = $this->lockProvider->lock(
+            Lock::UPDATE_WWDISTRIBUTION($distribution->getKey()),
+            10
+        );
+
+        $lock->block(30);
+
+        $this->connection->beginTransaction();
+
+        try {
+            $outputRowsGroup->rows()->detach($rows);
+            $inputRowsGroup->rows()->syncWithoutDetaching($rows);
+
+            $this->connection->commit();
+        } catch (Throwable $e) {
+            $this->connection->rollBack();
+
+            throw $e;
+        } finally {
+            $lock->release();
+        }
+    }
+
+    public function setDistributionsMargin(DistributionMarginTaxCollection $collection)
+    {
+        foreach ($collection as $marginTaxData) {
+            $violations = $this->validator->validate($marginTaxData);
+
+            if (count($violations)) {
+                throw new ValidationFailedException($marginTaxData, $violations);
+            }
+        }
+
+        $collection->rewind();
+
+        /** @var Collection<WorldwideDistribution> */
+        $distributions = WorldwideDistribution::query()
+            ->whereKey(Arr::pluck($collection, 'worldwide_distribution_id'))
+            ->get(['id', 'margin_value', 'created_at', 'updated_at'])
+            ->keyBy('id');
+
+        foreach ($collection as $distribution) {
+            /** @var WorldwideDistribution $model */
+            $model = $distributions->get($distribution->worldwide_distribution_id);
+
+            $model->margin_value = $distribution->margin_value;
+            $model->tax_value = $distribution->tax_value;
+
+            if (is_null($model->margin_value)) {
+                $model->margin_method = null;
+                $model->quote_type = null;
+            } else {
+                $model->margin_method = $distribution->margin_method;
+                $model->quote_type = $distribution->quote_type;
+            }
+
+            $lock = $this->lockProvider->lock(
+                Lock::UPDATE_WWDISTRIBUTION($model->getKey()),
+                10
+            );
+
+            $lock->block(30, function () use ($model) {
+
+                $this->connection->transaction(fn() => $model->save());
+
+            });
+        }
+    }
+
+    public function storeDistributorFile(UploadedFile $file, WorldwideDistribution $worldwideDistribution): QuoteFile
+    {
+        $fileName = $this->storage->put($worldwideDistribution->getKey(), $file);
+
+        $fileService = (new QuoteFileService);
+
+        $pagesCount = $fileService->countPages($this->storage->path($fileName));
+
+        $quoteFileFormat = $fileService->determineFileFormat($file->getClientOriginalName());
+
+        $filePath = Str::after($this->storage->path($fileName), Storage::path(''));
+
+        $quoteFile = tap(new QuoteFile(), function (QuoteFile $quoteFile) use ($pagesCount, $quoteFileFormat, $file, $filePath) {
+            $quoteFile->original_file_path = $filePath;
+            $quoteFile->original_file_name = $file->getClientOriginalName();
+            $quoteFile->quote_file_format_id = optional($quoteFileFormat)->getKey();
+            $quoteFile->pages = $pagesCount;
+            $quoteFile->file_type = QFT_WWPL;
+
+            $this->connection->transaction(fn() => $quoteFile->save());
+        });
+
+        $worldwideDistribution->distributorFile()->associate($quoteFile);
+
+        // Unset a cached exchange rate of mapped rows
+        // when a new file attached to the quote.
+        $worldwideDistribution->distribution_exchange_rate = null;
+
+        // Unset imported_at timestamp
+        // when a new file attached to the quote.
+        $worldwideDistribution->imported_at = null;
+
+        $lock = $this->lockProvider->lock(
+            Lock::UPDATE_WWDISTRIBUTION($worldwideDistribution->getKey()),
+            10
+        );
+
+        $lock->block(30, function () use ($worldwideDistribution) {
+
+            $this->connection->transaction(function () use ($worldwideDistribution) {
+                $worldwideDistribution->save();
+
+                // It's required to detach the existing mapped columns
+                // when a new file attached to the distributor quote.
+                $worldwideDistribution->templateFields()->update(['importable_column_id' => null]);
+            });
+
+        });
+
+        return $quoteFile;
+    }
+
+    public function storeScheduleFile(UploadedFile $file, WorldwideDistribution $worldwideDistribution): QuoteFile
+    {
+        $fileName = $this->storage->put($worldwideDistribution->getKey(), $file);
+
+        $fileService = (new QuoteFileService);
+
+        $pagesCount = $fileService->countPages($this->storage->path($fileName));
+
+        $quoteFileFormat = $fileService->determineFileFormat($file->getClientOriginalName());
+
+        $filePath = Str::after($this->storage->path($fileName), Storage::path(''));
+
+        $quoteFile = tap(new QuoteFile(), function (QuoteFile $quoteFile) use ($pagesCount, $filePath, $file, $quoteFileFormat) {
+            $quoteFile->original_file_path = $filePath;
+            $quoteFile->original_file_name = $file->getClientOriginalName();
+            $quoteFile->quote_file_format_id = optional($quoteFileFormat)->getKey();
+            $quoteFile->pages = $pagesCount;
+            $quoteFile->file_type = QFT_PS;
+
+            $this->connection->transaction(fn() => $quoteFile->save());
+        });
+
+        $worldwideDistribution->scheduleFile()->associate($quoteFile);
+
+        // Unset imported_at timestamp
+        // when a new file attached to the quote.
+        $worldwideDistribution->imported_at = null;
+
+        $lock = $this->lockProvider->lock(
+            Lock::UPDATE_WWDISTRIBUTION($worldwideDistribution->getKey()),
+            10
+        );
+
+        $lock->block(30, function () use ($worldwideDistribution) {
+
+            $this->connection->transaction(fn() => $worldwideDistribution->save());
+        });
+
+        return $quoteFile;
+    }
+
+    public function deleteDistribution(WorldwideDistribution $worldwideDistribution): bool
+    {
+        return $this->connection->transaction(fn() => $worldwideDistribution->delete());
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function updateMappedRowOfDistribution(UpdateMappedRowFieldCollection $rowData, MappedRow $mappedRow, WorldwideDistribution $worldwideDistribution): MappedRow
+    {
+        foreach ($rowData as $fieldData) {
+            $violations = $this->validator->validate($fieldData);
+
+            if (count($violations)) {
+                throw new ValidationFailedException($fieldData, $violations);
+            }
+        }
+
+        $rowData->rewind();
+
+        foreach ($rowData as $fieldData) {
+            $mappedRow->{$fieldData->field_name} = $fieldData->field_value;
+        }
+
+        $this->connection->transaction(fn() => $mappedRow->save());
+
+        return $mappedRow;
+    }
+}

@@ -3,74 +3,139 @@
 namespace App\Http\Controllers\API\Templates;
 
 use App\Http\Controllers\Controller;
-use App\Contracts\Repositories\QuoteTemplate\QuoteTemplateRepositoryInterface as QuoteTemplateRepository;
-use App\Http\Requests\QuoteTemplate\{
-    DeleteTemplate,
+use App\Http\Requests\QuoteTemplate\{DeleteTemplate,
+    FilterQuoteTemplatesByCompany,
     FilterQuoteTemplatesByMultipleVendors,
     StoreQuoteTemplateRequest,
     UpdateQuoteTemplateRequest
 };
-use App\Http\Resources\TemplateRepository\{
-    TemplateCollection,
-    TemplateResourceListing,
-    TemplateResourceWithIncludes
-};
+use App\Http\Resources\QuoteTemplate\PaginatedQuoteTemplate;
+use App\Http\Resources\QuoteTemplate\QuoteTemplateWithIncludes;
+use App\Http\Resources\TemplateRepository\{TemplateResourceListing};
 use App\Models\Template\QuoteTemplate;
-use App\Services\QuoteTemplateQueries;
+use App\Queries\QuoteTemplateQueries;
+use App\Services\Exceptions\ValidationException;
+use App\Services\QuoteTemplateService;
+use App\Services\Template\TemplateSchemaDataMapper;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 
 class QuoteTemplateController extends Controller
 {
-    protected $quoteTemplate;
-
-    public function __construct(QuoteTemplateRepository $quoteTemplate)
+    public function __construct()
     {
-        $this->quoteTemplate = $quoteTemplate;
         $this->authorizeResource(QuoteTemplate::class, 'template');
     }
 
     /**
      * Display a listing of the Quote Templates.
      *
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @param QuoteTemplateQueries $queries
+     * @return AnonymousResourceCollection
      */
-    public function index()
+    public function index(Request $request, QuoteTemplateQueries $queries): AnonymousResourceCollection
     {
-        $resource = request()->filled('search')
-            ? $this->quoteTemplate->search(request('search'))
-            : $this->quoteTemplate->all();
+        $resource = $queries->paginateQuoteTemplatesQuery($request)->apiPaginate();
+
+        return PaginatedQuoteTemplate::collection($resource);
+    }
+
+    /**
+     * Display a listing of the Quote Templates belong to specified country.
+     *
+     * @param string $country
+     * @param QuoteTemplateQueries $queries
+     * @return JsonResponse
+     * @throws AuthorizationException
+     */
+    public function filterTemplatesByCountry(string $country, QuoteTemplateQueries $queries): JsonResponse
+    {
+        $this->authorize('viewAny', QuoteTemplate::class);
+
+        return response()->json(TemplateResourceListing::collection(
+            $queries->quoteTemplatesBelongToCountryQuery($country)->get()
+        ));
+    }
+
+    /**
+     * Filter Rescue Quote Templates by multiple vendors.
+     *
+     * @param FilterQuoteTemplatesByMultipleVendors $request
+     * @param QuoteTemplateQueries $queries
+     * @return JsonResponse
+     * @throws AuthorizationException
+     */
+    public function filterRescueTemplates(FilterQuoteTemplatesByMultipleVendors $request, QuoteTemplateQueries $queries): JsonResponse
+    {
+        $this->authorize('viewAny', QuoteTemplate::class);
 
         return response()->json(
-            TemplateCollection::make($resource)
+            $queries->filterRescueQuoteTemplatesByMultipleVendorsQuery(
+                $request->input('company_id'),
+                $request->input('vendors'),
+                $request->input('country_id')
+            )->get()
         );
     }
 
     /**
-     * Display a listing of the Quote Templates by specified Country.
-     *
-     * @param  string $country
-     * @return \Illuminate\Http\Response
-     */
-    public function country(string $country)
-    {
-        $this->authorize('viewAny', QuoteTemplate::class);
-
-        $resource = $this->quoteTemplate->country($country);
-
-        return response()->json(TemplateResourceListing::collection($resource));
-    }
-
-    /**
-     * Filter Quote Templates by multiple vendors.
+     * Filter Worldwide Quote Templates by multiple vendors.
      *
      * @param FilterQuoteTemplatesByMultipleVendors $request
-     * @return \Illuminate\Http\Response
+     * @param QuoteTemplateQueries $queries
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function filterTemplates(FilterQuoteTemplatesByMultipleVendors $request, QuoteTemplateQueries $queries)
+    public function filterWorldwideTemplates(FilterQuoteTemplatesByMultipleVendors $request, QuoteTemplateQueries $queries): JsonResponse
     {
         $this->authorize('viewAny', QuoteTemplate::class);
 
         return response()->json(
-            $queries->filterQuoteTemplatesQuery(
+            $queries->filterWorldwideQuoteTemplatesByMultipleVendorsQuery(
+                $request->input('company_id'),
+                $request->input('vendors'),
+                $request->input('country_id')
+            )->get()
+        );
+    }
+
+    /**
+     * Filter Worldwide Pack Quote Templates by multiple vendors.
+     *
+     * @param FilterQuoteTemplatesByCompany $request
+     * @param QuoteTemplateQueries $queries
+     * @return JsonResponse
+     * @throws AuthorizationException
+     */
+    public function filterWorldwidePackTemplates(FilterQuoteTemplatesByCompany $request, QuoteTemplateQueries $queries): JsonResponse
+    {
+        $this->authorize('viewAny', QuoteTemplate::class);
+
+        return response()->json(
+            $queries->filterWorldwidePackQuoteTemplatesByCompanyQuery(
+                $request->input('company_id')
+            )->get()
+        );
+    }
+
+    /**
+     * Filter Worldwide Contract Quote Templates by multiple vendors.
+     *
+     * @param FilterQuoteTemplatesByMultipleVendors $request
+     * @param QuoteTemplateQueries $queries
+     * @return JsonResponse
+     * @throws AuthorizationException
+     */
+    public function filterWorldwideContractTemplates(FilterQuoteTemplatesByMultipleVendors $request, QuoteTemplateQueries $queries): JsonResponse
+    {
+        $this->authorize('viewAny', QuoteTemplate::class);
+
+        return response()->json(
+            $queries->filterWorldwideContractQuoteTemplatesByMultipleVendorsQuery(
                 $request->input('company_id'),
                 $request->input('vendors'),
                 $request->input('country_id')
@@ -81,99 +146,110 @@ class QuoteTemplateController extends Controller
     /**
      * Store a newly created Quote Template in storage.
      *
-     * @param  StoreQuoteTemplateRequest  $request
-     * @return \Illuminate\Http\Response
+     * @param StoreQuoteTemplateRequest $request
+     * @param QuoteTemplateService $service
+     * @return JsonResponse
+     * @throws ValidationException
      */
-    public function store(StoreQuoteTemplateRequest $request)
+    public function store(StoreQuoteTemplateRequest $request, QuoteTemplateService $service): JsonResponse
     {
-        $template = $this->quoteTemplate->create($request);
+        $resource = $service->createQuoteTemplate($request->getCreateQuoteTemplateData());
 
         return response()->json(
-            TemplateResourceWithIncludes::make($template)
+            QuoteTemplateWithIncludes::make($resource)
         );
     }
 
     /**
      * Display the specified Quote Template.
      *
-     * @param  QuoteTemplate $template
-     * @return \Illuminate\Http\Response
+     * @param QuoteTemplate $template
+     * @return JsonResponse
      */
-    public function show(QuoteTemplate $template)
+    public function show(QuoteTemplate $template): JsonResponse
     {
-        return response()->json(TemplateResourceWithIncludes::make($template));
+        return response()->json(QuoteTemplateWithIncludes::make($template));
     }
 
     /**
      * Update the specified Quote Template in storage.
      *
-     * @param  UpdateQuoteTemplateRequest  $request
-     * @param  QuoteTemplate $template
-     * @return \Illuminate\Http\Response
+     * @param UpdateQuoteTemplateRequest $request
+     * @param QuoteTemplate $template
+     * @param QuoteTemplateService $service
+     * @return JsonResponse
+     * @throws ValidationException
      */
-    public function update(UpdateQuoteTemplateRequest $request, QuoteTemplate $template)
+    public function update(UpdateQuoteTemplateRequest $request, QuoteTemplate $template, QuoteTemplateService $service): JsonResponse
     {
-        $template = $this->quoteTemplate->update($request, $template->id);
+        $resource = $service->updateQuoteTemplate($template, $request->getUpdateQuoteTemplateData());
 
-        return response()->json(TemplateResourceWithIncludes::make($template));
+        return response()->json(QuoteTemplateWithIncludes::make($resource));
     }
 
     /**
      * Remove the specified Quote Template from storage.
      *
-     * @param  DeleteTemplate $request
-     * @param  QuoteTemplate $template
-     * @return \Illuminate\Http\Response
+     * @param DeleteTemplate $request
+     * @param QuoteTemplate $template
+     * @param QuoteTemplateService $service
+     * @return Response
      */
-    public function destroy(DeleteTemplate $request, QuoteTemplate $template)
+    public function destroy(DeleteTemplate $request, QuoteTemplate $template, QuoteTemplateService $service): Response
     {
-        return response()->json(
-            $this->quoteTemplate->delete($template->id)
-        );
+        $service->deleteQuoteTemplate($template);
+
+        return response()->noContent();
     }
 
     /**
      * Activate the specified Quote Template from storage.
      *
-     * @param  QuoteTemplate $template
-     * @return \Illuminate\Http\Response
+     * @param QuoteTemplate $template
+     * @param QuoteTemplateService $service
+     * @return Response
+     * @throws AuthorizationException
      */
-    public function activate(QuoteTemplate $template)
+    public function activate(QuoteTemplate $template, QuoteTemplateService $service): Response
     {
         $this->authorize('update', $template);
 
-        return response()->json(
-            $this->quoteTemplate->activate($template->id)
-        );
+        $service->activateQuoteTemplate($template);
+
+        return response()->noContent();
     }
 
     /**
      * Deactivate the specified Quote Template from storage.
      *
-     * @param  QuoteTemplate $template
-     * @return \Illuminate\Http\Response
+     * @param QuoteTemplate $template
+     * @param QuoteTemplateService $service
+     * @return Response
+     * @throws AuthorizationException
      */
-    public function deactivate(QuoteTemplate $template)
+    public function deactivate(QuoteTemplate $template, QuoteTemplateService $service): Response
     {
         $this->authorize('update', $template);
 
-        return response()->json(
-            $this->quoteTemplate->deactivate($template->id)
-        );
+        $service->deactivateQuoteTemplate($template);
+
+        return response()->noContent();
     }
 
     /**
-     * Get Data for Template Designer.
+     * Show template schema of the specified Quote Template.
      *
      * @param QuoteTemplate $template
-     * @return \Illuminate\Http\Response
+     * @param TemplateSchemaDataMapper $schemaDataMapper
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function designer(QuoteTemplate $template)
+    public function showTemplateSchema(QuoteTemplate $template, TemplateSchemaDataMapper $schemaDataMapper): JsonResponse
     {
         $this->authorize('view', $template);
 
         return response()->json(
-            $this->quoteTemplate->designer($template->id)
+            $schemaDataMapper->mapQuoteTemplateSchema($template)
         );
     }
 
@@ -181,14 +257,16 @@ class QuoteTemplateController extends Controller
      * Create copy of the specified Quote Template.
      *
      * @param QuoteTemplate $template
-     * @return \Illuminate\Http\Response
+     * @param QuoteTemplateService $service
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function copy(QuoteTemplate $template)
+    public function copy(QuoteTemplate $template, QuoteTemplateService $service): JsonResponse
     {
         $this->authorize('copy', $template);
 
         return response()->json(
-            $this->quoteTemplate->copy($template->id)
+            $service->replicateQuoteTemplate($template)
         );
     }
 }

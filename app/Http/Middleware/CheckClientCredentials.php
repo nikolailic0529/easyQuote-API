@@ -3,24 +3,13 @@
 namespace App\Http\Middleware;
 
 use App\Contracts\Repositories\System\ClientCredentialsInterface;
-use Laravel\Passport\{
-    TokenRepository,
-    Http\Middleware\CheckClientCredentials as PassportClientCredentials
-};
-use League\OAuth2\{
-    Server\ResourceServer,
-    Server\Exception\OAuthServerException
-};
-use Laminas\Diactoros\{
-    ResponseFactory,
-    ServerRequestFactory,
-    StreamFactory,
-    UploadedFileFactory,
-};
-use Symfony\Bridge\PsrHttpMessage\Factory\PsrHttpFactory;
-use Illuminate\Auth\AuthenticationException;
-use Psr\Http\Message\ServerRequestInterface;
 use Closure;
+use Illuminate\Auth\AuthenticationException;
+use Laravel\Passport\{Http\Middleware\CheckClientCredentials as PassportClientCredentials, TokenRepository};
+use League\OAuth2\{Server\Exception\OAuthServerException, Server\ResourceServer};
+use Nyholm\Psr7\Factory\Psr17Factory;
+use Psr\Http\Message\ServerRequestInterface;
+use Symfony\Bridge\PsrHttpMessage\Factory\PsrHttpFactory;
 
 class CheckClientCredentials extends PassportClientCredentials
 {
@@ -36,19 +25,19 @@ class CheckClientCredentials extends PassportClientCredentials
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @param  mixed  ...$scopes
+     * @param \Illuminate\Http\Request $request
+     * @param \Closure $next
+     * @param mixed ...$scopes
      * @return mixed
-     * @throws \Illuminate\Auth\AuthenticationException
+     * @throws \Illuminate\Auth\AuthenticationException|\Laravel\Passport\Exceptions\MissingScopeException
      */
     public function handle($request, Closure $next, ...$scopes)
     {
         $psr = (new PsrHttpFactory(
-            new ServerRequestFactory,
-            new StreamFactory,
-            new UploadedFileFactory,
-            new ResponseFactory
+            new Psr17Factory,
+            new Psr17Factory,
+            new Psr17Factory,
+            new Psr17Factory
         ))->createRequest($request);
 
         try {
@@ -67,7 +56,7 @@ class CheckClientCredentials extends PassportClientCredentials
         return $next($request);
     }
 
-    protected function checkClientName(ServerRequestInterface $psr, $scopes)
+    protected function checkClientName(ServerRequestInterface $psr, $scopes): ?string
     {
         if (blank($scopes)) {
             return null;

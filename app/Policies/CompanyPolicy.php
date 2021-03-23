@@ -86,10 +86,6 @@ class CompanyPolicy
             return $this->deny(CPSD_01);
         }
 
-        if ($company->inUse()) {
-            return $this->deny(CPUD_01);
-        }
-
         if ($user->hasRole(R_SUPER)) {
             return true;
         }

@@ -3,7 +3,7 @@
 namespace App\Http\Requests\QuoteTemplate;
 
 use App\Models\Template\QuoteTemplate;
-use App\Services\QuoteTemplateQueries;
+use App\Queries\QuoteTemplateQueries;
 use Illuminate\Foundation\Http\FormRequest;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
@@ -14,7 +14,7 @@ class DeleteTemplate extends FormRequest
      *
      * @return bool
      */
-    public function authorize()
+    public function authorize(QuoteTemplateQueries $queries)
     {
         /** @var \App\Models\Template\QuoteTemplate */
         $template = head($this->route()->parameters());
@@ -23,7 +23,7 @@ class DeleteTemplate extends FormRequest
             return true;
         }
 
-        if ((new QuoteTemplateQueries)->referencedQuery($template->getKey())->exists()) {
+        if ($queries->referencedQuery($template->getKey())->exists()) {
             throw new UnprocessableEntityHttpException("You can't delete the Quote Template used in Quotes or Quote Versions.");
         }
 

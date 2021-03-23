@@ -84,8 +84,8 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
                 $join->on('customers.id', 'quotes.customer_id');
             })
             ->addSelect([
-                'company_name' => Company::select('name')->whereColumn('companies.id', 'quotes.company_id'),
-                'user_fullname' => User::select('user_fullname')->whereColumn('users.id', 'quotes.user_id')->limit(1),
+                'company_name' => Company::query()->select('name')->whereColumn('companies.id', 'quotes.company_id'),
+                'user_fullname' => User::query()->select('user_fullname')->whereColumn('users.id', 'quotes.user_id')->limit(1),
 
                 'customers.name as customer_name',
                 'customers.rfq as customer_rfq_number',
@@ -94,19 +94,19 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
                 'customers.support_start as customer_support_start_date',
                 'customers.support_end as customer_support_end_date',
 
-                'price_list_original_file_name' => QuoteFile::select('original_file_name')->whereColumn('quote_files.id', 'quotes.distributor_file_id')->limit(1),
-                'payment_schedule_original_file_name' => QuoteFile::select('original_file_name')->whereColumn('quote_files.id', 'quotes.schedule_file_id')->limit(1),
+                'price_list_original_file_name' => QuoteFile::query()->select('original_file_name')->whereColumn('quote_files.id', 'quotes.distributor_file_id')->limit(1),
+                'payment_schedule_original_file_name' => QuoteFile::query()->select('original_file_name')->whereColumn('quote_files.id', 'quotes.schedule_file_id')->limit(1),
 
             ])
             ->with([
                 'versions' => fn ($query) => $query->select('id', 'quote_id', 'user_id', 'company_id', 'version_number', 'completeness', 'updated_at')
-                    ->addSelect(['user_fullname' => User::select('user_fullname')->whereColumn('users.id', 'quote_versions.user_id')->limit(1)]),
+                    ->addSelect(['user_fullname' => User::query()->select('user_fullname')->whereColumn('users.id', 'quote_versions.user_id')->limit(1)]),
 
                 'activeVersion' => fn ($query) => $query->select('id', 'quote_id', 'user_id', 'distributor_file_id', 'schedule_file_id', 'company_id', 'version_number', 'completeness', 'updated_at')
                     ->addSelect([
-                        'company_name' => Company::select('name')->whereColumn('companies.id', 'quote_versions.company_id')->limit(1),
-                        'price_list_original_file_name' => QuoteFile::select('original_file_name')->whereColumn('quote_files.id', 'quote_versions.distributor_file_id')->limit(1),
-                        'payment_schedule_original_file_name' => QuoteFile::select('original_file_name')->whereColumn('quote_files.id', 'quote_versions.schedule_file_id')->limit(1)
+                        'company_name' => Company::query()->select('name')->whereColumn('companies.id', 'quote_versions.company_id')->limit(1),
+                        'price_list_original_file_name' => QuoteFile::query()->select('original_file_name')->whereColumn('quote_files.id', 'quote_versions.distributor_file_id')->limit(1),
+                        'payment_schedule_original_file_name' => QuoteFile::query()->select('original_file_name')->whereColumn('quote_files.id', 'quote_versions.schedule_file_id')->limit(1)
                     ]),
             ])
             ->whereNull('quotes.submitted_at');

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Contracts\Services\ContractState;
 use App\Contracts\Services\ContractView;
 use App\Contracts\Services\QuoteView as QuoteService;
+use App\Http\Requests\Contract\ShowContractState;
 use App\Http\Requests\Quote\StoreContractStateRequest;
 use App\Http\Resources\ContractReview;
 use App\Models\Quote\Contract;
@@ -48,13 +49,16 @@ class ContractStateController extends Controller
     /**
      * Display the specified resource.
      *
+     * @param  \App\Http\Requests\Contract\ShowContractState
      * @param  \App\Models\Quote\Contract $contract
      * @return \Illuminate\Http\Response
      */
-    public function show(Contract $contract)
+    public function show(ShowContractState $request, Contract $contract)
     {
         return response()->json(
-            ContractVersionResource::make($contract)
+            ContractVersionResource::make(
+                $request->loadContractAttributes($contract)
+            )
         );
     }
 
@@ -90,7 +94,9 @@ class ContractStateController extends Controller
         $resource = $this->processor->storeState($request->validated(), $contract);
 
         return response()->json(
-            ContractVersionResource::make($resource)
+            ContractVersionResource::make(
+               $request->loadContractAttributes($resource)
+            )
         );
     }
 

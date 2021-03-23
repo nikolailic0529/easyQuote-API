@@ -20,3 +20,15 @@ uuid('timezone_id')
 @templates_edited
 _ide_helper.php
 xpdf-tools
+.idea
+.idea/easyquote-api-ww.iml
+.idea/modules.xml
+.idea/php.xml
+.idea/phpunit.xml
+.idea/vcs.xml
+.idea/workspace.xml
+.phpstorm.meta.php
+.idea/codeStyles
+.idea/php-test-framework.xml
+.idea/.gitignore
+patch.sh

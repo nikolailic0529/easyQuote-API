@@ -66,11 +66,18 @@ return [
 
         'token_route' => 'api/oauth/token',
 
+        'submit_sales_order_route' => 'bc-data',
+
         'service_routes' => [
             'DEL' => 'dell-data/{serial}',
-            'HPE' => 'hpe-data/{serial}',
+            'HPE' => 'hpe-data/serial/{serial}/sku/{sku}/country/{country}',
             'LEN' => 'lenovo-data/serial/{serial}/type/{sku}',
             'IBM' => 'ibm-data/serial/{serial}/type/{sku}',
+        ],
+
+        'support_lookup_routes' => [
+            'HPE' => 'hpe-data/sku/{sku}/country/{country}',
+            'LEN' => 'lenovo-data/sku/{sku}/country/{country}/currency/{currency}'
         ],
 
         'client_id' => env('VS_API_CLIENT_ID'),

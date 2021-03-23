@@ -7,11 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class ElasticsearchQuery implements Arrayable
 {
-    /** @var string */
-    protected $index;
+    protected ?string $index = null;
 
-    /** @var array */
-    protected $body;
+    protected array $body = [];
 
     public function index(string $index): ElasticsearchQuery
     {
@@ -42,7 +40,7 @@ class ElasticsearchQuery implements Arrayable
         return $this;
     }
 
-    public function toArray()
+    public function toArray(): array
     {
         return [
             'index' => $this->index,
@@ -50,7 +48,7 @@ class ElasticsearchQuery implements Arrayable
         ];
     }
 
-    public static function escapeReservedChars(string $string)
+    public static function escapeReservedChars(string $string): string
     {
         $regex = "/[\\+\\-\\=\\&\\|\\!\\(\\)\\{\\}\\[\\]\\^\\\"\\~\\*\\<\\>\\?\\:\\\\\\/]/";
 

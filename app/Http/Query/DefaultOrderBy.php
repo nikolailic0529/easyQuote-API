@@ -1,4 +1,6 @@
-<?php namespace App\Http\Query;
+<?php
+
+namespace App\Http\Query;
 
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
@@ -7,35 +9,31 @@ class DefaultOrderBy
 {
     protected string $column;
 
-    protected string $ignore;
+    protected string $ignoreColumn;
 
-    public function __construct(string $column = 'created_at', string $ignore = 'activated_at IS NULL')
+    public function __construct(string $column = 'created_at', string $ignoreColumn = 'is_active')
     {
         $this->column = $column;
-        $this->ignore = $ignore;
+        $this->ignoreColumn = $ignoreColumn;
     }
 
     /**
      * Handle the builder instance.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $builder
-     * @param \Closure $next
-     * @return void
+     * @param Builder $builder
+     * @param Closure $next
+     * @return Builder
      */
-    public function handle($builder, Closure $next)
+    public function handle(Builder $builder, Closure $next)
     {
-        $orders = $builder instanceof Builder
-            ? $builder->getQuery()->orders
-            : $builder->orders;
+        $orders = array_filter($builder->getQuery()->orders ?? [], function (array $order) {
+            return !isset($order['column']) || $order['column'] !== $this->ignoreColumn;
+        });
 
-        $orders = array_filter($orders ?? [], fn ($order) => !isset($order['sql']) || !str_contains($order['sql'], $this->ignore));
-
-        if (!empty($orders)) {
-            return $builder;
+        if (empty($orders)) {
+            $builder->orderBy($this->column, 'desc');
         }
 
-        // $column = $builder instanceof Builder ? $builder->qualifyColumn($this->column) : $this->column;
-
-        return $next($builder->orderBy($this->column, 'desc'));
+        return $next($builder);
     }
 }

@@ -257,10 +257,14 @@ class UserRepository extends SearchableRepository implements UserRepositoryInter
 
     public function updateOwnProfile(UpdateProfileRequest $request): User
     {
+        /** @var User $user */
         $user = $request->user();
 
         $user->createImage($request->picture, ['width' => 120, 'height' => 120]);
-        $user->deleteImageWhen($request->delete_picture);
+
+        if ($request->delete_picture ?? false) {
+            $user->image()->flushQueryCache()->delete();
+        }
 
         $attributes = Arr::except($request->validated(), ['password']);
 

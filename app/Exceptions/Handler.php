@@ -2,15 +2,10 @@
 
 namespace App\Exceptions;
 
-use App\Contracts\Factories\FailureInterface;
-use App\Contracts\Services\Logger;
-use App\Mail\FailureReportMail;
-use Illuminate\Auth\AuthenticationException;
-use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
-use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
-use Psr\Log\LoggerInterface;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Support\Arr;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -44,61 +39,24 @@ class Handler extends ExceptionHandler
     /**
      * Report or log an exception.
      *
-     * @param Throwable $e
+     * @param  \Throwable  $exception
      * @return void
-     * @throws BindingResolutionException
-     * @throws Throwable
      */
-    public function report(Throwable $e)
+    public function report(Throwable $exception)
     {
-        parent::report($e);
+        parent::report($exception);
 
-        if ($this->shouldReportMail($e)) {
-            $this->reportToMail($e);
-        }
-    }
-
-    /**
-     * @param Throwable $exception
-     * @throws Throwable
-     * @throws BindingResolutionException
-     */
-    protected function reportToMail(Throwable $exception): void
-    {
-        try {
-            $failure = $this->container->make(FailureInterface::class)->helpFor($exception);
-
-            /** @var \Illuminate\Contracts\Mail\Mailer $mailer */
-            $mailer = $this->container->make('mailer');
-
-            $mailer->send(
-                new FailureReportMail($failure, setting('failure_report_recipients'))
-            );
-        } catch (Throwable $e) {
-            try {
-                $logger = $this->container->make(LoggerInterface::class);
-            } catch (\Exception $e) {
-                throw $e;
-            }
-
-            $logger->error(
-                $e->getMessage(),
-                array_merge(
-                    $this->exceptionContext($e),
-                    $this->context(),
-                    ['exception' => $e]
-                )
-            );
+        if ($this->shouldReportMail($exception)) {
+            report_failure($exception);
         }
     }
 
     /**
      * Render an exception into an HTTP response.
      *
-     * @param \Illuminate\Http\Request $request
-     * @param Throwable $exception
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Throwable  $exception
      * @return \Illuminate\Http\Response
-     * @throws Throwable
      */
     public function render($request, Throwable $exception)
     {
@@ -108,20 +66,20 @@ class Handler extends ExceptionHandler
     /**
      * Determine if the exception is in the "do not report mail" list.
      *
-     * @param Throwable $e
+     * @param  \Throwable  $e
      * @return bool
      */
     protected function shouldntReportMail(Throwable $e)
     {
         $dontReport = array_merge($this->dontReportMail, $this->dontReport, $this->internalDontReport);
 
-        return !is_null(Arr::first($dontReport, fn($type) => $e instanceof $type));
+        return !is_null(Arr::first($dontReport, fn ($type) => $e instanceof $type));
     }
 
     /**
-     * Whether the given exception should be reported to email.
+     * Determine if the exception should be reported by mail.
      *
-     * @param Throwable $e
+     * @param  \Throwable  $e
      * @return bool
      */
     public function shouldReportMail(Throwable $e)
@@ -132,16 +90,13 @@ class Handler extends ExceptionHandler
     /**
      * Convert a validation exception into a JSON response.
      *
-     * @param \Illuminate\Http\Request $request
-     * @param \Illuminate\Validation\ValidationException $exception
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Validation\ValidationException  $exception
      * @return \Illuminate\Http\JsonResponse
-     * @throws BindingResolutionException
      */
     protected function invalidJson($request, ValidationException $exception)
     {
-        $customLogger = $this->container->make(Logger::class);
-
-        $customLogger->log(['ErrorCode' => 'EQ_INV_DP_01'], $exception->errors());
+        customlog(['ErrorCode' => 'EQ_INV_DP_01'], $exception->errors());
 
         $http = $this->container->make('http.service');
 
@@ -151,10 +106,9 @@ class Handler extends ExceptionHandler
     /**
      * Convert an authentication exception into a response.
      *
-     * @param \Illuminate\Http\Request $request
-     * @param \Illuminate\Auth\AuthenticationException $exception
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Auth\AuthenticationException  $exception
      * @return \Symfony\Component\HttpFoundation\Response
-     * @throws BindingResolutionException
      */
     protected function unauthenticated($request, AuthenticationException $exception)
     {
@@ -166,9 +120,8 @@ class Handler extends ExceptionHandler
     /**
      * Convert the given exception to an array.
      *
-     * @param Throwable $exception
+     * @param  \Throwable  $e
      * @return array
-     * @throws BindingResolutionException
      */
     protected function convertExceptionToArray(Throwable $exception)
     {
@@ -178,6 +131,6 @@ class Handler extends ExceptionHandler
             return $http->convertErrorToArray(EQ_INV_REQ_01, 'EQ_INV_REQ_01', true);
         }
 
-        return parent::convertExceptionToArray($exception);
+        return parent::{__FUNCTION__}($exception);
     }
 }

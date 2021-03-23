@@ -74,11 +74,11 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
         $method = $limit > 1 ? 'get' : 'first';
 
         $query = $this->vendor->query()->inRandomOrder()->limit($limit);
-        
+
         if ($scope instanceof Closure) {
             $scope($query);
         }
-        
+
         return $query->{$method}();
     }
 
@@ -90,7 +90,7 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
 
         throw_unless(is_array($request), new \InvalidArgumentException(INV_ARG_RA_01));
 
-        return tap($this->vendor->create($request), function ($vendor) use ($request) {
+        return tap($this->vendor->create($request), function (Vendor $vendor) use ($request) {
             $vendor->createLogo(data_get($request, 'logo'));
             $vendor->syncCountries(data_get($request, 'countries'));
             $vendor->load('countries');

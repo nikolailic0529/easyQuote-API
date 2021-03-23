@@ -8,6 +8,6 @@ class InvalidCompany extends InvalidArgumentException
 {
     public static function nonInternal()
     {
-        throw new static('Provided company must be of Internal type.');
+        return new static('Provided company must be of Internal type.');
     }
 }

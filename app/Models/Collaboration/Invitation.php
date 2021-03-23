@@ -2,24 +2,20 @@
 
 namespace App\Models\Collaboration;
 
-use App\Traits\{
-    BelongsToUser,
+use App\Contracts\SearchableEntity;
+use App\Traits\{Activity\LogsActivity,
+    Auth\Multitenantable,
     BelongsToRole,
+    BelongsToUser,
     CanGenerateToken,
     Expirable,
     Search\Searchable,
-    Activity\LogsActivity,
-    Auth\Multitenantable,
-    Uuid
-};
+    Uuid};
 use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
-use Illuminate\Database\Eloquent\{
-    Model,
-    SoftDeletes,
-};
+use Illuminate\Database\Eloquent\{Model, SoftDeletes,};
 use Illuminate\Support\Str;
 
-class Invitation extends Model
+class Invitation extends Model implements SearchableEntity
 {
     use Uuid,
         Multitenantable,
@@ -34,23 +30,23 @@ class Invitation extends Model
         EloquentJoin;
 
     protected $fillable = [
-        'email', 'user_id', 'role_id', 'host'
+        'email', 'user_id', 'role_id', 'host',
     ];
 
     protected $hidden = [
-        'user', 'role', 'updated_at', 'deleted_at'
+        'user', 'role', 'updated_at', 'deleted_at',
     ];
 
     protected $appends = [
-        'user_email', 'role_name', 'url'
+        'user_email', 'role_name', 'url',
     ];
 
     protected $observables = [
-        'resended', 'canceled'
+        'resended', 'canceled',
     ];
 
     protected $dates = [
-        'expires_at'
+        'expires_at',
     ];
 
     protected static $logOnlyDirty = true;
@@ -79,7 +75,7 @@ class Invitation extends Model
      */
     public function getUrlAttribute(): string
     {
-        return (string) Str::of($this->host)->finish('/')->finish('signup/')->append($this->invitation_token);
+        return (string)Str::of($this->host)->finish('/')->finish('signup/')->append($this->invitation_token);
     }
 
     public function getUserEmailAttribute()
@@ -111,11 +107,11 @@ class Invitation extends Model
         return $this->forceFill(['expires_at' => null])->save();
     }
 
-    public function toSearchArray()
+    public function toSearchArray(): array
     {
         return [
-            'role_name'  => optional($this->role)->name,
-            'email'      => $this->email,
+            'role_name' => optional($this->role)->name,
+            'email' => $this->email,
             'created_at' => optional($this->created_at)->format(config('date.format')),
             'expires_at' => optional($this->expires_at)->format(config('date.format')),
         ];

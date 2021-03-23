@@ -3,7 +3,7 @@
 namespace App\Http\Requests\ContractTemplate;
 
 use App\Models\Template\ContractTemplate;
-use App\Services\ContractTemplateQueries;
+use App\Queries\ContractTemplateQueries;
 use Illuminate\Foundation\Http\FormRequest;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
 
@@ -14,7 +14,7 @@ class DeleteContractTemplate extends FormRequest
      *
      * @return bool
      */
-    public function authorize()
+    public function authorize(ContractTemplateQueries $queries)
     {
         /** @var \App\Models\Template\ContractTemplate */
         $template = head($this->route()->parameters());
@@ -23,7 +23,7 @@ class DeleteContractTemplate extends FormRequest
             return true;
         }
 
-        if ((new ContractTemplateQueries)->referencedQuery($template->getKey())->exists()) {
+        if ($queries->referencedQuery($template->getKey())->exists()) {
             throw new UnprocessableEntityHttpException("You can't delete the Contract Template used in Contracts.");
         }
 

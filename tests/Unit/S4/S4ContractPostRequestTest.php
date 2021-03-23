@@ -83,7 +83,9 @@ class S4ContractPostRequestTest extends TestCase
      */
     public function testRequestWithSoftDeletedCustomer(): void
     {
-        $customer = tap(app('customer.repository')->random())->delete();
+        $customer = factory(Customer::class)->create();
+
+        $customer->delete();
 
         $this->assertSoftDeleted($customer);
 

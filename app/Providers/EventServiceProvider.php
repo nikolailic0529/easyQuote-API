@@ -2,7 +2,25 @@
 
 namespace App\Providers;
 
+use App\Events\{ExchangeRatesUpdated,
+    Opportunity\OpportunityUpdated,
+    Permission\GrantedModulePermission,
+    RfqReceived,
+    WorldwideQuote\WorldwideQuoteNoteCreated};
+use App\Listeners\{ExchangeRatesListener,
+    LogSentMessage,
+    ModulePermissionListener,
+    NotifyNoteCreatedOnWorldwideQuote,
+    OpportunityEventSubscriber,
+    RfqReceivedListener,
+    SalesOrderEventSubscriber,
+    SyncOpportunitySuppliersWithWorldwideContractQuote,
+    TaskEventSubscriber,
+    TeamEventSubscriber};
+use Illuminate\Auth\Events\Registered;
+use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+use Illuminate\Mail\Events\MessageSent;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -12,21 +30,34 @@ class EventServiceProvider extends ServiceProvider
      * @var array
      */
     protected $listen = [
-        \Illuminate\Auth\Events\Registered::class => [
-            \Illuminate\Auth\Listeners\SendEmailVerificationNotification::class,
+
+        Registered::class => [
+            SendEmailVerificationNotification::class,
         ],
-        \Illuminate\Mail\Events\MessageSent::class => [
-            \App\Listeners\LogSentMessage::class
+
+        MessageSent::class => [
+            LogSentMessage::class,
         ],
-        \App\Events\RfqReceived::class => [
-            \App\Listeners\RfqReceivedListener::class
+
+        RfqReceived::class => [
+            RfqReceivedListener::class,
         ],
-        \App\Events\ExchangeRatesUpdated::class => [
-            \App\Listeners\ExchangeRatesListener::class
+
+        ExchangeRatesUpdated::class => [
+            ExchangeRatesListener::class,
         ],
-        \App\Events\Permission\GrantedModulePermission::class => [
-            \App\Listeners\ModulePermissionListener::class
+
+        GrantedModulePermission::class => [
+            ModulePermissionListener::class,
         ],
+
+        WorldwideQuoteNoteCreated::class => [
+            NotifyNoteCreatedOnWorldwideQuote::class,
+        ],
+
+        OpportunityUpdated::class => [
+            SyncOpportunitySuppliersWithWorldwideContractQuote::class
+        ]
     ];
 
     /**
@@ -35,8 +66,15 @@ class EventServiceProvider extends ServiceProvider
      * @var array
      */
     protected $subscribe = [
-        \App\Listeners\EloquentEventSubscriber::class,
-        \App\Listeners\TaskEventSubscriber::class,
+
+        TaskEventSubscriber::class,
+
+        OpportunityEventSubscriber::class,
+
+        SalesOrderEventSubscriber::class,
+
+        TeamEventSubscriber::class,
+
     ];
 
     /**

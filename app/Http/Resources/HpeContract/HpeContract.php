@@ -23,7 +23,6 @@ class HpeContract extends JsonResource
             'created_at' => carbon_format($this->created_at, config('date.format_time')),
             'updated_at' => carbon_format($this->updated_at, config('date.format_time')),
             'submitted_at' => $this->submitted_at,
-            'activated_at' => $this->activated_at,
 
             'hpe_contract_number' => $this->contract_number,
 
@@ -44,7 +43,7 @@ class HpeContract extends JsonResource
             'amp_id' => $this->amp_id,
             'support_account_reference' => $this->support_account_reference,
             'orders_authorization' => $this->orders_authorization,
-
+            
             'contract_numbers' => $this->contract_numbers,
             'services'  => $this->services,
 
@@ -65,9 +64,9 @@ class HpeContract extends JsonResource
                 'bill_contact' => $this->bill_contact,
 
                 'hw_delivery_contact' => $this->hw_delivery_contact,
-
+              
                 'sw_delivery_contact' => $this->sw_delivery_contact,
-
+              
                 'pr_support_contact' => $this->pr_support_contact,
 
                 'entitled_party_contact' => $this->entitled_party_contact,
@@ -81,7 +80,7 @@ class HpeContract extends JsonResource
 
             'completeness' => $this->completeness,
             'checkbox_status' => $this->checkbox_status,
-
+            
             'contract_date' => optional($this->contract_date)->format(config('date.format_ui')),
         ];
     }

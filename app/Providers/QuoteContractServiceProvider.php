@@ -12,7 +12,7 @@ use App\Repositories\Quote\ContractDraftedRepository;
 use App\Repositories\Quote\ContractSubmittedRepository;
 use App\Contracts\Repositories\Contract\ContractDraftedRepositoryInterface;
 use App\Contracts\Repositories\Contract\ContractSubmittedRepositoryInterface;
-use App\Services\ContractQueries;
+use App\Queries\ContractQueries;
 
 class QuoteContractServiceProvider extends ServiceProvider implements DeferrableProvider
 {
