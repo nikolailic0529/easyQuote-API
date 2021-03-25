@@ -23,8 +23,7 @@ class BatchSave extends FormRequest
                 'bail', 'required', 'array'
             ],
             'opportunities.*' => [
-                'bail', 'uuid',
-                Rule::exists(Opportunity::class, 'id')->whereNotNull('deleted_at')
+                'bail', 'uuid'
             ]
         ];
     }

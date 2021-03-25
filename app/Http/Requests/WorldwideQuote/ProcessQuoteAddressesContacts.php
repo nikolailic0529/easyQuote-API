@@ -116,6 +116,12 @@ class ProcessQuoteAddressesContacts extends FormRequest
                 'bail', 'nullable', 'boolean'
             ],
 
+
+
+            'payment_terms' => [
+                'bail', 'required', 'string', 'max:500'
+            ],
+
             'stage' => [
                 'bail', 'required', Rule::in(PackQuoteStage::getLabels())
             ],
@@ -168,6 +174,7 @@ class ProcessQuoteAddressesContacts extends FormRequest
                 'buy_price' => (float)$this->input('buy_price'),
                 'addresses' => $addressCollection,
                 'contacts' => $contactsCollection,
+                'payment_terms' => $this->input('payment_terms'),
                 'stage' => PackQuoteStage::getValueOfLabel($this->input('stage')),
             ]);
 

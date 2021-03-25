@@ -149,6 +149,8 @@ class WorldwideQuoteState extends JsonResource
 
             'closing_date' => $this->closing_date ?? now()->toDateString(),
 
+            'payment_terms' => $this->payment_terms,
+
             'pricing_document' => $this->pricing_document,
             'service_agreement_id' => $this->service_agreement_id,
             'system_handle' => $this->system_handle,

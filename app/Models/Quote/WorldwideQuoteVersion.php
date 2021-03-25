@@ -49,6 +49,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property float|null $margin_value
  * @property string|null $margin_method
  * @property float|null $custom_discount
+ * @property string|null $payment_terms
  * @property string|null $pricing_document
  * @property string|null $service_agreement_id
  * @property string|null $system_handle

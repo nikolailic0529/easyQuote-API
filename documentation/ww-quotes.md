@@ -415,6 +415,8 @@
                 "distribution_expiry_date": {date_string} (Y-m-d) *
             }
         ],
+
+        "payment_terms": {string_max_500_chars}, *
         "stage": {stage_string}, *
     }
 
@@ -847,26 +849,27 @@
         "addresses": [
             "*": {
                 "address_type": {address_type_string} ("Machine" or "Invoice"),
-                "address_1" => {string_max_191_chars}, *
-                "city" => {string_max_191_chars},
-                "state" => {string_max_191_chars},
-                "state_code" => {string_max_191_chars},
-                "address_2" => {string_max_191_chars},
-                "country_id" => {country_uuid},
-                "contact_name" => {string_max_191_chars},
-                "contact_number" => {string_max_191_chars},
-                "contact_email" => {string_max_191_chars},
+                "address_1": {string_max_191_chars}, *
+                "city": {string_max_191_chars},
+                "state": {string_max_191_chars},
+                "state_code": {string_max_191_chars},
+                "address_2": {string_max_191_chars},
+                "country_id": {country_uuid},
+                "contact_name": {string_max_191_chars},
+                "contact_number": {string_max_191_chars},
+                "contact_email": {string_max_191_chars},
             }
         ],
         "contacts": [
             "*": {
-                "first_name" => {string_max_191_chars}, *
-                "last_name" => {string_max_191_chars}, *
-                "mobile" => {string_max_191_chars},
-                "phone" => {string_max_191_chars},
-                "email" => "{string_max_191_chars},
+                "first_name": {string_max_191_chars}, *
+                "last_name": {string_max_191_chars}, *
+                "mobile": {string_max_191_chars},
+                "phone": {string_max_191_chars},
+                "email": "{string_max_191_chars},
             }
         ],
+        "payment_terms": {string_max_500_chars}, *
         "stage": {stage_string} ("Contacts")
     }
 

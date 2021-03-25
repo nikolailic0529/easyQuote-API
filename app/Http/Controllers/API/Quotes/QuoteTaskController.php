@@ -112,7 +112,7 @@ class QuoteTaskController extends Controller
      */
     public function storeRescueQuoteTask(CreateTaskRequest $request, Quote $quote, TaskService $service): JsonResponse
     {
-        $this->authorize('update', $quote);
+        $this->authorize('view', $quote);
 
         $resource = $service->createTaskForTaskable($request->getCreateTaskData(), $quote);
 
@@ -133,7 +133,7 @@ class QuoteTaskController extends Controller
      */
     public function storeWorldwideQuoteTask(CreateTaskRequest $request, WorldwideQuote $worldwideQuote, TaskService $service): JsonResponse
     {
-        $this->authorize('update', $worldwideQuote);
+        $this->authorize('view', $worldwideQuote);
 
         $resource = $service->createTaskForTaskable($request->getCreateTaskData(), $worldwideQuote);
 
@@ -185,7 +185,7 @@ class QuoteTaskController extends Controller
      */
     public function updateRescueQuoteTask(UpdateTaskRequest $request, Quote $quote, Task $task, TaskService $service): JsonResponse
     {
-        $this->authorize('update', $quote);
+        $this->authorize('view', $quote);
         $this->authorize('update', $task);
 
         $resource = $service->updateTask($task, $request->getUpdateTaskData());
@@ -211,7 +211,7 @@ class QuoteTaskController extends Controller
      */
     public function updateWorldwideQuoteTask(UpdateTaskRequest $request, WorldwideQuote $worldwideQuote, Task $task, TaskService $service): JsonResponse
     {
-        $this->authorize('update', $worldwideQuote);
+        $this->authorize('view', $worldwideQuote);
         $this->authorize('update', $task);
 
         $resource = $service->updateTask($task, $request->getUpdateTaskData());
@@ -235,7 +235,7 @@ class QuoteTaskController extends Controller
      */
     public function destroyRescueQuoteTask(Quote $quote, Task $task, TaskService $service): JsonResponse
     {
-        $this->authorize('update', $quote);
+        $this->authorize('view', $quote);
         $this->authorize('delete', $task);
 
         $service->deleteTask($task);
@@ -254,7 +254,7 @@ class QuoteTaskController extends Controller
      */
     public function destroyWorldwideQuoteTask(WorldwideQuote $worldwideQuote, Task $task, TaskService $service): JsonResponse
     {
-        $this->authorize('update', $worldwideQuote);
+        $this->authorize('view', $worldwideQuote);
         $this->authorize('delete', $task);
 
         $service->deleteTask($task);

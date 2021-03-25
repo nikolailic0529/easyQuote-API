@@ -9,6 +9,7 @@ use Database\Seeders\{AssetCategorySeeder,
     ContractTypeSeeder,
     CountrySeeder,
     CurrencySeeder,
+    CustomFieldSeeder,
     HpeContractTemplatesSeeder,
     MySQLSeeder,
     TeamSeeder,
@@ -125,6 +126,11 @@ class UpdateApplication extends Command
 
         $this->call(SeedCommand::class, [
             '--class' => AssetCategorySeeder::class,
+            '--force' => true
+        ]);
+
+        $this->call(SeedCommand::class, [
+            '--class' => CustomFieldSeeder::class,
             '--force' => true
         ]);
 

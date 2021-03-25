@@ -25,7 +25,10 @@ class CreateTeamsTable extends Migration
             $table->softDeletes()->index();
         });
 
-        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => \Database\Seeders\TeamSeeder::class]);
+        \Illuminate\Support\Facades\Artisan::call('db:seed', [
+            '--class' => \Database\Seeders\TeamSeeder::class,
+            '--force' => true
+        ]);
     }
 
     /**

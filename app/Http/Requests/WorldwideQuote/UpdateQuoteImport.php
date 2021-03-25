@@ -164,6 +164,11 @@ class UpdateQuoteImport extends FormRequest
             'worldwide_distributions.*.distribution_expiry_date' => [
                 'bail', 'required', 'date_format:Y-m-d',
             ],
+
+            'payment_terms' => [
+                'bail', 'required', 'string', 'max:500'
+            ],
+
             'stage' => [
                 'bail', 'required', Rule::in(ContractQuoteStage::getLabels())
             ],
@@ -211,6 +216,7 @@ class UpdateQuoteImport extends FormRequest
                     'is_default' => (bool)($contact['is_default'] ?? false),
                 ], $distributionData['contacts']),
             ], $this->input('worldwide_distributions')),
+            'payment_terms' => $this->input('payment_terms'),
             'stage' => ContractQuoteStage::getValueOfLabel($this->input('stage')),
         ]);
     }

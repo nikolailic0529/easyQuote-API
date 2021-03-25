@@ -490,9 +490,15 @@ class WorldwideQuoteDataMapper
             : [];
 
         $opportunity = $worldwideQuote->opportunity;
-        $opportunityStartDate = Carbon::createFromFormat('Y-m-d', $opportunity->opportunity_start_date);
-        $opportunityEndDate = Carbon::createFromFormat('Y-m-d', $opportunity->opportunity_end_date);
-        $opportunityClosingDate = Carbon::createFromFormat('Y-m-d', $opportunity->opportunity_closing_date);
+
+        /** @var Carbon|null $opportunityStartDate */
+        $opportunityStartDate = transform($opportunity->opportunity_start_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date));
+
+        /** @var Carbon|null $opportunityEndDate */
+        $opportunityEndDate = transform($opportunity->opportunity_end_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date));
+
+        /** @var Carbon|null $opportunityClosingDate */
+        $opportunityClosingDate = transform($opportunity->opportunity_closing_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date));
 
         $quotePriceData = $this->getQuotePriceData($worldwideQuote);
 
@@ -539,7 +545,8 @@ class WorldwideQuoteDataMapper
             'export_file_name' => $worldwideQuote->quote_number,
 
             'service_levels' => '',
-            'invoicing_terms' => '', // TODO: add the invoicing terms.
+            'invoicing_terms' => '',
+            'payment_terms' => $worldwideQuote->payment_terms ?? '',
 
             'support_start' => static::formatDate($opportunityStartDate),
             'support_end' => static::formatDate($opportunityEndDate),
