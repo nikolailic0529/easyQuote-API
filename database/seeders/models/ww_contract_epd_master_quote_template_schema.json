@@ -1877,71 +1877,13 @@
                     "class": "col-lg-8",
                     "controls": [
                         {
-                            "id": "6467a459-8603-44de-8f51-b4ce915ce8db",
-                            "src": null,
-                            "name": "l-1",
-                            "show": true,
-                            "type": "label",
-                            "class": "text-nowrap",
-                            "label": "Label",
-                            "value": null,
-                            "is_field": true,
-                            "is_image": false,
-                            "droppable": false,
-                            "is_system": false,
-                            "is_required": false,
-                            "attached_child_id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                            "attached_element_id": "6d38b26d-e1f4-4db2-bc87-4d6f4350f4ce"
-                        }
-                    ],
-                    "position": 2
-                }
-            ],
-            "class": "two-column field-dragger",
-            "order": 3,
-            "controls": [],
-            "is_field": false,
-            "droppable": false,
-            "decoration": "1+3"
-        },
-        {
-            "id": "c174ce4d-8e57-430a-961f-b1c1933d4127",
-            "name": "Two Column",
-            "child": [
-                {
-                    "id": "2521a5c6-6eda-4420-876d-b821841f892e",
-                    "class": "col-lg-4",
-                    "controls": [
-                        {
-                            "id": "c0093711-ea9d-478d-b288-8433ef02af26",
-                            "src": null,
-                            "name": "l-1",
-                            "show": true,
-                            "type": "label",
-                            "class": "bold",
-                            "label": "Label",
-                            "value": "Invoicing Terms:",
-                            "is_field": true,
-                            "is_image": false,
-                            "droppable": false,
-                            "is_system": false,
-                            "is_required": false,
-                            "attached_child_id": "2521a5c6-6eda-4420-876d-b821841f892e",
-                            "attached_element_id": "c174ce4d-8e57-430a-961f-b1c1933d4127"
-                        }
-                    ],
-                    "position": 1
-                },
-                {
-                    "id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                    "class": "col-lg-8",
-                    "controls": [
-                        {
-                            "id": "invoicing_terms",
-                            "name": "invoicing_terms",
+                            "id": "payment_terms",
+                            "css": null,
+                            "name": "payment_terms",
+                            "show": false,
                             "type": "tag",
-                            "class": "s4-form-control text-nowrap",
-                            "label": "Invoicing Terms",
+                            "class": "s4-form-control",
+                            "label": "Payment Terms",
                             "value": null,
                             "is_field": true,
                             "is_image": false,
@@ -1949,7 +1891,7 @@
                             "is_system": true,
                             "is_required": false,
                             "attached_child_id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
-                            "attached_element_id": "c174ce4d-8e57-430a-961f-b1c1933d4127"
+                            "attached_element_id": "6d38b26d-e1f4-4db2-bc87-4d6f4350f4ce"
                         }
                     ],
                     "position": 2

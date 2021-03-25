@@ -34,6 +34,8 @@ final class AddressesContactsStage extends DataTransferObject
 
     public Carbon $quote_expiry_date;
 
+    public string $payment_terms;
+
     /**
      * @Constraints\PositiveOrZero
      *

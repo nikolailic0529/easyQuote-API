@@ -421,6 +421,7 @@ class WorldwideContractQuoteTest extends TestCase
             'quote_expiry_date' => $quoteExpiryDate->toDateString(),
             'exchange_rate_margin' => 7,
             'worldwide_distributions' => $distributionsData,
+            'payment_terms' => '30 Days',
             'stage' => 'Import',
         ])
 //            ->dump()
@@ -473,6 +474,7 @@ class WorldwideContractQuoteTest extends TestCase
             'quote_expiry_date' => $quoteExpiryDate->toDateString(),
             'exchange_rate_margin' => 7,
             'worldwide_distributions' => $distributionsData,
+            'payment_terms' => '30 Days',
             'stage' => 'Import',
         ])
 //            ->dump()
@@ -1898,7 +1900,7 @@ TEMPLATE;
         });
 
         $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'/validate')
-            ->dump()
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 'passes',

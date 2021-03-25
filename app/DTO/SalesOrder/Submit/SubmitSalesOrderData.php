@@ -82,7 +82,7 @@ final class SubmitSalesOrderData extends DataTransferObject
     public string $order_date;
 
     /**
-     * @Constraints\Choice({"SWH"})
+     * @Constraints\Choice({"SWH","EPD%20Asia%20Pacific%20Pty%20Ltd"})
      *
      * @var string
      */

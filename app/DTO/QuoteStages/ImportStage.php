@@ -34,6 +34,8 @@ final class ImportStage extends DataTransferObject
 
     public Carbon $quote_expiry_date;
 
+    public string $payment_terms;
+
     public int $stage = ContractQuoteStage::IMPORT;
 
     /**

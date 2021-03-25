@@ -20,6 +20,8 @@ class WorldwideQuoteTemplateSeeder extends Seeder
         $wwPackQuoteTemplateUuid = '103167de-757d-49e5-aec1-33e4ea087a7a';
         $wwPackQuoteTemplateSchema = file_get_contents(database_path('seeders/models/ww_pack_epd_master_quote_template_schema.json'));
 
+        $dataHeaders = file_get_contents(database_path('seeders/models/ww_master_quote_template_data_headers.json'));
+
         $connection = $this->container['db.connection'];
 
         $vendors = $connection->table('vendors')
@@ -34,7 +36,7 @@ class WorldwideQuoteTemplateSeeder extends Seeder
             ->pluck('id')
             ->all();
 
-        $connection->transaction(function () use ($wwPackQuoteTemplateSchema, $wwContractQuoteTemplateSchema, $wwPackQuoteTemplateUuid, $wwContractQuoteTemplateUuid, $vendors, $countries, $connection) {
+        $connection->transaction(function () use ($dataHeaders, $wwPackQuoteTemplateSchema, $wwContractQuoteTemplateSchema, $wwPackQuoteTemplateUuid, $wwContractQuoteTemplateUuid, $vendors, $countries, $connection) {
 
             $connection->table('quote_templates')
                 ->insertOrIgnore([
@@ -45,6 +47,7 @@ class WorldwideQuoteTemplateSeeder extends Seeder
                     'contract_type_id' => CT_CONTRACT,
                     'currency_id' => $connection->table('currencies')->where('code', 'GBP')->value('id'),
                     'form_data' => $wwContractQuoteTemplateSchema,
+                    'data_headers' => $dataHeaders,
                     'is_system' => true,
                     'activated_at' => now(),
                     'created_at' => now(),
@@ -79,6 +82,7 @@ class WorldwideQuoteTemplateSeeder extends Seeder
                     'contract_type_id' => CT_PACK,
                     'currency_id' => $connection->table('currencies')->where('code', 'GBP')->value('id'),
                     'form_data' => $wwPackQuoteTemplateSchema,
+                    'data_headers' => $dataHeaders,
                     'is_system' => true,
                     'activated_at' => now(),
                     'created_at' => now(),

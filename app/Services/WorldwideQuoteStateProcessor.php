@@ -256,8 +256,9 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $quote->company()->associate($stage->company_id);
             $quote->quoteCurrency()->associate($stage->quote_currency_id);
             $quote->quoteTemplate()->associate($stage->quote_template_id);
-            $quote->quote_expiry_date = $stage->quote_expiry_date->toDateString();
             $quote->buy_price = $stage->buy_price;
+            $quote->quote_expiry_date = $stage->quote_expiry_date->toDateString();
+            $quote->payment_terms = $stage->payment_terms;
             $quote->completeness = $stage->stage;
 
             $quoteLock->block(30, function () use ($quote) {
@@ -631,6 +632,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         $quote->completeness = $stage->stage;
         $quote->exchange_rate_margin = $stage->exchange_rate_margin;
         $quote->quote_expiry_date = $stage->quote_expiry_date->toDateString();
+        $quote->payment_terms = $stage->payment_terms;
 
         $lock->block(30, fn() => $quote->saveOrFail());
 

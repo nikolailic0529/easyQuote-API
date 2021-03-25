@@ -57,8 +57,6 @@ final class TemplateSchema
         'ww_quote' => [
             'first_page' => [
                 ['id' => 'quote_data_aggregation', 'label' => 'Quote Data Aggregation'],
-//                // Quotation For
-//                ['id' => 'vendor_name', 'label' => 'Vendor Full Name'],
                 // For
                 ['id' => 'customer_name', 'label' => 'Customer Name'],
                 // From
@@ -87,6 +85,7 @@ final class TemplateSchema
 
                 ['id' => 'purchase_order_number', 'label' => 'Purchase Order Number'],
                 ['id' => 'vat_number', 'label' => 'VAT Number'],
+                ['id' => 'payment_terms', 'label' => 'Payment Terms']
             ],
             'data_pages' => [
                 ['id' => 'pricing_document', 'label' => 'Pricing Document'],

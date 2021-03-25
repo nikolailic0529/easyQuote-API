@@ -41,6 +41,7 @@ use App\Http\Controllers\API\SalesOrders\SalesOrderSubmittedController;
 use App\Http\Controllers\API\ServiceController;
 use App\Http\Controllers\API\StatsController;
 use App\Http\Controllers\API\System\ActivityController;
+use App\Http\Controllers\API\System\CustomFieldController;
 use App\Http\Controllers\API\System\ImportableColumnController;
 use App\Http\Controllers\API\System\MaintenanceController;
 use App\Http\Controllers\API\System\NotificationController;
@@ -167,6 +168,10 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::apiResource('importable-columns', ImportableColumnController::class);
         Route::put('importable-columns/activate/{importable_column}', [ImportableColumnController::class, 'activate']);
         Route::put('importable-columns/deactivate/{importable_column}', [ImportableColumnController::class, 'deactivate']);
+
+        Route::get('custom-fields', [CustomFieldController::class, 'showListOfCustomFields']);
+        Route::get('custom-field-values/{custom_field_name}', [CustomFieldController::class, 'showValuesOfCustomFieldByFieldName']);
+        Route::put('custom-field-values/{custom_field_name}', [CustomFieldController::class, 'updateValuesOfCustomField']);
     });
 
     Route::group(['middleware' => THROTTLE_RATE_01], function () {

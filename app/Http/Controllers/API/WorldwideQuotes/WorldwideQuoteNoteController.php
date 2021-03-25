@@ -34,7 +34,7 @@ class WorldwideQuoteNoteController extends Controller
      * @throws ValidationException
      * @throws AuthorizationException
      */
-    public function paginateQuoteNotes(Request $request, WorldwideQuote $worldwideQuote, WorldwideQuoteNoteQueries $queries)
+    public function paginateQuoteNotes(Request $request, WorldwideQuote $worldwideQuote, WorldwideQuoteNoteQueries $queries): JsonResponse
     {
         $this->authorize('view', $worldwideQuote);
         $this->authorize('viewAny', WorldwideQuoteNote::class);

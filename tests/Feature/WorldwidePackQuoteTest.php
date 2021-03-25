@@ -467,6 +467,7 @@ class WorldwidePackQuoteTest extends TestCase
             'addresses' => $addressesData,
             'contacts' => $contactsData,
             'buy_price' => $buyPrice = $this->faker->randomFloat(2, 1_000, 100_000),
+            'payment_terms' => '30 Days',
             'stage' => 'Contacts'
 
         ];

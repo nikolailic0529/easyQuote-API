@@ -30,6 +30,8 @@ final class QuoteSummary extends DataTransferObject
 
     public string $invoicing_terms;
 
+    public string $payment_terms;
+
     /**
      * @Constraints\NotBlank
      */
