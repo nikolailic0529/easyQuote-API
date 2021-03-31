@@ -21,6 +21,8 @@ class SubmitSalesOrderService
 {
     const USER_AGENT = 'EQ';
 
+    const BUSINESS_DIVISION = 'Worldwide';
+
     protected Config $config;
 
     protected ValidatorInterface $validator;
@@ -133,6 +135,7 @@ class SubmitSalesOrderService
                 'exchange_rate' => $salesOrderData->exchange_rate,
                 'post_sales_id' => $salesOrderData->post_sales_id,
                 'customer_po' => $salesOrderData->customer_po,
+                'business_division' => self::BUSINESS_DIVISION,
 
                 'customer' => [
                     'company_reg_no' => $salesOrderData->customer_data->company_reg_no,

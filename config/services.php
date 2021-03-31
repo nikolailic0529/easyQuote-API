@@ -67,6 +67,7 @@ return [
         'token_route' => 'api/oauth/token',
 
         'submit_sales_order_route' => 'bc-data',
+        'cancel_sales_order_route' => 'bc-data/{id}/cancel',
 
         'service_routes' => [
             'DEL' => 'dell-data/{serial}',

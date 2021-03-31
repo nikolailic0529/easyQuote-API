@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\SalesOrder;
 
-use App\DTO\SalesOrder\CancelSalesOrderData;
+use App\DTO\SalesOrder\Cancel\CancelSalesOrderData;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CancelSalesOrder extends FormRequest
@@ -29,6 +29,7 @@ class CancelSalesOrder extends FormRequest
     public function getCancelSalesOrderData(): CancelSalesOrderData
     {
         return $this->cancelSalesOrderData ??= new CancelSalesOrderData([
+            'sales_order_id' => $this->route('sales_order')->getKey(),
             'status_reason' => $this->input('status_reason')
         ]);
     }

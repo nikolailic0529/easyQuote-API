@@ -158,6 +158,9 @@ class WorldwideQuoteState extends JsonResource
 
             'additional_notes' => $this->additional_notes,
 
+            'status' => $this->status,
+            'status_reason' => $this->status_reason,
+
 //            'checkbox_status' => $this->checkbox_status,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

@@ -160,7 +160,7 @@ class ContractDraftedRepository extends SearchableRepository implements Contract
     {
         return [
             \App\Http\Query\ActiveFirst::class,
-            (new \App\Http\Query\OrderByCreatedAt)->shallQualify(false),
+            (new \App\Http\Query\OrderByCreatedAt)->qualifyColumnName(false),
             \App\Http\Query\Quote\OrderByName::class,
             \App\Http\Query\Quote\OrderByCompanyName::class,
             \App\Http\Query\Quote\OrderByRfq::class,

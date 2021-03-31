@@ -70,6 +70,9 @@ use Illuminate\Support\Carbon;
  *
  * @property string|null $sale_action_name // {"Preparation", "Special Bid Required", "Quote Ready", "Customer Contact", "Customer Order OK", "PO Placed", "Processed on BC", "Closed"}
  *
+ * @property int|null $status
+ * @property string|null $status_reason
+ *
  * @property ContractType|null $contractType
  * @property Company|null $primaryAccount
  * @property Contact|null $primaryAccountContact

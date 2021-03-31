@@ -10,9 +10,11 @@ use App\Models\Data\Currency;
 use App\Models\Data\ExchangeRate;
 use App\Services\Exceptions\FileNotFound;
 use Carbon\Carbon;
+use DateTimeInterface;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\Filesystem\FileNotFoundException;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\File;
 use RuntimeException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -92,6 +94,27 @@ abstract class ExchangeRateService implements ManagesExchangeRates
         }
 
         return 1 / $source->exchangeRate->exchange_rate;
+    }
+
+    public function getBaseRateByCurrencyCode(string $currencyCode, DateTimeInterface $dateTime = null): float
+    {
+        if ($currencyCode === $this->baseCurrency()) {
+            return 1;
+        }
+
+        $exchangeRateValue = ExchangeRate::query()
+            ->where('currency_code', $currencyCode)
+            ->where('base_currency', $this->baseCurrency())
+            ->when(!is_null($dateTime), function (Builder $builder) use ($dateTime) {
+                $carbon = Carbon::createFromTimestamp($dateTime->getTimestamp());
+
+                $builder->whereBetween('date', [$carbon->clone()->startOfMonth(), $carbon->clone()->endOfMonth()]);
+            })
+            ->value('exchange_rate');
+
+        $exchangeRateValue ??= 1;
+
+        return 1 / $exchangeRateValue;
     }
 
     public function getTargetRate(Currency $source, Currency $target, ?int $precision = null): float

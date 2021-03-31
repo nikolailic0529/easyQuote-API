@@ -288,7 +288,20 @@ class WorldwideQuoteDataMapper
 
         $this->sortWorldwidePackQuoteAssets($quote);
 
+        foreach ($quote->assets as $asset) {
+            $asset->setAttribute('date_from', $quote->opportunity->opportunity_start_date);
+        }
+
         return $this->worldwideQuoteAssetsToArrayOfAssetData($quote->assets, $quotePriceData->price_value_coefficient, $outputCurrency);
+    }
+
+    public static function formatMachineAddressToString(?Address $address): string
+    {
+        if (is_null($address)) {
+            return '';
+        }
+
+        return implode(', ', array_filter([$address->address_1, $address->city, optional($address->country)->iso_3166_2]));
     }
 
     /**
@@ -316,21 +329,12 @@ class WorldwideQuoteDataMapper
             ->sortByDesc('pivot.is_default')
             ->first(fn(Contact $contact) => $contact->contact_type === 'Software');
 
-        $addressStringFormatter = function (?Address $address): string {
-            if (is_null($address)) {
-                return '';
-            }
-
-            return implode(', ', array_filter([$address->address_1, $address->city, optional($address->country)->iso_3166_2]));
-        };
-
         return $worldwideQuote->worldwideDistributions->map(function (WorldwideDistribution $distribution) use (
             $paymentScheduleFields,
             $worldwideQuote,
             $outputCurrency,
             $quoteHardwareContact,
-            $quoteSoftwareContact,
-            $addressStringFormatter
+            $quoteSoftwareContact
         ) {
             if (is_null($distribution->total_price)) {
                 $distribution->total_price = $this->worldwideDistributionCalc->calculateDistributionTotalPrice($distribution);
@@ -400,6 +404,13 @@ class WorldwideQuoteDataMapper
                 ->first(fn(Address $address) => $address->address_type === 'Software');
 
             return new WorldwideDistributionData([
+                'supplier' => [
+                    'supplier_name' => (string)$distribution->opportunitySupplier->supplier_name,
+                    'contact_name' => (string)$distribution->opportunitySupplier->contact_name,
+                    'contact_email' => (string)$distribution->opportunitySupplier->contact_email,
+                    'country_name' => (string)$distribution->opportunitySupplier->country_name
+                ],
+
                 'vendors' => $distribution->vendors->pluck('name')->join(', '),
                 'country' => $distribution->country->name,
                 'assets_data' => $assetsData,
@@ -411,11 +422,11 @@ class WorldwideQuoteDataMapper
                 'payment_schedule_data' => $paymentScheduleData,
                 'has_payment_schedule_data' => !empty($paymentScheduleData),
 
-                'equipment_address' => $addressStringFormatter($quoteHardwareAddress),
+                'equipment_address' => self::formatMachineAddressToString($quoteHardwareAddress),
                 'hardware_phone' => $quoteHardwareContact->phone ?? '',
                 'hardware_contact' => $distribution->opportunitySupplier->contact_name,
 
-                'software_address' => $addressStringFormatter($quoteSoftwareAddress),
+                'software_address' => self::formatMachineAddressToString($quoteSoftwareAddress),
                 'software_phone' => $quoteSoftwareContact->phone ?? '',
                 'software_contact' => $distribution->opportunitySupplier->contact_name,
 
@@ -587,12 +598,20 @@ class WorldwideQuoteDataMapper
 
     public function sortWorldwidePackQuoteAssets(WorldwideQuote $quote): void
     {
-        if (is_null($quote->sort_rows_column) || $quote->sort_rows_column === '') {
+        $sortRowsColumn = $quote->sort_rows_column;
+
+        if (!is_string($sortRowsColumn) || $sortRowsColumn === '') {
             return;
         }
 
         $results = $quote->assets->sortBy(
-            $quote->sort_rows_column,
+            function (WorldwideQuoteAsset $asset) use ($sortRowsColumn) {
+                if ($sortRowsColumn === 'machine_address') {
+                    return self::formatMachineAddressToString($asset->machineAddress);
+                }
+
+                return $asset->{$sortRowsColumn};
+            },
             SORT_NATURAL,
             $quote->sort_rows_direction === 'desc'
         )
@@ -653,6 +672,7 @@ class WorldwideQuoteDataMapper
             'serial_no',
             'service_level_description',
             'service_sku',
+            'date_from',
             'date_to',
             'price',
             'machine_address_string'
@@ -812,7 +832,7 @@ class WorldwideQuoteDataMapper
 
     private static function formatPriceValue(float $value, string $currencySymbol = ''): string
     {
-        $priceValue = number_format($value, 2, '.', '');
+        $priceValue = number_format($value, 2);
 
         if ($currencySymbol !== '') {
             $priceValue = $currencySymbol.' '.$priceValue;
@@ -966,7 +986,7 @@ class WorldwideQuoteDataMapper
                 $builder->where('is_selected', true);
             }]);
 
-            $this->sortWorldwideDistributionRowsGroups($distribution);
+            $this->sortWorldwideDistributionRows($distribution);
 
             return $this->mappedRowsToArrayOfAssetData($distribution->mappedRows, $priceValueCoeff, $outputCurrency);
         }
@@ -975,7 +995,7 @@ class WorldwideQuoteDataMapper
             $builder->where('is_selected', true);
         }, 'rowsGroups.rows']);
 
-        $this->sortWorldwideDistributionRows($distribution);
+        $this->sortWorldwideDistributionRowsGroups($distribution);
 
         return $distribution->rowsGroups->map(function (DistributionRowsGroup $rowsGroup) use ($priceValueCoeff, $outputCurrency, $distribution) {
             $assets = $this->mappedRowsToArrayOfAssetData($rowsGroup->rows, $priceValueCoeff * (float)$outputCurrency->exchange_rate_value, $outputCurrency);
@@ -1039,7 +1059,10 @@ class WorldwideQuoteDataMapper
                     'service_sku' => $asset->service_sku ?? '',
                     'description' => $asset->product_name ?? '',
                     'serial_no' => $asset->serial_no ?? '',
-                    'date_from' => '',
+                    'date_from' => transform($asset->date_from, function (string $date) {
+                        /** @noinspection PhpParamsInspection */
+                        return static::formatDate(Carbon::createFromFormat('Y-m-d', $date));
+                    }, ''),
                     'date_to' => transform($asset->expiry_date, function (string $date) {
                         /** @noinspection PhpParamsInspection */
                         return static::formatDate(Carbon::createFromFormat('Y-m-d', $date));

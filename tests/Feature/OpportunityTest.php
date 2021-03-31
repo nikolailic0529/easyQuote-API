@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Opportunity;
@@ -9,9 +10,9 @@ use App\Models\OpportunitySupplier;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
+use function Couchbase\fastlzCompress;
 
 /**
  * Class OpportunityTest
@@ -52,6 +53,8 @@ class OpportunityTest extends TestCase
                         'opportunity_end_date',
                         'opportunity_closing_date',
                         'sale_action_name',
+                        'status',
+                        'status_reason',
                         'created_at',
                     ],
                 ],
@@ -66,6 +69,63 @@ class OpportunityTest extends TestCase
         $this->getJson('api/opportunities?order_by_opportunity_amount=asc')->assertOk();
         $this->getJson('api/opportunities?order_by_sale_action_name=asc')->assertOk();
         $this->getJson('api/opportunities?order_by_created_at=asc')->assertOk();
+        $this->getJson('api/opportunities?order_by_status=asc')->assertOk();
+    }
+
+    /**
+     * Test an ability to view paginated opportunities with the status 'LOST'.
+     *
+     * @return void
+     */
+    public function testCanViewPaginatedLostOpportunities()
+    {
+        $this->authenticateApi();
+
+        factory(Opportunity::class, 30)
+            ->create([
+                'user_id' => $this->app['auth.driver']->id(),
+                'status' => 0, // 'LOST',
+                'status_reason' => Str::random(40)
+            ]);
+
+        $this->getJson('api/opportunities/lost')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'company_id',
+                        'opportunity_type',
+                        'account_name',
+                        'account_manager_name',
+                        'project_name',
+                        'opportunity_amount',
+                        'opportunity_start_date',
+                        'opportunity_end_date',
+                        'opportunity_closing_date',
+
+                        'status',
+                        'status_reason',
+
+                        'sale_action_name',
+                        'status',
+                        'status_reason',
+                        'created_at',
+                    ],
+                ],
+            ]);
+
+        $this->getJson('api/opportunities?order_by_account_name=asc')->assertOk();
+        $this->getJson('api/opportunities?order_by_project_name=asc')->assertOk();
+        $this->getJson('api/opportunities?order_by_account_manager_name=asc')->assertOk();
+        $this->getJson('api/opportunities?order_by_opportunity_start_date=asc')->assertOk();
+        $this->getJson('api/opportunities?order_by_opportunity_end_date=asc')->assertOk();
+        $this->getJson('api/opportunities?order_by_opportunity_closing_date=asc')->assertOk();
+        $this->getJson('api/opportunities?order_by_opportunity_amount=asc')->assertOk();
+        $this->getJson('api/opportunities?order_by_sale_action_name=asc')->assertOk();
+        $this->getJson('api/opportunities?order_by_created_at=asc')->assertOk();
+        $this->getJson('api/opportunities?order_by_status=asc')->assertOk();
     }
 
     /**
@@ -90,6 +150,10 @@ class OpportunityTest extends TestCase
             $contact = factory(Contact::class)->create();
 
             $company->contacts()->sync($contact);
+
+            $address = factory(Address::class)->create();
+
+            $company->addresses()->sync($address);
         });
 
         $response = $this->getJson('api/external-companies')
@@ -109,7 +173,7 @@ class OpportunityTest extends TestCase
 
         $primaryAccountID = $response->json('data.0.id');
 
-        $response = $this->getJson('api/companies/' . $primaryAccountID)
+        $response = $this->getJson('api/companies/'.$primaryAccountID)
 //            ->dump()
             ->assertJsonStructure([
                 'contacts' => [
@@ -191,6 +255,9 @@ class OpportunityTest extends TestCase
                 "updated_at",
                 "created_at",
 
+                "status",
+                "status_reason",
+
                 "suppliers_grid" => [
                     "*" => [
                         "id", "supplier_name", "country_name", "contact_name", "contact_email"
@@ -225,6 +292,10 @@ class OpportunityTest extends TestCase
             $contact = factory(Contact::class)->create();
 
             $company->contacts()->sync($contact);
+
+            $address = factory(Address::class)->create();
+
+            $company->addresses()->sync($address);
         });
 
         $response = $this->getJson('api/external-companies')
@@ -243,7 +314,7 @@ class OpportunityTest extends TestCase
 
         $primaryAccountID = $response->json('data.0.id');
 
-        $response = $this->getJson('api/companies/' . $primaryAccountID)
+        $response = $this->getJson('api/companies/'.$primaryAccountID)
             ->assertJsonStructure([
                 'contacts' => [
                     '*' => [
@@ -269,7 +340,7 @@ class OpportunityTest extends TestCase
 
         $data['suppliers_grid'] = factory(OpportunitySupplier::class, 10)->raw();
 
-        $this->patchJson('api/opportunities/' . $opportunity->getKey(), $data)
+        $this->patchJson('api/opportunities/'.$opportunity->getKey(), $data)
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
@@ -324,6 +395,9 @@ class OpportunityTest extends TestCase
                 "updated_at",
                 "created_at",
 
+                "status",
+                "status_reason",
+
                 "suppliers_grid" => [
                     "*" => [
                         "id", "supplier_name", "country_name", "contact_name", "contact_email"
@@ -345,10 +419,10 @@ class OpportunityTest extends TestCase
             'user_id' => $this->app['auth.driver']->id(),
         ]);
 
-        $this->deleteJson('api/opportunities/' . $opportunity->getKey())
+        $this->deleteJson('api/opportunities/'.$opportunity->getKey())
             ->assertNoContent();
 
-        $this->getJson('api/opportunities/' . $opportunity->getKey())
+        $this->getJson('api/opportunities/'.$opportunity->getKey())
             ->assertNotFound();
     }
 
@@ -435,7 +509,7 @@ class OpportunityTest extends TestCase
         // Ensure that uploaded opportunities don't exist on the main listing.
 
         do {
-            $response = $this->getJson('api/opportunities?page=' . $page)
+            $response = $this->getJson('api/opportunities?page='.$page)
                 ->assertOk()
                 ->assertJsonStructure([
                     'data' => [
@@ -449,5 +523,75 @@ class OpportunityTest extends TestCase
         } while (null !== $response->json('links.next'));
 
         $this->assertCount(count($keys), $keysOnListing);
+    }
+
+    /**
+     * Test an ability to mark an existing opportunity as lost.
+     *
+     * @return void
+     */
+    public function testCanMarkOpportunityAsLost()
+    {
+        $opportunity = factory(Opportunity::class)->create([
+            'status' => 1,
+            'status_reason' => null
+        ]);
+
+        $this->authenticateApi();
+
+        $this->patchJson('api/opportunities/'.$opportunity->getKey().'/lost', [
+            'status_reason' => $statusReason = 'Hardware is no longer covered'
+        ])
+
+            ->assertNoContent();
+
+        $this->getJson('api/opportunities/'.$opportunity->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJson([
+                'status' => 0,
+                'status_reason' => $statusReason
+            ]);
+    }
+
+    /**
+     * Test an ability to restore an existing opportunity,
+     * i.e. mark an opportunity as not lost.
+     *
+     * @return void
+     */
+    public function testCanRestoreOpportunity()
+    {
+        $opportunity = factory(Opportunity::class)->create([
+            'status' => 1,
+            'status_reason' => null
+        ]);
+
+        $this->authenticateApi();
+
+        $this->patchJson('api/opportunities/'.$opportunity->getKey().'/lost', [
+            'status_reason' => $statusReason = 'Hardware is no longer covered'
+        ])
+
+            ->assertNoContent();
+
+        $this->getJson('api/opportunities/'.$opportunity->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJson([
+                'status' => 0,
+                'status_reason' => $statusReason
+            ]);
+
+        $this->patchJson('api/opportunities/'.$opportunity->getKey().'/restore-from-lost')
+            ->assertNoContent();
+
+        $this->getJson('api/opportunities/'.$opportunity->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJson([
+                'status' => 1,
+                'status_reason' => null
+            ]);
     }
 }

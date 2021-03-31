@@ -18,7 +18,7 @@ final class PackAssetsReviewStage extends DataTransferObject
     public bool $reject = false;
 
     /**
-     * @Constraints\Choice({"sku", "serial_no", "product_name", "expiry_date", "price", "service_level", "vendor_short_code"})
+     * @Constraints\Choice({"sku", "serial_no", "product_name", "expiry_date", "price", "service_level_description", "vendor_short_code", "machine_address"})
      *
      * @var string|null
      */

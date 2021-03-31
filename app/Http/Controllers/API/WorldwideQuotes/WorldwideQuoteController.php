@@ -4,9 +4,11 @@ namespace App\Http\Controllers\API\WorldwideQuotes;
 
 use App\Contracts\Services\ManagesExchangeRates as ExchangeRateService;
 use App\Contracts\Services\ProcessesWorldwideQuoteState;
+use App\DTO\WorldwideQuote\WorldwideQuoteValidationResult;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\{WorldwideQuote\DraftQuote,
     WorldwideQuote\InitQuote,
+    WorldwideQuote\MarkWorldwideQuoteAsDead,
     WorldwideQuote\ProcessQuoteAddressesContacts,
     WorldwideQuote\ProcessQuoteAssetsReviewStep,
     WorldwideQuote\ProcessQuoteDetails,
@@ -536,7 +538,7 @@ class WorldwideQuoteController extends Controller
      */
     public function activateQuote(WorldwideQuote $worldwideQuote): Response
     {
-        $this->authorize('update', $worldwideQuote);
+        $this->authorize('changeStatus', $worldwideQuote);
 
         $this->processor->activateQuote($worldwideQuote);
 
@@ -552,7 +554,7 @@ class WorldwideQuoteController extends Controller
      */
     public function deactivateQuote(WorldwideQuote $worldwideQuote): Response
     {
-        $this->authorize('update', $worldwideQuote);
+        $this->authorize('changeStatus', $worldwideQuote);
 
         $this->processor->deactivateQuote($worldwideQuote);
 
@@ -580,13 +582,46 @@ class WorldwideQuoteController extends Controller
      *
      * @param WorldwideQuote $worldwideQuote
      * @param WorldwideQuoteValidator $validator
-     * @return \App\DTO\WorldwideQuote\WorldwideQuoteValidationResult
+     * @return WorldwideQuoteValidationResult
      * @throws AuthorizationException
      */
-    public function validateQuote(WorldwideQuote $worldwideQuote, WorldwideQuoteValidator $validator): \App\DTO\WorldwideQuote\WorldwideQuoteValidationResult
+    public function validateQuote(WorldwideQuote $worldwideQuote, WorldwideQuoteValidator $validator): WorldwideQuoteValidationResult
     {
         $this->authorize('view', $worldwideQuote);
 
         return $validator->validateQuote($worldwideQuote);
+    }
+
+    /**
+     * Mark the specified quote entity as 'dead'.
+     *
+     * @param MarkWorldwideQuoteAsDead $request
+     * @param WorldwideQuote $worldwideQuote
+     * @return Response
+     * @throws AuthorizationException
+     */
+    public function markQuoteAsDead(MarkWorldwideQuoteAsDead $request, WorldwideQuote $worldwideQuote): Response
+    {
+        $this->authorize('changeStatus', $worldwideQuote);
+
+        $this->processor->markQuoteAsDead($worldwideQuote, $request->getMarkQuoteAsDeadData());
+
+        return response()->noContent();
+    }
+
+    /**
+     * Mark the specified quote entity as 'alive'.
+     *
+     * @param WorldwideQuote $worldwideQuote
+     * @return Response
+     * @throws AuthorizationException
+     */
+    public function markQuoteAsAlive(WorldwideQuote $worldwideQuote): Response
+    {
+        $this->authorize('changeStatus', $worldwideQuote);
+
+        $this->processor->markQuoteAsAlive($worldwideQuote);
+
+        return response()->noContent();
     }
 }

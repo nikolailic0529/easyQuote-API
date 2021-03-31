@@ -14,7 +14,7 @@ class CalculateAssets extends Command
      *
      * @var string
      */
-    protected $signature = 'eq:calculate-assets {--clear-cache}';
+    protected $signature = 'eq:calculate-assets';
 
     /**
      * The console command description.
@@ -36,30 +36,19 @@ class CalculateAssets extends Command
     /**
      * Execute the console command.
      *
+     * @param Stats $service
      * @return mixed
      */
-    public function handle(Stats $service, StatsAggregator $aggregator)
+    public function handle(Stats $service)
     {
-        $this->warn(ASSET_TCS_01);
-        customlog(['message' => ASSET_TCS_01]);
+        $this->output->title('Asset totals calculation started');
 
-        try {
-            $service->calculateAssetTotals($this->output->createProgressBar());
+        $service
+            ->setOutput($this->getOutput())
+            ->denormalizeSummaryOfAssets();
 
-            if ($this->option('clear-cache')) {
-                $aggregator->flushSummaryCache();
-                $this->info("\nSummary cache has been cleared!");
-            }
-        } catch (Throwable $e) {
-            $this->error(ASSET_TCERR_01);
-            customlog(['ErrorCode' => 'ASSET_TCERR_01'], customlog()->formatError(ASSET_TCERR_01, $e));
+        $this->output->success('Calculation of Asset totals has benn successfully finished');
 
-            return false;
-        }
-
-        $this->info("\n".ASSET_TCF_01);
-        customlog(['message' => ASSET_TCF_01]);
-
-        return true;
+        return Command::SUCCESS;
     }
 }

@@ -17,6 +17,7 @@ use App\DTO\QuoteStages\PackDiscountStage;
 use App\DTO\QuoteStages\PackMarginTaxStage;
 use App\DTO\QuoteStages\ReviewStage;
 use App\DTO\QuoteStages\SubmitStage;
+use App\DTO\WorldwideQuote\MarkWorldwideQuoteAsDeadData;
 use App\Models\Opportunity;
 use App\Models\Quote\WorldwideQuote;
 
@@ -190,4 +191,19 @@ interface ProcessesWorldwideQuoteState
      * @return void
      */
     public function deleteQuote(WorldwideQuote $quote): void;
+
+    /**
+     * Mark worldwide quote as 'dead'.
+     *
+     * @param WorldwideQuote $quote
+     * @param MarkWorldwideQuoteAsDeadData $data
+     */
+    public function markQuoteAsDead(WorldwideQuote $quote, MarkWorldwideQuoteAsDeadData $data): void;
+
+    /**
+     * Mark worldwide quote as 'alive'.
+     *
+     * @param WorldwideQuote $quote
+     */
+    public function markQuoteAsAlive(WorldwideQuote $quote): void;
 }

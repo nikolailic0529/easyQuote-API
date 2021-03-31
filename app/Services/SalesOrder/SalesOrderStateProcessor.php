@@ -5,7 +5,8 @@ namespace App\Services\SalesOrder;
 
 
 use App\Contracts\Services\ProcessesSalesOrderState;
-use App\DTO\SalesOrder\CancelSalesOrderData;
+use App\DTO\SalesOrder\Cancel\CancelSalesOrderData;
+use App\DTO\SalesOrder\Cancel\CancelSalesOrderResult;
 use App\DTO\SalesOrder\DraftSalesOrderData;
 use App\DTO\SalesOrder\Submit\SubmitSalesOrderResult;
 use App\DTO\SalesOrder\UpdateSalesOrderData;
@@ -39,6 +40,8 @@ class SalesOrderStateProcessor implements ProcessesSalesOrderState
 
     protected SubmitSalesOrderService $submitService;
 
+    protected CancelSalesOrderService $cancelService;
+
     protected SalesOrderDataMapper $dataMapper;
 
     public function __construct(ConnectionInterface $connection,
@@ -46,6 +49,7 @@ class SalesOrderStateProcessor implements ProcessesSalesOrderState
                                 EventDispatcher $eventDispatcher,
                                 ValidatorInterface $validator,
                                 SubmitSalesOrderService $submitService,
+                                CancelSalesOrderService $cancelService,
                                 SalesOrderDataMapper $dataMapper)
     {
         $this->connection = $connection;
@@ -53,6 +57,7 @@ class SalesOrderStateProcessor implements ProcessesSalesOrderState
         $this->validator = $validator;
         $this->eventDispatcher = $eventDispatcher;
         $this->submitService = $submitService;
+        $this->cancelService = $cancelService;
         $this->dataMapper = $dataMapper;
     }
 
@@ -164,12 +169,18 @@ class SalesOrderStateProcessor implements ProcessesSalesOrderState
         return $submitResult;
     }
 
-    public function cancelSalesOrder(CancelSalesOrderData $data, SalesOrder $salesOrder): void
+    public function cancelSalesOrder(CancelSalesOrderData $data, SalesOrder $salesOrder): CancelSalesOrderResult
     {
         $violations = $this->validator->validate($data);
 
         if (count($violations)) {
             throw new ValidationFailedException($data, $violations);
+        }
+
+        $cancelResult = $this->cancelService->processSalesOrderCancellation($data);
+
+        if (false === $cancelResult->response_ok) {
+            return $cancelResult;
         }
 
         $salesOrder->status = SalesOrderStatus::CANCEL;
@@ -186,6 +197,8 @@ class SalesOrderStateProcessor implements ProcessesSalesOrderState
         $this->eventDispatcher->dispatch(
             new SalesOrderCancelled($salesOrder)
         );
+
+        return $cancelResult;
     }
 
     /**

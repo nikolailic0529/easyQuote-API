@@ -74,6 +74,9 @@ class CreatedOpportunity extends JsonResource
 
             'suppliers_grid' => $this->opportunitySuppliers,
 
+            'status' => $this->status,
+            'status_reason' => $this->status_reason,
+
             'updated_at' => $this->updated_at,
             'created_at' => $this->created_at,
         ];

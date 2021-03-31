@@ -10,6 +10,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Pool;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
+use GuzzleHttp\RequestOptions;
 use Illuminate\Config\Repository as Config;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Arr;
@@ -75,11 +76,13 @@ class AssetServiceLookupService
             );
 
             $warrantyRequests[$assetLookupData->asset_id] = new Request('GET', $warrantyLookupUrl, [
-                'Authorization' => "Bearer $token"
+                'Authorization' => "Bearer $token",
+                'Accept' => 'application/json'
             ]);
 
             $supportRequests[$assetLookupData->asset_id] = new Request('GET', $supportLookupUrl, [
-                'Authorization' => "Bearer $token"
+                'Authorization' => "Bearer $token",
+                'Accept' => 'application/json'
             ]);
         }
 

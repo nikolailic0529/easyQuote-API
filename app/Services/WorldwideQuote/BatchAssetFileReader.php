@@ -45,7 +45,7 @@ class BatchAssetFileReader
     {
         $reader = ReaderFactory::createFromType($this->fileType);
 
-//        libxml_disable_entity_loader(false);
+        libxml_disable_entity_loader(false);
 
         $reader->open($this->filePath);
 
@@ -95,7 +95,7 @@ class BatchAssetFileReader
         if (empty($this->headers)) {
             $reader = ReaderFactory::createFromType($this->fileType);
 
-//            libxml_disable_entity_loader(false);
+            libxml_disable_entity_loader(false);
 
             $reader->open($this->filePath);
 

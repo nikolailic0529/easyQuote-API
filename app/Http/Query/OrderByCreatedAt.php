@@ -5,19 +5,19 @@ use Illuminate\Database\Eloquent\Builder;
 
 class OrderByCreatedAt extends Query
 {
-    protected bool $shallQualify = true;
+    protected bool $qualifyColumnName = true;
 
     public function applyQuery($builder, string $table)
     {
-        $column = $this->shallQualify ? "$table.created_at" : 'created_at';
+        $column = $this->qualifyColumnName ? "$table.created_at" : 'created_at';
 
         return $builder->orderBy($column, $this->value);
     }
 
-    public function shallQualify($value = true)
+    public function qualifyColumnName($value = true): self
     {
-        $this->shallQualify = $value;
-
-        return $this;
+        return tap($this, function () use ($value) {
+            $this->qualifyColumnName = $value;
+        });
     }
 }

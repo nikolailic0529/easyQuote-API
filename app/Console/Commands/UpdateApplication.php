@@ -3,8 +3,10 @@
 namespace App\Console\Commands;
 
 use App\Console\Commands\Routine\UpdateExchangeRates;
+use App\Models\CancelSalesOrderReason;
 use Database\Seeders\{AssetCategorySeeder,
     BusinessDivisionSeeder,
+    CancelSalesOrderReasonSeeder,
     CompanySeeder,
     ContractTypeSeeder,
     CountrySeeder,
@@ -131,6 +133,11 @@ class UpdateApplication extends Command
 
         $this->call(SeedCommand::class, [
             '--class' => CustomFieldSeeder::class,
+            '--force' => true
+        ]);
+
+        $this->call(SeedCommand::class, [
+            '--class' => CancelSalesOrderReasonSeeder::class,
             '--force' => true
         ]);
 

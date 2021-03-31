@@ -1,8 +1,8 @@
 * [Opportunities List](#opportunities-list)
-* [Drafted Contract Quotes List](#drafted-contract-quotes-list)
-* [Submitted Contract Quotes List](#submitted-contract-quotes-list)
-* [Drafted Pack Quotes List](#drafted-pack-quotes-list)
-* [Submitted Pack Quotes List](#submitted-pack-quotes-list)
+* [Drafted Alive Quotes List](#drafted-quotes-list)
+* [Drafted Dead Quotes List](#drafted-quotes-list)
+* [Submitted Alive Quotes List](#submitted-quotes-list)
+* [Submitted Dead Quotes List](#submitted-quotes-list)
 * [Quote Management](#quote-management)
     * [Init Quote](#init-quote)
     * [Show Quote State](#show-quote-state)
@@ -31,7 +31,7 @@
     * [Show Price Summary of Contract Quote after Country Margin & Tax](#show-price-summary-of-contract-quote-after-country-margin--tax)
     * [Show Price Summary of Pack Quote after Country Margin & Tax](#show-price-summary-of-pack-quote-after-country-margin--tax)
     * [Show Price Summary of Contract Quote after Discounts](#show-price-summary-of-contract-quote-after-discounts)
-    * [Show Price Summary of Pack Quote after Discounts](#show-price-summary-of-pack-quote-after-discounts)  
+    * [Show Price Summary of Pack Quote after Discounts](#show-price-summary-of-pack-quote-after-discounts)
     * [Apply discount on WW Distributions](#apply-discount-on-ww-distributions)
     * [Update Details of WW Distributions](#update-details-of-ww-distributions)
     * [Delete WW Distribution](#delete-ww-distribution)
@@ -60,14 +60,16 @@
     * [Unravel Quote](#unravel-quote)
     * [Mark Quote as active](#mark-quote-as-active)
     * [Mark Quote as inactive](#mark-quote-as-inactive)
+    * [Mark Quote as dead](#mark-quote-as-dead)
+    * [Restore Quote from dead](#restore-quote-from-dead)
 
 # Opportunities List
 
     [GET] api/opportunities
 
-# Drafted Contract Quotes List
+# Drafted Quotes List
 
-    [GET] api/ww-quotes/contract/drafted
+    [GET] api/ww-quotes/drafted
 
     order_by_customer_name=asc/desc
     order_by_rfq_number=asc/desc
@@ -119,9 +121,9 @@
 
 * * *
 
-# Submitted Contract Quotes List
+# Submitted Quotes List
 
-    [GET] api/ww-quotes/contract/submitted
+    [GET] api/ww-quotes/submitted
     
     order_by_customer_name=asc/desc
     order_by_rfq_number=asc/desc
@@ -171,115 +173,6 @@
         "to",
         "total"
     }
-
-* * *
-
-# Drafted Pack Quotes List
-
-    [GET] api/ww-quotes/pack/drafted
-
-    order_by_customer_name=asc/desc
-    order_by_rfq_number=asc/desc
-    order_by_valid_until_date=asc/desc
-    order_by_customer_support_start_date=asc/desc
-    order_by_customer_support_end_date=asc/desc
-    order_by_user_fullname=asc/desc
-    order_by_created_at=asc/desc
-
-**Response:**
-
-    {
-        "current_page",
-        "data": [
-            "*": {
-                    "id",
-                    "user_id",
-                    "opportunity_id",
-                    "company_id",
-                    "completeness",
-                    "created_at",
-                    "updated_at",
-                    "activated_at",
-                    "user_fullname",
-                    "company_name",
-                    "customer_name",
-                    "rfq_number",
-                    "valid_until_date",
-                    "customer_support_start_date",
-                    "customer_support_end_date",
-                    "permissions": {
-                        "view",
-                        "update",
-                        "delete"
-                    }
-            }
-        ],
-        "first_page_url",
-        "from",
-        "last_page",
-        "last_page_url",
-        "next_page_url",
-        "path",
-        "per_page",
-        "prev_page_url",
-        "to",
-        "total"
-    }
-
-* * *
-
-# Submitted Pack Quotes List
-
-    [GET] api/ww-quotes/pack/submitted
-    
-    order_by_customer_name=asc/desc
-    order_by_rfq_number=asc/desc
-    order_by_valid_until_date=asc/desc
-    order_by_customer_support_start_date=asc/desc
-    order_by_customer_support_end_date=asc/desc
-    order_by_created_at=asc/desc
-
-**Response:**
-
-    {
-        "current_page",
-        "data": [
-            "*": {
-                    "id",
-                    "user_id",
-                    "opportunity_id",
-                    "company_id",
-                    "completeness",
-                    "created_at",
-                    "updated_at",
-                    "activated_at",
-                    "user_fullname",
-                    "company_name",
-                    "customer_name",
-                    "rfq_number",
-                    "valid_until_date",
-                    "customer_support_start_date",
-                    "customer_support_end_date",
-                    "permissions": {
-                        "view",
-                        "update",
-                        "delete"
-                    }
-            }
-        ],
-        "first_page_url",
-        "from",
-        "last_page",
-        "last_page_url",
-        "next_page_url",
-        "path",
-        "per_page",
-        "prev_page_url",
-        "to",
-        "total"
-    }
-
-* * *
 
 # Quote Management
 
@@ -1447,6 +1340,19 @@
 ## Mark Quote as inactive
 
     [PATCH] api/ww-quotes/{worldwide_quote_uuid}/deactivate
+
+## Mark Quote as dead
+
+    [PATCH] api/ww-quotes/{worldwide_quote_uuid}/dead
+
+    Payload:
+    {
+        "status_reason": {string_max_500_chars} *
+    }
+
+## Restore Quote from dead
+
+    [PATCH] api/ww-quotes/{worldwide_quote_uuid}/restore-from-dead
 
 
 

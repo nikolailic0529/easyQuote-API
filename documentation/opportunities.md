@@ -3,14 +3,17 @@
     * [Update Opportunity Form Template](#update-opportunity-form-template)
 * [Opportunity Management](#opportunity-management)
     * [Paginate Opportunities](#paginate-opportunities)
+    * [Paginate Lost Opportunities](#paginate-lost-opportunities)
     * [Batch Upload Opportunities](#batch-upload-opportunities)
-    * [Batch Save Opportunities](#batch-save-opportunities)  
+    * [Batch Save Opportunities](#batch-save-opportunities)
     * [Create Opportunity](#create-opportunity)
-      * [Paginate Accounts](#paginate-accounts)
-      * [Show Account Contacts](#show-account-contacts)
+        * [Paginate Accounts](#paginate-accounts)
+        * [Show Account Contacts](#show-account-contacts)
     * [Update Opportunity](#update-opportunity)
     * [Delete Opportunity](#delete-opportunity)
-  
+    * [Mark Opportunity as Lost](#mark-opportunity-as-lost)
+    * [Restore Opportunity from Lost](#restore-opportunity-from-lost)
+
 # Opportunity Form
 
 *Available Controls*
@@ -67,12 +70,14 @@
     remarks                               : textbox/string
 
 ## Show Opportunity Form Template
+
     [GET] api/opportunity-template
     
     Response:
     [template schema in json format]
 
 ## Update Opportunity Form Template
+
     [PUT] api/opportunity-template
     
     Payload:
@@ -85,6 +90,7 @@
 # Opportunity Management
 
 ## Paginate Opportunities
+
     [GET] api/opportunities
 
     *Available Orders:
@@ -116,7 +122,41 @@
         ]
     }
 
+## Paginate Lost Opportunities
+
+    [GET] api/opportunities/lost
+
+    *Available Orders:
+    order_by_account_name=asc/desc
+    order_by_opportunity_start_date=asc/desc
+    order_by_opportunity_end_date=asc/desc
+    order_by_opportunity_closing_date=asc/desc
+    order_by_opportunity_amount=asc/desc
+    order_by_project_name=asc/desc
+    order_by_account_manager_name=asc/desc
+    order_by_sale_action_name=asc/desc
+    order_by_created_at=asc/desc
+
+    Response:
+    {
+        "data": [
+            "*": {
+                "id",
+                "account_name",
+                "account_manager_name",
+                "project_name",
+                "opportunity_amount",
+                "opportunity_start_date",
+                "opportunity_end_date",
+                "opportunity_closing_date",
+                "sale_action_name",
+                "created_at",             
+            }
+        ]
+    }
+
 ## Batch Upload Opportunities
+
     [POST] api/opportunities/upload
 
     Payload:
@@ -140,8 +180,8 @@
         ]
     }
 
-
 ## Batch Save Opportunities
+
     [PATCH] api/opportunities/save
 
     Payload:
@@ -152,9 +192,8 @@
         ]
     }
 
-
-
 ## Create Opportunity
+
     [POST] api/opportunities
 
     {
@@ -220,6 +259,7 @@
     }
 
 ### Paginate Accounts
+
     [GET] api/external-companies
     
     *Available Orders:
@@ -264,6 +304,7 @@
     }
 
 ### Show Account Contacts
+
     [GET] api/companies/{account_uuid}
     
     Response:
@@ -305,8 +346,8 @@
         "activated_at",
     }
 
-
 ## Update Opportunity
+
     [POST] api/opportunities/{opportunity_uuid}
 
     {
@@ -373,4 +414,18 @@
     }
 
 ## Delete Opportunity
+
     [DELETE] api/opportunities/{opportunity_uuid}
+
+## Mark Opportunity as Lost
+
+    [PATCH] api/opportunities/{opportunity_uuid}/lost
+
+    Payload:
+    {
+        "status_reason": {string_max_500_chars} *
+    }
+
+## Restore Opportunity from Lost
+
+    [PATCH] api/opportunities/{opportunity_uuid}/restore-from-lost

@@ -30,6 +30,7 @@ use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
  *
  * @property string|null $name
  * @property string|null $short_code
+ * @property string|null $vs_company_code
  * @property string|null $type
  * @property string|null $source
  * @property string|null $category

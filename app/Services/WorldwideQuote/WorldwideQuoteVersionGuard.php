@@ -268,8 +268,7 @@ class WorldwideQuoteVersionGuard
         $replicatedDistributorQuote = $distributorQuote->replicate();
 
         $replicatedDistributorQuote->{$replicatedDistributorQuote->getKeyName()} = (string)Uuid::generate(4);
-        $replicatedDistributorQuote->worldwide_quote_id = $replicatedQuoteVersion->getKey();
-        $replicatedDistributorQuote->worldwide_quote_type = get_class($replicatedQuoteVersion);
+        $replicatedDistributorQuote->worldwideQuote()->associate($replicatedQuoteVersion);
 
         $replicatedMapping = DistributionFieldColumn::query()
             ->where('worldwide_distribution_id', $distributorQuote->getKey())

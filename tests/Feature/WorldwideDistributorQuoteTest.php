@@ -293,7 +293,7 @@ class WorldwideDistributorQuoteTest extends TestCase
 
         $wwDistributions = factory(WorldwideDistribution::class, 2)->create([
             'worldwide_quote_id' => $wwQuote->getKey(),
-            'worldwide_quote_type' => WorldwideQuote::class,
+            'worldwide_quote_type' => $wwQuote->getMorphClass(),
             'distributor_file_id' => $distributorFile->getKey(),
             'distribution_currency_id' => $distributionCurrency->getKey()
         ]);

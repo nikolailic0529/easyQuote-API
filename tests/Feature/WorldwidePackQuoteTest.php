@@ -75,8 +75,12 @@ class WorldwidePackQuoteTest extends TestCase
                         'created_at',
                         'updated_at',
                         'activated_at',
+
+                        'status',
+                        'status_reason',
+
                         'permissions' => [
-                            'view', 'update', 'delete',
+                            'view', 'update', 'delete', 'change_status'
                         ],
                     ],
                 ],
@@ -127,6 +131,13 @@ class WorldwidePackQuoteTest extends TestCase
                         'valid_until_date',
                         'customer_support_start_date',
                         'customer_support_end_date',
+
+                        'status',
+                        'status_reason',
+
+                        'permissions' => [
+                            'view', 'update', 'delete', 'change_status'
+                        ],
                     ],
                 ],
                 'links' => [
@@ -241,7 +252,7 @@ class WorldwidePackQuoteTest extends TestCase
 //            ->dump()
             ->assertCreated()
             ->assertJsonStructure([
-                'id', 'worldwide_quote_id'
+                'id'
             ]);
     }
 
@@ -260,7 +271,7 @@ class WorldwidePackQuoteTest extends TestCase
 //            ->dump()
             ->assertCreated()
             ->assertJsonStructure([
-                'id', 'worldwide_quote_id'
+                'id'
             ]);
 
         $this->deleteJson('api/ww-quotes/'.$quote->getKey().'/assets/'.$response->json('id'))
@@ -289,7 +300,7 @@ class WorldwidePackQuoteTest extends TestCase
 //            ->dump()
                 ->assertCreated()
                 ->assertJsonStructure([
-                    'id', 'worldwide_quote_id'
+                    'id'
                 ]);
 
             $assetKeys[] = $response->json('id');
@@ -571,6 +582,7 @@ class WorldwidePackQuoteTest extends TestCase
         $this->postJson('api/ww-quotes/'.$quote->getKey().'/assets/upload', [
             'file' => $file
         ])
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 'file_id',
@@ -863,7 +875,11 @@ class WorldwidePackQuoteTest extends TestCase
 
         $this->authenticateApi();
 
-        $this->getJson('api/ww-quotes/'.$quote->getKey().'?include=summary')
+        $this->getJson('api/ww-quotes/'.$quote->getKey().'?'.Arr::query([
+                'include' => [
+                    'summary', 'assets.machine_address'
+                ]
+            ]))
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
@@ -1534,6 +1550,66 @@ class WorldwidePackQuoteTest extends TestCase
                     'margin_after_sn_discount' => '29.82',
                     'final_margin' => '29.82'
                 ]
+            ]);
+    }
+
+    /**
+     * Test an ability to mark worldwide pack quote as 'dead'.
+     *
+     * @return void
+     */
+    public function testCanMarkWorldwidePackQuoteAsDead()
+    {
+        $quote = factory(WorldwideQuote::class)->create(['contract_type_id' => CT_PACK]);
+
+        $this->authenticateApi();
+
+        $this->patchJson('api/ww-quotes/'.$quote->getKey().'/dead', [
+            'status_reason' => $statusReason = 'End of Service (Obsolete)'
+        ])
+//            ->dump()
+            ->assertNoContent();
+
+        $this->getJson('api/ww-quotes/'.$quote->getKey())
+            ->assertOk()
+            ->assertJson([
+                'status' => 0,
+                'status_reason' => $statusReason
+            ]);
+    }
+
+    /**
+     * Test an ability to mark worldwide contract quote as 'alive'.
+     *
+     * @return void
+     */
+    public function testCanMarkWorldwidePackQuoteAsAlive()
+    {
+        $quote = factory(WorldwideQuote::class)->create(['contract_type_id' => CT_PACK]);
+
+        $this->authenticateApi();
+
+        $this->patchJson('api/ww-quotes/'.$quote->getKey().'/dead', [
+            'status_reason' => $statusReason = 'End of Service (Obsolete)'
+        ])
+//            ->dump()
+            ->assertNoContent();
+
+        $this->getJson('api/ww-quotes/'.$quote->getKey())
+            ->assertOk()
+            ->assertJson([
+                'status' => 0,
+                'status_reason' => $statusReason
+            ]);
+
+        $this->patchJson('api/ww-quotes/'.$quote->getKey().'/restore-from-dead')
+            ->assertNoContent();
+
+        $this->getJson('api/ww-quotes/'.$quote->getKey())
+            ->assertOk()
+            ->assertJson([
+                'status' => 1,
+                'status_reason' => null
             ]);
     }
 }

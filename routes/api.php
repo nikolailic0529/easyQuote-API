@@ -51,15 +51,16 @@ use App\Http\Controllers\API\Templates\ContractTemplateController;
 use App\Http\Controllers\API\Templates\HpeContractTemplateController;
 use App\Http\Controllers\API\Templates\OpportunityTemplateController;
 use App\Http\Controllers\API\Templates\QuoteTemplateController;
+use App\Http\Controllers\API\UnifiedQuoteController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\VendorController;
 use App\Http\Controllers\API\WorldwideQuotes\WorldwideCustomerController;
 use App\Http\Controllers\API\WorldwideQuotes\WorldwideDistributionController;
-use App\Http\Controllers\API\WorldwideQuotes\WorldwidePackQuoteDraftedController;
-use App\Http\Controllers\API\WorldwideQuotes\WorldwidePackQuoteSubmittedController;
 use App\Http\Controllers\API\WorldwideQuotes\WorldwideQuoteAssetController;
 use App\Http\Controllers\API\WorldwideQuotes\WorldwideQuoteController;
+use App\Http\Controllers\API\WorldwideQuotes\WorldwideQuoteDraftedController;
 use App\Http\Controllers\API\WorldwideQuotes\WorldwideQuoteNoteController;
+use App\Http\Controllers\API\WorldwideQuotes\WorldwideQuoteSubmittedController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('settings/public', [SystemSettingController::class, 'showPublicSettings']);
@@ -421,12 +422,15 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::apiResource('ww-customers', WorldwideCustomerController::class, ['only' => ROUTE_R]);
 
     Route::get('opportunities', [OpportunityController::class, 'paginateOpportunities']);
+    Route::get('opportunities/lost', [OpportunityController::class, 'paginateLostOpportunities']);
     Route::post('opportunities/upload', [OpportunityController::class, 'batchUploadOpportunities']);
     Route::patch('opportunities/save', [OpportunityController::class, 'batchSaveOpportunities']);
     Route::get('opportunities/{opportunity}', [OpportunityController::class, 'showOpportunity']);
     Route::post('opportunities', [OpportunityController::class, 'storeOpportunity']);
     Route::patch('opportunities/{opportunity}', [OpportunityController::class, 'updateOpportunity']);
     Route::delete('opportunities/{opportunity}', [OpportunityController::class, 'destroyOpportunity']);
+    Route::patch('opportunities/{opportunity}/lost', [OpportunityController::class, 'markOpportunityAsLost']);
+    Route::patch('opportunities/{opportunity}/restore-from-lost', [OpportunityController::class, 'markOpportunityAsNotLost']);
 
     Route::get('opportunity-template', [OpportunityTemplateController::class, 'showOpportunityTemplate']);
     Route::put('opportunity-template', [OpportunityTemplateController::class, 'updateOpportunityTemplate']);
@@ -453,8 +457,11 @@ Route::group(['middleware' => 'auth:api'], function () {
     /**
      *  Worldwide Quotes.
      */
-    Route::get('ww-quotes/drafted', WorldwidePackQuoteDraftedController::class);
-    Route::get('ww-quotes/submitted', WorldwidePackQuoteSubmittedController::class);
+    Route::get('ww-quotes/drafted', WorldwideQuoteDraftedController::class);
+    Route::get('ww-quotes/drafted/dead', [WorldwideQuoteDraftedController::class, 'paginateDeadDraftedQuotes']);
+    Route::get('ww-quotes/submitted', WorldwideQuoteSubmittedController::class);
+    Route::get('ww-quotes/submitted/dead', [WorldwideQuoteSubmittedController::class, 'paginateDeadSubmittedQuotes']);
+
 
     Route::post('ww-quotes', [WorldwideQuoteController::class, 'initializeQuote']);
     Route::get('ww-quotes/{worldwide_quote}', [WorldwideQuoteController::class, 'showQuoteState']);
@@ -465,6 +472,8 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::patch('ww-quotes/{worldwide_quote}/unravel', [WorldwideQuoteController::class, 'unravelQuote']);
     Route::patch('ww-quotes/{worldwide_quote}/activate', [WorldwideQuoteController::class, 'activateQuote']);
     Route::patch('ww-quotes/{worldwide_quote}/deactivate', [WorldwideQuoteController::class, 'deactivateQuote']);
+    Route::patch('ww-quotes/{worldwide_quote}/dead', [WorldwideQuoteController::class, 'markQuoteAsDead']);
+    Route::patch('ww-quotes/{worldwide_quote}/restore-from-dead', [WorldwideQuoteController::class, 'markQuoteAsAlive']);
     Route::get('ww-quotes/{worldwide_quote}/files/distributor-files', [WorldwideQuoteController::class, 'downloadQuoteDistributorFiles']);
     Route::get('ww-quotes/{worldwide_quote}/files/schedule-files', [WorldwideQuoteController::class, 'downloadQuoteScheduleFiles']);
 
@@ -537,5 +546,13 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::post('ww-distributions/{worldwide_distribution}/country-margin-tax-margin', [WorldwideDistributionController::class, 'showPriceSummaryAfterMarginTax']);
 
     Route::patch('ww-distributions/{worldwide_distribution}/mapped-rows/{mapped_row:id}', [WorldwideDistributionController::class, 'updateMappedRow']);
+
+
+    /**
+     * Unified Quotes (Rescue & Worldwide).
+     */
+    Route::get('unified-quotes/expiring', [UnifiedQuoteController::class, 'paginateUnifiedExpiringQuotes']);
+    Route::get('unified-quotes/submitted', [UnifiedQuoteController::class, 'paginateUnifiedSubmittedQuotes']);
+    Route::get('unified-quotes/drafted', [UnifiedQuoteController::class, 'paginateUnifiedDraftedQuotes']);
 });
 

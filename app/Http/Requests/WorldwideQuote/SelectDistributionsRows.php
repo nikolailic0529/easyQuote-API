@@ -79,7 +79,7 @@ class SelectDistributionsRows extends FormRequest
                 'bail', 'required', 'boolean'
             ],
             'worldwide_distributions.*.sort_rows_column' => [
-                'bail', 'nullable', Rule::in(['product_no', 'description', 'serial_no', 'date_from', 'date_to', 'qty', 'price', 'pricing_document', 'system_handle', 'service_level_description', 'searchable'])
+                'bail', 'nullable', Rule::in(['product_no', 'service_sku', 'description', 'serial_no', 'date_from', 'date_to', 'qty', 'price', 'pricing_document', 'system_handle', 'service_level_description', 'searchable'])
             ],
             'worldwide_distributions.*.sort_rows_direction' => [
                 'bail', 'nullable', Rule::in(['asc', 'desc'])

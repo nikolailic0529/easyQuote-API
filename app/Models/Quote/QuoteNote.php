@@ -9,14 +9,11 @@ use App\Traits\{
     BelongsToUser,
     Uuid,
 };
-use Illuminate\Database\Eloquent\{
-    Model,
-    SoftDeletes,
-};
+use Illuminate\Database\Eloquent\{Model, Relations\BelongsTo, SoftDeletes};
 
 class QuoteNote extends Model
 {
-    use Uuid, Multitenantable, BelongsToQuote, BelongsToUser, LogsActivity, SoftDeletes;
+    use Uuid, Multitenantable, BelongsToUser, LogsActivity, SoftDeletes;
 
     protected $fillable = [
         'quote_id', 'user_id', 'text'
@@ -29,4 +26,9 @@ class QuoteNote extends Model
     protected static $logOnlyDirty = true;
 
     protected static $submitEmptyLogs = false;
+
+    public function quote(): BelongsTo
+    {
+        return $this->belongsTo(Quote::class)->withDefault();
+    }
 }

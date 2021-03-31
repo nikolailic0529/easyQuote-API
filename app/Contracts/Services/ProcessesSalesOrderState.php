@@ -2,7 +2,8 @@
 
 namespace App\Contracts\Services;
 
-use App\DTO\SalesOrder\CancelSalesOrderData;
+use App\DTO\SalesOrder\Cancel\CancelSalesOrderData;
+use App\DTO\SalesOrder\Cancel\CancelSalesOrderResult;
 use App\DTO\SalesOrder\DraftSalesOrderData;
 use App\DTO\SalesOrder\Submit\SubmitSalesOrderResult;
 use App\DTO\SalesOrder\UpdateSalesOrderData;
@@ -36,6 +37,15 @@ interface ProcessesSalesOrderState
     public function submitSalesOrder(SalesOrder $salesOrder): SubmitSalesOrderResult;
 
     /**
+     * Cancel the existing Sales Order.
+     *
+     * @param CancelSalesOrderData $data
+     * @param SalesOrder $salesOrder
+     * @return CancelSalesOrderResult
+     */
+    public function cancelSalesOrder(CancelSalesOrderData $data, SalesOrder $salesOrder): CancelSalesOrderResult;
+
+    /**
      * Unravel the existing Sales Order.
      *
      * @param SalesOrder $salesOrder
@@ -62,12 +72,4 @@ interface ProcessesSalesOrderState
      * @param SalesOrder $salesOrder
      */
     public function deleteSalesOrder(SalesOrder $salesOrder): void;
-
-    /**
-     * Cancel the existing Sales Order.
-     *
-     * @param CancelSalesOrderData $data
-     * @param SalesOrder $salesOrder
-     */
-    public function cancelSalesOrder(CancelSalesOrderData $data, SalesOrder $salesOrder): void;
 }

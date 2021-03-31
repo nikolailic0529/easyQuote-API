@@ -44,6 +44,7 @@ class CompanySeeder extends Seeder
                         'id' => $company['id'],
                         'name' => $company['name'],
                         'short_code' => $company['short_code'],
+                        'vs_company_code' => $company['vs_company_code'],
                         'vat' => $company['vat'],
                         'type' => $company['type'],
                         'default_vendor_id' => $company['default_vendor_id'],

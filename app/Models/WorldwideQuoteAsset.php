@@ -21,6 +21,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $sku
  * @property string|null $service_sku
  * @property string|null $product_name
+ * @property-read string|null $date_from
+ * @property-read string|null $machine_address_string
  * @property string|null $expiry_date
  * @property string|null $service_level_description
  * @property float|null $price
@@ -39,6 +41,10 @@ class WorldwideQuoteAsset extends Model
     public $timestamps = false;
 
     protected $guarded = [];
+
+    protected $hidden = [
+        'worldwide_quote_id', 'worldwide_quote_type', 'replicated_asset_id'
+    ];
 
     protected $casts = [
         'service_level_data' => 'array'

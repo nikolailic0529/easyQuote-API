@@ -15,7 +15,7 @@ class WorldwideQuotePolicy
      * Determine whether the user can view any models.
      *
      * @param  \App\Models\User  $user
-     * @return mixed
+     * @return mixed|void
      */
     public function viewAny(User $user)
     {
@@ -33,7 +33,7 @@ class WorldwideQuotePolicy
      *
      * @param  \App\Models\User  $user
      * @param  \App\Models\Quote\WorldwideQuote  $worldwideQuote
-     * @return mixed
+     * @return mixed|void
      */
     public function view(User $user, WorldwideQuote $worldwideQuote)
     {
@@ -50,7 +50,7 @@ class WorldwideQuotePolicy
      * Determine whether the user can create models.
      *
      * @param  \App\Models\User  $user
-     * @return mixed
+     * @return mixed|void
      */
     public function create(User $user)
     {
@@ -68,7 +68,7 @@ class WorldwideQuotePolicy
      *
      * @param  \App\Models\User  $user
      * @param  \App\Models\Quote\WorldwideQuote  $worldwideQuote
-     * @return mixed
+     * @return mixed|void
      */
     public function update(User $user, WorldwideQuote $worldwideQuote)
     {
@@ -89,22 +89,20 @@ class WorldwideQuotePolicy
     }
 
     /**
-     * Determine whether the user can delete the model.
+     * Determine whether the user can change status of the model.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Quote\WorldwideQuote  $worldwideQuote
-     * @return mixed
+     * @param User $user
+     * @param WorldwideQuote $worldwideQuote
+     * @return bool|void
      */
-    public function delete(User $user, WorldwideQuote $worldwideQuote)
+    public function changeStatus(User $user, WorldwideQuote $worldwideQuote)
     {
-        $salesOrderExistsMessage = 'You have to delete the Sales Order in order to delete the Quote.';
-
         if ($user->hasRole(R_SUPER)) {
-            return $this->ensureSalesOrderDoesntExist($worldwideQuote, $salesOrderExistsMessage);
+            return true;
         }
 
-        if ($user->can('delete_own_ww_quotes') && $user->getKey() === $worldwideQuote->{$worldwideQuote->user()->getForeignKeyName()}) {
-            return $this->ensureSalesOrderDoesntExist($worldwideQuote, $salesOrderExistsMessage);
+        if ($user->can('update_own_ww_quotes') && $user->getKey() === $worldwideQuote->{$worldwideQuote->user()->getForeignKeyName()}) {
+            return true;
         }
     }
 
@@ -113,7 +111,27 @@ class WorldwideQuotePolicy
      *
      * @param  \App\Models\User  $user
      * @param  \App\Models\Quote\WorldwideQuote  $worldwideQuote
-     * @return mixed
+     * @return mixed|void
+     */
+    public function delete(User $user, WorldwideQuote $worldwideQuote)
+    {
+        $salesOrderExistsMessage = 'You have to delete the Sales Order in order to delete the Quote.';
+
+        if ($user->hasRole(R_SUPER)) {
+            return $this->ensureSalesOrderDoesNotExist($worldwideQuote, $salesOrderExistsMessage);
+        }
+
+        if ($user->can('delete_own_ww_quotes') && $user->getKey() === $worldwideQuote->{$worldwideQuote->user()->getForeignKeyName()}) {
+            return $this->ensureSalesOrderDoesNotExist($worldwideQuote, $salesOrderExistsMessage);
+        }
+    }
+
+    /**
+     * Determine whether the user can delete the model.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Quote\WorldwideQuote  $worldwideQuote
+     * @return mixed|void
      */
     public function export(User $user, WorldwideQuote $worldwideQuote)
     {
@@ -145,22 +163,22 @@ class WorldwideQuotePolicy
      *
      * @param  \App\Models\User  $user
      * @param  \App\Models\Quote\WorldwideQuote  $worldwideQuote
-     * @return mixed
+     * @return mixed|void
      */
     public function unravel(User $user, WorldwideQuote $worldwideQuote)
     {
         $salesOrderExistsMessage = 'You have to delete the Sales Order in order to unravel the Quote.';
 
         if ($user->hasRole(R_SUPER)) {
-            return $this->ensureSalesOrderDoesntExist($worldwideQuote, $salesOrderExistsMessage);
+            return $this->ensureSalesOrderDoesNotExist($worldwideQuote, $salesOrderExistsMessage);
         }
 
         if ($user->can('update_own_ww_quotes') && $user->getKey() === $worldwideQuote->{$worldwideQuote->user()->getForeignKeyName()}) {
-            return $this->ensureSalesOrderDoesntExist($worldwideQuote, $salesOrderExistsMessage);
+            return $this->ensureSalesOrderDoesNotExist($worldwideQuote, $salesOrderExistsMessage);
         }
     }
 
-    protected function ensureSalesOrderDoesntExist(WorldwideQuote $worldwideQuote, string $denyMessage): Response
+    protected function ensureSalesOrderDoesNotExist(WorldwideQuote $worldwideQuote, string $denyMessage): Response
     {
         // When explicitly defined sales_order_exists field is present on the model entity,
         // We will use it to check an existence of sales order.

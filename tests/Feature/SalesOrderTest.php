@@ -23,6 +23,7 @@ use App\Models\Template\QuoteTemplate;
 use App\Models\Template\TemplateField;
 use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
+use App\Services\SalesOrder\CancelSalesOrderService;
 use App\Services\SalesOrder\SubmitSalesOrderService;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
@@ -489,11 +490,26 @@ class SalesOrderTest extends TestCase
 
         $salesOrder = factory(SalesOrder::class)->create();
 
+
+        $this->app->when(CancelSalesOrderService::class)->needs(ClientInterface::class)
+            ->give(function () {
+                $mock = new MockHandler([
+                    new \GuzzleHttp\Psr7\Response(200, [], json_encode(['token_type' => 'Bearer', 'expires_in' => 31536000, 'access_token' => '1234'])),
+                    new \GuzzleHttp\Psr7\Response(200, [], json_encode(['id' => 'b7a34431-75c1-4b8d-af9d-4db0ca499109'])),
+                ]);
+
+                $handlerStack = HandlerStack::create($mock);
+
+                return new Client(['handler' => $handlerStack]);
+            });
+
         $this->patchJson('api/sales-orders/'.$salesOrder->getKey().'/cancel', [
             'status_reason' => 'Just cancelled'
         ])
-//            ->dump()
-            ->assertNoContent();
+            ->assertStatus(Response::HTTP_ACCEPTED)
+            ->assertJsonStructure([
+                'result'
+            ]);
 
         $this->getJson('api/sales-orders/'.$salesOrder->getKey())
 //            ->dump()

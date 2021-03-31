@@ -143,7 +143,7 @@ CREATE TABLE `asset_totals` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `asset_totals_location_id_foreign` (`location_id`),
-  SPATIAL KEY `asset_totals_location_coordinates_spatial` (`location_coordinates`),
+  SPATIAL KEY `asset_totals_location_coordinates_spatialindex` (`location_coordinates`),
   KEY `asset_totals_country_id_foreign` (`country_id`),
   KEY `asset_totals_user_id_foreign` (`user_id`),
   CONSTRAINT `asset_totals_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -275,6 +275,7 @@ CREATE TABLE `companies` (
   `default_template_id` char(36) DEFAULT NULL,
   `name` varchar(191) NOT NULL,
   `short_code` char(3) DEFAULT NULL COMMENT 'Company short name',
+  `vs_company_code` varchar(191) DEFAULT NULL COMMENT 'Vendor-Services acceptable company name',
   `vat` varchar(191) DEFAULT NULL,
   `vat_type` varchar(191) DEFAULT NULL COMMENT 'EXEMPT, NO VAT, VAT Number',
   `is_system` tinyint(1) NOT NULL DEFAULT '0',
@@ -611,7 +612,6 @@ CREATE TABLE `country_vendor` (
   `vendor_id` char(36) NOT NULL,
   `country_id` char(36) NOT NULL,
   PRIMARY KEY (`country_id`,`vendor_id`),
-  KEY `country_vendor_country_id_foreign` (`country_id`),
   KEY `country_vendor_vendor_id_foreign` (`vendor_id`),
   CONSTRAINT `country_vendor_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `country_vendor_vendor_id_foreign` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
@@ -627,6 +627,35 @@ CREATE TABLE `currencies` (
   `symbol` varchar(191) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `currencies_code_unique` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `custom_field_values`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `custom_field_values` (
+  `id` char(36) NOT NULL,
+  `custom_field_id` char(36) NOT NULL,
+  `field_value` varchar(250) NOT NULL COMMENT 'Custom Field Value',
+  `is_default` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether the field value is default',
+  `entity_order` bigint(20) NOT NULL DEFAULT '0' COMMENT 'Entity Order',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `custom_field_values_custom_field_id_foreign` (`custom_field_id`),
+  KEY `custom_field_values_deleted_at_index` (`deleted_at`),
+  CONSTRAINT `custom_field_values_custom_field_id_foreign` FOREIGN KEY (`custom_field_id`) REFERENCES `custom_fields` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `custom_fields`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `custom_fields` (
+  `id` char(36) NOT NULL,
+  `field_name` varchar(191) NOT NULL COMMENT 'Custom Field Name',
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `custom_fields_deleted_at_index` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `customer_totals`;
@@ -652,7 +681,7 @@ CREATE TABLE `customer_totals` (
   KEY `customer_totals_address_id_foreign` (`address_id`),
   KEY `customer_totals_location_id_foreign` (`location_id`),
   KEY `customer_totals_customer_name_index` (`customer_name`),
-  SPATIAL KEY `customer_totals_location_coordinates_spatial` (`location_coordinates`),
+  SPATIAL KEY `customer_totals_location_coordinates_spatialindex` (`location_coordinates`),
   KEY `customer_totals_company_id_foreign` (`company_id`),
   KEY `customer_totals_country_id_foreign` (`country_id`),
   KEY `customer_totals_user_id_foreign` (`user_id`),
@@ -1083,17 +1112,17 @@ CREATE TABLE `imported_rows` (
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `imported_rows_kxwifaquogatuc0e_quote_file_id_foreign` (`quote_file_id`),
-  KEY `imported_rows_kxwifaquogatuc0e_deleted_at_is_selected_index` (`deleted_at`,`is_selected`),
-  KEY `imported_rows_kxwifaquogatuc0e_replicated_row_id_index` (`replicated_row_id`),
-  KEY `imported_rows_kxwifaquogatuc0e_deleted_at_index` (`deleted_at`),
-  CONSTRAINT `imported_rows_kxwifaquogatuc0e_quote_file_id_foreign` FOREIGN KEY (`quote_file_id`) REFERENCES `quote_files` (`id`) ON DELETE CASCADE
+  KEY `imported_rows_e0mcug9jpj1ywbbs_quote_file_id_foreign` (`quote_file_id`),
+  KEY `imported_rows_e0mcug9jpj1ywbbs_deleted_at_is_selected_index` (`deleted_at`,`is_selected`),
+  KEY `imported_rows_e0mcug9jpj1ywbbs_replicated_row_id_index` (`replicated_row_id`),
+  KEY `imported_rows_e0mcug9jpj1ywbbs_deleted_at_index` (`deleted_at`),
+  CONSTRAINT `imported_rows_e0mcug9jpj1ywbbs_quote_file_id_foreign` FOREIGN KEY (`quote_file_id`) REFERENCES `quote_files` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
-DROP TABLE IF EXISTS `imported_rows_lmzml0igy1cduxxf`;
+DROP TABLE IF EXISTS `imported_rows_gycquix4kt7qbbwv`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `imported_rows_lmzml0igy1cduxxf` (
+CREATE TABLE `imported_rows_gycquix4kt7qbbwv` (
   `id` char(36) NOT NULL,
   `replicated_row_id` char(36) DEFAULT NULL COMMENT 'Replicated Row ID',
   `user_id` char(36) NOT NULL,
@@ -1179,7 +1208,7 @@ CREATE TABLE `locations` (
   PRIMARY KEY (`id`),
   KEY `locations_country_id_foreign` (`country_id`),
   KEY `locations_searchable_address_index` (`searchable_address`),
-  SPATIAL KEY `locations_coordinates_spatial` (`coordinates`),
+  SPATIAL KEY `locations_coordinates_spatialindex` (`coordinates`),
   KEY `locations_country_code_index` (`country_code`),
   KEY `locations_formatted_address_index` (`formatted_address`),
   KEY `locations_deleted_at_index` (`deleted_at`),
@@ -1415,8 +1444,8 @@ CREATE TABLE `opportunities` (
   `margin_value` double(8,2) DEFAULT NULL COMMENT 'Margin value',
   `renewal_month` varchar(191) DEFAULT NULL COMMENT 'Renewal Month',
   `renewal_year` smallint(5) unsigned DEFAULT NULL COMMENT 'Renewal Year',
-  `opportunity_start_date` date NOT NULL COMMENT 'Opportunity Start Date',
-  `opportunity_end_date` date NOT NULL COMMENT 'Opportunity End Date',
+  `opportunity_start_date` date DEFAULT NULL COMMENT 'Opportunity Start Date',
+  `opportunity_end_date` date DEFAULT NULL COMMENT 'Opportunity End Date',
   `opportunity_closing_date` date NOT NULL COMMENT 'Opportunity closing date',
   `expected_order_date` date DEFAULT NULL COMMENT 'Expected Order Date',
   `customer_order_date` date DEFAULT NULL COMMENT 'Customer Order Date',
@@ -1432,6 +1461,8 @@ CREATE TABLE `opportunities` (
   `ranking` double(8,2) DEFAULT NULL COMMENT 'Opportunity Ranking percentage',
   `remarks` text COMMENT 'Opportunity remarks',
   `notes` text COMMENT 'Opportunity notes',
+  `status` mediumint(9) NOT NULL DEFAULT '1' COMMENT 'Opportunity Status',
+  `status_reason` varchar(500) DEFAULT NULL COMMENT 'Opportunity Status Reason',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -1676,7 +1707,7 @@ CREATE TABLE `quote_location_totals` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `quote_location_totals_location_id_foreign` (`location_id`),
-  SPATIAL KEY `quote_location_totals_location_coordinates_spatial` (`location_coordinates`),
+  SPATIAL KEY `quote_location_totals_location_coordinates_spatialindex` (`location_coordinates`),
   KEY `quote_location_totals_country_id_foreign` (`country_id`),
   KEY `quote_location_totals_user_id_foreign` (`user_id`),
   CONSTRAINT `quote_location_totals_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -1792,7 +1823,7 @@ CREATE TABLE `quote_totals` (
   KEY `quote_totals_customer_id_foreign` (`customer_id`),
   KEY `quote_totals_customer_name_index` (`customer_name`),
   KEY `quote_totals_location_id_foreign` (`location_id`),
-  SPATIAL KEY `quote_totals_location_coordinates_spatial` (`location_coordinates`),
+  SPATIAL KEY `quote_totals_location_coordinates_spatialindex` (`location_coordinates`),
   KEY `quote_totals_company_id_foreign` (`company_id`),
   KEY `quote_totals_country_id_foreign` (`country_id`),
   KEY `quote_totals_user_id_foreign` (`user_id`),
@@ -2458,8 +2489,8 @@ CREATE TABLE `worldwide_quote_versions` (
   `user_id` char(36) NOT NULL COMMENT 'Foreign key on users table',
   `company_id` char(36) DEFAULT NULL COMMENT 'Foreign key on companies table',
   `quote_template_id` char(36) DEFAULT NULL COMMENT 'Foreign key on quote_templates table',
-  `output_currency_id` char(36) DEFAULT NULL COMMENT 'Foreign key on currencies table',
   `quote_currency_id` char(36) DEFAULT NULL COMMENT 'Foreign key on currencies table',
+  `output_currency_id` char(36) DEFAULT NULL COMMENT 'Foreign key on currencies table',
   `multi_year_discount_id` char(36) DEFAULT NULL COMMENT 'Foreign key on multi_year_discounts table',
   `pre_pay_discount_id` char(36) DEFAULT NULL COMMENT 'Foreign key on pre_pay_discounts table',
   `promotional_discount_id` char(36) DEFAULT NULL COMMENT 'Foreign key on promotional_discounts table',
@@ -2470,11 +2501,12 @@ CREATE TABLE `worldwide_quote_versions` (
   `margin_value` double(8,2) DEFAULT NULL COMMENT 'Pack Quote Margin Value',
   `margin_method` varchar(191) DEFAULT NULL COMMENT 'Pack Quote Margin Method',
   `tax_value` double(8,2) DEFAULT NULL COMMENT 'Pack Quote Tax Value',
-  `buy_price` decimal(15,2) DEFAULT NULL,
+  `buy_price` decimal(15,2) DEFAULT NULL COMMENT 'Quote Buy Price',
   `sort_rows_column` enum('sku','serial_no','product_name','expiry_date','price','service_level_description','vendor_short_code','machine_address') DEFAULT NULL COMMENT 'Column name on the worldwide_quote_assets table for sorting',
   `sort_rows_direction` enum('asc','desc') NOT NULL DEFAULT 'asc' COMMENT 'Sorting direction of the pack assets',
   `exchange_rate_margin` decimal(8,2) DEFAULT NULL COMMENT 'Exchange Rate Margin',
   `quote_expiry_date` date DEFAULT NULL COMMENT 'Quote Expiration Date',
+  `payment_terms` varchar(500) DEFAULT NULL COMMENT 'Quote Payment Terms',
   `pricing_document` varchar(1000) DEFAULT NULL COMMENT 'Pack Quote Pricing Document Number',
   `service_agreement_id` varchar(1000) DEFAULT NULL COMMENT 'Pack Quote Service Agreement ID',
   `system_handle` varchar(1000) DEFAULT NULL COMMENT 'Pack Quote System Handle',
@@ -2488,13 +2520,13 @@ CREATE TABLE `worldwide_quote_versions` (
   KEY `worldwide_quote_versions_user_id_foreign` (`user_id`),
   KEY `worldwide_quote_versions_company_id_foreign` (`company_id`),
   KEY `worldwide_quote_versions_quote_template_id_foreign` (`quote_template_id`),
+  KEY `worldwide_quote_versions_quote_currency_id_foreign` (`quote_currency_id`),
   KEY `worldwide_quote_versions_output_currency_id_foreign` (`output_currency_id`),
   KEY `worldwide_quote_versions_multi_year_discount_id_foreign` (`multi_year_discount_id`),
   KEY `worldwide_quote_versions_pre_pay_discount_id_foreign` (`pre_pay_discount_id`),
   KEY `worldwide_quote_versions_promotional_discount_id_foreign` (`promotional_discount_id`),
   KEY `worldwide_quote_versions_sn_discount_id_foreign` (`sn_discount_id`),
   KEY `worldwide_quote_versions_deleted_at_index` (`deleted_at`),
-  KEY `worldwide_quote_versions_quote_currency_id_foreign` (`quote_currency_id`),
   KEY `worldwide_quote_versions_worldwide_quote_id_foreign` (`worldwide_quote_id`),
   CONSTRAINT `worldwide_quote_versions_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `worldwide_quote_versions_multi_year_discount_id_foreign` FOREIGN KEY (`multi_year_discount_id`) REFERENCES `multi_year_discounts` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -2539,12 +2571,15 @@ CREATE TABLE `worldwide_quotes` (
   `completeness` tinyint(3) unsigned NOT NULL DEFAULT '1' COMMENT 'Quote completeness value',
   `quote_expiry_date` date DEFAULT NULL COMMENT 'Quote Expiration Date',
   `custom_discount` decimal(8,2) DEFAULT NULL COMMENT 'Custom discount value',
+  `payment_terms` varchar(500) DEFAULT NULL COMMENT 'Quote Payment Terms',
   `closing_date` date DEFAULT NULL COMMENT 'Quote closing date',
   `pricing_document` varchar(1000) DEFAULT NULL COMMENT 'Pack Quote Pricing Document Number',
   `service_agreement_id` varchar(1000) DEFAULT NULL COMMENT 'Pack Quote Service Agreement ID',
   `system_handle` varchar(1000) DEFAULT NULL COMMENT 'Pack Quote System Handle',
   `additional_details` text COMMENT 'Pack Quote Additional Details',
   `additional_notes` text COMMENT 'Quote Additional Notes',
+  `status` mediumint(9) NOT NULL DEFAULT '1' COMMENT 'Quote Status',
+  `status_reason` varchar(500) DEFAULT NULL COMMENT 'Quote Status Reason',
   `checkbox_status` json DEFAULT NULL COMMENT 'Quote form checkboxes',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -2615,7 +2650,7 @@ BEGIN
                             SET sChar = SUBSTRING(in_string_parsed, inti, 1);
                             SET ctrNumber = FIND_IN_SET(sChar, '0,1,2,3,4,5,6,7,8,9,.');
                             IF ctrNumber > 0 AND (sChar != '.' OR LENGTH(digitsAndDotsNumber) > 0) THEN
-                                -- add first minus if needed
+                                
                                 IF digitSequenceStarted = false AND inti > 1 AND SUBSTRING(in_string_parsed, inti-1, 1) = '-' THEN
                                     SET negativeNumber = true;
                                 END IF;
@@ -2910,49 +2945,57 @@ INSERT INTO `migrations` VALUES (232,'2021_02_18_075717_add_pricing_document_ser
 INSERT INTO `migrations` VALUES (233,'2021_02_18_145830_add_is_selected_worldwide_quote_assets_table',1);
 INSERT INTO `migrations` VALUES (234,'2021_02_18_152040_add_sort_rows_column_sort_rows_direction_worldwide_quotes_table',1);
 INSERT INTO `migrations` VALUES (235,'2021_02_19_181532_add_service_level_data_worldwide_quote_assets_table',1);
-INSERT INTO `migrations` VALUES (236,'2021_02_21_144940_seed_worldwide_quote_templates',1);
-INSERT INTO `migrations` VALUES (237,'2021_02_22_121927_add_is_default_address_opportunity_table',1);
-INSERT INTO `migrations` VALUES (238,'2021_02_22_122028_add_is_default_contact_opportunity_table',1);
-INSERT INTO `migrations` VALUES (239,'2021_02_23_131218_rename_service_level_to_service_level_description_worldwide_quote_assets_table',1);
-INSERT INTO `migrations` VALUES (240,'2021_02_26_141049_add_contract_type_id_opportunities_table',1);
-INSERT INTO `migrations` VALUES (241,'2021_02_27_111434_add_buy_price_worldwide_quotes_table',1);
-INSERT INTO `migrations` VALUES (242,'2021_02_27_140614_add_is_default_addressables_table',1);
-INSERT INTO `migrations` VALUES (243,'2021_02_27_140716_add_is_default_contactables_table',1);
-INSERT INTO `migrations` VALUES (244,'2021_02_28_140940_add_opportunity_supplier_id_worldwide_distributions_table',1);
-INSERT INTO `migrations` VALUES (245,'2021_03_02_184518_add_business_division_id_contract_type_id_contract_templates_table',1);
-INSERT INTO `migrations` VALUES (246,'2021_03_03_113026_add_softdeletes_opportunity_suppliers_table',1);
-INSERT INTO `migrations` VALUES (247,'2021_03_04_071031_create_sales_orders_table',1);
-INSERT INTO `migrations` VALUES (248,'2021_03_04_152918_add_user_id_foreign_key_sales_orders_table',1);
-INSERT INTO `migrations` VALUES (249,'2021_03_05_090603_make_address_1_column_nullable_addresses_table',1);
-INSERT INTO `migrations` VALUES (250,'2021_03_08_095521_add_tax_value_worldwide_distributions_table',1);
-INSERT INTO `migrations` VALUES (251,'2021_03_08_095546_add_tax_value_worldwide_quotes_table',1);
-INSERT INTO `migrations` VALUES (252,'2021_03_09_132430_add_imported_at_worldwide_distributions_table',1);
-INSERT INTO `migrations` VALUES (253,'2021_03_10_091240_create_address_worldwide_distribution_table',1);
-INSERT INTO `migrations` VALUES (254,'2021_03_11_153408_add_is_editable_column_distribution_field_column_table',1);
-INSERT INTO `migrations` VALUES (255,'2021_03_12_170816_add_status_failure_reason_columns_sales_orders_table',1);
-INSERT INTO `migrations` VALUES (256,'2021_03_13_114840_add_order_number_sales_orders_table',1);
-INSERT INTO `migrations` VALUES (257,'2021_03_13_131921_add_provider_column_oauth_clients_table',2);
-INSERT INTO `migrations` VALUES (258,'2021_03_14_105847_create_teams_table',2);
-INSERT INTO `migrations` VALUES (259,'2021_03_14_111249_add_team_id_users_table',2);
-INSERT INTO `migrations` VALUES (260,'2021_03_15_131140_add_exchange_rate_sales_orders_table',2);
-INSERT INTO `migrations` VALUES (261,'2021_03_16_121302_add_status_reason_column_sales_orders_table',2);
-INSERT INTO `migrations` VALUES (262,'2021_03_16_144713_create_cancel_sales_order_reasons_table',2);
-INSERT INTO `migrations` VALUES (263,'2021_03_18_175629_add_vat_type_companies_table',2);
-INSERT INTO `migrations` VALUES (264,'2021_03_19_120355_create_contact_worldwide_distribution_table',2);
-INSERT INTO `migrations` VALUES (265,'2021_03_19_191028_add_is_active_generated_column_users_table',2);
-INSERT INTO `migrations` VALUES (277,'2021_03_21_074628_create_worldwide_quote_versions_table',3);
-INSERT INTO `migrations` VALUES (278,'2021_03_21_085318_add_active_version_id_worldwide_quotes_table',3);
-INSERT INTO `migrations` VALUES (279,'2021_03_21_093832_make_worldwide_quote_id_as_morph_worldwide_distributions_table',3);
-INSERT INTO `migrations` VALUES (280,'2021_03_21_105322_add_replicated_from_mapped_row_id_mapped_rows_table',3);
-INSERT INTO `migrations` VALUES (281,'2021_03_21_111837_add_replicated_distribution_rows_group_id_distribution_rows_groups_table',3);
-INSERT INTO `migrations` VALUES (286,'2021_03_21_135930_make_worldwide_quote_id_as_morph_worldwide_quote_assets_table',4);
-INSERT INTO `migrations` VALUES (287,'2021_03_21_140524_add_replicated_asset_id_worldwide_quote_assets_table',4);
-INSERT INTO `migrations` VALUES (289,'2021_03_21_192551_add_vat_type_sales_orders_table',5);
-INSERT INTO `migrations` VALUES (291,'2021_03_22_123607_add_service_sku_worldwide_quote_assets_table',6);
-INSERT INTO `migrations` VALUES (292,'2021_03_22_125012_add_service_sku_column_mapped_rows_table',7);
-INSERT INTO `migrations` VALUES (293,'2021_03_22_140629_make_vat_number_nullable_sales_orders_table',8);
-INSERT INTO `migrations` VALUES (295,'2021_03_23_085338_rename_sequence_number_to_user_version_sequence_number_worldwide_quote_versions_table',9);
-INSERT INTO `migrations` VALUES (302,'2021_03_23_100021_add_primary_key_company_vendor_table',10);
-INSERT INTO `migrations` VALUES (306,'2021_03_23_112953_add_primary_key_country_quote_template_table',11);
-INSERT INTO `migrations` VALUES (307,'2021_03_23_113015_add_primary_key_country_vendor_table',11);
-INSERT INTO `migrations` VALUES (308,'2021_03_23_113254_add_primary_key_quote_template_template_field_table',11);
+INSERT INTO `migrations` VALUES (236,'2021_02_22_121927_add_is_default_address_opportunity_table',1);
+INSERT INTO `migrations` VALUES (237,'2021_02_22_122028_add_is_default_contact_opportunity_table',1);
+INSERT INTO `migrations` VALUES (238,'2021_02_23_131218_rename_service_level_to_service_level_description_worldwide_quote_assets_table',1);
+INSERT INTO `migrations` VALUES (239,'2021_02_26_141049_add_contract_type_id_opportunities_table',1);
+INSERT INTO `migrations` VALUES (240,'2021_02_27_111434_add_buy_price_worldwide_quotes_table',1);
+INSERT INTO `migrations` VALUES (241,'2021_02_27_140614_add_is_default_addressables_table',1);
+INSERT INTO `migrations` VALUES (242,'2021_02_27_140716_add_is_default_contactables_table',1);
+INSERT INTO `migrations` VALUES (243,'2021_02_28_140940_add_opportunity_supplier_id_worldwide_distributions_table',1);
+INSERT INTO `migrations` VALUES (244,'2021_03_02_184518_add_business_division_id_contract_type_id_contract_templates_table',1);
+INSERT INTO `migrations` VALUES (245,'2021_03_03_113026_add_softdeletes_opportunity_suppliers_table',1);
+INSERT INTO `migrations` VALUES (246,'2021_03_04_071031_create_sales_orders_table',1);
+INSERT INTO `migrations` VALUES (247,'2021_03_04_152918_add_user_id_foreign_key_sales_orders_table',1);
+INSERT INTO `migrations` VALUES (248,'2021_03_05_090603_make_address_1_column_nullable_addresses_table',1);
+INSERT INTO `migrations` VALUES (249,'2021_03_08_095521_add_tax_value_worldwide_distributions_table',1);
+INSERT INTO `migrations` VALUES (250,'2021_03_08_095546_add_tax_value_worldwide_quotes_table',1);
+INSERT INTO `migrations` VALUES (251,'2021_03_09_132430_add_imported_at_worldwide_distributions_table',1);
+INSERT INTO `migrations` VALUES (252,'2021_03_10_091240_create_address_worldwide_distribution_table',1);
+INSERT INTO `migrations` VALUES (253,'2021_03_11_153408_add_is_editable_column_distribution_field_column_table',1);
+INSERT INTO `migrations` VALUES (254,'2021_03_12_170816_add_status_failure_reason_columns_sales_orders_table',1);
+INSERT INTO `migrations` VALUES (255,'2021_03_13_114840_add_order_number_sales_orders_table',1);
+INSERT INTO `migrations` VALUES (256,'2021_03_13_131921_add_provider_column_oauth_clients_table',1);
+INSERT INTO `migrations` VALUES (257,'2021_03_14_105847_create_teams_table',1);
+INSERT INTO `migrations` VALUES (258,'2021_03_14_111249_add_team_id_users_table',1);
+INSERT INTO `migrations` VALUES (259,'2021_03_15_131140_add_exchange_rate_sales_orders_table',1);
+INSERT INTO `migrations` VALUES (260,'2021_03_16_121302_add_status_reason_column_sales_orders_table',1);
+INSERT INTO `migrations` VALUES (261,'2021_03_16_144713_create_cancel_sales_order_reasons_table',1);
+INSERT INTO `migrations` VALUES (262,'2021_03_18_175629_add_vat_type_companies_table',1);
+INSERT INTO `migrations` VALUES (263,'2021_03_19_120355_create_contact_worldwide_distribution_table',1);
+INSERT INTO `migrations` VALUES (264,'2021_03_19_191028_add_is_active_generated_column_users_table',1);
+INSERT INTO `migrations` VALUES (265,'2021_03_21_074628_create_worldwide_quote_versions_table',1);
+INSERT INTO `migrations` VALUES (266,'2021_03_21_085318_add_active_version_id_worldwide_quotes_table',1);
+INSERT INTO `migrations` VALUES (267,'2021_03_21_093832_make_worldwide_quote_id_as_morph_worldwide_distributions_table',1);
+INSERT INTO `migrations` VALUES (268,'2021_03_21_105322_add_replicated_from_mapped_row_id_mapped_rows_table',1);
+INSERT INTO `migrations` VALUES (269,'2021_03_21_111837_add_replicated_distribution_rows_group_id_distribution_rows_groups_table',1);
+INSERT INTO `migrations` VALUES (270,'2021_03_21_135930_make_worldwide_quote_id_as_morph_worldwide_quote_assets_table',1);
+INSERT INTO `migrations` VALUES (271,'2021_03_21_140524_add_replicated_asset_id_worldwide_quote_assets_table',1);
+INSERT INTO `migrations` VALUES (272,'2021_03_21_192551_add_vat_type_sales_orders_table',1);
+INSERT INTO `migrations` VALUES (273,'2021_03_22_123607_add_service_sku_worldwide_quote_assets_table',1);
+INSERT INTO `migrations` VALUES (274,'2021_03_22_125012_add_service_sku_column_mapped_rows_table',1);
+INSERT INTO `migrations` VALUES (275,'2021_03_22_140629_make_vat_number_nullable_sales_orders_table',1);
+INSERT INTO `migrations` VALUES (276,'2021_03_23_085338_rename_sequence_number_to_user_version_sequence_number_worldwide_quote_versions_table',1);
+INSERT INTO `migrations` VALUES (277,'2021_03_23_100021_add_primary_key_company_vendor_table',1);
+INSERT INTO `migrations` VALUES (278,'2021_03_23_112953_add_primary_key_country_quote_template_table',1);
+INSERT INTO `migrations` VALUES (279,'2021_03_23_113015_add_primary_key_country_vendor_table',1);
+INSERT INTO `migrations` VALUES (280,'2021_03_23_113254_add_primary_key_quote_template_template_field_table',1);
+INSERT INTO `migrations` VALUES (281,'2021_03_23_154001_make_opportunity_start_date_opportunity_end_date_nullable_opportunities_table',1);
+INSERT INTO `migrations` VALUES (282,'2021_03_24_074513_create_custom_fields_table',1);
+INSERT INTO `migrations` VALUES (283,'2021_03_24_074612_create_custom_field_values_table',1);
+INSERT INTO `migrations` VALUES (284,'2021_03_24_112047_add_payment_terms_worldwide_quotes_table',1);
+INSERT INTO `migrations` VALUES (285,'2021_03_24_112213_add_payment_terms_worldwide_quote_versions_table',1);
+INSERT INTO `migrations` VALUES (286,'2021_03_24_124237_add_is_default_custom_field_values_table',1);
+INSERT INTO `migrations` VALUES (287,'2021_03_25_081947_add_status_status_reason_columns_opportunities_table',1);
+INSERT INTO `migrations` VALUES (288,'2021_03_25_091223_add_status_status_reason_columns_worldwide_quotes_table',1);
+INSERT INTO `migrations` VALUES (289,'2021_03_25_142558_add_vs_company_name_companies_table',1);

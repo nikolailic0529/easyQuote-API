@@ -68,7 +68,8 @@ class SalesOrderQueries
             ->send($query)
             ->through([
                 new \App\Http\Query\ActiveFirst('sales_orders.is_active'),
-                \App\Http\Query\OrderByCreatedAt::class,
+                (new \App\Http\Query\OrderByCreatedAt)->qualifyColumnName(),
+                (new \App\Http\Query\OrderByUpdatedAt)->qualifyColumnName(),
                 \App\Http\Query\OrderByOrderType::class,
                 \App\Http\Query\OrderByRfqNumber::class,
                 \App\Http\Query\OrderByOrderNumber::class,

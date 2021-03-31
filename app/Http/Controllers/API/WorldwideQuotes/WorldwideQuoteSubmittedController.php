@@ -13,7 +13,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 class WorldwideQuoteSubmittedController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of the existing alive submitted quotes.
      *
      * @param Request $request
      * @param WorldwideQuoteQueries $queries
@@ -24,18 +24,35 @@ class WorldwideQuoteSubmittedController extends Controller
     {
         $this->authorize('viewAny', WorldwideQuote::class);
 
-        $paginator = $queries->submittedListingQuery($request)->apiPaginate();
+        $pagination = $queries->aliveSubmittedListingQuery($request)->apiPaginate();
 
-        return tap(SubmittedWorldwideQuote::collection($paginator), function (AnonymousResourceCollection $resourceCollection) use ($paginator) {
+        return tap(SubmittedWorldwideQuote::collection($pagination), function (AnonymousResourceCollection $resourceCollection) use ($pagination) {
             $resourceCollection->additional([
-                'current_page' => $paginator->currentPage(),
-                'from' => $paginator->firstItem(),
-                'to' => $paginator->lastItem(),
-                'last_page' => $paginator->lastPage(),
-                'path' => $paginator->path(),
-                'per_page' => $paginator->perPage(),
-                'total' => $paginator->total(),
+                'current_page' => $pagination->currentPage(),
+                'from' => $pagination->firstItem(),
+                'to' => $pagination->lastItem(),
+                'last_page' => $pagination->lastPage(),
+                'path' => $pagination->path(),
+                'per_page' => $pagination->perPage(),
+                'total' => $pagination->total(),
             ]);
         });
+    }
+
+    /**
+     * Display a listing of the existing dead submitted quotes.
+     *
+     * @param Request $request
+     * @param WorldwideQuoteQueries $queries
+     * @return AnonymousResourceCollection
+     * @throws AuthorizationException
+     */
+    public function paginateDeadSubmittedQuotes(Request $request, WorldwideQuoteQueries $queries): AnonymousResourceCollection
+    {
+        $this->authorize('viewAny', WorldwideQuote::class);
+
+        $pagination = $queries->deadSubmittedListingQuery($request)->apiPaginate();
+
+        return SubmittedWorldwideQuote::collection($pagination);
     }
 }

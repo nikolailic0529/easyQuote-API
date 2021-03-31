@@ -6,11 +6,12 @@ use App\Contracts\SearchableEntity;
 use App\Traits\{Activatable, BelongsToCountry, BelongsToLocation, Search\Searchable, Uuid};
 use App\Models\Data\Country;
 use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
-use Illuminate\Database\Eloquent\{Builder, Model, SoftDeletes,};
+use Illuminate\Database\Eloquent\{Builder, Model, Relations\BelongsTo, SoftDeletes};
 
 /**
  * Class Address
  *
+ * @property string|null $location_id
  * @property string|null $address_type
  * @property string|null $address_1
  * @property string|null $address_2
@@ -25,10 +26,11 @@ use Illuminate\Database\Eloquent\{Builder, Model, SoftDeletes,};
  * @property bool|null $is_default
  *
  * @property Country|null $country
+ * @property Location $location
  */
 class Address extends Model implements SearchableEntity
 {
-    use Uuid, SoftDeletes, Activatable, BelongsToCountry, BelongsToLocation, Searchable, EloquentJoin;
+    use Uuid, SoftDeletes, Activatable, BelongsToCountry, Searchable, EloquentJoin;
 
     public const TYPES = ['Invoice', 'Client', 'Machine', 'Equipment', 'Software'];
 
@@ -52,12 +54,17 @@ class Address extends Model implements SearchableEntity
 
     public function scopeType(Builder $query, string $type): Builder
     {
-        return $query->whereAddressType($type);
+        return $query->where('address_type', $type);
     }
 
     public function scopeCommonTypes(Builder $query): Builder
     {
         return $query->whereIn('address_type', __('address.types'));
+    }
+
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class)->withDefault();
     }
 
     public function toSearchArray(): array

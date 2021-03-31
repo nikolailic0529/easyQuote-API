@@ -11,7 +11,11 @@ use App\Traits\{
     Quote\HasContract,
     Submittable
 };
+use App\Models\Customer\Customer;
 
+/**
+ * @property Customer|null $customer
+ */
 class Quote extends BaseQuote implements Multitenantable
 {
     use HasQuoteVersions, HasContract, NotifiableModel, Submittable, Activatable, Migratable;

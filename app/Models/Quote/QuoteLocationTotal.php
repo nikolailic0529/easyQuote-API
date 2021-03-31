@@ -2,17 +2,16 @@
 
 namespace App\Models\Quote;
 
-use App\Traits\{
-    Uuid,
-    BelongsToCountry,
-    BelongsToLocation,
-};
+use App\Models\Data\Country;
+use App\Models\Location;
+use App\Traits\{Uuid,};
 use Grimzy\LaravelMysqlSpatial\Eloquent\SpatialTrait;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class QuoteLocationTotal extends Model
 {
-    use Uuid, BelongsToLocation, BelongsToCountry, SpatialTrait;
+    use Uuid, SpatialTrait;
 
     protected $fillable = [
         'location_id', 'country_id', 'user_id', 'location_address', 'location_coordinates', 'total_drafted_count', 'total_drafted_value', 'total_submitted_count', 'total_submitted_value'
@@ -29,6 +28,16 @@ class QuoteLocationTotal extends Model
         'location_coordinates'
     ];
 
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class)->withDefault();
+    }
+
+    public function country(): BelongsTo
+    {
+        return $this->belongsTo(Country::class)->withDefault();
+    }
+
     public function getTotalCountAttribute(): int
     {
         return $this->total_drafted_count + $this->total_submitted_count;
@@ -37,5 +46,10 @@ class QuoteLocationTotal extends Model
     public function getTotalValueAttribute(): float
     {
         return $this->total_drafted_value + $this->total_submitted_value;
+    }
+
+    public function getCountryCodeAttribute()
+    {
+        return $this->country->code;
     }
 }

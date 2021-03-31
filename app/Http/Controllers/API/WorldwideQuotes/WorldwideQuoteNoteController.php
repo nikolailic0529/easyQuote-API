@@ -30,11 +30,11 @@ class WorldwideQuoteNoteController extends Controller
      * @param Request $request
      * @param WorldwideQuote $worldwideQuote
      * @param WorldwideQuoteNoteQueries $queries
-     * @return JsonResponse
-     * @throws ValidationException
+     * @return AnonymousResourceCollection
      * @throws AuthorizationException
+     * @throws ValidationException
      */
-    public function paginateQuoteNotes(Request $request, WorldwideQuote $worldwideQuote, WorldwideQuoteNoteQueries $queries): JsonResponse
+    public function paginateQuoteNotes(Request $request, WorldwideQuote $worldwideQuote, WorldwideQuoteNoteQueries $queries): AnonymousResourceCollection
     {
         $this->authorize('view', $worldwideQuote);
         $this->authorize('viewAny', WorldwideQuoteNote::class);

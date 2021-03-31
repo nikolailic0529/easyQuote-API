@@ -17,6 +17,8 @@ final class WorldwideDistributionData extends DataTransferObject
      */
     public string $country;
 
+    public DistributionSupplierData $supplier;
+
     /**
      * @var \App\DTO\WorldwideQuote\Export\AssetData[]|\App\DTO\WorldwideQuote\Export\AssetsGroupData[]
      */

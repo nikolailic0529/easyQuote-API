@@ -33,62 +33,12 @@ interface AssetRepository
     public function search(string $query = '');
 
     /**
-     * Begin chunked query for assets.
-     *
-     * @param integer $count
-     * @param callable $callback
-     * @param array $with
-     * @param callable|null $clause
-     * @return boolean
-     */
-    public function chunk(int $count, callable $callback, array $with = [], ?callable $clause = null): bool;
-
-    /**
-     * Retrieve total_value & total_count by each user.
-     *
-     * @param string $locationId
-     * @return SupportCollection[AssetAggregate]
-     */
-    public function aggregatesByUserAndLocation(string $locationId): SupportCollection;
-
-    /**
-     * Calculate total value by specific location.
-     *
-     * @param string $location
-     * @return integer
-     */
-    public function sumByLocation(string $location): int;
-
-    /**
-     * Calculate total count by specific location.
-     *
-     * @param string $location
-     * @return integer
-     */
-    public function countByLocation(string $location): int;
-
-    /**
-     * Count assets by specific clause.
-     *
-     * @param array $where
-     * @return integer
-     */
-    public function count(array $where = []): int;
-
-    /**
      * Check asset uniqueness by specific parameters.
      *
      * @param array $where
      * @return boolean
      */
     public function checkUniqueness(array $where): bool;
-
-    /**
-     * Get asset locations.
-     *
-     * @return Builder
-     */
-    public function locationsQuery(): Builder;
 
     /**
      * Find the specific asset by given id.

@@ -70,6 +70,13 @@ interface ManagesExchangeRates
     public function getBaseRate(Currency $source): float;
 
     /**
+     * @param string $currencyCode
+     * @param DateTimeInterface|null $dateTime
+     * @return float
+     */
+    public function getBaseRateByCurrencyCode(string $currencyCode, DateTimeInterface $dateTime = null): float;
+
+    /**
      * Format the request url with the given period.
      *
      * @param DateTimeInterface $dateTime

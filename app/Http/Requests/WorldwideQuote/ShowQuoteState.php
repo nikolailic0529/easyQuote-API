@@ -65,6 +65,7 @@ class ShowQuoteState extends FormRequest
             $this->container->call([$this, 'sortWorldwideDistributionRowsWhenLoaded'], ['model' => $worldwideQuote]);
             $this->container->call([$this, 'sortWorldwideDistributionRowsGroupsWhenLoaded'], ['model' => $worldwideQuote]);
             $this->container->call([$this, 'sortWorldwideQuoteAssetsWhenLoaded'], ['model' => $worldwideQuote]);
+            $this->container->call([$this, 'normalizeWorldwideQuoteAssetAttributesWhenLoaded'], ['model' => $worldwideQuote]);
             $this->container->call([$this, 'prepareWorldwideDistributionMappingWhenLoaded'], ['model' => $worldwideQuote]);
         });
     }
@@ -122,6 +123,19 @@ class ShowQuoteState extends FormRequest
 
         if (!$templateLoaded) {
             $model->unsetRelation('quoteTemplate');
+        }
+    }
+
+    public function normalizeWorldwideQuoteAssetAttributesWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper)
+    {
+        if ($model->relationLoaded('assets')) {
+
+            foreach ($model->assets as $asset) {
+                if ($asset->relationLoaded('machineAddress')) {
+                    $asset->setAttribute('machine_address_string', WorldwideQuoteDataMapper::formatMachineAddressToString($asset->machineAddress));
+                }
+            }
+
         }
     }
 

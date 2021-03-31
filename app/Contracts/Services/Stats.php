@@ -2,33 +2,44 @@
 
 namespace App\Contracts\Services;
 
+use Symfony\Component\Console\Output\OutputInterface;
+
 interface Stats
 {
-    /**
-     * Calculate and denormilize quote totals.
-     *
-     * @return void
-     */
-    public function calculateQuoteTotals(): void;
+    public function setOutput(OutputInterface $output): self;
 
     /**
-     * Calculate and denormilize quote totals per each location.
+     * Calculate and denormalize opportunity totals.
      *
      * @return void
      */
-    public function calculateQuoteLocationTotals(): void;
+    public function denormalizeSummaryOfOpportunities(): void;
 
     /**
-     * Calculate and denormilize customer totals base on quote totals.
+     * Calculate and denormalize quote totals.
      *
      * @return void
      */
-    public function calculateCustomerTotals(): void;
+    public function denormalizeSummaryOfQuotes(): void;
 
     /**
-     * Calculate and denormilize asset totals base on existing assets.
+     * Calculate and denormalize quote totals per each location.
      *
      * @return void
      */
-    public function calculateAssetTotals(): void;
+    public function denormalizeSummaryOfLocations(): void;
+
+    /**
+     * Calculate and denormalize customer totals base on quote totals.
+     *
+     * @return void
+     */
+    public function denormalizeSummaryOfCustomers(): void;
+
+    /**
+     * Calculate and denormalize asset totals base on existing assets.
+     *
+     * @return void
+     */
+    public function denormalizeSummaryOfAssets(): void;
 }

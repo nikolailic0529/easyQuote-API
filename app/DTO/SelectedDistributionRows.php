@@ -31,7 +31,7 @@ class SelectedDistributionRows extends DataTransferObject
     public bool $use_groups = false;
 
     /**
-     * @Constraints\Choice({"product_no","description","serial_no","date_from","date_to","qty","price","pricing_document","system_handle","service_level_description","searchable",null})
+     * @Constraints\Choice({"product_no","service_sku","description","serial_no","date_from","date_to","qty","price","pricing_document","system_handle","service_level_description","searchable",null})
      */
     public ?string $sort_rows_column;
 

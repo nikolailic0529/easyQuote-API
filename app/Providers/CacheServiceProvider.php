@@ -18,12 +18,6 @@ class CacheServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->when(StatsAggregator::class)->needs(Repository::class)->give(function ($app) {
-                return $app['config']['cache.default'] === 'redis'
-                    ? (new CacheManager($app))->driver()->tags(StatsAggregator::SUMMARY_CACHE_TAG)
-                    : (new CacheManager($app))->driver();
-            });
-
         $this->app->when(CountryRepository::class)->needs(Repository::class)->give(function ($app) {
             return $app['config']['cache.default'] === 'redis'
                 ? (new CacheManager($app))->driver()->tags(CountryRepository::CACHE_TAG)

@@ -175,6 +175,8 @@ return [
         App\Providers\AppServiceProvider::class,
         App\Providers\HelperServiceProvider::class,
 
+        App\Providers\EntityServiceProvider::class,
+
         App\Providers\AccessServiceProvider::class,
         App\Providers\ActivityServiceProvider::class,
         App\Providers\AssetServiceProvider::class,

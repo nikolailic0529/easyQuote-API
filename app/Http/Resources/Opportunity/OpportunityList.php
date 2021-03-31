@@ -29,6 +29,8 @@ class OpportunityList extends JsonResource
             'opportunity_closing_date' => $this->opportunity_closing_date,
             'sale_action_name' => $this->sale_action_name,
             'project_name' => $this->project_name,
+            'status' => $this->status,
+            'status_reason' => $this->status_reason,
             'created_at' => $this->created_at
         ];
     }

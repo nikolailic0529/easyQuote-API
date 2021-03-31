@@ -27,7 +27,7 @@ class ProcessQuoteAssetsReviewStep extends FormRequest
                 'bail', 'required', 'boolean'
             ],
             'sort_rows_column' => [
-                'bail', 'nullable', Rule::in(['sku', 'product_name', 'serial_no', 'expiry_date', 'price', 'service_level', 'vendor_short_code'])
+                'bail', 'nullable', Rule::in(['sku', 'product_name', 'serial_no', 'expiry_date', 'price', 'service_level_description', 'vendor_short_code', 'machine_address'])
             ],
             'sort_rows_direction' => [
                 'bail', 'nullable', Rule::in(['asc', 'desc'])

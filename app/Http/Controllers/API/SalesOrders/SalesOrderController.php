@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\SalesOrders;
 use App\Contracts\Services\ProcessesSalesOrderState;
 use App\DTO\SalesOrder\Submit\SubmitSalesOrderResult;
 use App\Http\Controllers\Controller;
+use Illuminate\Contracts\Support\Responsable;
 use App\Http\Requests\{SalesOrder\CancelSalesOrder, SalesOrder\DraftSalesOrder, SalesOrder\UpdateSalesOrder};
 use App\Http\Resources\SalesOrder\SalesOrderState;
 use App\Models\SalesOrder;
@@ -177,16 +178,14 @@ class SalesOrderController extends Controller
      *
      * @param CancelSalesOrder $request
      * @param SalesOrder $salesOrder
-     * @return Response
+     * @return Responsable
      * @throws AuthorizationException
      */
-    public function cancelSalesOrder(CancelSalesOrder $request, SalesOrder $salesOrder): Response
+    public function cancelSalesOrder(CancelSalesOrder $request, SalesOrder $salesOrder): Responsable
     {
         $this->authorize('cancel', $salesOrder);
 
-        $this->orderProcessor->cancelSalesOrder($request->getCancelSalesOrderData(), $salesOrder);
-
-        return response()->noContent();
+        return $this->orderProcessor->cancelSalesOrder($request->getCancelSalesOrderData(), $salesOrder);
     }
 
     /**

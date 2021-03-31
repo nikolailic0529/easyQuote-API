@@ -63,6 +63,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $additional_details
  * @property string|null $sort_rows_column
  * @property string|null $sort_rows_direction
+ * @property int|null $status
+ * @property string|null $status_reason
  *
  * @property float|null $total_price
  * @property float|null $margin_percentage

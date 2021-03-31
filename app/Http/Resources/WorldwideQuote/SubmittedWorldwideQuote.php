@@ -47,9 +47,13 @@ class SubmittedWorldwideQuote extends JsonResource
 
             'completeness' => $this->completeness,
 
+            'status' => $this->status,
+            'status_reason' => $this->status_reason,
+
             'permissions' => [
                 'view' => $user->can('view', $this->resource),
                 'update' => $user->can('update', $this->resource),
+                'change_status' => $user->can('change_status', $this->resource),
                 'delete' => $user->can('delete', $this->resource),
             ],
 

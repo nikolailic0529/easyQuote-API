@@ -70,7 +70,9 @@ class UpdateCompanies extends Command
                 $vendors = $vendorRepository->findByCode($companyData['vendors']);
                 $company->vendors()->sync($vendors);
 
-                if (is_null($company->logo)) {
+                $companyLogo = $company->logo;
+
+                if (empty($companyLogo)) {
                     $company->createLogo($companyData['logo'], true);
 
                     if (isset($companyData['svg_logo'])) {

@@ -4,23 +4,24 @@ namespace App\Models;
 
 use App\Contracts\SearchableEntity;
 use App\Models\Quote\Quote;
-use App\Traits\{BelongsToAddress, BelongsToAssetCategory, BelongsToQuote, BelongsToUser, BelongsToVendor, Uuid,};
+use App\Traits\{BelongsToUser, Uuid,};
 use App\Traits\{Auth\Multitenantable, Search\Searchable,};
 use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Staudenmeir\EloquentHasManyDeep\HasOneDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
+/**
+ * @property AssetCategory $assetCategory
+ * @property Location $location
+ */
 class Asset extends Model implements SearchableEntity
 {
     use Uuid,
         Multitenantable,
         BelongsToUser,
-        BelongsToVendor,
-        BelongsToAddress,
-        BelongsToAssetCategory,
-        BelongsToQuote,
         Searchable,
         HasRelationships,
         EloquentJoin,
@@ -57,6 +58,26 @@ class Asset extends Model implements SearchableEntity
         'base_warranty_start_date', 'base_warranty_end_date',
         'active_warranty_start_date', 'active_warranty_end_date',
     ];
+
+    public function quote(): BelongsTo
+    {
+        return $this->belongsTo(Quote::class)->withDefault();
+    }
+
+    public function vendor(): BelongsTo
+    {
+        return $this->belongsTo(Vendor::class)->withDefault();
+    }
+
+    public function address(): BelongsTo
+    {
+        return $this->belongsTo(Address::class)->withDefault();
+    }
+
+    public function assetCategory(): BelongsTo
+    {
+        return $this->belongsTo(AssetCategory::class)->withDefault();
+    }
 
     public function location(): HasOneDeep
     {

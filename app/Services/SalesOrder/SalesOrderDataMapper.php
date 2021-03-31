@@ -97,6 +97,7 @@ class SalesOrderDataMapper
         $customer = $opportunity->primaryAccount;
         $quoteCurrency = $this->getSalesOrderOutputCurrency($salesOrder);
         $accountManager = $opportunity->accountManager;
+        $company = $quote->company;
 
         if ($quote->worldwideDistributions->isEmpty()) {
             throw new \InvalidArgumentException("At least one Distributor Quote must exist on the Quote.");
@@ -192,15 +193,15 @@ class SalesOrderDataMapper
             'customer_data' => $customerData,
             'order_lines_data' => $orderLinesData,
             'vendor_short_code' => $firstVendor->short_code,
-            'contract_type' => 'Contract',
+            'contract_type' => $quote->contractType->type_short_name,
             'registration_customer_name' => null,
             'currency_code' => $quoteCurrency->code,
             'from_date' => $opportunity->opportunity_start_date,
             'to_date' => $opportunity->opportunity_end_date,
             'service_agreement_id' => $quote->quote_number,
-            'order_no' => SalesOrderNumberHelper::makeSalesOrderNumber('Contract', $quote->sequence_number),
+            'order_no' => $salesOrder->order_number,
             'order_date' => now()->toDateString(),
-            'bc_company_name' => 'SWH', // TODO: change hardcoded value
+            'bc_company_name' => transform($company, fn(Company $company) => $company->vs_company_code),
             'exchange_rate' => $exchangeRateValue,
             'post_sales_id' => $salesOrder->getKey(),
             'customer_po' => $salesOrder->customer_po,
@@ -217,6 +218,7 @@ class SalesOrderDataMapper
         $customer = $opportunity->primaryAccount;
         $quoteCurrency = $this->getSalesOrderOutputCurrency($salesOrder);
         $accountManager = $opportunity->accountManager;
+        $company = $quote->company;
 
         $quote->load(['assets' => function (HasMany $relation) {
             $relation->where('is_selected', true);
@@ -304,15 +306,15 @@ class SalesOrderDataMapper
             'customer_data' => $customerData,
             'order_lines_data' => $orderLinesData,
             'vendor_short_code' => $firstAsset->vendor->short_code,
-            'contract_type' => 'Contract',
+            'contract_type' => $quote->contractType->type_short_name,
             'registration_customer_name' => null,
             'currency_code' => $quoteCurrency->code,
             'from_date' => $opportunity->opportunity_start_date,
             'to_date' => $opportunity->opportunity_end_date,
             'service_agreement_id' => $quote->quote_number,
-            'order_no' => SalesOrderNumberHelper::makeSalesOrderNumber('Contract', $quote->sequence_number),
+            'order_no' => $salesOrder->order_number,
             'order_date' => now()->toDateString(),
-            'bc_company_name' => 'SWH', // TODO: change hardcoded value
+            'bc_company_name' => transform($company, fn(Company $company) => $company->vs_company_code),
             'exchange_rate' => $exchangeRateValue,
             'post_sales_id' => $salesOrder->getKey(),
             'customer_po' => $salesOrder->customer_po,

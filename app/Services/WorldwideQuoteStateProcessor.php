@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
+use App\Events\WorldwideQuote\WorldwideQuoteMarkedAsAlive;
 use App\Contracts\{Services\ManagesExchangeRates,
     Services\ProcessesWorldwideDistributionState,
-    Services\ProcessesWorldwideQuoteState
-};
+    Services\ProcessesWorldwideQuoteState};
 use App\DTO\QuoteStages\{AddressesContactsStage,
     ContractDetailsStage,
     ContractDiscountStage,
@@ -20,14 +20,14 @@ use App\DTO\QuoteStages\{AddressesContactsStage,
     PackDiscountStage,
     PackMarginTaxStage,
     ReviewStage,
-    SubmitStage
-};
+    SubmitStage};
 use App\DTO\WorldwideQuote\DistributionAddressData;
 use App\DTO\WorldwideQuote\DistributionContactData;
 use App\DTO\WorldwideQuote\DistributionImportData;
+use App\DTO\WorldwideQuote\MarkWorldwideQuoteAsDeadData;
 use App\DTO\WorldwideQuote\OpportunityAddressData;
 use App\DTO\WorldwideQuote\OpportunityContactData;
-use App\Enum\{ContractQuoteStage, Lock};
+use App\Enum\{ContractQuoteStage, Lock, QuoteStatus};
 use App\Events\WorldwideQuote\WorldwideContractQuoteDetailsStepProcessed;
 use App\Events\WorldwideQuote\WorldwideContractQuoteDiscountStepProcessed;
 use App\Events\WorldwideQuote\WorldwideContractQuoteImportStepProcessed;
@@ -45,6 +45,7 @@ use App\Events\WorldwideQuote\WorldwideQuoteDeactivated;
 use App\Events\WorldwideQuote\WorldwideQuoteDeleted;
 use App\Events\WorldwideQuote\WorldwideQuoteDrafted;
 use App\Events\WorldwideQuote\WorldwideQuoteInitialized;
+use App\Events\WorldwideQuote\WorldwideQuoteMarkedAsDead;
 use App\Events\WorldwideQuote\WorldwideQuoteSubmitted;
 use App\Events\WorldwideQuote\WorldwideQuoteUnraveled;
 use App\Jobs\IndexSearchableEntity;
@@ -55,12 +56,12 @@ use App\Models\{Address,
     Opportunity,
     OpportunitySupplier,
     Quote\WorldwideDistribution,
-    Quote\WorldwideQuote
-};
+    Quote\WorldwideQuote};
 use App\Services\Exceptions\ValidationException;
 use Illuminate\Contracts\{Bus\Dispatcher as BusDispatcher, Cache\LockProvider, Events\Dispatcher as EventDispatcher};
 use Illuminate\Database\{ConnectionInterface, Eloquent\Builder, Eloquent\ModelNotFoundException};
 use Illuminate\Support\{Carbon, Facades\DB};
+use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Webpatser\Uuid\Uuid;
 
@@ -1151,6 +1152,54 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
         $this->eventDispatcher->dispatch(
             new WorldwideQuoteDeactivated($quote)
+        );
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function markQuoteAsDead(WorldwideQuote $quote, MarkWorldwideQuoteAsDeadData $data): void
+    {
+        $violations = $this->validator->validate($data);
+
+        if (count($violations)) {
+            throw new ValidationFailedException($data, $violations);
+        }
+
+        $lock = $this->lockProvider->lock(Lock::UPDATE_WWQUOTE($quote->getKey()), 10);
+
+        $quote->status = QuoteStatus::DEAD;
+        $quote->status_reason = $data->status_reason;
+
+        $lock->block(30, function () use ($quote) {
+
+            $this->connection->transaction(fn() => $quote->save());
+
+        });
+
+        $this->eventDispatcher->dispatch(
+            new WorldwideQuoteMarkedAsDead($quote)
+        );
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function markQuoteAsAlive(WorldwideQuote $quote): void
+    {
+        $lock = $this->lockProvider->lock(Lock::UPDATE_WWQUOTE($quote->getKey()), 10);
+
+        $quote->status = QuoteStatus::ALIVE;
+        $quote->status_reason = null;
+
+        $lock->block(30, function () use ($quote) {
+
+            $this->connection->transaction(fn() => $quote->save());
+
+        });
+
+        $this->eventDispatcher->dispatch(
+            new WorldwideQuoteMarkedAsAlive($quote)
         );
     }
 }

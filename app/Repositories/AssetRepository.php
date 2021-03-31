@@ -3,17 +3,10 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\AssetRepository as Contract;
-use App\DTO\AssetAggregate;
-use App\Repositories\Exceptions\InvalidModel;
 use App\Models\Asset;
-use Closure;
-use Illuminate\Database\{
-    Eloquent\Builder,
-    Eloquent\Model,
-    Query\JoinClause,
-};
+use App\Repositories\Exceptions\InvalidModel;
+use Illuminate\Database\{Eloquent\Builder, Eloquent\Model,};
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Staudenmeir\EloquentHasManyDeep\HasOneDeep;
 
@@ -32,57 +25,7 @@ class AssetRepository extends SearchableRepository implements Contract
         $user = auth()->user();
 
         return $this->asset->query()
-            ->unless($user->hasRole(R_SUPER), fn (Builder $q) => $q->whereUserId(auth()->id()));
-    }
-
-    public function chunk(int $count, callable $callback, array $with = [], ?callable $clause = null): bool
-    {
-        return $this->asset->on(MYSQL_UNBUFFERED)
-            ->when($clause, $clause)
-            ->with($with)->chunk($count, $callback);
-    }
-
-    public function locationsQuery(): Builder
-    {
-        return $this->asset
-            ->query()
-            ->join('addresses', fn (JoinClause $join) => $join->on('addresses.id', '=', 'assets.address_id')->whereNotNull('addresses.location_id')->whereNull('addresses.deleted_at'))
-            ->join('locations', fn (JoinClause $join) => $join->on('locations.id', '=', 'addresses.location_id')->whereNull('locations.deleted_at'))
-            ->with('location')
-            ->groupByRaw('locations.id');
-    }
-
-    public function aggregatesByUserAndLocation(string $locationId): Collection
-    {
-        return $this->asset->query()
-            ->selectRaw('SUM(`unit_price`) AS `total_value`')
-            ->selectRaw('COUNT(*) AS `total_count`')
-            ->addSelect('user_id')
-            ->groupBy('user_id')
-            ->whereHas('location', fn (Builder $q) => $q->whereKey($locationId))
-            ->toBase()
-            ->get()
-            ->mapInto(AssetAggregate::class);
-    }
-
-    public function countByLocation(string $locationId): int
-    {
-        return $this->asset->whereHas('location', fn (Builder $q) => $q->whereKey($locationId))->count();
-    }
-
-    public function sumByLocation(string $locationId): int
-    {
-        return $this->asset->whereHas('location', fn (Builder $q) => $q->whereKey($locationId))->sum('unit_price');
-    }
-
-    public function getByLocation(string $locationId)
-    {
-        return $this->asset->whereHas('location', fn (Builder $q) => $q->whereKey($locationId))->get();
-    }
-
-    public function count(array $where = []): int
-    {
-        return $this->asset->query()->where($where)->count();
+            ->unless($user->hasRole(R_SUPER), fn(Builder $q) => $q->whereUserId(auth()->id()));
     }
 
     public function checkUniqueness(array $where): bool
@@ -116,7 +59,7 @@ class AssetRepository extends SearchableRepository implements Contract
         }
 
         return DB::transaction(
-            fn () => tap($asset)->update($attributes)
+            fn() => tap($asset)->update($attributes)
         );
     }
 
@@ -199,8 +142,8 @@ class AssetRepository extends SearchableRepository implements Contract
     protected static function listingRelationships(): array
     {
         return [
-            'assetCategory' => fn (BelongsTo $q) => $q->cacheForever(),
-            'customer' => fn (HasOneDeep $q) => $q->select('rfq')->cacheForever()
+            'assetCategory' => fn(BelongsTo $q) => $q->cacheForever(),
+            'customer' => fn(HasOneDeep $q) => $q->select('rfq')->cacheForever()
         ];
     }
 }
