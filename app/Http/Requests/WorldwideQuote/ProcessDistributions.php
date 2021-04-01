@@ -8,9 +8,11 @@ use App\Models\Data\Country;
 use App\Models\Data\Currency;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\QuoteFile\QuoteFile;
 use App\Models\Vendor;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
@@ -22,29 +24,7 @@ class ProcessDistributions extends FormRequest
 {
     protected ?ProcessableDistributionCollection $distributionCollection = null;
 
-    /**
-     * Determine if the user is authorized to make this request.
-     *
-     * @return bool
-     */
-    public function authorize()
-    {
-        $modelKeys = $this->input('worldwide_distributions.*.id');
-
-        $quoteKeys = WorldwideDistribution::whereKey($modelKeys)->distinct('worldwide_quote_id')->toBase()->pluck('worldwide_quote_id');
-
-        if ($quoteKeys->count() > 1) {
-            throw new AuthorizationException('The processable entities must belong to the same Worldwide Quote', Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        Gate::authorize('update', [$wwQuote = WorldwideQuote::whereKey($quoteKeys)->firstOrFail()]);
-
-        if ($wwQuote->submitted_at !== null) {
-            throw new AuthorizationException('You can\'t update a state of submitted Worldwide Quote', Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        return true;
-    }
+    protected ?WorldwideQuote $worldwideQuoteModel = null;
 
     /**
      * Get the validation rules that apply to the request.
@@ -59,7 +39,9 @@ class ProcessDistributions extends FormRequest
             ],
             'worldwide_distributions.*.id' => [
                 'bail', 'required', 'uuid',
-                Rule::exists(WorldwideDistribution::class, 'id')->whereNull('deleted_at'),
+                Rule::exists(WorldwideDistribution::class, 'id')
+                    ->where('worldwide_quote_id', $this->getQuote()->active_version_id)
+                    ->whereNull('deleted_at'),
             ],
             'worldwide_distributions.*.vendors' => [
                 'bail', 'required', 'array', 'distinct',
@@ -117,6 +99,18 @@ class ProcessDistributions extends FormRequest
             'worldwide_distributions.*.distributor_file_id' => 'Distributor File is required in each distribution',
             'worldwide_distributions.*.buy_price' => 'Buy price is required in each distribution',
         ];
+    }
+
+    public function getQuote(): WorldwideQuote
+    {
+        return $this->worldwideQuoteModel ??= with(true, function (): WorldwideQuote {
+            /** @var WorldwideQuoteVersion $version */
+            $version = WorldwideQuoteVersion::query()->whereHas('worldwideDistributions', function (Builder $builder) {
+                $builder->whereKey($this->input('worldwide_distributions.*.id'));
+            })->sole();
+
+            return $version->worldwideQuote;
+        });
     }
 
     public function getDistributionCollection(): ProcessableDistributionCollection

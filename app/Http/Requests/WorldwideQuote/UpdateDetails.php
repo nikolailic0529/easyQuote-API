@@ -8,6 +8,7 @@ use App\DTO\QuoteStages\ContractDetailsStage;
 use App\Enum\ContractQuoteStage;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\Quote\WorldwideQuoteVersion;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Http\FormRequest;
@@ -37,9 +38,7 @@ class UpdateDetails extends FormRequest
                 'bail', 'required', 'uuid',
                 Rule::exists(WorldwideDistribution::class, 'id')
                     ->whereNull('deleted_at')
-                    ->where('worldwide_quote_id', value(function () {
-                        return $this->getQuote()->getKey();
-                    }))
+                    ->where('worldwide_quote_id',  $this->getQuote()->active_version_id)
             ],
             'worldwide_distributions.*.pricing_document' => [
                 'bail', 'required', 'string', 'max:1000'
@@ -67,9 +66,14 @@ class UpdateDetails extends FormRequest
 
     public function getQuote(): WorldwideQuote
     {
-        return $this->quote ??= WorldwideQuote::whereHas('worldwideDistributions', function (Builder $builder) {
-            $builder->whereKey(head($this->input('worldwide_distributions.*.id')));
-        })->firstOrFail();
+        return $this->quote ??= with(true, function (): WorldwideQuote {
+            /** @var WorldwideQuoteVersion $version */
+            $version = WorldwideQuoteVersion::query()->whereHas('worldwideDistributions', function (Builder $builder) {
+                $builder->whereKey($this->input('worldwide_distributions.*.id'));
+            })->sole();
+
+            return $version->worldwideQuote;
+        });
     }
 
     public function getStage(): ContractDetailsStage

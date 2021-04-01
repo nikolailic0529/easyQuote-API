@@ -39,6 +39,9 @@ class WorldwideDistributionState extends JsonResource
 
         return [
             'id' => $this->id,
+
+            'replicated_distributor_quote_id' => $this->replicated_distributor_quote_id,
+
             'worldwide_quote_id' => $this->worldwide_quote_id,
             'opportunity_supplier_id' => $this->opportunity_supplier_id,
 

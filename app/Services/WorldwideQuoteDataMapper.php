@@ -29,6 +29,7 @@ use App\Models\Image;
 use App\Models\Quote\DistributionFieldColumn;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Models\QuoteFile\MappedRow;
 use App\Models\QuoteFile\QuoteFile;
@@ -108,15 +109,17 @@ class WorldwideQuoteDataMapper
 
     private function mapPackWorldwideQuoteSalesOrderData(WorldwideQuote $worldwideQuote): WorldwideQuoteToSalesOrderData
     {
+        $activeVersion = $worldwideQuote->activeVersion;
+
         $companyData = new SalesOrderCompanyData([
-            'id' => $worldwideQuote->company->getKey(),
-            'name' => $worldwideQuote->company->name,
-            'logo_url' => transform($worldwideQuote->company->logo, function (array $logo) {
+            'id' => $activeVersion->company->getKey(),
+            'name' => $activeVersion->company->name,
+            'logo_url' => transform($activeVersion->company->logo, function (array $logo) {
                 return $logo['x1'] ?? '';
             })
         ]);
 
-        $vendorModelKeys = $worldwideQuote->assets()->distinct('vendor_id')->pluck('vendor_id')->all();
+        $vendorModelKeys = $activeVersion->assets()->distinct('vendor_id')->pluck('vendor_id')->all();
 
         $vendors = Vendor::query()->whereKey($vendorModelKeys)->with('image')->get(['id', 'name']);
 
@@ -128,7 +131,7 @@ class WorldwideQuoteDataMapper
             })
         ])->all();
 
-        $addressModelKeys = $worldwideQuote->assets()->distinct('machine_address_id')->pluck('machine_address_id')->all();
+        $addressModelKeys = $activeVersion->assets()->distinct('machine_address_id')->pluck('machine_address_id')->all();
 
         $countryModelKeys = Address::query()
             ->whereKey($addressModelKeys)
@@ -148,7 +151,7 @@ class WorldwideQuoteDataMapper
         $templates = ContractTemplate::query()
             ->where('business_division_id', BD_WORLDWIDE)
             ->where('contract_type_id', CT_PACK)
-            ->where('company_id', $worldwideQuote->company_id)
+            ->where('company_id', $activeVersion->company_id)
             ->get(['id', 'name']);
 
         $templatesData = $templates->map(fn(ContractTemplate $template) => [
@@ -172,15 +175,17 @@ class WorldwideQuoteDataMapper
 
     private function mapContractWorldwideQuoteSalesOrderData(WorldwideQuote $worldwideQuote): WorldwideQuoteToSalesOrderData
     {
+        $activeVersion = $worldwideQuote->activeVersion;
+
         $companyData = new SalesOrderCompanyData([
-            'id' => $worldwideQuote->company->getKey(),
-            'name' => $worldwideQuote->company->name,
-            'logo_url' => transform($worldwideQuote->company->logo, function (array $logo) {
+            'id' => $activeVersion->company->getKey(),
+            'name' => $activeVersion->company->name,
+            'logo_url' => transform($activeVersion->company->logo, function (array $logo) {
                 return $logo['x1'] ?? '';
             })
         ]);
 
-        $distributions = $worldwideQuote->worldwideDistributions()->with('country:id,name,iso_3166_2,flag', 'vendors:id,name,short_code', 'vendors.image')->get(['id', 'country_id']);
+        $distributions = $activeVersion->worldwideDistributions()->with('country:id,name,iso_3166_2,flag', 'vendors:id,name,short_code', 'vendors.image')->get(['id', 'country_id']);
 
         $vendors = $distributions->pluck('vendors')->collapse()->unique('id')->values();
 
@@ -203,7 +208,7 @@ class WorldwideQuoteDataMapper
         $templates = ContractTemplate::query()
             ->where('business_division_id', BD_WORLDWIDE)
             ->where('contract_type_id', CT_CONTRACT)
-            ->where('company_id', $worldwideQuote->company_id)
+            ->where('company_id', $activeVersion->company_id)
             ->get(['id', 'name']);
 
         $templatesData = $templates->map(fn(ContractTemplate $template) => [
@@ -227,7 +232,7 @@ class WorldwideQuoteDataMapper
 
     public function mapWorldwideQuotePreviewData(WorldwideQuote $worldwideQuote): WorldwideQuotePreviewData
     {
-        if (is_null($worldwideQuote->quoteTemplate)) {
+        if (is_null($worldwideQuote->activeVersion->quoteTemplate)) {
             throw new \RuntimeException("Quote must have a Template to create an export data.");
         }
 
@@ -237,7 +242,7 @@ class WorldwideQuoteDataMapper
             'template_data' => $this->getTemplateData($worldwideQuote),
             'distributions' => $this->getContractQuoteDistributionsData($worldwideQuote, $outputCurrency),
             'pack_assets' => $this->getPackQuoteAssetsData($worldwideQuote, $outputCurrency),
-            'pack_asset_fields' => $this->getPackAssetFields($worldwideQuote, $worldwideQuote->quoteTemplate),
+            'pack_asset_fields' => $this->getPackAssetFields($worldwideQuote, $worldwideQuote->activeVersion->quoteTemplate),
             'quote_summary' => $this->getQuoteSummary($worldwideQuote, $outputCurrency),
             'contract_type_name' => $worldwideQuote->contractType->type_short_name
         ]);
@@ -245,7 +250,7 @@ class WorldwideQuoteDataMapper
 
     public function mapWorldwideQuotePreviewDataForExport(WorldwideQuote $worldwideQuote): WorldwideQuotePreviewData
     {
-        if (is_null($worldwideQuote->quoteTemplate)) {
+        if (is_null($worldwideQuote->activeVersion->quoteTemplate)) {
             throw new \RuntimeException("Quote must have a Template to create an export data.");
         }
 
@@ -255,7 +260,7 @@ class WorldwideQuoteDataMapper
             'template_data' => $this->getTemplateData($worldwideQuote, true),
             'distributions' => $this->getContractQuoteDistributionsData($worldwideQuote, $outputCurrency),
             'pack_assets' => $this->getPackQuoteAssetsData($worldwideQuote, $outputCurrency),
-            'pack_asset_fields' => $this->getPackAssetFields($worldwideQuote, $worldwideQuote->quoteTemplate),
+            'pack_asset_fields' => $this->getPackAssetFields($worldwideQuote, $worldwideQuote->activeVersion->quoteTemplate),
             'quote_summary' => $this->getQuoteSummary($worldwideQuote, $outputCurrency),
             'contract_type_name' => $worldwideQuote->contractType->type_short_name
         ]);
@@ -263,7 +268,7 @@ class WorldwideQuoteDataMapper
 
     public function getTemplateData(WorldwideQuote $quote, bool $useLocalAssets = false): TemplateData
     {
-        $templateSchema = $quote->quoteTemplate->form_data;
+        $templateSchema = $quote->activeVersion->quoteTemplate->form_data;
 
         return new TemplateData([
             'first_page_schema' => $this->templatePageSchemaToArrayOfTemplateElement($templateSchema['first_page'] ?? []),
@@ -315,7 +320,7 @@ class WorldwideQuoteDataMapper
             return [];
         }
 
-        $paymentScheduleFields = $this->getPaymentScheduleFields($worldwideQuote->quoteTemplate);
+        $paymentScheduleFields = $this->getPaymentScheduleFields($worldwideQuote->activeVersion->quoteTemplate);
 
         $opportunity = $worldwideQuote->opportunity;
 
@@ -329,7 +334,7 @@ class WorldwideQuoteDataMapper
             ->sortByDesc('pivot.is_default')
             ->first(fn(Contact $contact) => $contact->contact_type === 'Software');
 
-        return $worldwideQuote->worldwideDistributions->map(function (WorldwideDistribution $distribution) use (
+        return $worldwideQuote->activeVersion->worldwideDistributions->map(function (WorldwideDistribution $distribution) use (
             $paymentScheduleFields,
             $worldwideQuote,
             $outputCurrency,
@@ -356,7 +361,7 @@ class WorldwideQuoteDataMapper
 
             $assetsData = $this->getDistributionAssetsData($distribution, $priceValueCoeff, $outputCurrency);
 
-            $assetFields = $this->getDistributionAssetFields($distribution, $worldwideQuote->quoteTemplate);
+            $assetFields = $this->getDistributionAssetFields($distribution, $worldwideQuote->activeVersion->quoteTemplate);
 
             $mappedFieldsCount = count($assetFields);
 
@@ -460,7 +465,7 @@ class WorldwideQuoteDataMapper
             $duration = $opportunityStartDate->longAbsoluteDiffForHumans($opportunityEndDate);
         }
 
-        foreach ($quote->worldwideDistributions as $worldwideDistribution) {
+        foreach ($quote->activeVersion->worldwideDistributions as $worldwideDistribution) {
             /** @var WorldwideDistribution $worldwideDistribution */
 
             $distributionPrice = $this->worldwideDistributionCalc->calculateDistributionTotalPrice($worldwideDistribution);
@@ -496,6 +501,8 @@ class WorldwideQuoteDataMapper
 
     public function getQuoteSummary(WorldwideQuote $worldwideQuote, Currency $outputCurrency): QuoteSummary
     {
+        $activeVersion = $worldwideQuote->activeVersion;
+
         $quoteDataAggregation = $worldwideQuote->contract_type_id === CT_CONTRACT
             ? $this->getContractQuoteDataAggregation($worldwideQuote, $outputCurrency)
             : [];
@@ -550,14 +557,14 @@ class WorldwideQuoteDataMapper
         };
 
         return new QuoteSummary([
-            'company_name' => $worldwideQuote->company->name,
+            'company_name' => $activeVersion->company->name,
             'customer_name' => $opportunity->primaryAccount->name,
             'quotation_number' => $worldwideQuote->quote_number,
             'export_file_name' => $worldwideQuote->quote_number,
 
             'service_levels' => '',
             'invoicing_terms' => '',
-            'payment_terms' => $worldwideQuote->payment_terms ?? '',
+            'payment_terms' => $activeVersion->payment_terms ?? '',
 
             'support_start' => static::formatDate($opportunityStartDate),
             'support_end' => static::formatDate($opportunityEndDate),
@@ -573,7 +580,7 @@ class WorldwideQuoteDataMapper
             'contact_email' => optional($opportunity->primaryAccountContact)->email ?? '',
             'contact_phone' => optional($opportunity->primaryAccountContact)->phone ?? '',
 
-            'quote_data_aggregation_fields' => $this->getQuoteDataAggregationFields($worldwideQuote->quoteTemplate),
+            'quote_data_aggregation_fields' => $this->getQuoteDataAggregationFields($activeVersion->quoteTemplate),
             'quote_data_aggregation' => $quoteDataAggregation,
 
             'sub_total_value' => static::formatPriceValue($quotePriceData->final_total_price_value, $outputCurrency->symbol),
@@ -589,22 +596,24 @@ class WorldwideQuoteDataMapper
             'coverage_period' => '',
             'coverage_period_from' => static::formatDate($opportunityStartDate),
             'coverage_period_to' => static::formatDate($opportunityEndDate),
-            'additional_details' => $worldwideQuote->additional_details ?? '',
-            'pricing_document' => $worldwideQuote->pricing_document ?? '',
-            'service_agreement_id' => $worldwideQuote->service_agreement_id ?? '',
-            'system_handle' => $worldwideQuote->system_handle ?? '',
+            'additional_details' => $activeVersion->additional_details ?? '',
+            'pricing_document' => $activeVersion->pricing_document ?? '',
+            'service_agreement_id' => $activeVersion->service_agreement_id ?? '',
+            'system_handle' => $activeVersion->system_handle ?? '',
         ]);
     }
 
     public function sortWorldwidePackQuoteAssets(WorldwideQuote $quote): void
     {
-        $sortRowsColumn = $quote->sort_rows_column;
+        $activeVersion = $quote->activeVersion;
+
+        $sortRowsColumn = $activeVersion->sort_rows_column;
 
         if (!is_string($sortRowsColumn) || $sortRowsColumn === '') {
             return;
         }
 
-        $results = $quote->assets->sortBy(
+        $results = $activeVersion->assets->sortBy(
             function (WorldwideQuoteAsset $asset) use ($sortRowsColumn) {
                 if ($sortRowsColumn === 'machine_address') {
                     return self::formatMachineAddressToString($asset->machineAddress);
@@ -613,7 +622,7 @@ class WorldwideQuoteDataMapper
                 return $asset->{$sortRowsColumn};
             },
             SORT_NATURAL,
-            $quote->sort_rows_direction === 'desc'
+            $activeVersion->sort_rows_direction === 'desc'
         )
             ->values();
 
@@ -848,21 +857,21 @@ class WorldwideQuoteDataMapper
 
     private function getQuoteOutputCurrency(WorldwideQuote $worldwideQuote): Currency
     {
-        $currency = with($worldwideQuote, function (WorldwideQuote $worldwideQuote) {
+        $currency = with($worldwideQuote->activeVersion, function (WorldwideQuoteVersion $version) {
 
-            if (is_null($worldwideQuote->output_currency_id)) {
-                return $worldwideQuote->quoteCurrency;
+            if (is_null($version->output_currency_id)) {
+                return $version->quoteCurrency;
             }
 
-            return $worldwideQuote->outputCurrency;
+            return $version->outputCurrency;
 
         });
 
         return tap($currency, function (Currency $currency) use ($worldwideQuote) {
 
             $currency->exchange_rate_value = $this->exchangeRateService->getTargetRate(
-                $worldwideQuote->quoteCurrency,
-                $worldwideQuote->outputCurrency
+                $worldwideQuote->activeVersion->quoteCurrency,
+                $worldwideQuote->activeVersion->outputCurrency
             );
 
         });
@@ -875,7 +884,7 @@ class WorldwideQuoteDataMapper
      */
     private function getTemplateAssets(WorldwideQuote $quote, bool $useLocalAssets = false): TemplateAssets
     {
-        $company = $quote->company;
+        $company = $quote->activeVersion->company;
 
         $flags = ThumbHelper::WITH_KEYS;
 
@@ -925,7 +934,7 @@ class WorldwideQuoteDataMapper
 
             if ($quote->contract_type_id === CT_CONTRACT) {
 
-                $vendors = $quote->worldwideDistributions->load(['vendors' => function (BelongsToMany $relationship) {
+                $vendors = $quote->activeVersion->worldwideDistributions->load(['vendors' => function (BelongsToMany $relationship) {
                     $relationship->has('image');
                 }])->pluck('vendors')->collapse();
 

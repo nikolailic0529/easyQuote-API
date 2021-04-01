@@ -53,7 +53,7 @@ class BatchWarrantyLookup extends FormRequest
                 'serial_no' => $asset['serial_no'],
                 'sku' => $asset['sku'],
                 'country_code' => $asset['country'],
-                'currency_code' => $quote->quoteCurrency->code,
+                'currency_code' => $quote->activeVersion->quoteCurrency->code,
             ]), $assets);
 
             return new AssetServiceLookupDataCollection($collection);

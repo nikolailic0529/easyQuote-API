@@ -7,15 +7,12 @@ use App\Contracts\Repositories\{CompanyRepositoryInterface as CompanyRepository,
 };
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Company\{StoreCompanyRequest, UpdateCompanyContact, UpdateCompanyRequest};
-use App\Http\Resources\{Company\Company as CompanyResource,
-    Company\CompanyCollection,
-    Company\ExternalCompanyList,
-    Company\UpdatedCompany};
+use App\Http\Resources\{Company\CompanyCollection, Company\ExternalCompanyList, Company\UpdatedCompany};
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Customer\Customer;
 use App\Queries\CompanyQueries;
-use App\Services\CompanyService;
+use App\Services\CompanyEntityService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -119,10 +116,11 @@ class CompanyController extends Controller
      * Store a newly created Company in storage.
      *
      * @param StoreCompanyRequest $request
-     * @param CompanyService $service
+     * @param CompanyEntityService $service
      * @return JsonResponse
      */
-    public function store(StoreCompanyRequest $request, CompanyService $service): JsonResponse
+    public function store(StoreCompanyRequest $request,
+                          CompanyEntityService $service): JsonResponse
     {
         $resource = $service->createCompany($request->getCreateCompanyData());
 
@@ -150,9 +148,12 @@ class CompanyController extends Controller
      *
      * @param UpdateCompanyRequest $request
      * @param Company $company
+     * @param CompanyEntityService $service
      * @return JsonResponse
      */
-    public function update(UpdateCompanyRequest $request, Company $company, CompanyService $service): JsonResponse
+    public function update(UpdateCompanyRequest $request,
+                           CompanyEntityService $service,
+                           Company $company): JsonResponse
     {
         $resource = $service->updateCompany($company, $request->getUpdateCompanyData());
 
@@ -168,14 +169,14 @@ class CompanyController extends Controller
      * @param UpdateCompanyContact $request
      * @param Company $company
      * @param Contact $contact
-     * @param CompanyService $service
+     * @param CompanyEntityService $service
      * @return JsonResponse
      * @throws \Throwable
      */
     public function updateCompanyContact(UpdateCompanyContact $request,
+                                         CompanyEntityService $service,
                                          Company $company,
-                                         Contact $contact,
-                                         CompanyService $service): JsonResponse
+                                         Contact $contact): JsonResponse
     {
         $this->authorize('update', $company);
 
@@ -191,12 +192,16 @@ class CompanyController extends Controller
      * Remove the specified Company from storage.
      *
      * @param Company $company
+     * @param CompanyEntityService $service
      * @return JsonResponse
      */
-    public function destroy(Company $company): JsonResponse
+    public function destroy(CompanyEntityService $service, Company $company): JsonResponse
     {
+        $service->deleteCompany($company);
+
         return response()->json(
-            $this->company->delete($company->id)
+            true,
+            Response::HTTP_OK
         );
     }
 
@@ -204,15 +209,19 @@ class CompanyController extends Controller
      * Activate the specified Company from storage.
      *
      * @param Company $company
+     * @param CompanyEntityService $service
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function activate(Company $company): JsonResponse
+    public function activate(CompanyEntityService $service, Company $company): JsonResponse
     {
         $this->authorize('update', $company);
 
+        $service->markCompanyAsActive($company);
+
         return response()->json(
-            $this->company->activate($company->id)
+            true,
+            Response::HTTP_OK
         );
     }
 
@@ -220,15 +229,19 @@ class CompanyController extends Controller
      * Deactivate the specified Company from storage.
      *
      * @param Company $company
+     * @param CompanyEntityService $service
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function deactivate(Company $company): JsonResponse
+    public function deactivate(CompanyEntityService $service, Company $company): JsonResponse
     {
         $this->authorize('update', $company);
 
+        $service->markCompanyAsInactive($company);
+
         return response()->json(
-            $this->company->deactivate($company->id)
+            true,
+            Response::HTTP_OK
         );
     }
 }

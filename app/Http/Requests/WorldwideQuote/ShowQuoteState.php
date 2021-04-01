@@ -72,14 +72,14 @@ class ShowQuoteState extends FormRequest
 
     public function includeCompanyLogo(WorldwideQuote $model)
     {
-        if (!is_null($model->company)) {
-            $model->company->setAttribute('logo', $model->company->logo);
+        if (!is_null($model->activeVersion->company)) {
+            $model->activeVersion->company->setAttribute('logo', $model->activeVersion->company->logo);
         }
     }
 
     public function includeVendorsLogo(WorldwideQuote $model)
     {
-        $model->worldwideDistributions->each(function (WorldwideDistribution $distribution) {
+        $model->activeVersion->worldwideDistributions->each(function (WorldwideDistribution $distribution) {
            $distribution->vendors->each(function (Vendor $vendor) {
               $vendor->setAttribute('logo', $vendor->logo);
            });
@@ -88,7 +88,7 @@ class ShowQuoteState extends FormRequest
 
     public function includeCountryFlag(WorldwideQuote $model)
     {
-        $model->worldwideDistributions->each(function (WorldwideDistribution $distribution) {
+        $model->activeVersion->worldwideDistributions->each(function (WorldwideDistribution $distribution) {
             if (!is_null($distribution->country)) {
                 $distribution->country->setAttribute('flag', $distribution->country->flag);
             }
@@ -97,15 +97,15 @@ class ShowQuoteState extends FormRequest
 
     public function prepareWorldwideDistributionMappingWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper)
     {
-        $templateLoaded = $model->relationLoaded('quoteTemplate');
+        $templateLoaded = $model->activeVersion->relationLoaded('quoteTemplate');
 
-        if (!$model->relationLoaded('worldwideDistributions') || is_null($model->quoteTemplate)) {
+        if (!$model->activeVersion->relationLoaded('worldwideDistributions') || is_null($model->activeVersion->quoteTemplate)) {
             return;
         }
 
-        $quoteTemplate = $model->quoteTemplate;
+        $quoteTemplate = $model->activeVersion->quoteTemplate;
 
-        $model->worldwideDistributions->each(function (WorldwideDistribution $distribution) use ($quoteTemplate, $dataMapper) {
+        $model->activeVersion->worldwideDistributions->each(function (WorldwideDistribution $distribution) use ($quoteTemplate, $dataMapper) {
 
             if (!$distribution->relationLoaded('mapping')) {
                 return;
@@ -122,7 +122,7 @@ class ShowQuoteState extends FormRequest
         });
 
         if (!$templateLoaded) {
-            $model->unsetRelation('quoteTemplate');
+            $model->activeVersion->unsetRelation('quoteTemplate');
         }
     }
 
@@ -130,7 +130,7 @@ class ShowQuoteState extends FormRequest
     {
         if ($model->relationLoaded('assets')) {
 
-            foreach ($model->assets as $asset) {
+            foreach ($model->activeVersion->assets as $asset) {
                 if ($asset->relationLoaded('machineAddress')) {
                     $asset->setAttribute('machine_address_string', WorldwideQuoteDataMapper::formatMachineAddressToString($asset->machineAddress));
                 }
@@ -150,7 +150,7 @@ class ShowQuoteState extends FormRequest
 
     public function sortWorldwideDistributionRowsWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper)
     {
-        foreach ($model->worldwideDistributions as $distribution) {
+        foreach ($model->activeVersion->worldwideDistributions as $distribution) {
 
             if ($distribution->relationLoaded('mappedRows')) {
 
@@ -163,7 +163,7 @@ class ShowQuoteState extends FormRequest
 
     public function sortWorldwideDistributionRowsGroupsWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper)
     {
-        foreach ($model->worldwideDistributions as $distribution) {
+        foreach ($model->activeVersion->worldwideDistributions as $distribution) {
 
             if ($distribution->relationLoaded('rowsGroups')) {
 
@@ -178,36 +178,36 @@ class ShowQuoteState extends FormRequest
     {
         $priceSummary = $service->calculatePriceSummaryOfQuote($model);
 
-        $model->total_price = $priceSummary->total_price;
-        $model->buy_price = $priceSummary->buy_price;
-        $model->margin_percentage = $priceSummary->raw_margin;
+        $model->activeVersion->total_price = $priceSummary->total_price;
+        $model->activeVersion->buy_price = $priceSummary->buy_price;
+        $model->activeVersion->margin_percentage = $priceSummary->raw_margin;
 
-        $model->final_total_price = $priceSummary->final_total_price;
-        $model->final_total_price_excluding_tax = $priceSummary->final_total_price_excluding_tax;
-        $model->applicable_discounts_value = $priceSummary->applicable_discounts_value;
-        $model->final_margin = $priceSummary->final_margin;
+        $model->activeVersion->final_total_price = $priceSummary->final_total_price;
+        $model->activeVersion->final_total_price_excluding_tax = $priceSummary->final_total_price_excluding_tax;
+        $model->activeVersion->applicable_discounts_value = $priceSummary->applicable_discounts_value;
+        $model->activeVersion->final_margin = $priceSummary->final_margin;
 
-        $model->setAttribute('summary', [
-            'total_price' => $model->total_price,
-            'final_total_price' => $model->final_total_price,
-            'final_total_price_excluding_tax' => $model->final_total_price_excluding_tax,
-            'applicable_discounts_value' => $model->applicable_discounts_value,
-            'buy_price' => $model->buy_price,
-            'margin_percentage' => $model->margin_percentage,
-            'final_margin' => $model->final_margin,
+        $model->activeVersion->setAttribute('summary', [
+            'total_price' => $model->activeVersion->total_price,
+            'final_total_price' => $model->activeVersion->final_total_price,
+            'final_total_price_excluding_tax' => $model->activeVersion->final_total_price_excluding_tax,
+            'applicable_discounts_value' => $model->activeVersion->applicable_discounts_value,
+            'buy_price' => $model->activeVersion->buy_price,
+            'margin_percentage' => $model->activeVersion->margin_percentage,
+            'final_margin' => $model->activeVersion->final_margin,
         ]);
     }
 
     public function includeWorldwideDistributionsSummaryAttribute(WorldwideQuote $model, WorldwideDistributionCalc $service)
     {
-        $model->worldwideDistributions->load([
+        $model->activeVersion->worldwideDistributions->load([
             'multiYearDiscount:id,name,durations',
             'prePayDiscount:id,name,durations',
             'promotionalDiscount:id,name,value,minimum_limit',
             'snDiscount:id,name,value',
         ]);
 
-        $model->worldwideDistributions->each(function (WorldwideDistribution $distribution) use ($service) {
+        $model->activeVersion->worldwideDistributions->each(function (WorldwideDistribution $distribution) use ($service) {
             $distributorPriceSummary = $service->calculatePriceSummaryOfDistributorQuote($distribution);
 
             $distribution->total_price = $distributorPriceSummary->total_price;
@@ -232,7 +232,7 @@ class ShowQuoteState extends FormRequest
 
     public function includeWorldwideDistributionsPredefinedDiscounts(WorldwideQuote $model, WorldwideDistributionCalc $service)
     {
-        $model->worldwideDistributions->load([
+        $model->activeVersion->worldwideDistributions->load([
             'multiYearDiscount:id,name,durations',
             'prePayDiscount:id,name,durations',
             'promotionalDiscount:id,name,value,minimum_limit',
@@ -284,7 +284,7 @@ class ShowQuoteState extends FormRequest
 
     public function includeWorldwideQuotePredefinedDiscounts(WorldwideQuote $model, WorldwideQuoteCalc $service)
     {
-        $model->load([
+        $model->activeVersion->load([
             'multiYearDiscount:id,name,durations',
             'prePayDiscount:id,name,durations',
             'promotionalDiscount:id,name,value,minimum_limit',
@@ -293,43 +293,43 @@ class ShowQuoteState extends FormRequest
 
         $applicableDiscounts = $service->predefinedQuoteDiscountsToApplicableDiscounts($model);
 
-        $model->setAttribute('predefinedDiscounts', [
-            'multi_year_discount' => $model->multiYearDiscount,
-            'pre_pay_discount' => $model->prePayDiscount,
-            'promotional_discount' => $model->promotionalDiscount,
-            'sn_discount' => $model->snDiscount,
+        $model->activeVersion->setAttribute('predefinedDiscounts', [
+            'multi_year_discount' => $model->activeVersion->multiYearDiscount,
+            'pre_pay_discount' => $model->activeVersion->prePayDiscount,
+            'promotional_discount' => $model->activeVersion->promotionalDiscount,
+            'sn_discount' => $model->activeVersion->snDiscount,
         ]);
     }
 
     public function includeWorldwideQuoteApplicableDiscounts(WorldwideQuote $model, DiscountQueries $discountQueries)
     {
-        $model->setAttribute('applicableMultiYearDiscounts',
+        $model->activeVersion->setAttribute('applicableMultiYearDiscounts',
             $discountQueries->activeMultiYearDiscountsQuery()->get()
         );
 
-        $model->setAttribute('applicablePrePayDiscounts',
+        $model->activeVersion->setAttribute('applicablePrePayDiscounts',
             $discountQueries->activePrePayDiscountsQuery()->get()
         );
 
-        $model->setAttribute('applicablePromotionalDiscounts',
+        $model->activeVersion->setAttribute('applicablePromotionalDiscounts',
             $discountQueries->activePromotionalDiscountsQuery()->get()
         );
 
-        $model->setAttribute('applicableSnDiscounts',
+        $model->activeVersion->setAttribute('applicableSnDiscounts',
             $discountQueries->activeSnDiscountsQuery()->get()
         );
 
-        $model->setAttribute('applicableDiscounts', [
-            'multi_year_discounts' => $model->applicableMultiYearDiscounts,
-            'pre_pay_discounts' => $model->applicablePrePayDiscounts,
-            'promotional_discounts' => $model->applicablePromotionalDiscounts,
-            'sn_discounts' => $model->applicableSnDiscounts,
+        $model->activeVersion->setAttribute('applicableDiscounts', [
+            'multi_year_discounts' => $model->activeVersion->applicableMultiYearDiscounts,
+            'pre_pay_discounts' => $model->activeVersion->applicablePrePayDiscounts,
+            'promotional_discounts' => $model->activeVersion->applicablePromotionalDiscounts,
+            'sn_discounts' => $model->activeVersion->applicableSnDiscounts,
         ]);
     }
 
     public function includeWorldwideDistributionsApplicableDiscounts(WorldwideQuote $model, DiscountQueries $discountQueries)
     {
-        $model->worldwideDistributions->each(function (WorldwideDistribution $distribution) use ($discountQueries) {
+        $model->activeVersion->worldwideDistributions->each(function (WorldwideDistribution $distribution) use ($discountQueries) {
             $distribution->setAttribute('applicableMultiYearDiscounts',
                 $discountQueries->applicableMultiYearDiscountsForDistributionQuery($distribution)->get(['id', 'name', 'durations'])
             );

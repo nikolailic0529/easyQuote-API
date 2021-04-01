@@ -54,12 +54,14 @@ class MoveRowsBetweenGroups extends FormRequest
 
     public function getOutputRowsGroup(): DistributionRowsGroup
     {
-        return $this->outputRowsGroup ??= DistributionRowsGroup::findOrFail($this->input('output_rows_group_id'));
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
+        return $this->outputRowsGroup ??= DistributionRowsGroup::query()->findOrFail($this->input('output_rows_group_id'));
     }
 
     public function getInputRowsGroup(): DistributionRowsGroup
     {
-        return $this->inputRowsGroup ??= DistributionRowsGroup::findOrFail($this->input('input_rows_group_id'));
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
+        return $this->inputRowsGroup ??= DistributionRowsGroup::query()->findOrFail($this->input('input_rows_group_id'));
     }
 
     public function loadGroupAttributes(DistributionRowsGroup $group): DistributionRowsGroup

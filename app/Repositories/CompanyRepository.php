@@ -26,13 +26,13 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
         $this->company = $company;
     }
 
-    public function data($additional = []): SupportCollection
+    public function data(array $additionalData = []): SupportCollection
     {
         return collect([
             'types' => Company::TYPES,
             'categories' => Company::CATEGORIES
         ])
-            ->union($additional);
+            ->union($additionalData);
     }
 
     public function allInternal(array $columns = ['*']): Collection
@@ -129,73 +129,6 @@ class CompanyRepository extends SearchableRepository implements CompanyRepositor
     public function findByVat(string $vat)
     {
         return $this->company->query()->whereVat($vat)->first();
-    }
-
-    public function random(int $limit = 1, ?Closure $scope = null)
-    {
-        $method = $limit > 1 ? 'get' : 'first';
-
-        $query = $this->company->query()->inRandomOrder()->limit($limit);
-
-        if ($scope instanceof Closure) {
-            $scope($query);
-        }
-
-        return $query->{$method}();
-    }
-
-    public function create(array $attributes): Company
-    {
-        return DB::transaction(
-            fn () => tap($this->company->make($attributes), function (Company $company) use ($attributes) {
-                $company->save();
-
-                $company->createLogo(Arr::get($attributes, 'logo'));
-
-                $company->syncVendors(Arr::get($attributes, 'vendors'));
-
-                $company->syncAddresses(Arr::get($attributes, 'addresses_attach'));
-
-                $company->syncContacts(Arr::get($attributes, 'contacts_attach'));
-            })
-        );
-    }
-
-    public function update(string $id, array $attributes): Company
-    {
-        return DB::transaction(
-            fn () =>
-            tap($this->find($id), function (Company $company) use ($attributes) {
-                $company->update($attributes);
-
-                $company->createLogo(Arr::get($attributes, 'logo'));
-
-                if ($attributes['delete_logo'] ?? false) {
-                    $company->image()->flushQueryCache()->delete();
-                }
-
-                $company->syncVendors(Arr::get($attributes, 'vendors'));
-
-                $company->syncAddresses(Arr::get($attributes, 'addresses_attach'));
-
-                $company->syncContacts(Arr::get($attributes, 'contacts_attach'));
-            })
-        );
-    }
-
-    public function delete(string $id): bool
-    {
-        return $this->find($id)->delete();
-    }
-
-    public function activate(string $id): bool
-    {
-        return $this->find($id)->activate();
-    }
-
-    public function deactivate(string $id): bool
-    {
-        return $this->find($id)->deactivate();
     }
 
     public function country(string $id): Collection

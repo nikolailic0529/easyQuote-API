@@ -20,6 +20,7 @@ use App\DTO\QuoteStages\SubmitStage;
 use App\DTO\WorldwideQuote\MarkWorldwideQuoteAsDeadData;
 use App\Models\Opportunity;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\Quote\WorldwideQuoteVersion;
 
 interface ProcessesWorldwideQuoteState
 {
@@ -32,6 +33,22 @@ interface ProcessesWorldwideQuoteState
     public function initializeQuote(InitStage $stage): WorldwideQuote;
 
     /**
+     * Switch active version of Worldwide Quote.
+     *
+     * @param WorldwideQuote $quote
+     * @param WorldwideQuoteVersion $version
+     */
+    public function switchActiveVersionOfQuote(WorldwideQuote $quote, WorldwideQuoteVersion $version): void;
+
+    /**
+     * Delete the specified version of Worldwide Quote.
+     *
+     * @param WorldwideQuote $quote
+     * @param WorldwideQuoteVersion $version
+     */
+    public function deleteVersionOfQuote(WorldwideQuote $quote, WorldwideQuoteVersion $version): void;
+
+    /**
      * Synchronize Contract Quote with Opportunity Data.
      *
      * @param WorldwideQuote $quote
@@ -42,125 +59,128 @@ interface ProcessesWorldwideQuoteState
     /**
      * Process Quote import step.
      *
-     * @param \App\Models\Quote\WorldwideQuote $quote
+     * @param WorldwideQuoteVersion $quoteVersion
      * @param \App\DTO\QuoteStages\ImportStage $stage
      * @return \App\Models\Quote\WorldwideQuote
      */
-    public function processQuoteImportStep(WorldwideQuote $quote, ImportStage $stage): WorldwideQuote;
+    public function processQuoteImportStep(WorldwideQuoteVersion $quoteVersion, ImportStage $stage): WorldwideQuoteVersion;
 
     /**
      * Process Pack Quote margin step.
      *
-     * @param WorldwideQuote $quote
+     * @param WorldwideQuoteVersion $quote
      * @param PackMarginTaxStage $stage
-     * @return WorldwideQuote
+     * @return WorldwideQuoteVersion
      */
-    public function processPackQuoteMarginStep(WorldwideQuote $quote, PackMarginTaxStage $stage): WorldwideQuote;
+    public function processPackQuoteMarginStep(WorldwideQuoteVersion $quote, PackMarginTaxStage $stage): WorldwideQuoteVersion;
 
     /**
      * Process Pack Quote discount step.
      *
-     * @param WorldwideQuote $quote
+     * @param WorldwideQuoteVersion $quote
      * @param PackDiscountStage $stage
-     * @return WorldwideQuote
+     * @return WorldwideQuoteVersion
      */
-    public function processPackQuoteDiscountStep(WorldwideQuote $quote, PackDiscountStage $stage): WorldwideQuote;
+    public function processPackQuoteDiscountStep(WorldwideQuoteVersion $quote, PackDiscountStage $stage): WorldwideQuoteVersion;
 
     /**
      * Process Quote addresses & contacts step.
      *
-     * @param WorldwideQuote $quote
+     * @param WorldwideQuoteVersion $quote
      * @param AddressesContactsStage $stage
-     * @return WorldwideQuote
+     * @return WorldwideQuoteVersion
      */
-    public function processQuoteAddressesContactsStep(WorldwideQuote $quote, AddressesContactsStage $stage): WorldwideQuote;
+    public function processQuoteAddressesContactsStep(WorldwideQuoteVersion $quote, AddressesContactsStage $stage): WorldwideQuoteVersion;
 
     /**
      * Process Pack Quote details step.
      *
-     * @param WorldwideQuote $quote
+     * @param WorldwideQuoteVersion $quote
      * @param PackDetailsStage $stage
-     * @return WorldwideQuote
+     * @return WorldwideQuoteVersion
      */
-    public function processPackQuoteDetailsStep(WorldwideQuote $quote, PackDetailsStage $stage): WorldwideQuote;
+    public function processPackQuoteDetailsStep(WorldwideQuoteVersion $quote, PackDetailsStage $stage): WorldwideQuoteVersion;
 
     /**
      * Process Quote assets creation step.
      *
-     * @param WorldwideQuote $quote
+     * @param WorldwideQuoteVersion $quote
      * @param PackAssetsCreationStage $stage
-     * @return WorldwideQuote
+     * @return WorldwideQuoteVersion
      */
-    public function processQuoteAssetsCreationStep(WorldwideQuote $quote, PackAssetsCreationStage $stage): WorldwideQuote;
+    public function processQuoteAssetsCreationStep(WorldwideQuoteVersion $quote, PackAssetsCreationStage $stage): WorldwideQuoteVersion;
 
     /**
      * Process Quote assets review step.
      *
-     * @param WorldwideQuote $quote
+     * @param WorldwideQuoteVersion $quote
      * @param PackAssetsReviewStage $stage
-     * @return WorldwideQuote
+     * @return WorldwideQuoteVersion
      */
-    public function processQuoteAssetsReviewStep(WorldwideQuote $quote, PackAssetsReviewStage $stage): WorldwideQuote;
+    public function processQuoteAssetsReviewStep(WorldwideQuoteVersion $quote, PackAssetsReviewStage $stage): WorldwideQuoteVersion;
 
     /**
      * Process Quote mapping step.
      *
+     * @param WorldwideQuoteVersion $version
      * @param \App\DTO\QuoteStages\MappingStage $stage
      * @return \App\Models\Quote\WorldwideQuote
      */
-    public function processQuoteMappingStep(MappingStage $stage): WorldwideQuote;
+    public function processQuoteMappingStep(WorldwideQuoteVersion $version, MappingStage $stage): WorldwideQuoteVersion;
 
     /**
      * Process Quote mapping review step.
      *
+     * @param WorldwideQuoteVersion $quote
      * @param \App\DTO\QuoteStages\ReviewStage $stage
-     * @return \App\Models\Quote\WorldwideQuote
+     * @return WorldwideQuoteVersion
      */
-    public function processQuoteMappingReviewStep(ReviewStage $stage): WorldwideQuote;
+    public function processQuoteMappingReviewStep(WorldwideQuoteVersion $quote, ReviewStage $stage): WorldwideQuoteVersion;
 
     /**
      * Process Quote margin step.
      *
+     * @param WorldwideQuoteVersion $quote
      * @param \App\DTO\QuoteStages\ContractMarginTaxStage $stage
      * @return \App\Models\Quote\WorldwideQuote
      */
-    public function processQuoteMarginStep(ContractMarginTaxStage $stage): WorldwideQuote;
+    public function processQuoteMarginStep(WorldwideQuoteVersion $quote, ContractMarginTaxStage $stage): WorldwideQuoteVersion;
 
     /**
      * Process Quote discount step.
      *
-     * @param WorldwideQuote $quote
+     * @param WorldwideQuoteVersion $quote
      * @param ContractDiscountStage $stage
      * @return WorldwideQuote
      */
-    public function processQuoteDiscountStep(WorldwideQuote $quote, ContractDiscountStage $stage): WorldwideQuote;
+    public function processQuoteDiscountStep(WorldwideQuoteVersion $quote, ContractDiscountStage $stage): WorldwideQuoteVersion;
 
     /**
      * Process Contract Quote details step.
      *
-     * @param WorldwideQuote $quote
+     * @param WorldwideQuoteVersion $quote
      * @param ContractDetailsStage $stage
-     * @return WorldwideQuote
+     * @return WorldwideQuoteVersion
      */
-    public function processContractQuoteDetailsStep(WorldwideQuote $quote, ContractDetailsStage $stage): WorldwideQuote;
+    public function processContractQuoteDetailsStep(WorldwideQuoteVersion $quote, ContractDetailsStage $stage): WorldwideQuoteVersion;
 
     /**
      * Process Quote submission.
      *
-     * @param WorldwideQuote $quote
+     * @param WorldwideQuoteVersion $quote
      * @param SubmitStage $stage
-     * @return mixed
+     * @return WorldwideQuoteVersion
      */
-    public function processQuoteSubmission(WorldwideQuote $quote, SubmitStage $stage): WorldwideQuote;
+    public function processQuoteSubmission(WorldwideQuoteVersion $quote, SubmitStage $stage): WorldwideQuoteVersion;
 
     /**
      * Process Quote draft.
      *
-     * @param WorldwideQuote $quote
+     * @param WorldwideQuoteVersion $quote
      * @param DraftStage $stage
-     * @return WorldwideQuote
+     * @return WorldwideQuoteVersion
      */
-    public function processQuoteDraft(WorldwideQuote $quote, DraftStage $stage): WorldwideQuote;
+    public function processQuoteDraft(WorldwideQuoteVersion $quote, DraftStage $stage): WorldwideQuoteVersion;
 
     /**
      * Process Quote unravel.

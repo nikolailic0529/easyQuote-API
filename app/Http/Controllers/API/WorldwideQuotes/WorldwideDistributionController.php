@@ -33,8 +33,10 @@ use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Models\QuoteFile\MappedRow;
 use App\Queries\WorldwideDistributionQueries;
 use App\Services\WorldwideDistributionCalc;
+use App\Services\WorldwideQuote\WorldwideQuoteVersionGuard;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\MessageBag;
 use Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException;
@@ -53,14 +55,16 @@ class WorldwideDistributionController extends Controller
      *
      * @param InitDistribution $request
      * @return JsonResponse
-     * @throws AuthorizationException
+     * @throws AuthorizationException|\Throwable
      */
     public function initializeDistribution(InitDistribution $request): JsonResponse
     {
-        $this->authorize('update', $request->getWorldwideQuote());
+        $this->authorize('update', $request->getQuote());
+
+        $version = (new WorldwideQuoteVersionGuard($request->getQuote(), $request->user()))->resolveModelForActingUser();
 
         $resource = $this->processor->initializeDistribution(
-            $request->getWorldwideQuote()
+            $version
         );
 
         return response()->json(
@@ -74,10 +78,16 @@ class WorldwideDistributionController extends Controller
      *
      * @param ProcessDistributions $request
      * @return JsonResponse
+     * @throws AuthorizationException
+     * @throws \Throwable
      */
     public function processDistributions(ProcessDistributions $request): JsonResponse
     {
-        $this->processor->processDistributionsImport($request->getDistributionCollection());
+        $this->authorize('update', $request->getQuote());
+
+        $version = (new WorldwideQuoteVersionGuard($request->getQuote(), $request->user()))->resolveModelForActingUser();
+
+        $this->processor->processDistributionsImport($version, $request->getDistributionCollection());
 
         return with($this->processor->validateDistributionsAfterImport($request->getDistributionCollection()), function (MessageBag $messageBag) use ($request) {
             if ($messageBag->isEmpty()) {
@@ -94,12 +104,17 @@ class WorldwideDistributionController extends Controller
      * @param UpdateDistributionsMapping $request
      * @param ProcessesWorldwideQuoteState $quoteProcessor
      * @return Response
+     * @throws AuthorizationException|\Throwable
      */
     public function updateDistributionsMapping(UpdateDistributionsMapping $request, ProcessesWorldwideQuoteState $quoteProcessor): Response
     {
-        $this->processor->processDistributionsMapping($request->getMappingCollection());
+        $this->authorize('update', $request->getQuote());
 
-        $quoteProcessor->processQuoteMappingStep($request->getStage());
+        $version = (new WorldwideQuoteVersionGuard($request->getQuote(), $request->user()))->resolveModelForActingUser();
+
+        $this->processor->processDistributionsMapping($version, $request->getMappingCollection());
+
+        $quoteProcessor->processQuoteMappingStep($version, $request->getStage());
 
         return response()->noContent();
     }
@@ -110,12 +125,17 @@ class WorldwideDistributionController extends Controller
      * @param SelectDistributionsRows $request
      * @param ProcessesWorldwideQuoteState $quoteProcessor
      * @return Response
+     * @throws AuthorizationException|\Throwable
      */
     public function updateRowsSelection(SelectDistributionsRows $request, ProcessesWorldwideQuoteState $quoteProcessor): Response
     {
-        $this->processor->updateRowsSelection($request->getSelectedDistributionRowsCollection());
+        $this->authorize('update', $request->getQuote());
 
-        $quoteProcessor->processQuoteMappingReviewStep($request->getStage());
+        $version = (new WorldwideQuoteVersionGuard($request->getQuote(), $request->user()))->resolveModelForActingUser();
+
+        $this->processor->updateRowsSelection($version, $request->getSelectedDistributionRowsCollection());
+
+        $quoteProcessor->processQuoteMappingReviewStep($version, $request->getStage());
 
         return response()->noContent();
     }
@@ -126,12 +146,17 @@ class WorldwideDistributionController extends Controller
      * @param SetDistributionsMargin $request
      * @param ProcessesWorldwideQuoteState $quoteProcessor
      * @return Response
+     * @throws \Throwable
      */
     public function setDistributionsMargin(SetDistributionsMargin $request, ProcessesWorldwideQuoteState $quoteProcessor): Response
     {
-        $this->processor->setDistributionsMargin($request->getDistributionMarginCollection());
+        $this->authorize('update', $request->getQuote());
 
-        $quoteProcessor->processQuoteMarginStep($request->getStage());
+        $version = (new WorldwideQuoteVersionGuard($request->getQuote(), $request->user()))->resolveModelForActingUser();
+
+        $this->processor->setDistributionsMargin($version, $request->getDistributionMarginCollection());
+
+        $quoteProcessor->processQuoteMarginStep($version, $request->getStage());
 
         return response()->noContent();
     }
@@ -146,9 +171,11 @@ class WorldwideDistributionController extends Controller
      */
     public function createRowsGroup(CreateRowsGroup $request, WorldwideDistribution $worldwideDistribution): JsonResponse
     {
-        $this->authorize('update', $worldwideDistribution->worldwideQuote);
+        $this->authorize('update', $worldwideDistribution->worldwideQuote->worldwideQuote);
 
-        $resource = $this->processor->createRowsGroup($worldwideDistribution, $request->getRowsGroupData());
+        $version = (new WorldwideQuoteVersionGuard($worldwideDistribution->worldwideQuote->worldwideQuote, $request->user()))->resolveModelForActingUser();
+
+        $resource = $this->processor->createRowsGroup($version, $worldwideDistribution, $request->getRowsGroupData());
 
         return response()->json(
             RowsGroup::make($request->loadGroupAttributes($resource)),
@@ -167,10 +194,15 @@ class WorldwideDistributionController extends Controller
      */
     public function updateRowsGroup(UpdateRowsGroup $request, WorldwideDistribution $worldwideDistribution, DistributionRowsGroup $rowsGroup): JsonResponse
     {
-        $this->authorize('update', $worldwideDistribution->worldwideQuote);
+        $this->authorize('update', $worldwideDistribution->worldwideQuote->worldwideQuote);
+
+        $version = (new WorldwideQuoteVersionGuard($worldwideDistribution->worldwideQuote->worldwideQuote, $request->user()))->resolveModelForActingUser();
 
         $resource = $this->processor->updateRowsGroup(
-            $worldwideDistribution, $rowsGroup, $request->getRowsGroupData()
+            $version,
+            $worldwideDistribution,
+            $rowsGroup,
+            $request->getRowsGroupData()
         );
 
         return response()->json(
@@ -190,9 +222,11 @@ class WorldwideDistributionController extends Controller
      */
     public function deleteRowsGroup(DeleteRowsGroup $request, WorldwideDistribution $worldwideDistribution, DistributionRowsGroup $rowsGroup): Response
     {
-        $this->authorize('update', $worldwideDistribution->worldwideQuote);
+        $this->authorize('update', $worldwideDistribution->worldwideQuote->worldwideQuote);
 
-        $this->processor->deleteRowsGroup($worldwideDistribution, $rowsGroup);
+        $version = (new WorldwideQuoteVersionGuard($worldwideDistribution->worldwideQuote->worldwideQuote, $request->user()))->resolveModelForActingUser();
+
+        $this->processor->deleteRowsGroup($version, $worldwideDistribution, $rowsGroup);
 
         return response()->noContent();
     }
@@ -207,9 +241,12 @@ class WorldwideDistributionController extends Controller
      */
     public function moveRowsBetweenGroups(MoveRowsBetweenGroups $request, WorldwideDistribution $worldwideDistribution): JsonResponse
     {
-        $this->authorize('update', $worldwideDistribution->worldwideQuote);
+        $this->authorize('update', $worldwideDistribution->worldwideQuote->worldwideQuote);
+
+        $version = (new WorldwideQuoteVersionGuard($worldwideDistribution->worldwideQuote->worldwideQuote, $request->user()))->resolveModelForActingUser();
 
         $this->processor->moveRowsBetweenGroups(
+            $version,
             $worldwideDistribution,
             $request->getOutputRowsGroup(),
             $request->getInputRowsGroup(),
@@ -230,7 +267,7 @@ class WorldwideDistributionController extends Controller
      */
     public function performRowsLookup(RowsLookup $rowsLookup, WorldwideDistributionQueries $queries, WorldwideDistribution $worldwideDistribution): JsonResponse
     {
-        $this->authorize('view', $worldwideDistribution->worldwideQuote);
+        $this->authorize('view', $worldwideDistribution->worldwideQuote->worldwideQuote);
 
         return response()->json(
             $queries->rowsLookupQuery(
@@ -250,7 +287,7 @@ class WorldwideDistributionController extends Controller
      */
     public function showDistributionApplicableDiscounts(ShowDistributionApplicableDiscounts $request, WorldwideDistribution $worldwideDistribution): JsonResponse
     {
-        $this->authorize('view', $worldwideDistribution->worldwideQuote);
+        $this->authorize('view', $worldwideDistribution->worldwideQuote->worldwideQuote);
 
         return response()->json(
             ApplicableDiscountCollection::make($request->getApplicableDiscounts())
@@ -270,7 +307,7 @@ class WorldwideDistributionController extends Controller
                                                        WorldwideDistribution $worldwideDistribution,
                                                        WorldwideDistributionCalc $calcService): JsonResponse
     {
-        $this->authorize('view', $worldwideDistribution->worldwideQuote);
+        $this->authorize('view', $worldwideDistribution->worldwideQuote->worldwideQuote);
 
         $resource = $calcService->calculatePriceSummaryAfterPredefinedDiscounts(
             $worldwideDistribution, $request->getApplicableDiscounts()
@@ -294,7 +331,7 @@ class WorldwideDistributionController extends Controller
                                                   WorldwideDistribution $worldwideDistribution,
                                                   WorldwideDistributionCalc $calcService): JsonResponse
     {
-        $this->authorize('view', $worldwideDistribution->worldwideQuote);
+        $this->authorize('view', $worldwideDistribution->worldwideQuote->worldwideQuote);
 
         $resource = $calcService->calculatePriceSummaryAfterCustomDiscount($worldwideDistribution, $request->getCustomDiscountData());
 
@@ -317,7 +354,7 @@ class WorldwideDistributionController extends Controller
                                                    WorldwideDistribution $worldwideDistribution,
                                                    WorldwideDistributionCalc $calcService): JsonResponse
     {
-        $this->authorize('view', $worldwideDistribution->worldwideQuote);
+        $this->authorize('view', $worldwideDistribution->worldwideQuote->worldwideQuote);
 
         $resource = $calcService->calculatePriceSummaryAfterMarginTax($worldwideDistribution, $request->getMarginTaxData());
 
@@ -338,12 +375,15 @@ class WorldwideDistributionController extends Controller
     {
         $this->authorize('update', $request->getQuote());
 
+        $version = (new WorldwideQuoteVersionGuard($request->getQuote(), $request->user()))->resolveModelForActingUser();
+
         $this->processor->applyDistributionsDiscount(
+            $version,
             $request->getDistributionDiscountsCollection()
         );
 
         $quoteProcessor->processQuoteDiscountStep(
-            $request->getQuote(),
+            $version,
             $request->getStage()
         );
 
@@ -356,18 +396,21 @@ class WorldwideDistributionController extends Controller
      * @param UpdateDetails $request
      * @param ProcessesWorldwideQuoteState $quoteProcessor
      * @return Response
-     * @throws AuthorizationException
+     * @throws AuthorizationException|\Throwable
      */
     public function updateDetails(UpdateDetails $request, ProcessesWorldwideQuoteState $quoteProcessor): Response
     {
         $this->authorize('update', $request->getQuote());
 
+        $version = (new WorldwideQuoteVersionGuard($request->getQuote(), $request->user()))->resolveModelForActingUser();
+
         $this->processor->updateDistributionsDetails(
+            $version,
             $request->getDistributionDetailsCollection()
         );
 
         $quoteProcessor->processContractQuoteDetailsStep(
-            $request->getQuote(),
+            $version,
             $request->getStage()
         );
 
@@ -380,15 +423,18 @@ class WorldwideDistributionController extends Controller
      * @param StoreDistributorFile $request
      * @param WorldwideDistribution $worldwideDistribution
      * @return JsonResponse
-     * @throws AuthorizationException
+     * @throws AuthorizationException|\Throwable
      */
     public function storeDistributorFile(StoreDistributorFile $request, WorldwideDistribution $worldwideDistribution): JsonResponse
     {
-        $this->authorize('update', $worldwideDistribution->worldwideQuote);
+        $this->authorize('update', $worldwideDistribution->worldwideQuote->worldwideQuote);
+
+        $version = (new WorldwideQuoteVersionGuard($worldwideDistribution->worldwideQuote->worldwideQuote, $request->user()))->resolveModelForActingUser();
 
         $resource = $this->processor->storeDistributorFile(
-            $request->file('file'),
+            $version,
             $worldwideDistribution,
+            $request->file('file'),
         );
 
         return response()->json(
@@ -403,15 +449,18 @@ class WorldwideDistributionController extends Controller
      * @param StoreScheduleFile $request
      * @param WorldwideDistribution $worldwideDistribution
      * @return JsonResponse
-     * @throws AuthorizationException
+     * @throws AuthorizationException|\Throwable
      */
     public function storeScheduleFile(StoreScheduleFile $request, WorldwideDistribution $worldwideDistribution): JsonResponse
     {
-        $this->authorize('update', $worldwideDistribution->worldwideQuote);
+        $this->authorize('update', $worldwideDistribution->worldwideQuote->worldwideQuote);
+
+        $version = (new WorldwideQuoteVersionGuard($worldwideDistribution->worldwideQuote->worldwideQuote, $request->user()))->resolveModelForActingUser();
 
         $resource = $this->processor->storeScheduleFile(
-            $request->file('file'),
+            $version,
             $worldwideDistribution,
+            $request->file('file'),
         );
 
         return response()->json(
@@ -433,12 +482,15 @@ class WorldwideDistributionController extends Controller
                                     WorldwideDistribution $worldwideDistribution,
                                     MappedRow $mappedRow): JsonResponse
     {
-        $this->authorize('update', $worldwideDistribution->worldwideQuote);
+        $this->authorize('update', $worldwideDistribution->worldwideQuote->worldwideQuote);
+
+        $version = (new WorldwideQuoteVersionGuard($worldwideDistribution->worldwideQuote->worldwideQuote, $request->user()))->resolveModelForActingUser();
 
         $resource = $this->processor->updateMappedRowOfDistribution(
-            $request->getUpdateMappedRowFieldCollection(),
+            $version,
+            $worldwideDistribution,
             $mappedRow,
-            $worldwideDistribution
+            $request->getUpdateMappedRowFieldCollection(),
         );
 
         return response()->json(
@@ -450,15 +502,19 @@ class WorldwideDistributionController extends Controller
     /**
      * Remove the specified resource from storage.
      *
+     * @param Request $request
      * @param WorldwideDistribution $worldwideDistribution
      * @return Response
      * @throws AuthorizationException
+     * @throws \Throwable
      */
-    public function destroy(WorldwideDistribution $worldwideDistribution): Response
+    public function destroy(Request $request, WorldwideDistribution $worldwideDistribution): Response
     {
-        $this->authorize('update', $worldwideDistribution->worldwideQuote);
+        $this->authorize('update', $worldwideDistribution->worldwideQuote->worldwideQuote);
 
-        $this->processor->deleteDistribution($worldwideDistribution);
+        $version = (new WorldwideQuoteVersionGuard($worldwideDistribution->worldwideQuote->worldwideQuote, $request->user()))->resolveModelForActingUser();
+
+        $this->processor->deleteDistribution($version, $worldwideDistribution);
 
         return response()->noContent();
     }

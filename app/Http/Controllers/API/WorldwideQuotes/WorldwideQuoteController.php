@@ -27,8 +27,10 @@ use App\Http\Resources\{Discount\ApplicableDiscountCollection,
     WorldwideQuote\PackQuotePriceSummary,
     WorldwideQuote\WorldwideQuoteState};
 use App\Models\Quote\WorldwideQuote;
+use App\Models\Quote\WorldwideQuoteVersion;
 use App\Services\{WorldwideQuote\CollectWorldwideQuoteFilesService,
     WorldwideQuote\WorldwideQuoteValidator,
+    WorldwideQuote\WorldwideQuoteVersionGuard,
     WorldwideQuoteCalc,
     WorldwideQuoteDataMapper,
     WorldwideQuoteExporter};
@@ -71,19 +73,55 @@ class WorldwideQuoteController extends Controller
     }
 
     /**
+     * Switch active version of Worldwide Quote.
+     *
+     * @param WorldwideQuote $worldwideQuote
+     * @param WorldwideQuoteVersion $version
+     * @return Response
+     * @throws AuthorizationException
+     */
+    public function switchActiveVersionOfQuote(WorldwideQuote $worldwideQuote, WorldwideQuoteVersion $version): Response
+    {
+        $this->authorize('update', $worldwideQuote);
+
+        $this->processor->switchActiveVersionOfQuote($worldwideQuote, $version);
+
+        return response()->noContent();
+    }
+
+    /**
+     * Delete inactive version of Worldwide Quote.
+     *
+     * @param WorldwideQuote $worldwideQuote
+     * @param WorldwideQuoteVersion $version
+     * @return Response
+     * @throws AuthorizationException
+     */
+    public function destroyQuoteVersion(WorldwideQuote $worldwideQuote, WorldwideQuoteVersion $version): Response
+    {
+        $this->authorize('deleteVersion', [$worldwideQuote, $version]);
+
+        $this->processor->deleteVersionOfQuote($worldwideQuote, $version);
+
+        return response()->noContent();
+    }
+
+    /**
      * Process Worldwide Quote addresses & contacts step.
      *
      * @param ProcessQuoteAddressesContacts $request
      * @param WorldwideQuote $worldwideQuote
      * @return JsonResponse
-     * @throws AuthorizationException
+     * @throws AuthorizationException|\Throwable
      */
     public function processQuoteAddressesContactsStep(ProcessQuoteAddressesContacts $request, WorldwideQuote $worldwideQuote): JsonResponse
     {
         $this->authorize('update', $worldwideQuote);
 
+        $version = (new WorldwideQuoteVersionGuard($worldwideQuote, $request->user()))->resolveModelForActingUser();
+
         $resource = $this->processor->processQuoteAddressesContactsStep(
-            $worldwideQuote,
+            $version,
             $request->getStage()
         );
 
@@ -99,7 +137,7 @@ class WorldwideQuoteController extends Controller
      * @param UpdateQuoteImport $request
      * @param WorldwideQuote $worldwideQuote
      * @return JsonResponse
-     * @throws AuthorizationException
+     * @throws AuthorizationException|\Throwable
      */
     public function processQuoteImportStep(
         UpdateQuoteImport $request,
@@ -108,13 +146,15 @@ class WorldwideQuoteController extends Controller
     {
         $this->authorize('update', $worldwideQuote);
 
+        $version = (new WorldwideQuoteVersionGuard($worldwideQuote, $request->user()))->resolveModelForActingUser();
+
         $resource = $this->processor->processQuoteImportStep(
-            $worldwideQuote,
+            $version,
             $request->getStage()
         );
 
         return response()->json(
-            $resource,
+            $worldwideQuote,
             Response::HTTP_OK
         );
     }
@@ -131,13 +171,15 @@ class WorldwideQuoteController extends Controller
     {
         $this->authorize('update', $worldwideQuote);
 
+        $version = (new WorldwideQuoteVersionGuard($worldwideQuote, $request->user()))->resolveModelForActingUser();
+
         $resource = $this->processor->processQuoteAssetsReviewStep(
-            $worldwideQuote,
+            $version,
             $request->getStage()
         );
 
         return response()->json(
-            $resource,
+            $worldwideQuote,
             Response::HTTP_OK
         );
     }
@@ -148,14 +190,16 @@ class WorldwideQuoteController extends Controller
      * @param ProcessQuoteMarginStep $request
      * @param WorldwideQuote $worldwideQuote
      * @return JsonResponse
-     * @throws AuthorizationException
+     * @throws AuthorizationException|\Throwable
      */
     public function processQuoteMarginStep(ProcessQuoteMarginStep $request, WorldwideQuote $worldwideQuote): JsonResponse
     {
         $this->authorize('update', $worldwideQuote);
 
+        $version = (new WorldwideQuoteVersionGuard($worldwideQuote, $request->user()))->resolveModelForActingUser();
+
         $resource = $this->processor->processPackQuoteMarginStep(
-            $worldwideQuote,
+            $version,
             $request->getStage()
         );
 
@@ -171,19 +215,21 @@ class WorldwideQuoteController extends Controller
      * @param ProcessQuoteDiscountStep $request
      * @param WorldwideQuote $worldwideQuote
      * @return JsonResponse
-     * @throws AuthorizationException
+     * @throws AuthorizationException|\Throwable
      */
     public function processQuoteDiscountStep(ProcessQuoteDiscountStep $request, WorldwideQuote $worldwideQuote): JsonResponse
     {
         $this->authorize('update', $worldwideQuote);
 
+        $version = (new WorldwideQuoteVersionGuard($worldwideQuote, $request->user()))->resolveModelForActingUser();
+
         $resource = $this->processor->processPackQuoteDiscountStep(
-            $worldwideQuote,
+            $version,
             $request->getStage()
         );
 
         return response()->json(
-            $resource,
+            $worldwideQuote,
             Response::HTTP_OK
         );
     }
@@ -200,13 +246,15 @@ class WorldwideQuoteController extends Controller
     {
         $this->authorize('update', $worldwideQuote);
 
+        $version = (new WorldwideQuoteVersionGuard($worldwideQuote, $request->user()))->resolveModelForActingUser();
+
         $resource = $this->processor->processPackQuoteDetailsStep(
-            $worldwideQuote,
+            $version,
             $request->getStage()
         );
 
         return response()->json(
-            $resource,
+            $worldwideQuote,
             Response::HTTP_OK
         );
     }
@@ -226,8 +274,8 @@ class WorldwideQuoteController extends Controller
 
         $resource = WorldwideQuoteState::make($worldwideQuote)
             ->setActualExchangeRate($exchangeRateService->getTargetRate(
-                $worldwideQuote->quoteCurrency,
-                $worldwideQuote->outputCurrency
+                $worldwideQuote->activeVersion->quoteCurrency,
+                $worldwideQuote->activeVersion->outputCurrency
             ));
 
         return response()->json(
@@ -485,8 +533,10 @@ class WorldwideQuoteController extends Controller
     {
         $this->authorize('update', $worldwideQuote);
 
+        $version = (new WorldwideQuoteVersionGuard($worldwideQuote, $request->user()))->resolveModelForActingUser();
+
         $this->processor->processQuoteSubmission(
-            $worldwideQuote,
+            $version,
             $request->getStage()
         );
 
@@ -505,8 +555,10 @@ class WorldwideQuoteController extends Controller
     {
         $this->authorize('update', $worldwideQuote);
 
+        $version = (new WorldwideQuoteVersionGuard($worldwideQuote, $request->user()))->resolveModelForActingUser();
+
         $this->processor->processQuoteDraft(
-            $worldwideQuote,
+            $version,
             $request->getStage()
         );
 

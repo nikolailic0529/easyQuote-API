@@ -6,6 +6,7 @@ use App\Contracts\Services\ProcessesWorldwideQuoteAssetState;
 use App\Contracts\Services\ProcessesWorldwideQuoteState;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WorldwideQuote\BatchWarrantyLookup;
+use App\Http\Requests\WorldwideQuote\DeleteQuoteAsset;
 use App\Http\Requests\WorldwideQuote\ImportBatchAssetFile;
 use App\Http\Requests\WorldwideQuote\InitQuoteAsset;
 use App\Http\Requests\WorldwideQuote\UpdateQuoteAssets;
@@ -15,8 +16,10 @@ use App\Models\Quote\WorldwideQuote;
 use App\Models\WorldwideQuoteAsset;
 use App\Services\Exceptions\ValidationException;
 use App\Services\WorldwideQuote\AssetServiceLookupService;
+use App\Services\WorldwideQuote\WorldwideQuoteVersionGuard;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 class WorldwideQuoteAssetController extends Controller
@@ -31,16 +34,20 @@ class WorldwideQuoteAssetController extends Controller
     /**
      * Initialize a new Worldwide Quote Asset.
      *
+     * @param Request $request
      * @param WorldwideQuote $worldwideQuote
      * @return JsonResponse
      * @throws AuthorizationException
+     * @throws \Throwable
      */
-    public function initializeQuoteAsset(WorldwideQuote $worldwideQuote): JsonResponse
+    public function initializeQuoteAsset(Request $request, WorldwideQuote $worldwideQuote): JsonResponse
     {
         $this->authorize('update', $worldwideQuote);
 
+        $version = (new WorldwideQuoteVersionGuard($worldwideQuote, $request->user()))->resolveModelForActingUser();
+
         $asset = $this->processor->initializeQuoteAsset(
-            $worldwideQuote
+            $version
         );
 
         return response()->json(
@@ -56,18 +63,21 @@ class WorldwideQuoteAssetController extends Controller
      * @param WorldwideQuote $worldwideQuote
      * @param ProcessesWorldwideQuoteState $quoteProcessor
      * @return Response
-     * @throws AuthorizationException
+     * @throws AuthorizationException|\Throwable
      */
     public function batchUpdateQuoteAssets(UpdateQuoteAssets $request, WorldwideQuote $worldwideQuote, ProcessesWorldwideQuoteState $quoteProcessor): Response
     {
         $this->authorize('update', $worldwideQuote);
 
+        $version = (new WorldwideQuoteVersionGuard($worldwideQuote, $request->user()))->resolveModelForActingUser();
+
         $this->processor->batchUpdateQuoteAssets(
+            $version,
             $request->getAssetDataCollection()
         );
 
         $quoteProcessor->processQuoteAssetsCreationStep(
-            $worldwideQuote,
+            $version,
             $request->getStage()
         );
 
@@ -108,9 +118,11 @@ class WorldwideQuoteAssetController extends Controller
     {
         $this->authorize('update', $worldwideQuote);
 
+        $version = (new WorldwideQuoteVersionGuard($worldwideQuote, $request->user()))->resolveModelForActingUser();
+
         $this->processor->importBatchAssetFile(
-            $request->getImportData(),
-            $worldwideQuote
+            $version,
+            $request->getImportData()
         );
 
         return response()->noContent();
@@ -144,16 +156,21 @@ class WorldwideQuoteAssetController extends Controller
     /**
      * Delete the specified Worldwide Quote Asset.
      *
-     * @param WorldwideQuoteAsset $asset
+     * @param Request $request
      * @param WorldwideQuote $worldwideQuote
+     * @param WorldwideQuoteAsset $asset
      * @return Response
      * @throws AuthorizationException
+     * @throws \Throwable
      */
-    public function destroyQuoteAsset(WorldwideQuote $worldwideQuote, WorldwideQuoteAsset $asset): Response
+    public function destroyQuoteAsset(Request $request, WorldwideQuote $worldwideQuote, WorldwideQuoteAsset $asset): Response
     {
         $this->authorize('update', $worldwideQuote);
 
+        $version = (new WorldwideQuoteVersionGuard($worldwideQuote, $request->user()))->resolveModelForActingUser();
+
         $this->processor->deleteQuoteAsset(
+            $version,
             $asset
         );
 

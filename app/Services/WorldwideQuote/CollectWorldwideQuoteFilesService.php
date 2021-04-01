@@ -25,7 +25,7 @@ class CollectWorldwideQuoteFilesService
 
             $splFile = new \SplFileObject($zipFileName, 'w+');
 
-            $splFile->fwrite(base64_decode("UEsFBgAAAAAAAAAAAAAAAAAAAAAAAA=="));
+            $splFile->fwrite(base64_decode("UEsFBgAAAAAAAAAAAAAAAAAAAAAAAA==")); // bytes of empty zip file
 
             return $splFile->getFileInfo();
 
@@ -78,7 +78,7 @@ class CollectWorldwideQuoteFilesService
 
         $zipFileName = $temporaryDirectory->path(sprintf('%s-payment-schedule-files.zip', $worldwideQuote->quote_number));
 
-        $distributorFileModelKeys = $worldwideQuote->worldwideDistributions()->whereNotNull('schedule_file_id')->pluck('schedule_file_id');
+        $distributorFileModelKeys = $worldwideQuote->activeVersion->worldwideDistributions()->whereNotNull('schedule_file_id')->pluck('schedule_file_id');
 
         /** @var Collection<QuoteFile>|QuoteFile[] $quoteFiles */
         $quoteFiles = QuoteFile::query()->select(['id', 'original_file_path', 'original_file_name'])
@@ -99,7 +99,7 @@ class CollectWorldwideQuoteFilesService
 
         $zipFileName = $temporaryDirectory->path(sprintf('%s-distributor-files.zip', $worldwideQuote->quote_number));
 
-        $distributorFileModelKeys = $worldwideQuote->worldwideDistributions()->whereNotNull('distributor_file_id')->pluck('distributor_file_id');
+        $distributorFileModelKeys = $worldwideQuote->activeVersion->worldwideDistributions()->whereNotNull('distributor_file_id')->pluck('distributor_file_id');
 
         /** @var Collection<QuoteFile>|QuoteFile[] $quoteFiles */
         $quoteFiles = QuoteFile::query()->select(['id', 'original_file_path', 'original_file_name'])

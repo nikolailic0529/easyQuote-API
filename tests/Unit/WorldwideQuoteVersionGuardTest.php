@@ -59,7 +59,8 @@ class WorldwideQuoteVersionGuardTest extends TestCase
 
         /** @var WorldwideDistribution $distributorQuote */
         $distributorQuote = factory(WorldwideDistribution::class)->create([
-            'worldwide_quote_id' => $quote->getKey(),
+            'worldwide_quote_id' => $quote->activeVersion->getKey(),
+            'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
             'opportunity_supplier_id' => $supplier->getKey(),
             'distributor_file_id' => $distributorFile->getKey(),
             'schedule_file_id' => $scheduleFile->getKey(),

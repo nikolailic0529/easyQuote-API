@@ -64,6 +64,12 @@ class ImportCsv
                 continue;
             }
 
+            $row = array_slice($row, 0, count($this->header));
+
+            while (count($row) < count($this->header)) {
+                $row[] = null;
+            }
+
             $row = array_combine($this->header, $row);
 
             $importedRows->push($this->makeRow($row));
@@ -74,7 +80,7 @@ class ImportCsv
         }
 
         ImportedRow::insert($importedRows->all());
-        
+
         $this->afterImport();
     }
 
@@ -86,7 +92,7 @@ class ImportCsv
 
     protected function afterImport(): void
     {
-        // 
+        //
     }
 
     protected function checkHeader(): void

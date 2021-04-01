@@ -6,6 +6,7 @@ use App\DTO\WorldwideQuote\ImportBatchAssetFileData;
 use App\DTO\WorldwideQuote\ReadBatchFileResult;
 use App\DTO\WorldwideQuote\WorldwideQuoteAssetDataCollection;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\WorldwideQuoteAsset;
 use Illuminate\Http\UploadedFile;
 
@@ -14,18 +15,19 @@ interface ProcessesWorldwideQuoteAssetState
     /**
      * Initialize a new Worldwide Quote Asset.
      *
-     * @param WorldwideQuote $quote
+     * @param WorldwideQuoteVersion $quote
      * @return WorldwideQuoteAsset
      */
-    public function initializeQuoteAsset(WorldwideQuote $quote): WorldwideQuoteAsset;
+    public function initializeQuoteAsset(WorldwideQuoteVersion $quote): WorldwideQuoteAsset;
 
     /**
      * Batch update the Worldwide Quote Assets.
      *
+     * @param WorldwideQuoteVersion $quote
      * @param WorldwideQuoteAssetDataCollection $collection
      * @return mixed
      */
-    public function batchUpdateQuoteAssets(WorldwideQuoteAssetDataCollection $collection);
+    public function batchUpdateQuoteAssets(WorldwideQuoteVersion $quote, WorldwideQuoteAssetDataCollection $collection);
 
     /**
      * Read headers & first rows from the batch asset file.
@@ -38,16 +40,17 @@ interface ProcessesWorldwideQuoteAssetState
     /**
      * Import the batch asset file.
      *
+     * @param WorldwideQuoteVersion $quote
      * @param ImportBatchAssetFileData $data
-     * @param WorldwideQuote $worldwideQuote
      * @return mixed
      */
-    public function importBatchAssetFile(ImportBatchAssetFileData $data, WorldwideQuote $worldwideQuote);
+    public function importBatchAssetFile(WorldwideQuoteVersion $quote, ImportBatchAssetFileData $data);
 
     /**
      * Delete the specified Worldwide Quote Asset.
      *
+     * @param WorldwideQuoteVersion $quote
      * @param WorldwideQuoteAsset $asset
      */
-    public function deleteQuoteAsset(WorldwideQuoteAsset $asset): void;
+    public function deleteQuoteAsset(WorldwideQuoteVersion $quote, WorldwideQuoteAsset $asset): void;
 }

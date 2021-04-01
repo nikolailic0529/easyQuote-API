@@ -44,7 +44,7 @@ class StatsAggregator
                     $relation->whereKey($countryId);
                 });
             })
-            ->when(!is_null($userId), function (BaseBuilder $builder) use ($userId) {
+            ->when(!is_null($userId), function (Builder $builder) use ($userId) {
                 $builder->where('user_id', $userId);
             })
             ->toBase()
@@ -75,8 +75,8 @@ class StatsAggregator
                     $relation->whereKey($countryId);
                 });
             })
-            ->when(!is_null($userId), function (BaseBuilder $builder) use ($userId) {
-                $builder->where('user_id', $userId);
+            ->when(!is_null($userId), function (Builder $builder) use ($userId) {
+                $builder->where('sales_orders.user_id', $userId);
             })
             ->toBase()
             ->first();
@@ -295,12 +295,12 @@ class StatsAggregator
             ->first();
 
         $result->assets_locations_count = AssetTotal::query()
-            ->toBase()
             ->whereNotNull('location_id')
             ->distinct('location_id')
             ->when(!is_null($userId), function (Builder $builder) use ($userId) {
                 $builder->where('user_id', $userId);
             })
+            ->toBase()
             ->count();
 
         return $result;

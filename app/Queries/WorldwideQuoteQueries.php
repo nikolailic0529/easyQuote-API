@@ -12,6 +12,7 @@ use DB;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use Illuminate\Pipeline\Pipeline;
@@ -37,6 +38,20 @@ class WorldwideQuoteQueries
     public function aliveDraftedListingQuery(Request $request = null): Builder
     {
         return $this->draftedListingQuery($request)
+            ->with(['versions' => function (Relation $relation) {
+                $relation->select([
+                    'worldwide_quote_versions.id',
+                    'worldwide_quote_versions.worldwide_quote_id',
+                    'worldwide_quote_versions.user_id',
+                    'users.user_fullname',
+                    'worldwide_quote_versions.user_version_sequence_number',
+                    'worldwide_quote_versions.updated_at'
+                ])
+                    ->join('users', function (JoinClause $join) {
+                        $join->on('users.id', 'worldwide_quote_versions.user_id');
+                    })
+                    ->orderByDesc('updated_at');
+            }])
             ->where('worldwide_quotes.status', QuoteStatus::ALIVE);
     }
 
@@ -67,13 +82,13 @@ class WorldwideQuoteQueries
     public function submittedListingQuery(Request $request = null): Builder
     {
         $distributorFileExistenceQuery = WorldwideDistribution::query()->selectRaw('1')
-            ->whereColumn('worldwide_distributions.worldwide_quote_id', 'worldwide_quotes.id')
+            ->whereColumn('worldwide_distributions.worldwide_quote_id', 'worldwide_quotes.active_version_id')
             ->has('opportunitySupplier')
             ->has('distributorFile')
             ->limit(1);
 
         $scheduleFileExistenceQuery = WorldwideDistribution::query()->selectRaw('1')
-            ->whereColumn('worldwide_distributions.worldwide_quote_id', 'worldwide_quotes.id')
+            ->whereColumn('worldwide_distributions.worldwide_quote_id', 'worldwide_quotes.active_version_id')
             ->has('opportunitySupplier')
             ->has('scheduleFile')
             ->limit(1);
@@ -94,8 +109,12 @@ class WorldwideQuoteQueries
         $request ??= new Request;
 
         $query = WorldwideQuote::query()
+            ->join('worldwide_quote_versions as active_version', function (JoinClause $joinClause) {
+                $joinClause->on('active_version.id', 'worldwide_quotes.active_version_id');
+            })
             ->select(
                 'worldwide_quotes.id',
+                'worldwide_quotes.active_version_id',
                 'worldwide_quotes.user_id',
                 'worldwide_quotes.opportunity_id',
                 'worldwide_quotes.contract_type_id',
@@ -105,8 +124,8 @@ class WorldwideQuoteQueries
 
                 'contract_types.type_short_name as type_name',
                 'worldwide_quotes.quote_number as rfq_number',
-                'worldwide_quotes.company_id',
-                'worldwide_quotes.completeness',
+                'active_version.company_id',
+                'active_version.completeness',
 
                 'worldwide_quotes.status',
                 'worldwide_quotes.status_reason',
@@ -131,7 +150,7 @@ class WorldwideQuoteQueries
             })
             ->addSelect([
                 'user_fullname' => User::query()->select('user_fullname')->whereColumn('users.id', 'worldwide_quotes.user_id')->limit(1),
-                'company_name' => Company::query()->select('name')->whereColumn('companies.id', 'worldwide_quotes.company_id')->limit(1),
+                'company_name' => Company::query()->select('name')->whereColumn('companies.id', 'active_version.company_id')->limit(1),
                 'companies.name as customer_name',
                 'opportunities.opportunity_closing_date as valid_until_date',
                 'opportunities.opportunity_start_date as customer_support_start_date',
@@ -156,7 +175,7 @@ class WorldwideQuoteQueries
                 new \App\Http\Query\ActiveFirst('worldwide_quotes.is_active'),
                 \App\Http\Query\OrderByTypeName::class,
                 \App\Http\Query\OrderByCustomerName::class,
-                \App\Http\Query\Quote\OrderByCompleteness::class,
+                new \App\Http\Query\Quote\OrderByCompleteness('active_version.completeness'),
                 \App\Http\Query\OrderByUserFullname::class,
                 \App\Http\Query\OrderByRfqNumber::class,
                 \App\Http\Query\OrderByValidUntilDate::class,

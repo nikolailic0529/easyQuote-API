@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\{Builder,
  * @property string|null $file_type
  * @property string|null $original_file_path
  * @property string|null $original_file_name
+ * @property string|null $replicated_quote_file_id
  * @property int|null $pages
  * @property int|null $imported_page
  *

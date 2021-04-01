@@ -2,11 +2,11 @@
 
 namespace Tests\Unit\User;
 
-use Tests\TestCase;
-use Tests\Unit\Traits\WithFakeUser;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\{Str, Arr};
+use Illuminate\Support\{Arr, Str};
+use Tests\TestCase;
+use Tests\Unit\Traits\WithFakeUser;
 
 /**
  * @group build
@@ -29,9 +29,9 @@ class AuthTest extends TestCase
         $user = factory(User::class)->create();
 
         $attributes = [
-            'email'       => $user->email,
-            'local_ip'    => $user->ip_address,
-            'password'    => 'password',
+            'email' => $user->email,
+            'local_ip' => $user->ip_address,
+            'password' => 'password',
             'g_recaptcha' => Str::random(),
         ];
 
@@ -51,9 +51,9 @@ class AuthTest extends TestCase
         $user = factory(User::class)->create();
 
         $attributes = [
-            'email'       => $user->email,
-            'local_ip'    => $user->ip_address,
-            'password'    => Str::random(20),
+            'email' => $user->email,
+            'local_ip' => $user->ip_address,
+            'password' => Str::random(20),
             'g_recaptcha' => Str::random(),
         ];
 
@@ -88,9 +88,9 @@ class AuthTest extends TestCase
         $user = factory(User::class)->create();
 
         $attributes = [
-            'email'       => $user->email,
-            'local_ip'    => $user->ip_address,
-            'password'    => 'password',
+            'email' => $user->email,
+            'local_ip' => $user->ip_address,
+            'password' => 'password',
             'g_recaptcha' => Str::random(),
         ];
 
@@ -99,27 +99,6 @@ class AuthTest extends TestCase
             ->assertJsonStructure([
                 'Error' => ['original' => ['local_ip']]
             ]);
-    }
-
-    /**
-     * User Registration Test.
-     *
-     * @return void
-     */
-    public function testSignupUser()
-    {
-        $user = factory(User::class)->raw();
-
-        $attributes = array_merge($user, [
-            'local_ip'              => $user['ip_address'],
-            'password'              => 'password',
-            'password_confirmation' => 'password',
-            'g_recaptcha'           => Str::random(),
-        ]);
-
-        $this->postJson(url('/api/auth/signup'), $attributes)
-            ->assertOk()
-            ->assertJsonStructure(['access_token', 'token_type', 'expires_at']);
     }
 
     /**
@@ -152,7 +131,7 @@ class AuthTest extends TestCase
     public function testCurrentUserRetrieving()
     {
         $this->authenticate();
-        
+
         $this->getJson(url('api/auth/user'))
             ->assertOk()
             ->assertJsonStructure([

@@ -16,15 +16,14 @@ use App\DTO\{Discounts\DistributionDiscountsCollection,
     RowMapping,
     RowsGroupData,
     SelectedDistributionRows,
-    SelectedDistributionRowsCollection
-};
+    SelectedDistributionRowsCollection};
 use App\Enum\Lock;
 use App\Events\DistributionProcessed;
 use App\Models\{Data\Country,
     OpportunitySupplier,
-    Quote\BaseWorldwideQuote,
     Quote\DistributionFieldColumn,
     Quote\WorldwideDistribution,
+    Quote\WorldwideQuoteVersion,
     QuoteFile\DistributionRowsGroup,
     QuoteFile\MappedRow,
     QuoteFile\QuoteFile,
@@ -36,8 +35,7 @@ use Illuminate\Contracts\{Cache\Lock as LockContract,
     Cache\LockProvider,
     Config\Repository as Config,
     Events\Dispatcher,
-    Filesystem\Filesystem
-};
+    Filesystem\Filesystem};
 use Illuminate\Database\{ConnectionInterface, Eloquent\Builder, Eloquent\Collection, Eloquent\ModelNotFoundException};
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\UploadedFile;
@@ -47,8 +45,7 @@ use RuntimeException;
 use Symfony\Component\{Process\Process,
     Validator\Constraints,
     Validator\Exception\ValidationFailedException,
-    Validator\Validator\ValidatorInterface
-};
+    Validator\Validator\ValidatorInterface};
 use Throwable;
 
 class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistributionState
@@ -99,7 +96,7 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         $this->distributionQueries = $distributionQueries;
     }
 
-    public function initializeDistribution(BaseWorldwideQuote $quote, ?string $opportunitySupplierId = null): WorldwideDistribution
+    public function initializeDistribution(WorldwideQuoteVersion $quote, ?string $opportunitySupplierId = null): WorldwideDistribution
     {
         /** @var WorldwideDistribution $wwDistribution */
 
@@ -144,8 +141,10 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         });
     }
 
-    public function applyDistributionsDiscount(DistributionDiscountsCollection $collection)
+    public function applyDistributionsDiscount(WorldwideQuoteVersion $quote, DistributionDiscountsCollection $collection)
     {
+        $newVersionResolved = $quote->wasRecentlyCreated;
+
         foreach ($collection as $discountsData) {
             $violations = $this->validator->validate($discountsData);
 
@@ -155,6 +154,20 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         }
 
         $collection->rewind();
+
+        if ($newVersionResolved) {
+            foreach ($collection as $discountsData) {
+                $originalModel = $discountsData->worldwideDistribution;
+
+                /** @var WorldwideDistribution $versionedModel */
+                $versionedModel = WorldwideDistribution::query()
+                    ->where('replicated_distributor_quote_id', $originalModel->getKey())
+                    ->where('worldwide_quote_id', $quote->getKey())
+                    ->sole();
+
+                $discountsData->worldwideDistribution = $versionedModel;
+            }
+        }
 
         foreach ($collection as $discountsData) {
             $model = $discountsData->worldwideDistribution;
@@ -227,8 +240,10 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         }
     }
 
-    public function updateDistributionsDetails(DistributionDetailsCollection $collection)
+    public function updateDistributionsDetails(WorldwideQuoteVersion $quote, DistributionDetailsCollection $collection)
     {
+        $newVersionResolved = $quote->wasRecentlyCreated;
+
         foreach ($collection as $detailsData) {
             $violations = $this->validator->validate($detailsData);
 
@@ -238,6 +253,15 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         }
 
         $collection->rewind();
+
+        if ($newVersionResolved) {
+            foreach ($collection as $detailsData) {
+                /** @var WorldwideDistribution $versionedModel */
+                $versionedModel = $quote->worldwideDistributions()->where('replicated_distributor_quote_id', $detailsData->worldwide_distribution->getKey())->sole();
+
+                $detailsData->worldwide_distribution = $versionedModel;
+            }
+        }
 
         foreach ($collection as $detailsData) {
             $model = $detailsData->worldwide_distribution;
@@ -260,8 +284,10 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         }
     }
 
-    public function processDistributionsImport(ProcessableDistributionCollection $collection)
+    public function processDistributionsImport(WorldwideQuoteVersion $quote, ProcessableDistributionCollection $collection)
     {
+        $newVersionResolved = $quote->wasRecentlyCreated;
+
         foreach ($collection as $distribution) {
             $violations = $this->validator->validate($distribution);
 
@@ -284,10 +310,39 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         }, BaseCollection::make());
 
         /** @var Collection<WorldwideDistribution>|WorldwideDistribution[] $distributions */
-        $distributions = WorldwideDistribution::query()->whereKey($modelKeys)->get()->keyBy('id');
+        $distributions = $quote->worldwideDistributions()
+            ->when($newVersionResolved, function (Builder $builder) use ($modelKeys) {
+                $builder->whereIn('replicated_distributor_quote_id', $modelKeys);
+            }, function (Builder $builder) use ($modelKeys) {
+                $builder->whereKey($modelKeys);
+            })
+            ->get();
+
+        $distributions = value(function () use ($newVersionResolved, $distributions): Collection {
+            if ($newVersionResolved) {
+                return $distributions->keyBy('replicated_distributor_quote_id');
+            }
+
+            return $distributions->keyBy('id');
+        });
 
         /** @var Collection */
-        $quoteFiles = QuoteFile::query()->whereKey($fileKeys)->get()->keyBy('id');
+        $quoteFiles = $distributions
+            ->load(['distributorFile', 'scheduleFile'])
+            ->reduce(function (array $quoteFileCollection, WorldwideDistribution $distributorQuote) use ($newVersionResolved) {
+                $distributorQuoteFiles = collect([
+                    $distributorQuote->distributorFile,
+                    $distributorQuote->scheduleFile
+                ])->filter()->values();
+
+                if ($newVersionResolved) {
+                    return array_merge($quoteFileCollection, $distributorQuoteFiles->keyBy('replicated_quote_file_id')->all());
+                }
+
+                return array_merge($quoteFileCollection, $distributorQuoteFiles->keyBy('id')->all());
+            }, []);
+
+        $quoteFiles = new Collection($quoteFiles);
 
         $missingDistributions = $modelKeys->diff($distributions->keys());
         $missingQuoteFiles = $fileKeys->diff($quoteFiles->keys());
@@ -324,6 +379,12 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
 
                 $distributorFileModel = $quoteFiles->get($distribution->distributor_file_id);
                 $scheduleFileModel = $quoteFiles->get($distribution->schedule_file_id);
+
+                if ($newVersionResolved) {
+                    $distribution->id = $model->getKey();
+                    $distribution->distributor_file_id = (string)$model->distributor_file_id;
+                    $distribution->schedule_file_id = $model->schedule_file_id;
+                }
 
                 tap($distributorFileModel, function (QuoteFile $file) use ($distribution) {
                     $file->forceFill(['imported_page' => $distribution->distributor_file_page ?? 1])->save();
@@ -465,9 +526,11 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         );
 
         /** @var WorldwideDistribution $wwDistribution */
-        $wwDistribution = WorldwideDistribution::query()->findOrFail($distributionId, ['id', 'worldwide_quote_id', 'distributor_file_id', 'schedule_file_id']);
+        $wwDistribution = WorldwideDistribution::query()->findOrFail($distributionId, ['id', 'replicated_distributor_quote_id', 'worldwide_quote_id', 'worldwide_quote_type', 'distributor_file_id', 'schedule_file_id']);
 
-        $wwDistribution->templateFields()->sync(TemplateField::query()->where('is_system', true)->pluck('id'));
+        $wwDistribution->templateFields()->sync(TemplateField::query()
+            ->whereIn('name', $this->config['quote-mapping.worldwide_quote.fields'] ?? [])
+            ->where('is_system', true)->pluck('id'));
 
         $failures = new MessageBag(['distributor_file' => [], 'schedule_file' => []]);
 
@@ -529,9 +592,11 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
 
         });
 
+        $parentOfDistributorQuote = $wwDistribution->worldwideQuote;
+
         $this->dispatcher->dispatch(new DistributionProcessed(
-            $wwDistribution->{$wwDistribution->worldwideQuote()->getForeignKeyName()},
-            $wwDistribution->getKey(),
+            $parentOfDistributorQuote->{$parentOfDistributorQuote->worldwideQuote()->getForeignKeyName()},
+            $wwDistribution->replicated_distributor_quote_id ?? $wwDistribution->getKey(),
             $failures
         ));
     }
@@ -600,24 +665,26 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
 
     protected function getMappedRowSettings(WorldwideDistribution $worldwideDistribution): MappedRowSettings
     {
-        $wwQuote = $worldwideDistribution->worldwideQuote;
+        $version = $worldwideDistribution->worldwideQuote;
 
         $exchangeRateValue = $this->exchangeRateService->getTargetRate(
-            $worldwideDistribution->getRelationValue('distributionCurrency') ?? $wwQuote->quoteCurrency,
-            $wwQuote->quoteCurrency
+            $worldwideDistribution->getRelationValue('distributionCurrency') ?? $version->quoteCurrency,
+            $version->quoteCurrency
         );
 
         return new MappedRowSettings([
-            'default_date_from' => transform($wwQuote->opportunity->opportunity_start_date, fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
-            'default_date_to' => transform($wwQuote->opportunity->opportunity_end_date, fn (string $date) => Carbon::createFromFormat('Y-m-d', $date)),
+            'default_date_from' => transform($version->worldwideQuote->opportunity->opportunity_start_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
+            'default_date_to' => transform($version->worldwideQuote->opportunity->opportunity_end_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
             'default_qty' => 1,
             'calculate_list_price' => (bool)$worldwideDistribution->calculate_list_price,
             'exchange_rate_value' => $exchangeRateValue,
         ]);
     }
 
-    public function processDistributionsMapping(DistributionMappingCollection $collection)
+    public function processDistributionsMapping(WorldwideQuoteVersion $quote, DistributionMappingCollection $collection)
     {
+        $newVersionResolved = $quote->wasRecentlyCreated;
+
         foreach ($collection as $mapping) {
             $violations = $this->validator->validate($mapping);
 
@@ -629,12 +696,24 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         $modelKeys = collect($collection)->pluck('worldwide_distribution_id')->unique();
 
         /** @var Collection<WorldwideDistribution>|WorldwideDistribution[] $distributions */
-        $distributions = WorldwideDistribution::query()
-            ->whereKey($modelKeys)
+        $distributions = $quote->worldwideDistributions()
+            ->when($newVersionResolved, function (Builder $builder) use ($modelKeys) {
+                $builder->whereIn('replicated_distributor_quote_id', $modelKeys);
+            }, function (Builder $builder) use ($modelKeys) {
+                $builder->whereKey($modelKeys);
+            })
             ->with('worldwideQuote')
-            ->get(['id', 'worldwide_quote_id', 'worldwide_quote_type', 'distributor_file_id', 'distribution_currency_id', 'created_at', 'updated_at']);
+            ->get(['id', 'replicated_distributor_quote_id', 'worldwide_quote_id', 'worldwide_quote_type', 'distributor_file_id', 'distribution_currency_id', 'created_at', 'updated_at']);
 
-        $missingDistributions = $modelKeys->diff($distributions->modelKeys());
+        $actualDistributorQuoteModelKeys = value(function () use ($distributions, $newVersionResolved): array {
+            if ($newVersionResolved) {
+                return $distributions->pluck('replicated_distributor_quote_id')->all();
+            }
+
+            return $distributions->modelKeys();
+        });
+
+        $missingDistributions = $modelKeys->diff($actualDistributorQuoteModelKeys);
 
         if ($missingDistributions->isNotEmpty()) {
             throw (new ModelNotFoundException)->setModel(WorldwideDistribution::class, $missingDistributions->all());
@@ -658,7 +737,12 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
 
             try {
                 /** @var BaseCollection */
-                $distributionMapping = $mapping->get($model->getKey());
+                $distributionMapping = value(function () use ($model, $mapping, $newVersionResolved): BaseCollection {
+                    if ($newVersionResolved) {
+                        return $mapping->get($model->replicated_distributor_quote_id);
+                    }
+                    return $mapping->get($model->getKey());
+                });
 
                 // Filter the mapping related to the distribution.
                 $modelMapping = BaseCollection::wrap($distributionMapping)->mapWithKeys(
@@ -699,8 +783,10 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         }
     }
 
-    public function updateRowsSelection(SelectedDistributionRowsCollection $collection)
+    public function updateRowsSelection(WorldwideQuoteVersion $quote, SelectedDistributionRowsCollection $collection)
     {
+        $newVersionResolved = $quote->wasRecentlyCreated;
+
         foreach ($collection as $selection) {
             $violations = $this->validator->validate($collection);
 
@@ -709,11 +795,24 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
             }
         }
 
+        $modelKeys = Arr::pluck($collection, 'worldwide_distribution_id');
+
         /** @var Collection<WorldwideDistribution> */
-        $distributions = WorldwideDistribution::query()
-            ->whereKey(Arr::pluck($collection, 'worldwide_distribution_id'))
-            ->get(['id', 'distributor_file_id', 'created_at', 'updated_at'])
-            ->keyBy('id');
+        $distributions = $quote->worldwideDistributions()
+            ->when($newVersionResolved, function (Builder $builder) use ($modelKeys) {
+                $builder->whereIn('replicated_distributor_quote_id', $modelKeys);
+            }, function (Builder $builder) use ($modelKeys) {
+                $builder->whereKey($modelKeys);
+            })
+            ->get(['id', 'replicated_distributor_quote_id', 'distributor_file_id', 'created_at', 'updated_at']);
+
+        $distributions = value(function () use ($distributions, $newVersionResolved): Collection {
+            if ($newVersionResolved) {
+                return $distributions->keyBy('replicated_distributor_quote_id');
+            }
+
+            return $distributions->keyBy('id');
+        });
 
         foreach ($collection as $selection) {
             /** @var WorldwideDistribution */
@@ -729,7 +828,7 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
             $this->connection->beginTransaction();
 
             try {
-                with($selection, function (SelectedDistributionRows $selection) use ($model) {
+                with($selection, function (SelectedDistributionRows $selection) use ($newVersionResolved, $model) {
                     if ($selection->use_groups) {
                         $model->use_groups = true;
                         $model->sort_rows_groups_column = $selection->sort_rows_groups_column;
@@ -741,8 +840,20 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
                             ->when(
                                 $selection->reject,
 
-                                fn(Builder $builder) => $builder->whereKeyNot($selection->selected_groups),
-                                fn(Builder $builder) => $builder->whereKey($selection->selected_groups),
+                                function (Builder $builder) use ($selection, $newVersionResolved) {
+                                    if ($newVersionResolved) {
+                                        return $builder->whereNotIn('replicated_rows_group_id', $selection->selected_groups);
+                                    }
+
+                                    return $builder->whereKeyNot($selection->selected_groups);
+                                },
+                                function (Builder $builder) use ($selection, $newVersionResolved) {
+                                    if ($newVersionResolved) {
+                                        return $builder->whereIn('replicated_rows_group_id', $selection->selected_groups);
+                                    }
+
+                                    return $builder->whereKey($selection->selected_groups);
+                                },
                             )
                             ->update(['is_selected' => true]);
 
@@ -759,8 +870,20 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
                         ->when(
                             $selection->reject,
 
-                            fn(Builder $builder) => $builder->whereKeyNot($selection->selected_rows),
-                            fn(Builder $builder) => $builder->whereKey($selection->selected_rows),
+                            function (Builder $builder) use ($selection, $newVersionResolved) {
+                                if ($newVersionResolved) {
+                                    return $builder->whereNotIn('replicated_mapped_row_id', $selection->selected_rows);
+                                }
+
+                                return $builder->whereKeyNot($selection->selected_rows);
+                            },
+                            function (Builder $builder) use ($selection, $newVersionResolved) {
+                                if ($newVersionResolved) {
+                                    return $builder->whereIn('replicated_mapped_row_id', $selection->selected_rows);
+                                }
+
+                                return $builder->whereKey($selection->selected_rows);
+                            },
                         )
                         ->update(['is_selected' => true]);
 
@@ -781,13 +904,26 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         }
     }
 
-    public function createRowsGroup(WorldwideDistribution $distribution, RowsGroupData $data): DistributionRowsGroup
+    public function createRowsGroup(WorldwideQuoteVersion $quote, WorldwideDistribution $distribution, RowsGroupData $data): DistributionRowsGroup
     {
+        $newVersionResolved = $quote->wasRecentlyCreated;
+
         $violations = $this->validator->validate($data);
 
         if (count($violations)) {
             throw new ValidationFailedException($data, $violations);
         }
+
+        $distribution = value(function () use ($distribution, $quote, $newVersionResolved): WorldwideDistribution {
+            if ($newVersionResolved) {
+                /** @var WorldwideDistribution $model */
+                $model = $quote->worldwideDistributions()->where('replicated_distributor_quote_id', $distribution->getKey())->sole();
+
+                return $model;
+            }
+
+            return $distribution;
+        });
 
         $lock = $this->lockProvider->lock(
             Lock::UPDATE_WWDISTRIBUTION($distribution->getKey()),
@@ -799,7 +935,7 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         $this->connection->beginTransaction();
 
         try {
-            /** @var DistributionRowsGroup */
+            /** @var DistributionRowsGroup $rowsGroup */
             $rowsGroup = tap(new DistributionRowsGroup([
                 'worldwide_distribution_id' => $distribution->getKey(),
                 'group_name' => $data->group_name,
@@ -820,13 +956,37 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         }
     }
 
-    public function updateRowsGroup(WorldwideDistribution $distribution, DistributionRowsGroup $rowsGroup, RowsGroupData $data): DistributionRowsGroup
+    public function updateRowsGroup(WorldwideQuoteVersion $quote, WorldwideDistribution $distribution, DistributionRowsGroup $rowsGroup, RowsGroupData $data): DistributionRowsGroup
     {
+        $newVersionResolved = $quote->wasRecentlyCreated;
+
         $violations = $this->validator->validate($data);
 
         if (count($violations)) {
             throw new ValidationFailedException($data, $violations);
         }
+
+        $distribution = value(function () use ($distribution, $quote, $newVersionResolved): WorldwideDistribution {
+            if ($newVersionResolved) {
+                /** @var WorldwideDistribution $model */
+                $model = $quote->worldwideDistributions()->where('replicated_distributor_quote_id', $distribution->getKey())->sole();
+
+                return $model;
+            }
+
+            return $distribution;
+        });
+
+        $rowsGroup = value(function () use ($rowsGroup, $distribution, $newVersionResolved): DistributionRowsGroup {
+            if ($newVersionResolved) {
+                /** @var DistributionRowsGroup $model */
+                $model = $distribution->rowsGroups()->where('replicated_rows_group_id', $rowsGroup->getKey())->sole();
+
+                return $model;
+            }
+
+            return $rowsGroup;
+        });
 
         $lock = $this->lockProvider->lock(
             Lock::UPDATE_WWDISTRIBUTION($distribution->getKey()),
@@ -857,8 +1017,32 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         }
     }
 
-    public function deleteRowsGroup(WorldwideDistribution $distribution, DistributionRowsGroup $rowsGroup): void
+    public function deleteRowsGroup(WorldwideQuoteVersion $quote, WorldwideDistribution $distribution, DistributionRowsGroup $rowsGroup): void
     {
+        $newVersionResolved = $quote->wasRecentlyCreated;
+
+        $distribution = value(function () use ($distribution, $quote, $newVersionResolved): WorldwideDistribution {
+            if ($newVersionResolved) {
+                /** @var WorldwideDistribution $model */
+                $model = $quote->worldwideDistributions()->where('replicated_distributor_quote_id', $distribution->getKey())->sole();
+
+                return $model;
+            }
+
+            return $distribution;
+        });
+
+        $rowsGroup = value(function () use ($rowsGroup, $distribution, $newVersionResolved): DistributionRowsGroup {
+            if ($newVersionResolved) {
+                /** @var DistributionRowsGroup $model */
+                $model = $distribution->rowsGroups()->where('replicated_rows_group_id', $rowsGroup->getKey())->sole();
+
+                return $model;
+            }
+
+            return $rowsGroup;
+        });
+
         $lock = $this->lockProvider->lock(
             Lock::UPDATE_WWDISTRIBUTION($distribution->getKey()),
             10
@@ -881,10 +1065,53 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         }
     }
 
-    public function moveRowsBetweenGroups(WorldwideDistribution $distribution, DistributionRowsGroup $outputRowsGroup, DistributionRowsGroup $inputRowsGroup, array $rows): void
+    public function moveRowsBetweenGroups(WorldwideQuoteVersion $quote, WorldwideDistribution $worldwideDistribution, DistributionRowsGroup $outputRowsGroup, DistributionRowsGroup $inputRowsGroup, array $rows): void
     {
+        $newVersionResolved = $quote->wasRecentlyCreated;
+
+        $worldwideDistribution = value(function () use ($worldwideDistribution, $quote, $newVersionResolved): WorldwideDistribution {
+            if ($newVersionResolved) {
+                /** @var WorldwideDistribution $model */
+                $model = $quote->worldwideDistributions()->where('replicated_distributor_quote_id', $worldwideDistribution->getKey())->sole();
+
+                return $model;
+            }
+
+            return $worldwideDistribution;
+        });
+
+        $outputRowsGroup = value(function () use ($outputRowsGroup, $worldwideDistribution, $newVersionResolved): DistributionRowsGroup {
+            if ($newVersionResolved) {
+                /** @var DistributionRowsGroup $model */
+                $model = $worldwideDistribution->rowsGroups()->where('replicated_rows_group_id', $outputRowsGroup->getKey())->sole();
+
+                return $model;
+            }
+
+            return $outputRowsGroup;
+        });
+
+        $inputRowsGroup = value(function () use ($inputRowsGroup, $worldwideDistribution, $newVersionResolved): DistributionRowsGroup {
+            if ($newVersionResolved) {
+                /** @var DistributionRowsGroup $model */
+                $model = $worldwideDistribution->rowsGroups()->where('replicated_rows_group_id', $inputRowsGroup->getKey())->sole();
+
+                return $model;
+            }
+
+            return $inputRowsGroup;
+        });
+
+        $rows = value(function () use ($outputRowsGroup, $newVersionResolved, $rows) {
+            if ($newVersionResolved) {
+                return $outputRowsGroup->rows()->whereIn('replicated_mapped_row_id', $rows)->pluck('id')->all();
+            }
+
+            return $rows;
+        });
+
         $lock = $this->lockProvider->lock(
-            Lock::UPDATE_WWDISTRIBUTION($distribution->getKey()),
+            Lock::UPDATE_WWDISTRIBUTION($worldwideDistribution->getKey()),
             10
         );
 
@@ -906,8 +1133,10 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         }
     }
 
-    public function setDistributionsMargin(DistributionMarginTaxCollection $collection)
+    public function setDistributionsMargin(WorldwideQuoteVersion $quote, DistributionMarginTaxCollection $collection): void
     {
+        $newVersionResolved = $quote->wasRecentlyCreated;
+
         foreach ($collection as $marginTaxData) {
             $violations = $this->validator->validate($marginTaxData);
 
@@ -918,11 +1147,24 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
 
         $collection->rewind();
 
+        $distributorQuoteKeys = Arr::pluck($collection, 'worldwide_distribution_id');
+
         /** @var Collection<WorldwideDistribution> */
         $distributions = WorldwideDistribution::query()
-            ->whereKey(Arr::pluck($collection, 'worldwide_distribution_id'))
-            ->get(['id', 'margin_value', 'created_at', 'updated_at'])
-            ->keyBy('id');
+            ->when($newVersionResolved, function (Builder $builder) use ($distributorQuoteKeys) {
+                $builder->whereIn('replicated_distributor_quote_id', $distributorQuoteKeys);
+            }, function (Builder $builder) use ($distributorQuoteKeys) {
+                $builder->whereKey($distributorQuoteKeys);
+            })
+            ->get(['id', 'replicated_distributor_quote_id', 'margin_value', 'created_at', 'updated_at']);
+
+        $distributions = value(function () use ($distributions, $newVersionResolved): Collection {
+            if ($newVersionResolved) {
+                return $distributions->keyBy('replicated_distributor_quote_id');
+            }
+
+            return $distributions->keyBy('id');
+        });
 
         foreach ($collection as $distribution) {
             /** @var WorldwideDistribution $model */
@@ -952,8 +1194,19 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         }
     }
 
-    public function storeDistributorFile(UploadedFile $file, WorldwideDistribution $worldwideDistribution): QuoteFile
+    public function storeDistributorFile(WorldwideQuoteVersion $quote, WorldwideDistribution $worldwideDistribution, UploadedFile $file): QuoteFile
     {
+        $worldwideDistribution = value(function () use ($quote, $worldwideDistribution): WorldwideDistribution {
+            if ($quote->wasRecentlyCreated) {
+                /** @var WorldwideDistribution $model */
+                $model = $quote->worldwideDistributions()->where('replicated_distributor_quote_id', $worldwideDistribution->getKey())->firstOrFail();
+
+                return $model;
+            }
+
+            return $worldwideDistribution;
+        });
+
         $fileName = $this->storage->put($worldwideDistribution->getKey(), $file);
 
         $fileService = (new QuoteFileService);
@@ -1004,8 +1257,19 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         return $quoteFile;
     }
 
-    public function storeScheduleFile(UploadedFile $file, WorldwideDistribution $worldwideDistribution): QuoteFile
+    public function storeScheduleFile(WorldwideQuoteVersion $quote, WorldwideDistribution $worldwideDistribution, UploadedFile $file): QuoteFile
     {
+        $worldwideDistribution = value(function () use ($quote, $worldwideDistribution): WorldwideDistribution {
+            if ($quote->wasRecentlyCreated) {
+                /** @var WorldwideDistribution $model */
+                $model = $quote->worldwideDistributions()->where('replicated_distributor_quote_id', $worldwideDistribution->getKey())->firstOrFail();
+
+                return $model;
+            }
+
+            return $worldwideDistribution;
+        });
+
         $fileName = $this->storage->put($worldwideDistribution->getKey(), $file);
 
         $fileService = (new QuoteFileService);
@@ -1045,16 +1309,24 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         return $quoteFile;
     }
 
-    public function deleteDistribution(WorldwideDistribution $worldwideDistribution): bool
+    public function deleteDistribution(WorldwideQuoteVersion $quote, WorldwideDistribution $worldwideDistribution): bool
     {
+        $newVersionResolved = $quote->wasRecentlyCreated;
+
+        if ($newVersionResolved) {
+            $worldwideDistribution = $quote->worldwideDistributions()->where('replicated_distributor_quote_id', $worldwideDistribution->getKey())->sole();
+        }
+
         return $this->connection->transaction(fn() => $worldwideDistribution->delete());
     }
 
     /**
      * @inheritDoc
      */
-    public function updateMappedRowOfDistribution(UpdateMappedRowFieldCollection $rowData, MappedRow $mappedRow, WorldwideDistribution $worldwideDistribution): MappedRow
+    public function updateMappedRowOfDistribution(WorldwideQuoteVersion $quote, WorldwideDistribution $worldwideDistribution, MappedRow $mappedRow, UpdateMappedRowFieldCollection $rowData): MappedRow
     {
+        $newVersionResolved = $quote->wasRecentlyCreated;
+
         foreach ($rowData as $fieldData) {
             $violations = $this->validator->validate($fieldData);
 
@@ -1064,6 +1336,14 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         }
 
         $rowData->rewind();
+
+        if ($newVersionResolved) {
+            $worldwideDistribution = $quote->worldwideDistributions()->where('replicated_distributor_quote_id', $worldwideDistribution->getKey())->sole();
+        }
+
+        if ($newVersionResolved) {
+            $mappedRow = $worldwideDistribution->mappedRows()->where('replicated_mapped_row_id', $mappedRow->getKey())->sole();
+        }
 
         foreach ($rowData as $fieldData) {
             $mappedRow->{$fieldData->field_name} = $fieldData->field_value;

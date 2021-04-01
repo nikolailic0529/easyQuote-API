@@ -69,7 +69,6 @@ Route::group(['prefix' => 'auth', 'middleware' => THROTTLE_RATE_01], function ()
     Route::get('attempts/{email}', [AuthController::class, 'showAttempts']);
 
     Route::post('signin', [AuthController::class, 'signin'])->name('signin');
-    Route::post('signup', [AuthController::class, 'signup'])->name('signup');
     Route::post('logout-user', [AuthController::class, 'authenticateAndLogout']);
 
     Route::get('signup/{invitation}', [AuthController::class, 'showInvitation']);
@@ -464,6 +463,8 @@ Route::group(['middleware' => 'auth:api'], function () {
 
 
     Route::post('ww-quotes', [WorldwideQuoteController::class, 'initializeQuote']);
+    Route::patch('ww-quotes/{worldwide_quote}/versions/{version:id}', [WorldwideQuoteController::class, 'switchActiveVersionOfQuote']);
+    Route::delete('ww-quotes/{worldwide_quote}/versions/{version:id}', [WorldwideQuoteController::class, 'destroyQuoteVersion']);
     Route::get('ww-quotes/{worldwide_quote}', [WorldwideQuoteController::class, 'showQuoteState']);
 
     Route::get('ww-quotes/{worldwide_quote}/export', [WorldwideQuoteController::class, 'exportQuote']);

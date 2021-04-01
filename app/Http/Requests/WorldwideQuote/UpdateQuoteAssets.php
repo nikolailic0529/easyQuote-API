@@ -8,6 +8,7 @@ use App\DTO\WorldwideQuote\WorldwideQuoteAssetDataCollection;
 use App\Enum\ContractQuoteStage;
 use App\Enum\PackQuoteStage;
 use App\Models\Address;
+use App\Models\Quote\WorldwideQuote;
 use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
 use Illuminate\Foundation\Http\FormRequest;
@@ -33,7 +34,8 @@ class UpdateQuoteAssets extends FormRequest
             ],
             'assets.*.id' => [
                 'bail', 'uuid',
-                Rule::exists(WorldwideQuoteAsset::class, 'id')->where('worldwide_quote_id', $this->route('worldwide_quote')->getKey())
+                Rule::exists(WorldwideQuoteAsset::class, 'id')
+                    ->where('worldwide_quote_id', $this->getQuote()->active_version_id)
             ],
             'assets.*.vendor_id' => [
                 'bail', 'required', 'uuid',
@@ -71,6 +73,14 @@ class UpdateQuoteAssets extends FormRequest
                 'bail', 'required', Rule::in(PackQuoteStage::getLabels())
             ],
         ];
+    }
+
+    public function getQuote(): WorldwideQuote
+    {
+        /** @var WorldwideQuote $model */
+        $model = $this->route('worldwide_quote');
+
+        return $model;
     }
 
     public function getAssetDataCollection(): WorldwideQuoteAssetDataCollection

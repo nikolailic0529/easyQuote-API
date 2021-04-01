@@ -40,21 +40,6 @@ class AuthController extends Controller
     }
 
     /**
-     * Register a new User with Administrator Role
-     *
-     * @param UserSignUpRequest $request
-     * @return \Illuminate\Http\Response
-     */
-    public function signup(UserSignUpRequest $request)
-    {
-        $this->user->createAdministrator($request->validated());
-
-        return response()->json(
-            $this->auth->authenticate($request->validated())
-        );
-    }
-
-    /**
      * Show specified Invitation
      *
      * @param string $invitation

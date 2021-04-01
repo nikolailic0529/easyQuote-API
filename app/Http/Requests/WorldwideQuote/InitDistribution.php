@@ -33,7 +33,7 @@ class InitDistribution extends FormRequest
         ];
     }
 
-    public function getWorldwideQuote(): WorldwideQuote
+    public function getQuote(): WorldwideQuote
     {
         /** @noinspection PhpIncompatibleReturnTypeInspection */
         return $this->wwQuote ??= WorldwideQuote::query()->findOrFail($this->input('worldwide_quote_id'));

@@ -3,9 +3,11 @@
 namespace App\Policies;
 
 use App\Models\Quote\WorldwideQuote;
+use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Auth\Access\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class WorldwideQuotePolicy
 {
@@ -73,8 +75,8 @@ class WorldwideQuotePolicy
     public function update(User $user, WorldwideQuote $worldwideQuote)
     {
         if (
-            !$user->hasRole(R_SUPER)
-            && !($user->can('update_own_ww_quotes') && $user->getKey() === $worldwideQuote->{$worldwideQuote->user()->getForeignKeyName()})
+            !$user->hasRole(R_SUPER) &&
+            !($user->can('update_own_ww_quotes') && $user->getKey() === $worldwideQuote->{$worldwideQuote->user()->getForeignKeyName()})
         ) {
             return false;
         }
@@ -86,6 +88,35 @@ class WorldwideQuotePolicy
         if ($worldwideQuote->submitted_at !== null) {
             return $this->deny('You can\'t to update the submitted Worldwide Quote', 422);
         }
+    }
+
+    /**
+     * Determine whether the user can delete the specified version of the model.
+     *
+     * @param User $user
+     * @param WorldwideQuote $worldwideQuote
+     * @param WorldwideQuoteVersion $version
+     * @return bool|Response
+     */
+    public function deleteVersion(User $user, WorldwideQuote $worldwideQuote, WorldwideQuoteVersion $version)
+    {
+
+        if (
+            !$user->hasRole(R_SUPER) &&
+            !($user->can('update_own_ww_quotes') && $user->getKey() === $worldwideQuote->{$worldwideQuote->user()->getForeignKeyName()})
+        ) {
+            return false;
+        }
+
+        if ($worldwideQuote->submitted_at !== null) {
+            return $this->deny('You can\'t to delete version of the submitted Worldwide Quote', HttpResponse::HTTP_FORBIDDEN);
+        }
+
+        if ($worldwideQuote->{$worldwideQuote->activeVersion()->getForeignKeyName()} === $version->getKey()) {
+            return $this->deny('You can\'t to delete the active version of Worldwide Quote.', HttpResponse::HTTP_FORBIDDEN);
+        }
+
+        return true;
     }
 
     /**

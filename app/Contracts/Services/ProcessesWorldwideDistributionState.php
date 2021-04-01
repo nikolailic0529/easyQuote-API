@@ -13,6 +13,7 @@ use App\DTO\RowsGroupData;
 use App\DTO\SelectedDistributionRowsCollection;
 use App\Models\Quote\BaseWorldwideQuote;
 use App\Models\Quote\WorldwideDistribution;
+use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Models\QuoteFile\MappedRow;
 use App\Models\QuoteFile\QuoteFile;
@@ -24,11 +25,11 @@ interface ProcessesWorldwideDistributionState
     /**
      * Initialize a new Worldwide Distribution instance.
      *
-     * @param BaseWorldwideQuote $quote
+     * @param WorldwideQuoteVersion $quote
      * @param string|null $opportunitySupplierId
      * @return \App\Models\Quote\WorldwideDistribution
      */
-    public function initializeDistribution(BaseWorldwideQuote $quote, ?string $opportunitySupplierId = null): WorldwideDistribution;
+    public function initializeDistribution(WorldwideQuoteVersion $quote, ?string $opportunitySupplierId = null): WorldwideDistribution;
 
     /**
      * Set expiry date on the Worldwide Distributions.
@@ -41,18 +42,20 @@ interface ProcessesWorldwideDistributionState
     /**
      * Apply Discounts on the Worldwide Distributions.
      *
+     * @param WorldwideQuoteVersion $quote
      * @param DistributionDiscountsCollection $collection
      * @return void
      */
-    public function applyDistributionsDiscount(DistributionDiscountsCollection $collection);
+    public function applyDistributionsDiscount(WorldwideQuoteVersion $quote, DistributionDiscountsCollection $collection);
 
     /**
      * Update Details of the Worldwide Distributions.
      *
+     * @param WorldwideQuoteVersion $quote
      * @param DistributionDetailsCollection $collection
      * @return void
      */
-    public function updateDistributionsDetails(DistributionDetailsCollection $collection);
+    public function updateDistributionsDetails(WorldwideQuoteVersion $quote, DistributionDetailsCollection $collection);
 
     /**
      * Process a single Worldwide Distribution import.
@@ -65,10 +68,11 @@ interface ProcessesWorldwideDistributionState
     /**
      * Process Worldwide Distributions import.
      *
+     * @param WorldwideQuoteVersion $quote
      * @param \App\DTO\ProcessableDistributionCollection $collection
      * @return mixed
      */
-    public function processDistributionsImport(ProcessableDistributionCollection $collection);
+    public function processDistributionsImport(WorldwideQuoteVersion $quote, ProcessableDistributionCollection $collection);
 
     /**
      * @param ProcessableDistributionCollection $collection
@@ -79,99 +83,110 @@ interface ProcessesWorldwideDistributionState
     /**
      * Process Worldwide Distributions mapping.
      *
+     * @param WorldwideQuoteVersion $quote
      * @param \App\DTO\DistributionMappingCollection $collection
      * @return mixed
      */
-    public function processDistributionsMapping(DistributionMappingCollection $collection);
+    public function processDistributionsMapping(WorldwideQuoteVersion $quote, DistributionMappingCollection $collection);
 
     /**
      * Update rows selection of Worldwide Distributions.
      *
+     * @param WorldwideQuoteVersion $quote
      * @param \App\DTO\SelectedDistributionRowsCollection $collection
      * @return mixed
      */
-    public function updateRowsSelection(SelectedDistributionRowsCollection $collection);
+    public function updateRowsSelection(WorldwideQuoteVersion $quote, SelectedDistributionRowsCollection $collection);
 
     /**
      * Set margin of Worldwide Distributions.
      *
+     * @param WorldwideQuoteVersion $quote
      * @param \App\DTO\DistributionMarginTaxCollection $collection
      * @return void
      */
-    public function setDistributionsMargin(DistributionMarginTaxCollection $collection);
+    public function setDistributionsMargin(WorldwideQuoteVersion $quote, DistributionMarginTaxCollection $collection);
 
     /**
      * Create a new rows group of worldwide distribution.
      *
+     * @param WorldwideQuoteVersion $quote
      * @param \App\Models\Quote\WorldwideDistribution $distribution
      * @param \App\DTO\RowsGroupData $data
      * @return \App\Models\QuoteFile\DistributionRowsGroup
      */
-    public function createRowsGroup(WorldwideDistribution $distribution, RowsGroupData $data): DistributionRowsGroup;
+    public function createRowsGroup(WorldwideQuoteVersion $quote, WorldwideDistribution $distribution, RowsGroupData $data): DistributionRowsGroup;
 
     /**
      * Update the rows group of worldwide distribution.
      *
+     * @param WorldwideQuoteVersion $quote
      * @param \App\Models\Quote\WorldwideDistribution $distribution
      * @param \App\Models\QuoteFile\DistributionRowsGroup $rowsGroup
      * @param \App\DTO\RowsGroupData $data
      * @return \App\Models\QuoteFile\DistributionRowsGroup
      */
-    public function updateRowsGroup(WorldwideDistribution $distribution, DistributionRowsGroup $rowsGroup, RowsGroupData $data): DistributionRowsGroup;
+    public function updateRowsGroup(WorldwideQuoteVersion $quote, WorldwideDistribution $distribution, DistributionRowsGroup $rowsGroup, RowsGroupData $data): DistributionRowsGroup;
 
     /**
      * Delete the rows group of worldwide distribution.
      *
+     * @param WorldwideQuoteVersion $quote
      * @param \App\Models\Quote\WorldwideDistribution $distribution
      * @param \App\Models\QuoteFile\DistributionRowsGroup $rowsGroup
      * @return void
      */
-    public function deleteRowsGroup(WorldwideDistribution $distribution, DistributionRowsGroup $rowsGroup): void;
+    public function deleteRowsGroup(WorldwideQuoteVersion $quote, WorldwideDistribution $distribution, DistributionRowsGroup $rowsGroup): void;
 
     /**
      * Move rows between the groups of worldwide distribution.
      *
-     * @param \App\Models\Quote\WorldwideDistribution $worldwideDistribution
+     * @param WorldwideQuoteVersion $quote
+     * @param \App\Models\Quote\WorldwideDistribution $worldwideWorldwideDistribution
      * @param \App\Models\QuoteFile\DistributionRowsGroup $outputRowsGroup
      * @param \App\Models\QuoteFile\DistributionRowsGroup $inputRowsGroup
      * @param array $rows
      * @return void
      */
-    public function moveRowsBetweenGroups(WorldwideDistribution $worldwideDistribution, DistributionRowsGroup $outputRowsGroup, DistributionRowsGroup $inputRowsGroup, array $rows): void;
+    public function moveRowsBetweenGroups(WorldwideQuoteVersion $quote, WorldwideDistribution $worldwideWorldwideDistribution, DistributionRowsGroup $outputRowsGroup, DistributionRowsGroup $inputRowsGroup, array $rows): void;
 
     /**
      * Store a new Distributor File to the Worldwide Distribution.
      *
-     * @param \Illuminate\Http\UploadedFile $file
+     * @param WorldwideQuoteVersion $quote
      * @param \App\Models\Quote\WorldwideDistribution $worldwideDistribution
+     * @param \Illuminate\Http\UploadedFile $file
      * @return \App\Models\QuoteFile\QuoteFile
      */
-    public function storeDistributorFile(UploadedFile $file, WorldwideDistribution $worldwideDistribution): QuoteFile;
+    public function storeDistributorFile(WorldwideQuoteVersion $quote, WorldwideDistribution $worldwideDistribution, UploadedFile $file): QuoteFile;
 
     /**
      * Store a new Payment Schedule File to the Worldwide Distribution.
      *
-     * @param \Illuminate\Http\UploadedFile $file
+     * @param WorldwideQuoteVersion $quote
      * @param \App\Models\Quote\WorldwideDistribution $worldwideDistribution
+     * @param \Illuminate\Http\UploadedFile $file
      * @return \App\Models\QuoteFile\QuoteFile
      */
-    public function storeScheduleFile(UploadedFile $file, WorldwideDistribution $worldwideDistribution): QuoteFile;
+    public function storeScheduleFile(WorldwideQuoteVersion $quote, WorldwideDistribution $worldwideDistribution, UploadedFile $file): QuoteFile;
 
     /**
      * Delete the specified Distribution.
      *
+     * @param WorldwideQuoteVersion $quote
      * @param \App\Models\Quote\WorldwideDistribution $worldwideDistribution
      * @return boolean
      */
-    public function deleteDistribution(WorldwideDistribution $worldwideDistribution): bool;
+    public function deleteDistribution(WorldwideQuoteVersion $quote, WorldwideDistribution $worldwideDistribution): bool;
 
     /**
      * Update the specified row of the Worldwide Distribution.
      *
-     * @param UpdateMappedRowFieldCollection $rowData
-     * @param MappedRow $mappedRow
+     * @param WorldwideQuoteVersion $quote
      * @param WorldwideDistribution $worldwideDistribution
+     * @param MappedRow $mappedRow
+     * @param UpdateMappedRowFieldCollection $rowData
      * @return MappedRow
      */
-    public function updateMappedRowOfDistribution(UpdateMappedRowFieldCollection $rowData, MappedRow $mappedRow, WorldwideDistribution $worldwideDistribution): MappedRow;
+    public function updateMappedRowOfDistribution(WorldwideQuoteVersion $quote, WorldwideDistribution $worldwideDistribution, MappedRow $mappedRow, UpdateMappedRowFieldCollection $rowData): MappedRow;
 }

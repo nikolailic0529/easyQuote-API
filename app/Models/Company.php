@@ -38,6 +38,7 @@ use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
  * @property string|null $vat
  * @property string|null $vat_type
  * @property string|null $phone
+ * @property string|null $activated_at
  *
  * @property Image|null $image
  * @property Collection<Address>|Address[] $addresses

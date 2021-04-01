@@ -101,21 +101,21 @@ class WorldwideQuoteCalc
     {
         $totalPrice = $this->calculatePackQuoteTotalPrice($quote);
 
-        $buyPrice = (float)$quote->buy_price;
+        $buyPrice = (float)$quote->activeVersion->buy_price;
 
         $rawMarginPercentage = $this->calculateMarginPercentage($totalPrice, $buyPrice);
 
         $quoteTotalPrice = $this->calculatePackQuoteTotalPrice($quote);
 
-        $totalPriceAfterMarginExcludingCustomDiscount = $this->calculateTotalPriceAfterMargin($quoteTotalPrice, (float)$quote->margin_value, 0.00);
+        $totalPriceAfterMarginExcludingCustomDiscount = $this->calculateTotalPriceAfterMargin($quoteTotalPrice, (float)$quote->activeVersion->margin_value, 0.00);
 
-        $totalPriceAfterMargin = $this->calculateTotalPriceAfterMargin($quoteTotalPrice, (float)$quote->margin_value, (float)$quote->custom_discount);
+        $totalPriceAfterMargin = $this->calculateTotalPriceAfterMargin($quoteTotalPrice, (float)$quote->activeVersion->margin_value, (float)$quote->activeVersion->custom_discount);
 
         $applicableDiscounts = $this->predefinedQuoteDiscountsToApplicableDiscounts($quote);
 
         $totalPriceAfterDiscounts = (float)$this->calculateTotalPriceAfterPredefinedDiscounts($totalPriceAfterMargin, $applicableDiscounts);
 
-        $applicableDiscountsValue = with($quote->custom_discount, function (?float $customDiscountValue) use ($totalPriceAfterMargin, $totalPriceAfterMarginExcludingCustomDiscount, $applicableDiscounts) {
+        $applicableDiscountsValue = with($quote->activeVersion->custom_discount, function (?float $customDiscountValue) use ($totalPriceAfterMargin, $totalPriceAfterMarginExcludingCustomDiscount, $applicableDiscounts) {
             if (!is_null($customDiscountValue)) {
                 return $totalPriceAfterMarginExcludingCustomDiscount - $totalPriceAfterMargin;
             }
@@ -148,7 +148,7 @@ class WorldwideQuoteCalc
         $quoteRawMargin = null;
         $quoteFinalMargin = null;
 
-        foreach ($quote->worldwideDistributions as $distributorQuote) {
+        foreach ($quote->activeVersion->worldwideDistributions as $distributorQuote) {
 
             $distributorPriceSummary = $this->distributionCalc->calculatePriceSummaryOfDistributorQuote($distributorQuote);
 
@@ -191,7 +191,7 @@ class WorldwideQuoteCalc
     {
         /** @var Collection|WorldwideDistribution[] $distributions */
 
-        $distributions = $quote->worldwideDistributions()->get(['id', 'worldwide_quote_id', 'distributor_file_id', 'use_groups']);
+        $distributions = $quote->activeVersion->worldwideDistributions()->get(['id', 'worldwide_quote_id', 'distributor_file_id', 'use_groups']);
 
         return (float)$distributions->reduce(function (float $totalPrice, WorldwideDistribution $distribution) {
             $distributionTotalPrice = (float)$this->distributionQueries->distributionTotalPriceQuery($distribution)->value('total_price');
@@ -202,7 +202,7 @@ class WorldwideQuoteCalc
 
     public function calculatePackQuoteTotalPrice(WorldwideQuote $quote): float
     {
-        return (float)$quote->assets()->sum('price');
+        return (float)$quote->activeVersion->assets()->sum('price');
     }
 
     public function calculateQuoteFinalTotalPrice(WorldwideQuote $quote): QuoteFinalTotalPrice
@@ -360,13 +360,13 @@ class WorldwideQuoteCalc
     {
         $quoteTotalPrice = $this->calculatePackQuoteTotalPrice($quote);
 
-        $quoteTotalBuyPrice = (float)$quote->buy_price;
+        $quoteTotalBuyPrice = (float)$quote->activeVersion->buy_price;
 
         $priceInputData = QuotePriceInputData::immutable([
             'total_price' => $quoteTotalPrice,
             'buy_price' => $quoteTotalBuyPrice,
-            'margin_value' => (float)$quote->margin_value,
-            'tax_value' => (float)$quote->tax_value,
+            'margin_value' => (float)$quote->activeVersion->margin_value,
+            'tax_value' => (float)$quote->activeVersion->tax_value,
         ]);
 
         /** @var ImmutablePriceSummaryData $priceSummaryAfterDiscounts */
@@ -474,7 +474,7 @@ class WorldwideQuoteCalc
     {
         $quoteTotalPrice = $this->calculatePackQuoteTotalPrice($quote);
 
-        $totalPriceAfterMargin = $this->calculateTotalPriceAfterMargin($quoteTotalPrice, (float)$marginTaxData->margin_value, (float)$quote->custom_discount);
+        $totalPriceAfterMargin = $this->calculateTotalPriceAfterMargin($quoteTotalPrice, (float)$marginTaxData->margin_value, (float)$quote->activeVersion->custom_discount);
 
         $applicableDiscounts = $this->predefinedQuoteDiscountsToApplicableDiscounts($quote);
 
@@ -482,7 +482,7 @@ class WorldwideQuoteCalc
 
         $finalTotalPrice = $this->calculateTotalPriceAfterTax($totalPriceAfterDiscounts, (float)$marginTaxData->tax_value);
 
-        $buyPrice = (float)$quote->buy_price;
+        $buyPrice = (float)$quote->activeVersion->buy_price;
 
         $quoteMarginValue = $this->calculateMarginPercentage($finalTotalPrice, $buyPrice);
 
@@ -562,7 +562,7 @@ class WorldwideQuoteCalc
 
     public function calculateContractQuoteFinalTotalPrice(WorldwideQuote $quote): QuoteFinalTotalPrice
     {
-        return $quote->worldwideDistributions->reduce(function (QuoteFinalTotalPrice $quoteFinalTotalPrice, WorldwideDistribution $distribution) {
+        return $quote->activeVersion->worldwideDistributions->reduce(function (QuoteFinalTotalPrice $quoteFinalTotalPrice, WorldwideDistribution $distribution) {
             if (is_null($distribution->total_price)) {
                 $distribution->total_price = $this->distributionCalc->calculateDistributionTotalPrice($distribution);
             }
@@ -581,26 +581,13 @@ class WorldwideQuoteCalc
         }, new QuoteFinalTotalPrice());
     }
 
-    public function calculateQuoteBuyPrice(WorldwideQuote $quote): float
-    {
-        if ($quote->contract_type_id === CT_PACK) {
-            return (float)$quote->buy_price;
-        }
-
-        if ($quote->contract_type_id === CT_CONTRACT) {
-            return (float)$quote->worldwideDistributions()->getQuery()->sum('buy_price');
-        }
-
-        throw new \RuntimeException('Unsupported Contract Type of the Quote to calculate a buy price.');
-    }
-
     public function predefinedQuoteDiscountsToApplicableDiscounts(WorldwideQuote $quote): ApplicablePredefinedDiscounts
     {
         return new ApplicablePredefinedDiscounts([
-            'multi_year_discount' => transform($quote->multiYearDiscount, [static::class, 'multiYearDiscountToImmutableMultiYearDiscountData']),
-            'pre_pay_discount' => transform($quote->prePayDiscount, [static::class, 'prePayDiscountToImmutablePrePayDiscountData']),
-            'promotional_discount' => transform($quote->promotionalDiscount, [static::class, 'promotionalDiscountToImmutablePromotionalDiscountData']),
-            'special_negotiation_discount' => transform($quote->snDiscount, [static::class, 'snDiscountToImmutableSpecialNegotiationData']),
+            'multi_year_discount' => transform($quote->activeVersion->multiYearDiscount, [static::class, 'multiYearDiscountToImmutableMultiYearDiscountData']),
+            'pre_pay_discount' => transform($quote->activeVersion->prePayDiscount, [static::class, 'prePayDiscountToImmutablePrePayDiscountData']),
+            'promotional_discount' => transform($quote->activeVersion->promotionalDiscount, [static::class, 'promotionalDiscountToImmutablePromotionalDiscountData']),
+            'special_negotiation_discount' => transform($quote->activeVersion->snDiscount, [static::class, 'snDiscountToImmutableSpecialNegotiationData']),
         ]);
     }
 

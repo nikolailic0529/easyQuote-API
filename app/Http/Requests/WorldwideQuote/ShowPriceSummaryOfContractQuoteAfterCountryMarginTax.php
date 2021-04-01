@@ -29,7 +29,7 @@ class ShowPriceSummaryOfContractQuoteAfterCountryMarginTax extends FormRequest
                 'bail', 'required', 'uuid',
                 Rule::exists(WorldwideDistribution::class, 'id')
                     ->whereNull('deleted_at')
-                    ->where('worldwide_quote_id', $this->getWorldwideQuote()->getKey())
+                    ->where('worldwide_quote_id', $this->getWorldwideQuote()->active_version_id)
             ],
             'worldwide_distributions.*.margin_value' => [
                 'bail', 'nullable', 'numeric', 'min:'.(-100_000_000), 'max:'.(100_000_000),

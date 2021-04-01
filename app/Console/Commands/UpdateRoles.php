@@ -35,9 +35,10 @@ class UpdateRoles extends Command
     /**
      * Execute the console command.
      *
-     * @return mixed
+     * @return int
+     * @throws \Throwable
      */
-    public function handle()
+    public function handle(): int
     {
         $this->output->title("Updating System Defined Roles...");
 
@@ -53,6 +54,8 @@ class UpdateRoles extends Command
         activity()->enableLogging();
 
         $this->output->success("System Defined Roles were updated!");
+
+        return Command::SUCCESS;
     }
 
     protected function updateSystemRoles()
@@ -62,12 +65,12 @@ class UpdateRoles extends Command
         $this->output->progressStart(count($roles));
 
         collect($roles)->each(function ($attributes) {
-            /** @var Role */
-            $role = Role::query()->firstOrCreate(['name' => $attributes['name']]);
+            /** @var Role $role */
+            $role = Role::query()->firstOrCreate(['name' => $attributes['name'], 'is_system' => true]);
 
             $role->syncPermissions($attributes['permissions']);
 
-            $companies = Company::whereIn('short_code', $attributes['companies'])->pluck('id');
+            $companies = Company::query()->whereIn('short_code', $attributes['companies'])->pluck('id');
 
             $role->companies()->sync($companies);
 

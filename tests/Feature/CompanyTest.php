@@ -83,9 +83,7 @@ class CompanyTest extends TestCase
      */
     public function testCanUpdateCompany()
     {
-        $attributes = factory(Company::class)->raw(['user_id' => $this->user->id]);
-
-        $company = app('company.repository')->create($attributes);
+        $company = factory(Company::class)->create();
 
         $newAttributes = factory(Company::class)->raw(['_method' => 'PATCH']);
 
@@ -234,19 +232,39 @@ class CompanyTest extends TestCase
      */
     public function testCanActivateCompany()
     {
-        $attributes = factory(Company::class)->raw(['user_id' => $this->user->id]);
+        $company = tap(factory(Company::class)->create(), function (Company $company) {
 
-        $company = tap(app('company.repository')->create($attributes))->deactivate();
+            $company->activated_at = null;
 
-        $this->putJson(url("api/companies/activate/{$company->id}"), [])
+            $company->save();
+
+        });
+
+        $response = $this->getJson('api/companies/'.$company->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'activated_at'
+            ]);
+
+        $this->assertEmpty($response->json('activated_at'));
+
+        $this->putJson("api/companies/activate/".$company->getKey(), [])
             ->assertOk()
             ->assertExactJson([true]);
 
-        $this->assertNotNull($company->refresh()->activated_at);
-
-        $this->getJson(url('api/quotes/step/1'))
+        $response = $this->getJson('api/companies/'.$company->getKey())
             ->assertOk()
-            ->assertJsonFragment(['id' => $company->id]);
+            ->assertJsonStructure([
+                'id',
+                'activated_at'
+            ]);
+
+        $this->assertNotEmpty($response->json('activated_at'));
+
+        $this->getJson('api/quotes/step/1')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $company->getKey()]);
     }
 
     /**
@@ -256,19 +274,39 @@ class CompanyTest extends TestCase
      */
     public function testCanDeactivateCompany()
     {
-        $attributes = factory(Company::class)->raw(['user_id' => $this->user->id]);
+        $company = tap(factory(Company::class)->create(), function (Company $company) {
 
-        $company = app('company.repository')->create($attributes);
+            $company->activated_at = now();
 
-        $this->putJson(url("api/companies/deactivate/{$company->id}"), [])
+            $company->save();
+
+        });
+
+        $response = $this->getJson('api/companies/'.$company->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'activated_at'
+            ]);
+
+        $this->assertNotEmpty($response->json('activated_at'));
+
+        $this->putJson("api/companies/deactivate/".$company->getKey(), [])
             ->assertOk()
             ->assertExactJson([true]);
 
-        $this->assertNull($company->refresh()->activated_at);
-
-        $this->getJson(url('api/quotes/step/1'))
+        $response = $this->getJson('api/companies/'.$company->getKey())
             ->assertOk()
-            ->assertJsonMissing(['id' => $company->id]);
+            ->assertJsonStructure([
+                'id',
+                'activated_at'
+            ]);
+
+        $this->assertEmpty($response->json('activated_at'));
+
+        $this->getJson('api/quotes/step/1')
+            ->assertOk()
+            ->assertJsonMissing(['id' => $company->getKey()]);
     }
 
     /**
@@ -278,11 +316,9 @@ class CompanyTest extends TestCase
      */
     public function testCanDeleteCompany()
     {
-        $attributes = factory(Company::class)->raw(['user_id' => $this->user->id]);
+        $company = factory(Company::class)->create();
 
-        $company = app('company.repository')->create($attributes);
-
-        $this->deleteJson(url("api/companies/{$company->id}"), [])
+        $this->deleteJson("api/companies/".$company->getKey(), [])
             ->assertOk()
             ->assertExactJson([true]);
     }
@@ -296,7 +332,7 @@ class CompanyTest extends TestCase
     {
         $systemCompany = factory(Company::class)->create(['is_system' => true]);
 
-        $this->deleteJson(url("api/companies/{$systemCompany->id}"), [])
+        $this->deleteJson("api/companies/".$systemCompany->getKey(), [])
             ->assertForbidden()
             ->assertJsonFragment([
                 'message' => CPSD_01
@@ -340,7 +376,7 @@ class CompanyTest extends TestCase
 
         $firstVendor = collect($response->json('companies'))->firstWhere('id', $company->getKey());
 
-        $this->assertEquals($vendor->id, data_get($firstVendor, 'vendors.0.id'));
+        $this->assertEquals($vendor->getKey(), data_get($firstVendor, 'vendors.0.id'));
     }
 
     /**
@@ -427,9 +463,9 @@ class CompanyTest extends TestCase
 //            ->dump()
             ->assertOk();
 
-        $response = $this->getJson(url("api/companies/{$company->id}"))->assertOk();
+        $response = $this->getJson("api/companies/".$company->getKey())->assertOk();
 
-        $this->assertEquals($country->id, $response->json('vendors.0.countries.0.id'));
+        $this->assertEquals($country->getKey(), $response->json('vendors.0.countries.0.id'));
 
         $response = $this->getJson('api/quotes/step/1')->assertOk();
 

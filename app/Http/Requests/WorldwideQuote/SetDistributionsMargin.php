@@ -8,10 +8,9 @@ use App\DTO\QuoteStages\ContractMarginTaxStage;
 use App\Enum\ContractQuoteStage;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
-use Illuminate\Auth\Access\AuthorizationException;
+use App\Models\Quote\WorldwideQuoteVersion;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class SetDistributionsMargin extends FormRequest
@@ -20,29 +19,8 @@ class SetDistributionsMargin extends FormRequest
 
     protected ?DistributionMarginTaxCollection $distributionMarginCollection = null;
 
-    /**
-     * Determine if the user is authorized to make this request.
-     *
-     * @return bool
-     */
-    public function authorize()
-    {
-        $modelKeys = $this->input('worldwide_distributions.*.id');
+    protected ?WorldwideQuote $worldwideQuoteModel = null;
 
-        $quoteKeys = WorldwideDistribution::whereKey($modelKeys)->distinct('worldwide_quote_id')->toBase()->pluck('worldwide_quote_id');
-
-        if ($quoteKeys->count() > 1) {
-            throw new AuthorizationException('The processable entities must belong to the same Worldwide Quote', Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        Gate::authorize('update', [$wwQuote = WorldwideQuote::whereKey($quoteKeys)->firstOrFail()]);
-
-        if ($wwQuote->submitted_at !== null) {
-            throw new AuthorizationException('You can\'t update a state of submitted Worldwide Quote', Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        return true;
-    }
     /**
      * Get the validation rules that apply to the request.
      *
@@ -56,7 +34,9 @@ class SetDistributionsMargin extends FormRequest
             ],
             'worldwide_distributions.*.id' => [
                 'bail', 'required', 'uuid',
-                Rule::exists(WorldwideDistribution::class, 'id')->whereNull('deleted_at')
+                Rule::exists(WorldwideDistribution::class, 'id')
+                    ->where('worldwide_quote_id', $this->getQuote()->active_version_id)
+                    ->whereNull('deleted_at')
             ],
             'worldwide_distributions.*.tax_value' => [
                 'bail', 'nullable', 'numeric', 'min:'.(-100_000_000), 'max:'.(100_000_000),
@@ -76,6 +56,18 @@ class SetDistributionsMargin extends FormRequest
         ];
     }
 
+    public function getQuote(): WorldwideQuote
+    {
+        return $this->worldwideQuoteModel ??= with(true, function (): WorldwideQuote {
+            /** @var WorldwideQuoteVersion $version */
+            $version = WorldwideQuoteVersion::query()->whereHas('worldwideDistributions', function (Builder $builder) {
+                $builder->whereKey($this->input('worldwide_distributions.*.id'));
+            })->sole();
+
+            return $version->worldwideQuote;
+        });
+    }
+
     public function getStage(): ContractMarginTaxStage
     {
         return $this->marginStage ??= new ContractMarginTaxStage([
@@ -90,8 +82,8 @@ class SetDistributionsMargin extends FormRequest
             $collection = array_map(function (array $distribution) {
                 return new DistributionMarginTax([
                     'worldwide_distribution_id' => $distribution['id'],
-                    'tax_value' => transform($distribution['tax_value'] ?? null, fn ($value) => (float) $value),
-                    'margin_value' => transform($distribution['margin_value'] ?? null, fn ($value) => (float) $value),
+                    'tax_value' => transform($distribution['tax_value'] ?? null, fn($value) => (float)$value),
+                    'margin_value' => transform($distribution['margin_value'] ?? null, fn($value) => (float)$value),
                     'quote_type' => $distribution['quote_type'] ?? 'New',
                     'margin_method' => $distribution['margin_method'] ?? 'No Margin'
                 ]);

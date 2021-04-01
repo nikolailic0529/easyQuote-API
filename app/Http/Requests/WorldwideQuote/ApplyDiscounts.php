@@ -13,6 +13,7 @@ use App\Models\Quote\Discount\PromotionalDiscount;
 use App\Models\Quote\Discount\SND;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\Quote\WorldwideQuoteVersion;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Http\FormRequest;
@@ -29,30 +30,6 @@ class ApplyDiscounts extends FormRequest
     protected ?DistributionDiscountsCollection $distributionDiscountsCollection = null;
 
     /**
-     * Determine if the user is authorized to make this request.
-     *
-     * @return bool
-     */
-    public function authorize()
-    {
-        $modelKeys = $this->input('worldwide_distributions.*.id');
-
-        $quoteKeys = WorldwideDistribution::whereKey($modelKeys)->distinct('worldwide_quote_id')->toBase()->pluck('worldwide_quote_id');
-
-        if ($quoteKeys->count() > 1) {
-            throw new AuthorizationException('The processable entities must belong to the same Worldwide Quote', Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        Gate::authorize('update', [$wwQuote = WorldwideQuote::whereKey($quoteKeys)->firstOrFail()]);
-
-        if ($wwQuote->submitted_at !== null) {
-            throw new AuthorizationException('You can\'t update a state of submitted Worldwide Quote', Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        return true;
-    }
-
-    /**
      * Get the validation rules that apply to the request.
      *
      * @return array
@@ -65,7 +42,9 @@ class ApplyDiscounts extends FormRequest
             ],
             'worldwide_distributions.*.id' => [
                 'bail', 'required', 'uuid',
-                Rule::exists(WorldwideDistribution::class, 'id')->whereNull('deleted_at')
+                Rule::exists(WorldwideDistribution::class, 'id')
+                    ->where('worldwide_quote_id', $this->getQuote()->active_version_id)
+                    ->whereNull('deleted_at')
             ],
             'worldwide_distributions.*.predefined_discounts' => [
                 //
@@ -110,9 +89,14 @@ class ApplyDiscounts extends FormRequest
 
     public function getQuote(): WorldwideQuote
     {
-        return $this->worldwideQuote ??= WorldwideQuote::whereHas('worldwideDistributions', function (Builder $builder) {
-            return $builder->whereKey($this->input('worldwide_distributions.0.id'));
-        })->firstOrFail();
+        return $this->worldwideQuote ??= with(true, function (): WorldwideQuote {
+            /** @var WorldwideQuoteVersion $version */
+            $version = WorldwideQuoteVersion::query()->whereHas('worldwideDistributions', function (Builder $builder) {
+                $builder->whereKey($this->input('worldwide_distributions.*.id'));
+            })->sole();
+
+            return $version->worldwideQuote;
+        });
     }
 
     public function getDistributionDiscountsCollection(): DistributionDiscountsCollection

@@ -5,24 +5,32 @@
 use App\Models\Company;
 use App\Models\Customer\WorldwideCustomer;
 use App\Models\Data\Currency;
+use App\Models\Opportunity;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\User;
 use Faker\Generator as Faker;
 
 $factory->define(WorldwideQuote::class, function (Faker $faker) {
     $user = factory(User::class)->create();
-    $opportunity = factory(\App\Models\Opportunity::class)->create();
+    $opportunity = factory(Opportunity::class)->create();
 
     $sequenceNumber = \Illuminate\Support\Facades\DB::table('worldwide_quotes')->max('sequence_number');
     $newNumber = $sequenceNumber + 1;
 
+    $activeVersion = factory(WorldwideQuoteVersion::class)->create();
+
     return [
+        'active_version_id' => $activeVersion->getKey(),
         'contract_type_id' => CT_CONTRACT,
         'user_id' => $user->getKey(),
-        'company_id' => Company::where('short_code', $faker->randomElement(['SWH', 'EPD', 'THG']))->value('id'),
         'opportunity_id' => $opportunity->getKey(),
-        'quote_currency_id' => Currency::where('code', $faker->randomElement(['GBP', 'USD']))->value('id'),
         'sequence_number' => $newNumber,
         'quote_number' => sprintf("EPD-WW-DP-%'.07d", $newNumber)
     ];
+});
+
+$factory->afterCreating(WorldwideQuote::class, function (WorldwideQuote $worldwideQuote) {
+    $worldwideQuote->activeVersion->worldwideQuote()->associate($worldwideQuote);
+    $worldwideQuote->activeVersion->save();
 });

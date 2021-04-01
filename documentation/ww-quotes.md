@@ -62,6 +62,8 @@
     * [Mark Quote as inactive](#mark-quote-as-inactive)
     * [Mark Quote as dead](#mark-quote-as-dead)
     * [Restore Quote from dead](#restore-quote-from-dead)
+    * [Switch Active Version of Quote](#switch-active-version-of-quote)
+    * [Delete Version of Quote](#delete-version-of-quote)
 
 # Opportunities List
 
@@ -1353,6 +1355,14 @@
 ## Restore Quote from dead
 
     [PATCH] api/ww-quotes/{worldwide_quote_uuid}/restore-from-dead
+
+## Switch Active Version of Quote
+
+    [PATCH] api/ww-quotes/{worldwide_quote_uuid}/versions/{version_uuid}
+
+## Delete Version of Quote
+
+    [DELETE] api/ww-quotes/{worldwide_quote_uuid}/versions/{version_uuid}
 
 
 

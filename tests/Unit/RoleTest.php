@@ -110,11 +110,13 @@ class RoleTest extends TestCase
      */
     public function testSystemDefinedRoleUpdating()
     {
-        $role = app('role.repository')->findByName('Administrator');
+        $role = factory(Role::class)->create(['is_system' => true]);
 
-        $attributes = factory(Role::class)->raw();
+        $attributes = factory(Role::class)->state('privileges')->raw();
 
-        $response = $this->patchJson("api/roles/{$role->id}", $attributes)->assertForbidden();
+        $response = $this->patchJson('api/roles/'.$role->getKey(), $attributes)
+//            ->dump()
+            ->assertForbidden();
 
         $this->assertEquals(RSU_01, $response->json('message'));
     }
@@ -128,7 +130,7 @@ class RoleTest extends TestCase
     {
         $role = factory(Role::class)->create();
 
-        $this->deleteJson("api/roles/{$role->id}")
+        $this->deleteJson("api/roles/".$role->getKey())
             ->assertOk()
             ->assertExactJson([true]);
     }
@@ -140,9 +142,9 @@ class RoleTest extends TestCase
      */
     public function testSystemDefinedRoleDeleting()
     {
-        $role = app('role.repository')->findByName('Administrator');
+        $role = factory(Role::class)->create(['is_system' => true]);
 
-        $response = $this->deleteJson("api/roles/{$role->id}")->assertForbidden();
+        $response = $this->deleteJson('api/roles/'.$role->getKey())->assertForbidden();
 
         $this->assertEquals(RSD_01, $response->json('message'));
     }
@@ -154,9 +156,13 @@ class RoleTest extends TestCase
      */
     public function testRoleActivating()
     {
-        $role = tap(factory(Role::class)->create())->deactivate();
+        $role = tap(factory(Role::class)->create(), function (Role $role) {
+            $role->activated_at = null;
 
-        $this->putJson("api/roles/activate/{$role->id}")
+            $role->save();
+        });
+
+        $this->putJson("api/roles/activate/".$role->getKey())
             ->assertOk()
             ->assertExactJson([true]);
     }
@@ -168,9 +174,14 @@ class RoleTest extends TestCase
      */
     public function testRoleDeactivating()
     {
-        $role = tap(factory(Role::class)->create())->activate();
+        $role = tap(factory(Role::class)->create(), function (Role $role) {
+            $role->activated_at = now();
 
-        $this->putJson("api/roles/deactivate/{$role->id}")
+            $role->save();
+        });
+
+        $this->putJson("api/roles/deactivate/".$role->getKey())
+//            ->dump()
             ->assertOk()
             ->assertExactJson([true]);
     }

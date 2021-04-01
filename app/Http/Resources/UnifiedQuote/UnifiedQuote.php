@@ -41,6 +41,32 @@ class UnifiedQuote extends JsonResource
             'has_contract' => !is_null($this->contract_id),
             'contract_submitted_at' => !is_null($this->contract_submitted_at),
 
+            'active_version_id' => $this->active_version_id,
+
+            'has_distributor_files' => value(function (): bool {
+                if ($this->resource instanceof WorldwideQuote) {
+                    return (bool)$this->has_distributor_files;
+                }
+
+                if (!is_null($this->active_version_id)) {
+                    return !is_null($this->active_version_distributor_file_id);
+                }
+
+                return !is_null($this->distributor_file_id);
+            }),
+
+            'has_schedule_files' => value(function (): bool {
+                if ($this->resource instanceof WorldwideQuote) {
+                    return (bool)$this->has_schedule_files;
+                }
+
+                if (!is_null($this->active_version_id)) {
+                    return !is_null($this->active_version_schedule_file_id);
+                }
+
+                return !is_null($this->schedule_file_id);
+            }),
+
             'permissions' => [
                 'view' => $user->can('view', $this->resource),
                 'update' => $user->can('update', $this->resource),

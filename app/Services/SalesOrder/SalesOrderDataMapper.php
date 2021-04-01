@@ -26,6 +26,7 @@ use App\Models\Image;
 use App\Models\Opportunity;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\QuoteFile\MappedRow;
 use App\Models\SalesOrder;
 use App\Models\User;
@@ -37,6 +38,7 @@ use App\Services\WorldwideQuoteCalc;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\Arr;
@@ -214,23 +216,24 @@ class SalesOrderDataMapper
     private function mapPackSalesOrderToSubmitSalesOrderData(SalesOrder $salesOrder): SubmitSalesOrderData
     {
         $quote = $salesOrder->worldwideQuote;
+        $quoteActiveVersion = $quote->activeVersion;
         $opportunity = $quote->opportunity;
         $customer = $opportunity->primaryAccount;
         $quoteCurrency = $this->getSalesOrderOutputCurrency($salesOrder);
         $accountManager = $opportunity->accountManager;
-        $company = $quote->company;
+        $company = $quoteActiveVersion->company;
 
-        $quote->load(['assets' => function (HasMany $relation) {
+        $quoteActiveVersion->load(['assets' => function (MorphMany $relation) {
             $relation->where('is_selected', true);
         }, 'assets.machineAddress.country']);
 
-        if ($quote->assets->isEmpty()) {
+        if ($quoteActiveVersion->assets->isEmpty()) {
             throw new \InvalidArgumentException("At least one Pack Asset must exist on the Quote.");
         }
 
         $quotePriceData = $this->getSalesOrderPriceData($salesOrder);
 
-        $orderLinesData = $quote->assets->map(function (WorldwideQuoteAsset $row) use ($quoteCurrency, $quotePriceData) {
+        $orderLinesData = $quoteActiveVersion->assets->map(function (WorldwideQuoteAsset $row) use ($quoteCurrency, $quotePriceData) {
             return new SubmitOrderLineData([
                 'line_id' => $row->getKey(),
                 'unit_price' => $row->price,
@@ -448,7 +451,9 @@ class SalesOrderDataMapper
 
     private function getSalesOrderOutputCurrency(SalesOrder $salesOrder): Currency
     {
-        $currency = with($salesOrder->worldwideQuote, function (WorldwideQuote $worldwideQuote) {
+        $quoteActiveVersion = $salesOrder->worldwideQuote->activeVersion;
+
+        $currency = with($quoteActiveVersion, function (WorldwideQuoteVersion $worldwideQuote) {
 
             if (is_null($worldwideQuote->output_currency_id)) {
                 return $worldwideQuote->quoteCurrency;
@@ -458,11 +463,11 @@ class SalesOrderDataMapper
 
         });
 
-        return tap($currency, function (Currency $currency) use ($salesOrder) {
+        return tap($currency, function (Currency $currency) use ($quoteActiveVersion, $salesOrder) {
 
             $currency->exchange_rate_value = $this->exchangeRateService->getTargetRate(
-                $salesOrder->worldwideQuote->quoteCurrency,
-                $salesOrder->worldwideQuote->outputCurrency
+                $quoteActiveVersion->quoteCurrency,
+                $quoteActiveVersion->outputCurrency
             );
 
         });
@@ -512,7 +517,7 @@ class SalesOrderDataMapper
     {
         $quote = $salesOrder->worldwideQuote;
 
-        $company = $quote->company;
+        $company = $quote->activeVersion->company;
 
         $flags = ThumbHelper::WITH_KEYS;
 
@@ -562,7 +567,7 @@ class SalesOrderDataMapper
 
             if ($quote->contract_type_id === CT_CONTRACT) {
 
-                $vendors = $quote->worldwideDistributions->load(['vendors' => function (BelongsToMany $relationship) {
+                $vendors = $quote->activeVersion->worldwideDistributions->load(['vendors' => function (BelongsToMany $relationship) {
                     $relationship->has('image');
                 }])->pluck('vendors')->collapse();
 

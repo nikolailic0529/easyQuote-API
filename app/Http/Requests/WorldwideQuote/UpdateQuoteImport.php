@@ -63,7 +63,8 @@ class UpdateQuoteImport extends FormRequest
             ],
             'worldwide_distributions.*.id' => [
                 'bail', 'required', 'uuid',
-                Rule::exists(WorldwideDistribution::class, 'id')->where('worldwide_quote_id', $this->getQuote()->getKey())->whereNull('deleted_at')->where(function (BaseBuilder $builder) {
+                Rule::exists(WorldwideDistribution::class, 'id')
+                    ->where('worldwide_quote_id', $this->getQuote()->active_version_id)->whereNull('deleted_at')->where(function (BaseBuilder $builder) {
                     $builder->whereExists(function (BaseBuilder $builder) {
                         $builder->selectRaw('1')
                             ->from('opportunity_suppliers')

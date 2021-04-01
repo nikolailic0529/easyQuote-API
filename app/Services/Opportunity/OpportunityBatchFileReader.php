@@ -2,19 +2,16 @@
 
 namespace App\Services\Opportunity;
 
-use App\DTO\Opportunity\CreateOpportunityData;
+use Box\Spout\Common\Entity\Cell;
 use Box\Spout\Common\Entity\Row;
 use Box\Spout\Reader\Common\Creator\ReaderFactory;
 use Box\Spout\Reader\SheetInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Factory as ValidatorFactory;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Validation\Validator;
 
 class OpportunityBatchFileReader
 {
-    const HEADER_ROW_INDEX = 1;
+    const HEADER_ROW_INDEX = 0;
 
     protected string $filePath;
 
@@ -78,16 +75,37 @@ class OpportunityBatchFileReader
 
         $rowIterator->rewind();
 
-        foreach (range(0, static::HEADER_ROW_INDEX - 1) as $i) {
+        $offset = 0;
+
+        while ($offset < static::HEADER_ROW_INDEX) {
             $rowIterator->next();
+            $offset++;
         }
 
-        /** @var Row $firstRow */
-        $firstRow = $rowIterator->current();
+        $headerRowArray = value(function () use (&$offset, $rowIterator): array {
+            while ($rowIterator->valid()) {
+                /** @var Row $firstRow */
+                $firstRow = $rowIterator->current();
+
+                $firstRowArray = $this->rowToArrayOfStrings($firstRow);
+
+                $filteredRowArray = array_filter($firstRowArray, fn(string $value) => !empty($value));
+
+                if (!empty($filteredRowArray)) {
+                    return $firstRowArray;
+                }
+
+                $rowIterator->next();
+
+                $offset++;
+            }
+
+            return [];
+        });
 
         $this->headers = array_map(function (string $header) {
             return Str::slug($header, '_');
-        }, $firstRow->toArray());
+        }, $headerRowArray);
 
         // Collating suppliers data.
         // from: country country country supplier supplier suppler contact_name contact_name contact_name email_address email_address email_address
@@ -109,6 +127,19 @@ class OpportunityBatchFileReader
 
             return $header;
         }, $this->headers);
+    }
+
+    private function rowToArrayOfStrings(Row $row): array
+    {
+        return array_map(function (Cell $cell) {
+            $value = $cell->getValue();
+
+            if ($cell->isDate()) {
+                $value = Carbon::createFromTimestamp($value->getTimestamp())->toString();
+            }
+
+            return trim((string)$value);
+        }, $row->getCells());
     }
 
     protected function getValueFromRow(Row $row): array

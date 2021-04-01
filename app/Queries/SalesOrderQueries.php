@@ -43,8 +43,11 @@ class SalesOrderQueries
             ->join('worldwide_quotes', function (JoinClause $join) {
                 $join->on('worldwide_quotes.id', 'sales_orders.worldwide_quote_id');
             })
+            ->join('worldwide_quote_versions as active_quote_version', function (JoinClause $join) {
+                $join->on('active_quote_version.id', 'worldwide_quotes.active_version_id');
+            })
             ->join('companies', function (JoinClause $join) {
-                $join->on('companies.id', 'worldwide_quotes.company_id');
+                $join->on('companies.id', 'active_quote_version.company_id');
             })
             ->join('contract_types', function (JoinClause $join) {
                 $join->on('contract_types.id', 'worldwide_quotes.contract_type_id');
@@ -103,8 +106,11 @@ class SalesOrderQueries
             ->join('worldwide_quotes', function (JoinClause $join) {
                 $join->on('worldwide_quotes.id', 'sales_orders.worldwide_quote_id');
             })
+            ->join('worldwide_quote_versions as active_quote_version', function (JoinClause $join) {
+                $join->on('active_quote_version.id', 'worldwide_quotes.active_version_id');
+            })
             ->join('companies', function (JoinClause $join) {
-                $join->on('companies.id', 'worldwide_quotes.company_id');
+                $join->on('companies.id', 'active_quote_version.company_id');
             })
             ->join('contract_types', function (JoinClause $join) {
                 $join->on('contract_types.id', 'worldwide_quotes.contract_type_id');

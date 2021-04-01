@@ -12,7 +12,6 @@ use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use Tests\TestCase;
-use function Couchbase\fastlzCompress;
 
 /**
  * Class OpportunityTest
@@ -440,7 +439,7 @@ class OpportunityTest extends TestCase
         $this->postJson('api/opportunities/upload', [
             'file' => $file
         ])
-//            ->dump()
+            ->dump()
             ->assertCreated()
             ->assertJsonStructure([
                 'opportunities' => [
@@ -451,6 +450,24 @@ class OpportunityTest extends TestCase
                 'errors'
             ]);
 
+        $file = UploadedFile::fake()->createWithContent('ops-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/export (8).xlsx')));
+
+        $this->authenticateApi();
+
+        $this->postJson('api/opportunities/upload', [
+            'file' => $file
+        ])
+            ->dump()
+            ->assertCreated()
+            ->assertJsonStructure([
+                'opportunities' => [
+                    '*' => [
+                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date', 'sale_action_name'
+                    ]
+                ],
+                'errors'
+            ]);
+//
 //        $this->getJson('api/users')
 //            ->dump();
     }
@@ -462,7 +479,7 @@ class OpportunityTest extends TestCase
      */
     public function testCanBatchSaveOpportunities()
     {
-        $this->app['db.connection']->table('opportunities')->delete();
+        $this->app['db.connection']->table('opportunities')->update(['deleted_at' => now()]);
 
         $file = UploadedFile::fake()->createWithContent('ops-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/ops-export.xlsx')));
 

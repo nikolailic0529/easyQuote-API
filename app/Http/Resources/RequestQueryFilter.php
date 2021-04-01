@@ -3,7 +3,7 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
 class RequestQueryFilter
@@ -17,19 +17,34 @@ class RequestQueryFilter
 
     public function attach($resource)
     {
-        $availableIncludes = optional($resource)->availableIncludes ?? [];
+        $availableIncludes = (array)($resource->availableIncludes ?? []);
+        $translatedIncludes = (array)($resource->translatedIncludes ?? []);
 
-        $requestIncludes = $this->getRequestIncludes($availableIncludes)->all();
+        $requestIncludes = $this->resolveRequestIncludes($availableIncludes, $translatedIncludes);
 
         $resource->load($requestIncludes);
 
         return $resource;
     }
-    protected function getRequestIncludes(array $availableIncludes = []): Collection
+
+    protected function resolveRequestIncludes(array $availableIncludes = [], array $translatedIncludes = []): array
     {
-        return collect(data_get($this->request->input(), 'include', []))
-            ->transform(fn ($include) => Str::camel($include))
-            ->intersect($availableIncludes)
-            ->values();
+        if (empty($availableIncludes)) {
+            return [];
+        }
+
+        $requestIncludes = array_filter(Arr::wrap($this->request->input('include')), 'is_string');
+
+        $requestIncludes = array_map([Str::class, 'camel'], $requestIncludes);
+
+        $filteredIncludes = array_values(array_intersect($requestIncludes, $availableIncludes));
+
+        if (empty($translatedIncludes)) {
+            return $filteredIncludes;
+        }
+
+        return array_map(function (string $include) use ($translatedIncludes) {
+            return $translatedIncludes[$include] ?? $include;
+        }, $filteredIncludes);
     }
 }

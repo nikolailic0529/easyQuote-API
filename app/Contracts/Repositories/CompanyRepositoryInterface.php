@@ -17,10 +17,10 @@ interface CompanyRepositoryInterface
     /**
      * Data for creating a new Company
      *
-     * @param $array
+     * @param array $additionalDataData
      * @return Collection
      */
-    public function data($additionalData = []): Collection;
+    public function data(array $additionalDataData = []): Collection;
 
     /**
      * Get all Companies.
@@ -114,54 +114,4 @@ interface CompanyRepositoryInterface
      * @return \App\Models\Company|null
      */
     public function findByVat(string $vat);
-
-    /**
-     * Retrieve random existing Company.
-     *
-     * @param int $limit
-     * @param Closure $scope
-     * @return \App\Models\Company|\Illuminate\Database\Eloquent\Collection|null
-     */
-    public function random(int $limit = 1, ?Closure $scope = null);
-
-    /**
-     * Create Company.
-     *
-     * @param  array $attributes
-     * @return \App\Models\Company
-     */
-    public function create(array $attributes): Company;
-
-    /**
-     * Update Company.
-     *
-     * @param string $id
-     * @param array $attributes
-     * @return \App\Models\Company
-     */
-    public function update(string $id, array $attributes): Company;
-
-    /**
-     * Delete Company.
-     *
-     * @param string $id
-     * @return boolean
-     */
-    public function delete(string $id): bool;
-
-    /**
-     * Activate Company.
-     *
-     * @param string $id
-     * @return boolean
-     */
-    public function activate(string $id): bool;
-
-    /**
-     * Deactivate Company.
-     *
-     * @param string $id
-     * @return boolean
-     */
-    public function deactivate(string $id): bool;
 }

@@ -137,7 +137,7 @@ class SalesOrderTest extends TestCase
         factory(ContractTemplate::class)->create([
             'business_division_id' => BD_WORLDWIDE,
             'contract_type_id' => CT_CONTRACT,
-            'company_id' => $quote->company_id,
+            'company_id' => $quote->activeVersion->company_id,
         ]);
 
         $response = $this->getJson('api/ww-quotes/'.$quote->getKey().'/sales-order-data')
@@ -234,16 +234,19 @@ class SalesOrderTest extends TestCase
 
         $template = factory(QuoteTemplate::class)->create();
 
-        $template->vendors()->sync(Vendor::limit(2)->get());
+        $template->vendors()->sync(Vendor::query()->limit(2)->get());
 
-        $country = Country::first();
-        $vendor = Vendor::first();
+        $country = Country::query()->first();
+        $vendor = Vendor::query()->first();
 
         $multiYearDiscount = factory(MultiYearDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
 
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create([
-            'contract_type_id' => CT_PACK,
+            'contract_type_id' => CT_PACK
+        ]);
+
+        $quote->activeVersion->update([
             'quote_template_id' => $template->getKey(),
             'multi_year_discount_id' => $multiYearDiscount->getKey(),
             'sort_rows_column' => 'vendor_short_code',
@@ -429,15 +432,20 @@ class SalesOrderTest extends TestCase
             $invoiceAddress->getKey(), $machineAddress->getKey()
         ]);
 
+        /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create([
             'contract_type_id' => CT_PACK,
             'opportunity_id' => $opportunity->getKey(),
+        ]);
+
+        $quote->activeVersion->update([
             'quote_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
         ]);
 
 
         factory(WorldwideQuoteAsset::class)->create([
-            'worldwide_quote_id' => $quote->getKey(),
+            'worldwide_quote_id' => $quote->activeVersion->getKey(),
+            'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
             'is_selected' => true,
             'vendor_id' => Vendor::query()->where('short_code', 'IBM')->value('id'),
             'sku' => 'J9846A',
@@ -609,7 +617,7 @@ class SalesOrderTest extends TestCase
         factory(ContractTemplate::class)->create([
             'business_division_id' => BD_WORLDWIDE,
             'contract_type_id' => CT_CONTRACT,
-            'company_id' => $quote->company_id,
+            'company_id' => $quote->activeVersion->company_id,
         ]);
 
         $response = $this->getJson('api/ww-quotes/'.$quote->getKey().'/sales-order-data')
@@ -688,7 +696,10 @@ class SalesOrderTest extends TestCase
         /** @var WorldwideQuote $wwQuote */
         $wwQuote = factory(WorldwideQuote::class)->create([
             'contract_type_id' => CT_CONTRACT,
-            'submitted_at' => now(),
+            'submitted_at' => now()
+        ]);
+
+        $wwQuote->activeVersion->update([
             'quote_template_id' => $quoteTemplate->getKey()
         ]);
 

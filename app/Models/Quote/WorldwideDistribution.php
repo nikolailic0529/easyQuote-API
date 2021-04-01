@@ -32,6 +32,7 @@ use Staudenmeir\EloquentHasManyDeep\HasOneDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 /**
+ * @property string|null $replicated_distributor_quote_id
  * @property string|null $worldwide_quote_id
  * @property string|null $worldwide_quote_type
  * @property string|null $opportunity_supplier_id
@@ -66,7 +67,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string $distribution_expiry_date
  * @property mixed $quote_type
  * @property mixed $margin_method
- * @property WorldwideQuote $worldwideQuote
+ * @property WorldwideQuoteVersion $worldwideQuote
  * @property Currency|null $distributionCurrency
  * @property QuoteFile|null $distributorFile
  * @property QuoteFile|null $scheduleFile

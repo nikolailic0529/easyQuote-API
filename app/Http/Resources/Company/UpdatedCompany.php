@@ -62,6 +62,7 @@ class UpdatedCompany extends JsonResource
             'addresses' => with($this->addresses, function (Collection $addresses) {
                 return $addresses->each(function (Address $address) {
                     $address->setAttribute('is_default', (bool)$address->pivot->is_default);
+                    $address->loadMissing('country');
                 });
             }),
             'contacts' => with($this->contacts, function (Collection $contacts) {

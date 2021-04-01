@@ -11,12 +11,14 @@ use App\DTO\WorldwideQuote\{AssetServiceLevel,
     ImportBatchAssetFileData,
     ReadAssetRow,
     ReadBatchFileResult,
-    WorldwideQuoteAssetDataCollection};
+    WorldwideQuoteAssetDataCollection
+};
 use App\Enum\Lock;
 use App\Models\Address;
 use App\Models\Data\Country;
 use App\Models\Data\Currency;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
 use App\Services\Exceptions\ValidationException;
@@ -26,9 +28,9 @@ use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Webpatser\Uuid\Uuid;
 
@@ -65,7 +67,7 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
         $this->lookupService = $lookupService;
     }
 
-    public function initializeQuoteAsset(WorldwideQuote $quote): WorldwideQuoteAsset
+    public function initializeQuoteAsset(WorldwideQuoteVersion $quote): WorldwideQuoteAsset
     {
         return tap(new WorldwideQuoteAsset(), function (WorldwideQuoteAsset $asset) use ($quote) {
             $asset->worldwideQuote()->associate($quote);
@@ -75,7 +77,7 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
         });
     }
 
-    public function batchUpdateQuoteAssets(WorldwideQuoteAssetDataCollection $collection)
+    public function batchUpdateQuoteAssets(WorldwideQuoteVersion $quote, WorldwideQuoteAssetDataCollection $collection)
     {
         $assetKeys = [];
 
@@ -92,7 +94,18 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
         /**
          * @var WorldwideQuoteAsset[] $assetModels
          */
-        $assetModels = WorldwideQuoteAsset::query()->whereKey($assetKeys)->get()->keyBy('id');
+
+        $assetModels = value(function () use ($assetKeys, $quote) {
+            if ($quote->wasRecentlyCreated) {
+                return WorldwideQuoteAsset::query()->whereHas('replicatedAsset', function (Builder $builder) use ($assetKeys) {
+                    $builder->whereKey($assetKeys);
+                })
+                    ->get()
+                    ->keyBy('replicated_asset_id');
+            }
+
+            return WorldwideQuoteAsset::query()->whereKey($assetKeys)->get()->keyBy('id');
+        });
 
         $collection->rewind();
 
@@ -172,14 +185,14 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
         ]);
     }
 
-    private function mapAssetDataUsingFileMapping(BatchAssetFileMapping $mapping, array $row, WorldwideQuote $quote): WorldwideQuoteAsset
+    private function mapAssetDataUsingFileMapping(BatchAssetFileMapping $mapping, array $row, WorldwideQuoteVersion $quote): WorldwideQuoteAsset
     {
         return tap(new WorldwideQuoteAsset(), function (WorldwideQuoteAsset $asset) use ($row, $mapping, $quote) {
             $asset->is_selected = true;
 
             $asset->{$asset->getKeyName()} = (string)Uuid::generate(4);
 
-            $asset->worldwide_quote_id = $quote->getKey();
+            $asset->worldwideQuote()->associate($quote);
 
             $asset->serial_no = transform($mapping->serial_no, function (string $serialNoColumn) use ($row) {
                 return $row[$serialNoColumn] ?? null;
@@ -283,8 +296,10 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
         });
     }
 
-    public function importBatchAssetFile(ImportBatchAssetFileData $data, WorldwideQuote $worldwideQuote)
+    public function importBatchAssetFile(WorldwideQuoteVersion $quote, ImportBatchAssetFileData $data)
     {
+        $newVersionResolved = $quote->wasRecentlyCreated;
+
         $violations = $this->validator->validate($data);
 
         if (count($violations)) {
@@ -310,13 +325,13 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
         $machineAddressKeys = [];
 
         $currencyCode = Currency::query()
-            ->whereKey($worldwideQuote->quote_currency_id)
+            ->whereKey($quote->quote_currency_id)
             ->value('code');
 
         foreach ($chunkIterator as $chunk) {
 
             $assetBatch = array_map(
-                fn(array $row) => $this->mapAssetDataUsingFileMapping($data->file_mapping, $row, $worldwideQuote),
+                fn(array $row) => $this->mapAssetDataUsingFileMapping($data->file_mapping, $row, $quote),
                 $chunk
             );
 
@@ -344,11 +359,11 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
         $machineAddressKeys = array_values(array_unique($machineAddressKeys));
 
         if (!empty($machineAddressKeys)) {
-            $opportunityLock = $this->lockProvider->lock(Lock::UPDATE_OPPORTUNITY($worldwideQuote->opportunity->getKey()), 10);
+            $opportunityLock = $this->lockProvider->lock(Lock::UPDATE_OPPORTUNITY($quote->worldwideQuote->opportunity->getKey()), 10);
 
-            $opportunityLock->block(30, function () use ($machineAddressKeys, $worldwideQuote) {
+            $opportunityLock->block(30, function () use ($machineAddressKeys, $quote) {
 
-                $this->connection->transaction(fn() => $worldwideQuote->opportunity->addresses()->syncWithoutDetaching($machineAddressKeys));
+                $this->connection->transaction(fn() => $quote->worldwideQuote->opportunity->addresses()->syncWithoutDetaching($machineAddressKeys));
 
             });
         }
@@ -467,8 +482,16 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
         return new AssetServiceLookupDataCollection($lookupDataCollection);
     }
 
-    public function deleteQuoteAsset(WorldwideQuoteAsset $asset): void
+    public function deleteQuoteAsset(WorldwideQuoteVersion $quote, WorldwideQuoteAsset $asset): void
     {
+        $newVersionResolved = $quote->wasRecentlyCreated;
+
+        if ($newVersionResolved) {
+            $asset = $quote->assets()->whereHas('replicatedAsset', function (Builder $builder) use ($asset) {
+                $builder->whereKey($asset->getKey());
+            })->sole();
+        }
+
         $lock = $this->lockProvider->lock(Lock::DELETE_WWASSET($asset->getKey()), 10);
 
         $lock->block(30, function () use ($asset) {

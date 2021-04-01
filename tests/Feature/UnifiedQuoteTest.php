@@ -23,7 +23,19 @@ class UnifiedQuoteTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
-                        'id', 'business_division', 'contract_type', 'opportunity_id', 'customer_id', 'customer_name', 'company_name', 'rfq_number', 'valid_until_date', 'updated_at', 'activated_at', 'is_active',
+                        'id',
+                        'business_division',
+                        'contract_type',
+                        'opportunity_id',
+                        'customer_id',
+                        'customer_name',
+                        'company_name',
+                        'rfq_number',
+                        'valid_until_date',
+                        'updated_at',
+                        'activated_at',
+                        'is_active',
+
                         'permissions' => [
                             'update',
                             'delete'
@@ -82,7 +94,22 @@ class UnifiedQuoteTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
-                        'id', 'business_division', 'contract_type', 'opportunity_id', 'customer_id', 'customer_name', 'company_name', 'rfq_number', 'updated_at', 'activated_at', 'is_active',
+                        'id',
+                        'business_division',
+                        'contract_type',
+                        'opportunity_id',
+                        'customer_id',
+                        'customer_name',
+                        'company_name',
+                        'rfq_number',
+                        'updated_at',
+                        'activated_at',
+                        'is_active',
+
+                        'active_version_id',
+
+                        'has_distributor_files',
+                        'has_schedule_files',
 
                         'sales_order_id',
                         'has_sales_order',
@@ -149,7 +176,22 @@ class UnifiedQuoteTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
-                        'id', 'business_division', 'contract_type', 'opportunity_id', 'customer_id', 'customer_name', 'company_name', 'rfq_number', 'updated_at', 'activated_at', 'is_active',
+                        'id',
+                        'business_division',
+                        'contract_type',
+                        'opportunity_id',
+                        'customer_id',
+                        'customer_name',
+                        'company_name',
+                        'rfq_number',
+                        'updated_at',
+                        'activated_at',
+                        'is_active',
+
+                        'active_version_id',
+
+                        'has_distributor_files',
+                        'has_schedule_files',
 
                         'sales_order_id',
                         'has_sales_order',

@@ -11,7 +11,9 @@ use App\Http\Query\{ActiveFirst,
     OrderByUpdatedAt,
     Quote\OrderByCompanyName};
 use App\Models\Quote\Quote;
+use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
+use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
@@ -20,10 +22,13 @@ use Illuminate\Support\Facades\DB;
 
 class UnifiedQuoteQueries
 {
+    protected ConnectionInterface $connection;
+
     protected Pipeline $pipeline;
 
-    public function __construct(Pipeline $pipeline)
+    public function __construct(ConnectionInterface $connection, Pipeline $pipeline)
     {
+        $this->connection = $connection;
         $this->pipeline = $pipeline;
     }
 
@@ -43,9 +48,9 @@ class UnifiedQuoteQueries
                     ->orOn('companies.id', 'quotes.company_id');
             })
             ->whereNull('quotes.submitted_at')
-//            ->whereNotNull('quotes.activated_at')
             ->select([
                 'quotes.id as id',
+                'quotes.user_id',
                 DB::raw("'Rescue' as business_division"),
                 DB::raw("'Contract' as contract_type"),
                 DB::raw('NULL as opportunity_id'),
@@ -54,17 +59,43 @@ class UnifiedQuoteQueries
                 'companies.name as company_name',
                 'customers.rfq as rfq_number',
                 DB::raw('COALESCE(quote_versions.completeness, quotes.completeness) as completeness'),
+
+                'quotes.active_version_id as active_version_id',
+                'quote_versions.distributor_file_id as active_version_distributor_file_id',
+                'quote_versions.schedule_file_id as active_version_schedule_file_id',
+
+                'quotes.distributor_file_id as distributor_file_id',
+                'quotes.schedule_file_id as schedule_file_id',
+
+                DB::raw('NULL as has_distributor_files'),
+                DB::raw('NULL as has_schedule_files'),
+
                 'quotes.updated_at as updated_at',
                 'quotes.activated_at as activated_at',
                 'quotes.is_active as is_active'
             ]);
 
+        $distributorFileExistenceQuery = WorldwideDistribution::query()->selectRaw('1')
+            ->whereColumn('worldwide_distributions.worldwide_quote_id', 'worldwide_quotes.active_version_id')
+            ->has('opportunitySupplier')
+            ->has('distributorFile')
+            ->limit(1);
+
+        $scheduleFileExistenceQuery = WorldwideDistribution::query()->selectRaw('1')
+            ->whereColumn('worldwide_distributions.worldwide_quote_id', 'worldwide_quotes.active_version_id')
+            ->has('opportunitySupplier')
+            ->has('scheduleFile')
+            ->limit(1);
+
         $worldwideQuotesQuery = WorldwideQuote::query()
             ->join('opportunities', function (JoinClause $joinClause) {
                 $joinClause->on('opportunities.id', 'worldwide_quotes.opportunity_id');
             })
+            ->join('worldwide_quote_versions as quote_active_version', function (JoinClause $joinClause) {
+                $joinClause->on('quote_active_version.id', 'worldwide_quotes.active_version_id');
+            })
             ->join('companies as company', function (JoinClause $joinClause) {
-                $joinClause->on('company.id', 'worldwide_quotes.company_id');
+                $joinClause->on('company.id', 'quote_active_version.company_id');
             })
             ->join('companies as primary_account', function (JoinClause $joinClause) {
                 $joinClause->on('primary_account.id', 'opportunities.primary_account_id');
@@ -77,6 +108,7 @@ class UnifiedQuoteQueries
             ->where('worldwide_quotes.status', QuoteStatus::ALIVE)
             ->select([
                 'worldwide_quotes.id as id',
+                'worldwide_quotes.user_id',
                 DB::raw("'Worldwide' as business_division"),
                 'contract_types.type_short_name as contract_type',
                 'opportunities.id as opportunity_id',
@@ -84,7 +116,21 @@ class UnifiedQuoteQueries
                 'primary_account.name as customer_name',
                 'company.name as company_name',
                 'worldwide_quotes.quote_number as rfq_number',
-                'worldwide_quotes.completeness as completeness',
+                'quote_active_version.completeness as completeness',
+
+                'worldwide_quotes.active_version_id as active_version_id',
+
+                DB::raw('NULL as active_version_distributor_file_id'),
+                DB::raw('NULL as active_version_schedule_file_id'),
+
+                DB::raw('NULL as distributor_file_id'),
+                DB::raw('NULL as schedule_file_id'),
+
+                'has_distributor_files' => $this->connection->query()
+                    ->selectRaw('exists ('.$distributorFileExistenceQuery->toSql().')', $scheduleFileExistenceQuery->getBindings()),
+                'has_schedule_files' => $this->connection->query()
+                    ->selectRaw('exists ('.$scheduleFileExistenceQuery->toSql().')', $scheduleFileExistenceQuery->getBindings()),
+
                 'worldwide_quotes.updated_at as updated_at',
                 'worldwide_quotes.activated_at as activated_at',
                 'worldwide_quotes.is_active as is_active'
@@ -131,6 +177,7 @@ class UnifiedQuoteQueries
             ->whereNotNull('quotes.submitted_at')
             ->select([
                 'quotes.id as id',
+                'quotes.user_id',
                 DB::raw("'Rescue' as business_division"),
                 DB::raw("'Contract' as contract_type"),
                 DB::raw('NULL as opportunity_id'),
@@ -139,6 +186,16 @@ class UnifiedQuoteQueries
                 'companies.name as company_name',
                 'customers.rfq as rfq_number',
                 DB::raw('COALESCE(quote_versions.completeness, quotes.completeness) as completeness'),
+
+                'quotes.active_version_id as active_version_id',
+                'quote_versions.distributor_file_id as active_version_distributor_file_id',
+                'quote_versions.schedule_file_id as active_version_schedule_file_id',
+
+                'quotes.distributor_file_id as distributor_file_id',
+                'quotes.schedule_file_id as schedule_file_id',
+
+                DB::raw('NULL as has_distributor_files'),
+                DB::raw('NULL as has_schedule_files'),
 
                 DB::raw('NULL as sales_order_id'),
                 DB::raw('NULL as sales_order_submitted_at'),
@@ -151,12 +208,27 @@ class UnifiedQuoteQueries
                 'quotes.is_active as is_active'
             ]);
 
+        $distributorFileExistenceQuery = WorldwideDistribution::query()->selectRaw('1')
+            ->whereColumn('worldwide_distributions.worldwide_quote_id', 'worldwide_quotes.active_version_id')
+            ->has('opportunitySupplier')
+            ->has('distributorFile')
+            ->limit(1);
+
+        $scheduleFileExistenceQuery = WorldwideDistribution::query()->selectRaw('1')
+            ->whereColumn('worldwide_distributions.worldwide_quote_id', 'worldwide_quotes.active_version_id')
+            ->has('opportunitySupplier')
+            ->has('scheduleFile')
+            ->limit(1);
+
         $worldwideQuotesQuery = WorldwideQuote::query()
             ->join('opportunities', function (JoinClause $joinClause) {
                 $joinClause->on('opportunities.id', 'worldwide_quotes.opportunity_id');
             })
+            ->join('worldwide_quote_versions as quote_active_version', function (JoinClause $joinClause) {
+                $joinClause->on('quote_active_version.id', 'worldwide_quotes.active_version_id');
+            })
             ->join('companies as company', function (JoinClause $joinClause) {
-                $joinClause->on('company.id', 'worldwide_quotes.company_id');
+                $joinClause->on('company.id', 'quote_active_version.company_id');
             })
             ->join('companies as primary_account', function (JoinClause $joinClause) {
                 $joinClause->on('primary_account.id', 'opportunities.primary_account_id');
@@ -173,6 +245,7 @@ class UnifiedQuoteQueries
             ->where('worldwide_quotes.status', QuoteStatus::ALIVE)
             ->select([
                 'worldwide_quotes.id as id',
+                'worldwide_quotes.user_id',
                 DB::raw("'Worldwide' as business_division"),
                 'contract_types.type_short_name as contract_type',
                 'opportunities.id as opportunity_id',
@@ -180,7 +253,20 @@ class UnifiedQuoteQueries
                 'primary_account.name as customer_name',
                 'company.name as company_name',
                 'worldwide_quotes.quote_number as rfq_number',
-                'worldwide_quotes.completeness as completeness',
+                'quote_active_version.completeness as completeness',
+
+                'worldwide_quotes.active_version_id as active_version_id',
+
+                DB::raw('NULL as active_version_distributor_file_id'),
+                DB::raw('NULL as active_version_schedule_file_id'),
+
+                DB::raw('NULL as distributor_file_id'),
+                DB::raw('NULL as schedule_file_id'),
+
+                'has_distributor_files' => $this->connection->query()
+                    ->selectRaw('exists ('.$distributorFileExistenceQuery->toSql().')', $scheduleFileExistenceQuery->getBindings()),
+                'has_schedule_files' => $this->connection->query()
+                    ->selectRaw('exists ('.$scheduleFileExistenceQuery->toSql().')', $scheduleFileExistenceQuery->getBindings()),
 
                 'sales_orders.id as sales_order_id',
                 'sales_orders.submitted_at as sales_order_submitted_at',
@@ -249,8 +335,11 @@ class UnifiedQuoteQueries
             ->join('opportunities', function (JoinClause $joinClause) {
                 $joinClause->on('opportunities.id', 'worldwide_quotes.opportunity_id');
             })
+            ->join('worldwide_quote_versions as quote_active_version', function (JoinClause $joinClause) {
+                $joinClause->on('quote_active_version.id', 'worldwide_quotes.active_version_id');
+            })
             ->join('companies as company', function (JoinClause $joinClause) {
-                $joinClause->on('company.id', 'worldwide_quotes.company_id');
+                $joinClause->on('company.id', 'quote_active_version.company_id');
             })
             ->join('companies as primary_account', function (JoinClause $joinClause) {
                 $joinClause->on('primary_account.id', 'opportunities.primary_account_id');
@@ -271,7 +360,7 @@ class UnifiedQuoteQueries
                 'company.name as company_name',
                 'worldwide_quotes.quote_number as rfq_number',
                 DB::raw('DATE(opportunities.opportunity_closing_date) as valid_until_date'),
-                'worldwide_quotes.completeness as completeness',
+                'quote_active_version.completeness as completeness',
                 'worldwide_quotes.updated_at as updated_at',
                 'worldwide_quotes.activated_at as activated_at',
                 'worldwide_quotes.is_active as is_active'

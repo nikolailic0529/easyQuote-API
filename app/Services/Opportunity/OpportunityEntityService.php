@@ -389,7 +389,7 @@ class OpportunityEntityService
             'account_manager_id' => $this->resolveAccountOwner($row['owner'] ?? null),
             'primary_account_id' => optional($primaryAccount)->getKey(),
             'primary_account_contact_id' => optional($primaryContact)->getKey(),
-            'project_name' => $row['business_partner_name'] ?? null,
+            'project_name' => $row['business_partner_name'] ?? $row['project_name'] ?? null,
             'nature_of_service' => $row['nature_of_service'] ?? null,
             'renewal_month' => $row['renewal_month'] ?? null,
             'renewal_year' => $row['renewal_year'] ?? null,

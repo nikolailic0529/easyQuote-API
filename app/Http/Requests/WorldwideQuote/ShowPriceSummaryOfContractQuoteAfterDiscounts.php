@@ -35,7 +35,7 @@ class ShowPriceSummaryOfContractQuoteAfterDiscounts extends FormRequest
                 'bail', 'required', 'uuid',
                 Rule::exists(WorldwideDistribution::class, 'id')
                     ->whereNull('deleted_at')
-                    ->where('worldwide_quote_id', $this->getWorldwideQuote()->getKey())
+                    ->where('worldwide_quote_id', $this->getWorldwideQuote()->active_version_id)
             ],
             'worldwide_distributions.*.predefined_discounts' => [
                 'bail', 'nullable', 'array'

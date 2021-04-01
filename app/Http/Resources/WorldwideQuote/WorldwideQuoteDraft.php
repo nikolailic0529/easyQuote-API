@@ -5,6 +5,7 @@ namespace App\Http\Resources\WorldwideQuote;
 use App\Enum\ContractQuoteStage;
 use App\Enum\PackQuoteStage;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\User;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -26,6 +27,7 @@ class WorldwideQuoteDraft extends JsonResource
         return [
             'id' => $this->getKey(),
             'user_id' => $this->user_id,
+            'active_version_id' => $this->active_version_id,
             'opportunity_id' => $this->opportunity_id,
             'type_name' => $this->type_name,
             'company_id' => $this->company_id,
@@ -47,6 +49,20 @@ class WorldwideQuoteDraft extends JsonResource
 
                 return ContractQuoteStage::getLabelOfValue($this->completeness);
 
+            }),
+
+            'has_versions' => $this->whenLoaded('versions', function () {
+                /** @var WorldwideQuote $this */
+                return $this->versions->count() > 1;
+            }),
+
+            'versions' => $this->whenLoaded('versions', function () {
+                /** @var WorldwideQuote $this */
+
+                return $this->versions->each(function (WorldwideQuoteVersion $version) {
+                    $version->setAttribute('version_name', sprintf('%s %s', $version->user_fullname, $version->user_version_sequence_number));
+                    $version->setAttribute('is_active_version', $version->getKey() === $this->active_version_id);
+                });
             }),
 
             'status' => $this->status,

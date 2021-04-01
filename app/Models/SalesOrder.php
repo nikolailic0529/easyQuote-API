@@ -68,7 +68,7 @@ class SalesOrder extends Model implements SearchableEntity
     public function toSearchArray(): array
     {
         return [
-            'customer_name' => $this->worldwideQuote->company->name,
+            'customer_name' => $this->worldwideQuote->activeVersion->company->name,
             'order_number' => SalesOrderNumberHelper::makeSalesOrderNumber(
                 $this->worldwideQuote->contractType->type_short_name,
                 $this->worldwideQuote->sequence_number

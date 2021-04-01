@@ -10,12 +10,17 @@ use App\Models\Quote\Discount\MultiYearDiscount;
 use App\Models\Quote\Discount\PrePayDiscount;
 use App\Models\Quote\Discount\PromotionalDiscount;
 use App\Models\Quote\Discount\SND;
+use App\Models\Task;
 use App\Models\Template\QuoteTemplate;
 use App\Models\User;
+use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
 use App\Traits\Uuid;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -24,10 +29,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * @property string|null $id
  * @property string|null $worldwide_quote_id
-// * @property string|null $contract_type_id
  * @property string|null $user_id
  * @property string|null $company_id
-// * @property string|null $opportunity_id
  * @property string|null $quote_currency_id
  * @property string|null $output_currency_id
  * @property string|null $quote_template_id
@@ -35,14 +38,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $completeness
  * @property string|null $quote_expiry_date
  * @property string|null $closing_date
-// * @property array|null $checkbox_status
-// * @property string|null $assets_migrated_at
-// * @property string|null $submitted_at
-// * @property string|null $activated_at
+ * @property string|null $assets_migrated_at
  * @property float|null $buy_price
  * @property float|null $actual_exchange_rate_value
  * @property string|null $additional_notes
-// * @property string|null $quote_number
  * @property int|null $user_version_sequence_number
  * @property string|null $quote_type
  * @property float|null $tax_value
@@ -66,7 +65,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * @property User $user
  * @property ContractType|null $contractType
- * @property Opportunity|null $opportunity
+// * @property Opportunity|null $opportunity
  * @property Collection|WorldwideDistribution[] $worldwideDistributions
  * @property QuoteTemplate|null $quoteTemplate
  * @property Currency $quoteCurrency
@@ -81,8 +80,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property Collection|null $applicablePromotionalDiscounts
  * @property Collection|null $applicablePrePayDiscounts
  * @property Collection|null $applicableMultiYearDiscounts
+ * @property WorldwideQuote|null $worldwideQuote
  */
-class WorldwideQuoteVersion extends BaseWorldwideQuote
+class WorldwideQuoteVersion extends Model
 {
     use Uuid, SoftDeletes;
 
@@ -91,5 +91,67 @@ class WorldwideQuoteVersion extends BaseWorldwideQuote
     public function worldwideQuote(): BelongsTo
     {
         return $this->belongsTo(WorldwideQuote::class);
+    }
+
+    public function assets(): MorphMany
+    {
+        return $this->morphMany(WorldwideQuoteAsset::class, 'worldwide_quote')
+            ->addSelect([
+                'vendor_short_code' => Vendor::query()->select('short_code')
+                    ->from('vendors')
+                    ->whereColumn('vendors.id', 'worldwide_quote_assets.vendor_id')->limit(1)->toBase()
+            ]);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function quoteCurrency(): BelongsTo
+    {
+        return $this->belongsTo(Currency::class)->withDefault();
+    }
+
+    public function outputCurrency(): BelongsTo
+    {
+        return $this->belongsTo(Currency::class)->withDefault();
+    }
+
+    public function quoteTemplate(): BelongsTo
+    {
+        return $this->belongsTo(QuoteTemplate::class);
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function worldwideDistributions(): MorphMany
+    {
+        return $this->morphMany(WorldwideDistribution::class, 'worldwide_quote')
+            // the clause is required to sync Worldwide Distribution with Opportunity Supplier Entities
+            ->has('opportunitySupplier');
+    }
+
+    public function multiYearDiscount(): BelongsTo
+    {
+        return $this->belongsTo(MultiYearDiscount::class);
+    }
+
+    public function prePayDiscount(): BelongsTo
+    {
+        return $this->belongsTo(PrePayDiscount::class);
+    }
+
+    public function promotionalDiscount(): BelongsTo
+    {
+        return $this->belongsTo(PromotionalDiscount::class);
+    }
+
+    public function snDiscount(): BelongsTo
+    {
+        return $this->belongsTo(SND::class);
     }
 }

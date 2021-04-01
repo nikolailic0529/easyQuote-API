@@ -2,6 +2,7 @@
 
 namespace App\Services\WorldwideQuote;
 
+use Illuminate\Database\Eloquent\Model;
 use App\Models\{Quote\BaseWorldwideQuote,
     Quote\DistributionFieldColumn,
     Quote\WorldwideDistribution,
@@ -48,7 +49,7 @@ class WorldwideQuoteVersionGuard
      * @return BaseWorldwideQuote
      * @throws \Throwable
      */
-    public function resolveModelForActingUser(): BaseWorldwideQuote
+    public function resolveModelForActingUser(): WorldwideQuoteVersion
     {
         if ($this->isActingUserOwnerOfActiveModelVersion()) {
             return $this->getActiveVersionOfModel();
@@ -58,10 +59,10 @@ class WorldwideQuoteVersionGuard
     }
 
     /**
-     * @return BaseWorldwideQuote
+     * @return WorldwideQuoteVersion
      * @throws \Throwable
      */
-    protected function performQuoteVersioning(): BaseWorldwideQuote
+    protected function performQuoteVersioning(): WorldwideQuoteVersion
     {
         $activeVersion = $this->getActiveVersionOfModel();
 
@@ -76,7 +77,7 @@ class WorldwideQuoteVersionGuard
             function (WorldwideDistribution $distributorQuote) use ($replicatedVersion) {
                 return $this->replicateDistributorQuote($distributorQuote, $replicatedVersion);
             },
-            $this->worldwideQuote->worldwideDistributions->all()
+            $activeVersion->worldwideDistributions->all()
         );
 
         return tap($replicatedVersion, function (WorldwideQuoteVersion $replicatedVersion) use ($activeVersion, $replicatedPackAssets, $replicatedDistributorQuotesOfVersion) {
@@ -125,9 +126,9 @@ class WorldwideQuoteVersionGuard
 
             $mappedRowBatch = array_merge($mappedRowBatch, array_map(fn(MappedRow $row) => $row->getAttributes(), $distributorQuoteData->getMappedRows()));
 
-            $groupOfRowBatch = array_merge($groupOfRowBatch, $distributorQuoteData->getRowsGroups());
+            $groupOfRowBatch = array_merge($groupOfRowBatch, array_map(fn (Model $model) => $model->getAttributes(), $distributorQuoteData->getRowsGroups()));
 
-            $rowOfGroupBatch = array_merge($rowOfGroupBatch, $distributorQuoteData->getGroupRows());
+            $rowOfGroupBatch = array_merge($rowOfGroupBatch, array_merge([], ...$distributorQuoteData->getGroupRows()));
 
             if (!is_null($distributorFile)) {
                 $distributorFileBatch[] = $distributorFile->getAttributes();
@@ -207,10 +208,10 @@ class WorldwideQuoteVersionGuard
         });
     }
 
-    protected function replicatePackQuoteAssets(BaseWorldwideQuote $activeVersion, WorldwideQuoteVersion $replicatedVersion): array
+    protected function replicatePackQuoteAssets(WorldwideQuoteVersion $activeVersion, WorldwideQuoteVersion $replicatedVersion): array
     {
         return array_map(function (WorldwideQuoteAsset $asset) use ($replicatedVersion) {
-            $newAsset = $asset->replicate();
+            $newAsset = $asset->replicate(['vendor_short_code']);
             $newAsset->{$newAsset->getKeyName()} = (string)Uuid::generate(4);
             $newAsset->worldwideQuote()->associate($replicatedVersion);
             $newAsset->replicatedAsset()->associate($asset);
@@ -219,11 +220,11 @@ class WorldwideQuoteVersionGuard
         }, $activeVersion->assets->all());
     }
 
-    protected function replicateQuoteVersion(BaseWorldwideQuote $activeVersion): WorldwideQuoteVersion
+    protected function replicateQuoteVersion(WorldwideQuoteVersion $activeVersion): WorldwideQuoteVersion
     {
         return tap(new WorldwideQuoteVersion(), function (WorldwideQuoteVersion $version) use ($activeVersion) {
             $version->{$version->getKeyName()} = (string)Uuid::generate(4);
-            $version->worldwideQuote()->associate($activeVersion);
+            $version->worldwideQuote()->associate($activeVersion->worldwideQuote);
             $version->user()->associate($this->actingUser);
             $version->company_id = $activeVersion->company_id;
             $version->quote_currency_id = $activeVersion->quote_currency_id;
@@ -251,16 +252,11 @@ class WorldwideQuoteVersionGuard
 
     protected function resolveNewVersionNumberForActingUser(): int
     {
-        // We increment a new version sequence by 2,
-        // when the acting user is owner of the base quote entity,
-        // as we assume the base entity as a first version of base quote entity owner.
-        $increment = $this->isActingUserOwnerOfBaseModel() ? 2 : 1;
-
         $userVersionCount = $this->worldwideQuote->versions()
             ->where((new WorldwideQuoteVersion())->user()->getQualifiedForeignKeyName(), $this->actingUser->getKey())
             ->count();
 
-        return $userVersionCount + $increment;
+        return ++$userVersionCount;
     }
 
     protected function replicateDistributorQuote(WorldwideDistribution $distributorQuote, WorldwideQuoteVersion $replicatedQuoteVersion): ReplicatedDistributorQuoteData
@@ -269,6 +265,7 @@ class WorldwideQuoteVersionGuard
 
         $replicatedDistributorQuote->{$replicatedDistributorQuote->getKeyName()} = (string)Uuid::generate(4);
         $replicatedDistributorQuote->worldwideQuote()->associate($replicatedQuoteVersion);
+        $replicatedDistributorQuote->replicated_distributor_quote_id = $distributorQuote->getKey();
 
         $replicatedMapping = DistributionFieldColumn::query()
             ->where('worldwide_distribution_id', $distributorQuote->getKey())
@@ -287,6 +284,7 @@ class WorldwideQuoteVersionGuard
         $replicatedDistributorFile = transform($distributorQuote->distributorFile, function (QuoteFile $quoteFile) {
             $newQuoteFile = $quoteFile->replicate();
             $newQuoteFile->{$newQuoteFile->getKeyName()} = (string)Uuid::generate(4);
+            $newQuoteFile->replicated_quote_file_id = $quoteFile->getKey();
             $newQuoteFile->{$newQuoteFile->getCreatedAtColumn()} = $quoteFile->{$quoteFile->getCreatedAtColumn()};
             $newQuoteFile->{$newQuoteFile->getUpdatedAtColumn()} = $quoteFile->{$quoteFile->getUpdatedAtColumn()};
 
@@ -310,7 +308,7 @@ class WorldwideQuoteVersionGuard
         $replicatedMappedRowsDictionary = (new Collection($replicatedMappedRows))->pluck('id', 'replicated_mapped_row_id')->all();
 
         $replicatedRowsGroups = array_map(function (DistributionRowsGroup $rowsGroup) use ($replicatedDistributorQuote) {
-            $newRowsGroup = $rowsGroup->replicate();
+            $newRowsGroup = $rowsGroup->replicate(['rows_count', 'rows_sum']);
             $newRowsGroup->replicated_rows_group_id = $rowsGroup->getKey();
             $newRowsGroup->{$newRowsGroup->getKeyName()} = (string)Uuid::generate(4);
             $newRowsGroup->{$newRowsGroup->worldwideDistribution()->getForeignKeyName()} = $replicatedDistributorQuote->getKey();
@@ -339,6 +337,7 @@ class WorldwideQuoteVersionGuard
 
             $newQuoteFile = $quoteFile->replicate();
             $newQuoteFile->{$newQuoteFile->getKeyName()} = (string)Uuid::generate(4);
+            $newQuoteFile->replicated_quote_file_id = $quoteFile->getKey();
             $newQuoteFile->{$newQuoteFile->getCreatedAtColumn()} = $quoteFile->{$quoteFile->getCreatedAtColumn()};
             $newQuoteFile->{$newQuoteFile->getUpdatedAtColumn()} = $quoteFile->{$quoteFile->getUpdatedAtColumn()};
 
@@ -383,10 +382,9 @@ class WorldwideQuoteVersionGuard
         );
     }
 
-    public function getActiveVersionOfModel(): BaseWorldwideQuote
+    public function getActiveVersionOfModel(): WorldwideQuoteVersion
     {
-        return $this->worldwideQuote->getRelationValue(static::$activeVersionRelationKey)
-            ?? $this->worldwideQuote;
+        return $this->worldwideQuote->getRelationValue(static::$activeVersionRelationKey);
     }
 
     public function isActingUserOwnerOfBaseModel(): bool

@@ -17,7 +17,9 @@ class QuotePolicy
      */
     public function viewAny(User $user)
     {
-        return $user->can('view_quotes') || $user->can('view_own_quotes');
+        if ($user->can('view_quotes') || $user->can('view_own_quotes')) {
+            return true;
+        }
     }
 
     /**
@@ -33,15 +35,15 @@ class QuotePolicy
             return true;
         }
 
-        if ($user->can("quotes.read.{$quote->id}")) {
+        if ($user->can("quotes.read.".$quote->getKey())) {
             return true;
         }
 
-        if ($user->can("quotes.read.user.{$quote->user_id}")) {
+        if (!is_null($quote->user()->getParentKey()) && $user->can("quotes.read.user.".$quote->user()->getParentKey())) {
             return true;
         }
 
-        if ($user->can('view_own_quotes') && $user->id === $quote->user_id) {
+        if ($user->can('view_own_quotes') && $user->getKey() === $quote->user()->getParentKey()) {
             return true;
         }
     }
@@ -74,15 +76,15 @@ class QuotePolicy
             return true;
         }
 
-        if ($user->can("quotes.update.{$quote->id}")) {
+        if ($user->can("quotes.update.".$quote->getKey())) {
             return true;
         }
 
-        if ($user->can("quotes.update.user.{$quote->user_id}")) {
+        if (!is_null($quote->user()->getParentKey()) && $user->can("quotes.update.user.".$quote->user()->getParentKey())) {
             return true;
         }
 
-        if ($user->can('update_own_quotes') && $user->id === $quote->user_id) {
+        if ($user->can('update_own_quotes') && $user->getKey() === $quote->user()->getParentKey()) {
             return true;
         }
     }
@@ -100,15 +102,15 @@ class QuotePolicy
             return true;
         }
 
-        if ($user->can("quotes.update.{$quote->id}")) {
+        if ($user->can("quotes.update.".$quote->getKey())) {
             return true;
         }
 
-        if ($user->can("quotes.update.user.{$quote->user_id}")) {
+        if (!is_null($quote->user()->getParentKey()) && $user->can("quotes.update.user.".$quote->user()->getParentKey())) {
             return true;
         }
 
-        if ($user->can('update_own_quotes') && $user->id === $quote->user_id) {
+        if ($user->can('update_own_quotes') && $user->getKey() === $quote->user()->getParentKey()) {
             return true;
         }
     }
@@ -202,11 +204,11 @@ class QuotePolicy
             return true;
         }
 
-        if ($user->can("quotes.delete.user.{$quote->user_id}")) {
+        if (!is_null($quote->user()->getParentKey()) && $user->can("quotes.delete.user.".$quote->user()->getParentKey())) {
             return true;
         }
 
-        if ($user->can('delete_own_quotes') && $user->id === $quote->user_id) {
+        if ($user->can('delete_own_quotes') && $user->getKey() === $quote->user()->getParentKey()) {
             return true;
         }
     }
@@ -229,11 +231,11 @@ class QuotePolicy
             return true;
         }
 
-        if ($user->can("quotes.delete.user.{$quote->user_id}")) {
+        if (!is_null($quote->user()->getParentKey()) && $user->can("quotes.delete.user.".$quote->user()->getParentKey())) {
             return true;
         }
 
-        if ($user->can('delete_own_quotes') && $user->id === $version->user_id) {
+        if ($user->can('delete_own_quotes') && $user->getKey() === $quote->user()->getParentKey()) {
             return true;
         }
     }

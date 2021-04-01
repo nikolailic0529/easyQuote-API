@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Events\WorldwideQuote\WorldwideQuoteMarkedAsAlive;
 use App\Contracts\{Services\ManagesExchangeRates,
     Services\ProcessesWorldwideDistributionState,
     Services\ProcessesWorldwideQuoteState};
@@ -45,6 +44,7 @@ use App\Events\WorldwideQuote\WorldwideQuoteDeactivated;
 use App\Events\WorldwideQuote\WorldwideQuoteDeleted;
 use App\Events\WorldwideQuote\WorldwideQuoteDrafted;
 use App\Events\WorldwideQuote\WorldwideQuoteInitialized;
+use App\Events\WorldwideQuote\WorldwideQuoteMarkedAsAlive;
 use App\Events\WorldwideQuote\WorldwideQuoteMarkedAsDead;
 use App\Events\WorldwideQuote\WorldwideQuoteSubmitted;
 use App\Events\WorldwideQuote\WorldwideQuoteUnraveled;
@@ -56,10 +56,11 @@ use App\Models\{Address,
     Opportunity,
     OpportunitySupplier,
     Quote\WorldwideDistribution,
-    Quote\WorldwideQuote};
+    Quote\WorldwideQuote,
+    Quote\WorldwideQuoteVersion};
 use App\Services\Exceptions\ValidationException;
 use Illuminate\Contracts\{Bus\Dispatcher as BusDispatcher, Cache\LockProvider, Events\Dispatcher as EventDispatcher};
-use Illuminate\Database\{ConnectionInterface, Eloquent\Builder, Eloquent\ModelNotFoundException};
+use Illuminate\Database\{ConnectionInterface, Eloquent\Builder, Eloquent\Collection, Eloquent\ModelNotFoundException};
 use Illuminate\Support\{Carbon, Facades\DB};
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -134,17 +135,28 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                 $quote->contractType()->associate($stage->contract_type_id);
                 $quote->opportunity()->associate($stage->opportunity_id);
                 $quote->user()->associate($stage->user_id);
-                $quote->completeness = $stage->stage;
-                $quote->quote_expiry_date = $stage->quote_expiry_date->toDateString();
                 $this->assignNewQuoteNumber($quote);
 
-                if ($quote->contract_type_id === CT_PACK) {
-                    $quote->buy_price = $opportunity->purchase_price;
-                }
+                $activeVersion = tap(new WorldwideQuoteVersion(), function (WorldwideQuoteVersion $version) use ($opportunity, $quote, $stage) {
+                    $version->{$version->getKeyName()} = (string)Uuid::generate(4);
+                    $version->user()->associate($stage->user_id);
+                    $version->completeness = $stage->stage;
+                    $version->quote_expiry_date = $stage->quote_expiry_date->toDateString();
+                    $version->user_version_sequence_number = 1;
 
-                $this->connection->transaction(function () use ($quote, $opportunitySuppliers) {
+                    if ($quote->contract_type_id === CT_PACK) {
+                        $version->buy_price = $opportunity->purchase_price;
+                    }
+                });
+
+                $quote->activeVersion()->associate($activeVersion);
+
+                $this->connection->transaction(function () use ($activeVersion, $quote, $opportunitySuppliers) {
+                    $activeVersion->save();
 
                     $quote->save();
+
+                    $activeVersion->worldwideQuote()->associate($quote)->save();
 
                     if ($quote->contract_type_id !== CT_CONTRACT) {
                         return;
@@ -153,7 +165,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                     // Populating the files from Opportunity Suppliers.
 
                     foreach ($opportunitySuppliers as $supplier) {
-                        $this->distributionProcessor->initializeDistribution($quote, $supplier->getKey());
+                        $this->distributionProcessor->initializeDistribution($activeVersion, $supplier->getKey());
                     }
 
                 });
@@ -218,9 +230,47 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         $quote->sequence_number = $newNumber;
     }
 
-    public function processQuoteAddressesContactsStep(WorldwideQuote $quote, AddressesContactsStage $stage): WorldwideQuote
+    public function switchActiveVersionOfQuote(WorldwideQuote $quote, WorldwideQuoteVersion $version): void
     {
-        if ($quote->contract_type_id !== CT_PACK) {
+        $lock = $this->lockProvider->lock(
+            Lock::UPDATE_WWQUOTE($quote->getKey()),
+            10
+        );
+
+        $quote->activeVersion()->associate($version);
+
+        $lock->block(30, function () use ($quote) {
+
+            $this->connection->transaction(function () use ($quote) {
+
+                $quote->save();
+
+            });
+
+        });
+    }
+
+    public function deleteVersionOfQuote(WorldwideQuote $quote, WorldwideQuoteVersion $version): void
+    {
+        $lock = $this->lockProvider->lock(
+            Lock::UPDATE_WWQUOTE($quote->getKey()),
+            10
+        );
+
+        $lock->block(30, function () use ($version) {
+
+            $this->connection->transaction(function () use ($version) {
+
+                $version->delete();
+
+            });
+
+        });
+    }
+
+    public function processQuoteAddressesContactsStep(WorldwideQuoteVersion $quote, AddressesContactsStage $stage): WorldwideQuoteVersion
+    {
+        if ($quote->worldwideQuote->contract_type_id !== CT_PACK) {
             throw new ValidationException('A processing of this stage is intended for Pack Quotes only.');
         }
 
@@ -246,8 +296,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             }
         }
 
-        return tap($quote, function (WorldwideQuote $quote) use ($stage) {
-            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->getRawOriginal());
+        return tap($quote, function (WorldwideQuoteVersion $quote) use ($stage) {
+            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->worldwideQuote->getRawOriginal());
 
             $quoteLock = $this->lockProvider->lock(
                 Lock::UPDATE_WWQUOTE($quote->getKey()),
@@ -267,12 +317,12 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             });
 
             $opportunityLock = $this->lockProvider->lock(
-                Lock::UPDATE_OPPORTUNITY($quote->opportunity_id),
+                Lock::UPDATE_OPPORTUNITY($quote->worldwideQuote->opportunity_id),
                 10
             );
 
             $opportunityLock->block(30, function () use ($quote, $stage) {
-                $opportunity = $quote->opportunity;
+                $opportunity = $quote->worldwideQuote->opportunity;
 
                 $existingAddressModelKeys = array_map(function (OpportunityAddressData $addressData) {
                     return $addressData->address_id;
@@ -367,16 +417,18 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
             $this->eventDispatcher->dispatch(
                 new WorldwidePackQuoteContactsStepProcessed(
-                    $quote,
+                    $quote->worldwideQuote,
                     $oldQuote
                 )
             );
         });
     }
 
-    public function processPackQuoteMarginStep(WorldwideQuote $quote, PackMarginTaxStage $stage): WorldwideQuote
+    public function processPackQuoteMarginStep(WorldwideQuoteVersion $quote, PackMarginTaxStage $stage): WorldwideQuoteVersion
     {
-        if ($quote->contract_type_id !== CT_PACK) {
+        $newVersionResolved = $quote->wasRecentlyCreated;
+
+        if ($quote->worldwideQuote->contract_type_id !== CT_PACK) {
             throw new ValidationException('A processing of this stage is intended for Pack Quotes only.');
         }
 
@@ -386,8 +438,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             throw new ValidationException($violations);
         }
 
-        return tap($quote, function (WorldwideQuote $quote) use ($stage) {
-            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->getRawOriginal());
+        return tap($quote, function (WorldwideQuoteVersion $quote) use ($stage) {
+            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->worldwideQuote->getRawOriginal());
 
             $lock = $this->lockProvider->lock(Lock::UPDATE_WWQUOTE($quote->getKey()), 10);
 
@@ -404,7 +456,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
             $this->eventDispatcher->dispatch(
                 new WorldwidePackQuoteMarginStepProcessed(
-                    $quote,
+                    $quote->worldwideQuote,
                     $oldQuote
                 )
             );
@@ -412,9 +464,9 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         });
     }
 
-    public function processPackQuoteDiscountStep(WorldwideQuote $quote, PackDiscountStage $stage): WorldwideQuote
+    public function processPackQuoteDiscountStep(WorldwideQuoteVersion $quote, PackDiscountStage $stage): WorldwideQuoteVersion
     {
-        if ($quote->contract_type_id !== CT_PACK) {
+        if ($quote->worldwideQuote->contract_type_id !== CT_PACK) {
             throw new ValidationException('A processing of this stage is intended for Pack Quotes only.');
         }
 
@@ -424,8 +476,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             throw new ValidationException($violations);
         }
 
-        return tap($quote, function (WorldwideQuote $quote) use ($stage) {
-            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->getRawOriginal());
+        return tap($quote, function (WorldwideQuoteVersion $quote) use ($stage) {
+            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->worldwideQuote->getRawOriginal());
 
             if (!is_null($stage->predefinedDiscounts)) {
                 $quote->multiYearDiscount()->associate($stage->predefinedDiscounts->multiYearDiscount);
@@ -453,16 +505,16 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
             $this->eventDispatcher->dispatch(
                 new WorldwidePackQuoteDiscountStepProcessed(
-                    $quote,
+                    $quote->worldwideQuote,
                     $oldQuote
                 )
             );
         });
     }
 
-    public function processPackQuoteDetailsStep(WorldwideQuote $quote, PackDetailsStage $stage): WorldwideQuote
+    public function processPackQuoteDetailsStep(WorldwideQuoteVersion $quote, PackDetailsStage $stage): WorldwideQuoteVersion
     {
-        if ($quote->contract_type_id !== CT_PACK) {
+        if ($quote->worldwideQuote->contract_type_id !== CT_PACK) {
             throw new ValidationException('A processing of this stage is intended for Pack Quotes only.');
         }
 
@@ -472,8 +524,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             throw new ValidationException($violations);
         }
 
-        return tap($quote, function (WorldwideQuote $quote) use ($stage) {
-            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->getRawOriginal());
+        return tap($quote, function (WorldwideQuoteVersion $quote) use ($stage) {
+            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->worldwideQuote->getRawOriginal());
 
             $lock = $this->lockProvider->lock(
                 Lock::UPDATE_WWQUOTE($quote->getKey()),
@@ -492,23 +544,25 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
             $this->eventDispatcher->dispatch(
                 new WorldwidePackQuoteDetailsStepProcessed(
-                    $quote,
+                    $quote->worldwideQuote,
                     $oldQuote
                 )
             );
         });
     }
 
-    public function processQuoteAssetsCreationStep(WorldwideQuote $quote, PackAssetsCreationStage $stage): WorldwideQuote
+    public function processQuoteAssetsCreationStep(WorldwideQuoteVersion $quote, PackAssetsCreationStage $stage): WorldwideQuoteVersion
     {
+        $newVersionResolved = $quote->wasRecentlyCreated;
+
         $violations = $this->validator->validate($stage);
 
         if (count($violations)) {
             throw new ValidationException($violations);
         }
 
-        return tap($quote, function (WorldwideQuote $quote) use ($stage) {
-            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->getRawOriginal());
+        return tap($quote, function (WorldwideQuoteVersion $quote) use ($stage) {
+            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->worldwideQuote->getRawOriginal());
 
             $lock = $this->lockProvider->lock(
                 Lock::UPDATE_WWQUOTE($quote->getKey()),
@@ -525,7 +579,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
             $this->eventDispatcher->dispatch(
                 new WorldwidePackQuoteAssetsCreationStepProcessed(
-                    $quote,
+                    $quote->worldwideQuote,
                     $oldQuote
                 )
             );
@@ -533,7 +587,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         });
     }
 
-    public function processQuoteAssetsReviewStep(WorldwideQuote $quote, PackAssetsReviewStage $stage): WorldwideQuote
+    public function processQuoteAssetsReviewStep(WorldwideQuoteVersion $quote, PackAssetsReviewStage $stage): WorldwideQuoteVersion
     {
         $violations = $this->validator->validate($stage);
 
@@ -541,8 +595,11 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             throw new ValidationException($violations);
         }
 
-        return tap($quote, function (WorldwideQuote $quote) use ($stage) {
-            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->getRawOriginal());
+        return tap($quote, function (WorldwideQuoteVersion $quote) use ($stage) {
+
+            $newVersionResolved = $quote->wasRecentlyCreated;
+
+            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->worldwideQuote->getRawOriginal());
 
             $lock = $this->lockProvider->lock(
                 Lock::UPDATE_WWQUOTE($quote->getKey()),
@@ -553,18 +610,27 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $quote->sort_rows_column = $stage->sort_rows_column;
             $quote->sort_rows_direction = $stage->sort_rows_direction;
 
-            $lock->block(30, function () use ($quote, $stage) {
+            $lock->block(30, function () use ($quote, $stage, $newVersionResolved) {
 
-                $this->connection->transaction(function () use ($quote, $stage) {
+                $this->connection->transaction(function () use ($quote, $stage, $newVersionResolved) {
                     $quote->save();
 
                     $quote->assets()->update(['is_selected' => false]);
 
                     $quote->assets()
-                        ->when($stage->reject, function (Builder $builder) use ($stage) {
-                            $builder->whereKeyNot($stage->selected_rows);
-                        }, function (Builder $builder) use ($stage) {
-                            $builder->whereKey($stage->selected_rows);
+                        ->when($stage->reject, function (Builder $builder) use ($stage, $newVersionResolved) {
+                            if ($newVersionResolved) {
+                                return $builder->whereNotIn('replicated_asset_id', $stage->selected_rows);
+                            }
+
+                            return $builder->whereKeyNot($stage->selected_rows);
+                        }, function (Builder $builder) use ($newVersionResolved, $stage) {
+                            if ($newVersionResolved) {
+                                return $builder->whereIn('replicated_asset_id', $stage->selected_rows);
+                            }
+
+
+                            return $builder->whereKey($stage->selected_rows);
                         })
                         ->update(['is_selected' => true]);
                 });
@@ -573,7 +639,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
             $this->eventDispatcher->dispatch(
                 new WorldwidePackQuoteAssetsReviewStepProcessed(
-                    $quote,
+                    $quote->worldwideQuote,
                     $oldQuote
                 )
             );
@@ -581,9 +647,11 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         });
     }
 
-    public function processQuoteImportStep(WorldwideQuote $quote, ImportStage $stage): WorldwideQuote
+    public function processQuoteImportStep(WorldwideQuoteVersion $quoteVersion, ImportStage $stage): WorldwideQuoteVersion
     {
-        if ($quote->contract_type_id !== CT_CONTRACT) {
+        $newVersionResolved = $quoteVersion->wasRecentlyCreated;
+
+        if ($quoteVersion->worldwideQuote->contract_type_id !== CT_CONTRACT) {
             throw new ValidationException('A processing of this stage is intended for Contract Quotes only.');
         }
 
@@ -608,40 +676,47 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $distributionsDataDictionary[$distributionData->distribution_id] = $distributionData;
         }
 
-        $oldQuote = with($quote, function (WorldwideQuote $quote) {
-            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->getRawOriginal());
+        $oldQuote = with($quoteVersion, function (WorldwideQuoteVersion $quoteVersion) {
+            $oldQuote = (new WorldwideQuote())->setRawAttributes($quoteVersion->worldwideQuote->getRawOriginal());
 
-            $oldDistributions = $quote->worldwideDistributions->map(function (WorldwideDistribution $distribution) {
-                return (new WorldwideDistribution())->setRawAttributes($distribution->getRawOriginal());
-            });
-
-            $oldQuote->setRelation('worldwideDistributions', $oldDistributions);
+            $oldQuote->setRelation('activeVersion', (new WorldwideQuoteVersion())->setRawAttributes($quoteVersion->getRawOriginal()));
 
             return $oldQuote;
         });
 
         $lock = $this->lockProvider->lock(
-            Lock::UPDATE_WWQUOTE($quote->getKey()),
+            Lock::UPDATE_WWQUOTE($quoteVersion->getKey()),
             10
         );
 
-        $quote->company()->associate($stage->company_id);
-        $quote->quoteCurrency()->associate($stage->quote_currency_id);
-        $quote->outputCurrency()->associate($stage->output_currency_id);
-        $quote->quoteTemplate()->associate($stage->quote_template_id);
+        $quoteVersion->company()->associate($stage->company_id);
+        $quoteVersion->quoteCurrency()->associate($stage->quote_currency_id);
+        $quoteVersion->outputCurrency()->associate($stage->output_currency_id);
+        $quoteVersion->quoteTemplate()->associate($stage->quote_template_id);
 
-        $quote->completeness = $stage->stage;
-        $quote->exchange_rate_margin = $stage->exchange_rate_margin;
-        $quote->quote_expiry_date = $stage->quote_expiry_date->toDateString();
-        $quote->payment_terms = $stage->payment_terms;
+        $quoteVersion->completeness = $stage->stage;
+        $quoteVersion->exchange_rate_margin = $stage->exchange_rate_margin;
+        $quoteVersion->quote_expiry_date = $stage->quote_expiry_date->toDateString();
+        $quoteVersion->payment_terms = $stage->payment_terms;
 
-        $lock->block(30, fn() => $quote->saveOrFail());
+        $lock->block(30, fn() => $quoteVersion->saveOrFail());
 
-        /** @var WorldwideDistribution[] $distributionModels */
-        $distributionModels = $quote->worldwideDistributions()
-            ->whereKey(array_keys($distributionsDataDictionary))
-            ->get()
-            ->getDictionary();
+        /** @var WorldwideDistribution[]|Collection $distributionModels */
+        $distributionModels = $quoteVersion->worldwideDistributions()
+            ->when($newVersionResolved, function (Builder $builder) use ($distributionsDataDictionary) {
+                $builder->whereIn('replicated_distributor_quote_id', array_keys($distributionsDataDictionary));
+            }, function (Builder $builder) use ($distributionsDataDictionary) {
+                $builder->whereKey(array_keys($distributionsDataDictionary));
+            })
+            ->get();
+
+        $distributionModels = value(function () use ($distributionModels, $newVersionResolved): array {
+            if ($newVersionResolved) {
+                return $distributionModels->keyBy('replicated_distributor_quote_id')->all();
+            }
+
+            return $distributionModels->getDictionary();
+        });
 
         // Updating attributes of the quote distributions.
         foreach ($stage->distributions_data as $distributionData) {
@@ -758,22 +833,22 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         }
 
         // Updating computed price of mapped rows of the quote distributions.
-        $distributions = $quote->worldwideDistributions()->with('distributionCurrency')->get(['id', 'worldwide_quote_id', 'distribution_currency_id', 'distribution_exchange_rate', 'created_at', 'updated_at']);
+        $distributions = $quoteVersion->worldwideDistributions()->with('distributionCurrency')->get(['id', 'worldwide_quote_id', 'distribution_currency_id', 'distribution_exchange_rate', 'created_at', 'updated_at']);
 
-        $distributions->each(function (WorldwideDistribution $distribution) use ($quote, $distributionsDataDictionary) {
+        $distributions->each(function (WorldwideDistribution $distribution) use ($quoteVersion, $distributionsDataDictionary) {
             $originalDistributionExchangeRate = $distribution->distribution_exchange_rate ?? 1;
 
-            $distribution->distribution_exchange_rate = with($distribution, function (WorldwideDistribution $distribution) use ($quote) {
-                if ($quote->quoteCurrency->is($distribution->distributionCurrency)) {
+            $distribution->distribution_exchange_rate = with($distribution, function (WorldwideDistribution $distribution) use ($quoteVersion) {
+                if ($quoteVersion->quoteCurrency->is($distribution->distributionCurrency)) {
                     return 1.0;
                 }
 
                 $rateValue = $this->exchangeRateService->getTargetRate(
                     $distribution->distributionCurrency ?? new Currency(),
-                    $quote->quoteCurrency
+                    $quoteVersion->quoteCurrency
                 );
 
-                return $rateValue + ($rateValue * $quote->exchange_rate_margin / 100);
+                return $rateValue + ($rateValue * $quoteVersion->exchange_rate_margin / 100);
             });
 
 
@@ -795,73 +870,56 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             });
         });
 
-        return tap($quote, function (WorldwideQuote $quote) use ($oldQuote) {
+        return tap($quoteVersion, function (WorldwideQuoteVersion $quote) use ($oldQuote) {
             $this->busDispatcher->dispatch(
-                new IndexSearchableEntity($quote)
+                new IndexSearchableEntity($quote->worldwideQuote)
             );
 
             $this->eventDispatcher->dispatch(
                 new WorldwideContractQuoteImportStepProcessed(
-                    $quote,
+                    $quote->worldwideQuote,
                     $oldQuote
                 )
             );
         });
     }
 
-    public function processQuoteMappingStep(MappingStage $stage): WorldwideQuote
+    public function processQuoteMappingStep(WorldwideQuoteVersion $quote, MappingStage $stage): WorldwideQuoteVersion
     {
         $stage->mapping->rewind();
 
-        $distributionMapping = $stage->mapping->current();
+        return tap($quote, function (WorldwideQuoteVersion $quote) use ($stage) {
+            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->worldwideQuote->getRawOriginal());
 
-        $quote = WorldwideQuote::query()->whereHas('worldwideDistributions', function (Builder $builder) use ($distributionMapping) {
-            $builder->whereKey($distributionMapping->worldwide_distribution_id);
-        })->first();
+            $lock = $this->lockProvider->lock(Lock::UPDATE_WWQUOTE($quote->worldwide_quote_id), 10);
 
-        if (is_null($quote)) {
-            throw (new ModelNotFoundException)->setModel(WorldwideQuote::class);
-        }
+            $quote->completeness = $stage->stage;
 
-        $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->getRawOriginal());
-
-        return tap($quote, function (WorldwideQuote $wwQuote) use ($oldQuote, $stage) {
-            $wwQuote->completeness = $stage->stage;
-            $wwQuote->save();
+            $lock->block(30, function () use ($quote) {
+                $quote->save();
+            });
 
             $this->eventDispatcher->dispatch(
                 new WorldwideContractQuoteMappingStepProcessed(
-                    $wwQuote,
+                    $quote->worldwideQuote,
                     $oldQuote
                 )
             );
         });
     }
 
-    public function processQuoteMappingReviewStep(ReviewStage $stage): WorldwideQuote
+    public function processQuoteMappingReviewStep(WorldwideQuoteVersion $quote, ReviewStage $stage): WorldwideQuoteVersion
     {
-        $stage->selected_distribution_rows->rewind();
+        return tap($quote, function (WorldwideQuoteVersion $quote) use ($stage) {
 
-        $distribution = $stage->selected_distribution_rows->current();
-
-        $quote = WorldwideQuote::query()->whereHas('worldwideDistributions', function (Builder $builder) use ($distribution) {
-            $builder->whereKey($distribution->worldwide_distribution_id);
-        })->first();
-
-        if (is_null($quote)) {
-            throw (new ModelNotFoundException)->setModel(WorldwideQuote::class);
-        }
-
-        return tap($quote, function (WorldwideQuote $quote) use ($stage) {
-
-            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->getRawOriginal());
-
-            $quote->completeness = $stage->stage;
+            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->worldwideQuote->getRawOriginal());
 
             $lock = $this->lockProvider->lock(
-                Lock::UPDATE_WWQUOTE($quote->getKey()),
+                Lock::UPDATE_WWQUOTE($quote->worldwide_quote_id),
                 10
             );
+
+            $quote->completeness = $stage->stage;
 
             $lock->block(30, function () use ($quote) {
                 $this->connection->transaction(fn() => $quote->save());
@@ -869,7 +927,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
             $this->eventDispatcher->dispatch(
                 new WorldwideContractQuoteMappingReviewStepProcessed(
-                    $quote,
+                    $quote->worldwideQuote,
                     $oldQuote
                 )
             );
@@ -877,23 +935,23 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         });
     }
 
-    public function processQuoteMarginStep(ContractMarginTaxStage $stage): WorldwideQuote
+    public function processQuoteMarginStep(WorldwideQuoteVersion $quote, ContractMarginTaxStage $stage): WorldwideQuoteVersion
     {
         $stage->distributions_margin->rewind();
 
         $distribution = $stage->distributions_margin->current();
 
-        $quote = WorldwideQuote::query()->whereHas('worldwideDistributions', function (Builder $builder) use ($distribution) {
-            $builder->whereKey($distribution->worldwide_distribution_id);
-        })->first();
+//        $quote = WorldwideQuote::query()->whereHas('worldwideDistributions', function (Builder $builder) use ($distribution) {
+//            $builder->whereKey($distribution->worldwide_distribution_id);
+//        })->first();
+//
+//        if (is_null($quote)) {
+//            throw (new ModelNotFoundException)->setModel(WorldwideQuote::class);
+//        }
 
-        if (is_null($quote)) {
-            throw (new ModelNotFoundException)->setModel(WorldwideQuote::class);
-        }
+        return tap($quote, function (WorldwideQuoteVersion $quote) use ($stage) {
 
-        return tap($quote, function (WorldwideQuote $quote) use ($stage) {
-
-            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->getRawOriginal());
+            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->worldwideQuote->getRawOriginal());
 
             $quote->completeness = $stage->stage;
 
@@ -908,7 +966,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
             $this->eventDispatcher->dispatch(
                 new WorldwideContractQuoteMarginStepProcessed(
-                    $quote,
+                    $quote->worldwideQuote,
                     $oldQuote
                 )
             );
@@ -916,10 +974,10 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         });
     }
 
-    public function processQuoteDiscountStep(WorldwideQuote $quote, ContractDiscountStage $stage): WorldwideQuote
+    public function processQuoteDiscountStep(WorldwideQuoteVersion $quote, ContractDiscountStage $stage): WorldwideQuoteVersion
     {
-        return tap($quote, function (WorldwideQuote $quote) use ($stage) {
-            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->getRawOriginal());
+        return tap($quote, function (WorldwideQuoteVersion $quote) use ($stage) {
+            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->worldwideQuote->getRawOriginal());
 
             $lock = $this->lockProvider->lock(
                 Lock::UPDATE_WWQUOTE($quote->getKey()),
@@ -936,17 +994,17 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
             $this->eventDispatcher->dispatch(
                 new WorldwideContractQuoteDiscountStepProcessed(
-                    $quote,
+                    $quote->worldwideQuote,
                     $oldQuote
                 )
             );
         });
     }
 
-    public function processContractQuoteDetailsStep(WorldwideQuote $quote, ContractDetailsStage $stage): WorldwideQuote
+    public function processContractQuoteDetailsStep(WorldwideQuoteVersion $quote, ContractDetailsStage $stage): WorldwideQuoteVersion
     {
-        return tap($quote, function (WorldwideQuote $quote) use ($stage) {
-            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->getRawOriginal());
+        return tap($quote, function (WorldwideQuoteVersion $quote) use ($stage) {
+            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->worldwideQuote->getRawOriginal());
 
             $lock = $this->lockProvider->lock(
                 Lock::UPDATE_WWQUOTE($quote->getKey()),
@@ -963,67 +1021,75 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
             $this->eventDispatcher->dispatch(
                 new WorldwideContractQuoteDetailsStepProcessed(
-                    $quote,
+                    $quote->worldwideQuote,
                     $oldQuote
                 )
             );
         });
     }
 
-    public function processQuoteSubmission(WorldwideQuote $quote, SubmitStage $stage): WorldwideQuote
+    public function processQuoteSubmission(WorldwideQuoteVersion $quote, SubmitStage $stage): WorldwideQuoteVersion
     {
-        return tap($quote, function (WorldwideQuote $quote) use ($stage) {
-            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->getRawOriginal());
+        return tap($quote, function (WorldwideQuoteVersion $quote) use ($stage) {
+            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->worldwideQuote->getRawOriginal());
 
             $lock = $this->lockProvider->lock(
-                Lock::UPDATE_WWQUOTE($quote->getKey()),
+                Lock::UPDATE_WWQUOTE($quote->worldwideQuote->getKey()),
                 10
             );
 
             $quote->completeness = ContractQuoteStage::COMPLETED;
-            $quote->submitted_at = Carbon::now();
+            $quote->worldwideQuote->submitted_at = Carbon::now();
             $quote->closing_date = $stage->quote_closing_date->toDateString();
             $quote->additional_notes = $stage->additional_notes;
 
             $lock->block(30, function () use ($quote) {
 
-                $this->connection->transaction(fn() => $quote->save());
+                $this->connection->transaction(function () use ($quote) {
+                    $quote->save();
+
+                    $quote->worldwideQuote->save();
+                });
 
             });
 
             $this->eventDispatcher->dispatch(
                 new WorldwideQuoteSubmitted(
-                    $quote,
+                    $quote->worldwideQuote,
                     $oldQuote
                 )
             );
         });
     }
 
-    public function processQuoteDraft(WorldwideQuote $quote, DraftStage $stage): WorldwideQuote
+    public function processQuoteDraft(WorldwideQuoteVersion $quote, DraftStage $stage): WorldwideQuoteVersion
     {
-        return tap($quote, function (WorldwideQuote $quote) use ($stage) {
-            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->getRawOriginal());
+        return tap($quote, function (WorldwideQuoteVersion $quote) use ($stage) {
+            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->worldwideQuote->getRawOriginal());
 
             $lock = $this->lockProvider->lock(
-                Lock::UPDATE_WWQUOTE($quote->getKey()),
+                Lock::UPDATE_WWQUOTE($quote->worldwideQuote->getKey()),
                 10
             );
 
             $quote->completeness = ContractQuoteStage::COMPLETED;
-            $quote->submitted_at = null;
+            $quote->worldwideQuote->submitted_at = null;
             $quote->closing_date = $stage->quote_closing_date->toDateString();
             $quote->additional_notes = $stage->additional_notes;
 
             $lock->block(30, function () use ($quote) {
 
-                $this->connection->transaction(fn() => $quote->save());
+                $this->connection->transaction(function () use ($quote) {
+                    $quote->save();
+
+                    $quote->worldwideQuote->save();
+                });
 
             });
 
             $this->eventDispatcher->dispatch(
                 new WorldwideQuoteDrafted(
-                    $quote,
+                    $quote->worldwideQuote,
                     $oldQuote
                 )
             );
@@ -1064,7 +1130,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         $lock->block(30, function () use ($quote) {
 
             $this->connection->transaction(function () use ($quote) {
-                $quote->worldwideDistributions()->getQuery()->delete();
+                $quote->versions()->getQuery()->delete();
                 $quote->delete();
             });
 
@@ -1110,7 +1176,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $newSuppliers = $quote->opportunity->opportunitySuppliers()->doesntHave('worldwideDistribution')->get();
 
             foreach ($newSuppliers as $supplier) {
-                $this->distributionProcessor->initializeDistribution($quote, $supplier->getKey());
+                $this->distributionProcessor->initializeDistribution($quote->activeVersion, $supplier->getKey());
             }
         }
     }

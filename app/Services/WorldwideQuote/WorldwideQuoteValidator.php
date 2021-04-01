@@ -116,14 +116,14 @@ class WorldwideQuoteValidator
             'phone_no' => $customer->phone,
             'fax_no' => null,
             'email' => $customer->email,
-            'currency_code' => transform($quote->quoteCurrency, fn(Currency $currency) => $currency->code),
+            'currency_code' => transform($quote->activeVersion->quoteCurrency, fn(Currency $currency) => $currency->code),
         ];
     }
 
     private function mapQuoteAssetsToArray(WorldwideQuote $quote): array
     {
         if ($quote->contract_type_id === CT_CONTRACT) {
-            return $quote->worldwideDistributions->reduce(function (array $assets, WorldwideDistribution $distributorQuote) {
+            return $quote->activeVersion->worldwideDistributions->reduce(function (array $assets, WorldwideDistribution $distributorQuote) {
 
                 // TODO: add distinction when groups of rows are used.
                 $distributorQuote->load(['mappedRows' => function (Relation $relation) {
@@ -158,7 +158,7 @@ class WorldwideQuoteValidator
                 $relation->where('is_selected', true);
             }]);
 
-            return $quote->assets->map(fn(WorldwideQuoteAsset $asset) => [
+            return $quote->activeVersion->assets->map(fn(WorldwideQuoteAsset $asset) => [
                 'service_sku' => $asset->service_sku,
                 'service_description' => $asset->service_level_description,
                 'serial_number' => $asset->serial_no,
@@ -200,7 +200,7 @@ class WorldwideQuoteValidator
 
         if ($quote->contract_type_id === CT_CONTRACT) {
 
-            return $quote->worldwideDistributions->reduce(function (array $addresses, WorldwideDistribution $distributorQuote) use ($addressToArray) {
+            return $quote->activeVersion->worldwideDistributions->reduce(function (array $addresses, WorldwideDistribution $distributorQuote) use ($addressToArray) {
 
                 $distributorQuoteAddresses = $distributorQuote->addresses->map($addressToArray)->all();
 
