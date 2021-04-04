@@ -3,21 +3,16 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\{
-    Stats\Map,
-    Stats\Summary,
-    Stats\Request as StatsRequest,
-};
+use App\Http\Requests\{Stats\ShowQuoteLocations, Stats\StatsAggregatorRequest as StatsRequest, Stats\Summary,};
 use App\Models\Location;
-use App\Services\StatsAggregator;
-use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use App\Services\Stats\StatsAggregationService;
+use Illuminate\Http\JsonResponse;
 
 class StatsController extends Controller
 {
-    protected StatsAggregator $stats;
+    protected StatsAggregationService $stats;
 
-    public function __construct(StatsAggregator $stats)
+    public function __construct(StatsAggregationService $stats)
     {
         $this->stats = $stats;
     }
@@ -26,16 +21,13 @@ class StatsController extends Controller
      * Display a quotes summary.
      *
      * @param Summary $request
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
      */
-    public function quotesSummary(Summary $request)
+    public function showSummaryOfQuotes(Summary $request): JsonResponse
     {
         return response()->json(
-            $this->stats->quotesSummary(
-                $request->period(),
-                $request->country_id,
-                $request->currency_id,
-                $request->userId()
+            $this->stats->getQuotesSummary(
+                $request->getSummaryRequestData()
             )
         );
     }
@@ -44,16 +36,13 @@ class StatsController extends Controller
      * Display a customers summary.
      *
      * @param Summary $request
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
      */
-    public function customersSummary(Summary $request)
+    public function showSummaryOfCustomers(Summary $request): JsonResponse
     {
         return response()->json(
-            $this->stats->customersSummaryList(
-                $request->period(),
-                $request->country_id,
-                $request->currency_id,
-                $request->userId()
+            $this->stats->getCustomersSummaryList(
+                $request->getSummaryRequestData()
             )
         );
     }
@@ -61,15 +50,15 @@ class StatsController extends Controller
     /**
      * Display customer totals for map.
      *
-     * @param Map $request
-     * @return \Illuminate\Http\Response
+     * @param ShowQuoteLocations $request
+     * @return JsonResponse
      */
-    public function mapCustomers(Map $request)
+    public function showCustomerLocations(ShowQuoteLocations $request): JsonResponse
     {
         return response()->json(
-            $this->stats->mapCustomerTotals(
-                $request->polygon(),
-                $request->userId()
+            $this->stats->getCustomerTotalLocations(
+                $request->getPolygon(),
+                $request->resolveEntityKeyOfActingUser()
             )
         );
     }
@@ -77,16 +66,16 @@ class StatsController extends Controller
     /**
      * Display asset totals for map.
      *
-     * @param Map $request
-     * @return \Illuminate\Http\Response
+     * @param ShowQuoteLocations $request
+     * @return JsonResponse
      */
-    public function mapAssets(Map $request)
+    public function showAssetLocations(ShowQuoteLocations $request): JsonResponse
     {
         return response()->json(
-            $this->stats->mapAssetTotals(
-                $request->centerPoint(),
-                $request->polygon(),
-                $request->userId()
+            $this->stats->getAssetTotalLocations(
+                $request->getPointOfCenter(),
+                $request->getPolygon(),
+                $request->resolveEntityKeyOfActingUser()
             )
         );
     }
@@ -94,16 +83,16 @@ class StatsController extends Controller
     /**
      * Display quote totals for map.
      *
-     * @param Map $request
-     * @return \Illuminate\Http\Response
+     * @param ShowQuoteLocations $request
+     * @return JsonResponse
      */
-    public function mapQuotes(Map $request)
+    public function showQuoteLocations(ShowQuoteLocations $request): JsonResponse
     {
         return response()->json(
-            $this->stats->mapQuoteTotals(
-                $request->centerPoint(),
-                $request->polygon(),
-                $request->userId()
+            $this->stats->getQuoteLocations(
+                $request->getPointOfCenter(),
+                $request->getPolygon(),
+                $request->resolveEntityKeyOfActingUser()
             )
         );
     }
@@ -113,14 +102,14 @@ class StatsController extends Controller
      *
      * @param Location $location
      * @param StatsRequest $request
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
      */
-    public function quotesByLocation(Location $location, StatsRequest $request)
+    public function showQuotesOfLocation(StatsRequest $request, Location $location): JsonResponse
     {
         return response()->json(
-            $this->stats->quotesByLocation(
-                $location->id,
-                $request->userId()
+            $this->stats->getQuoteTotalLocations(
+                $location->getKey(),
+                $request->resolveEntityKeyOfActingUser()
             )
         );
     }

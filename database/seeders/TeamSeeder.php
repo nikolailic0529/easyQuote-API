@@ -21,6 +21,7 @@ class TeamSeeder extends Seeder
             $connection->table('teams')->insertOrIgnore([
                 'id' => UT_RESCUE,
                 'team_name' => 'Rescue',
+                'business_division_id' => BD_RESCUE,
                 'is_system' => true,
                 'created_at' => now(),
                 'updated_at' => now()
@@ -29,6 +30,7 @@ class TeamSeeder extends Seeder
             $connection->table('teams')->insertOrIgnore([
                 'id' => UT_EPD_WW,
                 'team_name' => 'EPD Worldwide',
+                'business_division_id' => BD_WORLDWIDE,
                 'is_system' => true,
                 'created_at' => now(),
                 'updated_at' => now()

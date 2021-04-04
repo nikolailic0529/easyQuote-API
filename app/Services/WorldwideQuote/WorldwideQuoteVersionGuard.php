@@ -254,7 +254,7 @@ class WorldwideQuoteVersionGuard
     {
         $userVersionCount = $this->worldwideQuote->versions()
             ->where((new WorldwideQuoteVersion())->user()->getQualifiedForeignKeyName(), $this->actingUser->getKey())
-            ->count();
+            ->max('user_version_sequence_number');
 
         return ++$userVersionCount;
     }

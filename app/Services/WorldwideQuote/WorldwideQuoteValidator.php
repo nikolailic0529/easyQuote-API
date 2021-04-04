@@ -8,6 +8,7 @@ use App\Models\Data\Country;
 use App\Models\Data\Currency;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Models\QuoteFile\MappedRow;
 use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
@@ -125,28 +126,54 @@ class WorldwideQuoteValidator
         if ($quote->contract_type_id === CT_CONTRACT) {
             return $quote->activeVersion->worldwideDistributions->reduce(function (array $assets, WorldwideDistribution $distributorQuote) {
 
-                // TODO: add distinction when groups of rows are used.
-                $distributorQuote->load(['mappedRows' => function (Relation $relation) {
-                    $relation->where('is_selected', true);
-                }]);
+                $distributorQuoteAssets = value(function () use ($distributorQuote): array {
+                    /** @var Vendor $vendor */
+                    $vendor = $distributorQuote->vendors->first(null, new Vendor());
 
-                /** @var Vendor $vendor */
-                $vendor = $distributorQuote->vendors->first(null, new Vendor());
+                    if ($distributorQuote->use_groups) {
+                        $distributorQuote->load(['rowsGroups' => function (Relation $relation) {
+                            $relation->where('is_selected', true);
+                        }, 'rowsGroups.rows']);
 
-                $distributorQuoteAssets = $distributorQuote->mappedRows->map(fn(MappedRow $row) => [
-                    'service_sku' => $row->service_sku,
-                    'service_description' => $row->service_level_description,
-                    'serial_number' => $row->serial_no,
-                    'sku' => $row->product_no,
-                    'product_description' => $row->description,
-                    'unit_price' => $row->price,
-                    'buy_price' => $row->price,
-                    'quantity' => $row->qty,
-                    'machine_country_code' => transform($distributorQuote->country, fn (Country $country) => $country->iso_3166_2),
-                    'vendor_name' => $vendor->short_code,
-                    'distributor' => $distributorQuote->opportunitySupplier->supplier_name,
-                    'discount_applied' => null,
-                ])->all();
+                        return $distributorQuote->rowsGroups->reduce(function (array $rows, DistributionRowsGroup $rowsGroup) use ($vendor, $distributorQuote) {
+                            $rowsOfGroup = $rowsGroup->rows->map(fn(MappedRow $row) => [
+                                'service_sku' => $row->service_sku,
+                                'service_description' => $row->service_level_description,
+                                'serial_number' => $row->serial_no,
+                                'sku' => $row->product_no,
+                                'product_description' => $row->description,
+                                'unit_price' => $row->price,
+                                'buy_price' => $row->price,
+                                'quantity' => $row->qty,
+                                'machine_country_code' => transform($distributorQuote->country, fn(Country $country) => $country->iso_3166_2),
+                                'vendor_name' => $vendor->short_code,
+                                'distributor' => $distributorQuote->opportunitySupplier->supplier_name,
+                                'discount_applied' => null,
+                            ])->all();
+
+                            return array_merge($rows, $rowsOfGroup);
+                        }, []);
+                    }
+
+                    $distributorQuote->load(['mappedRows' => function (Relation $relation) {
+                        $relation->where('is_selected', true);
+                    }]);
+
+                    return $distributorQuote->mappedRows->map(fn(MappedRow $row) => [
+                        'service_sku' => $row->service_sku,
+                        'service_description' => $row->service_level_description,
+                        'serial_number' => $row->serial_no,
+                        'sku' => $row->product_no,
+                        'product_description' => $row->description,
+                        'unit_price' => $row->price,
+                        'buy_price' => $row->price,
+                        'quantity' => $row->qty,
+                        'machine_country_code' => transform($distributorQuote->country, fn(Country $country) => $country->iso_3166_2),
+                        'vendor_name' => $vendor->short_code,
+                        'distributor' => $distributorQuote->opportunitySupplier->supplier_name,
+                        'discount_applied' => null,
+                    ])->all();
+                });
 
                 return array_merge($assets, $distributorQuoteAssets);
 

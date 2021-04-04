@@ -2,19 +2,19 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
-use Tests\Unit\Traits\{
-    WithFakeUser
-};
 use App\Contracts\Services\LocationService;
-use App\Contracts\Services\Stats;
+use App\DTO\Stats\SummaryRequestData;
 use App\DTO\Summary;
-use App\Models\{Quote\Quote, Quote\QuoteTotal, Data\Country, Quote\WorldwideQuote};
-use App\Services\StatsAggregator;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Carbon;
+use App\Models\{Data\Country, Quote\Quote, Quote\WorldwideQuote};
+use App\Services\Stats\StatsAggregationService;
 use Carbon\CarbonPeriod;
+use Illuminate\Contracts\Container\BindingResolutionException;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Carbon;
+use Tests\TestCase;
+use Tests\Unit\Traits\{WithFakeUser};
 
 /**
  * @group build
@@ -42,10 +42,10 @@ class StatsTest extends TestCase
      */
     public function testQuotesStatsByLocation()
     {
-        /** @var StatsAggregator */
-        $aggregator = app(StatsAggregator::class);
+        /** @var StatsAggregationService */
+        $aggregator = $this->app->make(StatsAggregationService::class);
 
-        $quotes = $aggregator->quotesByLocation($this->faker->uuid);
+        $quotes = $aggregator->getQuoteTotalLocations($this->faker->uuid);
 
         $this->assertInstanceOf(Collection::class, $quotes);
     }
@@ -57,13 +57,13 @@ class StatsTest extends TestCase
      */
     public function testQuotesOnMap()
     {
-        /** @var StatsAggregator */
-        $aggregator = app(StatsAggregator::class);
+        /** @var StatsAggregationService */
+        $aggregator = $this->app->make(StatsAggregationService::class);
 
         /** @var LocationService */
-        $locationService = app(LocationService::class);
+        $locationService = $this->app->make(LocationService::class);
 
-        $quotes = $aggregator->mapQuoteTotals(
+        $quotes = $aggregator->getQuoteLocations(
             $locationService->renderPoint(
                 $this->faker->latitude,
                 $this->faker->longitude
@@ -86,13 +86,13 @@ class StatsTest extends TestCase
      */
     public function testAssetsOnMap()
     {
-        /** @var StatsAggregator */
-        $aggregator = app(StatsAggregator::class);
+        /** @var StatsAggregationService */
+        $aggregator = $this->app->make(StatsAggregationService::class);
 
         /** @var LocationService */
-        $locationService = app(LocationService::class);
+        $locationService = $this->app->make(LocationService::class);
 
-        $assets = $aggregator->mapAssetTotals(
+        $assets = $aggregator->getAssetTotalLocations(
             $locationService->renderPoint(
                 $this->faker->latitude,
                 $this->faker->longitude
@@ -117,13 +117,13 @@ class StatsTest extends TestCase
      */
     public function testCustomersOnMap()
     {
-        /** @var StatsAggregator */
-        $aggregator = app(StatsAggregator::class);
+        /** @var StatsAggregationService */
+        $aggregator = $this->app->make(StatsAggregationService::class);
 
         /** @var LocationService */
-        $locationService = app(LocationService::class);
+        $locationService = $this->app->make(LocationService::class);
 
-        $customers = $aggregator->mapCustomerTotals(
+        $customers = $aggregator->getCustomerTotalLocations(
             $locationService->renderPolygon(
                 $this->faker->latitude,
                 $this->faker->longitude,
@@ -140,14 +140,24 @@ class StatsTest extends TestCase
      * Test Customers Summary aggregate.
      *
      * @return void
+     * @throws BindingResolutionException
      */
     public function testCustomersSummary()
     {
-        /** @var StatsAggregator */
-        $aggregator = app(StatsAggregator::class);
+        /** @var StatsAggregationService */
+        $aggregator = $this->app->make(StatsAggregationService::class);
 
-        $customers = $aggregator->customersSummary(
-            value($this->faker->randomElement([null, fn () => Country::value('id')]))
+        $classMap = array_flip(Relation::$morphMap);
+
+        $entityTypes = [
+            $classMap[Quote::class],
+            $classMap[WorldwideQuote::class]
+        ];
+
+        $customers = $aggregator->getCustomersSummary(new SummaryRequestData([
+                'country_id' => Country::query()->value('id'),
+                'entity_types' => $entityTypes
+            ])
         );
 
         $this->assertIsObject($customers);
@@ -158,16 +168,27 @@ class StatsTest extends TestCase
      * Test Quotes Summary aggregate.
      *
      * @return void
+     * @throws BindingResolutionException
      */
     public function testQuotesSummary()
     {
-        /** @var StatsAggregator */
-        $aggregator = app(StatsAggregator::class);
+        /** @var StatsAggregationService */
+        $aggregator = $this->app->make(StatsAggregationService::class);
 
         $period = CarbonPeriod::create(Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth());
 
+        $classMap = array_flip(Relation::$morphMap);
+
+        $entityTypes = [
+            $classMap[Quote::class],
+            $classMap[WorldwideQuote::class]
+        ];
+
         /** @var Summary */
-        $quotes = $aggregator->quotesSummary($period);
+        $quotes = $aggregator->getQuotesSummary(new SummaryRequestData([
+            'period' => $period,
+            'entity_types' => $entityTypes
+        ]));
 
         $this->assertInstanceOf(Summary::class, $quotes);
 

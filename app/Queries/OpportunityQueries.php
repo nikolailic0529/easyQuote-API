@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use Illuminate\Pipeline\Pipeline;
-use Illuminate\Support\Str;
 
 class OpportunityQueries
 {
@@ -75,7 +74,7 @@ class OpportunityQueries
                 return $this->elasticsearch->search(
                     (new ElasticsearchQuery)
                         ->modelIndex($model)
-                        ->queryString(Str::of($searchQuery)->start('*')->finish('*'))
+                        ->queryString('*'.ElasticsearchQuery::escapeReservedChars($searchQuery).'*')
                         ->toArray()
                 );
             });

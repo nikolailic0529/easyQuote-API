@@ -24,6 +24,7 @@ class UnifiedQuote extends JsonResource
 
         return [
             'id' => $this->getKey(),
+            'user_id' => $this->user_id,
             'business_division' => $this->business_division,
             'contract_type' => $this->contract_type,
             'opportunity_id' => $this->opportunity_id,

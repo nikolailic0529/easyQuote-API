@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Team\TeamWithIncludes;
 use App\Http\Requests\{Team\CreateTeam, Team\UpdateTeam};
 use App\Http\Resources\Team\TeamList;
 use App\Models\Team;
@@ -105,7 +106,7 @@ class TeamController extends Controller
         $this->authorize('view', $team);
 
         return response()->json(
-            $team,
+            TeamWithIncludes::make($team),
             Response::HTTP_OK
         );
     }

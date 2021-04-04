@@ -6,6 +6,7 @@ use App\Models\Address;
 use App\Models\Data\Country;
 use App\Models\Data\Currency;
 use App\Models\Opportunity;
+use App\Models\OpportunitySupplier;
 use App\Models\Quote\Discount\MultiYearDiscount;
 use App\Models\Quote\Discount\PrePayDiscount;
 use App\Models\Quote\Discount\PromotionalDiscount;
@@ -409,11 +410,11 @@ class SalesOrderTest extends TestCase
     }
 
     /**
-     * Test an ability to submit an existing Sales Order.
+     * Test an ability to submit an existing Pack Sales Order.
      *
      * @return void
      */
-    public function testCanSubmitSalesOrder()
+    public function testCanSubmitPackSalesOrder()
     {
         $this->authenticateApi();
 
@@ -466,6 +467,107 @@ class SalesOrderTest extends TestCase
                $handlerStack = HandlerStack::create($mock);
 
                return new Client(['handler' => $handlerStack]);
+            });
+
+
+        $response = $this->postJson('api/sales-orders/'.$salesOrder->getKey().'/submit')
+//            ->dump()
+        ;
+
+        $this->assertContainsEquals($response->status(), [Response::HTTP_UNPROCESSABLE_ENTITY, Response::HTTP_ACCEPTED]);
+
+        $response = $this->getJson('api/sales-orders/'.$salesOrder->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'submitted_at'
+            ]);
+
+        $this->assertNotEmpty($response->json('submitted_at'));
+    }
+
+    /**
+     * Test an ability to submit an existing Pack Sales Order.
+     *
+     * @return void
+     */
+    public function testCanSubmitContractSalesOrder()
+    {
+        $this->authenticateApi();
+
+        /** @var Opportunity $opportunity */
+        $opportunity = factory(Opportunity::class)->create([
+            'contract_type_id' => CT_CONTRACT
+        ]);
+
+        $invoiceAddress = factory(Address::class)->create(['address_type' => 'Invoice']);
+        $machineAddress = factory(Address::class)->create([
+            'address_type' => 'Machine',
+            'country_id' => Country::query()->where('iso_3166_2', 'GB')->value('id')
+        ]);
+
+        $opportunity->addresses()->sync([
+            $invoiceAddress->getKey(), $machineAddress->getKey()
+        ]);
+
+        /** @var WorldwideQuote $quote */
+        $quote = factory(WorldwideQuote::class)->create([
+            'contract_type_id' => CT_CONTRACT,
+            'opportunity_id' => $opportunity->getKey(),
+        ]);
+
+        $quote->activeVersion->update([
+            'quote_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
+        ]);
+
+        $distributorFile = factory(QuoteFile::class)->create();
+
+        $supplier = factory(OpportunitySupplier::class)->create([
+            'opportunity_id' => $opportunity->getKey()
+        ]);
+
+        /** @var WorldwideDistribution $distributorQuote */
+        $distributorQuote = factory(WorldwideDistribution::class)->create([
+            'worldwide_quote_id' => $quote->activeVersion->getKey(),
+            'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
+            'distributor_file_id' => $distributorFile,
+            'opportunity_supplier_id' => $supplier->getKey(),
+            'country_id' => Country::query()->value('id'),
+            'use_groups' => true
+        ]);
+
+        $distributorQuote->addresses()->sync([
+            $invoiceAddress->getKey(),
+            $machineAddress->getKey()
+        ]);
+
+        $distributorQuote->vendors()->sync(Vendor::query()->where('short_code', 'HPE')->value('id'));
+
+        $mappedRows = factory(MappedRow::class, 10)->create([
+            'quote_file_id' => $distributorFile->getKey()
+        ]);
+
+        /** @var DistributionRowsGroup $groupOfRows */
+        $groupOfRows = factory(DistributionRowsGroup::class)->create([
+            'worldwide_distribution_id' => $distributorQuote->getKey(),
+            'is_selected' => true
+        ]);
+
+        $groupOfRows->rows()->sync($mappedRows);
+
+        $salesOrder = factory(SalesOrder::class)->create(['worldwide_quote_id' => $quote->getKey(), 'submitted_at' => null, 'vat_number' => '1234']);
+
+        $this->app->when(SubmitSalesOrderService::class)->needs(ClientInterface::class)
+            ->give(function () {
+                $mock = new MockHandler([
+                    new \GuzzleHttp\Psr7\Response(200, [], json_encode(['token_type' => 'Bearer', 'expires_in' => 31536000, 'access_token' => '1234'])),
+                    new \GuzzleHttp\Psr7\Response(200, [], json_encode(['id' => 'b7a34431-75c1-4b8d-af9d-4db0ca499109'])),
+                ]);
+
+                $handlerStack = HandlerStack::create($mock);
+
+                return new Client(['handler' => $handlerStack]);
             });
 
 

@@ -9,6 +9,7 @@ $factory->define(MappedRow::class, function (Faker $faker) {
     return [
         'product_no'  => $faker->regexify('/\d{6}-[A-Z]\d{2}/'),
         'serial_no'   => $faker->regexify('/[A-Z]{2}\d{4}[A-Z]{2}[A-Z]/'),
+        'service_sku' => $faker->regexify('/\d{6}-[A-Z]\d{2}/'),
         'description' => $faker->text,
         'date_from'   => now(),
         'date_to'     => now()->addYears(2),

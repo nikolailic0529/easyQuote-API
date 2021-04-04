@@ -2,6 +2,7 @@
 
 namespace App\DTO\Opportunity;
 
+use App\Models\Company;
 use Spatie\DataTransferObject\DataTransferObject;
 
 final class ImportedOpportunityData extends DataTransferObject

@@ -27,6 +27,7 @@ use App\Models\Opportunity;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\Quote\WorldwideQuoteVersion;
+use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Models\QuoteFile\MappedRow;
 use App\Models\SalesOrder;
 use App\Models\User;
@@ -35,9 +36,9 @@ use App\Models\WorldwideQuoteAsset;
 use App\Services\ThumbHelper;
 use App\Services\WorldwideQuote\AssetServiceLookupService;
 use App\Services\WorldwideQuoteCalc;
+use http\Exception\InvalidArgumentException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder as BaseBuilder;
@@ -99,51 +100,101 @@ class SalesOrderDataMapper
         $customer = $opportunity->primaryAccount;
         $quoteCurrency = $this->getSalesOrderOutputCurrency($salesOrder);
         $accountManager = $opportunity->accountManager;
-        $company = $quote->company;
 
-        if ($quote->worldwideDistributions->isEmpty()) {
+        $activeQuoteVersion = $quote->activeVersion;
+
+        $company = $activeQuoteVersion->company;
+
+        if ($activeQuoteVersion->worldwideDistributions->isEmpty()) {
             throw new \InvalidArgumentException("At least one Distributor Quote must exist on the Quote.");
         }
 
         $quotePriceData = $this->getSalesOrderPriceData($salesOrder);
 
-        $quote->worldwideDistributions->load(['mappedRows' => function (Relation $relation) {
+        $activeQuoteVersion->worldwideDistributions->load(['mappedRows' => function (Relation $relation) {
             $relation->where('is_selected', true);
-        }]);
+        }, 'rowsGroups' => function (Relation $relation) {
+            $relation->where('is_selected', true);
+        }, 'rowsGroups.rows']);
 
-        $orderLinesData = $quote->worldwideDistributions->reduce(function (array $orderLines, WorldwideDistribution $distribution) use ($quoteCurrency, $quotePriceData) {
-            /** @var Vendor $quoteVendor */
-            $quoteVendor = $distribution->vendors->first();
+        $activeQuoteVersion->worldwideDistributions->each(function (WorldwideDistribution $distributorQuote) {
 
-            $supplier = $distribution->opportunitySupplier;
+            $supplierName = $distributorQuote->opportunitySupplier->supplier_name;
 
-            $distributorQuoteLines = $distribution->mappedRows->map(function (MappedRow $row) use ($distribution, $quoteCurrency, $supplier, $quoteVendor, $quotePriceData) {
-                return new SubmitOrderLineData([
-                    'line_id' => $row->getKey(),
-                    'unit_price' => $row->price,
-                    'sku' => $row->product_no ?? '',
-                    'buy_price' => $row->price * $quotePriceData->price_value_coefficient * (float)$quoteCurrency->exchange_rate_value,
-                    'service_description' => $row->service_level_description ?? '',
-                    'product_description' => $row->description ?? '',
-                    'serial_number' => $row->serial_no ?? '',
-                    'quantity' => $row->qty,
-                    'service_sku' => $row->service_sku ?? '',
-                    'vendor_short_code' => $quoteVendor->short_code ?? '',
-                    'distributor_name' => $supplier->supplier_name ?? '',
-                    'discount_applied' => $quotePriceData->applicable_discounts_value > 0,
-                    'machine_country_code' => $distribution->country->iso_3166_2,
-                    'currency_code' => $quoteCurrency->code,
-                ]);
-            })->all();
+            if ($distributorQuote->vendors->isEmpty()) {
+                throw new \InvalidArgumentException("No vendors defined, Supplier: '{$supplierName}'.");
+            }
+
+            if (is_null($distributorQuote->country)) {
+                throw new \InvalidArgumentException("Country must be defined, Supplier: '{$supplierName}'.");
+            }
+
+        });
+
+        $orderLinesData = $activeQuoteVersion->worldwideDistributions->reduce(function (array $orderLines, WorldwideDistribution $distribution) use ($quoteCurrency, $quotePriceData) {
+            $distributorQuoteLines = value(function () use ($quotePriceData, $quoteCurrency, $distribution): array {
+                /** @var Vendor $quoteVendor */
+                $quoteVendor = $distribution->vendors->first();
+
+                $supplier = $distribution->opportunitySupplier;
+
+                if ($distribution->use_groups) {
+
+                    return $distribution->rowsGroups->reduce(function (array $rows, DistributionRowsGroup $rowsGroup) use ($supplier, $quoteVendor, $quotePriceData, $quoteCurrency, $distribution) {
+                        $rowsOfGroup = $rowsGroup->rows->map(fn(MappedRow $row) => new SubmitOrderLineData([
+                            'line_id' => $row->getKey(),
+                            'unit_price' => $row->price,
+                            'sku' => $row->product_no ?? '',
+                            'buy_price' => $row->price * $quotePriceData->price_value_coefficient * (float)$quoteCurrency->exchange_rate_value,
+                            'service_description' => $row->service_level_description ?? '',
+                            'product_description' => $row->description ?? '',
+                            'serial_number' => $row->serial_no ?? '',
+                            'quantity' => $row->qty,
+                            'service_sku' => $row->service_sku ?? '',
+                            'vendor_short_code' => $quoteVendor->short_code ?? '',
+                            'distributor_name' => $supplier->supplier_name ?? '',
+                            'discount_applied' => $quotePriceData->applicable_discounts_value > 0,
+                            'machine_country_code' => transform($distribution->country, fn(Country $country) => $country->iso_3166_2) ?? '',
+                            'currency_code' => $quoteCurrency->code,
+                        ]))->all();
+
+                        return array_merge($rows, $rowsOfGroup);
+                    }, []);
+
+                }
+
+                return $distribution->mappedRows->map(function (MappedRow $row) use ($distribution, $quoteCurrency, $supplier, $quoteVendor, $quotePriceData) {
+                    return new SubmitOrderLineData([
+                        'line_id' => $row->getKey(),
+                        'unit_price' => $row->price,
+                        'sku' => $row->product_no ?? '',
+                        'buy_price' => $row->price * $quotePriceData->price_value_coefficient * (float)$quoteCurrency->exchange_rate_value,
+                        'service_description' => $row->service_level_description ?? '',
+                        'product_description' => $row->description ?? '',
+                        'serial_number' => $row->serial_no ?? '',
+                        'quantity' => $row->qty,
+                        'service_sku' => $row->service_sku ?? '',
+                        'vendor_short_code' => $quoteVendor->short_code ?? '',
+                        'distributor_name' => $supplier->supplier_name ?? '',
+                        'discount_applied' => $quotePriceData->applicable_discounts_value > 0,
+                        'machine_country_code' => transform($distribution->country, fn(Country $country) => $country->iso_3166_2) ?? '',
+                        'currency_code' => $quoteCurrency->code,
+                    ]);
+                })->all();
+            });
 
             return array_merge($distributorQuoteLines);
         }, []);
+
+        if (empty($orderLinesData)) {
+            throw new \InvalidArgumentException('At least one Order Line must exist on the Quote.');
+        }
 
 //        $this->populateServiceDataToSupportLines(...$orderLinesData);
 
         $addresses = [];
 
-        foreach ($quote->worldwideDistributions as $distributorQuote) {
+        foreach ($activeQuoteVersion->worldwideDistributions as $distributorQuote) {
             $addresses[] = $distributorQuote->addresses
                 ->sortByDesc('pivot.is_default')
                 ->first(function (Address $address) {
@@ -183,7 +234,7 @@ class SalesOrderDataMapper
         ]);
 
         /** @var WorldwideDistribution|null $firstDistributorQuote */
-        $firstDistributorQuote = $quote->worldwideDistributions->first();
+        $firstDistributorQuote = $activeQuoteVersion->worldwideDistributions->first();
 
         /** @var Vendor|null $firstVendor */
         $firstVendor = $firstDistributorQuote->vendors->first();

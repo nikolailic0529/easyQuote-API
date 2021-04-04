@@ -4,21 +4,38 @@ namespace App\Models;
 
 use App\Contracts\SearchableEntity;
 use App\Traits\Uuid;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Class Team
  *
+ * @property string|null $business_division_id
  * @property string|null $team_name
  * @property float|null $monthly_goal_amount
  * @property bool|null $is_system
+ *
+ * @property BusinessDivision|null $businessDivision
+ * @property Collection<User>|User[] $teamLeaders
  */
 class Team extends Model implements SearchableEntity
 {
     use Uuid, SoftDeletes;
 
     protected $guarded = [];
+
+    public function businessDivision(): BelongsTo
+    {
+        return $this->belongsTo(BusinessDivision::class);
+    }
+
+    public function teamLeaders(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'team_team_leader', null, 'team_leader_id');
+    }
 
     public function getSearchIndex(): string
     {

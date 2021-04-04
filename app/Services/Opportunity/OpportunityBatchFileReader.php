@@ -87,7 +87,7 @@ class OpportunityBatchFileReader
                 /** @var Row $firstRow */
                 $firstRow = $rowIterator->current();
 
-                $firstRowArray = $this->rowToArrayOfStrings($firstRow);
+                $firstRowArray = $this->rowToArray($firstRow);
 
                 $filteredRowArray = array_filter($firstRowArray, fn(string $value) => !empty($value));
 
@@ -129,16 +129,20 @@ class OpportunityBatchFileReader
         }, $this->headers);
     }
 
-    private function rowToArrayOfStrings(Row $row): array
+    private function rowToArray(Row $row): array
     {
         return array_map(function (Cell $cell) {
             $value = $cell->getValue();
 
             if ($cell->isDate()) {
-                $value = Carbon::createFromTimestamp($value->getTimestamp())->toString();
+                return Carbon::createFromTimestamp($value->getTimestamp())->toString();
             }
 
-            return trim((string)$value);
+            if (is_string($value)) {
+                return trim($value);
+            }
+
+            return $value;
         }, $row->getCells());
     }
 
@@ -156,6 +160,10 @@ class OpportunityBatchFileReader
         $values = array_map(function ($value) {
             if (is_string($value) && trim($value) === "") {
                 return null;
+            }
+
+            if (is_string($value)) {
+                return trim($value);
             }
 
             return $value;

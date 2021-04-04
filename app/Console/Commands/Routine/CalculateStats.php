@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands\Routine;
 
-use App\Services\StatsAggregator;
 use Illuminate\Console\Command;
 
 class CalculateStats extends Command

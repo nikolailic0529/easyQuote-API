@@ -2,6 +2,9 @@
 
 namespace App\Services\Opportunity;
 
+use App\Enum\AccountCategory;
+use App\Enum\VAT;
+use Illuminate\Support\Arr;
 use App\DTO\{Opportunity\BatchOpportunityUploadResult,
     Opportunity\BatchSaveOpportunitiesData,
     Opportunity\CreateOpportunityData,
@@ -9,19 +12,18 @@ use App\DTO\{Opportunity\BatchOpportunityUploadResult,
     Opportunity\ImportedOpportunityData,
     Opportunity\MarkOpportunityAsLostData,
     Opportunity\UpdateOpportunityData,
-    Opportunity\UpdateSupplierData
-};
+    Opportunity\UpdateSupplierData};
 use App\Enum\Lock;
 use App\Enum\OpportunityStatus;
 use App\Events\{Opportunity\OpportunityCreated,
     Opportunity\OpportunityDeleted,
     Opportunity\OpportunityMarkedAsLost,
     Opportunity\OpportunityMarkedAsNotLost,
-    Opportunity\OpportunityUpdated
-};
+    Opportunity\OpportunityUpdated};
 use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
+use App\Models\Data\Country;
 use App\Models\Data\Timezone;
 use App\Models\Opportunity;
 use App\Models\OpportunitySupplier;
@@ -93,25 +95,50 @@ class OpportunityEntityService
     /**
      * Perform batch Opportunity import.
      *
-     * @param UploadedFile $fileInfo
+     * @param UploadedFile $opportunitiesDataFile
+     * @param UploadedFile $accountsDataFile
+     * @param UploadedFile $accountContactsFile
      * @param User $user
      * @return BatchOpportunityUploadResult
      * @throws ValidationException
      * @throws \Throwable
      */
-    public function batchImportOpportunities(UploadedFile $fileInfo, User $user): BatchOpportunityUploadResult
+    public function batchImportOpportunities(UploadedFile $opportunitiesDataFile, UploadedFile $accountsDataFile, UploadedFile $accountContactsFile, User $user): BatchOpportunityUploadResult
     {
-        $reader = (new OpportunityBatchFileReader(
-            $fileInfo->getRealPath(),
-            $fileInfo->getClientOriginalExtension()
+        $opportunitiesDataFileReader = (new OpportunityBatchFileReader(
+            $opportunitiesDataFile->getRealPath(),
+            $opportunitiesDataFile->getClientOriginalExtension()
         ));
+
+        $accountsDataFileReader = (new AccountsDataBatchFileReader(
+            $accountsDataFile->getRealPath(),
+            $accountsDataFile->getClientOriginalExtension()
+        ));
+
+        $accountContactsFileReader = (new AccountContactBatchFileReader(
+            $accountContactsFile->getRealPath(),
+            $accountContactsFile->getClientOriginalExtension()
+        ));
+
+        $accountsDataDictionary = iterator_to_array($accountsDataFileReader->getRows());
+
+
+        $accountContactsDictionary = value(function () use ($accountContactsFileReader): array {
+            $dictionary = [];
+
+            foreach ($accountContactsFileReader->getRows() as $key => $row) {
+                $dictionary[$key][] = $row;
+            }
+
+            return $dictionary;
+        });
 
         $errors = (new MessageBag())
             ->setFormat('Validation failure on :key row. :message');
 
         $imported = [];
 
-        foreach ($reader->getRows() as $i => $row) {
+        foreach ($opportunitiesDataFileReader->getRows() as $i => $row) {
             $validator = $this->validateBatchOpportunityRow($row);
 
             if ($validator->fails()) {
@@ -122,7 +149,12 @@ class OpportunityEntityService
                 continue;
             }
 
-            $importedOpportunity = $this->importOpportunity($this->mapBatchOpportunityRow($row, $user));
+            $importedOpportunity = $this->importOpportunity($this->mapBatchOpportunityRow(
+                $row,
+                $accountsDataDictionary,
+                $accountContactsDictionary,
+                $user
+            ));
 
             $imported[] = new ImportedOpportunityData([
                 'id' => $importedOpportunity->getKey(),
@@ -306,23 +338,184 @@ class OpportunityEntityService
         ]);
     }
 
-    private function mapBatchOpportunityRow(array $row, User $user): CreateOpportunityData
+    private function mapPrimaryAccountData(string $accountName, array $accountsDataDictionary, array $accountContactsDataDictionary): Company
     {
-        /** @var Company|null $primaryAccount */
-        $primaryAccount = transform($row['primary_account_name'] ?? null, function (string $accountName) {
-            $company = Company::query()->where('name', trim($accountName))->where('type', 'External')->first();
+        $accountNameHash = md5($accountName);
 
-            if (is_null($company)) {
-                $company = tap(new Company(), function (Company $company) use ($accountName) {
-                    $company->name = $accountName;
-                    $company->type = 'External';
-                    $company->source = 'EQ';
-                    $company->category = 'Reseller';
-                    $company->save();
-                });
+        $accountData = $accountsDataDictionary[$accountNameHash] ?? null;
+        $accountContactData = $accountContactsDataDictionary[$accountNameHash] ?? null;
+
+        $company = Company::query()->where('name', trim($accountName))->where('type', 'External')->first();
+
+        $categoryOfCompanyResolver = static function (?array $accountData) {
+            static $categoryDictionary = [
+                'distributor' => AccountCategory::RESELLER,
+                'business_partner' => AccountCategory::BUSINESS_PARTNER,
+                'reseller' => AccountCategory::RESELLER,
+                'end_user' => AccountCategory::END_USER
+            ];
+
+            if (is_null($accountData)) {
+                return 'Reseller';
             }
 
+            $categoryDictionaryOfAccountData = Arr::only($accountData, ['distributor', 'business_partner', 'reseller', 'end_user']);
+
+            foreach ($categoryDictionaryOfAccountData as $key => $value) {
+                if (strtolower(trim($value)) === 'yes') {
+                    return $categoryDictionary[$key];
+                }
+
+            }
+
+            return AccountCategory::RESELLER;
+        };
+
+        if (is_null($company)) {
+            $company = tap(new Company(), function (Company $company) use ($accountData, $categoryOfCompanyResolver, $accountName) {
+                $company->{$company->getKeyName()} = (string)Uuid::generate(4);
+                $company->name = $accountName;
+                $company->type = 'External';
+                $company->source = 'EQ';
+                $company->vat_type = VAT::NO_VAT;
+                $company->category = $categoryOfCompanyResolver($accountData);
+            });
+        }
+
+        /** @var Company $company */
+
+        if (!is_null($accountData)) {
+            $company->email ??= $accountData['primary_e_mail'] ?? $company->email;
+            $company->phone ??= $accountData['primary_phone'] ?? $company->phone;
+            $company->website ??= $accountData['home_page'] ?? $company->website;
+        }
+
+        $company->save();
+
+        if (is_null($accountContactData)) {
             return $company;
+        }
+
+        $newAddressDataOfCompany = [];
+        $newContactDataOfCompany = [];
+
+        foreach ($accountContactData as $contactData) {
+            $newAddressDataOfCompany[] = tap(new Address(), function (Address $address) use ($contactData) {
+                $address->{$address->getKeyName()} = (string)Uuid::generate(4);
+                $address->address_type = 'Invoice';
+
+                [$addressOne, $addressTwo] = transform($contactData['street_address'] ?? null, function (string $streetAddress) {
+                    if (str_contains($streetAddress, "\n")) {
+                        return explode("\n", $streetAddress);
+                    }
+
+                    return [$streetAddress, null];
+                }, [null, null]);
+
+                $address->address_1 = transform($addressOne, fn (string $address) => trim($address, " \t\n\r\0\x0B,"));
+                $address->address_2 = transform($addressTwo, fn (string $address) => trim($address, " \t\n\r\0\x0B,"));
+
+                $address->city = $contactData['city'] ?? null;
+                $address->contact_name = $contactData['owner'] ?? null;
+                $address->contact_number = $contactData['primary_phone'] ?? null;
+                $address->contact_email = $contactData['primary_e_mail'] ?? null;
+                $address->post_code = $contactData['zip_code'] ?? null;
+                $address->state = $contactData['state_province'] ?? null;
+
+                if (isset($contactData['country'])) {
+                    $address->country()->associate(
+                        Country::query()->where('name', $contactData['country'])->first()
+                    );
+                }
+
+                $address->{$address->getCreatedAtColumn()} = $address->freshTimestampString();
+                $address->{$address->getUpdatedAtColumn()} = $address->freshTimestampString();
+            });
+
+            $newContactDataOfCompany[] = tap(new Contact(), function (Contact $contact) use ($contactData) {
+                $contact->{$contact->getKeyName()} = (string)Uuid::generate(4);
+                $contact->first_name = $contactData['first_name'] ?? null;
+                $contact->last_name = $contactData['last_name'] ?? null;
+                $contact->email = $contactData['primary_e_mail'] ?? null;
+                $contact->phone = $contactData['primary_phone'] ?? null;
+                $contact->job_title = $contactData['titlesalutation'] ?? null;
+                $contact->is_verified = true;
+
+                $contact->{$contact->getCreatedAtColumn()} = $contact->freshTimestampString();
+                $contact->{$contact->getUpdatedAtColumn()} = $contact->freshTimestampString();
+            });
+        }
+
+        $company->load(['addresses', 'contacts']);
+
+        $addressToHash = static function (Address $address): string {
+            return md5(implode('~', [
+                $address->address_type,
+                $address->address_1,
+                $address->address_2,
+                $address->city,
+                $address->contact_name,
+                $address->contact_number,
+                $address->contact_email,
+                $address->post_code,
+                $address->state,
+                $address->country_id
+            ]));
+        };
+
+        $contactToHash = static function (Contact $contact): string {
+            return md5(implode('~', [
+                $contact->first_name,
+                $contact->last_name,
+                $contact->email,
+                $contact->phone,
+                $contact->job_title,
+                $contact->is_verified
+            ]));
+        };
+
+        $existingAddressHashes = array_flip(array_map($addressToHash, $company->addresses->all()));
+        $existingContactHashes = array_flip(array_map($contactToHash, $company->contacts->all()));
+
+        $newAddressDataOfCompany = array_values(array_filter($newAddressDataOfCompany, function (Address $address) use ($existingAddressHashes, $addressToHash) {
+            $addressHash = $addressToHash($address);
+
+            return !isset($existingAddressHashes[$addressHash]);
+        }));
+
+        $newContactDataOfCompany = array_values(array_filter($newContactDataOfCompany, function (Contact $contact) use ($existingContactHashes, $contactToHash) {
+            $contactHash = $contactToHash($contact);
+
+            return !isset($existingContactHashes[$contactHash]);
+        }));
+
+        $newBatchAddressDataOfCompany = array_map(fn(Model $model) => $model->getAttributes(), $newAddressDataOfCompany);
+        $newBatchContactDataOfCompany = array_map(fn(Model $model) => $model->getAttributes(), $newContactDataOfCompany);
+
+        if (!empty($newBatchAddressDataOfCompany)) {
+            Address::query()->insert($newBatchAddressDataOfCompany);
+
+            $company->addresses()->syncWithoutDetaching(array_column($newBatchAddressDataOfCompany, 'id'));
+        }
+
+        if (!empty($newContactDataOfCompany)) {
+            Contact::query()->insert($newBatchContactDataOfCompany);
+
+            $company->contacts()->syncWithoutDetaching(array_column($newBatchContactDataOfCompany, 'id'));
+        }
+
+        return $company;
+    }
+
+    private function mapBatchOpportunityRow(array $row, array $accountsDataDictionary, array $accountContactsDataDictionary, User $user): CreateOpportunityData
+    {
+        /** @var Company|null $primaryAccount */
+        $primaryAccount = transform($row['primary_account_name'] ?? null, function (string $accountName) use ($accountContactsDataDictionary, $accountsDataDictionary) {
+            return $this->mapPrimaryAccountData(
+                $accountName,
+                $accountsDataDictionary,
+                $accountContactsDataDictionary
+            );
         });
 
         $primaryContact = transform($row['primary_contact_name'] ?? null, function (string $primaryContactName) use ($primaryAccount) {

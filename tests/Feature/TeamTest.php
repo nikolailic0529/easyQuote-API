@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Team;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
@@ -64,10 +66,16 @@ class TeamTest extends TestCase
     {
         $this->authenticateApi();
 
+        /** @var Collection $teamLeaders */
+        $teamLeaders = factory(User::class, 2)->create();
+
         $response = $this->postJson('api/teams', [
             'team_name' => $teamName = $this->faker->text(191),
-            'monthly_goal_amount' => $monthlyGoalAmount = $this->faker->randomFloat(0, 0, 999999999)
+            'monthly_goal_amount' => $monthlyGoalAmount = $this->faker->randomFloat(0, 0, 999999999),
+            'business_division_id' => BD_RESCUE,
+            'team_leaders' => $teamLeaders->modelKeys()
         ])
+//            ->dump()
             ->assertCreated()
             ->assertJsonStructure([
                 'id',
@@ -80,11 +88,18 @@ class TeamTest extends TestCase
         $modelKey = $response->json('id');
 
         $this->getJson('api/teams/'.$modelKey)
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 'id',
+                'business_division_id',
                 'team_name',
                 'monthly_goal_amount',
+                'team_leaders' => [
+                  '*' => [
+                      'id', 'first_name', 'last_name'
+                  ]
+                ],
                 'created_at',
                 'updated_at'
             ])
@@ -105,9 +120,14 @@ class TeamTest extends TestCase
 
         $team = factory(Team::class)->create();
 
+        /** @var Collection $teamLeaders */
+        $teamLeaders = factory(User::class, 2)->create();
+
         $this->patchJson('api/teams/'.$team->getKey(), [
             'team_name' => $teamName = $this->faker->text(191),
-            'monthly_goal_amount' => $monthlyGoalAmount = $this->faker->randomFloat(0, 999999999)
+            'monthly_goal_amount' => $monthlyGoalAmount = $this->faker->randomFloat(0, 999999999),
+            'business_division_id' => BD_RESCUE,
+            'team_leaders' => $teamLeaders->modelKeys()
         ])
             ->assertOk()
             ->assertJsonStructure([
@@ -122,8 +142,14 @@ class TeamTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
+                'business_division_id',
                 'team_name',
                 'monthly_goal_amount',
+                'team_leaders' => [
+                    '*' => [
+                        'id', 'first_name', 'last_name'
+                    ]
+                ],
                 'created_at',
                 'updated_at'
             ])

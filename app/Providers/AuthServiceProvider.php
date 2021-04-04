@@ -64,6 +64,7 @@ use App\Policies\SalesOrderPolicy;
 use App\Policies\SNDPolicy;
 use App\Policies\SystemSettingPolicy;
 use App\Policies\TaskPolicy;
+use App\Policies\UnifiedQuotePolicy;
 use App\Policies\UserPolicy;
 use App\Policies\VendorPolicy;
 use App\Policies\WorldwideDistributionPolicy;
@@ -160,8 +161,9 @@ class AuthServiceProvider extends ServiceProvider
 
     protected function registerGates()
     {
-        Gate::define('view_quote_task_template', QuoteTaskTemplatePolicy::class . '@view');
-
-        Gate::define('update_quote_task_template', QuoteTaskTemplatePolicy::class . '@update');
+        Gate::define('view_quote_task_template', [QuoteTaskTemplatePolicy::class, 'view']);
+        Gate::define('update_quote_task_template', [QuoteTaskTemplatePolicy::class, 'update']);
+        Gate::define('viewQuotesOfAnyBusinessDivision', [UnifiedQuotePolicy::class, 'viewEntitiesOfAnyBusinessDivision']);
+        Gate::define('viewQuotesOfAnyUser', [UnifiedQuotePolicy::class, 'viewEntitiesOfAnyUser']);
     }
 }

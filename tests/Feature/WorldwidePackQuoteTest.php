@@ -1790,13 +1790,18 @@ class WorldwidePackQuoteTest extends TestCase
                         'id', 'worldwide_quote_id', 'user_id', 'user_version_sequence_number', 'updated_at'
                     ]
                 ]
-            ])
-            ->assertJson([
-                'versions' => [
-                    ['id' => $version->getKey()]
-                ]
             ]);
 
         $this->assertCount(2, $response->json('versions'));
+
+        $this->assertTrue(value(function () use ($response, $version) {
+            foreach ($response->json('versions') as $versionFromResponse) {
+                if ($versionFromResponse['id'] === $version->getKey()) {
+                    return true;
+                }
+            }
+
+            return false;
+        }));
     }
 }

@@ -104,7 +104,12 @@ class OpportunityController extends Controller
     {
         $this->authorize('create', Opportunity::class);
 
-        $result = $service->batchImportOpportunities($request->file('file'), $request->user());
+        $result = $service->batchImportOpportunities(
+            $request->file('opportunities_file'),
+            $request->file('accounts_data_file'),
+            $request->file('account_contacts_file'),
+            $request->user()
+        );
 
         return response()->json($result, Response::HTTP_CREATED);
     }

@@ -17,7 +17,7 @@ final class SubmitOrderLineData extends DataTransferObject
     public float $unit_price;
 
     /**
-     * @Constraints\NotBlank(message="SKU is required.")
+     * @Constraints\NotBlank(message="SKU is missing on one or more order lines.")
      *
      * @var string
      */
@@ -30,7 +30,7 @@ final class SubmitOrderLineData extends DataTransferObject
     public ?string $product_description;
 
     /**
-     * @Constraints\NotBlank(message="Serial number is required.")
+     * @Constraints\NotBlank(message="Serial number is missing on one or more order lines.")
      *
      * @var string
      */
@@ -39,14 +39,14 @@ final class SubmitOrderLineData extends DataTransferObject
     public int $quantity;
 
     /**
-     * @Constraints\NotBlank(message="Service SKU is required.")
+     * @Constraints\NotBlank(message="Service SKU is missing on one or more order lines.")
      *
      * @var string
      */
     public string $service_sku;
 
     /**
-     * @Constraints\NotBlank(message="Vendor is required.")
+     * @Constraints\NotBlank(message="Vendor is missing on one or more order lines.")
      *
      * @var string
      */
@@ -57,7 +57,8 @@ final class SubmitOrderLineData extends DataTransferObject
     public bool $discount_applied;
 
     /**
-     * @Constraints\Country(message="Invalid Machine Country Code.")
+     * @Constraints\NotBlank(message="Country Code is missing on one or more order lines.")
+     * @Constraints\Country(message="One or more order lines have invalid machine country code.")
      *
      * @var string
      */

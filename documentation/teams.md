@@ -38,7 +38,11 @@
     
     {
         "team_name": {string_max_191_chars}, *
-        "monthly_goal_amount": {numeric_value} (min: 0, max: 999_999_999)
+        "business_division_id": {business_division_uuid} *,
+        "monthly_goal_amount": {numeric_value} (min: 0, max: 999_999_999),
+        "team_leaders": [
+            "*": {user_uuid}
+        ]
     }
 
 # Update Team
@@ -49,7 +53,11 @@
     
     {
         "team_name": {string_max_191_chars}, *
-        "monthly_goal_amount": {numeric_value} (min: 0, max: 999_999_999)
+        "business_division_id": {business_division_uuid} *,
+        "monthly_goal_amount": {numeric_value} (min: 0, max: 999_999_999),
+        "team_leaders": [
+            "*": {user_uuid}
+        ]
     }
 
 # Delete Team

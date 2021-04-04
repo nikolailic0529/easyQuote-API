@@ -8,7 +8,7 @@ use Symfony\Component\Validator\Constraints;
 final class SubmitSalesOrderData extends DataTransferObject
 {
     /**
-     * @Constraints\NotBlank
+     * @Constraints\NotBlank(message="At least one address must be present.")
      * @Constraints\All(@Constraints\Type("\App\DTO\SalesOrder\Submit\SubmitOrderAddressData"))
      *
      * @var \App\DTO\SalesOrder\Submit\SubmitOrderAddressData[]
@@ -18,7 +18,7 @@ final class SubmitSalesOrderData extends DataTransferObject
     public SubmitOrderCustomerData $customer_data;
 
     /**
-     * @Constraints\NotBlank
+     * @Constraints\NotBlank(message="At least one order line must be present.")
      * @Constraints\All(@Constraints\Type("\App\DTO\SalesOrder\Submit\SubmitOrderLineData"))
      *
      * @var \App\DTO\SalesOrder\Submit\SubmitOrderLineData[]
@@ -26,7 +26,7 @@ final class SubmitSalesOrderData extends DataTransferObject
     public array $order_lines_data;
 
     /**
-     * @Constraints\Choice({"HPE", "LEN", "IBM"})
+     * @Constraints\Choice({"HPE", "LEN", "IBM"}, message="An invalid vendor {{ value }} provided, vendor must be one the following: {{ choices }}.")
      *
      * @var string
      */

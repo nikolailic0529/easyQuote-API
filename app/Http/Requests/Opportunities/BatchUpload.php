@@ -14,7 +14,13 @@ class BatchUpload extends FormRequest
     public function rules()
     {
         return [
-            'file' => [
+            'opportunities_file' => [
+                'bail', 'required', 'file', 'mimes:xlsx', 'max:10000'
+            ],
+            'accounts_data_file' => [
+                'bail', 'required', 'file', 'mimes:xlsx', 'max:10000'
+            ],
+            'account_contacts_file' => [
                 'bail', 'required', 'file', 'mimes:xlsx', 'max:10000'
             ]
         ];

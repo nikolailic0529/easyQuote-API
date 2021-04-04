@@ -37,7 +37,7 @@ class CompanyQueries
                 return $this->elasticsearch->search(
                     (new ElasticsearchQuery)
                         ->modelIndex($model)
-                        ->queryString(Str::of($searchQuery)->start('*')->finish('*'))
+                        ->queryString('*'.ElasticsearchQuery::escapeReservedChars($searchQuery).'*')
                         ->toArray()
                 );
             });

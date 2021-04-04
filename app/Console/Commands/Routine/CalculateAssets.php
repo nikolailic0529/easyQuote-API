@@ -3,9 +3,7 @@
 namespace App\Console\Commands\Routine;
 
 use App\Contracts\Services\Stats;
-use App\Services\StatsAggregator;
 use Illuminate\Console\Command;
-use Throwable;
 
 class CalculateAssets extends Command
 {

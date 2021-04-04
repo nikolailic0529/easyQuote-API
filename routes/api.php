@@ -115,12 +115,12 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get('contract-types', ContractTypeController::class);
 
     Route::group(['middleware' => THROTTLE_RATE_01], function () {
-        Route::match(['get', 'post'], 'stats', [StatsController::class, 'quotesSummary']);
-        Route::match(['get', 'post'], 'stats/customers', [StatsController::class, 'customersSummary']);
-        Route::post('stats/customers/map', [StatsController::class, 'mapCustomers']);
-        Route::post('stats/assets/map', [StatsController::class, 'mapAssets']);
-        Route::post('stats/quotes/map', [StatsController::class, 'mapQuotes']);
-        Route::get('stats/locations/{location}/quotes', [StatsController::class, 'quotesByLocation']);
+        Route::match(['get', 'post'], 'stats', [StatsController::class, 'showSummaryOfQuotes']);
+        Route::match(['get', 'post'], 'stats/customers', [StatsController::class, 'showSummaryOfCustomers']);
+        Route::post('stats/customers/map', [StatsController::class, 'showCustomerLocations']);
+        Route::post('stats/assets/map', [StatsController::class, 'showAssetLocations']);
+        Route::post('stats/quotes/map', [StatsController::class, 'showQuoteLocations']);
+        Route::get('stats/locations/{location}/quotes', [StatsController::class, 'showQuotesOfLocation']);
 
         Route::post('attachments', AttachmentController::class);
 

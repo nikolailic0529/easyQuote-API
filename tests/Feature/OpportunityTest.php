@@ -432,14 +432,20 @@ class OpportunityTest extends TestCase
      */
     public function testCanBatchUploadOpportunities()
     {
-        $file = UploadedFile::fake()->createWithContent('ops-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/export-23032021.xlsx')));
+        $opportunitiesFile = UploadedFile::fake()->createWithContent('ops-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/export-23032021.xlsx')));
+
+        $accountsDataFile = UploadedFile::fake()->createWithContent('primary-account-contacts-pipeliner-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/primary-account-data-pipeliner-export.xlsx')));
+
+        $accountContactsFile = UploadedFile::fake()->createWithContent('primary-account-contacts-pipeliner-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/primary-account-contacts-pipeliner-export.xlsx')));
 
         $this->authenticateApi();
 
         $this->postJson('api/opportunities/upload', [
-            'file' => $file
+            'opportunities_file' => $opportunitiesFile,
+            'accounts_data_file' => $accountsDataFile,
+            'account_contacts_file' => $accountContactsFile
         ])
-            ->dump()
+//            ->dump()
             ->assertCreated()
             ->assertJsonStructure([
                 'opportunities' => [
@@ -450,14 +456,16 @@ class OpportunityTest extends TestCase
                 'errors'
             ]);
 
-        $file = UploadedFile::fake()->createWithContent('ops-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/export (8).xlsx')));
+        $opportunitiesFile = UploadedFile::fake()->createWithContent('ops-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/export (8).xlsx')));
 
         $this->authenticateApi();
 
-        $this->postJson('api/opportunities/upload', [
-            'file' => $file
+        $response = $this->postJson('api/opportunities/upload', [
+            'opportunities_file' => $opportunitiesFile,
+            'accounts_data_file' => $accountsDataFile,
+            'account_contacts_file' => $accountContactsFile
         ])
-            ->dump()
+//            ->dump()
             ->assertCreated()
             ->assertJsonStructure([
                 'opportunities' => [
@@ -467,7 +475,28 @@ class OpportunityTest extends TestCase
                 ],
                 'errors'
             ]);
+
+//        $companyKeys = array_filter($response->json('opportunities.*.company_id'));
+
+//        $firstPrimaryAccount = head($companyKeys);
 //
+//        $this->getJson('api/companies/'.$firstPrimaryAccount)
+//            ->assertOk()
+//            ->assertJsonStructure([
+//                'id',
+//                'addresses' => [
+//                    '*' => [
+//                        'id', 'address_1', 'address_2', 'city', 'country'
+//                    ]
+//                ],
+//                'contacts' => [
+//                    '*' => [
+//                        'id', 'first_name', 'last_name'
+//                    ]
+//                ]
+//            ])
+//            ->dump();
+
 //        $this->getJson('api/users')
 //            ->dump();
     }
@@ -481,12 +510,18 @@ class OpportunityTest extends TestCase
     {
         $this->app['db.connection']->table('opportunities')->update(['deleted_at' => now()]);
 
-        $file = UploadedFile::fake()->createWithContent('ops-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/ops-export.xlsx')));
+        $opportunitiesFile = UploadedFile::fake()->createWithContent('ops-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/export-23032021.xlsx')));
+
+        $accountsDataFile = UploadedFile::fake()->createWithContent('primary-account-contacts-pipeliner-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/primary-account-data-pipeliner-export.xlsx')));
+
+        $accountContactsFile = UploadedFile::fake()->createWithContent('primary-account-contacts-pipeliner-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/primary-account-contacts-pipeliner-export.xlsx')));
 
         $this->authenticateApi();
 
         $response = $this->postJson('api/opportunities/upload', [
-            'file' => $file
+            'opportunities_file' => $opportunitiesFile,
+            'accounts_data_file' => $accountsDataFile,
+            'account_contacts_file' => $accountContactsFile
         ])
 //            ->dump()
             ->assertCreated()
@@ -559,7 +594,6 @@ class OpportunityTest extends TestCase
         $this->patchJson('api/opportunities/'.$opportunity->getKey().'/lost', [
             'status_reason' => $statusReason = 'Hardware is no longer covered'
         ])
-
             ->assertNoContent();
 
         $this->getJson('api/opportunities/'.$opportunity->getKey())
@@ -589,7 +623,6 @@ class OpportunityTest extends TestCase
         $this->patchJson('api/opportunities/'.$opportunity->getKey().'/lost', [
             'status_reason' => $statusReason = 'Hardware is no longer covered'
         ])
-
             ->assertNoContent();
 
         $this->getJson('api/opportunities/'.$opportunity->getKey())

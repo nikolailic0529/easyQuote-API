@@ -60,13 +60,19 @@ class UpdatedCompany extends JsonResource
             'default_template' => $this->defaultTemplate,
 
             'addresses' => with($this->addresses, function (Collection $addresses) {
-                return $addresses->each(function (Address $address) {
+                return $addresses
+                    ->sortBy('created_at')
+                    ->values()
+                    ->each(function (Address $address) {
                     $address->setAttribute('is_default', (bool)$address->pivot->is_default);
                     $address->loadMissing('country');
                 });
             }),
             'contacts' => with($this->contacts, function (Collection $contacts) {
-                return $contacts->each(function (Contact $contact) {
+                return $contacts
+                    ->sortBy('created_at')
+                    ->values()
+                    ->each(function (Contact $contact) {
                     $contact->setAttribute('is_default', (bool)$contact->pivot->is_default);
                 });
             }),

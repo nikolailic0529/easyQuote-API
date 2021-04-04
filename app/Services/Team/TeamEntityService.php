@@ -29,9 +29,16 @@ class TeamEntityService
     {
         return tap(new Team(), function (Team $team) use ($data) {
             $team->team_name = $data->team_name;
+            $team->businessDivision()->associate($data->business_division_id);
             $team->monthly_goal_amount = $data->monthly_goal_amount;
 
-            $this->connection->transaction(fn() => $team->save());
+            $this->connection->transaction(function () use ($data, $team) {
+                $team->save();
+
+                if (!empty($data->team_leader_user_ids)) {
+                    $team->teamLeaders()->sync($data->team_leader_user_ids);
+                }
+            });
 
             $this->eventDispatcher->dispatch(
                 new TeamCreated($team)
@@ -43,9 +50,14 @@ class TeamEntityService
     {
         return tap($team, function (Team $team) use ($data) {
             $team->team_name = $data->team_name;
+            $team->businessDivision()->associate($data->business_division_id);
             $team->monthly_goal_amount = $data->monthly_goal_amount;
 
-            $this->connection->transaction(fn() => $team->save());
+            $this->connection->transaction(function () use ($data, $team) {
+                $team->save();
+
+                $team->teamLeaders()->sync($data->team_leader_user_ids);
+            });
 
             $this->eventDispatcher->dispatch(
                 new TeamUpdated($team)
