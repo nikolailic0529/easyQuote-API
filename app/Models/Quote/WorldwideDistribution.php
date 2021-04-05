@@ -117,12 +117,12 @@ class WorldwideDistribution extends Model
 
     public function addresses(): BelongsToMany
     {
-        return $this->belongsToMany(Address::class)->withPivot('is_default');
+        return $this->belongsToMany(Address::class)->withPivot(['is_default', 'replicated_address_id']);
     }
 
     public function contacts(): BelongsToMany
     {
-        return $this->belongsToMany(Contact::class)->withPivot('is_default');
+        return $this->belongsToMany(Contact::class)->withPivot(['is_default', 'replicated_contact_id']);
     }
 
     public function templateFields(): BelongsToMany

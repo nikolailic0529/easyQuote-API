@@ -157,6 +157,9 @@ class UpdateOpportunity extends FormRequest
             'ranking' => [
                 'bail', 'nullable', 'numeric', 'min:0', 'max:1'
             ],
+            'campaign_name' => [
+              'bail', 'nullable', 'string', 'max:191'
+            ],
             'suppliers_grid' => [
                 'bail', 'nullable', 'array',
             ],
@@ -247,6 +250,7 @@ class UpdateOpportunity extends FormRequest
                 'has_additional_hardware' => $this->boolean('has_additional_hardware'),
                 'remarks' => $this->input('remarks'),
                 'notes' => $this->input('notes'),
+                'campaign_name' => $this->input('campaign_name'),
                 'sale_action_name' => $this->input('sale_action_name'),
                 'create_suppliers' => $createSuppliers,
                 'update_suppliers' => $updateSuppliers

@@ -67,6 +67,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $notes
  * @property string|null $personal_rating
  * @property int|null $ranking
+ * @property string|null $campaign_name
  *
  * @property string|null $sale_action_name // {"Preparation", "Special Bid Required", "Quote Ready", "Customer Contact", "Customer Order OK", "PO Placed", "Processed on BC", "Closed"}
  *

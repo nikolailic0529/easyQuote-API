@@ -4,7 +4,8 @@ namespace App\Services;
 
 use App\Contracts\{Services\ManagesExchangeRates,
     Services\ProcessesWorldwideDistributionState,
-    Services\ProcessesWorldwideQuoteState};
+    Services\ProcessesWorldwideQuoteState
+};
 use App\DTO\QuoteStages\{AddressesContactsStage,
     ContractDetailsStage,
     ContractDiscountStage,
@@ -19,7 +20,8 @@ use App\DTO\QuoteStages\{AddressesContactsStage,
     PackDiscountStage,
     PackMarginTaxStage,
     ReviewStage,
-    SubmitStage};
+    SubmitStage
+};
 use App\DTO\WorldwideQuote\DistributionAddressData;
 use App\DTO\WorldwideQuote\DistributionContactData;
 use App\DTO\WorldwideQuote\DistributionImportData;
@@ -51,16 +53,15 @@ use App\Events\WorldwideQuote\WorldwideQuoteUnraveled;
 use App\Jobs\IndexSearchableEntity;
 use App\Models\{Address,
     Contact,
-    Data\Country,
     Data\Currency,
     Opportunity,
-    OpportunitySupplier,
     Quote\WorldwideDistribution,
     Quote\WorldwideQuote,
-    Quote\WorldwideQuoteVersion};
+    Quote\WorldwideQuoteVersion
+};
 use App\Services\Exceptions\ValidationException;
 use Illuminate\Contracts\{Bus\Dispatcher as BusDispatcher, Cache\LockProvider, Events\Dispatcher as EventDispatcher};
-use Illuminate\Database\{ConnectionInterface, Eloquent\Builder, Eloquent\Collection, Eloquent\ModelNotFoundException};
+use Illuminate\Database\{ConnectionInterface, Eloquent\Builder, Eloquent\Collection};
 use Illuminate\Support\{Carbon, Facades\DB};
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -1155,28 +1156,38 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         }
 
         if ($quote->contract_type_id === CT_CONTRACT) {
-            /** @var OpportunitySupplier[] $suppliersWithDistributorQuote */
-            $suppliersWithDistributorQuote = $quote->opportunity->opportunitySuppliers()->has('worldwideDistribution')->get();
+            /**
+             * Initialization of new distributor quotes for each quote version,
+             * when new suppliers of opportunity are created.
+             */
+            foreach ($quote->versions as $version) {
 
-            foreach ($suppliersWithDistributorQuote as $supplier) {
-                $countryOfSupplier = Country::query()->where('name', $supplier->country_name)->first();
+                $newSuppliers = $quote->opportunity->opportunitySuppliers()->whereDoesntHave('distributorQuotes', function (Builder $builder) use ($quote) {
+                    $builder->where((new WorldwideDistribution())->worldwideQuote()->getQualifiedForeignKeyName(), $quote->activeVersion->getKey());
+                })->get();
 
-                $distributorQuote = $supplier->worldwideDistribution;
-                $distributorQuote->country()->associate($countryOfSupplier);
+                foreach ($newSuppliers as $supplier) {
 
-                $lock = $this->lockProvider->lock(Lock::UPDATE_WWDISTRIBUTION($distributorQuote->getKey()), 10);
+                    $this->distributionProcessor->initializeDistribution($version, $supplier->getKey());
 
-                $lock->block(30, function () use ($distributorQuote) {
+                }
 
-                    $this->connection->transaction(fn() => $distributorQuote->save());
-
-                });
             }
 
-            $newSuppliers = $quote->opportunity->opportunitySuppliers()->doesntHave('worldwideDistribution')->get();
+            /**
+             * Updating the corresponding contract distributor quotes of each supplier.
+             */
+            $opportunity = $quote->opportunity;
 
-            foreach ($newSuppliers as $supplier) {
-                $this->distributionProcessor->initializeDistribution($quote->activeVersion, $supplier->getKey());
+            $opportunity->opportunitySuppliers->load(['country']);
+
+            foreach ($quote->opportunity->opportunitySuppliers as $supplier) {
+
+                foreach ($supplier->distributorQuotes as $distributorQuote) {
+
+                    $this->distributionProcessor->syncDistributionWithOwnOpportunitySupplier($distributorQuote);
+
+                }
             }
         }
     }

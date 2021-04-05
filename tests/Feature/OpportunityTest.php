@@ -127,6 +127,83 @@ class OpportunityTest extends TestCase
         $this->getJson('api/opportunities?order_by_status=asc')->assertOk();
     }
 
+    public function testCanViewOpportunity()
+    {
+        /** @var Opportunity $opportunity */
+        $opportunity = factory(Opportunity::class)->create();
+
+        factory(OpportunitySupplier::class, 2)->create(['opportunity_id' => $opportunity->getKey()]);
+
+        $this->authenticateApi();
+
+        $this->getJson('api/opportunities/'.$opportunity->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                "id",
+                "user_id",
+                "contract_type_id",
+                "contract_type",
+                "primary_account_id",
+                "primary_account",
+                "primary_account_contact_id",
+                "primary_account_contact",
+                "account_manager_id",
+                "account_manager",
+                "project_name",
+                "nature_of_service",
+                "renewal_month",
+                "renewal_year",
+                "customer_status",
+                "end_user_name",
+                "hardware_status",
+                "region_name",
+                "opportunity_start_date",
+                "opportunity_end_date",
+                "opportunity_closing_date",
+                "expected_order_date",
+                "customer_order_date",
+                "purchase_order_date",
+                "supplier_order_date",
+                "supplier_order_transaction_date",
+                "supplier_order_confirmation_date",
+                "opportunity_amount",
+                "opportunity_amount_currency_code",
+                "purchase_price",
+                "purchase_price_currency_code",
+                "list_price",
+                "list_price_currency_code",
+                "estimated_upsell_amount",
+                "estimated_upsell_amount_currency_code",
+                "margin_value",
+                "personal_rating",
+                "ranking",
+                "account_manager_name",
+                "service_level_agreement_id",
+                "sale_unit_name",
+                "drop_in",
+                "lead_source_name",
+                "has_higher_sla",
+                "is_multi_year",
+                "has_additional_hardware",
+                "remarks",
+                "notes",
+                "campaign_name",
+                "sale_action_name",
+                "competition_name",
+                "updated_at",
+                "created_at",
+
+                "status",
+                "status_reason",
+
+                "suppliers_grid" => [
+                    "*" => [
+                        "id", "supplier_name", "country_name", "contact_name", "contact_email"
+                    ]
+                ]
+            ]);
+    }
+
     /**
      * Test an ability to create a new opportunity.
      *
@@ -432,31 +509,11 @@ class OpportunityTest extends TestCase
      */
     public function testCanBatchUploadOpportunities()
     {
-        $opportunitiesFile = UploadedFile::fake()->createWithContent('ops-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/export-23032021.xlsx')));
+        $accountsDataFile = UploadedFile::fake()->createWithContent('Accounts-04042021.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/Accounts-04042021.xlsx')));
 
-        $accountsDataFile = UploadedFile::fake()->createWithContent('primary-account-contacts-pipeliner-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/primary-account-data-pipeliner-export.xlsx')));
+        $accountContactsFile = UploadedFile::fake()->createWithContent('Contacts-04042021.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/Contacts-04042021.xlsx')));
 
-        $accountContactsFile = UploadedFile::fake()->createWithContent('primary-account-contacts-pipeliner-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/primary-account-contacts-pipeliner-export.xlsx')));
-
-        $this->authenticateApi();
-
-        $this->postJson('api/opportunities/upload', [
-            'opportunities_file' => $opportunitiesFile,
-            'accounts_data_file' => $accountsDataFile,
-            'account_contacts_file' => $accountContactsFile
-        ])
-//            ->dump()
-            ->assertCreated()
-            ->assertJsonStructure([
-                'opportunities' => [
-                    '*' => [
-                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date', 'sale_action_name'
-                    ]
-                ],
-                'errors'
-            ]);
-
-        $opportunitiesFile = UploadedFile::fake()->createWithContent('ops-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/export (8).xlsx')));
+        $opportunitiesFile = UploadedFile::fake()->createWithContent('Opportunities-04042021.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/Opportunities-04042021.xlsx')));
 
         $this->authenticateApi();
 
@@ -470,35 +527,13 @@ class OpportunityTest extends TestCase
             ->assertJsonStructure([
                 'opportunities' => [
                     '*' => [
-                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date', 'sale_action_name'
+                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date', 'sale_action_name', 'campaign_name'
                     ]
                 ],
                 'errors'
             ]);
 
-//        $companyKeys = array_filter($response->json('opportunities.*.company_id'));
-
-//        $firstPrimaryAccount = head($companyKeys);
-//
-//        $this->getJson('api/companies/'.$firstPrimaryAccount)
-//            ->assertOk()
-//            ->assertJsonStructure([
-//                'id',
-//                'addresses' => [
-//                    '*' => [
-//                        'id', 'address_1', 'address_2', 'city', 'country'
-//                    ]
-//                ],
-//                'contacts' => [
-//                    '*' => [
-//                        'id', 'first_name', 'last_name'
-//                    ]
-//                ]
-//            ])
-//            ->dump();
-
-//        $this->getJson('api/users')
-//            ->dump();
+        $this->assertEmpty($response->json('errors'));
     }
 
     /**

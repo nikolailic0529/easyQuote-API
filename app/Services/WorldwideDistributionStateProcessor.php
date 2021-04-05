@@ -19,7 +19,10 @@ use App\DTO\{Discounts\DistributionDiscountsCollection,
     SelectedDistributionRowsCollection};
 use App\Enum\Lock;
 use App\Events\DistributionProcessed;
-use App\Models\{Data\Country,
+use App\Models\{Address,
+    Company,
+    Contact,
+    Data\Country,
     OpportunitySupplier,
     Quote\DistributionFieldColumn,
     Quote\WorldwideDistribution,
@@ -36,7 +39,12 @@ use Illuminate\Contracts\{Cache\Lock as LockContract,
     Config\Repository as Config,
     Events\Dispatcher,
     Filesystem\Filesystem};
-use Illuminate\Database\{ConnectionInterface, Eloquent\Builder, Eloquent\Collection, Eloquent\ModelNotFoundException};
+use Illuminate\Database\{ConnectionInterface,
+    Eloquent\Builder,
+    Eloquent\Collection,
+    Eloquent\Model,
+    Eloquent\ModelNotFoundException,
+    Eloquent\Relations\Relation};
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\{Arr, Carbon, Collection as BaseCollection, Facades\App, Facades\Storage, MessageBag, Str};
@@ -47,6 +55,7 @@ use Symfony\Component\{Process\Process,
     Validator\Exception\ValidationFailedException,
     Validator\Validator\ValidatorInterface};
 use Throwable;
+use Webpatser\Uuid\Uuid;
 
 class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistributionState
 {
@@ -139,6 +148,119 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
                 $distribution->templateFields()->sync($templateFields);
             });
         });
+    }
+
+    public function syncDistributionWithOwnOpportunitySupplier(WorldwideDistribution $distributorQuote): void
+    {
+        $supplier = $distributorQuote->opportunitySupplier;
+
+        if (is_null($supplier)) {
+            return;
+        }
+
+        $opportunity = $supplier->opportunity;
+
+        $distributorQuote->country()->associate($supplier->country);
+
+        $newAddressModelsOfDistributorQuote = [];
+        $newContactModelsOfDistributorQuote = [];
+        $newAddressPivotsOfDistributorQuote = [];
+        $newContactPivotsOfDistributorQuote = [];
+
+        /**
+         * If primary account is present on opportunity entity,
+         * we replicate only new address, contact entities to the distributor quote.
+         */
+        if (!is_null($opportunity->primaryAccount)) {
+            $alreadyReplicatedAddressKeys = $distributorQuote
+                ->addresses()
+                ->wherePivotNotNull('replicated_address_id')
+                ->pluck('replicated_address_id')
+                ->all();
+
+            $alreadyReplicatedContactKeys = $distributorQuote
+                ->contacts()
+                ->wherePivotNotNull('replicated_contact_id')
+                ->pluck('replicated_contact_id')
+                ->all();
+
+            $opportunity->primaryAccount->load(['addresses' => function (Relation $relation) use ($alreadyReplicatedAddressKeys) {
+                $relation->whereKeyNot($alreadyReplicatedAddressKeys);
+            }]);
+
+            $opportunity->primaryAccount->load(['contacts' => function (Relation $relation) use ($alreadyReplicatedContactKeys) {
+                $relation->whereKeyNot($alreadyReplicatedContactKeys);
+            }]);
+
+            [$newAddressModelsOfDistributorQuote, $newAddressPivotsOfDistributorQuote] = $this->replicateAddressModelsOfPrimaryAccount($opportunity->primaryAccount);
+            [$newContactModelsOfDistributorQuote, $newContactPivotsOfDistributorQuote] = $this->replicateContactModelsOfPrimaryAccount($opportunity->primaryAccount);
+
+        }
+
+        $newAddressBatch = array_map(fn(Model $model) => $model->getAttributes(), $newAddressModelsOfDistributorQuote);
+        $newContactBatch = array_map(fn(Model $model) => $model->getAttributes(), $newContactModelsOfDistributorQuote);
+
+        $lock = $this->lockProvider->lock(Lock::UPDATE_WWDISTRIBUTION($distributorQuote->getKey()), 10);
+
+        $lock->block(
+            30,
+            fn() => $this->connection->transaction(function () use ($newAddressBatch, $newContactBatch, $newAddressPivotsOfDistributorQuote, $newContactPivotsOfDistributorQuote, $distributorQuote) {
+                $distributorQuote->save();
+
+                if (!empty($newAddressBatch)) {
+                    Address::query()->insert($newAddressBatch);
+                }
+
+                if (!empty($newAddressPivotsOfDistributorQuote)) {
+                    $distributorQuote->addresses()->syncWithoutDetaching($newAddressPivotsOfDistributorQuote);
+                }
+
+                if (!empty($newContactBatch)) {
+                    Contact::query()->insert($newContactBatch);
+                }
+
+                if (!empty($newContactPivotsOfDistributorQuote)) {
+                    $distributorQuote->contacts()->syncWithoutDetaching($newContactPivotsOfDistributorQuote);
+                }
+
+            })
+        );
+    }
+
+    private function replicateAddressModelsOfPrimaryAccount(Company $primaryAccount): array
+    {
+        $newAddressModels = [];
+        $newAddressPivots = [];
+
+        foreach ($primaryAccount->addresses as $address) {
+            $newAddress = $address->replicate();
+            $newAddress->{$newAddress->getKeyName()} = (string)Uuid::generate(4);
+            $newAddress->{$newAddress->getCreatedAtColumn()} = $newAddress->freshTimestampString();
+            $newAddress->{$newAddress->getUpdatedAtColumn()} = $newAddress->freshTimestampString();
+
+            $newAddressModels[] = $newAddress;
+            $newAddressPivots[$newAddress->getKey()] = ['replicated_address_id' => $address->getKey()];
+        }
+
+        return [$newAddressModels, $newAddressPivots];
+    }
+
+    private function replicateContactModelsOfPrimaryAccount(Company $primaryAccount): array
+    {
+        $newContactModels = [];
+        $newContactPivots = [];
+
+        foreach ($primaryAccount->contacts as $contact) {
+            $newContact = $contact->replicate();
+            $newContact->{$newContact->getKeyName()} = (string)Uuid::generate(4);
+            $newContact->{$newContact->getCreatedAtColumn()} = $newContact->freshTimestampString();
+            $newContact->{$newContact->getUpdatedAtColumn()} = $newContact->freshTimestampString();
+
+            $newContactModels[] = $newContact;
+            $newContactPivots[$newContact->getKey()] = ['replicated_contact_id' => $contact->getKey()];
+        }
+
+        return [$newContactModels, $newContactPivots];
     }
 
     public function applyDistributionsDiscount(WorldwideQuoteVersion $quote, DistributionDiscountsCollection $collection)

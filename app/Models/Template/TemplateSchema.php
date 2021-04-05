@@ -97,6 +97,7 @@ final class TemplateSchema
                 ['id' => 'software_address', 'label' => 'Software Address'],
                 ['id' => 'software_contact', 'label' => 'Software Contact'],
                 ['id' => 'software_phone', 'label' => 'Software Phone'],
+                ['id' => 'coverage_period', 'label' => 'Coverage Period'],
                 ['id' => 'coverage_period_from', 'label' => 'Coverage Period From'],
                 ['id' => 'coverage_period_to', 'label' => 'Coverage Period To'],
                 // Quotation Service Level

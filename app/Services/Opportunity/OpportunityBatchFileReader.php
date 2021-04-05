@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 
 class OpportunityBatchFileReader
 {
-    const HEADER_ROW_INDEX = 0;
+    protected int $headerRowIndex = 0;
 
     protected string $filePath;
 
@@ -55,8 +55,11 @@ class OpportunityBatchFileReader
         $rowIterator = $sheet->getRowIterator();
         $rowIterator->rewind();
 
-        foreach (range(0, static::HEADER_ROW_INDEX) as $i) {
+        $startRowIndex = 0;
+
+        while ($rowIterator->valid() && $this->headerRowIndex >= $startRowIndex) {
             $rowIterator->next();
+            $startRowIndex++;
         }
 
         while ($rowIterator->valid()) {
@@ -75,13 +78,6 @@ class OpportunityBatchFileReader
 
         $rowIterator->rewind();
 
-        $offset = 0;
-
-        while ($offset < static::HEADER_ROW_INDEX) {
-            $rowIterator->next();
-            $offset++;
-        }
-
         $headerRowArray = value(function () use (&$offset, $rowIterator): array {
             while ($rowIterator->valid()) {
                 /** @var Row $firstRow */
@@ -97,7 +93,7 @@ class OpportunityBatchFileReader
 
                 $rowIterator->next();
 
-                $offset++;
+                $this->headerRowIndex++;
             }
 
             return [];

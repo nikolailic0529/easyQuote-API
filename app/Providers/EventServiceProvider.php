@@ -14,7 +14,7 @@ use App\Listeners\{ExchangeRatesListener,
     OpportunityEventSubscriber,
     RfqReceivedListener,
     SalesOrderEventSubscriber,
-    SyncOpportunitySuppliersWithWorldwideContractQuote,
+    SyncWorldwideContractQuoteWithOpportunityData,
     TaskEventSubscriber,
     TeamEventSubscriber};
 use Illuminate\Auth\Events\Registered;
@@ -56,7 +56,7 @@ class EventServiceProvider extends ServiceProvider
         ],
 
         OpportunityUpdated::class => [
-            SyncOpportunitySuppliersWithWorldwideContractQuote::class
+            SyncWorldwideContractQuoteWithOpportunityData::class
         ]
     ];
 

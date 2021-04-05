@@ -21,15 +21,17 @@ final class ImportedOpportunityData extends DataTransferObject
 
     public ?float $opportunity_amount;
 
-    public string $opportunity_start_date;
+    public ?string $opportunity_start_date;
 
-    public string $opportunity_end_date;
+    public ?string $opportunity_end_date;
 
-    public string $opportunity_closing_date;
+    public ?string $opportunity_closing_date;
 
     public ?string $sale_action_name;
 
     public ?string $project_name;
+
+    public ?string $campaign_name;
 
     public string $created_at;
 }

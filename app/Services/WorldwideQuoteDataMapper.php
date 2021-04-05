@@ -385,18 +385,20 @@ class WorldwideQuoteDataMapper
 
             $serviceLevels = implode(', ', $customer->service_levels ?? []); // TODO: add the service levels.
 
-            $coveragePeriod = '';
-
             $opportunityStartDate = transform($opportunity->opportunity_start_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date));
             $opportunityEndDate = transform($opportunity->opportunity_end_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date));
 
-            if (!is_null($opportunityStartDate) && !is_null($opportunityEndDate)) {
-                $coveragePeriod = implode(' ', [
-                    static::formatDate($opportunityStartDate),
-                    'to',
-                    static::formatDate($opportunityEndDate),
-                ]);
-            }
+            $coveragePeriod = value(function () use ($opportunityEndDate, $opportunityStartDate): string {
+                if (!is_null($opportunityStartDate) && !is_null($opportunityEndDate)) {
+                    return implode('&nbsp;', [
+                        static::formatDate($opportunityStartDate),
+                        'to',
+                        static::formatDate($opportunityEndDate),
+                    ]);
+                }
+
+                return '';
+            });
 
             /** @var Address|null $quoteHardwareAddress */
             $quoteHardwareAddress = $distribution->addresses
@@ -556,6 +558,18 @@ class WorldwideQuoteDataMapper
             return implode(' ', [$contact->first_name, $contact->last_name]);
         };
 
+        $coveragePeriod = value(function () use ($opportunityEndDate, $opportunityStartDate): string {
+            if (!is_null($opportunityStartDate) && !is_null($opportunityEndDate)) {
+                return implode('&nbsp;', [
+                    static::formatDate($opportunityStartDate),
+                    'to',
+                    static::formatDate($opportunityEndDate),
+                ]);
+            }
+
+            return '';
+        });
+
         return new QuoteSummary([
             'company_name' => $activeVersion->company->name,
             'customer_name' => $opportunity->primaryAccount->name,
@@ -593,7 +607,7 @@ class WorldwideQuoteDataMapper
             'software_address' => $addressStringFormatter($quoteSoftwareAddress),
             'software_contact' => $contactStringFormatter($quoteSoftwareContact),
             'software_phone' => optional($quoteSoftwareContact)->phone ?? '',
-            'coverage_period' => '',
+            'coverage_period' => $coveragePeriod,
             'coverage_period_from' => static::formatDate($opportunityStartDate),
             'coverage_period_to' => static::formatDate($opportunityEndDate),
             'additional_details' => $activeVersion->additional_details ?? '',

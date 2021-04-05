@@ -2,9 +2,6 @@
 
 namespace App\Services\Opportunity;
 
-use App\Enum\AccountCategory;
-use App\Enum\VAT;
-use Illuminate\Support\Arr;
 use App\DTO\{Opportunity\BatchOpportunityUploadResult,
     Opportunity\BatchSaveOpportunitiesData,
     Opportunity\CreateOpportunityData,
@@ -12,14 +9,18 @@ use App\DTO\{Opportunity\BatchOpportunityUploadResult,
     Opportunity\ImportedOpportunityData,
     Opportunity\MarkOpportunityAsLostData,
     Opportunity\UpdateOpportunityData,
-    Opportunity\UpdateSupplierData};
+    Opportunity\UpdateSupplierData
+};
+use App\Enum\AccountCategory;
 use App\Enum\Lock;
 use App\Enum\OpportunityStatus;
+use App\Enum\VAT;
 use App\Events\{Opportunity\OpportunityCreated,
     Opportunity\OpportunityDeleted,
     Opportunity\OpportunityMarkedAsLost,
     Opportunity\OpportunityMarkedAsNotLost,
-    Opportunity\OpportunityUpdated};
+    Opportunity\OpportunityUpdated
+};
 use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
@@ -34,6 +35,7 @@ use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Events\Dispatcher as EventDispatcher;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\Str;
@@ -169,6 +171,7 @@ class OpportunityEntityService
                 'opportunity_closing_date' => $importedOpportunity->opportunity_closing_date,
                 'sale_action_name' => $importedOpportunity->sale_action_name,
                 'project_name' => $importedOpportunity->project_name,
+                'campaign_name' => $importedOpportunity->campaign_name,
                 'created_at' => (string)$importedOpportunity->created_at,
             ]);
         }
@@ -412,8 +415,8 @@ class OpportunityEntityService
                     return [$streetAddress, null];
                 }, [null, null]);
 
-                $address->address_1 = transform($addressOne, fn (string $address) => trim($address, " \t\n\r\0\x0B,"));
-                $address->address_2 = transform($addressTwo, fn (string $address) => trim($address, " \t\n\r\0\x0B,"));
+                $address->address_1 = transform($addressOne, fn(string $address) => trim($address, " \t\n\r\0\x0B,"));
+                $address->address_2 = transform($addressTwo, fn(string $address) => trim($address, " \t\n\r\0\x0B,"));
 
                 $address->city = $contactData['city'] ?? null;
                 $address->contact_name = $contactData['owner'] ?? null;
@@ -584,23 +587,23 @@ class OpportunityEntityService
             'primary_account_contact_id' => optional($primaryContact)->getKey(),
             'project_name' => $row['business_partner_name'] ?? $row['project_name'] ?? null,
             'nature_of_service' => $row['nature_of_service'] ?? null,
-            'renewal_month' => $row['renewal_month'] ?? null,
-            'renewal_year' => $row['renewal_year'] ?? null,
+            'renewal_month' => $row['renewal_month'] ?? $row['ren_month'] ?? null,
+            'renewal_year' => transform($row['renewal_year'] ?? $row['ren_year'] ?? null, fn(string $value) => (int)$value),
             'customer_status' => $row['customer_status'] ?? null,
             'end_user_name' => $row['enduser'] ?? null,
             'hardware_status' => $row['hw_status'] ?? null,
             'region_name' => $row['region'] ?? null,
-            'opportunity_start_date' => Carbon::parse($row['start_date']),
-            'opportunity_end_date' => Carbon::parse($row['end_date']),
-            'opportunity_closing_date' => Carbon::parse($row['closing_date']),
+            'opportunity_start_date' => transform($row['start_date'] ?? null, fn($date) => Carbon::parse($date)),
+            'opportunity_end_date' => transform($row['end_date'] ?? null, fn($date) => Carbon::parse($date)),
+            'opportunity_closing_date' => transform($row['closing_date'] ?? null, fn($date) => Carbon::parse($date)),
 
-            'opportunity_amount' => transform($row['opportunity_value'] ?? null, fn(string $value) => (float)$value),
+            'opportunity_amount' => transform($row['opportunity_value_foreign_value'] ?? null, fn(string $value) => (float)$value),
             'opportunity_amount_currency_code' => $row['opportunity_value_currency_code'] ?? null,
 
-            'list_price' => transform($row['list_price'] ?? null, fn(string $value) => (float)$value),
+            'list_price' => transform($row['list_price_foreign_value'] ?? null, fn(string $value) => (float)$value),
             'list_price_currency_code' => $row['list_price_currency_code'] ?? null,
 
-            'purchase_price' => transform($row['purchase_price'] ?? null, fn(string $value) => (float)$value),
+            'purchase_price' => transform($row['purchase_price_foreign_value'] ?? null, fn(string $value) => (float)$value),
             'purchase_price_currency_code' => $row['purchase_price_currency_code'] ?? null,
 
             'ranking' => transform($row['ranking'] ?? null, fn(string $value) => (float)$value),
@@ -616,13 +619,15 @@ class OpportunityEntityService
             'service_level_agreement_id' => $row['sla'] ?? null,
             'sale_unit_name' => $row['sales_unit'] ?? null,
             'drop_in' => $row['drop_in'] ?? null,
-            'lead_source_name' => $row['lead_source_name'] ?? null,
+            'lead_source_name' => $row['lead_source_name'] ?? $row['lead_source'] ?? null,
             'has_higher_sla' => strtolower($row['higher_sla'] ?? '') === 'yes',
             'is_multi_year' => strtolower($row['multi_year'] ?? '') === 'yes',
             'has_additional_hardware' => strtolower($row['additional_hardware'] ?? '') === 'yes',
             'remarks' => $row['remark'] ?? null,
             'notes' => $row['notes'] ?? null,
             'sale_action_name' => $row['sales_step'] ?? null,
+
+            'campaign_name' => $row['campaign'] ?? null,
 
             'create_suppliers' => $suppliers,
         ]);
@@ -721,6 +726,9 @@ class OpportunityEntityService
             $opportunity->remarks = $data->remarks;
             $opportunity->sale_action_name = $data->sale_action_name;
             $opportunity->ranking = $data->ranking;
+            $opportunity->campaign_name = $data->campaign_name;
+            $opportunity->competition_name = $data->competition_name;
+            $opportunity->notes = $data->notes;
 
             $opportunity->deleted_at = now();
 
@@ -925,6 +933,7 @@ class OpportunityEntityService
                 $opportunity->remarks = $data->remarks;
                 $opportunity->sale_action_name = $data->sale_action_name;
                 $opportunity->ranking = $data->ranking;
+                $opportunity->campaign_name = $data->campaign_name;
 
                 $newOpportunitySuppliers = array_map(function (CreateSupplierData $supplierData) use ($opportunity) {
                     return tap(new OpportunitySupplier(), function (OpportunitySupplier $supplier) use ($opportunity, $supplierData) {

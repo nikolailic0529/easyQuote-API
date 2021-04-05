@@ -70,7 +70,10 @@ class CreatedOpportunity extends JsonResource
             'is_multi_year' => $this->is_multi_year,
             'has_additional_hardware' => $this->has_additional_hardware,
             'remarks' => $this->remarks,
+            'notes' => $this->notes,
+            'campaign_name' => $this->campaign_name,
             'sale_action_name' => $this->sale_action_name,
+            'competition_name' => $this->competition_name,
 
             'suppliers_grid' => $this->opportunitySuppliers,
 

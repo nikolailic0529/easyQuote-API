@@ -29,86 +29,86 @@ final class CreateOpportunityData extends DataTransferObject
     /**
      * @Constraints\Uuid
      */
-    public ?string $primary_account_id = null;
+    public ?string $primary_account_id;
 
     /**
      * @Constraints\Uuid
      */
-    public ?string $primary_account_contact_id = null;
+    public ?string $primary_account_contact_id;
 
     /**
      * @Constraints\Length(
      *      max=191
      * )
      */
-    public ?string $project_name = null;
+    public ?string $project_name;
 
     /**
      * @Constraints\Length(
      *     max=191
      * )
      */
-    public ?string $nature_of_service = null;
+    public ?string $nature_of_service;
 
     /**
      * @Constraints\NotBlank(
      *    allowNull=true
      * )
      */
-    public ?string $renewal_month = null;
+    public ?string $renewal_month;
 
     /**
      * @Constraints\PositiveOrZero
      */
-    public ?int $renewal_year = null;
+    public ?int $renewal_year;
 
     /**
      * @Constraints\Length(
      *     max=191
      * )
      */
-    public ?string $customer_status = null;
+    public ?string $customer_status;
 
     /**
      * @Constraints\Length(
      *     max=191
      * )
      */
-    public ?string $end_user_name = null;
+    public ?string $end_user_name;
 
     /**
      * @Constraints\Length(
      *     max=191
      * )
      */
-    public ?string $hardware_status = null;
+    public ?string $hardware_status;
 
     /**
      * @Constraints\Length(
      *     max=191
      * )
      */
-    public ?string $region_name = null;
+    public ?string $region_name;
 
-    public Carbon $opportunity_start_date;
+    public ?Carbon $opportunity_start_date;
 
-    public Carbon $opportunity_end_date;
+    public ?Carbon $opportunity_end_date;
 
-    public Carbon $opportunity_closing_date;
+    public ?Carbon $opportunity_closing_date;
 
-    public ?Carbon $expected_order_date = null;
+    public ?Carbon $expected_order_date;
 
-    public ?Carbon $customer_order_date = null;
+    public ?Carbon $customer_order_date;
 
-    public ?Carbon $purchase_order_date = null;
+    public ?Carbon $purchase_order_date;
 
-    public ?Carbon $supplier_order_date = null;
+    public ?Carbon $supplier_order_date;
 
-    public ?Carbon $supplier_order_transaction_date = null;
+    public ?Carbon $supplier_order_transaction_date;
 
-    public ?Carbon $supplier_order_confirmation_date = null;
+    public ?Carbon $supplier_order_confirmation_date;
 
-    public ?float $opportunity_amount = null;
+    public ?float $opportunity_amount;
 
     /**
      * @Constraints\Length(
@@ -116,19 +116,9 @@ final class CreateOpportunityData extends DataTransferObject
      *     max=3
      * )
      */
-    public ?string $opportunity_amount_currency_code = null;
+    public ?string $opportunity_amount_currency_code;
 
-    public ?float $purchase_price = null;
-
-    /**
-     * @Constraints\Length(
-     *     min=3,
-     *     max=3
-     * )
-     */
-    public ?string $purchase_price_currency_code = null;
-
-    public ?float $list_price = null;
+    public ?float $purchase_price;
 
     /**
      * @Constraints\Length(
@@ -136,9 +126,9 @@ final class CreateOpportunityData extends DataTransferObject
      *     max=3
      * )
      */
-    public ?string $list_price_currency_code = null;
+    public ?string $purchase_price_currency_code;
 
-    public ?float $estimated_upsell_amount = null;
+    public ?float $list_price;
 
     /**
      * @Constraints\Length(
@@ -146,78 +136,97 @@ final class CreateOpportunityData extends DataTransferObject
      *     max=3
      * )
      */
-    public ?string $estimated_upsell_amount_currency_code = null;
+    public ?string $list_price_currency_code;
+
+    public ?float $estimated_upsell_amount;
+
+    /**
+     * @Constraints\Length(
+     *     min=3,
+     *     max=3
+     * )
+     */
+    public ?string $estimated_upsell_amount_currency_code;
 
     /**
      * @Constraints\NotBlank(allowNull=true)
      */
-    public ?string $personal_rating = null;
+    public ?string $personal_rating;
 
-    public ?float $ranking = null;
+    public ?float $ranking;
 
-    public ?float $margin_value = null;
-
-    /**
-     * @Constraints\Length(
-     *     max=191
-     * )
-     */
-    public ?string $competition_name = null;
+    public ?float $margin_value;
 
     /**
      * @Constraints\Length(
      *     max=191
      * )
      */
-    public ?string $service_level_agreement_id = null;
+    public ?string $competition_name;
 
     /**
      * @Constraints\Length(
      *     max=191
      * )
      */
-    public ?string $sale_unit_name = null;
+    public ?string $service_level_agreement_id;
 
     /**
      * @Constraints\Length(
      *     max=191
      * )
      */
-    public ?string $drop_in = null;
+    public ?string $sale_unit_name;
 
     /**
      * @Constraints\Length(
      *     max=191
      * )
      */
-    public ?string $lead_source_name = null;
+    public ?string $drop_in;
 
-    public bool $has_higher_sla = false;
+    /**
+     * @Constraints\Length(
+     *     max=191
+     * )
+     */
+    public ?string $lead_source_name;
 
-    public bool $is_multi_year = false;
+    public bool $has_higher_sla;
 
-    public bool $has_additional_hardware = false;
+    public bool $is_multi_year;
+
+    public bool $has_additional_hardware;
 
     /**
      * @Constraints\Length(
      *     max=10000
      * )
      */
-    public ?string $remarks = null;
+    public ?string $remarks;
 
     /**
      * @Constraints\Length(
      *     max=10000
      * )
      */
-    public ?string $notes = null;
+    public ?string $notes;
 
     /**
      * @Constraints\Length(
      *     max=191
      * )
      */
-    public ?string $sale_action_name = null;
+    public ?string $sale_action_name;
+
+    /**
+     * @Constraints\Length(
+     *    max=191
+     * )
+     *
+     * @var string|null
+     */
+    public ?string $campaign_name;
 
     /**
      * @var \App\DTO\Opportunity\CreateSupplierData[]

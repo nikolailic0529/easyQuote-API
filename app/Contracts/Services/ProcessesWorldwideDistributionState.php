@@ -11,6 +11,7 @@ use App\DTO\MappedRow\UpdateMappedRowFieldCollection;
 use App\DTO\ProcessableDistributionCollection;
 use App\DTO\RowsGroupData;
 use App\DTO\SelectedDistributionRowsCollection;
+use App\Models\OpportunitySupplier;
 use App\Models\Quote\BaseWorldwideQuote;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuoteVersion;
@@ -30,6 +31,14 @@ interface ProcessesWorldwideDistributionState
      * @return \App\Models\Quote\WorldwideDistribution
      */
     public function initializeDistribution(WorldwideQuoteVersion $quote, ?string $opportunitySupplierId = null): WorldwideDistribution;
+
+    /**
+     * Sync data of the Distributor Quote with own Opportunity Supplier.
+     *
+     * @param WorldwideDistribution $distributorQuote
+     * @return WorldwideDistribution
+     */
+    public function syncDistributionWithOwnOpportunitySupplier(WorldwideDistribution $distributorQuote): void;
 
     /**
      * Set expiry date on the Worldwide Distributions.

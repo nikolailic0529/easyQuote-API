@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Address;
 use App\Models\Company;
+use App\Models\Contact;
 use App\Models\Data\Country;
 use App\Models\Data\Currency;
 use App\Models\Opportunity;
@@ -98,7 +99,7 @@ class WorldwideContractQuoteTest extends TestCase
                         'active_version_id',
 
                         'versions' => [
-                            '*' =>  [
+                            '*' => [
                                 'id',
                                 'worldwide_quote_id',
                                 'user_id',
@@ -2165,6 +2166,272 @@ TEMPLATE;
 
             return false;
         }));
+    }
+
+    /**
+     * Test an ability to update an existing opportunity of worldwide quote,
+     * and see the newly populated distributor quotes.
+     *
+     * @return void
+     */
+    public function testCanUpdateOpportunityOfWorldwideQuoteAndSeeNewlyPopulatedDistributorQuotes()
+    {
+        /** @var Company $primaryAccount */
+        $primaryAccount = factory(Company::class)->create([
+            'category' => 'External'
+        ]);
+
+        /** @var Opportunity $opportunity */
+        $opportunity = factory(Opportunity::class)->create([
+            'contract_type_id' => CT_CONTRACT,
+            'primary_account_id' => $primaryAccount->getKey()
+        ]);
+
+        $this->authenticateApi();
+
+        // Initialization of a new contact quote.
+        $response = $this->postJson('api/ww-quotes', [
+            'opportunity_id' => $opportunity->getKey(),
+            'contract_type' => 'contract'
+        ])
+            ->assertCreated()
+            ->assertJsonStructure([
+                'id',
+                'opportunity_id'
+            ]);
+
+        $quoteEntityKey = $response->json('id');
+
+        $this->assertNotEmpty($quoteEntityKey);
+
+        $response = $this->getJson('api/ww-quotes/'.$quoteEntityKey.'?'.Arr::query([
+                'include' => [
+                    'worldwide_distributions.opportunity_supplier',
+                    'worldwide_distributions.country',
+                    'worldwide_distributions.addresses',
+                    'worldwide_distributions.contacts',
+                ]
+            ]))
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'worldwide_distributions' => [
+                    '*' => [
+                        'id',
+                        'opportunity_supplier' => [
+                            'id',
+                            'supplier_name',
+                            'country_name'
+                        ]
+                    ]
+                ]
+            ]);
+
+        $this->assertEmpty($response->json('worldwide_distributions'));
+
+        $this->patchJson('api/opportunities/'.$opportunity->getKey(), [
+            'primary_account_id' => $primaryAccount->getKey(),
+            'contract_type_id' => CT_CONTRACT,
+            'opportunity_start_date' => $this->faker->dateTimeBetween('-1 year', '+2 years')->format('Y-m-d'),
+            'opportunity_end_date' => $this->faker->dateTimeBetween('-1 year', '+2 years')->format('Y-m-d'),
+            'opportunity_closing_date' => $this->faker->dateTimeBetween('-1 year', '+2 years')->format('Y-m-d'),
+            'suppliers_grid' => [
+                ['id' => null, 'supplier_name' => $supplierName = $this->faker->company, 'contact_name' => $supplierContactName = $this->faker->name, 'country_name' => $supplierCountry = 'United Kingdom']
+            ]
+        ])
+            ->assertOk();
+
+        $response = $this->getJson('api/ww-quotes/'.$quoteEntityKey.'?'.Arr::query([
+                'include' => [
+                    'worldwide_distributions.opportunity_supplier',
+                    'worldwide_distributions.country',
+                    'worldwide_distributions.addresses',
+                    'worldwide_distributions.contacts',
+                ]
+            ]))
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'worldwide_distributions' => [
+                    '*' => [
+                        'id',
+                        'opportunity_supplier' => [
+                            'id',
+                            'supplier_name',
+                            'country_name'
+                        ]
+                    ]
+                ]
+            ]);
+
+        $this->assertCount(1, $response->json('worldwide_distributions'));
+        $this->assertSame($supplierName, $response->json('worldwide_distributions.0.opportunity_supplier.supplier_name'));
+        $this->assertSame($supplierContactName, $response->json('worldwide_distributions.0.opportunity_supplier.contact_name'));
+        $this->assertSame($supplierCountry, $response->json('worldwide_distributions.0.opportunity_supplier.country_name'));
+        $this->assertSame($supplierCountry, $response->json('worldwide_distributions.0.country.name'));
+
+        $vendors = factory(Vendor::class, 2)->create();
+
+        $address = factory(Address::class)->create();
+        $contact = factory(Contact::class)->create();
+
+        // Creating new addresses & contacts for primary account.
+        $this->patchJson('api/companies/'.$primaryAccount->getKey(), [
+            'name' => $primaryAccount->name,
+            'vat_type' => 'NO VAT',
+            'email' => $this->faker->email,
+            'vendors' => $vendors->modelKeys(),
+            'addresses' => [
+                ['id' => $address->getKey(), 'is_default' => true]
+            ],
+            'contacts' => [
+                ['id' => $contact->getKey(), 'is_default' => true]
+            ],
+
+        ])
+            ->assertOk();
+
+        // Updating the opportunity entity to trigger an event
+        // supposed to populate new addresses & contacts to the existing distributor quotes.
+        $responseOfOpportunity = $this->getJson('api/opportunities/'.$opportunity->getKey())
+            ->assertJsonStructure([
+                'primary_account_id',
+                'contract_type_id',
+                'opportunity_start_date',
+                'opportunity_end_date',
+                'opportunity_closing_date',
+                'suppliers_grid' => [
+                    '*' => ['id', 'supplier_name', 'contact_name', 'country_name']
+                ],
+            ])
+            ->assertOk();
+
+        $this->patchJson('api/opportunities/'.$opportunity->getKey(), [
+            'primary_account_id' => $responseOfOpportunity->json('primary_account_id'),
+            'contract_type_id' => $responseOfOpportunity->json('contract_type_id'),
+            'opportunity_start_date' => $responseOfOpportunity->json('opportunity_start_date'),
+            'opportunity_end_date' => $responseOfOpportunity->json('opportunity_end_date'),
+            'opportunity_closing_date' => $responseOfOpportunity->json('opportunity_closing_date'),
+            'suppliers_grid' => $responseOfOpportunity->json('suppliers_grid')
+        ])
+//            ->dump()
+            ->assertOk();
+
+        $response = $this->getJson('api/ww-quotes/'.$quoteEntityKey.'?'.Arr::query([
+                'include' => [
+                    'worldwide_distributions.opportunity_supplier',
+                    'worldwide_distributions.country',
+                    'worldwide_distributions.addresses',
+                    'worldwide_distributions.contacts',
+                ]
+            ]))
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'worldwide_distributions' => [
+                    '*' => [
+                        'id',
+                        'opportunity_supplier' => [
+                            'id',
+                            'supplier_name',
+                            'country_name'
+                        ],
+                        'addresses' => [
+                            '*' => [
+                                'id'
+                            ]
+                        ],
+                        'contacts' => [
+                            '*' => [
+                                'id'
+                            ]
+                        ]
+                    ]
+                ]
+            ]);
+
+        $this->assertCount(1, $response->json('worldwide_distributions'));
+        $this->assertSame($supplierName, $response->json('worldwide_distributions.0.opportunity_supplier.supplier_name'));
+        $this->assertSame($supplierContactName, $response->json('worldwide_distributions.0.opportunity_supplier.contact_name'));
+        $this->assertSame($supplierCountry, $response->json('worldwide_distributions.0.opportunity_supplier.country_name'));
+        $this->assertSame($supplierCountry, $response->json('worldwide_distributions.0.country.name'));
+
+        $this->assertCount(1, $response->json('worldwide_distributions.0.addresses'));
+        $this->assertCount(1, $response->json('worldwide_distributions.0.contacts'));
+
+
+        // Updating the opportunity entity again
+        // to ensure no duplicated data is populated.
+        $responseOfOpportunity = $this->getJson('api/opportunities/'.$opportunity->getKey())
+            ->assertJsonStructure([
+                'primary_account_id',
+                'contract_type_id',
+                'opportunity_start_date',
+                'opportunity_end_date',
+                'opportunity_closing_date',
+                'suppliers_grid' => [
+                    '*' => ['id', 'supplier_name', 'contact_name', 'country_name']
+                ],
+            ])
+            ->assertOk();
+
+        $this->patchJson('api/opportunities/'.$opportunity->getKey(), [
+            'primary_account_id' => $responseOfOpportunity->json('primary_account_id'),
+            'contract_type_id' => $responseOfOpportunity->json('contract_type_id'),
+            'opportunity_start_date' => $responseOfOpportunity->json('opportunity_start_date'),
+            'opportunity_end_date' => $responseOfOpportunity->json('opportunity_end_date'),
+            'opportunity_closing_date' => $responseOfOpportunity->json('opportunity_closing_date'),
+            'suppliers_grid' => $responseOfOpportunity->json('suppliers_grid')
+        ])
+//            ->dump()
+            ->assertOk();
+
+        $response = $this->getJson('api/ww-quotes/'.$quoteEntityKey.'?'.Arr::query([
+                'include' => [
+                    'worldwide_distributions.opportunity_supplier',
+                    'worldwide_distributions.country',
+                    'worldwide_distributions.addresses',
+                    'worldwide_distributions.contacts',
+                ]
+            ]))
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'worldwide_distributions' => [
+                    '*' => [
+                        'id',
+                        'opportunity_supplier' => [
+                            'id',
+                            'supplier_name',
+                            'country_name'
+                        ],
+                        'addresses' => [
+                            '*' => [
+                                'id'
+                            ]
+                        ],
+                        'contacts' => [
+                            '*' => [
+                                'id'
+                            ]
+                        ]
+                    ]
+                ]
+            ]);
+
+        $this->assertCount(1, $response->json('worldwide_distributions'));
+        $this->assertSame($supplierName, $response->json('worldwide_distributions.0.opportunity_supplier.supplier_name'));
+        $this->assertSame($supplierContactName, $response->json('worldwide_distributions.0.opportunity_supplier.contact_name'));
+        $this->assertSame($supplierCountry, $response->json('worldwide_distributions.0.opportunity_supplier.country_name'));
+        $this->assertSame($supplierCountry, $response->json('worldwide_distributions.0.country.name'));
+
+        $this->assertCount(1, $response->json('worldwide_distributions.0.addresses'));
+        $this->assertCount(1, $response->json('worldwide_distributions.0.contacts'));
+
+
     }
 }
 

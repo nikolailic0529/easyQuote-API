@@ -177,7 +177,9 @@ class WorldwideQuoteState extends JsonResource
                     return new MissingValue();
                 }
 
-                return WorldwideDistributionState::collection($this->activeVersion->worldwideDistributions);
+                return WorldwideDistributionState::collection(
+                    $this->activeVersion->worldwideDistributions->sortBy('created_at')->values()
+                );
             }),
 
             'quote_expiry_date' => $this->activeVersion->quote_expiry_date,
