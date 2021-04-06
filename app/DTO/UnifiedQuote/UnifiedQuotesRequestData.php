@@ -12,13 +12,27 @@ final class UnifiedQuotesRequestData extends DataTransferObject
      *
      * @var string|null
      */
-    public ?string $user_id = null;
+    public ?string $acting_user_id = null;
 
-    public bool $show_rescue_entities = true;
+    /**
+     * @Constraints\Uuid
+     *
+     * @var string|null
+     */
+    public ?string $acting_user_team_id = null;
 
-    public bool $show_worldwide_entities = true;
+    /**
+     * @Constraints\All(@Constraints\Uuid)
+     *
+     * @var array
+     */
+    public array $acting_user_led_teams = [];
 
-    public bool $show_own_entities_only = false;
+    public bool $get_rescue_entities = true;
+
+    public bool $get_worldwide_entities = true;
+
+    public bool $get_any_owner_entities = true;
 
     /**
      * @Constraints\IsTrue(message="At least one entity type must be defined.")
@@ -27,6 +41,6 @@ final class UnifiedQuotesRequestData extends DataTransferObject
      */
     public function isAnyEntityTypeDefined(): bool
     {
-        return $this->show_worldwide_entities || $this->show_rescue_entities;
+        return $this->get_worldwide_entities || $this->get_rescue_entities;
     }
 }

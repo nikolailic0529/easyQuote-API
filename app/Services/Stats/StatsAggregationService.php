@@ -13,7 +13,8 @@ use App\Models\{Asset,
     Data\Currency,
     OpportunityTotal,
     Quote\QuoteLocationTotal,
-    Quote\QuoteTotal};
+    Quote\QuoteTotal,
+    User};
 use Grimzy\LaravelMysqlSpatial\{Types\Point, Types\Polygon};
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\JoinClause;
@@ -41,8 +42,9 @@ class StatsAggregationService
                     $relation->whereKey($summaryRequestData->country_id);
                 });
             })
-            ->when($summaryRequestData->own_entities_only, function (Builder $builder) use ($summaryRequestData) {
-                $builder->where('user_id', $summaryRequestData->user_id);
+            ->when(false === $summaryRequestData->any_owner_entities, function (Builder $builder) use ($summaryRequestData) {
+                $builder->where($builder->qualifyColumn('user_id'), $summaryRequestData->acting_user_id)
+                    ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
             })
             ->whereIn('quote_type', $summaryRequestData->entity_types)
             ->toBase()
@@ -73,8 +75,9 @@ class StatsAggregationService
                     $relation->whereKey($summaryRequestData->country_id);
                 });
             })
-            ->when($summaryRequestData->own_entities_only, function (Builder $builder) use ($summaryRequestData) {
-                $builder->where('sales_orders.user_id', $summaryRequestData->user_id);
+            ->when(false === $summaryRequestData->any_owner_entities, function (Builder $builder) use ($summaryRequestData) {
+                $builder->where($builder->qualifyColumn('sales_orders.user_id'), $summaryRequestData->acting_user_id)
+                    ->orWhereIn($builder->qualifyColumn('sales_orders.user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
             })
             ->whereIn('quote_type', $summaryRequestData->entity_types)
             ->toBase()
@@ -92,8 +95,9 @@ class StatsAggregationService
                     $relation->whereKey($summaryRequestData->country_id);
                 });
             })
-            ->when($summaryRequestData->own_entities_only, function (Builder $builder) use ($summaryRequestData) {
-                $builder->where('user_id', $summaryRequestData->user_id);
+            ->when(false === $summaryRequestData->any_owner_entities, function (Builder $builder) use ($summaryRequestData) {
+                $builder->where($builder->qualifyColumn('user_id'), $summaryRequestData->acting_user_id)
+                    ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
             })
             ->toBase()
             ->first();
@@ -154,8 +158,9 @@ class StatsAggregationService
                     $builder->whereKey($summaryRequestData->country_id);
                 });
             })
-            ->when(!is_null($summaryRequestData->user_id), function (Builder $builder) use ($summaryRequestData) {
-                $builder->where('user_id', $summaryRequestData->user_id);
+            ->when(false === $summaryRequestData->any_owner_entities, function (Builder $builder) use ($summaryRequestData) {
+                $builder->where($builder->qualifyColumn('user_id'), $summaryRequestData->acting_user_id)
+                    ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
             })
             ->take(15)
             ->toBase()
@@ -220,8 +225,9 @@ class StatsAggregationService
                     $relation->whereKey($summaryRequestData->country_id);
                 });
             })
-            ->when($summaryRequestData->own_entities_only, function (Builder $builder) use ($summaryRequestData) {
-                $builder->where('user_id', $summaryRequestData->user_id);
+            ->when(false === $summaryRequestData->any_owner_entities, function (Builder $builder) use ($summaryRequestData) {
+                $builder->where($builder->qualifyColumn('user_id'), $summaryRequestData->acting_user_id)
+                    ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
             })
             ->toBase()
             ->first();
@@ -235,8 +241,9 @@ class StatsAggregationService
             ->when(!is_null($summaryRequestData->country_id), function (Builder $builder) use ($summaryRequestData) {
                 $builder->where('country_id', $summaryRequestData->country_id);
             })
-            ->when($summaryRequestData->own_entities_only, function (Builder $builder) use ($summaryRequestData) {
-                $builder->where('user_id', $summaryRequestData->user_id);
+            ->when(false === $summaryRequestData->any_owner_entities, function (Builder $builder) use ($summaryRequestData) {
+                $builder->where($builder->qualifyColumn('user_id'), $summaryRequestData->acting_user_id)
+                    ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
             })
             ->toBase()
             ->first();
@@ -250,8 +257,9 @@ class StatsAggregationService
             ->when(!is_null($summaryRequestData->country_id), function (Builder $builder) use ($summaryRequestData) {
                 $builder->where('default_country_id', $summaryRequestData->country_id);
             })
-            ->when($summaryRequestData->own_entities_only, function (Builder $builder) use ($summaryRequestData) {
-                $builder->where('user_id', $summaryRequestData->user_id);
+            ->when(false === $summaryRequestData->any_owner_entities, function (Builder $builder) use ($summaryRequestData) {
+                $builder->where($builder->qualifyColumn('user_id'), $summaryRequestData->acting_user_id)
+                    ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
             })
             ->count();
 
@@ -283,8 +291,9 @@ class StatsAggregationService
                     $relation->whereKey($summaryRequestData->country_id);
                 });
             })
-            ->when($summaryRequestData->own_entities_only, function (Builder $builder) use ($summaryRequestData) {
-                $builder->where('user_id', $summaryRequestData->user_id);
+            ->when(false === $summaryRequestData->any_owner_entities, function (Builder $builder) use ($summaryRequestData) {
+                $builder->where($builder->qualifyColumn('user_id'), $summaryRequestData->acting_user_id)
+                    ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
             })
             ->toBase()
             ->first();
@@ -292,8 +301,9 @@ class StatsAggregationService
         $result->assets_locations_count = AssetTotal::query()
             ->whereNotNull('location_id')
             ->distinct('location_id')
-            ->when($summaryRequestData->own_entities_only, function (Builder $builder) use ($summaryRequestData) {
-                $builder->where('user_id', $summaryRequestData->user_id);
+            ->when(false === $summaryRequestData->any_owner_entities, function (Builder $builder) use ($summaryRequestData) {
+                $builder->where($builder->qualifyColumn('user_id'), $summaryRequestData->acting_user_id)
+                    ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
             })
             ->toBase()
             ->count();

@@ -16,7 +16,8 @@ use App\Listeners\{ExchangeRatesListener,
     SalesOrderEventSubscriber,
     SyncWorldwideContractQuoteWithOpportunityData,
     TaskEventSubscriber,
-    TeamEventSubscriber};
+    TeamEventSubscriber,
+    WorldwideQuoteEventAuditor};
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -74,6 +75,8 @@ class EventServiceProvider extends ServiceProvider
         SalesOrderEventSubscriber::class,
 
         TeamEventSubscriber::class,
+
+        WorldwideQuoteEventAuditor::class,
 
     ];
 

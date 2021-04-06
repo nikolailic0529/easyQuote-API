@@ -5,6 +5,7 @@ namespace App\Http\Resources\WorldwideQuote;
 use App\Enum\ContractQuoteStage;
 use App\Enum\PackQuoteStage;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\User;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Http\Resources\MissingValue;
 
@@ -86,8 +87,13 @@ class WorldwideQuoteState extends JsonResource
     {
         /** @var WorldwideQuote|WorldwideQuoteState $this */
 
+        /** @var User $user */
+        $user = $request->user();
+
         return [
             'id' => $this->id,
+
+            'acting_user_is_version_owner' => optional($user)->getKey() === $this->activeVersion->user_id,
 
             'active_version_id' => $this->active_version_id,
             'active_version_user_id' => $this->activeVersion->user_id,

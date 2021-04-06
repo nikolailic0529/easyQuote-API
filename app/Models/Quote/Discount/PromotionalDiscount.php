@@ -7,6 +7,9 @@ use App\Traits\{
     Activity\LogsActivity
 };
 
+/**
+ * @property string|null $name
+ */
 class PromotionalDiscount extends Discount
 {
     use HasValueAttribute, LogsActivity;

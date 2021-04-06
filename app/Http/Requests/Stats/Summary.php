@@ -69,8 +69,10 @@ class Summary extends StatsAggregatorRequest
             'period' => $this->resolvePeriod(),
             'country_id' => $this->input('country_id'),
             'currency_id' => $this->input('currency_id'),
-            'user_id' => $user->getKey(),
-            'own_entities_only' => false === $gate->allows('viewQuotesOfAnyUser'),
+            'acting_user_id' => $user->getKey(),
+            'acting_user_team_id' => $user->team()->getParentKey(),
+            'acting_user_led_teams' => $user->ledTeams()->pluck('id')->all(),
+            'any_owner_entities' => $gate->allows('viewQuotesOfAnyUser'),
             'entity_types' => array_keys($allowedQuoteEntityTypes)
         ]);
     }

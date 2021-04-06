@@ -36,7 +36,7 @@ use Illuminate\Contracts\Auth\{Access\Authorizable as AuthorizableContract,
     Authenticatable as AuthenticatableContract,
     CanResetPassword as CanResetPasswordContract
 };
-use Illuminate\Database\Eloquent\{Builder, Model, SoftDeletes,};
+use Illuminate\Database\Eloquent\{Builder, Model, Relations\BelongsToMany, SoftDeletes};
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\Access\Authorizable;
 use Illuminate\Http\UploadedFile;
@@ -304,5 +304,10 @@ class User extends Model implements
     public function team(): BelongsTo
     {
         return $this->belongsTo(Team::class);
+    }
+
+    public function ledTeams(): BelongsToMany
+    {
+        return $this->belongsToMany(Team::class, 'team_team_leader', 'team_leader_id');
     }
 }

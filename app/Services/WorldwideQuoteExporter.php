@@ -54,8 +54,6 @@ class WorldwideQuoteExporter
 
     private function mapTemplateDataControls(WorldwideQuotePreviewData $previewData): void
     {
-        $templateData = $previewData->template_data;
-
         $violations = $this->validator->validate($previewData);
 
         if (count($violations)) {
@@ -89,6 +87,7 @@ class WorldwideQuoteExporter
 
                     if (Str::startsWith($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
                         $control->value = $this->viewFactory->make('ww-quotes.components.images_row', [
+                            'class' => $control->class,
                             'images' => $templateData->template_assets->{$control->id}
                         ]);
                     } elseif (is_scalar($value)) {
@@ -117,10 +116,11 @@ class WorldwideQuoteExporter
                     break;
 
                 case 'tag':
-                    $value = $previewData->quote_summary->{$control->id} ?? $previewData->distributions[0]->{$control->id} ?? '';
+                    $value = $previewData->distributions[0]->{$control->id} ?? $previewData->quote_summary->{$control->id} ?? '';
 
                     if (Str::startsWith($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
                         $control->value = $this->viewFactory->make('ww-quotes.components.images_row', [
+                            'class' => $control->class,
                             'images' => $templateData->template_assets->{$control->id}
                         ]);
                     } elseif (is_scalar($value)) {
@@ -279,6 +279,7 @@ class WorldwideQuoteExporter
 
                     if (Str::startsWith($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
                         $control->value = $this->viewFactory->make('ww-quotes.components.images_row', [
+                            'class' => $control->class,
                             'images' => $templateData->template_assets->{$control->id}
                         ]);
                     } elseif (is_scalar($value)) {
@@ -310,6 +311,7 @@ class WorldwideQuoteExporter
 
                     if (Str::startsWith($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
                         $control->value = $this->viewFactory->make('ww-quotes.components.images_row', [
+                            'class' => $control->class,
                             'images' => $templateData->template_assets->{$control->id}
                         ]);
                     } elseif (is_scalar($value)) {
@@ -342,6 +344,7 @@ class WorldwideQuoteExporter
 
                     if (Str::startsWith($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
                         $control->value = $this->viewFactory->make('ww-quotes.components.images_row', [
+                            'class' => $control->class,
                             'images' => $templateData->template_assets->{$control->id}
                         ]);
                     } elseif (is_scalar($value)) {
@@ -428,6 +431,7 @@ class WorldwideQuoteExporter
 
                     if (Str::startsWith($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
                         $control->value = $this->viewFactory->make('ww-quotes.components.images_row', [
+                            'class' => $control->class,
                             'images' => $templateData->template_assets->{$control->id}
                         ]);
                     } elseif (is_scalar($value)) {

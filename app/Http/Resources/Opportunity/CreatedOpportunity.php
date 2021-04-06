@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Opportunity;
 
+use App\Models\Company;
 use App\Models\Opportunity;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -10,7 +11,7 @@ class CreatedOpportunity extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return array
      */
     public function toArray($request)
@@ -25,7 +26,9 @@ class CreatedOpportunity extends JsonResource
             'contract_type' => $this->contractType,
 
             'primary_account_id' => $this->primary_account_id,
-            'primary_account' => $this->primaryAccount,
+            'primary_account' => transform($this->primaryAccount, function (Company $primaryAccount) {
+                return $primaryAccount->setAttribute('vendor_ids', $primaryAccount->vendors->modelKeys());
+            }),
 
             'primary_account_contact_id' => $this->primary_account_contact_id,
             'primary_account_contact' => $this->primaryAccountContact,

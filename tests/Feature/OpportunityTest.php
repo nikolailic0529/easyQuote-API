@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Opportunity;
 use App\Models\OpportunitySupplier;
+use App\Models\Vendor;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
@@ -127,16 +128,29 @@ class OpportunityTest extends TestCase
         $this->getJson('api/opportunities?order_by_status=asc')->assertOk();
     }
 
+    /**
+     * Test an ability to view an existing opportunity entity.
+     *
+     * @return void
+     */
     public function testCanViewOpportunity()
     {
+        /** @var Company $primaryAccount */
+        $primaryAccount = factory(Company::class)->create();
+
+        $primaryAccount->vendors()->sync(Vendor::query()->limit(2)->get());
+
         /** @var Opportunity $opportunity */
-        $opportunity = factory(Opportunity::class)->create();
+        $opportunity = factory(Opportunity::class)->create([
+            'primary_account_id' => $primaryAccount->getKey()
+        ]);
 
         factory(OpportunitySupplier::class, 2)->create(['opportunity_id' => $opportunity->getKey()]);
 
         $this->authenticateApi();
 
         $this->getJson('api/opportunities/'.$opportunity->getKey())
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 "id",
@@ -145,6 +159,9 @@ class OpportunityTest extends TestCase
                 "contract_type",
                 "primary_account_id",
                 "primary_account",
+                "primary_account" => [
+                  "vendor_ids"
+                ],
                 "primary_account_contact_id",
                 "primary_account_contact",
                 "account_manager_id",

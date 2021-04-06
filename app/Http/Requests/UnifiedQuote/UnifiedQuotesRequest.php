@@ -31,10 +31,12 @@ class UnifiedQuotesRequest extends FormRequest
         $gate = $this->container[Gate::class];
 
         return new UnifiedQuotesRequestData([
-            'user_id' => $user->getKey(),
-            'show_rescue_entities' => $gate->allows('viewAny', Quote::class),
-            'show_worldwide_entities' => $gate->allows('viewAny', WorldwideQuote::class),
-            'show_own_entities_only' => false === $gate->allows('viewQuotesOfAnyUser')
+            'acting_user_id' => $user->getKey(),
+            'acting_user_team_id' => $user->team()->getParentKey(),
+            'acting_user_led_teams' => $user->ledTeams()->pluck('id')->all(),
+            'get_rescue_entities' => $gate->allows('viewAny', Quote::class),
+            'get_worldwide_entities' => $gate->allows('viewAny', WorldwideQuote::class),
+            'get_any_owner_entities' => $gate->allows('viewQuotesOfAnyUser'),
         ]);
     }
 }

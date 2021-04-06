@@ -13,7 +13,21 @@ final class SummaryRequestData extends DataTransferObject
      *
      * @var string|null
      */
-    public ?string $user_id;
+    public ?string $acting_user_id;
+
+    /**
+     * @Constraints\Uuid
+     *
+     * @var string|null
+     */
+    public ?string $acting_user_team_id;
+
+    /**
+     * @Constraints\All(@Constraints\Uuid)
+     *
+     * @var array
+     */
+    public array $acting_user_led_teams;
 
     public ?CarbonPeriod $period;
 
@@ -31,7 +45,7 @@ final class SummaryRequestData extends DataTransferObject
      */
     public ?string $currency_id;
 
-    public bool $own_entities_only = false;
+    public bool $any_owner_entities;
 
     /**
      * @Constraints\All(@Constraints\Uuid)

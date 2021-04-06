@@ -14,6 +14,7 @@ use App\Http\Query\{ActiveFirst,
 use App\Models\Quote\Quote;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\User;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as BaseBuilder;
@@ -53,17 +54,27 @@ class UnifiedQuoteQueries
         /** @var Builder[] $queries */
         $queries = [];
 
-        if ($requestData->show_rescue_entities) {
+        if ($requestData->get_rescue_entities) {
             $queries[] = $this->draftedRescueQuotesListingQuery()
-                ->when($requestData->show_own_entities_only, function (Builder $builder) use ($requestData) {
-                    $builder->where($builder->qualifyColumn('user_id'), $requestData->user_id);
+                ->when(false === $requestData->get_any_owner_entities, function (Builder $builder) use ($requestData) {
+                    $builder->where(function (Builder $builder) use ($requestData) {
+
+                        $builder->where($builder->qualifyColumn('user_id'), $requestData->acting_user_id)
+                            ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $requestData->acting_user_led_teams));
+
+                    });
                 });
         }
 
-        if ($requestData->show_worldwide_entities) {
+        if ($requestData->get_worldwide_entities) {
             $queries[] = $this->draftedWorldwideQuotesListingQuery()
-                ->when($requestData->show_own_entities_only, function (Builder $builder) use ($requestData) {
-                    $builder->where($builder->qualifyColumn('user_id'), $requestData->user_id);
+                ->when(false === $requestData->get_any_owner_entities, function (Builder $builder) use ($requestData) {
+                    $builder->where(function (Builder $builder) use ($requestData) {
+
+                        $builder->where($builder->qualifyColumn('user_id'), $requestData->acting_user_id)
+                            ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $requestData->acting_user_led_teams));
+
+                    });
                 });
         }
 
@@ -104,17 +115,27 @@ class UnifiedQuoteQueries
         /** @var Builder[] $queries */
         $queries = [];
 
-        if ($requestData->show_rescue_entities) {
+        if ($requestData->get_rescue_entities) {
             $queries[] = $this->submittedRescueQuotesListingQuery()
-                ->when($requestData->show_own_entities_only, function (Builder $builder) use ($requestData) {
-                    $builder->where($builder->qualifyColumn('user_id'), $requestData->user_id);
+                ->when(false === $requestData->get_any_owner_entities, function (Builder $builder) use ($requestData) {
+                    $builder->where(function (Builder $builder) use ($requestData) {
+
+                        $builder->where($builder->qualifyColumn('user_id'), $requestData->acting_user_id)
+                            ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $requestData->acting_user_led_teams));
+
+                    });
                 });
         }
 
-        if ($requestData->show_worldwide_entities) {
+        if ($requestData->get_worldwide_entities) {
             $queries[] = $this->submittedWorldwideQuotesListingQuery()
-                ->when($requestData->show_own_entities_only, function (Builder $builder) use ($requestData) {
-                    $builder->where($builder->qualifyColumn('user_id'), $requestData->user_id);
+                ->when(false === $requestData->get_any_owner_entities, function (Builder $builder) use ($requestData) {
+                    $builder->where(function (Builder $builder) use ($requestData) {
+
+                        $builder->where($builder->qualifyColumn('user_id'), $requestData->acting_user_id)
+                            ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $requestData->acting_user_led_teams));
+
+                    });
                 });
         }
 
@@ -155,17 +176,27 @@ class UnifiedQuoteQueries
         /** @var Builder[] $queries */
         $queries = [];
 
-        if ($requestData->show_rescue_entities) {
+        if ($requestData->get_rescue_entities) {
             $queries[] = $this->expiringRescueQuotesListingQuery()
-                ->when($requestData->show_own_entities_only, function (Builder $builder) use ($requestData) {
-                    $builder->where($builder->qualifyColumn('user_id'), $requestData->user_id);
+                ->when(false === $requestData->get_any_owner_entities, function (Builder $builder) use ($requestData) {
+                    $builder->where(function (Builder $builder) use ($requestData) {
+
+                        $builder->where($builder->qualifyColumn('user_id'), $requestData->acting_user_id)
+                            ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $requestData->acting_user_led_teams));
+
+                    });
                 });
         }
 
-        if ($requestData->show_worldwide_entities) {
+        if ($requestData->get_worldwide_entities) {
             $queries[] = $this->expiringWorldwideQuotesListingQuery()
-                ->when($requestData->show_own_entities_only, function (Builder $builder) use ($requestData) {
-                    $builder->where($builder->qualifyColumn('user_id'), $requestData->user_id);
+                ->when(false === $requestData->get_any_owner_entities, function (Builder $builder) use ($requestData) {
+                    $builder->where(function (Builder $builder) use ($requestData) {
+
+                        $builder->where($builder->qualifyColumn('user_id'), $requestData->acting_user_id)
+                            ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $requestData->acting_user_led_teams));
+
+                    });
                 });
         }
 

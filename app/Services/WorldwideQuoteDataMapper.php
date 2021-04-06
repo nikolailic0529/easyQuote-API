@@ -287,17 +287,19 @@ class WorldwideQuoteDataMapper
 
         $quotePriceData = $this->getQuotePriceData($quote);
 
-        $quote->load(['assets' => function (Relation $builder) {
+        $activeVersionOfQuote = $quote->activeVersion;
+
+        $activeVersionOfQuote->load(['assets' => function (Relation $builder) {
             $builder->where('is_selected', true);
         }]);
 
         $this->sortWorldwidePackQuoteAssets($quote);
 
-        foreach ($quote->assets as $asset) {
+        foreach ($activeVersionOfQuote->assets as $asset) {
             $asset->setAttribute('date_from', $quote->opportunity->opportunity_start_date);
         }
 
-        return $this->worldwideQuoteAssetsToArrayOfAssetData($quote->assets, $quotePriceData->price_value_coefficient, $outputCurrency);
+        return $this->worldwideQuoteAssetsToArrayOfAssetData($activeVersionOfQuote->assets, $quotePriceData->price_value_coefficient, $outputCurrency);
     }
 
     public static function formatMachineAddressToString(?Address $address): string
