@@ -78,19 +78,18 @@ class SalesOrderDataMapper
 
     private function getSalesOrderPriceData(SalesOrder $salesOrder): QuotePriceData
     {
-        $quotePriceData = new QuotePriceData();
+        return tap(new QuotePriceData(), function (QuotePriceData $quotePriceData) use ($salesOrder) {
+            $priceSummary = $this->quoteCalc->calculatePriceSummaryOfQuote($salesOrder->worldwideQuote);
 
-        $quotePriceData->total_price_value = $this->quoteCalc->calculateQuoteTotalPrice($salesOrder->worldwideQuote);
-        $quoteFinalPrice = $this->quoteCalc->calculateQuoteFinalTotalPrice($salesOrder->worldwideQuote);
+            $quotePriceData->total_price_value = $priceSummary->total_price;
+            $quotePriceData->final_total_price_value = $priceSummary->final_total_price;
+            $quotePriceData->final_total_price_value_excluding_tax = $priceSummary->final_total_price_excluding_tax;
+            $quotePriceData->applicable_discounts_value = $priceSummary->applicable_discounts_value;
 
-        $quotePriceData->final_total_price_value = $quoteFinalPrice->final_total_price_value;
-        $quotePriceData->applicable_discounts_value = $quoteFinalPrice->applicable_discounts_value;
-
-        if ($quotePriceData->final_total_price_value !== 0.0) {
-            $quotePriceData->price_value_coefficient = $quotePriceData->total_price_value / $quotePriceData->final_total_price_value;
-        }
-
-        return $quotePriceData;
+            if ($quotePriceData->final_total_price_value !== 0.0) {
+                $quotePriceData->price_value_coefficient = $quotePriceData->total_price_value / $quotePriceData->final_total_price_value;
+            }
+        });
     }
 
     private function mapContractSalesOrderToSubmitSalesOrderData(SalesOrder $salesOrder): SubmitSalesOrderData

@@ -7,14 +7,11 @@ use App\Contracts\Repositories\Contract\ContractDraftedRepositoryInterface;
 use App\Models\Company;
 use App\Models\Customer\Customer;
 use App\Models\HpeContract;
-use App\Repositories\SearchableRepository;
 use App\Models\Quote\Contract;
 use App\Models\User;
+use App\Repositories\SearchableRepository;
 use App\Scopes\ContractTypeScope;
-use Illuminate\Database\Eloquent\{
-    Model,
-    Builder
-};
+use Illuminate\Database\Eloquent\{Builder, Model};
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\DB;
 
@@ -37,19 +34,19 @@ class ContractDraftedRepository extends SearchableRepository implements Contract
 
     public function userQuery(): Builder
     {
-        /** @var \App\Models\User */
+        /** @var User $user */
         $user = auth()->user();
 
         $query = Contract::query()
             ->joinSub(
                 Customer::select('customers.id', 'customers.rfq', 'customers.valid_until', 'customers.support_start', 'customers.support_end'),
                 'customer',
-                fn (JoinClause $join) => $join->on('customer.id', '=', 'contracts.customer_id')->limit(1)
+                fn(JoinClause $join) => $join->on('customer.id', '=', 'contracts.customer_id')->limit(1)
             )
             ->joinSub(
                 User::select('users.id', 'users.first_name', 'users.last_name'),
                 'user',
-                fn (JoinClause $join) => $join->on('user.id', 'contracts.user_id')->limit(1)
+                fn(JoinClause $join) => $join->on('user.id', 'contracts.user_id')->limit(1)
             )
             ->select(
                 'contracts.id',
@@ -76,12 +73,16 @@ class ContractDraftedRepository extends SearchableRepository implements Contract
                 'company_name' => Company::select('name')->whereColumn('companies.id', 'contracts.company_id')->limit(1),
             ])
             ->when(
-                /** If user is not super-admin we are retrieving the user's own contracts */
+            /** If user is not super-admin we are retrieving the user's own contracts */
                 $user->cant('view_contracts'),
-                fn (Builder $query) => $query->currentUser()
-                    /** Adding contracts that have been granted access to */
-                    ->orWhereIn('quote_id', $user->getPermissionTargets('quotes.read'))
-                    ->orWhereIn('user_id', $user->getModulePermissionProviders('contracts.read'))
+                function (Builder $builder) use ($user) {
+                    $builder->where(function (Builder $builder) use ($user) {
+                        $builder->where('quotes.user_id', $user->getKey())
+                            /** Adding contracts that have been granted access to */
+                            ->orWhereIn($builder->qualifyColumn('quote_id'), $user->getPermissionTargets('quotes.read'))
+                            ->orWhereIn($builder->qualifyColumn('user_id'), $user->getModulePermissionProviders('contracts.read'));
+                    });
+                }
             )
             ->whereNull('contracts.submitted_at');
 
@@ -107,22 +108,25 @@ class ContractDraftedRepository extends SearchableRepository implements Contract
                 'hpe_contracts.activated_at',
                 'hpe_contracts.is_active'
             )
-            ->joinSub(
-                User::select('users.id', 'users.first_name', 'users.last_name'),
-                'user',
-                fn (JoinClause $join) => $join->on('user.id', '=', 'hpe_contracts.user_id')->limit(1)
-            )
-            ->addSelect([
-                'company_name' => Company::select('name')->whereColumn('companies.id', 'hpe_contracts.company_id')->limit(1),
-            ])
-            ->when(
+                ->joinSub(
+                    User::select('users.id', 'users.first_name', 'users.last_name'),
+                    'user',
+                    fn(JoinClause $join) => $join->on('user.id', '=', 'hpe_contracts.user_id')->limit(1)
+                )
+                ->addSelect([
+                    'company_name' => Company::select('name')->whereColumn('companies.id', 'hpe_contracts.company_id')->limit(1),
+                ])
+                ->when(
                 /** If user is not super-admin we are retrieving the user's own contracts */
-                $user->cant('view_contracts'),
-                fn (Builder $query) => $query->currentUser()
-                    /** Adding contracts that have been granted access to */
-                    ->orWhereIn('user_id', $user->getModulePermissionProviders('contracts.read'))
-            )
-            ->whereNull('hpe_contracts.submitted_at')
+                    $user->cant('view_contracts'),
+                    function (Builder $builder) use ($user) {
+                        $builder->where(function (Builder $builder) use ($user) {
+                            $builder->where($builder->qualifyColumn('user_id'), $user->getKey())
+                                ->orWhereIn($builder->qualifyColumn('user_id'), $user->getModulePermissionProviders('contracts.read'));
+                        });
+                    }
+                )
+                ->whereNull('hpe_contracts.submitted_at')
         );
 
         return (new UnifiedContractBuilder($query->toBase()))->setModel(new Contract);
@@ -137,7 +141,7 @@ class ContractDraftedRepository extends SearchableRepository implements Contract
     {
         return tap(
             $this->find($id),
-            fn (Contract $contract) => $contract->quote->update(['contract_template_id' => null])
+            fn(Contract $contract) => $contract->quote->update(['contract_template_id' => null])
         )->delete();
     }
 

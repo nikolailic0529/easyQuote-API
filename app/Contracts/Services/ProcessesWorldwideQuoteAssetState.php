@@ -3,6 +3,7 @@
 namespace App\Contracts\Services;
 
 use App\DTO\WorldwideQuote\ImportBatchAssetFileData;
+use App\DTO\WorldwideQuote\InitializeWorldwideQuoteAssetData;
 use App\DTO\WorldwideQuote\ReadBatchFileResult;
 use App\DTO\WorldwideQuote\WorldwideQuoteAssetDataCollection;
 use App\Models\Quote\WorldwideQuote;
@@ -16,9 +17,10 @@ interface ProcessesWorldwideQuoteAssetState
      * Initialize a new Worldwide Quote Asset.
      *
      * @param WorldwideQuoteVersion $quote
+     * @param InitializeWorldwideQuoteAssetData $data
      * @return WorldwideQuoteAsset
      */
-    public function initializeQuoteAsset(WorldwideQuoteVersion $quote): WorldwideQuoteAsset;
+    public function initializeQuoteAsset(WorldwideQuoteVersion $quote, InitializeWorldwideQuoteAssetData $data): WorldwideQuoteAsset;
 
     /**
      * Batch update the Worldwide Quote Assets.

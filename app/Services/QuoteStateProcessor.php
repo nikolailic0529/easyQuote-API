@@ -3,98 +3,105 @@
 namespace App\Services;
 
 use App\Collections\MappedRows;
-use App\Queries\QuoteQueries;
-use App\Contracts\Repositories\{
-    Quote\Margin\MarginRepositoryInterface as MarginRepository,
-    QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository
-};
-use App\Contracts\{
-    Services\QuoteState,
-    Services\QuoteView as QuoteService,
-};
+use App\Events\RescueQuote\RescueQuoteSubmitted;
+use App\Contracts\{Services\QuoteState, Services\QuoteView as QuoteService,};
+use App\Contracts\Repositories\{QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository};
 use App\DTO\RowsGroup;
 use App\Enum\Lock;
-use App\Models\{
-    Quote\Quote,
-    Quote\BaseQuote,
-    Quote\Discount as QuoteDiscount,
-    QuoteFile\QuoteFile,
-    QuoteFile\ImportableColumn,
-    Template\TemplateField,
-    User
-};
-use App\Http\Requests\{
-    Quote\StoreQuoteStateRequest,
-};
+use App\Events\RescueQuote\RescueQuoteCreated;
+use App\Events\RescueQuote\RescueQuoteUnravelled;
+use App\Events\RescueQuote\RescueQuoteUpdated;
+use App\Http\Requests\{Quote\StoreQuoteStateRequest,};
 use App\Http\Requests\Quote\TryDiscountsRequest;
 use App\Http\Resources\QuoteReviewResource;
 use App\Jobs\MigrateQuoteAssets;
 use App\Jobs\RetrievePriceAttributes;
+use App\Models\{Quote\BaseQuote,
+    Quote\Discount as MorphDiscount,
+    Quote\Margin\CountryMargin,
+    Quote\Quote,
+    QuoteFile\QuoteFile,
+    User};
 use App\Models\Quote\QuoteVersion;
-use App\Repositories\Concerns\{
-    ManagesGroupDescription,
+use App\Queries\QuoteQueries;
+use App\Repositories\Concerns\{ManagesGroupDescription,
     ManagesSchemalessAttributes,
     ResolvesImplicitModel,
-    ResolvesTargetModel
-};
-use Illuminate\Support\Collection;
+    ResolvesTargetModel};
+use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
+use Illuminate\Contracts\Cache\Lock as LockContract;
+use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
+use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\{Arr, Str, Facades\Cache, Facades\DB};
+use Illuminate\Support\{Arr, Facades\DB, Str};
+use Illuminate\Support\Collection;
 use Throwable;
 
 class QuoteStateProcessor implements QuoteState
 {
     use ResolvesImplicitModel, ResolvesTargetModel, ManagesGroupDescription, ManagesSchemalessAttributes;
 
-    protected Quote $quote;
+    protected ConnectionInterface $connection;
+
+    protected LockProvider $lockProvider;
+
+    protected EventDispatcher $eventDispatcher;
+
+    protected BusDispatcher $busDispatcher;
 
     protected QuoteService $quoteService;
 
-    protected QuoteFile $quoteFile;
-
     protected QuoteFileRepository $quoteFileRepository;
 
-    protected MarginRepository $margin;
-
-    protected TemplateField $templateField;
-
-    protected ImportableColumn $importableColumn;
-
-    protected QuoteDiscount $morphDiscount;
-
     public function __construct(
-        Quote $quote,
+        ConnectionInterface $connection,
+        LockProvider $lockProvider,
+        EventDispatcher $eventDispatcher,
+        BusDispatcher $busDispatcher,
         QuoteService $quoteService,
-        QuoteFile $quoteFile,
-        QuoteFileRepository $quoteFileRepository,
-        MarginRepository $margin,
-        TemplateField $templateField,
-        ImportableColumn $importableColumn,
-        QuoteDiscount $morphDiscount
-    ) {
-        $this->quote = $quote;
-        $this->quoteFile = $quoteFile;
+        QuoteFileRepository $quoteFileRepository
+    )
+    {
+        $this->connection = $connection;
+        $this->lockProvider = $lockProvider;
+        $this->eventDispatcher = $eventDispatcher;
+        $this->busDispatcher = $busDispatcher;
         $this->quoteFileRepository = $quoteFileRepository;
-        $this->margin = $margin;
-        $this->templateField = $templateField;
-        $this->importableColumn = $importableColumn;
         $this->quoteService = $quoteService;
-        $this->morphDiscount = $morphDiscount;
     }
 
-    public function storeState(StoreQuoteStateRequest $request)
+    /**
+     * @param StoreQuoteStateRequest $request
+     * @return array
+     * @throws Throwable
+     */
+    public function storeState(StoreQuoteStateRequest $request): array
     {
         $lock = null;
 
-        $quote = $request->quote();
+        $quote = $request->getQuote();
 
-        if ($quote->exists) {
-            $lock = Cache::lock(Lock::UPDATE_QUOTE($quote->getKey()), 10);
-        }
+        $newQuote = false === $quote->exists;
 
-        optional($lock)->block(30);
+        /** @var LockContract $lock */
+        $lock = value(function () use ($quote): LockContract {
+            if (false === $quote->exists) {
+                return $this->lockProvider->lock(
+                    Lock::CREATE_QUOTE,
+                    10
+                );
+            }
 
-        DB::beginTransaction();
+            return $this->lockProvider->lock(
+                Lock::UPDATE_QUOTE($quote->getKey()),
+                10
+            );
+        });
+
+        $lock->block(30);
+
+        $this->connection->beginTransaction();
 
         try {
             $version = $this->createNewVersionIfNonCreator($quote);
@@ -103,6 +110,7 @@ class QuoteStateProcessor implements QuoteState
              * We are swapping $version instance to Quote instance if the Version is Parent.
              * It needs to perform actions with it as with Quote instance.
              */
+            /** @var BaseQuote $version */
             $version = $this->resolveTargetModel($quote, $version);
 
             $state = $request->validatedData();
@@ -110,12 +118,14 @@ class QuoteStateProcessor implements QuoteState
 
             $version->fill($quoteData)->save();
 
-            $this->draftOrSubmit($state, $quote);
+            $quoteWasRecentlySubmitted = $this->draftOrSubmit($state, $quote);
 
             /**
              * We are attaching passed Files to Quote only when a new version has not been created.
              */
-            !$quote->wasCreatedNewVersion && $this->storeQuoteFilesState($state, $version);
+            if (false === $quote->wasCreatedNewVersion) {
+                $this->storeQuoteFilesState($state, $version);
+            }
 
             $this->detachScheduleIfRequested($state, $version);
             $this->attachColumnsToFields($state, $version);
@@ -126,45 +136,57 @@ class QuoteStateProcessor implements QuoteState
              * We are selecting imported rows only when a new version has not been created.
              * Rows will be selected when replicating the version.
              */
-            !$quote->wasCreatedNewVersion && $this->markRowsAsSelectedOrUnSelected($state, $version);
+            if (false === $quote->wasCreatedNewVersion) {
+                $this->markRowsAsSelectedOrUnSelected($state, $version);
+            }
 
             $this->setMargin($state, $version);
             $this->setDiscounts($state, $version);
 
-            DB::commit();
+            $this->connection->commit();
 
-            optional($lock)->release();
+            if ($newQuote) {
+                $this->eventDispatcher->dispatch(new RescueQuoteCreated($quote));
+            } else {
+                $this->eventDispatcher->dispatch(new RescueQuoteUpdated($quote));
+            }
+
+            if ($quoteWasRecentlySubmitted) {
+                $this->eventDispatcher->dispatch(new RescueQuoteSubmitted($quote));
+            }
 
             /**
              * We are always returning original Quote Id regardless of the versions.
              */
             return ['id' => $quote->getKey()];
         } catch (Throwable $e) {
-            DB::rollBack();
-
-            optional($lock)->release();
+            $this->connection->rollBack();
 
             throw $e;
+        } finally {
+            $lock->release();
         }
     }
 
     public function userQuery(): Builder
     {
-        return tap($this->quote->query(), function (Builder $query) {
+        return tap(Quote::query(), function (Builder $query) {
             !app()->runningUnitTests() && $query->currentUserWhen(
                 request()->user()->cant('view_quotes')
             );
         });
     }
 
-    public function findOrNew(string $id)
+    public function findOrNew(string $id): Quote
     {
-        return $this->userQuery()->whereId($id)->firstOrNew();
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
+        return Quote::query()->whereKey($id)->firstOrNew();
     }
 
     public function find(string $id): Quote
     {
-        return $this->quote->whereId($id)->firstOrFail();
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
+        return Quote::query()->whereKey($id)->firstOrFail();
     }
 
     public function findVersion($model): BaseQuote
@@ -180,20 +202,18 @@ class QuoteStateProcessor implements QuoteState
 
     public function create(array $attributes): Quote
     {
-        return tap($this->quote->make($attributes))->saveOrFail();
-    }
-
-    public function make(array $array)
-    {
-        return $this->quote->make($array);
+        return tap(new Quote, function (Quote $quote) use ($attributes) {
+            $quote->fill($attributes);
+            $quote->saveOrFail();
+        });
     }
 
     public function discounts(string $id)
     {
         $quote = $this->findVersion($id);
 
-        $discounts = $this->morphDiscount
-            ->whereHasMorph('discountable', $quote->discountsOrder(), fn ($query) => $query->quoteAcceptable($quote)->activated())
+        $discounts = MorphDiscount::query()
+            ->whereHasMorph('discountable', $quote->discountsOrder(), fn($query) => $query->quoteAcceptable($quote)->activated())
             ->get()->pluck('discountable');
 
         $expectingDiscounts = ['multi_year' => [], 'pre_pay' => [], 'promotions' => [], 'snd' => []];
@@ -228,7 +248,7 @@ class QuoteStateProcessor implements QuoteState
             return sprintf("when '%s' then %s", $discount['id'], $discount['duration'] ?? 'null');
         })->prepend('case `discountable_id`')->push('else null end')->implode(" ");
 
-        $providedDiscounts = $this->morphDiscount->with('discountable')->whereIn('discountable_id', Arr::pluck($attributes, 'id'))
+        $providedDiscounts = MorphDiscount::query()->with('discountable')->whereIn('discountable_id', Arr::pluck($attributes, 'id'))
             ->select(['*', DB::raw("({$durationsSelect}) as `duration`")])
             ->orderByRaw("field(`discounts`.`discountable_type`, {$quote->discountsOrderToString()})", 'desc')
             ->get();
@@ -278,7 +298,7 @@ class QuoteStateProcessor implements QuoteState
             return false;
         }
 
-        $lock = Cache::lock(Lock::UPDATE_QUOTE($quote->getKey()), 10);
+        $lock = $this->lockProvider->lock(Lock::UPDATE_QUOTE($quote->getKey()), 10);
 
         return $lock->block(30, function () use ($quote, $versionId) {
             $oldVersion = $quote->activeVersionOrCurrent;
@@ -346,9 +366,9 @@ class QuoteStateProcessor implements QuoteState
         $targetTable = $target instanceof QuoteVersion ? 'quote_version_discount' : 'quote_discount';
         $targetForeignKeyName = $target instanceof QuoteVersion ? 'quote_version_id' : 'quote_id';
 
-        DB::table($targetTable)->insertUsing(
+        $this->connection->table($targetTable)->insertUsing(
             [$targetForeignKeyName, 'discount_id', 'duration'],
-            DB::table($sourceTable)->select(
+            $this->connection->table($sourceTable)->select(
                 DB::raw("'{$target->getKey()}' as $targetForeignKeyName"),
                 'discount_id',
                 'duration'
@@ -365,9 +385,9 @@ class QuoteStateProcessor implements QuoteState
         $targetTable = $target instanceof QuoteVersion ? 'quote_version_field_column' : 'quote_field_column';
         $targetForeignKeyName = $target instanceof QuoteVersion ? 'quote_version_id' : 'quote_id';
 
-        DB::table($targetTable)->insertUsing(
+        $this->connection->table($targetTable)->insertUsing(
             [$targetForeignKeyName, 'template_field_id', 'importable_column_id', 'is_default_enabled', 'sort'],
-            DB::table($sourceTable)->select(
+            $this->connection->table($sourceTable)->select(
                 DB::raw("'{$target->getKey()}' as $targetForeignKeyName"),
                 'template_field_id',
                 'importable_column_id',
@@ -443,35 +463,35 @@ class QuoteStateProcessor implements QuoteState
 
         return (new QuoteVersion)
             ->setRawAttributes([
-                'user_id'                => optional($user)->getKey(),
-                'quote_id'               => $quote->getKey(),
-                'customer_id'            => Arr::get($attributes, 'customer_id'),
-                'distributor_file_id'    => Arr::get($attributes, 'distributor_file_id'),
-                'schedule_file_id'       => Arr::get($attributes, 'schedule_file_id'),
-                'company_id'             => Arr::get($attributes, 'company_id'),
-                'vendor_id'              => Arr::get($attributes, 'vendor_id'),
-                'country_id'             => Arr::get($attributes, 'country_id'),
-                'quote_template_id'      => Arr::get($attributes, 'quote_template_id'),
-                'country_margin_id'      => Arr::get($attributes, 'country_margin_id'),
-                'source_currency_id'     => Arr::get($attributes, 'source_currency_id'),
-                'target_currency_id'     => Arr::get($attributes, 'target_currency_id'),
-                'completeness'           => Arr::get($attributes, 'completeness'),
-                'group_description'      => Arr::get($attributes, 'group_description'),
+                'user_id' => optional($user)->getKey(),
+                'quote_id' => $quote->getKey(),
+                'customer_id' => Arr::get($attributes, 'customer_id'),
+                'distributor_file_id' => Arr::get($attributes, 'distributor_file_id'),
+                'schedule_file_id' => Arr::get($attributes, 'schedule_file_id'),
+                'company_id' => Arr::get($attributes, 'company_id'),
+                'vendor_id' => Arr::get($attributes, 'vendor_id'),
+                'country_id' => Arr::get($attributes, 'country_id'),
+                'quote_template_id' => Arr::get($attributes, 'quote_template_id'),
+                'country_margin_id' => Arr::get($attributes, 'country_margin_id'),
+                'source_currency_id' => Arr::get($attributes, 'source_currency_id'),
+                'target_currency_id' => Arr::get($attributes, 'target_currency_id'),
+                'completeness' => Arr::get($attributes, 'completeness'),
+                'group_description' => Arr::get($attributes, 'group_description'),
                 'sort_group_description' => Arr::get($attributes, 'sort_group_description'),
-                'custom_discount'        => Arr::get($attributes, 'custom_discount'),
-                'buy_price'              => Arr::get($attributes, 'buy_price'),
-                'exchange_rate_margin'   => Arr::get($attributes, 'exchange_rate_margin'),
-                'calculate_list_price'   => Arr::get($attributes, 'calculate_list_price'),
-                'use_groups'             => Arr::get($attributes, 'use_groups'),
+                'custom_discount' => Arr::get($attributes, 'custom_discount'),
+                'buy_price' => Arr::get($attributes, 'buy_price'),
+                'exchange_rate_margin' => Arr::get($attributes, 'exchange_rate_margin'),
+                'calculate_list_price' => Arr::get($attributes, 'calculate_list_price'),
+                'use_groups' => Arr::get($attributes, 'use_groups'),
                 // 'version_number'         => Arr::get($attributes, '____________'),
-                'pricing_document'       => Arr::get($attributes, 'pricing_document'),
-                'service_agreement_id'   => Arr::get($attributes, 'service_agreement_id'),
-                'system_handle'          => Arr::get($attributes, 'system_handle'),
-                'additional_details'     => Arr::get($attributes, 'additional_details'),
-                'additional_notes'       => Arr::get($attributes, 'additional_notes'),
-                'closing_date'           => Arr::get($attributes, 'closing_date'),
-                'previous_state'         => Arr::get($attributes, 'previous_state'),
-                'checkbox_status'        => Arr::get($attributes, 'checkbox_status'),
+                'pricing_document' => Arr::get($attributes, 'pricing_document'),
+                'service_agreement_id' => Arr::get($attributes, 'service_agreement_id'),
+                'system_handle' => Arr::get($attributes, 'system_handle'),
+                'additional_details' => Arr::get($attributes, 'additional_details'),
+                'additional_notes' => Arr::get($attributes, 'additional_notes'),
+                'closing_date' => Arr::get($attributes, 'closing_date'),
+                'previous_state' => Arr::get($attributes, 'previous_state'),
+                'checkbox_status' => Arr::get($attributes, 'checkbox_status'),
             ]);
     }
 
@@ -484,45 +504,47 @@ class QuoteStateProcessor implements QuoteState
             ->setRawAttributes([
 
                 // 'active_version_id'      => Arr::get($attributes, '___'),
-                'user_id'                => Arr::get($versionAttributes, 'user_id'),
-                'quote_template_id'      => Arr::get($versionAttributes, 'quote_template_id'),
-                'contract_template_id'   => Arr::get($quoteAttributes, 'contract_template_id'),
-                'company_id'             => Arr::get($versionAttributes, 'company_id'),
-                'vendor_id'              => Arr::get($versionAttributes, 'vendor_id'),
-                'country_id'             => Arr::get($versionAttributes, 'country_id'),
-                'customer_id'            => Arr::get($versionAttributes, 'customer_id'),
-                'schedule_file_id'       => Arr::get($versionAttributes, 'schedule_file_id'),
-                'distributor_file_id'    => Arr::get($versionAttributes, 'distributor_file_id'),
-                'previous_state'         => Arr::get($versionAttributes, 'previous_state'),
-                'country_margin_id'      => Arr::get($versionAttributes, 'country_margin_id'),
-                'completeness'           => Arr::get($versionAttributes, 'completeness'),
-                'pricing_document'       => Arr::get($versionAttributes, 'pricing_document'),
-                'service_agreement_id'   => Arr::get($versionAttributes, 'service_agreement_id'),
-                'system_handle'          => Arr::get($versionAttributes, 'system_handle'),
-                'additional_details'     => Arr::get($versionAttributes, 'additional_details'),
-                'checkbox_status'        => Arr::get($versionAttributes, 'checkbox_status'),
-                'closing_date'           => Arr::get($versionAttributes, 'closing_date'),
-                'additional_notes'       => Arr::get($versionAttributes, 'additional_notes'),
-                'calculate_list_price'   => Arr::get($versionAttributes, 'calculate_list_price'),
-                'buy_price'              => Arr::get($versionAttributes, 'buy_price'),
-                'exchange_rate_margin'   => Arr::get($versionAttributes, 'exchange_rate_margin'),
-                'custom_discount'        => Arr::get($versionAttributes, 'custom_discount'),
-                'group_description'      => Arr::get($versionAttributes, 'group_description'),
-                'use_groups'             => Arr::get($versionAttributes, 'use_groups'),
+                'user_id' => Arr::get($versionAttributes, 'user_id'),
+                'quote_template_id' => Arr::get($versionAttributes, 'quote_template_id'),
+                'contract_template_id' => Arr::get($quoteAttributes, 'contract_template_id'),
+                'company_id' => Arr::get($versionAttributes, 'company_id'),
+                'vendor_id' => Arr::get($versionAttributes, 'vendor_id'),
+                'country_id' => Arr::get($versionAttributes, 'country_id'),
+                'customer_id' => Arr::get($versionAttributes, 'customer_id'),
+                'schedule_file_id' => Arr::get($versionAttributes, 'schedule_file_id'),
+                'distributor_file_id' => Arr::get($versionAttributes, 'distributor_file_id'),
+                'previous_state' => Arr::get($versionAttributes, 'previous_state'),
+                'country_margin_id' => Arr::get($versionAttributes, 'country_margin_id'),
+                'completeness' => Arr::get($versionAttributes, 'completeness'),
+                'pricing_document' => Arr::get($versionAttributes, 'pricing_document'),
+                'service_agreement_id' => Arr::get($versionAttributes, 'service_agreement_id'),
+                'system_handle' => Arr::get($versionAttributes, 'system_handle'),
+                'additional_details' => Arr::get($versionAttributes, 'additional_details'),
+                'checkbox_status' => Arr::get($versionAttributes, 'checkbox_status'),
+                'closing_date' => Arr::get($versionAttributes, 'closing_date'),
+                'additional_notes' => Arr::get($versionAttributes, 'additional_notes'),
+                'calculate_list_price' => Arr::get($versionAttributes, 'calculate_list_price'),
+                'buy_price' => Arr::get($versionAttributes, 'buy_price'),
+                'exchange_rate_margin' => Arr::get($versionAttributes, 'exchange_rate_margin'),
+                'custom_discount' => Arr::get($versionAttributes, 'custom_discount'),
+                'group_description' => Arr::get($versionAttributes, 'group_description'),
+                'use_groups' => Arr::get($versionAttributes, 'use_groups'),
                 'sort_group_description' => Arr::get($versionAttributes, 'sort_group_description'),
-                'source_currency_id'     => Arr::get($versionAttributes, 'source_currency_id'),
-                'target_currency_id'     => Arr::get($versionAttributes, 'target_currency_id'),
-                'created_at'             => Arr::get($versionAttributes, 'created_at'),
-                'updated_at'             => Arr::get($quoteAttributes, 'updated_at'),
-                'deleted_at'             => Arr::get($quoteAttributes, 'deleted_at'),
-                'activated_at'           => Arr::get($quoteAttributes, 'activated_at'),
-                'submitted_at'           => Arr::get($quoteAttributes, 'submitted_at'),
-                'assets_migrated_at'     => Arr::get($quoteAttributes, 'assets_migrated_at'),
+                'source_currency_id' => Arr::get($versionAttributes, 'source_currency_id'),
+                'target_currency_id' => Arr::get($versionAttributes, 'target_currency_id'),
+                'created_at' => Arr::get($versionAttributes, 'created_at'),
+                'updated_at' => Arr::get($quoteAttributes, 'updated_at'),
+                'deleted_at' => Arr::get($quoteAttributes, 'deleted_at'),
+                'activated_at' => Arr::get($quoteAttributes, 'activated_at'),
+                'submitted_at' => Arr::get($quoteAttributes, 'submitted_at'),
+                'assets_migrated_at' => Arr::get($quoteAttributes, 'assets_migrated_at'),
             ]);
     }
 
     public function replicateQuote(Quote $quote): Quote
     {
+        $this->connection->beginTransaction();
+
         try {
             $version = $quote->activeVersionOrCurrent;
 
@@ -555,6 +577,8 @@ class QuoteStateProcessor implements QuoteState
 
             $replicatedQuote->save();
 
+            $this->connection->commit();
+
             activity()
                 ->on($replicatedQuote)
                 ->withProperties(['old' => Quote::logChanges($version), 'attributes' => Quote::logChanges($replicatedQuote)])
@@ -563,7 +587,7 @@ class QuoteStateProcessor implements QuoteState
 
             return $replicatedQuote;
         } catch (Throwable $e) {
-            DB::rollBack();
+            $this->connection->rollBack();
 
             throw $e;
         }
@@ -571,7 +595,7 @@ class QuoteStateProcessor implements QuoteState
 
     protected function replicateVersion(Quote $parent, BaseQuote $version, ?User $user = null): BaseQuote
     {
-        DB::beginTransaction();
+        $this->connection->beginTransaction();
 
         try {
             /** @var QuoteVersion */
@@ -622,18 +646,16 @@ class QuoteStateProcessor implements QuoteState
 
             $pass = $replicatedVersion->save();
 
-            if ($pass) {
-                activity()
-                    ->on($replicatedVersion)
-                    ->withProperties(['old' => $this->quote->logChanges($version), 'attributes' => $this->quote->logChanges($replicatedVersion)])
-                    ->queue('created_version');
-            }
+            $this->connection->commit();
 
-            DB::commit();
+            activity()
+                ->on($replicatedVersion)
+                ->withProperties(['old' => Quote::logChanges($version), 'attributes' => Quote::logChanges($replicatedVersion)])
+                ->queue('created_version');
 
             return $replicatedVersion;
         } catch (Throwable $e) {
-            DB::rollBack();
+            $this->connection->rollBack();
 
             throw $e;
         }
@@ -641,7 +663,7 @@ class QuoteStateProcessor implements QuoteState
 
     protected function setMargin(Collection $state, BaseQuote $quote): void
     {
-        if ((bool) data_get($state, 'margin.delete', false) === true) {
+        if ((bool)data_get($state, 'margin.delete', false) === true) {
             $quote->deleteCountryMargin();
 
             /**
@@ -655,9 +677,28 @@ class QuoteStateProcessor implements QuoteState
             return;
         }
 
-        $countryMargin = $this->margin->firstOrCreate($quote, $state->get('margin'));
+        /** @var CountryMargin $countryMargin */
+        $countryMargin = CountryMargin::query()
+            ->where('vendor_id', $quote->vendor_id)
+            ->where('country_id', $quote->country_id)
+            ->where('quote_type', $state['margin']['quote_type'] ?? null)
+            ->where('is_fixed', $state['margin']['is_fixed'] ?? null)
+            ->where('value', $state['margin']['value'] ?? null)
+            ->where('method', $state['margin']['method'] ?? null)
+            ->firstOr(function () use ($state, $quote) {
+                return tap(new CountryMargin(), function (CountryMargin $countryMargin) use ($quote, $state) {
+                    $countryMargin->vendor_id = $quote->vendor_id;
+                    $countryMargin->country_id = $quote->country_id;
+                    $countryMargin->quote_type = $state['margin']['quote_type'] ?? null;
+                    $countryMargin->is_fixed = $state['margin']['is_fixed'] ?? null;
+                    $countryMargin->value = $state['margin']['value'] ?? null;
+                    $countryMargin->method = $state['margin']['method'] ?? null;
 
-        if ($countryMargin->id === $quote->country_margin_id) {
+                    $countryMargin->save();
+                });
+            });
+
+        if ($countryMargin->getKey() === $quote->country_margin_id) {
             return;
         }
 
@@ -674,7 +715,7 @@ class QuoteStateProcessor implements QuoteState
 
     protected function setDiscounts(Collection $state, BaseQuote $quote): void
     {
-        if ((bool) $state->get('discounts_detach') === true) {
+        if ((bool)$state->get('discounts_detach') === true) {
             $quote->resetCustomDiscount();
 
             if ($quote->discounts->isEmpty()) {
@@ -720,16 +761,28 @@ class QuoteStateProcessor implements QuoteState
             ->queueWhen('updated', $diff);
     }
 
-    protected function draftOrSubmit(Collection $state, Quote $quote): void
+    /**
+     * Returns true if quote was submitted.
+     *
+     * @param Collection $state
+     * @param Quote $quote
+     * @return bool
+     */
+    protected function draftOrSubmit(Collection $state, Quote $quote): bool
     {
-        if ($state->get('save', false) == false) {
+        if ((bool)$state->get('save') === false) {
             $quote->save();
-            return;
+
+            return false;
         }
 
-        if ($state->get('save')) {
-            $quote->disableLogging()->tap()->submit()->enableLogging();
-        }
+        tap($quote, function (Quote $quote) {
+            $quote->submitted_at = $quote->freshTimestampString();
+
+            $quote->save();
+        });
+
+        return true;
     }
 
     protected function markRowsAsSelectedOrUnSelected(Collection $state, BaseQuote $quote, bool $reject = false): void
@@ -746,7 +799,7 @@ class QuoteStateProcessor implements QuoteState
 
         $oldRowsIds = $quote->rowsData()->selected()->pluck('imported_rows.id');
 
-        DB::transaction(function () use ($quote, $updatableScope, $selectedRowsIds) {
+        $this->connection->transaction(function () use ($quote, $updatableScope, $selectedRowsIds) {
             $quote->rowsData()->update(['is_selected' => false]);
 
             $quote->rowsData()->{$updatableScope}('imported_rows.id', $selectedRowsIds)
@@ -805,8 +858,8 @@ class QuoteStateProcessor implements QuoteState
             return;
         }
 
-        dispatch(new RetrievePriceAttributes($quote));
-        dispatch(new MigrateQuoteAssets($quote));
+        $this->busDispatcher->dispatch(new RetrievePriceAttributes($quote));
+        $this->busDispatcher->dispatch(new MigrateQuoteAssets($quote));
 
         /**
          * Clear Cache Mapping Review Data when Mapping was changed.
@@ -823,7 +876,7 @@ class QuoteStateProcessor implements QuoteState
         $distributorFileKey = $quote->getAttribute($quote->priceList()->getForeignKeyName());
         $paymentScheduleFileKey = $quote->getAttribute($quote->paymentSchedule()->getForeignKeyName());
 
-        $stateQuoteFiles = QuoteFile::whereKey($stateFiles->all())->get()->keyBy('file_type');
+        $stateQuoteFiles = QuoteFile::query()->whereKey($stateFiles->all())->get()->keyBy('file_type');
         $stateDistributorFile = $stateQuoteFiles->get(QFT_PL);
         $statePaymentScheduleFile = $stateQuoteFiles->get(QFT_PS);
 
@@ -871,8 +924,6 @@ class QuoteStateProcessor implements QuoteState
     {
         $count = $quote->versions()->where('user_id', $version->user_id)->count();
 
-        logger([$count, $version->user_id]);
-
         /**
          * We are incrementing a new version on 2 point if parent author equals a new version author as we are not record original version to the pivot table.
          * Incrementing number equals 1 if there is a new version from non-author.
@@ -882,5 +933,25 @@ class QuoteStateProcessor implements QuoteState
         }
 
         return ++$count;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function processQuoteUnravel(Quote $quote): void
+    {
+        $lock = $this->lockProvider->lock(
+            Lock::UPDATE_WWQUOTE($quote->getKey())
+        );
+
+        $quote->submitted_at = null;
+
+        $lock->block(30, function () use ($quote) {
+            $this->connection->transaction(fn() => $quote->save());
+        });
+
+        $this->eventDispatcher->dispatch(new RescueQuoteUnravelled($quote));
+
+        activity()->on($quote)->queue('unravel');
     }
 }

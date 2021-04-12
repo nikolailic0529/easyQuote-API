@@ -7,6 +7,9 @@ use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Opportunity;
 use App\Models\OpportunitySupplier;
+use App\Models\Quote\WorldwideQuote;
+use App\Models\Role;
+use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -70,6 +73,89 @@ class OpportunityTest extends TestCase
         $this->getJson('api/opportunities?order_by_sale_action_name=asc')->assertOk();
         $this->getJson('api/opportunities?order_by_created_at=asc')->assertOk();
         $this->getJson('api/opportunities?order_by_status=asc')->assertOk();
+    }
+
+    /**
+     * Test an ability to view own opportunity entities.
+     *
+     * @return void
+     */
+    public function testCanViewOwnPaginatedOpportunities()
+    {
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions('view_opportunities');
+
+        /** @var User $user */
+        $user = factory(User::class)->create();
+
+        $user->syncRoles($role);
+
+        $opportunity = factory(Opportunity::class)->create([
+            'user_id' => $user->getKey()
+        ]);
+
+        factory(Opportunity::class)->create();
+
+        $this->actingAs($user, 'api');
+
+        $response = $this->getJson('api/opportunities')
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id'
+                    ]
+                ]
+            ]);
+
+        $this->assertCount(1, $response->json('data'));
+        $this->assertSame($user->getKey(), $response->json('data.0.user_id'));
+    }
+
+    /**
+     * Test an ability to view own lost opportunity entities.
+     *
+     * @return void
+     */
+    public function testCanViewOwnPaginatedLostOpportunities()
+    {
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions('view_opportunities');
+
+        /** @var User $user */
+        $user = factory(User::class)->create();
+
+        $user->syncRoles($role);
+
+        $opportunity = factory(Opportunity::class)->create([
+            'user_id' => $user->getKey(),
+            'status' => 0 // lost
+        ]);
+
+        factory(Opportunity::class)->create([
+            'status' => 0
+        ]);
+
+        $this->actingAs($user, 'api');
+
+        $response = $this->getJson('api/opportunities/lost')
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id'
+                    ]
+                ]
+            ]);
+
+        $this->assertCount(1, $response->json('data'));
+        $this->assertSame($user->getKey(), $response->json('data.0.user_id'));
     }
 
     /**
@@ -213,6 +299,13 @@ class OpportunityTest extends TestCase
                 "status",
                 "status_reason",
 
+                "base_list_price",
+                "base_purchase_price",
+                "base_opportunity_amount",
+
+                "is_opportunity_start_date_assumed",
+                "is_opportunity_end_date_assumed",
+
                 "suppliers_grid" => [
                     "*" => [
                         "id", "supplier_name", "country_name", "contact_name", "contact_email"
@@ -350,6 +443,13 @@ class OpportunityTest extends TestCase
 
                 "status",
                 "status_reason",
+
+                "base_list_price",
+                "base_purchase_price",
+                "base_opportunity_amount",
+
+                "is_opportunity_start_date_assumed",
+                "is_opportunity_end_date_assumed",
 
                 "suppliers_grid" => [
                     "*" => [
@@ -491,6 +591,13 @@ class OpportunityTest extends TestCase
                 "status",
                 "status_reason",
 
+                "base_list_price",
+                "base_purchase_price",
+                "base_opportunity_amount",
+
+                "is_opportunity_start_date_assumed",
+                "is_opportunity_end_date_assumed",
+
                 "suppliers_grid" => [
                     "*" => [
                         "id", "supplier_name", "country_name", "contact_name", "contact_email"
@@ -513,6 +620,7 @@ class OpportunityTest extends TestCase
         ]);
 
         $this->deleteJson('api/opportunities/'.$opportunity->getKey())
+//            ->dump()
             ->assertNoContent();
 
         $this->getJson('api/opportunities/'.$opportunity->getKey())
@@ -695,5 +803,25 @@ class OpportunityTest extends TestCase
                 'status' => 1,
                 'status_reason' => null
             ]);
+    }
+
+    /**
+     * Test an ability to delete opportunity with attached quote.
+     *
+     * @return void
+     */
+    public function testCanNotDeleteOpportunityWithAttachedQuote()
+    {
+        $opportunity = factory(Opportunity::class)->create();
+
+        $quote = factory(WorldwideQuote::class)->create([
+            'opportunity_id' => $opportunity->getKey()
+        ]);
+
+        $this->authenticateApi();
+
+        $this->deleteJson('api/opportunities/'.$opportunity->getKey())
+//            ->dump()
+            ->assertForbidden();
     }
 }

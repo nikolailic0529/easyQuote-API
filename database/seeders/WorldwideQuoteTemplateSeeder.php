@@ -39,7 +39,7 @@ class WorldwideQuoteTemplateSeeder extends Seeder
         $connection->transaction(function () use ($dataHeaders, $wwPackQuoteTemplateSchema, $wwContractQuoteTemplateSchema, $wwPackQuoteTemplateUuid, $wwContractQuoteTemplateUuid, $vendors, $countries, $connection) {
 
             $connection->table('quote_templates')
-                ->insertOrIgnore([
+                ->upsert([
                     'id' => $wwContractQuoteTemplateUuid,
                     'name' => 'WW-Contract-EPD-Master',
                     'company_id' => $connection->table('companies')->where('short_code', 'EPD')->value('id'),
@@ -52,6 +52,13 @@ class WorldwideQuoteTemplateSeeder extends Seeder
                     'activated_at' => now(),
                     'created_at' => now(),
                     'updated_at' => now()
+                ], null, [
+                    'name' => 'WW-Contract-EPD-Master',
+                    'company_id' => $connection->table('companies')->where('short_code', 'EPD')->value('id'),
+                    'currency_id' => $connection->table('currencies')->where('code', 'GBP')->value('id'),
+                    'form_data' => $wwContractQuoteTemplateSchema,
+                    'data_headers' => $dataHeaders,
+                    'is_system' => true,
                 ]);
 
             foreach ($countries as $countryKey) {
@@ -74,7 +81,7 @@ class WorldwideQuoteTemplateSeeder extends Seeder
 
 
             $connection->table('quote_templates')
-                ->insertOrIgnore([
+                ->upsert([
                     'id' => $wwPackQuoteTemplateUuid,
                     'name' => 'WW-Pack-EPD-Master',
                     'company_id' => $connection->table('companies')->where('short_code', 'EPD')->value('id'),
@@ -87,6 +94,13 @@ class WorldwideQuoteTemplateSeeder extends Seeder
                     'activated_at' => now(),
                     'created_at' => now(),
                     'updated_at' => now()
+                ], null, [
+                    'name' => 'WW-Pack-EPD-Master',
+                    'company_id' => $connection->table('companies')->where('short_code', 'EPD')->value('id'),
+                    'currency_id' => $connection->table('currencies')->where('code', 'GBP')->value('id'),
+                    'form_data' => $wwPackQuoteTemplateSchema,
+                    'data_headers' => $dataHeaders,
+                    'is_system' => true,
                 ]);
 
             foreach ($countries as $countryKey) {

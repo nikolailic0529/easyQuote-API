@@ -2,10 +2,11 @@
 
 namespace App\Events\Opportunity;
 
+use App\Contracts\WithOpportunityEntity;
 use App\Models\Opportunity;
 use Illuminate\Queue\SerializesModels;
 
-final class OpportunityDeleted
+final class OpportunityDeleted implements WithOpportunityEntity
 {
     use SerializesModels;
 

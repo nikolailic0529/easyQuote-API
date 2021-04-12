@@ -39,38 +39,4 @@ interface AssetRepository
      * @return boolean
      */
     public function checkUniqueness(array $where): bool;
-
-    /**
-     * Find the specific asset by given id.
-     *
-     * @param string $id
-     * @return Asset
-     * @throws ModelNotFoundException
-     */
-    public function findOrFail(string $id): Asset;
-
-    /**
-     * Create a new asset with specific attributes.
-     *
-     * @param array $attributes
-     * @return Asset
-     */
-    public function create(array $attributes): Asset;
-
-    /**
-     * Update the specific asset with given attributes.
-     *
-     * @param Asset|string $id
-     * @param array $attributes
-     * @return Asset
-     */
-    public function update($id, array $attributes): Asset;
-
-    /**
-     * Delete the specific asset.
-     *
-     * @param Asset|string $id
-     * @return boolean
-     */
-    public function delete($id): bool;
 }

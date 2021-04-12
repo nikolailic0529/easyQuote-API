@@ -2,6 +2,7 @@
 
 namespace App\Services\Opportunity;
 
+use App\Services\ExchangeRate\CurrencyConverter;
 use App\DTO\{Opportunity\BatchOpportunityUploadResult,
     Opportunity\BatchSaveOpportunitiesData,
     Opportunity\CreateOpportunityData,
@@ -30,8 +31,10 @@ use App\Models\Opportunity;
 use App\Models\OpportunitySupplier;
 use App\Models\User;
 use App\Services\Exceptions\ValidationException;
+use App\Services\Opportunity\Models\PipelinerOppMap;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Events\Dispatcher as EventDispatcher;
@@ -60,19 +63,23 @@ class OpportunityEntityService
 
     protected ValidatorFactory $validatorFactory;
 
+    protected CurrencyConverter $currencyConverter;
+
     private array $accountOwnerCache = [];
 
     public function __construct(ConnectionInterface $connection,
                                 LockProvider $lockProvider,
                                 ValidatorInterface $validator,
                                 EventDispatcher $eventDispatcher,
-                                ValidatorFactory $validatorFactory)
+                                ValidatorFactory $validatorFactory,
+                                CurrencyConverter $currencyConverter)
     {
         $this->connection = $connection;
         $this->lockProvider = $lockProvider;
         $this->validator = $validator;
         $this->eventDispatcher = $eventDispatcher;
         $this->validatorFactory = $validatorFactory;
+        $this->currencyConverter = $currencyConverter;
     }
 
     public function batchSaveOpportunities(BatchSaveOpportunitiesData $data): void
@@ -457,9 +464,6 @@ class OpportunityEntityService
                 $address->address_1,
                 $address->address_2,
                 $address->city,
-                $address->contact_name,
-                $address->contact_number,
-                $address->contact_email,
                 $address->post_code,
                 $address->state,
                 $address->country_id
@@ -492,8 +496,19 @@ class OpportunityEntityService
             return !isset($existingContactHashes[$contactHash]);
         }));
 
-        $newBatchAddressDataOfCompany = array_map(fn(Model $model) => $model->getAttributes(), $newAddressDataOfCompany);
-        $newBatchContactDataOfCompany = array_map(fn(Model $model) => $model->getAttributes(), $newContactDataOfCompany);
+        $newAddressDataOfCompanyDictionary = [];
+        $newContactDataOfCompanyDictionary = [];
+
+        foreach ($newAddressDataOfCompany as $address) {
+            $newAddressDataOfCompanyDictionary[$addressToHash($address)] = $address;
+        }
+
+        foreach ($newContactDataOfCompany as $contact) {
+            $newContactDataOfCompanyDictionary[$contactToHash($contact)] = $contact;
+        }
+
+        $newBatchAddressDataOfCompany = array_map(fn(Model $model) => $model->getAttributes(), array_values($newAddressDataOfCompanyDictionary));
+        $newBatchContactDataOfCompany = array_map(fn(Model $model) => $model->getAttributes(), array_values($newContactDataOfCompanyDictionary));
 
         if (!empty($newBatchAddressDataOfCompany)) {
             Address::query()->insert($newBatchAddressDataOfCompany);
@@ -550,7 +565,17 @@ class OpportunityEntityService
 
         });
 
-        $suppliers = with($row['suppliers'] ?? [], function (array $suppliersData) {
+        $valueRetriever = function (array $row, array $keys, $default = null) {
+            foreach ($keys as $key) {
+                if (isset($row[$key])) {
+                    return $row[$key];
+                }
+            }
+
+            return $default;
+        };
+
+        $suppliers = with($valueRetriever($row, PipelinerOppMap::SUPPLIERS, []), function (array $suppliersData) {
             $suppliers = array_map(fn(array $supplier) => [
                 'supplier_name' => $supplier['supplier'] ?? null,
                 'country_name' => $supplier['country'] ?? null,
@@ -581,53 +606,56 @@ class OpportunityEntityService
 
         return new CreateOpportunityData([
             'user_id' => $user->getKey(),
-            'contract_type_id' => $contractTypeResolver($row['opportunity_type'] ?? null),
-            'account_manager_id' => $this->resolveAccountOwner($row['owner'] ?? null),
+            'contract_type_id' => $contractTypeResolver($valueRetriever($row, PipelinerOppMap::CONTRACT_TYPE)),
+            'account_manager_id' => $this->resolveAccountOwner($valueRetriever($row, PipelinerOppMap::ACCOUNT_MANAGER)),
             'primary_account_id' => optional($primaryAccount)->getKey(),
             'primary_account_contact_id' => optional($primaryContact)->getKey(),
-            'project_name' => $row['business_partner_name'] ?? $row['project_name'] ?? null,
-            'nature_of_service' => $row['nature_of_service'] ?? null,
-            'renewal_month' => $row['renewal_month'] ?? $row['ren_month'] ?? null,
-            'renewal_year' => transform($row['renewal_year'] ?? $row['ren_year'] ?? null, fn(string $value) => (int)$value),
-            'customer_status' => $row['customer_status'] ?? null,
-            'end_user_name' => $row['enduser'] ?? null,
-            'hardware_status' => $row['hw_status'] ?? null,
-            'region_name' => $row['region'] ?? null,
-            'opportunity_start_date' => transform($row['start_date'] ?? null, fn($date) => Carbon::parse($date)),
-            'opportunity_end_date' => transform($row['end_date'] ?? null, fn($date) => Carbon::parse($date)),
-            'opportunity_closing_date' => transform($row['closing_date'] ?? null, fn($date) => Carbon::parse($date)),
+            'project_name' => $valueRetriever($row, PipelinerOppMap::PROJECT_NAME),
+            'nature_of_service' => $valueRetriever($row, PipelinerOppMap::NATURE_OF_SERVICE),
+            'renewal_month' => $valueRetriever($row, PipelinerOppMap::RENEWAL_MONTH),
+            'renewal_year' => transform($valueRetriever($row, PipelinerOppMap::RENEWAL_YEAR), fn(string $value) => (int)$value),
+            'customer_status' => $valueRetriever($row, PipelinerOppMap::CUSTOMER_STATUS),
+            'end_user_name' => $valueRetriever($row, PipelinerOppMap::END_USER_NAME),
+            'hardware_status' => $valueRetriever($row, PipelinerOppMap::HARDWARE_STATUS),
+            'region_name' => $valueRetriever($row, PipelinerOppMap::REGION_NAME),
+            'opportunity_start_date' => transform($valueRetriever($row, PipelinerOppMap::OPPORTUNITY_START_DATE), fn($date) => Carbon::parse($date)),
+            'opportunity_end_date' => transform($valueRetriever($row, PipelinerOppMap::OPPORTUNITY_END_DATE), fn($date) => Carbon::parse($date)),
+            'opportunity_closing_date' => transform($valueRetriever($row, PipelinerOppMap::OPPORTUNITY_CLOSING_DATE), fn($date) => Carbon::parse($date)),
 
-            'opportunity_amount' => transform($row['opportunity_value_foreign_value'] ?? null, fn(string $value) => (float)$value),
-            'opportunity_amount_currency_code' => $row['opportunity_value_currency_code'] ?? null,
+            'base_opportunity_amount' => transform($valueRetriever($row, PipelinerOppMap::BASE_OPPORTUNITY_AMOUNT), fn(string $value) => (float)$value),
+            'opportunity_amount' => transform($valueRetriever($row, PipelinerOppMap::OPPORTUNITY_AMOUNT), fn(string $value) => (float)$value),
+            'opportunity_amount_currency_code' => $valueRetriever($row, PipelinerOppMap::OPPORTUNITY_AMOUNT_CURRENCY_CODE),
 
-            'list_price' => transform($row['list_price_foreign_value'] ?? null, fn(string $value) => (float)$value),
-            'list_price_currency_code' => $row['list_price_currency_code'] ?? null,
+            'base_list_price' => transform($valueRetriever($row, PipelinerOppMap::BASE_LIST_PRICE), fn(string $value) => (float)$value),
+            'list_price' => transform($valueRetriever($row, PipelinerOppMap::LIST_PRICE), fn(string $value) => (float)$value),
+            'list_price_currency_code' => $valueRetriever($row, PipelinerOppMap::LIST_PRICE_CURRENCY_CODE),
 
-            'purchase_price' => transform($row['purchase_price_foreign_value'] ?? null, fn(string $value) => (float)$value),
-            'purchase_price_currency_code' => $row['purchase_price_currency_code'] ?? null,
+            'base_purchase_price' => transform($valueRetriever($row, PipelinerOppMap::BASE_PURCHASE_PRICE), fn(string $value) => (float)$value),
+            'purchase_price' => transform($valueRetriever($row, PipelinerOppMap::PURCHASE_PRICE), fn(string $value) => (float)$value),
+            'purchase_price_currency_code' => $valueRetriever($row, PipelinerOppMap::PURCHASE_PRICE_CURRENCY_CODE),
 
-            'ranking' => transform($row['ranking'] ?? null, fn(string $value) => (float)$value),
-            'estimated_upsell_amount' => transform($row['estimated_upsell_amount'] ?? null, fn(string $value) => (float)$value),
-            'estimated_upsell_amount_currency_code' => $row['estimated_upsell_amount_currency_code'] ?? null,
+            'ranking' => transform($valueRetriever($row, PipelinerOppMap::RANKING), fn(string $value) => (float)$value),
+            'estimated_upsell_amount' => transform($valueRetriever($row, PipelinerOppMap::ESTIMATED_UPSELL_AMOUNT), fn(string $value) => (float)$value),
+            'estimated_upsell_amount_currency_code' => $valueRetriever($row, PipelinerOppMap::ESTIMATED_UPSELL_AMOUNT_CURRENCY_CODE),
 
-            'personal_rating' => $row['personal_rating'] ?? null,
+            'personal_rating' => $valueRetriever($row, PipelinerOppMap::PERSONAL_RATING),
 
-            'margin_value' => transform($row['margin'] ?? null, fn(string $value) => (float)$value),
+            'margin_value' => transform($valueRetriever($row, PipelinerOppMap::MARGIN_VALUE), fn(string $value) => (float)$value),
 
-            'competition_name' => $row['competition'] ?? null,
+            'competition_name' => $valueRetriever($row, PipelinerOppMap::COMPETITION_NAME),
 
-            'service_level_agreement_id' => $row['sla'] ?? null,
-            'sale_unit_name' => $row['sales_unit'] ?? null,
-            'drop_in' => $row['drop_in'] ?? null,
-            'lead_source_name' => $row['lead_source_name'] ?? $row['lead_source'] ?? null,
-            'has_higher_sla' => strtolower($row['higher_sla'] ?? '') === 'yes',
-            'is_multi_year' => strtolower($row['multi_year'] ?? '') === 'yes',
-            'has_additional_hardware' => strtolower($row['additional_hardware'] ?? '') === 'yes',
-            'remarks' => $row['remark'] ?? null,
-            'notes' => $row['notes'] ?? null,
-            'sale_action_name' => $row['sales_step'] ?? null,
+            'service_level_agreement_id' => $valueRetriever($row, PipelinerOppMap::SERVICE_LEVEL_AGREEMENT_ID),
+            'sale_unit_name' => $valueRetriever($row, PipelinerOppMap::SALE_UNIT_NAME),
+            'drop_in' => $valueRetriever($row, PipelinerOppMap::DROP_IN),
+            'lead_source_name' => $valueRetriever($row, PipelinerOppMap::LEAD_SOURCE_NAME),
+            'has_higher_sla' => strtolower($valueRetriever($row, PipelinerOppMap::HAS_HIGHER_SLA, '')) === 'yes',
+            'is_multi_year' => strtolower($valueRetriever($row, PipelinerOppMap::IS_MULTI_YEAR, '')) === 'yes',
+            'has_additional_hardware' => strtolower($valueRetriever($row, PipelinerOppMap::HAS_ADDITIONAL_HARDWARE, '')) === 'yes',
+            'remarks' => $valueRetriever($row, PipelinerOppMap::REMARKS),
+            'notes' => $valueRetriever($row, PipelinerOppMap::NOTES),
+            'sale_action_name' => $valueRetriever($row, PipelinerOppMap::SALE_ACTION_NAME),
 
-            'campaign_name' => $row['campaign'] ?? null,
+            'campaign_name' => $valueRetriever($row, PipelinerOppMap::CAMPAIGN_NAME),
 
             'create_suppliers' => $suppliers,
         ]);
@@ -707,12 +735,15 @@ class OpportunityEntityService
             $opportunity->supplier_order_transaction_date = optional($data->supplier_order_transaction_date)->toDateString();
             $opportunity->supplier_order_confirmation_date = optional($data->supplier_order_confirmation_date)->toDateString();
             $opportunity->opportunity_amount = $data->opportunity_amount;
+            $opportunity->base_opportunity_amount = $data->base_opportunity_amount;
             $opportunity->opportunity_amount_currency_code = $data->opportunity_amount_currency_code;
             $opportunity->purchase_price = $data->purchase_price;
+            $opportunity->base_purchase_price = $data->base_purchase_price;
             $opportunity->purchase_price_currency_code = $data->purchase_price_currency_code;
             $opportunity->estimated_upsell_amount = $data->estimated_upsell_amount;
             $opportunity->estimated_upsell_amount_currency_code = $data->estimated_upsell_amount_currency_code;
             $opportunity->list_price = $data->list_price;
+            $opportunity->base_list_price = $data->base_list_price;
             $opportunity->list_price_currency_code = $data->list_price_currency_code;
             $opportunity->personal_rating = $data->personal_rating;
             $opportunity->margin_value = $data->margin_value;
@@ -795,7 +826,9 @@ class OpportunityEntityService
             $opportunity->hardware_status = $data->hardware_status;
             $opportunity->region_name = $data->region_name;
             $opportunity->opportunity_start_date = optional($data->opportunity_start_date)->toDateString();
+            $opportunity->is_opportunity_start_date_assumed = $data->is_opportunity_start_date_assumed;
             $opportunity->opportunity_end_date = optional($data->opportunity_end_date)->toDateString();
+            $opportunity->is_opportunity_end_date_assumed = $data->is_opportunity_end_date_assumed;
             $opportunity->opportunity_closing_date = optional($data->opportunity_closing_date)->toDateString();
             $opportunity->expected_order_date = optional($data->expected_order_date)->toDateString();
             $opportunity->customer_order_date = optional($data->customer_order_date)->toDateString();
@@ -804,12 +837,39 @@ class OpportunityEntityService
             $opportunity->supplier_order_transaction_date = optional($data->supplier_order_transaction_date)->toDateString();
             $opportunity->supplier_order_confirmation_date = optional($data->supplier_order_confirmation_date)->toDateString();
             $opportunity->opportunity_amount = $data->opportunity_amount;
+            $opportunity->base_opportunity_amount = transform($data->opportunity_amount, function (float $value) use ($data) {
+                $baseCurrency = $this->currencyConverter->getBaseCurrency();
+
+                return $this->currencyConverter->convertCurrencies(
+                    $data->opportunity_amount_currency_code ?? $baseCurrency,
+                    $baseCurrency,
+                    $value
+                );
+            });
             $opportunity->opportunity_amount_currency_code = $data->opportunity_amount_currency_code;
             $opportunity->purchase_price = $data->purchase_price;
+            $opportunity->base_purchase_price = transform($data->purchase_price, function (float $value) use ($data) {
+                $baseCurrency = $this->currencyConverter->getBaseCurrency();
+
+                return $this->currencyConverter->convertCurrencies(
+                    $data->purchase_price_currency_code ?? $baseCurrency,
+                    $baseCurrency,
+                    $value
+                );
+            });
             $opportunity->purchase_price_currency_code = $data->purchase_price_currency_code;
             $opportunity->estimated_upsell_amount = $data->estimated_upsell_amount;
             $opportunity->estimated_upsell_amount_currency_code = $data->estimated_upsell_amount_currency_code;
             $opportunity->list_price = $data->list_price;
+            $opportunity->base_list_price = transform($data->list_price, function (float $value) use ($data) {
+                $baseCurrency = $this->currencyConverter->getBaseCurrency();
+
+                return $this->currencyConverter->convertCurrencies(
+                    $data->list_price_currency_code ?? $baseCurrency,
+                    $baseCurrency,
+                    $value
+                );
+            });
             $opportunity->list_price_currency_code = $data->list_price_currency_code;
             $opportunity->personal_rating = $data->personal_rating;
             $opportunity->margin_value = $data->margin_value;
@@ -905,7 +965,9 @@ class OpportunityEntityService
                 $opportunity->hardware_status = $data->hardware_status;
                 $opportunity->region_name = $data->region_name;
                 $opportunity->opportunity_start_date = optional($data->opportunity_start_date)->toDateString();
+                $opportunity->is_opportunity_start_date_assumed = $data->is_opportunity_start_date_assumed;
                 $opportunity->opportunity_end_date = optional($data->opportunity_end_date)->toDateString();
+                $opportunity->is_opportunity_end_date_assumed = $data->is_opportunity_end_date_assumed;
                 $opportunity->opportunity_closing_date = optional($data->opportunity_closing_date)->toDateString();
                 $opportunity->expected_order_date = optional($data->expected_order_date)->toDateString();
                 $opportunity->customer_order_date = optional($data->customer_order_date)->toDateString();
@@ -914,12 +976,39 @@ class OpportunityEntityService
                 $opportunity->supplier_order_transaction_date = optional($data->supplier_order_transaction_date)->toDateString();
                 $opportunity->supplier_order_confirmation_date = optional($data->supplier_order_confirmation_date)->toDateString();
                 $opportunity->opportunity_amount = $data->opportunity_amount;
+                $opportunity->base_opportunity_amount = transform($data->opportunity_amount, function (float $value) use ($data) {
+                    $baseCurrency = $this->currencyConverter->getBaseCurrency();
+
+                    return $this->currencyConverter->convertCurrencies(
+                        $data->opportunity_amount_currency_code ?? $baseCurrency,
+                        $baseCurrency,
+                        $value
+                    );
+                });
                 $opportunity->opportunity_amount_currency_code = $data->opportunity_amount_currency_code;
                 $opportunity->purchase_price = $data->purchase_price;
+                $opportunity->base_purchase_price = transform($data->purchase_price, function (float $value) use ($data) {
+                    $baseCurrency = $this->currencyConverter->getBaseCurrency();
+
+                    return $this->currencyConverter->convertCurrencies(
+                        $data->purchase_price_currency_code ?? $baseCurrency,
+                        $baseCurrency,
+                        $value
+                    );
+                });
                 $opportunity->purchase_price_currency_code = $data->purchase_price_currency_code;
                 $opportunity->estimated_upsell_amount = $data->estimated_upsell_amount;
                 $opportunity->estimated_upsell_amount_currency_code = $data->estimated_upsell_amount_currency_code;
                 $opportunity->list_price = $data->list_price;
+                $opportunity->base_list_price = transform($data->list_price, function (float $value) use ($data) {
+                    $baseCurrency = $this->currencyConverter->getBaseCurrency();
+
+                    return $this->currencyConverter->convertCurrencies(
+                        $data->list_price_currency_code ?? $baseCurrency,
+                        $baseCurrency,
+                        $value
+                    );
+                });
                 $opportunity->list_price_currency_code = $data->list_price_currency_code;
                 $opportunity->personal_rating = $data->personal_rating;
                 $opportunity->margin_value = $data->margin_value;
@@ -950,6 +1039,29 @@ class OpportunityEntityService
 
                 $batchCreateSupplierData = array_map(fn(OpportunitySupplier $supplier) => $supplier->getAttributes(), $newOpportunitySuppliers);
 
+                $addressToHash = static function (Address $address): string {
+                    return md5(implode('~', [
+                        $address->address_type,
+                        $address->address_1,
+                        $address->address_2,
+                        $address->city,
+                        $address->post_code,
+                        $address->state,
+                        $address->country_id
+                    ]));
+                };
+
+                $contactToHash = static function (Contact $contact): string {
+                    return md5(implode('~', [
+                        $contact->first_name,
+                        $contact->last_name,
+                        $contact->email,
+                        $contact->phone,
+                        $contact->job_title,
+                        $contact->is_verified
+                    ]));
+                };
+
                 $primaryAccount = $opportunity->primaryAccount;
                 $newOpportunityAddressModels = [];
                 $newOpportunityContactModels = [];
@@ -977,8 +1089,39 @@ class OpportunityEntityService
                         $relation->whereKeyNot($alreadyReplicatedContactKeys);
                     }]);
 
-                    [$newOpportunityAddressModels, $newOpportunityAddressPivots] = $this->replicateAddressModelsOfPrimaryAccount($primaryAccount);
-                    [$newOpportunityContactModels, $newOpportunityContactPivots] = $this->replicateContactModelsOfPrimaryAccount($primaryAccount);
+                    $existingAddressHashes = array_flip(array_map(fn(Address $address) => $addressToHash($address), $opportunity->addresses->all()));
+                    $existingContactHashes = array_flip(array_map(fn(Contact $contact) => $contactToHash($contact), $opportunity->contacts->all()));
+
+                    $newAddressModelsOfPrimaryAccount = value(function () use ($primaryAccount, $addressToHash, $existingAddressHashes) {
+                        $newAddresses = [];
+
+                        foreach ($primaryAccount->addresses as $address) {
+                            $addressHash = $addressToHash($address);
+
+                            if (!isset($existingAddressHashes[$addressHash])) {
+                                $newAddresses[$addressHash] = $address;
+                            }
+                        }
+
+                        return $newAddresses;
+                    });
+
+                    $newContactModelsOfPrimaryAccount = value(function () use ($primaryAccount, $contactToHash, $existingContactHashes) {
+                        $newContacts = [];
+
+                        foreach ($primaryAccount->contacts as $contact) {
+                            $contactHash = $contactToHash($contact);
+
+                            if (!isset($existingContactHashes[$contactHash])) {
+                                $newContacts[$contactHash] = $contact;
+                            }
+                        }
+
+                        return $newContacts;
+                    });
+
+                    [$newOpportunityAddressModels, $newOpportunityAddressPivots] = $this->replicateAddressModelsOfPrimaryAccount(new Collection($newAddressModelsOfPrimaryAccount));
+                    [$newOpportunityContactModels, $newOpportunityContactPivots] = $this->replicateContactModelsOfPrimaryAccount(new Collection($newContactModelsOfPrimaryAccount));
                 }
 
                 $newOpportunityAddressBatch = array_map(fn(Model $model) => $model->getAttributes(), $newOpportunityAddressModels);
@@ -1028,12 +1171,12 @@ class OpportunityEntityService
         });
     }
 
-    private function replicateAddressModelsOfPrimaryAccount(Company $primaryAccount): array
+    private function replicateAddressModelsOfPrimaryAccount(Collection $addresses): array
     {
         $newAddressModels = [];
         $newAddressPivots = [];
 
-        foreach ($primaryAccount->addresses as $address) {
+        foreach ($addresses as $address) {
             $newAddress = $address->replicate();
             $newAddress->{$newAddress->getKeyName()} = (string)Uuid::generate(4);
             $newAddress->{$newAddress->getCreatedAtColumn()} = $newAddress->freshTimestampString();
@@ -1046,12 +1189,12 @@ class OpportunityEntityService
         return [$newAddressModels, $newAddressPivots];
     }
 
-    private function replicateContactModelsOfPrimaryAccount(Company $primaryAccount): array
+    private function replicateContactModelsOfPrimaryAccount(Collection $contacts): array
     {
         $newContactModels = [];
         $newContactPivots = [];
 
-        foreach ($primaryAccount->contacts as $contact) {
+        foreach ($contacts as $contact) {
             $newContact = $contact->replicate();
             $newContact->{$newContact->getKeyName()} = (string)Uuid::generate(4);
             $newContact->{$newContact->getCreatedAtColumn()} = $newContact->freshTimestampString();

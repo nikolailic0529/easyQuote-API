@@ -37,10 +37,14 @@ final class QuoteSummary extends DataTransferObject
      */
     public string $support_start;
 
+    public string $support_start_assumed_char;
+
     /**
      * @Constraints\NotBlank
      */
     public string $support_end;
+
+    public string $support_end_assumed_char;
 
     /**
      * @Constraints\NotBlank
@@ -123,6 +127,8 @@ final class QuoteSummary extends DataTransferObject
     public string $service_agreement_id;
 
     public string $system_handle;
+
+    public string $footer_notes;
 
     public string $purchase_order_number = '';
 

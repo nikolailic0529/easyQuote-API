@@ -9,6 +9,18 @@ use Grimzy\LaravelMysqlSpatial\Eloquent\SpatialTrait;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property mixed quote_total_id
+ * @property mixed|string|null user_id
+ * @property mixed location_id
+ * @property mixed country_id
+ * @property mixed location_coordinates
+ * @property mixed|string|null location_address
+ * @property mixed total_drafted_value
+ * @property mixed total_drafted_count
+ * @property mixed total_submitted_value
+ * @property mixed total_submitted_count
+ */
 class QuoteLocationTotal extends Model
 {
     use Uuid, SpatialTrait;

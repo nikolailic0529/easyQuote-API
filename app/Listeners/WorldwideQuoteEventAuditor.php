@@ -31,8 +31,9 @@ use App\Models\Template\QuoteTemplate;
 use App\Services\Activity\ActivityLogger;
 use App\Services\Activity\ChangesDetector;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
-class WorldwideQuoteEventAuditor
+class WorldwideQuoteEventAuditor implements ShouldQueue
 {
     protected BusDispatcher $busDispatcher;
 

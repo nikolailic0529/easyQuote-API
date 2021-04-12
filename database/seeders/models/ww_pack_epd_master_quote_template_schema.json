@@ -866,7 +866,7 @@
                     "controls": [
                         {
                             "id": "c0093711-ea9d-478d-b288-8433ef02af26",
-                            "css": "font-size: 12px",
+                            "css": null,
                             "src": null,
                             "name": "l-1",
                             "show": true,
@@ -940,6 +940,23 @@
                             "is_required": false,
                             "attached_child_id": "2521a5c6-6eda-4420-876d-b821841f892e",
                             "attached_element_id": "a931eb6b-51e1-45d5-816e-dcdd64ec843b"
+                        },
+                        {
+                            "id": "support_start_assumed_char",
+                            "css": null,
+                            "name": "support_start_assumed_char",
+                            "show": false,
+                            "type": "tag",
+                            "class": "s4-form-control",
+                            "label": "Support Start Assumed (*)",
+                            "value": null,
+                            "is_field": true,
+                            "is_image": false,
+                            "droppable": false,
+                            "is_system": true,
+                            "is_required": false,
+                            "attached_child_id": "2521a5c6-6eda-4420-876d-b821841f892e",
+                            "attached_element_id": "a931eb6b-51e1-45d5-816e-dcdd64ec843b"
                         }
                     ],
                     "position": 1
@@ -995,6 +1012,23 @@
                             "is_image": false,
                             "droppable": false,
                             "is_system": false,
+                            "is_required": false,
+                            "attached_child_id": "2521a5c6-6eda-4420-876d-b821841f892e",
+                            "attached_element_id": "7a98ee0b-e097-4370-938a-dc7d3e1f4f73"
+                        },
+                        {
+                            "id": "support_end_assumed_char",
+                            "css": null,
+                            "name": "support_end_assumed_char",
+                            "show": false,
+                            "type": "tag",
+                            "class": "s4-form-control",
+                            "label": "Support End Assumed (*)",
+                            "value": null,
+                            "is_field": true,
+                            "is_image": false,
+                            "droppable": false,
+                            "is_system": true,
                             "is_required": false,
                             "attached_child_id": "2521a5c6-6eda-4420-876d-b821841f892e",
                             "attached_element_id": "7a98ee0b-e097-4370-938a-dc7d3e1f4f73"
@@ -1524,6 +1558,42 @@
             "is_field": false,
             "droppable": false,
             "decoration": "2+1"
+        },
+        {
+            "id": "91e18f80-92f5-4628-b6d3-b951da437f0f",
+            "name": "Single Column",
+            "child": [
+                {
+                    "id": "75d642c7-049b-438d-9e3f-249ba51691fa",
+                    "class": "col-lg-12 border-right",
+                    "controls": [
+                        {
+                            "id": "footer_notes",
+                            "css": null,
+                            "name": "footer_notes",
+                            "show": false,
+                            "type": "tag",
+                            "class": "s4-form-control",
+                            "label": "Footer notes",
+                            "value": null,
+                            "is_field": true,
+                            "is_image": false,
+                            "droppable": false,
+                            "is_system": true,
+                            "is_required": false,
+                            "attached_child_id": "75d642c7-049b-438d-9e3f-249ba51691fa",
+                            "attached_element_id": "91e18f80-92f5-4628-b6d3-b951da437f0f"
+                        }
+                    ],
+                    "position": 1
+                }
+            ],
+            "class": "single-column field-dragger",
+            "order": 1,
+            "controls": [],
+            "is_field": false,
+            "droppable": false,
+            "decoration": "1"
         }
     ],
     "payment_page": [

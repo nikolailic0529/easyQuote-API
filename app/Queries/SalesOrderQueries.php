@@ -29,6 +29,7 @@ class SalesOrderQueries
         $query = SalesOrder::query()
             ->select(
                 'sales_orders.id',
+                'sales_orders.user_id',
                 'sales_orders.worldwide_quote_id',
                 'worldwide_quotes.contract_type_id',
                 'sales_orders.order_number',
@@ -90,6 +91,7 @@ class SalesOrderQueries
         $query = SalesOrder::query()
             ->select(
                 'sales_orders.id',
+                'sales_orders.user_id',
                 'sales_orders.worldwide_quote_id',
                 'worldwide_quotes.contract_type_id',
                 'sales_orders.order_number',

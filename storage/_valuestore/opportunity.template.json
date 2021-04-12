@@ -583,6 +583,42 @@
                 "class": "col-lg-3",
                 "position": 1,
                 "id": "d6fcbccc-4cf4-465f-a699-4ba7503d3543",
+                "controls": []
+            },
+            {
+                "class": "col-lg-3",
+                "position": 2,
+                "id": "5e18c148-5f77-4970-aeb5-17b7fae6a64d",
+                "controls": []
+            },
+            {
+                "class": "col-lg-3",
+                "position": 3,
+                "id": "5731c3a2-161e-4d58-9fad-89a1c9161c3a",
+                "controls": []
+            },
+            {
+                "class": "col-lg-3 border-right",
+                "position": 4,
+                "id": "532b7031-80d9-4593-8bf6-cb8aa917f0b6",
+                "controls": []
+            }
+        ],
+        "controls": []
+    },
+    {
+        "id": "0eb63978-6ba8-45ce-b278-3e80d51957f1",
+        "droppable": false,
+        "name": "Four Column",
+        "class": "four-column field-dragger",
+        "decoration": "4",
+        "order": 5,
+        "is_field": false,
+        "child": [
+            {
+                "class": "col-lg-2",
+                "position": 1,
+                "id": "05e702d0-50e9-42c3-856e-16ea4af2fa4e",
                 "controls": [
                     {
                         "type": "label",
@@ -590,8 +626,8 @@
                         "class": null,
                         "droppable": false,
                         "is_field": true,
-                        "attached_element_id": "a61ecce7-01be-4535-9018-dc48cba28bd0",
-                        "attached_child_id": "d6fcbccc-4cf4-465f-a699-4ba7503d3543",
+                        "attached_element_id": "0eb63978-6ba8-45ce-b278-3e80d51957f1",
+                        "attached_child_id": "05e702d0-50e9-42c3-856e-16ea4af2fa4e",
                         "id": "ca2f41c2-8334-472c-829f-14922ff6c660",
                         "is_system": false,
                         "label": "Label",
@@ -609,8 +645,8 @@
                         "class": "form-control",
                         "droppable": false,
                         "is_field": true,
-                        "attached_element_id": "a61ecce7-01be-4535-9018-dc48cba28bd0",
-                        "attached_child_id": "d6fcbccc-4cf4-465f-a699-4ba7503d3543",
+                        "attached_element_id": "0eb63978-6ba8-45ce-b278-3e80d51957f1",
+                        "attached_child_id": "05e702d0-50e9-42c3-856e-16ea4af2fa4e",
                         "id": "90340b6e-90bb-4717-a5ea-af223dd7fcfc",
                         "is_system": false,
                         "label": "Opportunity start date",
@@ -625,9 +661,9 @@
                 ]
             },
             {
-                "class": "col-lg-3",
-                "position": 2,
-                "id": "5e18c148-5f77-4970-aeb5-17b7fae6a64d",
+                "class": "col-lg-1",
+                "position": 1,
+                "id": "5ee4a679-315f-41ab-843a-94e10ca240dd",
                 "controls": [
                     {
                         "type": "label",
@@ -635,8 +671,53 @@
                         "class": null,
                         "droppable": false,
                         "is_field": true,
-                        "attached_element_id": "a61ecce7-01be-4535-9018-dc48cba28bd0",
-                        "attached_child_id": "5e18c148-5f77-4970-aeb5-17b7fae6a64d",
+                        "attached_element_id": "0eb63978-6ba8-45ce-b278-3e80d51957f1",
+                        "attached_child_id": "5ee4a679-315f-41ab-843a-94e10ca240dd",
+                        "id": "1dcd64ab-f296-4175-8f38-ceae86e30cd4",
+                        "is_system": false,
+                        "label": "Label",
+                        "is_required": false,
+                        "value": null,
+                        "is_image": false,
+                        "src": null,
+                        "css": null,
+                        "show": false
+                    },
+                    {
+                        "type": "checkbox",
+                        "placeholder": null,
+                        "name": "is_opportunity_start_date_assumed",
+                        "class": null,
+                        "droppable": false,
+                        "is_field": true,
+                        "attached_element_id": "0eb63978-6ba8-45ce-b278-3e80d51957f1",
+                        "attached_child_id": "5ee4a679-315f-41ab-843a-94e10ca240dd",
+                        "id": "407d0142-4916-4c67-8f4c-a19819e073c4",
+                        "is_system": false,
+                        "label": "Assumed",
+                        "is_required": false,
+                        "value": null,
+                        "is_image": false,
+                        "src": null,
+                        "css": null,
+                        "show": false,
+                        "field_required": false
+                    }
+                ]
+            },
+            {
+                "class": "col-lg-2",
+                "position": 2,
+                "id": "e64c73c0-81c7-442a-aac2-05cbadb47734",
+                "controls": [
+                    {
+                        "type": "label",
+                        "name": "l-1",
+                        "class": null,
+                        "droppable": false,
+                        "is_field": true,
+                        "attached_element_id": "0eb63978-6ba8-45ce-b278-3e80d51957f1",
+                        "attached_child_id": "e64c73c0-81c7-442a-aac2-05cbadb47734",
                         "id": "ca2f41c2-8334-472c-829f-14922ff6c660",
                         "is_system": false,
                         "label": "Label",
@@ -654,8 +735,8 @@
                         "class": "form-control",
                         "droppable": false,
                         "is_field": true,
-                        "attached_element_id": "a61ecce7-01be-4535-9018-dc48cba28bd0",
-                        "attached_child_id": "5e18c148-5f77-4970-aeb5-17b7fae6a64d",
+                        "attached_element_id": "0eb63978-6ba8-45ce-b278-3e80d51957f1",
+                        "attached_child_id": "e64c73c0-81c7-442a-aac2-05cbadb47734",
                         "id": "0fce7adb-473b-4230-a2bb-1149413df315",
                         "is_system": false,
                         "label": "Opportunity end date",
@@ -670,9 +751,9 @@
                 ]
             },
             {
-                "class": "col-lg-3",
-                "position": 3,
-                "id": "5731c3a2-161e-4d58-9fad-89a1c9161c3a",
+                "class": "col-lg-1",
+                "position": 1,
+                "id": "5b0b5cba-2420-4133-8b13-bd495e302851",
                 "controls": [
                     {
                         "type": "label",
@@ -680,8 +761,53 @@
                         "class": null,
                         "droppable": false,
                         "is_field": true,
-                        "attached_element_id": "a61ecce7-01be-4535-9018-dc48cba28bd0",
-                        "attached_child_id": "5731c3a2-161e-4d58-9fad-89a1c9161c3a",
+                        "attached_element_id": "0eb63978-6ba8-45ce-b278-3e80d51957f1",
+                        "attached_child_id": "5b0b5cba-2420-4133-8b13-bd495e302851",
+                        "id": "1dcd64ab-f296-4175-8f38-ceae86e30cd4",
+                        "is_system": false,
+                        "label": "Label",
+                        "is_required": false,
+                        "value": null,
+                        "is_image": false,
+                        "src": null,
+                        "css": null,
+                        "show": false
+                    },
+                    {
+                        "type": "checkbox",
+                        "placeholder": null,
+                        "name": "is_opportunity_end_date_assumed",
+                        "class": null,
+                        "droppable": false,
+                        "is_field": true,
+                        "attached_element_id": "0eb63978-6ba8-45ce-b278-3e80d51957f1",
+                        "attached_child_id": "5b0b5cba-2420-4133-8b13-bd495e302851",
+                        "id": "1f69f041-11d7-412b-9d31-d260c6c40a83",
+                        "is_system": false,
+                        "label": "Assumed",
+                        "is_required": false,
+                        "value": null,
+                        "is_image": false,
+                        "src": null,
+                        "css": null,
+                        "show": false,
+                        "field_required": false
+                    }
+                ]
+            },
+            {
+                "class": "col-lg-3",
+                "position": 3,
+                "id": "a4a396a7-e872-4723-a650-e508882f3eec",
+                "controls": [
+                    {
+                        "type": "label",
+                        "name": "l-1",
+                        "class": null,
+                        "droppable": false,
+                        "is_field": true,
+                        "attached_element_id": "0eb63978-6ba8-45ce-b278-3e80d51957f1",
+                        "attached_child_id": "a4a396a7-e872-4723-a650-e508882f3eec",
                         "id": "97890e48-06e7-44bb-ba58-ce0629f33ad5",
                         "is_system": false,
                         "label": "Label",
@@ -699,7 +825,7 @@
                         "class": "form-control",
                         "droppable": false,
                         "is_field": true,
-                        "attached_element_id": "a61ecce7-01be-4535-9018-dc48cba28bd0",
+                        "attached_element_id": "0eb63978-6ba8-45ce-b278-3e80d51957f1",
                         "contract_type": null,
                         "id": "fec85e61-1048-4c3f-8fb1-0b4fe6461dad",
                         "is_system": false,
@@ -712,24 +838,24 @@
                         "show": false,
                         "possibel_values": null,
                         "field_required": true,
-                        "attached_child_id": "5731c3a2-161e-4d58-9fad-89a1c9161c3a"
+                        "attached_child_id": "a4a396a7-e872-4723-a650-e508882f3eec"
                     }
                 ]
             },
             {
                 "class": "col-lg-3 border-right",
                 "position": 4,
-                "id": "532b7031-80d9-4593-8bf6-cb8aa917f0b6",
+                "id": "836cd437-b239-46b9-91d7-96f5ff86416f",
                 "controls": []
             }
         ],
         "controls": []
     },
     {
-        "id": "978ccba9-35ed-49ab-8f4e-ae1b29edb70f",
+        "id": "a85c8a5f-5043-4e62-a397-c45295f866d8",
         "droppable": false,
         "name": "Four Column",
-        "class": "four-column field-dragger",
+        "class": "8-column field-dragger",
         "decoration": "4",
         "order": 5,
         "is_field": false,
@@ -737,7 +863,7 @@
             {
                 "class": "col-lg-4",
                 "position": 1,
-                "id": "666b51a8-46fc-4bde-aec2-46b0d7a13972",
+                "id": "c53d74c1-4f35-4b4a-80fe-43bb116e307b",
                 "controls": [
                     {
                         "type": "label",
@@ -745,8 +871,8 @@
                         "class": null,
                         "droppable": false,
                         "is_field": true,
-                        "attached_element_id": "978ccba9-35ed-49ab-8f4e-ae1b29edb70f",
-                        "attached_child_id": "666b51a8-46fc-4bde-aec2-46b0d7a13972",
+                        "attached_element_id": "a85c8a5f-5043-4e62-a397-c45295f866d8",
+                        "attached_child_id": "c53d74c1-4f35-4b4a-80fe-43bb116e307b",
                         "id": "6d2fcb7a-2469-4097-9854-f6489472ac3e",
                         "is_system": false,
                         "label": "Label",
@@ -764,8 +890,8 @@
                         "class": "form-control",
                         "droppable": false,
                         "is_field": true,
-                        "attached_element_id": "978ccba9-35ed-49ab-8f4e-ae1b29edb70f",
-                        "attached_child_id": "666b51a8-46fc-4bde-aec2-46b0d7a13972",
+                        "attached_element_id": "a85c8a5f-5043-4e62-a397-c45295f866d8",
+                        "attached_child_id": "c53d74c1-4f35-4b4a-80fe-43bb116e307b",
                         "id": "eb0c1f55-9fc7-4e08-8ee3-fc5dfdaa1977",
                         "is_system": false,
                         "label": "Opportunity value",
@@ -781,9 +907,9 @@
                 ]
             },
             {
-                "class": "col-lg-2",
+                "class": "col-lg-1",
                 "position": 2,
-                "id": "5dc41556-efd2-4431-a9d8-93383577b5dd",
+                "id": "87f27395-20b3-47e6-8310-d0f2b4eed415",
                 "controls": [
                     {
                         "type": "label",
@@ -791,8 +917,8 @@
                         "class": null,
                         "droppable": false,
                         "is_field": true,
-                        "attached_element_id": "978ccba9-35ed-49ab-8f4e-ae1b29edb70f",
-                        "attached_child_id": "5dc41556-efd2-4431-a9d8-93383577b5dd",
+                        "attached_element_id": "a85c8a5f-5043-4e62-a397-c45295f866d8",
+                        "attached_child_id": "87f27395-20b3-47e6-8310-d0f2b4eed415",
                         "id": "6d2fcb7a-2469-4097-9854-f6489472ac3e",
                         "is_system": false,
                         "label": "Label",
@@ -810,8 +936,8 @@
                         "class": "form-control",
                         "droppable": false,
                         "is_field": true,
-                        "attached_element_id": "978ccba9-35ed-49ab-8f4e-ae1b29edb70f",
-                        "attached_child_id": "5dc41556-efd2-4431-a9d8-93383577b5dd",
+                        "attached_element_id": "a85c8a5f-5043-4e62-a397-c45295f866d8",
+                        "attached_child_id": "87f27395-20b3-47e6-8310-d0f2b4eed415",
                         "id": "1d86091b-7f4a-428a-ab92-df8d420c1a75",
                         "is_system": false,
                         "label": "Opportunity Value Currency",
@@ -826,9 +952,9 @@
                 ]
             },
             {
-                "class": "col-lg-4",
-                "position": 3,
-                "id": "efcc9da6-bd70-498a-82cd-a3cd93fe9595",
+                "class": "col-lg-1",
+                "position": 2,
+                "id": "706fb008-9451-43ed-b958-b7f86b20d128",
                 "controls": [
                     {
                         "type": "label",
@@ -836,8 +962,52 @@
                         "class": null,
                         "droppable": false,
                         "is_field": true,
-                        "attached_element_id": "978ccba9-35ed-49ab-8f4e-ae1b29edb70f",
-                        "attached_child_id": "efcc9da6-bd70-498a-82cd-a3cd93fe9595",
+                        "attached_element_id": "a85c8a5f-5043-4e62-a397-c45295f866d8",
+                        "attached_child_id": "706fb008-9451-43ed-b958-b7f86b20d128",
+                        "id": "ea6fba73-00d1-4a91-9ac3-cace3f359491",
+                        "is_system": false,
+                        "label": "Label",
+                        "is_required": false,
+                        "value": null,
+                        "is_image": false,
+                        "src": null,
+                        "css": null,
+                        "show": false
+                    },
+                    {
+                        "type": "currency_label",
+                        "placeholder": null,
+                        "name": "base_opportunity_amount",
+                        "class": "form-control",
+                        "droppable": false,
+                        "is_field": true,
+                        "attached_element_id": "a85c8a5f-5043-4e62-a397-c45295f866d8",
+                        "attached_child_id": "706fb008-9451-43ed-b958-b7f86b20d128",
+                        "id": "fb02307a-0a47-419e-b1a7-916d435aa565",
+                        "is_system": false,
+                        "label": "Base Opportunity Amount",
+                        "is_required": false,
+                        "value": null,
+                        "is_image": false,
+                        "src": null,
+                        "css": null,
+                        "show": false
+                    }
+                ]
+            },
+            {
+                "class": "col-lg-4",
+                "position": 3,
+                "id": "63686838-a94c-4c07-bbcf-47fef3044961",
+                "controls": [
+                    {
+                        "type": "label",
+                        "name": "l-1",
+                        "class": null,
+                        "droppable": false,
+                        "is_field": true,
+                        "attached_element_id": "a85c8a5f-5043-4e62-a397-c45295f866d8",
+                        "attached_child_id": "63686838-a94c-4c07-bbcf-47fef3044961",
                         "id": "6d2fcb7a-2469-4097-9854-f6489472ac3e",
                         "is_system": false,
                         "label": "Label",
@@ -855,8 +1025,8 @@
                         "class": "form-control",
                         "droppable": false,
                         "is_field": true,
-                        "attached_element_id": "978ccba9-35ed-49ab-8f4e-ae1b29edb70f",
-                        "attached_child_id": "efcc9da6-bd70-498a-82cd-a3cd93fe9595",
+                        "attached_element_id": "a85c8a5f-5043-4e62-a397-c45295f866d8",
+                        "attached_child_id": "63686838-a94c-4c07-bbcf-47fef3044961",
                         "id": "39469714-0b83-4fe4-8c42-a539a42e8b67",
                         "is_system": false,
                         "label": "Purchase price",
@@ -872,9 +1042,9 @@
                 ]
             },
             {
-                "class": "col-lg-2 border-right",
-                "position": 4,
-                "id": "b7cd7f3f-b54a-40bb-9759-ac6dd83bc04b",
+                "class": "col-lg-1",
+                "position": 2,
+                "id": "d6ebf334-8f11-4fc4-a806-916e14a279fc",
                 "controls": [
                     {
                         "type": "label",
@@ -882,8 +1052,8 @@
                         "class": null,
                         "droppable": false,
                         "is_field": true,
-                        "attached_element_id": "978ccba9-35ed-49ab-8f4e-ae1b29edb70f",
-                        "attached_child_id": "b7cd7f3f-b54a-40bb-9759-ac6dd83bc04b",
+                        "attached_element_id": "a85c8a5f-5043-4e62-a397-c45295f866d8",
+                        "attached_child_id": "d6ebf334-8f11-4fc4-a806-916e14a279fc",
                         "id": "6d2fcb7a-2469-4097-9854-f6489472ac3e",
                         "is_system": false,
                         "label": "Label",
@@ -901,8 +1071,8 @@
                         "class": "form-control",
                         "droppable": false,
                         "is_field": true,
-                        "attached_element_id": "978ccba9-35ed-49ab-8f4e-ae1b29edb70f",
-                        "attached_child_id": "b7cd7f3f-b54a-40bb-9759-ac6dd83bc04b",
+                        "attached_element_id": "a85c8a5f-5043-4e62-a397-c45295f866d8",
+                        "attached_child_id": "d6ebf334-8f11-4fc4-a806-916e14a279fc",
                         "id": "265e94aa-00f3-408a-82ad-53e4a4d934e8",
                         "is_system": false,
                         "label": "Purchase price Currency",
@@ -915,23 +1085,11 @@
                         "field_required": false
                     }
                 ]
-            }
-        ],
-        "controls": []
-    },
-    {
-        "id": "65a468dc-b23d-4758-ab6a-2da8228b94b1",
-        "droppable": false,
-        "name": "Four Column",
-        "class": "four-column field-dragger",
-        "decoration": "4",
-        "order": 5,
-        "is_field": false,
-        "child": [
+            },
             {
-                "class": "col-lg-4",
-                "position": 1,
-                "id": "666b51a8-46fc-4bde-aec2-46b0d7a13972",
+                "class": "col-lg-1 border-right",
+                "position": 4,
+                "id": "2c2e51a9-6305-45a9-b16a-409939b1cc95",
                 "controls": [
                     {
                         "type": "label",
@@ -939,8 +1097,64 @@
                         "class": null,
                         "droppable": false,
                         "is_field": true,
-                        "attached_element_id": "65a468dc-b23d-4758-ab6a-2da8228b94b1",
-                        "attached_child_id": "666b51a8-46fc-4bde-aec2-46b0d7a13972",
+                        "attached_element_id": "a85c8a5f-5043-4e62-a397-c45295f866d8",
+                        "attached_child_id": "2c2e51a9-6305-45a9-b16a-409939b1cc95",
+                        "id": "ea6fba73-00d1-4a91-9ac3-cace3f359491",
+                        "is_system": false,
+                        "label": "Label",
+                        "is_required": false,
+                        "value": null,
+                        "is_image": false,
+                        "src": null,
+                        "css": null,
+                        "show": false
+                    },
+                    {
+                        "type": "currency_label",
+                        "placeholder": null,
+                        "name": "base_purchase_price",
+                        "class": "form-control",
+                        "droppable": false,
+                        "is_field": true,
+                        "attached_element_id": "a85c8a5f-5043-4e62-a397-c45295f866d8",
+                        "attached_child_id": "2c2e51a9-6305-45a9-b16a-409939b1cc95",
+                        "id": "f86cc6e8-c70e-4f3b-a481-e32c23d97740",
+                        "is_system": false,
+                        "label": "Base Purchase Price",
+                        "is_required": false,
+                        "value": null,
+                        "is_image": false,
+                        "src": null,
+                        "css": null,
+                        "show": false
+                    }
+                ]
+            }
+        ],
+        "controls": []
+    },
+    {
+        "id": "e80041e2-173e-49b0-ae44-5d79282a2db8",
+        "droppable": false,
+        "name": "Four Column",
+        "class": "8-column field-dragger",
+        "decoration": "4",
+        "order": 5,
+        "is_field": false,
+        "child": [
+            {
+                "class": "col-lg-4",
+                "position": 1,
+                "id": "c53d74c1-4f35-4b4a-80fe-43bb116e307b",
+                "controls": [
+                    {
+                        "type": "label",
+                        "name": "l-1",
+                        "class": null,
+                        "droppable": false,
+                        "is_field": true,
+                        "attached_element_id": "e80041e2-173e-49b0-ae44-5d79282a2db8",
+                        "attached_child_id": "c53d74c1-4f35-4b4a-80fe-43bb116e307b",
                         "id": "6d2fcb7a-2469-4097-9854-f6489472ac3e",
                         "is_system": false,
                         "label": "Label",
@@ -958,8 +1172,8 @@
                         "class": "form-control",
                         "droppable": false,
                         "is_field": true,
-                        "attached_element_id": "65a468dc-b23d-4758-ab6a-2da8228b94b1",
-                        "attached_child_id": "666b51a8-46fc-4bde-aec2-46b0d7a13972",
+                        "attached_element_id": "e80041e2-173e-49b0-ae44-5d79282a2db8",
+                        "attached_child_id": "c53d74c1-4f35-4b4a-80fe-43bb116e307b",
                         "id": "71b5f083-6d0f-4872-aef5-159cc8928b71",
                         "is_system": false,
                         "label": "List price",
@@ -975,9 +1189,9 @@
                 ]
             },
             {
-                "class": "col-lg-2",
+                "class": "col-lg-1",
                 "position": 2,
-                "id": "5dc41556-efd2-4431-a9d8-93383577b5dd",
+                "id": "87f27395-20b3-47e6-8310-d0f2b4eed415",
                 "controls": [
                     {
                         "type": "label",
@@ -985,8 +1199,8 @@
                         "class": null,
                         "droppable": false,
                         "is_field": true,
-                        "attached_element_id": "65a468dc-b23d-4758-ab6a-2da8228b94b1",
-                        "attached_child_id": "5dc41556-efd2-4431-a9d8-93383577b5dd",
+                        "attached_element_id": "e80041e2-173e-49b0-ae44-5d79282a2db8",
+                        "attached_child_id": "87f27395-20b3-47e6-8310-d0f2b4eed415",
                         "id": "6d2fcb7a-2469-4097-9854-f6489472ac3e",
                         "is_system": false,
                         "label": "Label",
@@ -1004,8 +1218,8 @@
                         "class": "form-control",
                         "droppable": false,
                         "is_field": true,
-                        "attached_element_id": "65a468dc-b23d-4758-ab6a-2da8228b94b1",
-                        "attached_child_id": "5dc41556-efd2-4431-a9d8-93383577b5dd",
+                        "attached_element_id": "e80041e2-173e-49b0-ae44-5d79282a2db8",
+                        "attached_child_id": "87f27395-20b3-47e6-8310-d0f2b4eed415",
                         "id": "4b1887d2-1435-4490-aa54-04dcbea69a4a",
                         "is_system": false,
                         "label": "List Price Currency",
@@ -1020,15 +1234,65 @@
                 ]
             },
             {
+                "class": "col-lg-1",
+                "position": 2,
+                "id": "706fb008-9451-43ed-b958-b7f86b20d128",
+                "controls": [
+                    {
+                        "type": "label",
+                        "name": "l-1",
+                        "class": null,
+                        "droppable": false,
+                        "is_field": true,
+                        "attached_element_id": "e80041e2-173e-49b0-ae44-5d79282a2db8",
+                        "attached_child_id": "706fb008-9451-43ed-b958-b7f86b20d128",
+                        "id": "ea6fba73-00d1-4a91-9ac3-cace3f359491",
+                        "is_system": false,
+                        "label": "Label",
+                        "is_required": false,
+                        "value": null,
+                        "is_image": false,
+                        "src": null,
+                        "css": null,
+                        "show": false
+                    },
+                    {
+                        "type": "currency_label",
+                        "placeholder": null,
+                        "name": "base_list_price",
+                        "class": "form-control",
+                        "droppable": false,
+                        "is_field": true,
+                        "attached_element_id": "e80041e2-173e-49b0-ae44-5d79282a2db8",
+                        "attached_child_id": "706fb008-9451-43ed-b958-b7f86b20d128",
+                        "id": "914718cc-7c8b-475b-a365-457fa83d02fc",
+                        "is_system": false,
+                        "label": "Base List Price",
+                        "is_required": false,
+                        "value": null,
+                        "is_image": false,
+                        "src": null,
+                        "css": null,
+                        "show": false
+                    }
+                ]
+            },
+            {
                 "class": "col-lg-4",
                 "position": 3,
-                "id": "efcc9da6-bd70-498a-82cd-a3cd93fe9595",
+                "id": "63686838-a94c-4c07-bbcf-47fef3044961",
                 "controls": []
             },
             {
-                "class": "col-lg-2 border-right",
+                "class": "col-lg-1",
+                "position": 2,
+                "id": "d6ebf334-8f11-4fc4-a806-916e14a279fc",
+                "controls": []
+            },
+            {
+                "class": "col-lg-1 border-right",
                 "position": 4,
-                "id": "b7cd7f3f-b54a-40bb-9759-ac6dd83bc04b",
+                "id": "2c2e51a9-6305-45a9-b16a-409939b1cc95",
                 "controls": []
             }
         ],
@@ -1365,7 +1629,7 @@
                         "show": false,
                         "possibel_values": null,
                         "field_required": false,
-                        "possible_values": "Campaign1,Campaign2,Campaign3"
+                        "possible_values": "None,Discount 5%,General"
                     }
                 ]
             },
@@ -1645,7 +1909,7 @@
                         "css": null,
                         "show": false,
                         "field_required": false,
-                        "possible_values": "Required,Not Required"
+                        "possible_values": "Required,Not Required,Finalised"
                     },
                     {
                         "type": "label",

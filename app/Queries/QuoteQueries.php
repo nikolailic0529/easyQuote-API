@@ -27,6 +27,7 @@ class QuoteQueries
         )
         ->leftJoin($mappingQuery->getModel()->getTable(), fn (JoinClause $join) => $join->where($quote->fieldsColumns()->getQualifiedForeignKeyName(), $quote->getKey())->on('template_fields.id', '=', $mappingQuery->qualifyColumn('template_field_id')))
         ->where('template_fields.is_system', true)
+        ->whereIn('template_fields.name', config('quote-mapping.rescue_quote.fields'))
         ->orderBy('template_fields.order');
     }
 

@@ -55,10 +55,13 @@ $factory->define(Opportunity::class, function (Faker $faker) {
         'expected_order_date' => $faker->dateTimeBetween('now', '+60 days')->format('Y-m-d'),
 
         'opportunity_amount' => (string)$faker->randomFloat(2, 1000, 10000),
+        'base_opportunity_amount' => $faker->randomFloat(2, 1000, 10000),
         'opportunity_amount_currency_code' => $faker->currencyCode,
         'purchase_price' => (string)$faker->randomFloat(2, 1000, 10000),
+        'base_purchase_price' => $faker->randomFloat(2, 1000, 10000),
         'purchase_price_currency_code' => $faker->currencyCode,
         'list_price' => (string)$faker->randomFloat(2, 1000, 10000),
+        'base_list_price' => $faker->randomFloat(2, 1000, 10000),
         'list_price_currency_code' => $faker->currencyCode,
         'estimated_upsell_amount' => (string)$faker->randomFloat(2, 100, 1000),
         'estimated_upsell_amount_currency_code' => $faker->currencyCode,

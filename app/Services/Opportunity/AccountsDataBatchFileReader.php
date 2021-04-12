@@ -5,6 +5,7 @@ namespace App\Services\Opportunity;
 use Box\Spout\Common\Entity\Cell;
 use Box\Spout\Common\Entity\Row;
 use Box\Spout\Reader\Common\Creator\ReaderFactory;
+use Box\Spout\Reader\ReaderInterface;
 use Box\Spout\Reader\SheetInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -14,6 +15,8 @@ class AccountsDataBatchFileReader
     const HEADER_ROW_INDEX = 1;
 
     const ROW_KEY_HEADER = 'account_name';
+
+    protected ReaderInterface $reader;
 
     protected string $filePath;
 
@@ -28,19 +31,26 @@ class AccountsDataBatchFileReader
         $this->filePath = $filePath;
         $this->fileType = $fileType;
         $this->headerCountSeparator = Str::random(20);
+
+        $libxmlEntityLoaderPreviousValue = null;
+
+        if (\PHP_VERSION_ID < 80000) {
+            $libxmlEntityLoaderPreviousValue = libxml_disable_entity_loader(false);
+        }
+
+        $this->reader = ReaderFactory::createFromType($this->fileType);
+        $this->reader->open($filePath);
+
+        if (!is_null($libxmlEntityLoaderPreviousValue)) {
+            libxml_disable_entity_loader($libxmlEntityLoaderPreviousValue);
+        }
     }
 
     public function getRows(): \Iterator
     {
-        $reader = ReaderFactory::createFromType($this->fileType);
+        $this->reader->getSheetIterator()->rewind();
 
-        libxml_disable_entity_loader(false);
-
-        $reader->open($this->filePath);
-
-        $reader->getSheetIterator()->rewind();
-
-        $sheet = $reader->getSheetIterator()->current();
+        $sheet = $this->reader->getSheetIterator()->current();
 
         $this->processHeaders($sheet);
 

@@ -19,7 +19,7 @@ use App\Models\{Address,
 use App\Models\Quote\QuoteLocationTotal;
 use App\Queries\AssetQueries;
 use App\Services\WorldwideQuoteCalc;
-use Illuminate\Database\{ConnectionInterface, Eloquent\Collection};
+use Illuminate\Database\{ConnectionInterface, Eloquent\Collection, Query\JoinClause};
 use Illuminate\Support\{Collection as BaseCollection,};
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Output\NullOutput;
@@ -70,7 +70,7 @@ class StatsCalculationService implements Stats
 
         $this->connection->transaction(function () {
 
-            OpportunityTotal::query()->delete();
+            OpportunityTotal::query()->doesntHave('opportunity')->delete();
 
             Opportunity::query()
                 ->chunkById(500, function (Collection $chunk) {
@@ -91,13 +91,18 @@ class StatsCalculationService implements Stats
 
     }
 
-    protected function denormalizeSummaryOfOpportunity(Opportunity $opportunity): void
+    public function denormalizeSummaryOfOpportunity(Opportunity $opportunity): void
     {
         $baseOpportunityAmount = $opportunity->opportunity_amount * $this->resolveBaseRateOfOpportunityAmount($opportunity);
 
-        tap(new OpportunityTotal(), function (OpportunityTotal $opportunityTotal) use ($baseOpportunityAmount, $opportunity) {
-            $opportunityTotal->{$opportunityTotal->getKeyName()} = (string)Uuid::generate(4);
+        $opportunityTotal = OpportunityTotal::query()
+            ->where('opportunity_id', $opportunity->getKey())
+            ->firstOrNew();
+
+        tap($opportunityTotal, function (OpportunityTotal $opportunityTotal) use ($baseOpportunityAmount, $opportunity) {
+            $opportunityTotal->{$opportunityTotal->getKeyName()} ??= (string)Uuid::generate(4);
             $opportunityTotal->opportunity_id = $opportunity->getKey();
+            $opportunityTotal->account_manager_id = $opportunity->account_manager_id;
 
             $opportunityTotal->base_opportunity_amount = $baseOpportunityAmount;
             $opportunityTotal->opportunity_status = $opportunity->status;
@@ -105,9 +110,11 @@ class StatsCalculationService implements Stats
 
             $opportunityTotal->save();
 
-            $countries = $opportunity->primaryAccount->countries()->distinct('countries.id')->pluck('countries.id')->all();
+            if (!is_null($opportunity->primaryAccount)) {
+                $countries = $opportunity->primaryAccount->countries()->distinct('countries.id')->pluck('countries.id')->all();
 
-            $opportunityTotal->countries()->sync($countries);
+                $opportunityTotal->countries()->sync($countries);
+            }
         });
     }
 
@@ -127,7 +134,17 @@ class StatsCalculationService implements Stats
             /**
              * Truncate quote totals.
              */
-            QuoteTotal::query()->delete();
+            QuoteTotal::query()
+                ->leftJoin('quotes', function (JoinClause $join) {
+                    $join->on('quotes.id', 'quote_totals.quote_id')
+                        ->whereNull('quotes.deleted_at');
+                })
+                ->leftJoin('worldwide_quotes', function (JoinClause $join) {
+                    $join->on('worldwide_quotes.id', 'quote_totals.quote_id')
+                        ->whereNull('worldwide_quotes.deleted_at');
+                })
+                ->whereNull(['quotes.id', 'worldwide_quotes.id'])
+                ->delete();
 
             Quote::query()
                 ->with('customer.equipmentLocation')
@@ -153,7 +170,7 @@ class StatsCalculationService implements Stats
         $this->progressFinish();
     }
 
-    protected function denormalizeSummaryOfWorldwideQuote(WorldwideQuote $worldwideQuote): void
+    public function denormalizeSummaryOfWorldwideQuote(WorldwideQuote $worldwideQuote): void
     {
         $opportunity = $worldwideQuote->opportunity;
 
@@ -165,7 +182,7 @@ class StatsCalculationService implements Stats
             return;
         }
 
-        if (is_null($worldwideQuote->quoteCurrency)) {
+        if (is_null($worldwideQuote->activeVersion->quoteCurrency)) {
             $this->logger->warning("Quote Currency is not defined on WorldwideQuote entity, Quote Number: '$worldwideQuote->quote_number'.");
 
             return;
@@ -175,11 +192,15 @@ class StatsCalculationService implements Stats
             $worldwideQuote
         );
 
-        $baseRateValue = $this->exchangeRateService->getBaseRate($worldwideQuote->quoteCurrency);
+        $baseRateValue = $this->exchangeRateService->getBaseRate($worldwideQuote->activeVersion->quoteCurrency);
 
         $totalPriceOfQuote = $priceSummary->final_total_price * $baseRateValue;
 
-        tap(new QuoteTotal(), function (QuoteTotal $quoteTotal) use ($opportunity, $primaryAccount, $totalPriceOfQuote, $worldwideQuote) {
+        $quoteTotal = QuoteTotal::query()
+            ->where('quote_id', $worldwideQuote->getKey())
+            ->firstOrNew();
+
+        tap($quoteTotal, function (QuoteTotal $quoteTotal) use ($opportunity, $primaryAccount, $totalPriceOfQuote, $worldwideQuote) {
             $quoteTotal->quote()->associate($worldwideQuote);
             $quoteTotal->customer_id = null;
             $quoteTotal->company_id = $primaryAccount->getKey();
@@ -194,7 +215,7 @@ class StatsCalculationService implements Stats
             $quoteTotal->quote_created_at = $worldwideQuote->{$worldwideQuote->getCreatedAtColumn()};
             $quoteTotal->quote_submitted_at = $worldwideQuote->submitted_at;
             $quoteTotal->valid_until_date = $opportunity->opportunity_closing_date;
-            $quoteTotal->quote_status = $worldwideQuote->status;
+            $quoteTotal->quote_status = $worldwideQuote->status ?? QuoteStatus::ALIVE;
 
             $quoteTotal->save();
 
@@ -204,7 +225,7 @@ class StatsCalculationService implements Stats
         });
     }
 
-    protected function denormalizeSummaryOfRescueQuote(Quote $quote): void
+    public function denormalizeSummaryOfRescueQuote(Quote $quote): void
     {
         $company = Company::query()
             ->where('name', $quote->customer->name)
@@ -221,7 +242,11 @@ class StatsCalculationService implements Stats
 
         $totalPrice = $version->totalPrice / $version->margin_divider * $version->base_exchange_rate;
 
-        tap(new QuoteTotal(), function (QuoteTotal $quoteTotal) use ($totalPrice, $company, $quote) {
+        $quoteTotal = QuoteTotal::query()
+            ->where('quote_id', $quote->getKey())
+            ->firstOrNew();
+
+        tap($quoteTotal, function (QuoteTotal $quoteTotal) use ($totalPrice, $company, $quote) {
             $quoteTotal->quote()->associate($quote);
             $quoteTotal->customer_id = $quote->customer_id;
             $quoteTotal->company_id = $company->getKey();
@@ -256,10 +281,6 @@ class StatsCalculationService implements Stats
         $this->progressStart(QuoteTotal::query()->distinct('customer_name')->count());
 
         $this->connection->transaction(function () {
-            /**
-             * Truncate customer totals.
-             */
-            CustomerTotal::query()->delete();
 
             QuoteTotal::query()
                 ->toBase()
@@ -274,6 +295,7 @@ class StatsCalculationService implements Stats
                         $this->progressAdvance();
                     }
                 });
+
         });
 
         $this->logger->info('Summary by Customers has been calculated.');
@@ -286,11 +308,6 @@ class StatsCalculationService implements Stats
         $this->progressStart(QuoteTotal::query()->distinct('location_id')->count());
 
         $this->connection->transaction(function () {
-            /**
-             * Truncate quote location totals.
-             */
-            QuoteLocationTotal::query()->delete();
-
             QuoteTotal::query()
                 ->with('location')
                 ->has('location')
@@ -353,18 +370,28 @@ class StatsCalculationService implements Stats
          */
         $this->connection->transaction(function () use ($quoteTotals, $location) {
             $quoteTotals->each(function (QuoteTotal $quoteTotal) use ($location) {
-                (new QuoteLocationTotal([
-                    'user_id' => $quoteTotal->user_id,
-                    'location_id' => $location->getKey(),
-                    'country_id' => $location->country->getKey(),
-                    'location_coordinates' => $location->coordinates,
-                    'location_address' => $location->formatted_address,
-                    'total_drafted_value' => $quoteTotal->total_drafted_value,
-                    'total_drafted_count' => $quoteTotal->total_drafted_count,
-                    'total_submitted_value' => $quoteTotal->total_submitted_value,
-                    'total_submitted_count' => $quoteTotal->total_submitted_count
-                ]))
-                    ->save();
+
+                $quoteLocationTotal = QuoteLocationTotal::query()
+                    ->where('quote_total_id', $quoteTotal->getKey())
+                    ->where('location_id', $location->getKey())
+                    ->where('user_id', $quoteTotal->user_id)
+                    ->firstOrNew();
+
+                tap($quoteLocationTotal, function (QuoteLocationTotal $quoteLocationTotal) use ($location, $quoteTotal) {
+                    $quoteLocationTotal->quote_total_id = $quoteTotal->getKey();
+                    $quoteLocationTotal->user_id = $quoteTotal->user_id;
+                    $quoteLocationTotal->location_id = $location->getKey();
+                    $quoteLocationTotal->country_id = $location->country->getKey();
+                    $quoteLocationTotal->location_coordinates = $location->coordinates;
+                    $quoteLocationTotal->location_address = $location->formatted_address;
+                    $quoteLocationTotal->total_drafted_value = $quoteTotal->total_drafted_value;
+                    $quoteLocationTotal->total_drafted_count = $quoteTotal->total_drafted_count;
+                    $quoteLocationTotal->total_submitted_value = $quoteTotal->total_submitted_value;
+                    $quoteLocationTotal->total_submitted_count = $quoteTotal->total_submitted_count;
+
+                    $quoteTotal->save();
+                });
+
             });
         });
     }
@@ -382,6 +409,7 @@ class StatsCalculationService implements Stats
         $this->connection->transaction(function () use ($aggregatedAssetData, $location) {
 
             $aggregatedAssetData->each(function (AssetAggregate $aggregate) use ($location) {
+
                 tap(new AssetTotal(), function (AssetTotal $assetTotal) use ($location, $aggregate) {
                     $assetTotal->location_id = $location->getKey();
                     $assetTotal->country_id = $location->country->getKey();
@@ -435,8 +463,15 @@ class StatsCalculationService implements Stats
         $this->connection->transaction(function () use ($company, $total) {
 
             $company->addresses->each(function (Address $address) use ($company, $total) {
-                /** @var CustomerTotal $customerTotal */
-                $customerTotal = tap(new CustomerTotal(), function (CustomerTotal $customerTotal) use ($total, $address, $company) {
+
+                $customerTotal = CustomerTotal::query()
+                    ->where('quote_total_id', $total->quote_total_id)
+                    ->where('location_id', $address->location_id)
+                    ->where('company_id', $company->getKey())
+                    ->firstOrNew();
+
+                tap($customerTotal, function (CustomerTotal $customerTotal) use ($total, $address, $company) {
+                    $customerTotal->quote_total_id = $total->quote_total_id;
                     $customerTotal->customer_name = $company->name;
                     $customerTotal->location_id = $address->location_id;
                     $customerTotal->country_id = $address->location->country->getKey();

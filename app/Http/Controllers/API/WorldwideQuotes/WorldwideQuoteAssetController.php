@@ -6,9 +6,8 @@ use App\Contracts\Services\ProcessesWorldwideQuoteAssetState;
 use App\Contracts\Services\ProcessesWorldwideQuoteState;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\WorldwideQuote\BatchWarrantyLookup;
-use App\Http\Requests\WorldwideQuote\DeleteQuoteAsset;
 use App\Http\Requests\WorldwideQuote\ImportBatchAssetFile;
-use App\Http\Requests\WorldwideQuote\InitQuoteAsset;
+use App\Http\Requests\WorldwideQuote\InitializeQuoteAsset;
 use App\Http\Requests\WorldwideQuote\UpdateQuoteAssets;
 use App\Http\Requests\WorldwideQuote\UploadBatchAssetsFile;
 use App\Http\Resources\WorldwideQuote\BatchAssetLookupResult;
@@ -34,20 +33,21 @@ class WorldwideQuoteAssetController extends Controller
     /**
      * Initialize a new Worldwide Quote Asset.
      *
-     * @param Request $request
+     * @param InitializeQuoteAsset $request
      * @param WorldwideQuote $worldwideQuote
      * @return JsonResponse
      * @throws AuthorizationException
      * @throws \Throwable
      */
-    public function initializeQuoteAsset(Request $request, WorldwideQuote $worldwideQuote): JsonResponse
+    public function initializeQuoteAsset(InitializeQuoteAsset $request, WorldwideQuote $worldwideQuote): JsonResponse
     {
         $this->authorize('update', $worldwideQuote);
 
         $version = (new WorldwideQuoteVersionGuard($worldwideQuote, $request->user()))->resolveModelForActingUser();
 
         $asset = $this->processor->initializeQuoteAsset(
-            $version
+            $version,
+            $request->getInitializeAssetData()
         );
 
         return response()->json(

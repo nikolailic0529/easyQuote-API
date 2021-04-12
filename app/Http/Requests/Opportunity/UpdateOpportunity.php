@@ -67,8 +67,14 @@ class UpdateOpportunity extends FormRequest
             'opportunity_start_date' => [
                 'bail', 'required', 'date_format:Y-m-d',
             ],
+            'is_opportunity_start_date_assumed' => [
+                'bail', 'boolean'
+            ],
             'opportunity_end_date' => [
                 'bail', 'required', 'date_format:Y-m-d',
+            ],
+            'is_opportunity_end_end_assumed' => [
+                'bail', 'boolean'
             ],
             'opportunity_closing_date' => [
                 'bail', 'required', 'date_format:Y-m-d',
@@ -221,7 +227,9 @@ class UpdateOpportunity extends FormRequest
                 'hardware_status' => $this->input('hardware_status'),
                 'region_name' => $this->input('region_name'),
                 'opportunity_start_date' => transform($this->input('opportunity_start_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
+                'is_opportunity_start_date_assumed' => $this->boolean('is_opportunity_start_date_assumed'),
                 'opportunity_end_date' => transform($this->input('opportunity_end_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
+                'is_opportunity_end_date_assumed' => $this->boolean('is_opportunity_end_date_assumed'),
                 'opportunity_closing_date' => transform($this->input('opportunity_closing_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
                 'expected_order_date' => transform($this->input('expected_order_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
                 'customer_order_date' => transform($this->input('customer_order_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),

@@ -2,15 +2,19 @@
 
 namespace App\Queries;
 
+use App\Http\Query\{Activity\CauserId as FilterByCauserId,
+    Activity\CustomPeriod as FilterByCustomPeriod,
+    Activity\Period as FilterByPeriod,
+    Activity\SubjectTypes as FilterBySubjectEntityTypes,
+    Activity\Types as FilterByType,
+    DefaultOrderBy,
+    OrderByCreatedAt};
 use App\Models\System\Activity;
 use App\Services\ElasticsearchQuery;
 use Elasticsearch\Client as Elasticsearch;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Query\Builder as BaseBuilder;
+use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use Illuminate\Pipeline\Pipeline;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class ActivityQueries
 {
@@ -24,64 +28,33 @@ class ActivityQueries
         $this->elasticsearch = $elasticsearch;
     }
 
-    public function filteredActivityQuery(): Builder
-    {
-        $model = new Activity();
-
-        $query = $model->newQuery()
-            ->with('subject');
-
-        return $this->pipeline
-            ->send($query)
-            ->through([
-                \App\Http\Query\OrderByCreatedAt::class,
-                \App\Http\Query\Activity\Types::class,
-                \App\Http\Query\Activity\Period::class,
-                \App\Http\Query\Activity\CustomPeriod::class,
-                \App\Http\Query\Activity\CauserId::class,
-                \App\Http\Query\Activity\SubjectTypes::class,
-                \App\Http\Query\DefaultOrderBy::class,
-            ])
-            ->thenReturn();
-    }
-
-    public function filteredActivityBySubjectQuery(string $subjectId): Builder
-    {
-        $model = new Activity();
-
-        $query = $model->newQuery()
-            ->with('subject')
-            ->where('subject_id', $subjectId);
-
-        return $this->pipeline
-            ->send($query)
-            ->through([
-                \App\Http\Query\OrderByCreatedAt::class,
-                \App\Http\Query\Activity\Types::class,
-                \App\Http\Query\Activity\Period::class,
-                \App\Http\Query\Activity\CustomPeriod::class,
-                \App\Http\Query\Activity\CauserId::class,
-                \App\Http\Query\Activity\SubjectTypes::class,
-                \App\Http\Query\DefaultOrderBy::class,
-            ])
-            ->thenReturn();
-    }
-
-    public function paginateActivityQuery(?Request $request = null): Builder
+    public function paginateActivitiesQuery(Request $request = null)
     {
         $request ??= new Request();
 
-        $model = new Activity();
+        $model = (new Activity());
 
-        $query = $model->newQuery()
-            ->with('subject');
+        $query = Activity::query()
+            ->select([
+                "{$model->getQualifiedKeyName()} as id",
+                "{$model->subject()->getForeignKeyName()} as subject_id",
+                "{$model->subject()->getMorphType()} as subject_type",
+                "{$model->qualifyColumn('description')} as description",
+                "users.user_fullname as causer_name",
+                "{$model->qualifyColumn('causer_service')} as causer_service_name",
+                "{$model->qualifyColumn('properties')} as properties",
+                "{$model->getQualifiedCreatedAtColumn()} as created_at"
+            ])
+            ->leftJoin('users', function (JoinClause $join) use ($model) {
+                $join->on('users.id', $model->causer()->getQualifiedForeignKeyName());
+            });
 
-        if (filled($searchQuery = $request->query('search'))) {
+        if (filled($searchQuery = $request->input('search'))) {
             $hits = rescue(function () use ($model, $searchQuery) {
                 return $this->elasticsearch->search(
-                    (new ElasticsearchQuery())
+                    (new ElasticsearchQuery)
                         ->modelIndex($model)
-                        ->queryString(Str::of($searchQuery)->start('*')->finish('*'))
+                        ->queryString('*'.ElasticsearchQuery::escapeReservedChars($searchQuery).'*')
                         ->toArray()
                 );
             });
@@ -92,80 +65,45 @@ class ActivityQueries
         return $this->pipeline
             ->send($query)
             ->through([
-                \App\Http\Query\OrderByCreatedAt::class,
-                \App\Http\Query\Activity\Types::class,
-                \App\Http\Query\Activity\Period::class,
-                \App\Http\Query\Activity\CustomPeriod::class,
-                \App\Http\Query\Activity\CauserId::class,
-                \App\Http\Query\Activity\SubjectTypes::class,
-                \App\Http\Query\DefaultOrderBy::class,
+                OrderByCreatedAt::class,
+                FilterByType::class,
+                FilterByPeriod::class,
+                FilterByCustomPeriod::class,
+                FilterByCauserId::class,
+                FilterBySubjectEntityTypes::class,
+                new DefaultOrderBy($model->getQualifiedCreatedAtColumn()),
             ])
             ->thenReturn();
     }
 
-    public function activitySummaryQuery(): BaseBuilder
-    {
-        $query = Activity::query()
-            ->toBase()
-            ->selectRaw('count(*) as count')
-            ->select([
-                'description as type',
-                DB::raw('count(*) as count')
-            ])
-            ->groupBy('description');
-
-        return $this->pipeline
-            ->send($query)
-            ->through([
-                \App\Http\Query\Activity\Types::class,
-                \App\Http\Query\Activity\Period::class,
-                \App\Http\Query\Activity\CustomPeriod::class,
-                \App\Http\Query\Activity\CauserId::class,
-                \App\Http\Query\Activity\SubjectTypes::class,
-            ])
-            ->thenReturn();
-    }
-
-    public function activitySummaryBySubjectQuery(string $subject): BaseBuilder
-    {
-        $query = Activity::query()
-            ->where('subject_id', $subject)
-            ->toBase()
-            ->selectRaw('count(*) as count')
-            ->select([
-                'description as type',
-                DB::raw('count(*) as count')
-            ])
-            ->groupBy('description');
-
-        return $this->pipeline
-            ->send($query)
-            ->through([
-                \App\Http\Query\Activity\Types::class,
-                \App\Http\Query\Activity\Period::class,
-                \App\Http\Query\Activity\CustomPeriod::class,
-                \App\Http\Query\Activity\CauserId::class,
-                \App\Http\Query\Activity\SubjectTypes::class,
-            ])
-            ->thenReturn();
-    }
-
-    public function paginateActivityBySubjectQuery(string $subjectId, ?Request $request = null): Builder
+    public function paginateActivitiesOfSubjectQuery(string $subject, Request $request = null)
     {
         $request ??= new Request();
 
-        $model = new Activity();
+        $model = (new Activity());
 
-        $query = $model->newQuery()
-            ->with('subject')
-            ->where('subject_id', $subjectId);
+        $query = Activity::query()
+            ->select([
+                "{$model->getQualifiedKeyName()} as id",
+                "{$model->subject()->getForeignKeyName()} as subject_id",
+                "{$model->subject()->getMorphType()} as subject_type",
+                "{$model->qualifyColumn('description')} as description",
+                "users.user_fullname as causer_name",
+                "{$model->qualifyColumn('causer_service')} as causer_service_name",
+                "{$model->qualifyColumn('properties')} as properties",
+                "{$model->getQualifiedCreatedAtColumn()} as created_at"
+            ])
+            ->leftJoin('users', function (JoinClause $join) use ($model) {
+                $join->on('users.id', $model->causer()->getQualifiedForeignKeyName());
+            })
+            ->where($model->qualifyColumn('subject_id'), $subject);
 
-        if (filled($searchQuery = $request->query('search'))) {
+        if (filled($searchQuery = $request->input('search'))) {
             $hits = rescue(function () use ($model, $searchQuery) {
                 return $this->elasticsearch->search(
-                    (new ElasticsearchQuery())
+                    (new ElasticsearchQuery)
                         ->modelIndex($model)
-                        ->queryString(Str::of($searchQuery)->start('*')->finish('*'))
+                        ->queryString('*'.ElasticsearchQuery::escapeReservedChars($searchQuery).'*')
                         ->toArray()
                 );
             });
@@ -176,13 +114,13 @@ class ActivityQueries
         return $this->pipeline
             ->send($query)
             ->through([
-                \App\Http\Query\OrderByCreatedAt::class,
-                \App\Http\Query\Activity\Types::class,
-                \App\Http\Query\Activity\Period::class,
-                \App\Http\Query\Activity\CustomPeriod::class,
-                \App\Http\Query\Activity\CauserId::class,
-                \App\Http\Query\Activity\SubjectTypes::class,
-                \App\Http\Query\DefaultOrderBy::class,
+                OrderByCreatedAt::class,
+                FilterByType::class,
+                FilterByPeriod::class,
+                FilterByCustomPeriod::class,
+                FilterByCauserId::class,
+                FilterBySubjectEntityTypes::class,
+                DefaultOrderBy::class,
             ])
             ->thenReturn();
     }

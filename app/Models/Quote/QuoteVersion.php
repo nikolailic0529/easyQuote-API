@@ -47,6 +47,6 @@ class QuoteVersion extends BaseQuote
             ->withPivot('duration', 'margin_percentage')
             ->with('discountable')
             ->whereHasMorph('discountable', $this->discountsOrder())
-            ->orderByRaw("field(`discounts`.`discountable_type`, {$this->discountsOrderToString()})", 'desc');
+            ->orderByRaw("field(`discounts`.`discountable_type`, {$this->discountsOrderToString()}) desc");
     }
 }

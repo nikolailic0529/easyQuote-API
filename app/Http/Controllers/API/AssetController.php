@@ -6,18 +6,13 @@ use App\Contracts\Repositories\AssetCategoryRepository;
 use App\Contracts\Repositories\AssetRepository as Assets;
 use App\Contracts\Repositories\VendorRepositoryInterface as Vendors;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\{
-    Asset\CreateAsset,
-    Asset\UpdateAsset,
-};
+use App\Http\Requests\{Asset\CreateAsset, Asset\UpdateAsset,};
 use App\Http\Requests\Asset\Uniqueness;
-use App\Http\Resources\Asset\Asset as AssetResource;
 use App\Http\Resources\Asset\AssetCollection;
+use App\Http\Resources\Asset\AssetWithIncludes;
 use App\Models\Asset;
-use Illuminate\Http\{
-    Request,
-    Response,
-};
+use App\Services\Asset\AssetEntityService;
+use Illuminate\Http\{JsonResponse, Request, Response};
 
 class AssetController extends Controller
 {
@@ -35,20 +30,21 @@ class AssetController extends Controller
      *
      * @param AssetCategoryRepository $assetCategories
      * @param Vendors $vendors
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
      */
-    public function create(AssetCategoryRepository $assetCategories, Vendors $vendors)
+    public function create(AssetCategoryRepository $assetCategories, Vendors $vendors): JsonResponse
     {
         return response()->json([
             'asset_categories' => $assetCategories->allCached(),
-            'vendors'          => $vendors->allCached()
+            'vendors' => $vendors->allCached()
         ]);
     }
 
     /**
      * Display a listing of the resource.
      *
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return AssetCollection
      */
     public function index(Request $request)
     {
@@ -62,57 +58,71 @@ class AssetController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param  CreateAsset  $request
-     * @return \Illuminate\Http\Response
+     * @param CreateAsset $request
+     * @param AssetEntityService $assetEntityService
+     * @return JsonResponse
      */
-    public function store(CreateAsset $request)
+    public function store(CreateAsset $request, AssetEntityService $assetEntityService): JsonResponse
     {
-        $resource = $this->assets->create($request->validated())->loadMissing('assetCategory');
+        $resource = $assetEntityService->createAsset($request->getCreateAssetData());
 
-        return response()->json(AssetResource::make($resource), Response::HTTP_CREATED);
+        return response()->json(
+            AssetWithIncludes::make($resource),
+            Response::HTTP_CREATED
+        );
     }
 
     /**
      * Display the specified resource.
      *
-     * @param  \App\Models\Asset  $asset
-     * @return \Illuminate\Http\Response
+     * @param \App\Models\Asset $asset
+     * @return JsonResponse
      */
-    public function show(Asset $asset)
+    public function show(Asset $asset): JsonResponse
     {
-        $asset->loadMissing('assetCategory', 'address', 'country');
-        
-        return response()->json(AssetResource::make($asset));
+        return response()->json(
+            AssetWithIncludes::make($asset)
+        );
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  UpdateAsset  $request
-     * @param  \App\Models\Asset  $asset
-     * @return \Illuminate\Http\Response
+     * @param UpdateAsset $request
+     * @param AssetEntityService $assetEntityService
+     * @param \App\Models\Asset $asset
+     * @return JsonResponse
      */
-    public function update(UpdateAsset $request, Asset $asset)
+    public function update(UpdateAsset $request, AssetEntityService $assetEntityService, Asset $asset): JsonResponse
     {
-        $resource = $this->assets->update($asset, $request->validated())->loadMissing('assetCategory');
+        $resource = $assetEntityService->updateAsset($asset, $request->getUpdateAssetData());
 
-        return response()->json(AssetResource::make($resource));
+        return response()->json(
+            AssetWithIncludes::make($resource)
+        );
     }
 
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\Models\Asset  $asset
-     * @return \Illuminate\Http\Response
+     * @param \App\Models\Asset $asset
+     * @param AssetEntityService $assetEntityService
+     * @return JsonResponse
      */
-    public function destroy(Asset $asset)
+    public function destroy(Asset $asset, AssetEntityService $assetEntityService): JsonResponse
     {
+        $assetEntityService->deleteAsset($asset);
+
         return response()->json(
-            $this->assets->delete($asset)
+            true
         );
     }
 
-    public function checkUniqueness(Uniqueness $request)
+    /**
+     * @param Uniqueness $request
+     * @return JsonResponse
+     */
+    public function checkUniqueness(Uniqueness $request): JsonResponse
     {
         return response()->json(
             $this->assets->checkUniqueness($request->validated())

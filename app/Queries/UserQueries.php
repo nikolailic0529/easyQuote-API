@@ -24,6 +24,14 @@ class UserQueries
         $this->elasticsearch = $elasticsearch;
     }
 
+    public function userListQuery(): Builder
+    {
+        return User::query()
+            ->select([
+                'id', 'first_name', 'middle_name', 'last_name', 'email'
+            ]);
+    }
+
     public function paginateUsersQuery(?Request $request = null): Builder
     {
         $request ??= new Request();

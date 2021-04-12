@@ -13,6 +13,7 @@ use App\Http\Controllers\API\Contracts\ContractSubmittedController;
 use App\Http\Controllers\API\ContractTypeController;
 use App\Http\Controllers\API\Data\CountryController;
 use App\Http\Controllers\API\Data\CurrencyController;
+use App\Http\Controllers\API\Data\ExchangeRateController;
 use App\Http\Controllers\API\Data\FileFormatsController;
 use App\Http\Controllers\API\Data\LanguagesController;
 use App\Http\Controllers\API\Data\TimezonesController;
@@ -99,8 +100,11 @@ Route::group(['prefix' => 'data'], function () {
         Route::get('currencies/xr', [CurrencyController::class, 'showAllHavingExrate']);
         Route::get('fileformats', FileFormatsController::class);
     });
+
     Route::get('countries', CountryController::class);
 });
+
+Route::post('exchange-rates/convert', [ExchangeRateController::class, 'convertCurrencies']);
 
 Route::group(['prefix' => 's4', 'as' => 's4.', 'middleware' => [THROTTLE_RATE_01]], function () {
     Route::get('quotes/{rfq}', [S4QuoteController::class, 'show'])->name('quote');
@@ -159,11 +163,15 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::apiResource('settings', SystemSettingController::class, ['only' => ROUTE_RU]);
         Route::patch('settings', [SystemSettingController::class, 'updateMany']);
 
-        Route::match(['get', 'post'], 'activities', [ActivityController::class, 'index']);
-        Route::get('activities/meta', [ActivityController::class, 'meta']);
-        Route::match(['get', 'post'], 'activities/export/{type}', [ActivityController::class, 'export'])->where('type', 'csv|excel|pdf');
-        Route::match(['get', 'post'], 'activities/subject/{subject}', [ActivityController::class, 'subject']);
-        Route::match(['get', 'post'], 'activities/subject/{subject}/export/{type}', [ActivityController::class, 'exportSubject']);
+        Route::match(['get', 'post'], 'activities', [ActivityController::class, 'paginateActivities']);
+        Route::get('activities/meta', [ActivityController::class, 'showActivityLogMetaData']);
+        Route::match(['get', 'post'], 'activities/subject/{subject}', [ActivityController::class, 'paginateActivitiesOfSubject']);
+
+        Route::match(['get', 'post'], 'activities/export/pdf', [ActivityController::class, 'exportActivityLogToPdf']);
+        Route::match(['get', 'post'], 'activities/export/csv', [ActivityController::class, 'exportActivityLogToCsv']);
+
+        Route::match(['get', 'post'], 'activities/subject/{subject}/export/pdf', [ActivityController::class, 'exportActivityLogOfSubjectToPdf']);
+        Route::match(['get', 'post'], 'activities/subject/{subject}/export/csv', [ActivityController::class, 'exportActivityLogOfSubjectToCsv']);
 
         Route::apiResource('importable-columns', ImportableColumnController::class);
         Route::put('importable-columns/activate/{importable_column}', [ImportableColumnController::class, 'activate']);
@@ -389,13 +397,13 @@ Route::group(['middleware' => 'auth:api'], function () {
             /**
              * Submitted Quotes
              */
-            Route::get('submitted/pdf/{submitted}', [QuoteSubmittedController::class, 'pdf']);
-            Route::get('submitted/pdf/{submitted}/contract', [QuoteSubmittedController::class, 'contractPdf']);
+            Route::get('submitted/pdf/{submitted}', [QuoteSubmittedController::class, 'exportQuoteToPdf']);
+            Route::get('submitted/pdf/{submitted}/contract', [QuoteSubmittedController::class, 'exporContractOfQuoteToPdf']);
             Route::apiResource('submitted', QuoteSubmittedController::class, ['only' => ROUTE_RD]);
             Route::patch('submitted/{submitted}', [QuoteSubmittedController::class, 'activate']);
             Route::put('submitted/{submitted}', [QuoteSubmittedController::class, 'deactivate']);
             Route::put('submitted/copy/{submitted}', [QuoteSubmittedController::class, 'copy']);
-            Route::put('submitted/unsubmit/{submitted}', [QuoteSubmittedController::class, 'unsubmit']);
+            Route::put('submitted/unsubmit/{submitted}', [QuoteSubmittedController::class, 'unravelQuote']);
             Route::post('submitted/contract/{submitted}', [QuoteSubmittedController::class, 'createContract']);
             Route::put('submitted/contract-template/{submitted}/{template}', [QuoteSubmittedController::class, 'setContractTemplate']);
 
@@ -463,6 +471,7 @@ Route::group(['middleware' => 'auth:api'], function () {
 
 
     Route::post('ww-quotes', [WorldwideQuoteController::class, 'initializeQuote']);
+    Route::put('ww-quotes/{worldwide_quote}/copy', [WorldwideQuoteController::class, 'replicateQuote']);
     Route::patch('ww-quotes/{worldwide_quote}/versions/{version:id}', [WorldwideQuoteController::class, 'switchActiveVersionOfQuote']);
     Route::delete('ww-quotes/{worldwide_quote}/versions/{version:id}', [WorldwideQuoteController::class, 'destroyQuoteVersion']);
     Route::get('ww-quotes/{worldwide_quote}', [WorldwideQuoteController::class, 'showQuoteState']);

@@ -18,6 +18,7 @@ use App\Models\{Company,
 use App\Queries\QuoteQueries;
 use App\Repositories\Concerns\FetchesGroupDescription;
 use Illuminate\Support\{Collection, Str};
+use Illuminate\Http\Response;
 
 class QuoteViewService implements QuoteView
 {
@@ -231,7 +232,12 @@ class QuoteViewService implements QuoteView
         return $this;
     }
 
-    public function export(BaseQuote $quote, $type = QT_TYPE_QUOTE)
+    /**
+     * @param BaseQuote $quote
+     * @param int $type
+     * @return Response
+     */
+    public function export(BaseQuote $quote, int $type = QT_TYPE_QUOTE): Response
     {
         $quote->switchModeTo($type);
 

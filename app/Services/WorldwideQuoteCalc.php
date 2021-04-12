@@ -205,19 +205,6 @@ class WorldwideQuoteCalc
         return (float)$quote->activeVersion->assets()->sum('price');
     }
 
-    public function calculateQuoteFinalTotalPrice(WorldwideQuote $quote): QuoteFinalTotalPrice
-    {
-        if ($quote->contract_type_id === CT_PACK) {
-            return $this->calculatePackQuoteFinalTotalPrice($quote);
-        }
-
-        if ($quote->contract_type_id === CT_CONTRACT) {
-            return $this->calculateContractQuoteFinalTotalPrice($quote);
-        }
-
-        throw new \RuntimeException('Contract Type of the Quote either is not set or unsupported to calculate a final total price.');
-    }
-
     public function calculateTotalPriceAfterMargin(float $totalPrice, float $marginValue, float $customDiscount): float
     {
         $finalMargin = ($marginValue - $customDiscount) / 100;
@@ -480,11 +467,11 @@ class WorldwideQuoteCalc
 
         $totalPriceAfterDiscounts = (float)$this->calculateTotalPriceAfterPredefinedDiscounts($totalPriceAfterMargin, $applicableDiscounts);
 
-        $finalTotalPrice = $this->calculateTotalPriceAfterTax($totalPriceAfterDiscounts, (float)$marginTaxData->tax_value);
-
         $buyPrice = (float)$quote->activeVersion->buy_price;
 
-        $quoteMarginValue = $this->calculateMarginPercentage($finalTotalPrice, $buyPrice);
+        $quoteMarginValue = $this->calculateMarginPercentage($totalPriceAfterDiscounts, $buyPrice);
+
+        $finalTotalPrice = $this->calculateTotalPriceAfterTax($totalPriceAfterDiscounts, (float)$marginTaxData->tax_value);
 
         $quotePriceSummary = PriceSummaryData::immutable([
             'total_price' => $quoteTotalPrice,
@@ -497,33 +484,6 @@ class WorldwideQuoteCalc
             'worldwide_quote_id' => $quote->getKey(),
             'quote_price_summary' => $quotePriceSummary
         ]);
-    }
-
-    public function calculatePackQuoteFinalTotalPrice(WorldwideQuote $quote): QuoteFinalTotalPrice
-    {
-        $quoteTotalPrice = $this->calculatePackQuoteTotalPrice($quote);
-
-        $totalPriceAfterMargin = $this->calculateTotalPriceAfterMargin($quoteTotalPrice, (float)$quote->margin_value, (float)$quote->custom_discount);
-
-        $applicableDiscounts = $this->predefinedQuoteDiscountsToApplicableDiscounts($quote);
-
-        $totalPriceAfterDiscounts = (float)$this->calculateTotalPriceAfterPredefinedDiscounts($totalPriceAfterMargin, $applicableDiscounts);
-
-        $applicableDiscountsValue = with($quote->custom_discount, function (?float $customDiscountValue) use ($quoteTotalPrice, $totalPriceAfterDiscounts, $applicableDiscounts) {
-            if (!is_null($customDiscountValue)) {
-                return $quoteTotalPrice - $totalPriceAfterDiscounts;
-            }
-
-            return $this->calculateApplicableDiscountsValue($applicableDiscounts);
-        });
-
-        $finalTotalPriceValue = $this->calculateTotalPriceAfterTax($totalPriceAfterMargin, (float)$quote->tax_value);
-
-        return new QuoteFinalTotalPrice([
-            'final_total_price_value' => $finalTotalPriceValue,
-            'applicable_discounts_value' => $applicableDiscountsValue,
-        ]);
-
     }
 
     public function calculateTotalPriceAfterPredefinedDiscounts(float $totalPrice, ApplicablePredefinedDiscounts $applicableDiscounts): float

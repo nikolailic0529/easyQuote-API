@@ -128,7 +128,7 @@ class ShowQuoteState extends FormRequest
 
     public function normalizeWorldwideQuoteAssetAttributesWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper)
     {
-        if ($model->relationLoaded('assets')) {
+        if ($model->activeVersion->relationLoaded('assets')) {
 
             foreach ($model->activeVersion->assets as $asset) {
                 if ($asset->relationLoaded('machineAddress')) {
@@ -141,7 +141,7 @@ class ShowQuoteState extends FormRequest
 
     public function sortWorldwideQuoteAssetsWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper)
     {
-        if ($model->relationLoaded('assets')) {
+        if ($model->activeVersion->relationLoaded('assets')) {
 
             $dataMapper->sortWorldwidePackQuoteAssets($model);
 

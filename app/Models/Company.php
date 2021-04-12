@@ -17,11 +17,11 @@ use App\Traits\{Activatable,
     QuoteTemplate\HasQuoteTemplates,
     Search\Searchable,
     Systemable,
-    Uuid
-};
+    Uuid};
 use Illuminate\Database\Eloquent\{Builder, Model, SoftDeletes,};
 use Illuminate\Database\Eloquent\{Collection, Relations\BelongsTo, Relations\BelongsToMany};
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\Str;
 use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
 
@@ -136,11 +136,12 @@ class Company extends Model implements HasImagesDirectory, WithLogo, Activatable
     public function scopeWithTotalQuotedValue(Builder $query): Builder
     {
         return $query->addSelect([
-            'total_quoted_value' => fn($q) => $q
-                ->select('total_value')
-                ->from('customer_totals')
-                ->whereColumn('customer_totals.company_id', 'companies.id')
-                ->limit(1),
+            'total_quoted_value' => function (BaseBuilder $baseBuilder) {
+                return $baseBuilder
+                    ->selectRaw('SUM(total_price)')
+                    ->from('quote_totals')
+                    ->whereColumn('quote_totals.company_id', 'companies.id');
+            },
         ])
             ->withCasts([
                 'total_quoted_value' => 'decimal:2',

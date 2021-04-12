@@ -2,11 +2,12 @@
 
 namespace App\Events\WorldwideQuote;
 
+use App\Contracts\WithWorldwideQuoteEntity;
 use App\Models\Quote\WorldwideQuote;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-final class WorldwidePackQuoteMarginStepProcessed
+final class WorldwidePackQuoteMarginStepProcessed implements WithWorldwideQuoteEntity
 {
     use Dispatchable, SerializesModels;
 

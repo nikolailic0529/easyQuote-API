@@ -6,6 +6,7 @@ use App\Models\Quote\{
     BaseQuote,
     Margin\CountryMargin,
 };
+use Illuminate\Http\Response;
 
 interface QuoteView
 {
@@ -106,7 +107,8 @@ interface QuoteView
      * Export BaseQuote in PDF format.
      *
      * @param BaseQuote $quote
-     * @return array
+     * @param int $type
+     * @return Response
      */
-    public function export(BaseQuote $quote);
+    public function export(BaseQuote $quote, int $type): Response;
 }

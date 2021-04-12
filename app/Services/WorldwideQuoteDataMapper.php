@@ -488,19 +488,18 @@ class WorldwideQuoteDataMapper
 
     private function getQuotePriceData(WorldwideQuote $worldwideQuote): QuotePriceData
     {
-        $quotePriceData = new QuotePriceData();
+        return tap(new QuotePriceData(), function (QuotePriceData $quotePriceData) use ($worldwideQuote) {
+            $priceSummary = $this->worldwideQuoteCalc->calculatePriceSummaryOfQuote($worldwideQuote);
 
-        $quotePriceData->total_price_value = $this->worldwideQuoteCalc->calculateQuoteTotalPrice($worldwideQuote);
-        $quoteFinalPrice = $this->worldwideQuoteCalc->calculateQuoteFinalTotalPrice($worldwideQuote);
+            $quotePriceData->total_price_value = $priceSummary->total_price;
+            $quotePriceData->final_total_price_value = $priceSummary->final_total_price;
+            $quotePriceData->final_total_price_value_excluding_tax = $priceSummary->final_total_price_excluding_tax;
+            $quotePriceData->applicable_discounts_value = $priceSummary->applicable_discounts_value;
 
-        $quotePriceData->final_total_price_value = $quoteFinalPrice->final_total_price_value;
-        $quotePriceData->applicable_discounts_value = $quoteFinalPrice->applicable_discounts_value;
-
-        if ($quotePriceData->final_total_price_value !== 0.0) {
-            $quotePriceData->price_value_coefficient = $quotePriceData->total_price_value / $quotePriceData->final_total_price_value;
-        }
-
-        return $quotePriceData;
+            if ($quotePriceData->final_total_price_value !== 0.0) {
+                $quotePriceData->price_value_coefficient = $quotePriceData->total_price_value / $quotePriceData->final_total_price_value;
+            }
+        });
     }
 
     public function getQuoteSummary(WorldwideQuote $worldwideQuote, Currency $outputCurrency): QuoteSummary
@@ -572,6 +571,12 @@ class WorldwideQuoteDataMapper
             return '';
         });
 
+        $footerNotes = [];
+
+        if ($opportunity->is_opportunity_start_date_assumed || $opportunity->is_opportunity_end_date_assumed) {
+            $footerNotes[] = "* The dates are based on assumption";
+        }
+
         return new QuoteSummary([
             'company_name' => $activeVersion->company->name,
             'customer_name' => $opportunity->primaryAccount->name,
@@ -583,12 +588,14 @@ class WorldwideQuoteDataMapper
             'payment_terms' => $activeVersion->payment_terms ?? '',
 
             'support_start' => static::formatDate($opportunityStartDate),
+            'support_start_assumed_char' => $opportunity->is_opportunity_start_date_assumed ? '*' : '',
             'support_end' => static::formatDate($opportunityEndDate),
+            'support_end_assumed_char' => $opportunity->is_opportunity_end_date_assumed ? '*' : '',
             'valid_until' => static::formatDate($opportunityClosingDate),
 
             'list_price' => static::formatPriceValue($quotePriceData->total_price_value, $outputCurrency->symbol),
             'applicable_discounts' => static::formatPriceValue($quotePriceData->applicable_discounts_value, $outputCurrency->symbol),
-            'final_price' => static::formatPriceValue($quotePriceData->final_total_price_value, $outputCurrency->symbol),
+            'final_price' => static::formatPriceValue($quotePriceData->final_total_price_value_excluding_tax, $outputCurrency->symbol),
 
             'quote_price_value_coefficient' => $quotePriceData->price_value_coefficient,
 
@@ -599,8 +606,8 @@ class WorldwideQuoteDataMapper
             'quote_data_aggregation_fields' => $this->getQuoteDataAggregationFields($activeVersion->quoteTemplate),
             'quote_data_aggregation' => $quoteDataAggregation,
 
-            'sub_total_value' => static::formatPriceValue($quotePriceData->final_total_price_value, $outputCurrency->symbol),
-            'total_value_including_tax' => '',
+            'sub_total_value' => static::formatPriceValue($quotePriceData->final_total_price_value_excluding_tax, $outputCurrency->symbol),
+            'total_value_including_tax' => static::formatPriceValue($quotePriceData->final_total_price_value, $outputCurrency->symbol),
             'grand_total_value' => '',
 
             'equipment_address' => $addressStringFormatter($quoteHardwareAddress),
@@ -616,6 +623,8 @@ class WorldwideQuoteDataMapper
             'pricing_document' => $activeVersion->pricing_document ?? '',
             'service_agreement_id' => $activeVersion->service_agreement_id ?? '',
             'system_handle' => $activeVersion->system_handle ?? '',
+
+            'footer_notes' => implode("\n", $footerNotes)
         ]);
     }
 
@@ -939,7 +948,7 @@ class WorldwideQuoteDataMapper
                     ->whereIn((new Vendor())->getQualifiedKeyName(), function (BaseBuilder $builder) use ($quote) {
                         return $builder->selectRaw('distinct(vendor_id)')
                             ->from('worldwide_quote_assets')
-                            ->where($quote->assets()->getQualifiedForeignKeyName(), $quote->getKey())
+                            ->where($quote->activeVersion->assets()->getQualifiedForeignKeyName(), $quote->activeVersion->getKey())
                             ->whereNotNull('vendor_id')
                             ->where('is_selected', true);
                     })

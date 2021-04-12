@@ -37,6 +37,7 @@ use App\Services\{WorldwideQuote\CollectWorldwideQuoteFilesService,
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -675,5 +676,25 @@ class WorldwideQuoteController extends Controller
         $this->processor->markQuoteAsAlive($worldwideQuote);
 
         return response()->noContent();
+    }
+
+    /**
+     * Perform replication of quote.
+     *
+     * @param Request $request
+     * @param WorldwideQuote $worldwideQuote
+     * @return JsonResponse
+     * @throws AuthorizationException
+     */
+    public function replicateQuote(Request $request, WorldwideQuote $worldwideQuote): JsonResponse
+    {
+        $this->authorize('replicate', $worldwideQuote);
+
+        $replicatedQuote = $this->processor->processQuoteReplication($worldwideQuote, $request->user());
+
+        return response()->json(
+            $replicatedQuote,
+            Response::HTTP_CREATED
+        );
     }
 }

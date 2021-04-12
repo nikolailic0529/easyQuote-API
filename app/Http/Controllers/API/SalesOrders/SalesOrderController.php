@@ -86,6 +86,12 @@ class SalesOrderController extends Controller
     {
         $this->authorize('view', $salesOrder);
 
+        if (is_null($salesOrder->worldwideQuote)) {
+            return response()->json([
+                "message" => "The Quote of Sales Order was not found."
+            ], Response::HTTP_NOT_FOUND);
+        }
+
         $quotePreviewData = $quoteDataMapper->mapWorldwideQuotePreviewData($salesOrder->worldwideQuote);
 
         return response()->json(

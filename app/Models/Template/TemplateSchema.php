@@ -85,7 +85,10 @@ final class TemplateSchema
 
                 ['id' => 'purchase_order_number', 'label' => 'Purchase Order Number'],
                 ['id' => 'vat_number', 'label' => 'VAT Number'],
-                ['id' => 'payment_terms', 'label' => 'Payment Terms']
+                ['id' => 'payment_terms', 'label' => 'Payment Terms'],
+                ['id' => 'support_start_assumed_char', 'label' => 'Support Start Assumed (*)'],
+                ['id' => 'support_end_assumed_char', 'label' => 'Support End Assumed (*)'],
+                ['id' => 'footer_notes', 'label' => 'Footer notes']
             ],
             'data_pages' => [
                 ['id' => 'pricing_document', 'label' => 'Pricing Document'],

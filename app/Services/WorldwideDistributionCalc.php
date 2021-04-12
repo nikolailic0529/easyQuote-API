@@ -82,17 +82,17 @@ class WorldwideDistributionCalc
 
         $totalPriceAfterMargin = $this->calculateTotalPriceAfterMargin($quoteTotalPrice, (float)$distribution->margin_value, (float)$distribution->custom_discount);
 
-        $marginPercentageAfterCustomDiscount = $this->calculateMarginPercentage($totalPriceAfterMargin, $quoteBuyPrice);
+        $totalPriceAfterMarginWithoutCustomDiscount = $this->calculateTotalPriceAfterMargin($quoteTotalPrice, (float)$distribution->margin_value, 0.0);
 
-//        dd($marginPercentageAfterCustomDiscount);
+        $marginPercentageAfterCustomDiscount = $this->calculateMarginPercentage($totalPriceAfterMargin, $quoteBuyPrice);
 
         $applicableDiscounts = $this->predefinedDistributionDiscountsToApplicableDiscounts($distribution);
 
-        $totalPriceAfterDiscounts = (float)$this->calculateTotalPriceAfterPredefinedDiscounts($totalPriceAfterMargin, $applicableDiscounts);
+        $totalPriceAfterDiscounts = $this->calculateTotalPriceAfterPredefinedDiscounts($totalPriceAfterMargin, $applicableDiscounts);
 
-        $applicableDiscountsValue = with($distribution->custom_discount, function (?float $customDiscountValue) use ($quoteTotalPrice, $totalPriceAfterDiscounts, $applicableDiscounts) {
+        $applicableDiscountsValue = with($distribution->custom_discount, function (?float $customDiscountValue) use ($totalPriceAfterMargin, $totalPriceAfterMarginWithoutCustomDiscount, $quoteTotalPrice, $totalPriceAfterDiscounts, $applicableDiscounts) {
             if (!is_null($customDiscountValue)) {
-                return $quoteTotalPrice - $totalPriceAfterDiscounts;
+                return $totalPriceAfterMarginWithoutCustomDiscount - $totalPriceAfterMargin;
             }
 
             return $this->calculateApplicableDiscountsValue($applicableDiscounts);

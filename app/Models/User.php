@@ -310,4 +310,9 @@ class User extends Model implements
     {
         return $this->belongsToMany(Team::class, 'team_team_leader', 'team_leader_id');
     }
+
+    public function ledTeamUsers(): HasManyDeep
+    {
+        return $this->hasManyDeepFromRelations($this->ledTeams(), (new Team())->users());
+    }
 }

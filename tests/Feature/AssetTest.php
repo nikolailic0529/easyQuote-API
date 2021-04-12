@@ -120,6 +120,7 @@ class AssetTest extends TestCase
         $attributes = factory(Asset::class)->raw();
 
         $response = $this->patchJson('api/assets/'.$asset->getKey(), $attributes)
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 'id',

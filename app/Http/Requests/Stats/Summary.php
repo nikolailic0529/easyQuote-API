@@ -8,6 +8,7 @@ use App\Models\Data\Currency;
 use App\Models\Quote\Quote;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\User;
+use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -33,7 +34,10 @@ class Summary extends StatsAggregatorRequest
     public function resolvePeriod(): ?CarbonPeriod
     {
         if ($this->has(['start_date', 'end_date'])) {
-            return CarbonPeriod::create($this->start_date, $this->end_date);
+            return CarbonPeriod::createFromArray([
+                Carbon::createFromFormat('Y-m-d', $this->input('start_date')),
+                Carbon::createFromFormat('Y-m-d', $this->input('end_date'))
+            ]);
         }
 
         return null;

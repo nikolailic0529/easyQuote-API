@@ -58,7 +58,7 @@ class HpeContractTest extends TestCase
         $filePath = static::contractFiles()['20201210130642_39516_GB_S4'];
 
         $file = static::createUploadedFile($filePath);
-        
+
         /** @var HpeContractFileService */
         $fileService = app(HpeContractFileService::class);
 
@@ -544,7 +544,9 @@ class HpeContractTest extends TestCase
             'purchase_order_no' => $this->faker->randomNumber()
         ]);
 
-        $response = $this->get('api/hpe-contracts/' . $hpeContract->getKey() . '/export')->assertOk();
+        $response = $this->get('api/hpe-contracts/' . $hpeContract->getKey() . '/export')
+//            ->dump()
+            ->assertOk();
 
         $response->assertHeader('content-disposition', 'attachment; filename=' . $hpeContract->purchase_order_no . '.pdf');
     }

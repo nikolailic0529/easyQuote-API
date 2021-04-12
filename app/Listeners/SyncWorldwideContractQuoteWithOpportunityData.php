@@ -34,8 +34,8 @@ class SyncWorldwideContractQuoteWithOpportunityData
     {
         $opportunity = $event->getOpportunity();
 
-        if (!is_null($opportunity->worldwideQuote)) {
-            $this->quoteProcessor->syncContractQuoteWithOpportunityData($opportunity->worldwideQuote);
+        foreach ($opportunity->worldwideQuotes as $quote) {
+            $this->quoteProcessor->syncQuoteWithOpportunityData($quote);
         }
     }
 }

@@ -2,7 +2,6 @@
 
 namespace App\DTO\Opportunity;
 
-use App\Models\User;
 use Carbon\Carbon;
 use Spatie\DataTransferObject\DataTransferObject;
 use Symfony\Component\Validator\Constraints;
@@ -92,7 +91,11 @@ final class CreateOpportunityData extends DataTransferObject
 
     public ?Carbon $opportunity_start_date;
 
+    public bool $is_opportunity_start_date_assumed = false;
+
     public ?Carbon $opportunity_end_date;
+
+    public bool $is_opportunity_end_date_assumed = false;
 
     public ?Carbon $opportunity_closing_date;
 
@@ -110,6 +113,8 @@ final class CreateOpportunityData extends DataTransferObject
 
     public ?float $opportunity_amount;
 
+    public ?float $base_opportunity_amount;
+
     /**
      * @Constraints\Length(
      *     min=3,
@@ -120,6 +125,8 @@ final class CreateOpportunityData extends DataTransferObject
 
     public ?float $purchase_price;
 
+    public ?float $base_purchase_price;
+
     /**
      * @Constraints\Length(
      *     min=3,
@@ -129,6 +136,8 @@ final class CreateOpportunityData extends DataTransferObject
     public ?string $purchase_price_currency_code;
 
     public ?float $list_price;
+
+    public ?float $base_list_price;
 
     /**
      * @Constraints\Length(

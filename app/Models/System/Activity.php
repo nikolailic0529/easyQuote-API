@@ -3,13 +3,17 @@
 namespace App\Models\System;
 
 use App\Contracts\SearchableEntity;
-use App\Models\User;
 use App\Traits\{Search\Searchable, Uuid,};
 use Illuminate\Database\Eloquent\{Builder, Model, Relations\MorphTo};
 use Illuminate\Support\{Arr, Collection};
-use Illuminate\Support\Str;
 use Spatie\Activitylog\Contracts\Activity as ActivityContract;
 
+/**
+ * @property-read Collection|null $properties
+ * @property-read array|null $attribute_changes
+ * @property string|null $subject_type
+ * @property string|null $subject_id
+ */
 class Activity extends Model implements ActivityContract, SearchableEntity
 {
     use Uuid, Searchable;
@@ -55,21 +59,14 @@ class Activity extends Model implements ActivityContract, SearchableEntity
 
     public function getExtraProperty(string $propertyName)
     {
-        return Arr::get($this->properties->toArray(), $propertyName);
+        return Arr::get($this->properties, $propertyName);
     }
 
     public function changes(): Collection
     {
-        if (!$this->properties instanceof Collection) {
-            return new Collection();
-        }
+        $properties = Collection::wrap($this->properties);
 
-        return $this->properties->only(['attributes', 'old']);
-    }
-
-    public function getChangesAttribute(): Collection
-    {
-        return $this->changes();
+        return $properties->only(['attributes', 'old']);
     }
 
     public function scopeInLog(Builder $query, ...$logNames): Builder
@@ -95,82 +92,15 @@ class Activity extends Model implements ActivityContract, SearchableEntity
             ->where('subject_id', $subject->getKey());
     }
 
-    public function scopeForSubjectId(Builder $query, string $subject_id): Builder
-    {
-        return $query->where('subject_id', $subject_id);
-    }
-
-    public function scopeHasCauser(Builder $query): Builder
-    {
-        return $query->whereHasMorph('causer', User::class);
-    }
-
     public function toSearchArray(): array
     {
         return [
             'log_name' => $this->log_name,
             'description' => $this->description,
-            'changed_properties' => $this->readableChanges->collapse()->pluck('attribute')->unique()->toArray(),
+            'changed_properties' => $this->changes()->all(),
             'causer_name' => $this->causer_name,
             'subject_name' => $this->subject_name,
             'created_at' => optional($this->created_at)->format(config('date.format')),
         ];
-    }
-
-    public function getReadableChangesAttribute()
-    {
-        $expectedChanges = collect(['old' => [], 'attributes' => []]);
-
-        if ($this->changes()->isEmpty()) {
-            return $expectedChanges;
-        }
-
-        return $this->changes()->map(function ($change) {
-            return collect($change)->except('id')->map(function ($value, $key) {
-                $attribute = Str::formatAttributeKey($key);
-
-                if (is_iterable($value)) {
-                    $value = collect($value)->flatten()->implode(', ');
-                }
-
-                if (is_bool($value)) {
-                    $value = $value ? 'Yes' : 'No';
-                }
-
-                $value = blank($value) ? null : (string)$value;
-
-                return compact('attribute', 'value');
-            })->values();
-        })->union($expectedChanges);
-    }
-
-    public function getDescriptionAttribute($value)
-    {
-        return isset($value)
-            ? Str::spaced(Str::studly($value))
-            : null;
-    }
-
-    public function getCauserNameAttribute()
-    {
-        if (isset($this->causer_service)) {
-            return $this->causer_service;
-        }
-
-        if (isset($this->causer)) {
-            return "{$this->causer->email} ({$this->causer->full_name})";
-        }
-
-        return null;
-    }
-
-    public function getSubjectTypeBaseAttribute(): string
-    {
-        return Str::spaced(class_basename($this->subject_type));
-    }
-
-    public function getSubjectNameAttribute(): string
-    {
-        return $this->subject->item_name ?? "{$this->subject_type_base} ({$this->subject_id})";
     }
 }

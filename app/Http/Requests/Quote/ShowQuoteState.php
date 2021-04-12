@@ -5,6 +5,7 @@ namespace App\Http\Requests\Quote;
 use App\Models\Quote\Quote;
 use App\Models\Template\QuoteTemplate;
 use App\Models\Template\TemplateField;
+use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ShowQuoteState extends FormRequest
@@ -26,7 +27,14 @@ class ShowQuoteState extends FormRequest
         return tap($quote, function (Quote $quote) {
             filter($quote);
 
-            $templateFields = TemplateField::with('templateFieldType')->orderBy('order')->get();
+            $config = $this->container[Config::class];
+
+            $templateFields = TemplateField::with('templateFieldType')
+                ->whereIn('name', $config['quote-mapping.rescue_quote.fields'] ?? [])
+                ->orderBy('order')
+                ->get();
+
+            $quote->activeVersionOrCurrent->setAttribute('template_fields', $templateFields);
 
             $quote->activeVersionOrCurrent->quoteTemplate->setAttribute('template_fields', $templateFields);
 

@@ -61,7 +61,7 @@ class StoreQuoteStateRequest extends FormRequest
                 $this->customerRequired(),
                 'uuid',
                 Rule::exists('customers', 'id')->whereNull('deleted_at'),
-                (new UniqueCustomer)->ignore($this->quote())
+                (new UniqueCustomer)->ignore($this->getQuote())
             ],
 
             'quote_data.company_id' => [
@@ -116,7 +116,7 @@ class StoreQuoteStateRequest extends FormRequest
              */
             'quote_data.selected_rows.*'            => ['uuid', 'exists:imported_rows,id'],
             'quote_data.selected_rows_is_rejected'  => 'boolean',
-            'quote_data.use_groups'                 => ['boolean', new UseRowGroups($this->quote())],
+            'quote_data.use_groups'                 => ['boolean', new UseRowGroups($this->getQuote())],
             'quote_data.last_drafted_step'          => 'string|max:20',
             'quote_data.pricing_document'           => 'string|max:1000|min:2',
             'quote_data.service_agreement_id'       => 'string|max:1000|min:2',
@@ -222,7 +222,7 @@ class StoreQuoteStateRequest extends FormRequest
         return $this->validatedData()->get('quote_data') ?? [];
     }
 
-    public function quote(): Quote
+    public function getQuote(): Quote
     {
         if (isset($this->quote)) {
             return $this->quote;
@@ -241,14 +241,14 @@ class StoreQuoteStateRequest extends FormRequest
 
     protected function customerUpdating(): bool
     {
-        return $this->quote()->exists &&
+        return $this->getQuote()->exists &&
             $this->has('quote_data.customer_id') &&
             $this->input('quote_data.customer_id') !== $this->quote->customer_id;
     }
 
     protected function customerRequired()
     {
-        return is_null($this->quote()->customer_id)
+        return is_null($this->getQuote()->customer_id)
             && $this->missing('quote_data.customer_id')
             ? 'required' : '';
     }
@@ -261,7 +261,7 @@ class StoreQuoteStateRequest extends FormRequest
     protected function submittedRfqExists(): bool
     {
         return Quote::query()
-            ->whereKeyNot($this->quote()->id)
+            ->whereKeyNot($this->getQuote()->id)
             ->submitted()
             ->activated()
             ->rfq($this->quoteRfq())
@@ -272,7 +272,7 @@ class StoreQuoteStateRequest extends FormRequest
     {
         slack()
             ->title('Quote Submission')
-            ->url(ui_route('quotes.drafted.review', ['quote' => $this->quote()]))
+            ->url(ui_route('quotes.drafted.review', ['quote' => $this->getQuote()]))
             ->status([QSF_01, 'Quote RFQ' => $this->quoteRfq(), 'Reason' => QSE_01, 'Caused By' => optional($this->user())->fullname])
             ->image(assetExternal(SN_IMG_QSF))
             ->queue();

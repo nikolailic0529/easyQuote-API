@@ -40,7 +40,7 @@ class ContractSubmittedRepository extends SearchableRepository implements Contra
 
     public function userQuery(): Builder
     {
-        /** @var \App\Models\User */
+        /** @var User $user */
         $user = auth()->user();
 
         $query = Contract::query()
@@ -78,12 +78,16 @@ class ContractSubmittedRepository extends SearchableRepository implements Contra
                 'company_name' => Company::select('name')->whereColumn('companies.id', 'contracts.company_id')->limit(1),
             ])
             ->when(
-                /** If user is not super-admin we are retrieving the user's own contracts */
+            /** If user is not super-admin we are retrieving the user's own contracts */
                 $user->cant('view_contracts'),
-                fn (Builder $query) => $query->currentUser()
-                    /** Adding contracts that have been granted access to */
-                    ->orWhereIn('quote_id', $user->getPermissionTargets('quotes.read'))
-                    ->orWhereIn('user_id', $user->getModulePermissionProviders('contracts.read'))
+                function (Builder $builder) use ($user) {
+                    $builder->where(function (Builder $builder) use ($user) {
+                        $builder->where('quotes.user_id', $user->getKey())
+                            /** Adding contracts that have been granted access to */
+                            ->orWhereIn($builder->qualifyColumn('quote_id'), $user->getPermissionTargets('quotes.read'))
+                            ->orWhereIn($builder->qualifyColumn('user_id'), $user->getModulePermissionProviders('contracts.read'));
+                    });
+                }
             )
             ->whereNotNull('contracts.submitted_at');
 
@@ -119,9 +123,12 @@ class ContractSubmittedRepository extends SearchableRepository implements Contra
             ->when(
                 /** If user is not super-admin we are retrieving the user's own contracts */
                 $user->cant('view_contracts'),
-                fn (Builder $query) => $query->currentUser()
-                    /** Adding contracts that have been granted access to */
-                    ->orWhereIn('user_id', $user->getModulePermissionProviders('contracts.read'))
+                function (Builder $builder) use ($user) {
+                    $builder->where(function (Builder $builder) use ($user) {
+                        $builder->where($builder->qualifyColumn('user_id'), $user->getKey())
+                            ->orWhereIn($builder->qualifyColumn('user_id'), $user->getModulePermissionProviders('contracts.read'));
+                    });
+                }
             )
             ->whereNotNull('hpe_contracts.submitted_at')
         );

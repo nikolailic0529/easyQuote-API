@@ -2,6 +2,7 @@
 
 namespace App\Models\System;
 
+use App\Services\Activity\ActivityDataMapper;
 use Illuminate\Support\{Arr, Collection};
 
 class ActivityExportCollection
@@ -56,7 +57,7 @@ class ActivityExportCollection
 
     public function __get($key)
     {
-        $method = 'get' . ucfirst($key);
+        $method = 'get'.ucfirst($key);
 
         if (!method_exists($this, $method)) {
             return;
@@ -104,15 +105,31 @@ class ActivityExportCollection
 
     protected function prepareCollection(iterable $collection)
     {
-        return collect($collection)->map(function ($activity) use ($collection) {
-            ['old' => $old, 'attributes' => $attributes] = $activity->readable_changes;
+        return collect($collection)->map(function (Activity $activity) use ($collection) {
+            $attributeChanges = $activity->attribute_changes ?? [];
+            $oldAttributeValues = collect($attributeChanges[ActivityDataMapper::OLD_ATTRS_KEY] ?? [])->keyBy('attribute')->all();
+            $newAttributeValues = collect($attributeChanges[ActivityDataMapper::NEW_ATTRS_KEY] ?? [])->keyBy('attribute')->all();
 
-            $changes = collect($attributes)->map(function ($value, $key) use ($old) {
-                $old = data_get($old, $key, ['attribute' => data_get($value, 'attribute'), 'value' => null]);
-                return [$old, $value];
+            $flattenChanges = array_map(function (string $key) use ($newAttributeValues, $oldAttributeValues) {
+                $default = [
+                    'attribute' => $key,
+                    'value' => null
+                ];
+
+                $oldValue = Arr::get($oldAttributeValues, $key, $default);
+                $newValue = Arr::get($newAttributeValues, $key, $default);
+
+                return [$oldValue, $newValue];
+            }, array_keys($newAttributeValues));
+
+            $headChanges = value(function () use (&$flattenChanges) {
+
+                if (!empty($flattenChanges)) {
+                    return array_shift($flattenChanges);
+                }
+
+                return array_fill(0, 4, null);
             });
-
-            $firstChanges = $changes->isNotEmpty() ? $changes->shift() : array_fill(0, 4, null);
 
             $lines = collect();
 
@@ -120,17 +137,18 @@ class ActivityExportCollection
                 $activity->subject_name,
                 $activity->subject_type_base,
                 $activity->description,
-                $firstChanges,
-                $activity->causer_name,
+                $headChanges,
+                $activity->causer_name ?? $activity->causer_service_name,
                 $activity->created_at
             ];
 
             $lines->push(Arr::flatten($firstLine));
 
-            $changes->each(function ($value) use ($lines) {
-                $line = Arr::flatten([array_fill(0, 3, null), $value, array_fill(0, 2, null)]);
+            foreach ($flattenChanges as $change) {
+                $line = Arr::flatten([array_fill(0, 3, null), $change, array_fill(0, 2, null)]);
+
                 return $lines->push($line);
-            });
+            }
 
             return $lines;
         })->values();

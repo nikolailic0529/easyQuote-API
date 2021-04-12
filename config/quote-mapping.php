@@ -1,6 +1,20 @@
 <?php
 
 return [
+    'rescue_quote' => [
+        'fields' => [
+            'product_no',
+            'description',
+            'serial_no',
+            'date_from',
+            'date_to',
+            'qty',
+            'price',
+            'searchable',
+            'service_level_description'
+        ]
+    ],
+
     'worldwide_quote' => [
 
         'fields' => [

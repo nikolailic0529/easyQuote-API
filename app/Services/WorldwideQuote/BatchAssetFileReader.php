@@ -3,6 +3,7 @@
 namespace App\Services\WorldwideQuote;
 
 use App\DTO\Opportunity\CreateOpportunityData;
+use App\Services\Exceptions\FileException;
 use Box\Spout\Common\Entity\Row;
 use Box\Spout\Reader\Common\Creator\ReaderFactory;
 use Box\Spout\Reader\ReaderInterface;
@@ -16,6 +17,8 @@ use Illuminate\Validation\Validator;
 class BatchAssetFileReader
 {
     const HEADER_ROW_INDEX = 1;
+
+    protected ReaderInterface $reader;
 
     protected string $filePath;
 
@@ -32,6 +35,19 @@ class BatchAssetFileReader
         $this->filePath = $filePath;
         $this->fileType = $fileType;
         $this->headerCountSeparator = Str::random(20);
+
+        $libxmlEntityLoaderPreviousValue = null;
+
+        if (\PHP_VERSION_ID < 80000) {
+            $libxmlEntityLoaderPreviousValue= libxml_disable_entity_loader(false);
+        }
+
+        $this->reader = ReaderFactory::createFromType($this->fileType);
+        $this->reader->open($filePath);
+
+        if (!is_null($libxmlEntityLoaderPreviousValue)) {
+            libxml_disable_entity_loader($libxmlEntityLoaderPreviousValue);
+        }
     }
 
     public function fileContainsHeaders(bool $value = true): self
@@ -43,15 +59,9 @@ class BatchAssetFileReader
 
     public function getRows(): \Iterator
     {
-        $reader = ReaderFactory::createFromType($this->fileType);
+        $this->reader->getSheetIterator()->rewind();
 
-        libxml_disable_entity_loader(false);
-
-        $reader->open($this->filePath);
-
-        $reader->getSheetIterator()->rewind();
-
-        $sheet = $reader->getSheetIterator()->current();
+        $sheet = $this->reader->getSheetIterator()->current();
 
         $this->processHeaders($sheet);
 
@@ -93,15 +103,9 @@ class BatchAssetFileReader
     public function getHeaders(): array
     {
         if (empty($this->headers)) {
-            $reader = ReaderFactory::createFromType($this->fileType);
+            $this->reader->getSheetIterator()->rewind();
 
-            libxml_disable_entity_loader(false);
-
-            $reader->open($this->filePath);
-
-            $reader->getSheetIterator()->rewind();
-
-            $sheet = $reader->getSheetIterator()->current();
+            $sheet = $this->reader->getSheetIterator()->current();
 
             $this->processHeaders($sheet);
         }

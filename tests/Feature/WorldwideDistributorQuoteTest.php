@@ -145,8 +145,9 @@ class WorldwideDistributorQuoteTest extends TestCase
         $distributorFile = tap(new QuoteFile([
             'original_file_path' => $fileName,
             'pages' => 7,
-            'file_type' => 'Distributor Price List',
+            'file_type' => 'Worldwide Distributor Price List',
             'quote_file_format_id' => QuoteFileFormat::query()->where('extension', 'pdf')->value('id'),
+            'original_file_name' => $fileName,
             'imported_page' => 2
         ]))->save();
 
@@ -375,9 +376,29 @@ class WorldwideDistributorQuoteTest extends TestCase
 //            ->dump()
             ->assertNoContent();
 
-        $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'?include[]=worldwide_distributions.mapping')
+        $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'?'.Arr::query([
+                'include' => [
+                    'worldwide_distributions.mapping',
+                    'worldwide_distributions.mapped_rows'
+                ]
+            ]))
 //            ->dump()
-            ->assertOk();
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'worldwide_distributions' => [
+                    '*' => [
+                        'id',
+                        'mapped_rows' => [
+                            '*' => [
+                                'id'
+                            ]
+                        ]
+                    ]
+                ]
+            ]);
+
+        $firstMappedRowKey = $response->json('worldwide_distributions.0.mapped_rows.0.id');
 
         $this->assertEquals('Mapping', $response->json('stage'));
 
@@ -400,6 +421,49 @@ class WorldwideDistributorQuoteTest extends TestCase
                 $this->assertContainsEquals($field, $distributionMapping);
             }
         }
+
+        $distributorQuoteDictionary = collect($distributionsResponse)->pluck('id', 'replicated_distributor_quote_id');
+
+        // Make one column as editable for each distributor quote.
+        // The rows should not be mapped again in this case.
+        $newMapping = [];
+
+        foreach ($mapping as $distributorQuoteMapping) {
+            $distributorQuoteMapping['mapping'][0]['is_editable'] = true;
+
+            // Since a new version is created, we have to update entity keys accordingly.
+            $distributorQuoteMapping['id'] = $distributorQuoteDictionary[$distributorQuoteMapping['id']];
+
+            $newMapping[] = $distributorQuoteMapping;
+        }
+
+        $this->postJson('api/ww-distributions/mapping', ['worldwide_distributions' => $newMapping, 'stage' => 'Mapping'])
+//            ->dump()
+            ->assertNoContent();
+
+        $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'?'.Arr::query([
+                'include' => [
+                    'worldwide_distributions.mapping',
+                    'worldwide_distributions.mapped_rows'
+                ]
+            ]))
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'worldwide_distributions' => [
+                    '*' => [
+                        'id',
+                        'mapped_rows' => [
+                            '*' => [
+                                'id'
+                            ]
+                        ]
+                    ]
+                ]
+            ]);
+
+        $this->assertSame($firstMappedRowKey, $response->json('worldwide_distributions.0.mapped_rows.0.id'));
     }
 
     /**
@@ -1384,7 +1448,6 @@ class WorldwideDistributorQuoteTest extends TestCase
     public function testCanDeleteWorldwideDistribution()
     {
         $this->authenticateApi();
-
 
 
         $opportunity = factory(Opportunity::class)->create();

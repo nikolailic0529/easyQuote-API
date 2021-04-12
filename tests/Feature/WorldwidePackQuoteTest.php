@@ -86,16 +86,16 @@ class WorldwidePackQuoteTest extends TestCase
                         'active_version_id',
 
                         'versions' => [
-                          '*' =>  [
-                              'id',
-                              'worldwide_quote_id',
-                              'user_id',
-                              'user_fullname',
-                              'user_version_sequence_number',
-                              'updated_at',
-                              'version_name',
-                              'is_active_version'
-                          ]
+                            '*' => [
+                                'id',
+                                'worldwide_quote_id',
+                                'user_id',
+                                'user_fullname',
+                                'user_version_sequence_number',
+                                'updated_at',
+                                'version_name',
+                                'is_active_version'
+                            ]
                         ],
 
                         'status',
@@ -197,7 +197,7 @@ class WorldwidePackQuoteTest extends TestCase
     {
         $this->authenticateApi();
 
-        \DB::table('opportunities')->update(['deleted_at'=> now()]);
+        \DB::table('opportunities')->update(['deleted_at' => now()]);
 
         $opportunities = factory(Opportunity::class, 2)->create();
 
@@ -271,6 +271,26 @@ class WorldwidePackQuoteTest extends TestCase
         $quote = factory(WorldwideQuote::class)->create(['contract_type_id' => CT_PACK]);
 
         $this->postJson('api/ww-quotes/'.$quote->getKey().'/assets')
+//            ->dump()
+            ->assertCreated()
+            ->assertJsonStructure([
+                'id'
+            ]);
+
+        $machineAddress = factory(Address::class)->create();
+
+        $this->postJson('api/ww-quotes/'.$quote->getKey().'/assets', [
+            'vendor_id' => Vendor::query()->value('id'),
+            'machine_address_id' => $machineAddress->getKey(),
+            'country' => 'GB',
+            'serial_no' => $this->faker->regexify('/[A-Z]{2}\d{4}[A-Z]{2}[A-Z]/'),
+            'sku' => $this->faker->regexify('/\d{6}-[A-Z]\d{2}/'),
+            'service_sku' => $this->faker->regexify('/\d{6}-[A-Z]\d{2}/'),
+            'product_name' => $this->faker->linuxProcessor,
+            'expiry_date' => '2021-02-28T00:00:00.000Z',
+            'service_level_description' => 'Post Warranty, ADP, Next Business Day Onsite, excl. ext. Mon., HW Supp, 1 year',
+            'price' => $this->faker->randomFloat(2, 100, 1000)
+        ])
 //            ->dump()
             ->assertCreated()
             ->assertJsonStructure([
@@ -636,6 +656,7 @@ class WorldwidePackQuoteTest extends TestCase
             'file' => $file
         ])
 //            ->dump()
+            ->assertOk()
             ->assertJsonStructure([
                 'file_id',
                 'read_rows' => [
@@ -1131,32 +1152,39 @@ class WorldwidePackQuoteTest extends TestCase
         $prePayDiscount = factory(PrePayDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
         $multiYearDiscount = factory(MultiYearDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
 
-        /** @var WorldwideQuote $wwQuote */
-        $wwQuote = factory(WorldwideQuote::class)->create([
+        /** @var WorldwideQuote $quote */
+        $quote = factory(WorldwideQuote::class)->create([
             'contract_type_id' => CT_PACK,
         ]);
 
-        $wwQuote->activeVersion->update([
+        $quote->activeVersion->update([
             'quote_template_id' => $template->getKey(),
-            'multi_year_discount_id' => $multiYearDiscount->getKey(),
+//            'multi_year_discount_id' => $multiYearDiscount->getKey(),
             'sort_rows_column' => 'vendor_short_code',
-            'sort_rows_direction' => 'asc'
+            'sort_rows_direction' => 'asc',
+            'margin_value' => 10.00,
+            'custom_discount' => 5,
+            'tax_value' => 10,
+            'buy_price' => 5000,
+            'quote_currency_id' => Currency::query()->where('code', 'GBP')->value('id')
         ]);
 
         $defaultSoftwareAddress = factory(Address::class)->create(['address_type' => 'Software', 'address_1' => '-1 Default Software Address']);
         $softwareAddress2 = factory(Address::class)->create(['address_type' => 'Software']);
 
-        $wwQuote->opportunity->addresses()->sync([
+        $quote->opportunity->addresses()->sync([
             $softwareAddress2->getKey() => ['is_default' => false],
             $defaultSoftwareAddress->getKey() => ['is_default' => true]
         ]);
 
         factory(WorldwideQuoteAsset::class, 5)->create([
-            'worldwide_quote_id' => $wwQuote->getKey(),
-            'is_selected' => true
+            'worldwide_quote_id' => $quote->activeVersion->getKey(),
+            'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
+            'is_selected' => true,
+            'price' => 1000
         ]);
 
-        $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'/preview')
+        $response = $this->getJson('api/ww-quotes/'.$quote->getKey().'/preview')
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
@@ -1227,6 +1255,11 @@ class WorldwidePackQuoteTest extends TestCase
                     ]
                 ]
             ]);
+
+        $this->assertSame('£ 5,000.00', $response->json('quote_summary.list_price'));
+        $this->assertSame('£ 5,263.16', $response->json('quote_summary.final_price'));
+        $this->assertSame('£ 292.40', $response->json('quote_summary.applicable_discounts'));
+        $this->assertSame('£ 5,263.16', $response->json('quote_summary.sub_total_value'));
     }
 
     /**
@@ -1487,7 +1520,7 @@ class WorldwidePackQuoteTest extends TestCase
                     'total_price' => '3000.00',
                     'buy_price' => '2000.00',
                     'final_total_price' => '3343.33',
-                    'final_margin' => '40.18'
+                    'final_margin' => '40.00'
                 ]
             ]);
     }

@@ -21,6 +21,7 @@ use App\DTO\WorldwideQuote\MarkWorldwideQuoteAsDeadData;
 use App\Models\Opportunity;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\Quote\WorldwideQuoteVersion;
+use App\Models\User;
 
 interface ProcessesWorldwideQuoteState
 {
@@ -54,7 +55,7 @@ interface ProcessesWorldwideQuoteState
      * @param WorldwideQuote $quote
      * @return void
      */
-    public function syncContractQuoteWithOpportunityData(WorldwideQuote $quote): void;
+    public function syncQuoteWithOpportunityData(WorldwideQuote $quote): void;
 
     /**
      * Process Quote import step.
@@ -226,4 +227,13 @@ interface ProcessesWorldwideQuoteState
      * @param WorldwideQuote $quote
      */
     public function markQuoteAsAlive(WorldwideQuote $quote): void;
+
+    /**
+     * Process Quote replication.
+     *
+     * @param WorldwideQuote $quote
+     * @param User $actingUser
+     * @return WorldwideQuote
+     */
+    public function processQuoteReplication(WorldwideQuote $quote, User $actingUser): WorldwideQuote;
 }

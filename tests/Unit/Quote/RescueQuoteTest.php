@@ -2,26 +2,17 @@
 
 namespace Tests\Unit\Quote;
 
-use Tests\TestCase;
-use Tests\Unit\Traits\{
-    WithFakeQuote,
-    WithFakeQuoteFile,
-    WithFakeUser,
-};
 use App\DTO\RowsGroup;
-use Illuminate\Support\Collection;
-use App\Models\{
-    QuoteFile\QuoteFile,
-    QuoteFile\ImportableColumn,
-    QuoteFile\ImportedRow,
-    Template\TemplateField,
-};
+use App\Models\{QuoteFile\ImportableColumn, QuoteFile\ImportedRow, QuoteFile\QuoteFile, Template\TemplateField,};
 use App\Models\Quote\Quote;
 use Illuminate\Database\Eloquent\JsonEncodingException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\{Str, Arr};
+use Illuminate\Support\{Arr, Str};
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Tests\TestCase;
+use Tests\Unit\Traits\{WithFakeQuote, WithFakeQuoteFile, WithFakeUser,};
 
 /**
  * @group build
@@ -147,7 +138,7 @@ class RescueQuoteTest extends TestCase
 
         $this->assertInstanceOf(Collection::class, $gd);
 
-        $gd->each(fn ($group) => $this->assertInstanceOf(RowsGroup::class, $group));
+        $gd->each(fn($group) => $this->assertInstanceOf(RowsGroup::class, $group));
     }
 
     /**
@@ -158,12 +149,12 @@ class RescueQuoteTest extends TestCase
     public function testGroupDescriptionSetter()
     {
         $quote = $this->createQuote($this->user);
-        $groups = collect()->times(100, fn () => new RowsGroup([
-            'id' => (string) Str::uuid(),
+        $groups = collect()->times(100, fn() => new RowsGroup([
+            'id' => (string)Str::uuid(),
             'name' => 'Group',
             'search_text' => '1234',
             'is_selected' => true,
-            'rows_ids' => collect()->times(600, fn () => (string) Str::uuid())->toArray()
+            'rows_ids' => collect()->times(600, fn() => (string)Str::uuid())->toArray()
         ]));
 
         $quote->group_description = $groups;
@@ -173,15 +164,15 @@ class RescueQuoteTest extends TestCase
         /**
          * All Groups must be instance of RowsGroup.
          */
-        $groups = collect()->times(50, fn () => new RowsGroup([
-            'id' => (string) Str::uuid(),
+        $groups = collect()->times(50, fn() => new RowsGroup([
+            'id' => (string)Str::uuid(),
             'name' => 'Group',
             'search_text' => '1234',
             'is_selected' => true,
-            'rows_ids' => collect()->times(600, fn () => (string) Str::uuid())->toArray()
+            'rows_ids' => collect()->times(600, fn() => (string)Str::uuid())->toArray()
         ]));
 
-        $groups = collect()->times(50, fn () => Str::random());
+        $groups = collect()->times(50, fn() => Str::random());
 
         $this->expectException(JsonEncodingException::class);
         $this->expectExceptionMessageMatches('/The Collection must contain only values instance of/i');
@@ -193,12 +184,12 @@ class RescueQuoteTest extends TestCase
         /**
          * It is allowed to set Groups Collection as Json string.
          */
-        $groups = collect()->times(100, fn () => new RowsGroup([
-            'id' => (string) Str::uuid(),
+        $groups = collect()->times(100, fn() => new RowsGroup([
+            'id' => (string)Str::uuid(),
             'name' => 'Group',
             'search_text' => '1234',
             'is_selected' => true,
-            'rows_ids' => collect()->times(600, fn () => (string) Str::uuid())->toArray()
+            'rows_ids' => collect()->times(600, fn() => (string)Str::uuid())->toArray()
         ]))->toJson();
 
         $quote->group_description = $groups;
@@ -227,7 +218,7 @@ class RescueQuoteTest extends TestCase
 
         $this->assertInstanceOf(Collection::class, $gd);
 
-        $gd->each(fn ($group) => $this->assertInstanceOf(RowsGroup::class, $group));
+        $gd->each(fn($group) => $this->assertInstanceOf(RowsGroup::class, $group));
     }
 
     /**
@@ -255,7 +246,7 @@ class RescueQuoteTest extends TestCase
     {
         $quote = $this->createQuote($this->user);
         $quoteFile = $this->createFakeQuoteFile($quote);
-        $groups = collect()->times(2)->transform(fn () => $this->createFakeGroupDescription($quote, $quoteFile));
+        $groups = collect()->times(2)->transform(fn() => $this->createFakeGroupDescription($quote, $quoteFile));
 
         /** @var RowsGroup */
         $fromGroup = $groups->shift();
@@ -277,7 +268,7 @@ class RescueQuoteTest extends TestCase
 
         $this->assertInstanceOf(Collection::class, $gd);
 
-        $gd->each(fn ($group) => $this->assertInstanceOf(RowsGroup::class, $group));
+        $gd->each(fn($group) => $this->assertInstanceOf(RowsGroup::class, $group));
     }
 
     /**
@@ -309,7 +300,7 @@ class RescueQuoteTest extends TestCase
         $quoteFile = $this->createFakeQuoteFile($quote);
         $count = 10;
 
-        collect()->times($count)->each(fn () => $this->createFakeGroupDescription($quote, $quoteFile));
+        collect()->times($count)->each(fn() => $this->createFakeGroupDescription($quote, $quoteFile));
 
         $response = $this->getJson(url("api/quotes/groups/{$quote->id}"))->assertOk();
 
@@ -333,7 +324,7 @@ class RescueQuoteTest extends TestCase
         $quoteFile = $this->createFakeQuoteFile($quote);
         $count = 10;
 
-        $groups = collect()->times($count)->map(fn ($group) => $this->createFakeGroupDescription($quote, $quoteFile));
+        $groups = collect()->times($count)->map(fn($group) => $this->createFakeGroupDescription($quote, $quoteFile));
 
         $selected = $groups->random(mt_rand(1, $count))->keyBy('id');
 
@@ -345,7 +336,7 @@ class RescueQuoteTest extends TestCase
         /**
          * Assert that groups actual is_selected attribute is matching to selected groups.
          */
-        $groups->each(fn (RowsGroup $group) => $this->assertEquals($selected->has($group->id), $group->is_selected));
+        $groups->each(fn(RowsGroup $group) => $this->assertEquals($selected->has($group->id), $group->is_selected));
 
         /**
          * Assert that quote review endpoint is displaying selected groups.
@@ -358,7 +349,7 @@ class RescueQuoteTest extends TestCase
 
         $reviewGroupsIds = data_get($reviewData, 'data_pages.rows.*.id');
 
-        $selected->each(fn (RowsGroup $group) => $this->assertTrue(in_array($group->id, $reviewGroupsIds)));
+        $selected->each(fn(RowsGroup $group) => $this->assertTrue(in_array($group->id, $reviewGroupsIds)));
     }
 
     /**
@@ -388,7 +379,7 @@ class RescueQuoteTest extends TestCase
 
         Storage::fake();
 
-        $filePath = $this->user->quote_files_directory . '/' . Str::random(40) . '.pdf';
+        $filePath = $this->user->quote_files_directory.'/'.Str::random(40).'.pdf';
 
         Storage::put($filePath, file_get_contents(base_path('tests/Unit/Data/distributor-files-test/HPInvent1547101.pdf')));
 
@@ -419,7 +410,7 @@ class RescueQuoteTest extends TestCase
 
         Storage::fake();
 
-        $filePath = $this->user->quote_files_directory . '/' . Str::random(40) . '.pdf';
+        $filePath = $this->user->quote_files_directory.'/'.Str::random(40).'.pdf';
 
         Storage::put($filePath, file_get_contents(base_path('tests/Unit/Data/distributor-files-test/HPInvent1547101.pdf')));
 
@@ -454,13 +445,13 @@ class RescueQuoteTest extends TestCase
 
         $defaults = ['date_from' => true, 'date_to' => true];
 
-        $map = $templateFields->flip()->map(fn ($name, $id) => ['importable_column_id' => $importableColumns->get($name), 'is_default_enabled' => Arr::get($defaults, $name, false)]);
+        $map = $templateFields->flip()->map(fn($name, $id) => ['importable_column_id' => $importableColumns->get($name), 'is_default_enabled' => Arr::get($defaults, $name, false)]);
 
         $quote->templateFields()->sync($map->toArray());
 
-        $this->putJson('/api/quotes/get/' . $quote->id)->assertOk();
+        $this->putJson('/api/quotes/get/'.$quote->id)->assertOk();
 
-        $this->getJson('api/quotes/review/' . $quote->id)->assertOk();
+        $this->getJson('api/quotes/review/'.$quote->id)->assertOk();
     }
 
     /**
@@ -477,13 +468,15 @@ class RescueQuoteTest extends TestCase
         $templateFields = TemplateField::where('is_system', true)->pluck('id', 'name');
         $importableColumns = ImportableColumn::where('is_system', true)->pluck('id', 'name');
 
-        $map = $templateFields->flip()->map(fn ($name, $id) => ['importable_column_id' => $importableColumns->get($name)]);
+        $map = $templateFields->flip()->map(fn($name, $id) => ['importable_column_id' => $importableColumns->get($name)]);
 
         $quote->templateFields()->sync($map->toArray());
 
-        $this->putJson('/api/quotes/get/' . $quote->id)->assertOk();
+        $this->putJson('/api/quotes/get/'.$quote->id)
+//            ->dump()
+            ->assertOk();
 
-        $this->getJson('api/quotes/review/' . $quote->id)
+        $this->getJson('api/quotes/review/'.$quote->id)
             ->assertOk()
             ->assertJsonStructure([
                 'first_page',
@@ -504,7 +497,7 @@ class RescueQuoteTest extends TestCase
         /** @var \App\DTO\RowsGroup */
         $group = $this->quoteRepository->createGroupDescription($attributes, $quote);
 
-        return tap($group, fn () => $group->rows_ids = $attributes['rows']);
+        return tap($group, fn() => $group->rows_ids = $attributes['rows']);
     }
 
     protected function generateGroupDescription(QuoteFile $quoteFile): array
@@ -514,9 +507,9 @@ class RescueQuoteTest extends TestCase
         $rows = factory(ImportedRow::class, 4)->create(['quote_file_id' => $quoteFile->id]);
 
         return [
-            'name'          => $group_name,
-            'search_text'   => $this->faker->sentence(3),
-            'rows'          => $rows->pluck('id')->toArray()
+            'name' => $group_name,
+            'search_text' => $this->faker->sentence(3),
+            'rows' => $rows->pluck('id')->toArray()
         ];
     }
 }

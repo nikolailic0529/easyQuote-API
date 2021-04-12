@@ -18,10 +18,12 @@ use App\Models\QuoteFile\ImportableColumn;
 use App\Models\QuoteFile\MappedRow;
 use App\Models\QuoteFile\QuoteFile;
 use App\Models\QuoteFile\ScheduleData;
+use App\Models\Role;
 use App\Models\SalesOrder;
 use App\Models\Template\ContractTemplate;
 use App\Models\Template\QuoteTemplate;
 use App\Models\Template\TemplateField;
+use App\Models\User;
 use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
 use App\Services\SalesOrder\CancelSalesOrderService;
@@ -81,6 +83,100 @@ class SalesOrderTest extends TestCase
                     'current_page', 'from', 'last_page', 'path', 'per_page', 'to', 'total'
                 ]
             ]);
+    }
+
+    /**
+     * Test an ability to view only own paginated sales orders.
+     *
+     * @return void
+     */
+    public function testCanViewOwnPaginatedDraftedSalesOrders()
+    {
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions('view_own_sales_orders');
+
+        /** @var User $user */
+        $user = factory(User::class)->create();
+
+        $user->syncRoles($role);
+
+        /** @var SalesOrder $salesOrder */
+        // Acting user own entity.
+        $salesOrder = factory(SalesOrder::class)->create([
+            'user_id' => $user->getKey(),
+            'submitted_at' => null
+        ]);
+
+        // Entity own by different user.
+        factory(SalesOrder::class)->create([
+            'submitted_at' => null,
+        ]);
+
+        $this->actingAs($user, 'api');
+
+        $response = $this->getJson('api/sales-orders/drafted')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id'
+                    ]
+                ]
+            ]);
+
+        $this->assertCount(1, $response->json('data'));
+        $this->assertSame($user->getKey(), $response->json('data.0.user_id'));
+    }
+
+    /**
+     * Test an ability to view only own paginated sales orders.
+     *
+     * @return void
+     */
+    public function testCanViewOwnPaginatedSubmittedSalesOrders()
+    {
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions('view_own_sales_orders');
+
+        /** @var User $user */
+        $user = factory(User::class)->create();
+
+        $user->syncRoles($role);
+
+        /** @var SalesOrder $salesOrder */
+        // Acting user own entity.
+        $salesOrder = factory(SalesOrder::class)->create([
+            'user_id' => $user->getKey(),
+            'submitted_at' => now()
+        ]);
+
+        // Entity own by different user.
+        factory(SalesOrder::class)->create([
+            'submitted_at' => now(),
+        ]);
+
+        $this->actingAs($user, 'api');
+
+        $response = $this->getJson('api/sales-orders/submitted')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id'
+                    ]
+                ]
+            ]);
+
+        $this->assertCount(1, $response->json('data'));
+        $this->assertSame($user->getKey(), $response->json('data.0.user_id'));
     }
 
     /**

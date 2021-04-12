@@ -9,10 +9,10 @@ use App\DTO\WorldwideQuote\{AssetServiceLevel,
     AssetServiceLookupResult,
     BatchAssetFileMapping,
     ImportBatchAssetFileData,
+    InitializeWorldwideQuoteAssetData,
     ReadAssetRow,
     ReadBatchFileResult,
-    WorldwideQuoteAssetDataCollection
-};
+    WorldwideQuoteAssetDataCollection};
 use App\Enum\Lock;
 use App\Models\Address;
 use App\Models\Data\Country;
@@ -67,11 +67,25 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
         $this->lookupService = $lookupService;
     }
 
-    public function initializeQuoteAsset(WorldwideQuoteVersion $quote): WorldwideQuoteAsset
+    public function initializeQuoteAsset(WorldwideQuoteVersion $quote, InitializeWorldwideQuoteAssetData $data): WorldwideQuoteAsset
     {
-        return tap(new WorldwideQuoteAsset(), function (WorldwideQuoteAsset $asset) use ($quote) {
+        return tap(new WorldwideQuoteAsset(), function (WorldwideQuoteAsset $asset) use ($data, $quote) {
             $asset->worldwideQuote()->associate($quote);
             $asset->is_selected = true;
+
+            $asset->vendor()->associate($data->vendor_id);
+            $asset->machineAddress()->associate($data->machine_address_id);
+
+            $asset->country = $data->country_code;
+            $asset->serial_no = $data->serial_no;
+            $asset->sku = $data->sku;
+            $asset->service_sku = $data->service_sku;
+            $asset->product_name = $data->product_name;
+            $asset->expiry_date = transform($data->expiry_date, fn (\DateTimeInterface $dateTime) => $dateTime->format('Y-m-d'));
+            $asset->service_level_description = $data->service_level_description;
+            $asset->price = $data->price;
+
+            $asset->makeHidden('worldwideQuote');
 
             $this->connection->transaction(fn() => $asset->save());
         });
@@ -202,8 +216,8 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
                 return $row[$skuColumn] ?? null;
             });
 
-            $asset->service_sku = transform($mapping->service_sku, function (string $servuceSkuColumn) use ($row) {
-                return $row[$servuceSkuColumn] ?? null;
+            $asset->service_sku = transform($mapping->service_sku, function (string $serviceSkuColumn) use ($row) {
+                return $row[$serviceSkuColumn] ?? null;
             });
 
             $asset->product_name = transform($mapping->product_name, function (string $productNameColumn) use ($row) {
@@ -398,6 +412,8 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
 
             $asset->product_name = $assetLookupResult->product_name ?? $asset->product_name;
 
+            $asset->service_sku = $assetLookupResult->service_sku ?? $asset->service_sku;
+
             if (!empty($serviceLevelsArray)) {
                 $asset->service_level_data = $serviceLevelsArray;
             } elseif (!is_null($asset->service_level_description) && isset($asset->price)) {
@@ -411,21 +427,20 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
                 trim($asset->service_level_description) !== '' &&
                 !is_null($asset->price)
             ) {
-                $assetServiceLevelDesc = $asset->service_level_description;
-                $assetPrice = $asset->price;
 
-                $asset->price = with($assetLookupResult->service_levels, function (array $serviceLevels) use ($assetServiceLevelDesc, $assetPrice) {
+                // When service level description is present on the asset entity,
+                // we will try to find the matching service level from lookup result,
+                // and set the corresponding price, service_sku to the asset entity.
+                with($assetLookupResult->service_levels, function (array $serviceLevels) use ($asset) {
 
                     foreach ($serviceLevels as $serviceLevel) {
 
                         /** @var AssetServiceLevel $serviceLevel */
-
-                        if ($serviceLevel->description === $assetServiceLevelDesc) {
-                            return $serviceLevel->price;
+                        if ($serviceLevel->description === $asset->service_level_description) {
+                            $asset->price = $serviceLevel->price;
+                            $asset->service_sku = $serviceLevel->code;
                         }
                     }
-
-                    return $assetPrice;
 
                 });
             }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\SalesOrders;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SalesOrder\PaginateSalesOrders;
 use App\Http\Resources\SalesOrder\SalesOrderDraft;
 use App\Models\SalesOrder;
 use App\Queries\SalesOrderQueries;
@@ -15,16 +16,16 @@ class SalesOrderDraftedController extends Controller
     /**
      * Display a listing of the drafted Sales Orders.
      *
-     * @param Request $request
+     * @param PaginateSalesOrders $request
      * @param SalesOrderQueries $queries
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function __invoke(Request $request, SalesOrderQueries $queries): AnonymousResourceCollection
+    public function __invoke(PaginateSalesOrders $request, SalesOrderQueries $queries): AnonymousResourceCollection
     {
         $this->authorize('viewAny', SalesOrder::class);
 
-        $paginator = $queries->paginateDraftedOrdersQuery($request)->apiPaginate();
+        $paginator = $request->transformSalesOrdersQuery($queries->paginateDraftedOrdersQuery($request))->apiPaginate();
 
         return SalesOrderDraft::collection($paginator);
     }

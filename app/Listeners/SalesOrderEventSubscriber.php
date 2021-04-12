@@ -25,7 +25,6 @@ class SalesOrderEventSubscriber
      */
     public function subscribe(EventDispatcher $events)
     {
-        /** @noinspection PhpParamsInspection */
         $events->listen(SalesOrderDrafted::class, [$this, 'handleDraftedEvent']);
     }
 

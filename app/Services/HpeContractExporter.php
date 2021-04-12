@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\File;
 use LynX39\LaraPdfMerger\PdfManage;
 use Smalot\PdfParser\Parser as PdfParser;
 use Spatie\PdfToText\Pdf as PdfToText;
+use iio\libmergepdf\Merger;
+use iio\libmergepdf\Pages;
 
 class HpeContractExporter implements HpeExporter
 {
@@ -63,18 +65,17 @@ class HpeContractExporter implements HpeExporter
             ->loadView($exportView, ['form' => $form->except('first_page', 'contract_summary'), 'data' => $data, 'orientation' => 'L'])
             ->save($landscapePages, true);
 
-        $pdfMerger = $this->pdfMerger()->init();
+        $merger = new Merger();
 
         $portraitPagesNumbers = $this->findFilledPages($portraitPages);
         $landscapePagesNumbers = $this->findFilledPages($landscapePages);
 
-        $pdfMerger->addPDF($portraitPages, implode(',', $portraitPagesNumbers), 'P');
-        $pdfMerger->addPDF($landscapePages, implode(',', $landscapePagesNumbers), 'L');
-        $pdfMerger->merge();
+        $merger->addFile($portraitPages, new Pages(implode(',', $portraitPagesNumbers)));
+        $merger->addFile($landscapePages, new Pages(implode(',', $landscapePagesNumbers)));
+
+        $content = $merger->merge();
 
         $filePath = 'hpe_contracts' . DIRECTORY_SEPARATOR .  static::makeDownloadFileName($data);
-
-        $content = $pdfMerger->save(null, 'string');
 
         File::put($tempDir->path($filePath), $content);
 

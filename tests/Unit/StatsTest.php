@@ -142,7 +142,7 @@ class StatsTest extends TestCase
      * @return void
      * @throws BindingResolutionException
      */
-    public function testCustomersSummary()
+    public function testAggregatesSummaryOfCustomers()
     {
         /** @var StatsAggregationService */
         $aggregator = $this->app->make(StatsAggregationService::class);
@@ -156,7 +156,9 @@ class StatsTest extends TestCase
 
         $customers = $aggregator->getCustomersSummary(new SummaryRequestData([
                 'country_id' => Country::query()->value('id'),
-                'entity_types' => $entityTypes
+                'entity_types' => $entityTypes,
+                'any_owner_entities' => true,
+                'acting_user_led_teams' => []
             ])
         );
 
@@ -170,7 +172,7 @@ class StatsTest extends TestCase
      * @return void
      * @throws BindingResolutionException
      */
-    public function testQuotesSummary()
+    public function testAggregatesSummaryOfQuotes()
     {
         /** @var StatsAggregationService */
         $aggregator = $this->app->make(StatsAggregationService::class);
@@ -187,7 +189,9 @@ class StatsTest extends TestCase
         /** @var Summary */
         $quotes = $aggregator->getQuotesSummary(new SummaryRequestData([
             'period' => $period,
-            'entity_types' => $entityTypes
+            'entity_types' => $entityTypes,
+            'any_owner_entities' => true,
+            'acting_user_led_teams' => []
         ]));
 
         $this->assertInstanceOf(Summary::class, $quotes);

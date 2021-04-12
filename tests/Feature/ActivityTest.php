@@ -6,14 +6,13 @@ use App\Models\Asset;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
 use Tests\TestCase;
-use Tests\Unit\Traits\{AssertsListing,};
 
 /**
  * @group build
  */
 class ActivityTest extends TestCase
 {
-    use AssertsListing, DatabaseTransactions;
+    use DatabaseTransactions;
 
     /**
      * Test Activity listing.
@@ -24,16 +23,63 @@ class ActivityTest extends TestCase
     {
         $this->authenticateApi();
 
-        $response = $this->postJson(url('api/activities'));
+        $this->postJson('api/activities')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'log_name',
+                        'description',
+                        'subject_id',
+                        'subject_name',
+                        'subject_type',
+                        'causer_name',
+                        'changes' => [
+                            'old' => [
+                                '*' => [
+                                    'attribute',
+                                    'value'
+                                ]
+                            ],
+                            'attributes' => [
+                                '*' => [
+                                    'attribute',
+                                    'value'
+                                ]
+                            ]
+                        ]
+                    ]
+                ],
+                'current_page',
+                'first_page_url',
+                'from',
+                'last_page',
+                'last_page_url',
+                'links' => [
+                    '*' => [
+                        'url', 'label', 'active'
+                    ]
+                ],
+                'next_page_url',
+                'path',
+                'per_page',
+                'prev_page_url',
+                'to',
+                'total',
+                'summary' => [
+                    '*' => [
+                        'type', 'count'
+                    ]
+                ]
+            ]);
 
-        $this->assertListing($response);
-
-        $response = $this->postJson(url('api/activities'), [
+        $this->postJson('api/activities', [
             'order_by_created' => 'asc',
             'search' => Str::random(10)
-        ]);
-
-        $this->assertListing($response);
+        ])
+            ->assertOk();
     }
 
     /**
@@ -47,14 +93,60 @@ class ActivityTest extends TestCase
 
         $types = config('activitylog.types');
 
-        collect($types)->each(function ($type) {
-            $response = $this->postJson(url('api/activities'), ['types' => [$type]]);
-            $this->assertListing($response);
-        });
+        foreach ($types as $type) {
+            $this->postJson(url('api/activities'), ['types' => [$type]])
+                ->assertOk()
+                ->assertJsonStructure([
+                    'data' => [
+                        '*' => [
+                            'id',
+                            'log_name',
+                            'description',
+                            'subject_id',
+                            'subject_name',
+                            'subject_type',
+                            'causer_name',
+                            'changes' => [
+                                'old' => [
+                                    '*' => [
+                                        'attribute',
+                                        'value'
+                                    ]
+                                ],
+                                'attributes' => [
+                                    '*' => [
+                                        'attribute',
+                                        'value'
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ],
+                    'current_page',
+                    'first_page_url',
+                    'from',
+                    'last_page',
+                    'last_page_url',
+                    'links' => [
+                        '*' => [
+                            'url', 'label', 'active'
+                        ]
+                    ],
+                    'next_page_url',
+                    'path',
+                    'per_page',
+                    'prev_page_url',
+                    'to',
+                    'total',
+                    'summary' => [
+                        '*' => [
+                            'type', 'count'
+                        ]
+                    ]
+                ]);
+        }
 
-        $response = $this->postJson(url('api/activities'), compact('types'));
-
-        $this->assertListing($response);
+        $this->postJson('api/activities', ['types' => $types]);
     }
 
     /**
@@ -66,15 +158,63 @@ class ActivityTest extends TestCase
     {
         $this->authenticateApi();
 
-        $subject_types = array_keys(config('activitylog.subject_types'));
+        $subjectTypes = array_keys(config('activitylog.subject_types'));
 
-        collect($subject_types)->each(function ($type) {
-            $response = $this->postJson(url('api/activities'), ['subject_types' => [$type]]);
-            $this->assertListing($response);
-        });
+        foreach ($subjectTypes as $type) {
+            $this->postJson('api/activities', ['subject_types' => [$type]])
+                ->assertOk()
+                ->assertJsonStructure([
+                    'data' => [
+                        '*' => [
+                            'id',
+                            'log_name',
+                            'description',
+                            'subject_id',
+                            'subject_name',
+                            'subject_type',
+                            'causer_name',
+                            'changes' => [
+                                'old' => [
+                                    '*' => [
+                                        'attribute',
+                                        'value'
+                                    ]
+                                ],
+                                'attributes' => [
+                                    '*' => [
+                                        'attribute',
+                                        'value'
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ],
+                    'current_page',
+                    'first_page_url',
+                    'from',
+                    'last_page',
+                    'last_page_url',
+                    'links' => [
+                        '*' => [
+                            'url', 'label', 'active'
+                        ]
+                    ],
+                    'next_page_url',
+                    'path',
+                    'per_page',
+                    'prev_page_url',
+                    'to',
+                    'total',
+                    'summary' => [
+                        '*' => [
+                            'type', 'count'
+                        ]
+                    ]
+                ]);
+        }
 
-        $response = $this->postJson(url('api/activities'), compact('subject_types'));
-        $this->assertListing($response);
+        $this->postJson('api/activities', ['subject_types' => $subjectTypes])
+            ->assertOk();
     }
 
     /**
@@ -86,10 +226,58 @@ class ActivityTest extends TestCase
     {
         $this->authenticateApi();
 
-        collect(config('activitylog.periods'))->each(function ($period) {
-            $response = $this->postJson(url('api/activities'), compact('period'));
-            $this->assertListing($response);
-        });
+        foreach (config('activitylog.periods') as $period) {
+            $this->postJson(url('api/activities'), ['period' => $period])
+                ->assertOk()
+                ->assertJsonStructure([
+                    'data' => [
+                        '*' => [
+                            'id',
+                            'log_name',
+                            'description',
+                            'subject_id',
+                            'subject_name',
+                            'subject_type',
+                            'causer_name',
+                            'changes' => [
+                                'old' => [
+                                    '*' => [
+                                        'attribute',
+                                        'value'
+                                    ]
+                                ],
+                                'attributes' => [
+                                    '*' => [
+                                        'attribute',
+                                        'value'
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ],
+                    'current_page',
+                    'first_page_url',
+                    'from',
+                    'last_page',
+                    'last_page_url',
+                    'links' => [
+                        '*' => [
+                            'url', 'label', 'active'
+                        ]
+                    ],
+                    'next_page_url',
+                    'path',
+                    'per_page',
+                    'prev_page_url',
+                    'to',
+                    'total',
+                    'summary' => [
+                        '*' => [
+                            'type', 'count'
+                        ]
+                    ]
+                ]);
+        }
     }
 
     /**
@@ -115,9 +303,17 @@ class ActivityTest extends TestCase
 
         activity()
             ->on($model)
+            ->withProperties([
+                'old' => [
+                    'product_no' => 'ABCD'
+                ],
+                'new' => [
+                    'product_no' => 'GHJK'
+                ]
+            ])
             ->log('updated');
 
-        $this->post(url('api/activities/export/pdf'))
+        $this->post('api/activities/export/pdf')
             ->assertOk()
             ->assertHeader('content-type', 'application/pdf');
     }
@@ -131,7 +327,31 @@ class ActivityTest extends TestCase
     {
         $this->authenticateApi();
 
-        $this->post(url('api/activities/export/csv'))
+        $this->app['db.connection']->table('activity_log')->delete();
+
+        $model = factory(Asset::class)->create();
+
+        activity()
+            ->on($model)
+            ->log('created');
+
+        activity()
+            ->on($model)
+            ->log('updated');
+
+        activity()
+            ->on($model)
+            ->withProperties([
+                'old' => [
+                    'product_no' => 'ABCD'
+                ],
+                'new' => [
+                    'product_no' => 'GHJK'
+                ]
+            ])
+            ->log('updated');
+
+        $this->post('api/activities/export/csv')
             ->assertOk()
             ->assertHeader('content-type', 'text/plain');
     }

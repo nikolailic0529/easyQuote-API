@@ -8,7 +8,7 @@ use App\DTO\ExchangeRate\ExchangeRateData;
 use App\Events\ExchangeRatesUpdated;
 use App\Models\Data\Currency;
 use App\Models\Data\ExchangeRate;
-use App\Services\Exceptions\FileNotFound;
+use App\Services\Exceptions\FileException;
 use Carbon\Carbon;
 use DateTimeInterface;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -38,13 +38,13 @@ abstract class ExchangeRateService implements ManagesExchangeRates
      * @param string $filepath
      * @param Carbon $date
      * @return bool
-     * @throws FileNotFound
+     * @throws FileException
      * @throws FileNotFoundException
      */
     public function updateRatesFromFile(string $filepath, Carbon $date): bool
     {
         if (!file_exists($filepath)) {
-            throw FileNotFound::filePath($filepath);
+            throw FileException::notFound($filepath);
         }
 
         $data = $this->parseRatesData(File::get($filepath, true), $date);

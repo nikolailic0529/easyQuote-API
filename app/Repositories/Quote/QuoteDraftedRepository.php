@@ -4,23 +4,14 @@ namespace App\Repositories\Quote;
 
 use App\Contracts\Repositories\Quote\QuoteDraftedRepositoryInterface;
 use App\Http\Resources\QuoteRepository\DraftedCollection;
-use App\Repositories\SearchableRepository;
-use Illuminate\Database\Eloquent\{
-    Model,
-    Builder,
-    Collection
-};
-use App\Models\{
-    Company,
-    User,
-    Quote\Quote,
-    Quote\QuoteVersion
-};
+use App\Models\{Company, Quote\Quote, Quote\QuoteVersion, User};
 use App\Models\QuoteFile\QuoteFile;
-use Illuminate\Database\Query\JoinClause;
-use Illuminate\Support\LazyCollection;
+use App\Repositories\SearchableRepository;
 use Carbon\CarbonInterval;
 use Closure;
+use Illuminate\Database\Eloquent\{Builder, Collection, Model};
+use Illuminate\Database\Query\JoinClause;
+use Illuminate\Support\LazyCollection;
 
 class QuoteDraftedRepository extends SearchableRepository implements QuoteDraftedRepositoryInterface
 {
@@ -60,12 +51,16 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
 
         return Quote::query()
             ->when(
-                /** If user is not super-admin we are retrieving the user's own quotes */
+            /** If user is not super-admin we are retrieving the user's own quotes */
                 $user->cant('view_quotes'),
-                fn (Builder $query) => $query->currentUser()
-                    /** Adding quotes that have been granted access to */
-                    ->orWhereIn('id', $user->getPermissionTargets('quotes.read'))
-                    ->orWhereIn('user_id', $user->getModulePermissionProviders('quotes.read'))
+                function (Builder $builder) use ($user) {
+                    $builder->where(function (Builder $builder) use ($user) {
+                        $builder->where('quotes.user_id', auth()->id())
+                            /** Adding quotes that have been granted access to */
+                            ->orWhereIn('quotes.id', $user->getPermissionTargets('quotes.read'))
+                            ->orWhereIn('quotes.user_id', $user->getModulePermissionProviders('quotes.read'));
+                    });
+                }
             )
             ->select(
                 'quotes.id',
@@ -99,10 +94,10 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
 
             ])
             ->with([
-                'versions' => fn ($query) => $query->select('id', 'quote_id', 'user_id', 'company_id', 'version_number', 'completeness', 'updated_at')
+                'versions' => fn($query) => $query->select('id', 'quote_id', 'user_id', 'company_id', 'version_number', 'completeness', 'updated_at')
                     ->addSelect(['user_fullname' => User::query()->select('user_fullname')->whereColumn('users.id', 'quote_versions.user_id')->limit(1)]),
 
-                'activeVersion' => fn ($query) => $query->select('id', 'quote_id', 'user_id', 'distributor_file_id', 'schedule_file_id', 'company_id', 'version_number', 'completeness', 'updated_at')
+                'activeVersion' => fn($query) => $query->select('id', 'quote_id', 'user_id', 'distributor_file_id', 'schedule_file_id', 'company_id', 'version_number', 'completeness', 'updated_at')
                     ->addSelect([
                         'company_name' => Company::query()->select('name')->whereColumn('companies.id', 'quote_versions.company_id')->limit(1),
                         'price_list_original_file_name' => QuoteFile::query()->select('original_file_name')->whereColumn('quote_files.id', 'quote_versions.distributor_file_id')->limit(1),
@@ -126,7 +121,7 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
         throw_unless(is_null($user) || is_string($user), new \InvalidArgumentException(INV_ARG_UPK_01));
 
         $query = $this->expiringQuery($interval)
-            ->when($user, fn ($query) => $query->where('quotes.user_id', $user))
+            ->when($user, fn($query) => $query->where('quotes.user_id', $user))
             ->with('customer');
 
         if ($scope instanceof Closure) {
@@ -142,8 +137,7 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
             ->drafted()
             ->whereHas(
                 'customer',
-                fn (Builder $query) =>
-                $query->whereNotNull('customers.valid_until')
+                fn(Builder $query) => $query->whereNotNull('customers.valid_until')
                     ->whereDate('customers.valid_until', '>', now())
                     ->whereRaw("datediff(`customers`.`valid_until`, now()) <= ?", [$interval->d])
             );
@@ -153,8 +147,8 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
     {
         return $this->quote->query()
             ->whereNull('submitted_at')
-            ->when($activated, fn ($q) => $q->whereNotNull('activated_at'))
-            ->whereHas('customer', fn ($q) => $q->where('rfq', $rfqNumber))
+            ->when($activated, fn($q) => $q->whereNotNull('activated_at'))
+            ->whereHas('customer', fn($q) => $q->where('rfq', $rfqNumber))
             ->exists();
     }
 

@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\System;
 
+use App\Models\System\Activity;
+use App\Services\Activity\ActivityDataMapper;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -68,5 +70,21 @@ class GetActivitiesRequest extends FormRequest
 
         $type = mb_strtolower($this->type);
         $this->merge(compact('type'));
+    }
+
+    public function getSubjectName(): ?string
+    {
+        return transform($this->route('subject'), function (string $subjectKey) {
+            /** @var Activity|null $activity */
+            $activity = Activity::query()->where('subject_id', $subjectKey)->first();
+
+            if (is_null($activity)) {
+                return null;
+            }
+
+            $dataMapper = $this->container[ActivityDataMapper::class];
+
+            return $dataMapper->resolveSubjectNameOfActivity($activity);
+        });
     }
 }

@@ -4,8 +4,7 @@ namespace App\Services;
 
 use App\Contracts\{Services\ManagesExchangeRates,
     Services\ProcessesWorldwideDistributionState,
-    Services\ProcessesWorldwideQuoteState
-};
+    Services\ProcessesWorldwideQuoteState};
 use App\DTO\QuoteStages\{AddressesContactsStage,
     ContractDetailsStage,
     ContractDiscountStage,
@@ -20,8 +19,7 @@ use App\DTO\QuoteStages\{AddressesContactsStage,
     PackDiscountStage,
     PackMarginTaxStage,
     ReviewStage,
-    SubmitStage
-};
+    SubmitStage};
 use App\DTO\WorldwideQuote\DistributionAddressData;
 use App\DTO\WorldwideQuote\DistributionContactData;
 use App\DTO\WorldwideQuote\DistributionImportData;
@@ -55,13 +53,22 @@ use App\Models\{Address,
     Contact,
     Data\Currency,
     Opportunity,
+    Quote\DistributionFieldColumn,
     Quote\WorldwideDistribution,
     Quote\WorldwideQuote,
-    Quote\WorldwideQuoteVersion
-};
+    Quote\WorldwideQuoteVersion,
+    QuoteFile\DistributionRowsGroup,
+    QuoteFile\ImportedRow,
+    QuoteFile\MappedRow,
+    QuoteFile\QuoteFile,
+    QuoteFile\ScheduleData,
+    User,
+    WorldwideQuoteAsset};
 use App\Services\Exceptions\ValidationException;
+use App\Services\WorldwideQuote\Models\ReplicatedVersionData;
+use App\Services\WorldwideQuote\WorldwideQuoteReplicator;
 use Illuminate\Contracts\{Bus\Dispatcher as BusDispatcher, Cache\LockProvider, Events\Dispatcher as EventDispatcher};
-use Illuminate\Database\{ConnectionInterface, Eloquent\Builder, Eloquent\Collection};
+use Illuminate\Database\{ConnectionInterface, Eloquent\Builder, Eloquent\Collection, Eloquent\Model};
 use Illuminate\Support\{Carbon, Facades\DB};
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -147,6 +154,12 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
                     if ($quote->contract_type_id === CT_PACK) {
                         $version->buy_price = $opportunity->purchase_price;
+
+                        if (!is_null($opportunity->purchase_price_currency_code)) {
+                            $version->quoteCurrency()->associate(
+                                Currency::query()->where('code', $opportunity->purchase_price_currency_code)->first()
+                            );
+                        }
                     }
                 });
 
@@ -163,8 +176,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                         return;
                     }
 
-                    // Populating the files from Opportunity Suppliers.
-
+                    // Populating the Distributor Quotes from Opportunity Suppliers.
                     foreach ($opportunitySuppliers as $supplier) {
                         $this->distributionProcessor->initializeDistribution($activeVersion, $supplier->getKey());
                     }
@@ -1145,13 +1157,29 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
     /**
      * @inheritDoc
      */
-    public function syncContractQuoteWithOpportunityData(WorldwideQuote $quote): void
+    public function syncQuoteWithOpportunityData(WorldwideQuote $quote): void
     {
-        if (!is_null($quote->opportunity->contract_type_id) && $quote->contract_type_id !== $quote->opportunity->contract_type_id) {
+        $opportunity = $quote->opportunity;
+        $activeVersion = $quote->activeVersion;
 
-            $quote->contract_type_id = $quote->opportunity->contract_type_id;
+        if (!is_null($opportunity->contract_type_id) && $quote->contract_type_id !== $opportunity->contract_type_id) {
+
+            $quote->contract_type_id = $opportunity->contract_type_id;
 
             $this->connection->transaction(fn() => $quote->save());
+        }
+
+        if ($quote->contract_type_id === CT_PACK && is_null($activeVersion->buy_price) && !is_null($opportunity->purchase_price)) {
+
+            $activeVersion->buy_price = $opportunity->purchase_price;
+
+            if (!is_null($opportunity->purchase_price_currency_code)) {
+                $activeVersion->quoteCurrency()->associate(
+                    Currency::query()->where('code', $opportunity->purchase_price_currency_code)->first()
+                );
+            }
+
+            $this->connection->transaction(fn() => $quote->activeVersion->save());
 
         }
 
@@ -1278,5 +1306,169 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         $this->eventDispatcher->dispatch(
             new WorldwideQuoteMarkedAsAlive($quote)
         );
+    }
+
+    /**
+     * @inheritDoc
+     * @throws \Throwable
+     */
+    public function processQuoteReplication(WorldwideQuote $quote, User $actingUser): WorldwideQuote
+    {
+        $replicatedVersionData = (new WorldwideQuoteReplicator())
+            ->getReplicatedVersionData($quote->activeVersion);
+
+        $replicatedVersion = tap($replicatedVersionData->getReplicatedVersion(), function (WorldwideQuoteVersion $version) use ($actingUser) {
+            $version->worldwideQuote()->disassociate();
+            $version->user()->associate($actingUser);
+            $version->user_version_sequence_number = 1;
+        });
+
+        $this->persistReplicatedVersionData($replicatedVersionData, $actingUser);
+
+        return tap(new WorldwideQuote(), function (WorldwideQuote $replicatedQuote) use ($quote, $replicatedVersion, $actingUser) {
+            $replicatedQuote->{$replicatedQuote->getKeyName()} = (string)Uuid::generate(4);
+            $replicatedQuote->contractType()->associate($quote->contract_type_id);
+            $replicatedQuote->opportunity()->associate($quote->opportunity_id);
+            $replicatedQuote->user()->associate($actingUser);
+            $this->assignNewQuoteNumber($replicatedQuote);
+            $replicatedQuote->activeVersion()->associate($replicatedVersion);
+            $replicatedVersion->worldwideQuote()->associate($replicatedQuote);
+            $replicatedQuote->submitted_at = null;
+
+            $replicatedVersion->unsetRelation('worldwideQuote');
+
+            $lock = $this->lockProvider->lock(
+                Lock::CREATE_WWQUOTE,
+                10
+            );
+
+            $lock->block(30, function () use ($replicatedVersion, $replicatedQuote) {
+
+                $this->connection->transaction(function () use ($replicatedVersion, $replicatedQuote) {
+                    $replicatedQuote->save();
+
+                    $replicatedVersion->save();
+                });
+
+            });
+        });
+    }
+
+    /**
+     * @param ReplicatedVersionData $replicatedVersionData
+     * @param User $actingUser
+     * @throws \Throwable
+     */
+    protected function persistReplicatedVersionData(ReplicatedVersionData $replicatedVersionData, User $actingUser): void
+    {
+        $version = $replicatedVersionData->getReplicatedVersion();
+        $replicatedPackAssets = $replicatedVersionData->getReplicatedPackAssets();
+        $replicatedDistributorQuotes = $replicatedVersionData->getReplicatedDistributorQuotes();
+
+        $version->worldwideQuote()->disassociate();
+        $version->user()->associate($actingUser);
+        $version->user_version_sequence_number = 1;
+
+        $distributorQuoteBatch = [];
+        $mappingBatch = [];
+        $distributorFileBatch = [];
+        $scheduleFileBatch = [];
+        $scheduleFileDataBatch = [];
+        $importedRowBatch = [];
+        $groupOfRowBatch = [];
+        $rowOfGroupBatch = [];
+        $mappedRowBatch = [];
+        $packAssetBatch = array_map(fn(WorldwideQuoteAsset $asset) => $asset->getAttributes(), $replicatedPackAssets);
+
+        foreach ($replicatedDistributorQuotes as $distributorQuoteData) {
+            $distributorQuoteBatch[] = $distributorQuoteData->getDistributorQuote()->getAttributes();
+
+            $distributorMapping = array_map(fn(DistributionFieldColumn $fieldColumn) => $fieldColumn->getAttributes(), $distributorQuoteData->getMapping());
+
+            $mappingBatch = array_merge($mappingBatch, $distributorMapping);
+
+            $importedRowBatch = array_merge($importedRowBatch, array_map(fn(ImportedRow $row) => $row->getAttributes(), $distributorQuoteData->getImportedRows()));
+
+            $distributorFile = $distributorQuoteData->getDistributorFile();
+
+            $mappedRowBatch = array_merge($mappedRowBatch, array_map(fn(MappedRow $row) => $row->getAttributes(), $distributorQuoteData->getMappedRows()));
+
+            $groupOfRowBatch = array_merge($groupOfRowBatch, array_map(fn(Model $model) => $model->getAttributes(), $distributorQuoteData->getRowsGroups()));
+
+            $rowOfGroupBatch = array_merge($rowOfGroupBatch, array_merge([], ...$distributorQuoteData->getGroupRows()));
+
+            if (!is_null($distributorFile)) {
+                $distributorFileBatch[] = $distributorFile->getAttributes();
+            }
+
+            $scheduleFile = $distributorQuoteData->getScheduleFile();
+
+            if (!is_null($scheduleFile)) {
+                $scheduleFileBatch[] = $scheduleFile->getAttributes();
+            }
+
+            $scheduleFileData = $distributorQuoteData->getScheduleData();
+
+            if (!is_null($scheduleFileData)) {
+                $scheduleFileDataBatch[] = $scheduleFileData->getAttributes();
+            }
+        }
+
+        $this->connection->transaction(function () use (
+            $distributorQuoteBatch,
+            $distributorFileBatch,
+            $mappingBatch,
+            $importedRowBatch,
+            $scheduleFileBatch,
+            $scheduleFileDataBatch,
+            $packAssetBatch,
+            $mappedRowBatch,
+            $groupOfRowBatch,
+            $rowOfGroupBatch,
+            $version
+        ) {
+            $version->save();
+
+            if (!empty($distributorFileBatch)) {
+                QuoteFile::query()->insert($distributorFileBatch);
+            }
+
+            if (!empty($scheduleFileBatch)) {
+                QuoteFile::query()->insert($scheduleFileBatch);
+            }
+
+            if (!empty($distributorQuoteBatch)) {
+                WorldwideDistribution::query()->insert($distributorQuoteBatch);
+            }
+
+            if (!empty($mappingBatch)) {
+                DistributionFieldColumn::query()->insert($mappingBatch);
+            }
+
+            if (!empty($importedRowBatch)) {
+                ImportedRow::query()->insert($importedRowBatch);
+            }
+
+            if (!empty($scheduleFileDataBatch)) {
+                ScheduleData::query()->insert($scheduleFileDataBatch);
+            }
+
+            if (!empty($packAssetBatch)) {
+                WorldwideQuoteAsset::query()->insert($packAssetBatch);
+            }
+
+            if (!empty($mappedRowBatch)) {
+                MappedRow::query()->insert($mappedRowBatch);
+            }
+
+            if (!empty($groupOfRowBatch)) {
+                DistributionRowsGroup::query()->insert($groupOfRowBatch);
+            }
+
+            if (!empty($rowOfGroupBatch)) {
+                $this->connection->table((new DistributionRowsGroup())->rows()->getTable())
+                    ->insert($rowOfGroupBatch);
+            }
+        });
     }
 }

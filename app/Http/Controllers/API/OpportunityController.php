@@ -4,8 +4,12 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Opportunities\BatchUpload;
-use App\Http\Requests\Opportunity\{BatchSave, CreateOpportunity, MarkOpportunityAsLost, UpdateOpportunity};
-use App\Http\Resources\Opportunity\CreatedOpportunity;
+use App\Http\Requests\Opportunity\{BatchSave,
+    CreateOpportunity,
+    MarkOpportunityAsLost,
+    PaginateOpportunities,
+    UpdateOpportunity};
+use App\Http\Resources\Opportunity\OpportunityWithIncludes;
 use App\Http\Resources\Opportunity\OpportunityList;
 use App\Models\Opportunity;
 use App\Queries\OpportunityQueries;
@@ -19,16 +23,16 @@ class OpportunityController extends Controller
     /**
      * Paginate existing opportunities with the status 'OK'.
      *
-     * @param Request $request
+     * @param PaginateOpportunities $request
      * @param OpportunityQueries $queries
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function paginateOpportunities(Request $request, OpportunityQueries $queries): AnonymousResourceCollection
+    public function paginateOpportunities(PaginateOpportunities $request, OpportunityQueries $queries): AnonymousResourceCollection
     {
         $this->authorize('viewAny', Opportunity::class);
 
-        $resource = $queries->paginateOkOpportunitiesQuery($request)->apiPaginate();
+        $resource = $request->transformOpportunitiesQuery($queries->paginateOkOpportunitiesQuery($request))->apiPaginate();
 
         return OpportunityList::collection($resource);
     }
@@ -36,16 +40,16 @@ class OpportunityController extends Controller
     /**
      * Paginate existing opportunities with the status 'LOST'.
      *
-     * @param Request $request
+     * @param PaginateOpportunities $request
      * @param OpportunityQueries $queries
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function paginateLostOpportunities(Request $request, OpportunityQueries $queries): AnonymousResourceCollection
+    public function paginateLostOpportunities(PaginateOpportunities $request, OpportunityQueries $queries): AnonymousResourceCollection
     {
         $this->authorize('viewAny', Opportunity::class);
 
-        $resource = $queries->paginateLostOpportunitiesQuery($request)->apiPaginate();
+        $resource = $request->transformOpportunitiesQuery($queries->paginateLostOpportunitiesQuery($request))->apiPaginate();
 
         return OpportunityList::collection($resource);
     }
@@ -62,7 +66,7 @@ class OpportunityController extends Controller
         $this->authorize('view', $opportunity);
 
         return response()->json(
-            CreatedOpportunity::make($opportunity),
+            OpportunityWithIncludes::make($opportunity),
             Response::HTTP_OK
         );
     }
@@ -86,7 +90,7 @@ class OpportunityController extends Controller
         );
 
         return response()->json(
-            CreatedOpportunity::make($resource),
+            OpportunityWithIncludes::make($resource),
             Response::HTTP_CREATED
         );
     }
@@ -153,7 +157,7 @@ class OpportunityController extends Controller
         );
 
         return response()->json(
-            CreatedOpportunity::make($resource),
+            OpportunityWithIncludes::make($resource),
             Response::HTTP_OK
         );
     }

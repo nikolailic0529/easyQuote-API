@@ -14,7 +14,9 @@ use GuzzleHttp\RequestOptions;
 use Illuminate\Config\Repository as Config;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Arr;
+use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Validator\Constraints;
 
 class AssetServiceLookupService
 {
@@ -54,6 +56,7 @@ class AssetServiceLookupService
             }
         }
 
+        $this->validateConfig();
 
         $warrantyRequests = [];
         $supportRequests = [];
@@ -195,6 +198,29 @@ class AssetServiceLookupService
         }
 
 
+    }
+
+    protected function validateConfig(): void
+    {
+        $baseUrl = $this->config->get('services.vs.url') ?? '';
+        $clientID = $this->config->get('services.vs.client_id') ?? '';
+        $clientSecret = $this->config->get('services.vs.client_secret') ?? '';
+
+        $constraints = new Constraints\Collection([
+            'VS_API_URL' => new Constraints\NotBlank(null, 'VS_API_URL is not defined.'),
+            'VS_API_CLIENT_ID' => new Constraints\NotBlank(null, 'VS_API_CLIENT_ID is not defined.'),
+            'VS_API_CLIENT_SECRET' => new Constraints\NotBlank(null, 'VS_API_CLIENT_SECRET is not defined.')
+        ]);
+
+        $violations = $this->validator->validate($payload = [
+            'VS_API_URL' => $baseUrl,
+            'VS_API_CLIENT_ID' => $clientID,
+            'VS_API_CLIENT_SECRET' => $clientSecret
+        ], $constraints);
+
+        if (count($violations)) {
+            throw new ValidationFailedException($payload, $violations);
+        }
     }
 
     protected function issueBearerToken(): string

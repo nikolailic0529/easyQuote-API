@@ -5,12 +5,14 @@ namespace App\Models;
 use App\Models\Data\Country;
 use App\Traits\Uuid;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * Class OpportunityTotal
  *
  * @property string|null $user_id
+ * @property string|null account_manager_id
  * @property string|null $opportunity_id
  * @property float|null $base_opportunity_amount
  * @property int|null $opportunity_status
@@ -25,5 +27,10 @@ class OpportunityTotal extends Model
     public function countries(): BelongsToMany
     {
         return $this->belongsToMany(Country::class);
+    }
+
+    public function opportunity(): BelongsTo
+    {
+        return $this->belongsTo(Opportunity::class);
     }
 }

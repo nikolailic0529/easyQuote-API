@@ -7,6 +7,14 @@ use App\Models\Quote\BaseQuote as Quote;
 use App\Traits\{Activity\LogsActivity, BelongsToCountry, Search\Searchable};
 use Illuminate\Database\Eloquent\Builder;
 
+/**
+ * @property mixed $vendor_id
+ * @property mixed $country_id
+ * @property mixed|null $quote_type
+ * @property mixed|null $is_fixed
+ * @property mixed|null $value
+ * @property mixed|null $method
+ */
 class CountryMargin extends Margin implements SearchableEntity
 {
     use BelongsToCountry, Searchable, LogsActivity;

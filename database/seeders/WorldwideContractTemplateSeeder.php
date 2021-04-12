@@ -23,7 +23,7 @@ class WorldwideContractTemplateSeeder extends Seeder
             foreach ($wwContractTemplates as $template) {
 
                 $connection->table('contract_templates')
-                    ->insertOrIgnore([
+                    ->upsert([
                         'id' => $template['id'],
                         'business_division_id' => $template['business_division_id'],
                         'contract_type_id' => $template['contract_type_id'],
@@ -37,6 +37,14 @@ class WorldwideContractTemplateSeeder extends Seeder
                         'created_at' => now(),
                         'updated_at' => now(),
                         'activated_at' => now()
+                    ], null, [
+                        'company_id' => $template['company_id'],
+                        'vendor_id' => $template['vendor_id'],
+                        'currency_id' => $template['currency_id'],
+                        'name' => $template['name'],
+                        'form_data' => $template['form_data'],
+                        'data_headers' => $template['data_headers'],
+                        'is_system' => true
                     ]);
 
                 foreach ($template['country_model_keys'] as $countryKey) {

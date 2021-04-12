@@ -3,7 +3,7 @@
 namespace App\Services\DocumentEngine;
 
 use App\Services\Dummy\Logger;
-use App\Services\Exceptions\FileNotFound;
+use App\Services\Exceptions\FileException;
 use Illuminate\Support\Facades\Http;
 use Psr\Log\LoggerInterface;
 
@@ -30,12 +30,12 @@ abstract class Client
 
     /**
      * @return array|mixed|null
-     * @throws FileNotFound
+     * @throws FileException
      */
     final public function process(): ?array
     {
         if (!file_exists($this->filePath)) {
-            throw FileNotFound::filePath($this->filePath);
+            throw FileException::notFound($this->filePath);
         }
 
         $response = Http::baseUrl($this->getBaseUrl())

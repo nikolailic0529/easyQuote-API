@@ -4,7 +4,7 @@ namespace App\Models\Quote;
 
 use App\Casts\GroupDescription;
 use App\Contracts\{ActivatableInterface, HasOrderedScope, SearchableEntity};
-use App\Models\{QuoteFile\ImportedRow, QuoteFile\QuoteFile, QuoteFile\ScheduleData};
+use App\Models\{QuoteFile\ImportedRow, QuoteFile\QuoteFile, QuoteFile\ScheduleData, Template\TemplateField};
 use App\Traits\{Activity\LogsActivity,
     Auth\Multitenantable,
     BelongsToCompany,
@@ -30,12 +30,16 @@ use App\Traits\{Activity\LogsActivity,
     Search\Searchable,
     Uuid
 };
-use Illuminate\Database\Eloquent\{Builder, Model, SoftDeletes};
+use Illuminate\Database\Eloquent\{Builder, Collection, Model, SoftDeletes};
 use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Tappable;
 
 /**
  * @property \Illuminate\Support\Collection $group_description
+ * @property mixed country_margin_id
+ * @property mixed vendor_id
+ * @property mixed country_id
+ * @property Collection<TemplateField>|TemplateField[] $templateFields
  */
 abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableInterface, SearchableEntity
 {

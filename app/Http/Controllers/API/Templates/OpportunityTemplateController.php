@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API\Templates;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\OpportunityTemplate\UpdateOpportunityTemplate;
+use App\Models\Opportunity;
 use App\Services\Opportunity\OpportunityTemplateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
@@ -19,7 +20,7 @@ class OpportunityTemplateController extends Controller
      */
     public function showOpportunityTemplate(OpportunityTemplateService $service): JsonResponse
     {
-        $this->authorize('view_opportunity_form_template');
+        $this->authorize('viewAny', Opportunity::class);
 
         return response()->json(
             $service->getOpportunityTemplateSchema(),

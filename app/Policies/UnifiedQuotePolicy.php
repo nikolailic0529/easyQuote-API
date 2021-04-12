@@ -15,7 +15,7 @@ class UnifiedQuotePolicy
             return true;
         }
 
-        if ($user->hasAnyPermission(['view_quotes', 'view_own_ww_quotes'])) {
+        if ($user->hasAnyPermission(['view_own_quotes', 'view_own_ww_quotes'])) {
             return true;
         }
     }

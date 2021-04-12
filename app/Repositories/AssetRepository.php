@@ -4,10 +4,8 @@ namespace App\Repositories;
 
 use App\Contracts\Repositories\AssetRepository as Contract;
 use App\Models\Asset;
-use App\Repositories\Exceptions\InvalidModel;
 use Illuminate\Database\{Eloquent\Builder, Eloquent\Model,};
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\DB;
 use Staudenmeir\EloquentHasManyDeep\HasOneDeep;
 
 class AssetRepository extends SearchableRepository implements Contract
@@ -33,47 +31,9 @@ class AssetRepository extends SearchableRepository implements Contract
         return $this->asset->query()->where($where)->doesntExist();
     }
 
-    public function findOrFail(string $id): Asset
-    {
-        return $this->asset->whereKey($id)->firstOrFail();
-    }
-
     public function paginate()
     {
         return parent::all();
-    }
-
-    public function create(array $attributes): Asset
-    {
-        return tap($this->asset->make($attributes))->saveOrFail();
-    }
-
-    public function update($asset, array $attributes): Asset
-    {
-        if (is_string($asset)) {
-            $asset = $this->findOrFail($asset);
-        }
-
-        if (!$asset instanceof Asset) {
-            throw InvalidModel::key(Asset::class, __METHOD__, $asset);
-        }
-
-        return DB::transaction(
-            fn() => tap($asset)->update($attributes)
-        );
-    }
-
-    public function delete($asset): bool
-    {
-        if (is_string($asset)) {
-            $asset = $this->findOrFail($asset);
-        }
-
-        if (!$asset instanceof Asset) {
-            throw InvalidModel::key(Asset::class, __METHOD__, $asset);
-        }
-
-        return $asset->delete();
     }
 
     protected function filterQueryThrough(): array

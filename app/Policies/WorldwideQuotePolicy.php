@@ -16,7 +16,7 @@ class WorldwideQuotePolicy
     /**
      * Determine whether the user can view any models.
      *
-     * @param  \App\Models\User  $user
+     * @param \App\Models\User $user
      * @return mixed|void
      */
     public function viewAny(User $user)
@@ -33,8 +33,8 @@ class WorldwideQuotePolicy
     /**
      * Determine whether the user can view the model.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Quote\WorldwideQuote  $worldwideQuote
+     * @param \App\Models\User $user
+     * @param \App\Models\Quote\WorldwideQuote $worldwideQuote
      * @return mixed|void
      */
     public function view(User $user, WorldwideQuote $worldwideQuote)
@@ -51,7 +51,7 @@ class WorldwideQuotePolicy
     /**
      * Determine whether the user can create models.
      *
-     * @param  \App\Models\User  $user
+     * @param \App\Models\User $user
      * @return mixed|void
      */
     public function create(User $user)
@@ -68,8 +68,8 @@ class WorldwideQuotePolicy
     /**
      * Determine whether the user can update the model.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Quote\WorldwideQuote  $worldwideQuote
+     * @param \App\Models\User $user
+     * @param \App\Models\Quote\WorldwideQuote $worldwideQuote
      * @return mixed|void
      */
     public function update(User $user, WorldwideQuote $worldwideQuote)
@@ -140,8 +140,8 @@ class WorldwideQuotePolicy
     /**
      * Determine whether the user can delete the model.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Quote\WorldwideQuote  $worldwideQuote
+     * @param \App\Models\User $user
+     * @param \App\Models\Quote\WorldwideQuote $worldwideQuote
      * @return mixed|void
      */
     public function delete(User $user, WorldwideQuote $worldwideQuote)
@@ -160,8 +160,8 @@ class WorldwideQuotePolicy
     /**
      * Determine whether the user can delete the model.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Quote\WorldwideQuote  $worldwideQuote
+     * @param \App\Models\User $user
+     * @param \App\Models\Quote\WorldwideQuote $worldwideQuote
      * @return mixed|void
      */
     public function export(User $user, WorldwideQuote $worldwideQuote)
@@ -192,8 +192,8 @@ class WorldwideQuotePolicy
     /**
      * Determine whether the user can unravel the model.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Quote\WorldwideQuote  $worldwideQuote
+     * @param \App\Models\User $user
+     * @param \App\Models\Quote\WorldwideQuote $worldwideQuote
      * @return mixed|void
      */
     public function unravel(User $user, WorldwideQuote $worldwideQuote)
@@ -206,6 +206,24 @@ class WorldwideQuotePolicy
 
         if ($user->can('update_own_ww_quotes') && $user->getKey() === $worldwideQuote->{$worldwideQuote->user()->getForeignKeyName()}) {
             return $this->ensureSalesOrderDoesNotExist($worldwideQuote, $salesOrderExistsMessage);
+        }
+    }
+
+    /**
+     * Determine whether the user can replicate the model.
+     *
+     * @param User $user
+     * @param WorldwideQuote $worldwideQuote
+     * @return mixed
+     */
+    public function replicate(User $user, WorldwideQuote $worldwideQuote)
+    {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if ($user->can('create_ww_quotes')) {
+            return true;
         }
     }
 

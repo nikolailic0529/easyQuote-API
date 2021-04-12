@@ -2,38 +2,29 @@
 
 namespace App\Events\Opportunity;
 
-use Illuminate\Broadcasting\Channel;
-use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use App\Contracts\WithOpportunityEntity;
+use App\Models\Opportunity;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class OpportunityMarkedAsNotLost
+class OpportunityMarkedAsNotLost implements WithOpportunityEntity
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable, SerializesModels;
 
-    private \App\Models\Opportunity $opportunity;
+    private Opportunity $opportunity;
 
     /**
      * Create a new event instance.
      *
-     * @param \App\Models\Opportunity $opportunity
+     * @param Opportunity $opportunity
      */
-    public function __construct(\App\Models\Opportunity $opportunity)
+    public function __construct(Opportunity $opportunity)
     {
-        //
         $this->opportunity = $opportunity;
     }
 
-    /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return \Illuminate\Broadcasting\Channel|array
-     */
-    public function broadcastOn()
+    public function getOpportunity(): Opportunity
     {
-        return new PrivateChannel('channel-name');
+        return $this->opportunity;
     }
 }

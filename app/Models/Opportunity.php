@@ -32,7 +32,9 @@ use Illuminate\Support\Carbon;
  * @property string|null $region_name
  *
  * @property string|null $opportunity_start_date
+ * @property bool|null $is_opportunity_start_date_assumed
  * @property string|null $opportunity_end_date
+ * @property bool|null $is_opportunity_end_date_assumed
  * @property string|null $opportunity_closing_date
  * @property string|null $customer_order_date
  * @property string|null $purchase_order_date
@@ -50,6 +52,10 @@ use Illuminate\Support\Carbon;
  * @property float|null $estimated_upsell_amount
  * @property string|null $estimated_upsell_amount_currency_code
  * @property float|null $margin_value
+ *
+ * @property float|null $base_opportunity_amount
+ * @property float|null $base_list_price
+ * @property float|null $base_purchase_price
  *
  * @property string|null $account_manager_name
  * @property string|null $service_level_agreement_id
@@ -84,7 +90,8 @@ use Illuminate\Support\Carbon;
  *
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property WorldwideQuote|null $worldwideQuote
+// * @property WorldwideQuote|null $worldwideQuote
+ * @property Collection<WorldwideQuote>|WorldwideQuote[] $worldwideQuotes
  */
 class Opportunity extends Model implements SearchableEntity
 {
@@ -122,9 +129,14 @@ class Opportunity extends Model implements SearchableEntity
         return $this->hasMany(OpportunitySupplier::class);
     }
 
-    public function worldwideQuote(): HasOne
+//    public function worldwideQuote(): HasOne
+//    {
+//        return $this->hasOne(WorldwideQuote::class);
+//    }
+
+    public function worldwideQuotes(): HasMany
     {
-        return $this->hasOne(WorldwideQuote::class);
+        return $this->hasMany(WorldwideQuote::class);
     }
 
     public function addresses(): BelongsToMany

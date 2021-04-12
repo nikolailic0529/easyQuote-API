@@ -44,6 +44,7 @@ class OpportunityQueries
         $query = $model->newQuery()
             ->select(
                 'opportunities.id',
+                'opportunities.user_id',
                 'companies.id as company_id',
                 'companies.name as account_name',
                 'contract_types.type_short_name as opportunity_type',
@@ -58,7 +59,7 @@ class OpportunityQueries
                 'opportunities.status_reason',
                 'opportunities.created_at'
             )
-            ->doesntHave('worldwideQuote')
+            ->doesntHave('worldwideQuotes')
             ->leftJoin('contract_types', function (JoinClause $join) {
                 $join->on('contract_types.id', 'opportunities.contract_type_id');
             })

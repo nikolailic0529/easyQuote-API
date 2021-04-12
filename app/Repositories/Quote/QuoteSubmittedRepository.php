@@ -70,10 +70,14 @@ class QuoteSubmittedRepository extends SearchableRepository implements QuoteSubm
             ->when(
                 /** If user is not super-admin we are retrieving the user's own quotes */
                 $user->cant('view_quotes'),
-                fn (Builder $query) => $query->currentUser()
-                    /** Adding quotes that have been granted access to */
-                    ->orWhereIn('id', $user->getPermissionTargets('quotes.read'))
-                    ->orWhereIn('user_id', $user->getModulePermissionProviders('quotes.read'))
+                function (Builder $builder) use ($user) {
+                    $builder->where(function (Builder $builder) use ($user) {
+                        $builder->where('quotes.user_id', auth()->id())
+                            /** Adding quotes that have been granted access to */
+                            ->orWhereIn('quotes.id', $user->getPermissionTargets('quotes.read'))
+                            ->orWhereIn('quotes.user_id', $user->getModulePermissionProviders('quotes.read'));
+                    });
+                }
             )
             ->join('customers', function (JoinClause $join) {
                 $join->on('customers.id', 'quotes.customer_id');

@@ -14,6 +14,18 @@ use Staudenmeir\EloquentHasManyDeep\HasOneDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 /**
+ * @property string|null $vendor_short_code
+ * @property string|null $unit_price
+ * @property string|null $base_warranty_start_date
+ * @property string|null $base_warranty_end_date
+ * @property string|null $active_warranty_start_date
+ * @property string|null $active_warranty_end_date
+ * @property string|null $item_number
+ * @property string|null $product_number
+ * @property string|null $serial_number
+ * @property string|null $product_description
+ * @property string|null $product_image
+ *
  * @property AssetCategory $assetCategory
  * @property Location $location
  */

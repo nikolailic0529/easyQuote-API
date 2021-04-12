@@ -59,7 +59,7 @@ class QuoteController extends Controller
     public function storeState(StoreQuoteStateRequest $request)
     {
         if ($request->has('quote_id')) {
-            $this->authorize('state', $request->quote());
+            $this->authorize('state', $request->getQuote());
         } else {
             $this->authorize('create', Quote::class);
         }

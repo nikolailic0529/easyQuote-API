@@ -84,9 +84,13 @@ final class UpdateOpportunityData extends DataTransferObject
      */
     public ?string $region_name;
 
-    public Carbon $opportunity_start_date;
+    public ?Carbon $opportunity_start_date;
 
-    public Carbon $opportunity_end_date;
+    public bool $is_opportunity_start_date_assumed = false;
+
+    public ?Carbon $opportunity_end_date;
+
+    public bool $is_opportunity_end_date_assumed = false;
 
     public Carbon $opportunity_closing_date;
 

@@ -24,7 +24,7 @@ interface QuoteState
      * @param StoreQuoteStateRequest $request
      * @return \App\Models\Quote\Quote
      */
-    public function storeState(StoreQuoteStateRequest $request);
+    public function storeState(StoreQuoteStateRequest $request): array;
 
     /**
      * Create a new Quote.
@@ -198,4 +198,11 @@ interface QuoteState
      * @return string
      */
     public function getQuotePermission(Quote $quote, array $permissions = ['*']): string;
+
+    /**
+     * Process quote unravel.
+     *
+     * @param Quote $quote
+     */
+    public function processQuoteUnravel(Quote $quote): void;
 }

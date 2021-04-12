@@ -20,9 +20,9 @@ use App\DTO\{Discounts\DistributionDiscountsCollection,
 use App\Enum\Lock;
 use App\Events\DistributionProcessed;
 use App\Models\{Address,
-    Company,
     Contact,
     Data\Country,
+    Data\Currency,
     OpportunitySupplier,
     Quote\DistributionFieldColumn,
     Quote\WorldwideDistribution,
@@ -136,6 +136,14 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
                 $distribution->country()->associate(
                     Country::query()->where('name', $supplier->country_name)->first()
                 );
+
+                $distribution->buy_price = $supplier->opportunity->purchase_price;
+
+                if (!is_null($supplier->opportunity->purchase_price_currency_code)) {
+                    $distribution->distributionCurrency()->associate(
+                        Currency::query()->where('code', $supplier->opportunity->purchase_price_currency_code)->first()
+                    );
+                }
             }
 
             $templateFields = TemplateField::query()
@@ -160,12 +168,47 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
 
         $opportunity = $supplier->opportunity;
 
-        $distributorQuote->country()->associate($supplier->country);
+        if (is_null($distributorQuote->country_id)) {
+            $distributorQuote->country()->associate($supplier->country);
+        }
+
+        if (is_null($distributorQuote->buy_price)) {
+            $distributorQuote->buy_price = $opportunity->purchase_price;
+
+            if (!is_null($opportunity->purchase_price_currency_code)) {
+                $distributorQuote->distributionCurrency()->associate(
+                    Currency::query()->where('code', $opportunity->purchase_price_currency_code)->first()
+                );
+            }
+        }
 
         $newAddressModelsOfDistributorQuote = [];
         $newContactModelsOfDistributorQuote = [];
         $newAddressPivotsOfDistributorQuote = [];
         $newContactPivotsOfDistributorQuote = [];
+
+        $addressToHash = static function (Address $address): string {
+            return md5(implode('~', [
+                $address->address_type,
+                $address->address_1,
+                $address->address_2,
+                $address->city,
+                $address->post_code,
+                $address->state,
+                $address->country_id
+            ]));
+        };
+
+        $contactToHash = static function (Contact $contact): string {
+            return md5(implode('~', [
+                $contact->first_name,
+                $contact->last_name,
+                $contact->email,
+                $contact->phone,
+                $contact->job_title,
+                $contact->is_verified
+            ]));
+        };
 
         /**
          * If primary account is present on opportunity entity,
@@ -192,9 +235,40 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
                 $relation->whereKeyNot($alreadyReplicatedContactKeys);
             }]);
 
-            [$newAddressModelsOfDistributorQuote, $newAddressPivotsOfDistributorQuote] = $this->replicateAddressModelsOfPrimaryAccount($opportunity->primaryAccount);
-            [$newContactModelsOfDistributorQuote, $newContactPivotsOfDistributorQuote] = $this->replicateContactModelsOfPrimaryAccount($opportunity->primaryAccount);
+            $existingAddressHashes = array_flip(array_map(fn(Address $address) => $addressToHash($address), $distributorQuote->addresses->all()));
+            $existingContactHashes = array_flip(array_map(fn(Contact $contact) => $contactToHash($contact), $distributorQuote->contacts->all()));
 
+
+            $newAddressModelsOfPrimaryAccount = value(function () use ($opportunity, $addressToHash, $existingAddressHashes) {
+                $newAddresses = [];
+
+                foreach ($opportunity->primaryAccount->addresses as $address) {
+                    $addressHash = $addressToHash($address);
+
+                    if (!isset($existingAddressHashes[$addressHash])) {
+                        $newAddresses[$addressHash] = $address;
+                    }
+                }
+
+                return $newAddresses;
+            });
+
+            $newContactModelsOfPrimaryAccount = value(function () use ($opportunity, $contactToHash, $existingContactHashes) {
+                $newContacts = [];
+
+                foreach ($opportunity->primaryAccount->contacts as $contact) {
+                    $contactHash = $contactToHash($contact);
+
+                    if (!isset($existingContactHashes[$contactHash])) {
+                        $newContacts[$contactHash] = $contact;
+                    }
+                }
+
+                return $newContacts;
+            });
+
+            [$newAddressModelsOfDistributorQuote, $newAddressPivotsOfDistributorQuote] = $this->replicateAddressModelsOfPrimaryAccount((new Collection($newAddressModelsOfPrimaryAccount)));
+            [$newContactModelsOfDistributorQuote, $newContactPivotsOfDistributorQuote] = $this->replicateContactModelsOfPrimaryAccount((new Collection($newContactModelsOfPrimaryAccount)));
         }
 
         $newAddressBatch = array_map(fn(Model $model) => $model->getAttributes(), $newAddressModelsOfDistributorQuote);
@@ -227,12 +301,12 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         );
     }
 
-    private function replicateAddressModelsOfPrimaryAccount(Company $primaryAccount): array
+    private function replicateAddressModelsOfPrimaryAccount(Collection $addressCollection): array
     {
         $newAddressModels = [];
         $newAddressPivots = [];
 
-        foreach ($primaryAccount->addresses as $address) {
+        foreach ($addressCollection as $address) {
             $newAddress = $address->replicate();
             $newAddress->{$newAddress->getKeyName()} = (string)Uuid::generate(4);
             $newAddress->{$newAddress->getCreatedAtColumn()} = $newAddress->freshTimestampString();
@@ -245,12 +319,12 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         return [$newAddressModels, $newAddressPivots];
     }
 
-    private function replicateContactModelsOfPrimaryAccount(Company $primaryAccount): array
+    private function replicateContactModelsOfPrimaryAccount(Collection $contactCollection): array
     {
         $newContactModels = [];
         $newContactPivots = [];
 
-        foreach ($primaryAccount->contacts as $contact) {
+        foreach ($contactCollection as $contact) {
             $newContact = $contact->replicate();
             $newContact->{$newContact->getKeyName()} = (string)Uuid::generate(4);
             $newContact->{$newContact->getCreatedAtColumn()} = $newContact->freshTimestampString();
@@ -873,17 +947,31 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
                     ]
                 )->all();
 
-                with($model->templateFields()->syncWithoutDetaching($modelMapping), function (array $changes) use ($model, $distributionMapping) {
+                if ($model->templateFields()->doesntExist()) {
+                    $model->templateFields()->sync(
+                        TemplateField::query()
+                            ->where('is_system', true)
+                            ->whereIn('name', $this->config->get('quote-mapping.worldwide_quote.fields', []))
+                            ->pluck('id')
+                    );
+                }
+
+                $originalModelMapping = DistributionFieldColumn::query()->where('worldwide_distribution_id', $model->getKey())->get();
+
+                with($model->templateFields()->syncWithoutDetaching($modelMapping), function (array $changes) use ($model, $distributionMapping, $originalModelMapping) {
                     if (is_null($model->distributorFile)) {
                         return;
                     }
 
+                    $newModelMapping = DistributionFieldColumn::query()->where('worldwide_distribution_id', $model->getKey())->get();
+
+                    $mappingChanges = $this->compareOriginalMappingWithNew($originalModelMapping, $newModelMapping);
+
+                    $columnChangesOfMapping = array_values(array_filter(Arr::pluck($mappingChanges, 'importable_column_id')));
+
                     // Perform imported rows mapping only when any mapping field is changed
                     // or the mapped rows are not created for the distribution yet.
-                    if (
-                        empty($changes['attached']) && empty($changes['detached']) && empty($changes['updated'])
-                        && $model->mappedRows()->exists()
-                    ) {
+                    if (empty($columnChangesOfMapping) && $model->mappedRows()->exists()) {
                         return;
                     }
 
@@ -903,6 +991,48 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
                 $lock->release();
             }
         }
+    }
+
+    private function compareOriginalMappingWithNew(Collection $originalMapping, Collection $newMapping): array
+    {
+        $changes = [];
+
+        $originalMappingDictionary = $originalMapping->keyBy('template_field_id')->all();
+        $newMappingDictionary = $newMapping->keyBy('template_field_id')->all();
+
+        $pairIterator = function (array $originalMappingDictionary, array $newMappingDictionary): \Generator {
+            foreach ($originalMappingDictionary as $key => $value) {
+                yield $key => [$value, $newMappingDictionary[$key]];
+            }
+        };
+
+        $comparingAttributes = [
+            'importable_column_id',
+            'is_default_enabled',
+            'is_preview_visible',
+            'is_editable',
+            'sort'
+        ];
+
+        foreach ($pairIterator($originalMappingDictionary, $newMappingDictionary) as $key => $pair) {
+            /** @var DistributionFieldColumn $originalColumnMapping */
+            /** @var DistributionFieldColumn $newColumnMapping */
+
+            [$originalColumnMapping, $newColumnMapping] = $pair;
+
+            foreach ($comparingAttributes as $attribute) {
+
+                if ($originalColumnMapping->{$attribute} <> $newColumnMapping->{$attribute}) {
+                    $changes[$key][$attribute] = [
+                        'original' => $originalColumnMapping->{$attribute},
+                        'new' => $newColumnMapping->{$attribute}
+                    ];
+                }
+
+            }
+        }
+
+        return $changes;
     }
 
     public function updateRowsSelection(WorldwideQuoteVersion $quote, SelectedDistributionRowsCollection $collection)

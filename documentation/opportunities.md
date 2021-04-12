@@ -230,7 +230,9 @@
         "renewal_month"                         : {integer_between_1-12}
         "renewal_year"                          : {positive_integer}
         "opportunity_start_date"                : {y-m-d}
+        "is_opportunity_start_date_assumed"     : {boolean}
         "opportunity_end_date"                  : {y-m-d}
+        "is_opportunity_end_date_assumed"       : {boolean}
         "opportunity_closing_date"              : {y-m-d}
         "expected_order_date"                   : {y-m-d}
         "customer_order_date"                   : {y-m-d}
@@ -384,7 +386,9 @@
         "renewal_month"                         : {integer_between_1-12}
         "renewal_year"                          : {positive_integer}
         "opportunity_start_date"                : {y-m-d}
+        "is_opportunity_start_date_assumed"     : {boolean}
         "opportunity_end_date"                  : {y-m-d}
+        "is_opportunity_end_date_assumed"       : {boolean}
         "opportunity_closing_date"              : {y-m-d}
         "expected_order_date"                   : {y-m-d}
         "customer_order_date"                   : {y-m-d}
