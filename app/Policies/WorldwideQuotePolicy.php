@@ -31,6 +31,19 @@ class WorldwideQuotePolicy
     }
 
     /**
+     * Determine whether the user can view models of any owner.
+     *
+     * @param \App\Models\User $user
+     * @return mixed
+     */
+    public function viewAnyOwnerEntities(User $user)
+    {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+    }
+
+    /**
      * Determine whether the user can view the model.
      *
      * @param \App\Models\User $user

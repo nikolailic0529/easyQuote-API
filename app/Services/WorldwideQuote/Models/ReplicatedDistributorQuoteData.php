@@ -14,6 +14,10 @@ final class ReplicatedDistributorQuoteData
 {
     protected WorldwideDistribution $distributorQuote;
 
+    protected ReplicatedAddressesData $replicatedAddressesData;
+
+    protected ReplicatedContactsData $replicatedContactsData;
+
     protected array $mapping;
 
     protected array $rowsGroups;
@@ -43,6 +47,8 @@ final class ReplicatedDistributorQuoteData
      * @param ScheduleData|null $scheduleData
      */
     public function __construct(WorldwideDistribution $distributorQuote,
+                                ReplicatedAddressesData $replicatedAddressesData,
+                                ReplicatedContactsData $replicatedContactsData,
                                 array $mapping,
                                 array $rowsGroups,
                                 array $groupRows,
@@ -53,6 +59,9 @@ final class ReplicatedDistributorQuoteData
                                 ?ScheduleData $scheduleData)
     {
         $this->distributorQuote = $distributorQuote;
+
+        $this->replicatedAddressesData = $replicatedAddressesData;
+        $this->replicatedContactsData = $replicatedContactsData;
         $this->mapping = $mapping;
         $this->rowsGroups = $rowsGroups;
         $this->groupRows = $groupRows;
@@ -69,6 +78,22 @@ final class ReplicatedDistributorQuoteData
     public function getDistributorQuote(): WorldwideDistribution
     {
         return $this->distributorQuote;
+    }
+
+    /**
+     * @return \App\Services\WorldwideQuote\Models\ReplicatedAddressesData
+     */
+    public function getReplicatedAddressesData(): ReplicatedAddressesData
+    {
+        return $this->replicatedAddressesData;
+    }
+
+    /**
+     * @return \App\Services\WorldwideQuote\Models\ReplicatedContactsData
+     */
+    public function getReplicatedContactsData(): ReplicatedContactsData
+    {
+        return $this->replicatedContactsData;
     }
 
     /**

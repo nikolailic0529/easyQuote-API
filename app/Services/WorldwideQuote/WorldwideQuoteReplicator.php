@@ -2,6 +2,7 @@
 
 namespace App\Services\WorldwideQuote;
 
+use App\Models\Address;
 use App\Models\Quote\DistributionFieldColumn;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuoteVersion;
@@ -10,6 +11,8 @@ use App\Models\QuoteFile\ImportedRow;
 use App\Models\QuoteFile\MappedRow;
 use App\Models\QuoteFile\QuoteFile;
 use App\Models\WorldwideQuoteAsset;
+use App\Services\WorldwideQuote\Models\ReplicatedAddressesData;
+use App\Services\WorldwideQuote\Models\ReplicatedContactsData;
 use App\Services\WorldwideQuote\Models\ReplicatedDistributorQuoteData;
 use App\Services\WorldwideQuote\Models\ReplicatedVersionData;
 use Illuminate\Database\Eloquent\Collection;
@@ -192,8 +195,13 @@ class WorldwideQuoteReplicator
                 }, $quoteFile->rowsData->all());
             }) ?? [];
 
+        $replicatedAddresses = $this->replicateAddressModelsOfDistributorQuote($distributorQuote, $replicatedDistributorQuote);
+        $replicatedContacts = $this->replicateContactModelsOfDistributorQuote($distributorQuote, $replicatedDistributorQuote);
+
         return new ReplicatedDistributorQuoteData(
             $replicatedDistributorQuote,
+            $replicatedAddresses,
+            $replicatedContacts,
             $replicatedMapping,
             $replicatedRowsGroups,
             $groupRows,
@@ -203,5 +211,51 @@ class WorldwideQuoteReplicator
             $replicatedScheduleFile,
             $replicatedScheduleFileData
         );
+    }
+
+    private function replicateAddressModelsOfDistributorQuote(WorldwideDistribution $originalDistributorQuote, WorldwideDistribution $replicatedDistributorQuote): ReplicatedAddressesData
+    {
+        $newAddressModels = [];
+        $newAddressPivots = [];
+
+        foreach ($originalDistributorQuote->addresses as $address) {
+            $newAddress = $address->replicate();
+            $newAddress->{$newAddress->getKeyName()} = (string)Uuid::generate(4);
+            $newAddress->{$newAddress->getCreatedAtColumn()} = $newAddress->freshTimestampString();
+            $newAddress->{$newAddress->getUpdatedAtColumn()} = $newAddress->freshTimestampString();
+
+            $newAddressModels[] = $newAddress;
+            $newAddressPivots[] = [
+                'address_id' => $newAddress->getKey(),
+                'replicated_address_id' => $address->getKey(),
+                'worldwide_distribution_id' => $replicatedDistributorQuote->getKey(),
+                'is_default' => $address->pivot->is_default
+            ];
+        }
+
+        return new ReplicatedAddressesData($newAddressModels, $newAddressPivots);
+    }
+
+    private function replicateContactModelsOfDistributorQuote(WorldwideDistribution $originalDistributorQuote, WorldwideDistribution $replicatedDistributorQuote): ReplicatedContactsData
+    {
+        $newContactModels = [];
+        $newContactPivots = [];
+
+        foreach ($originalDistributorQuote->contacts as $contact) {
+            $newContact = $contact->replicate();
+            $newContact->{$newContact->getKeyName()} = (string)Uuid::generate(4);
+            $newContact->{$newContact->getCreatedAtColumn()} = $newContact->freshTimestampString();
+            $newContact->{$newContact->getUpdatedAtColumn()} = $newContact->freshTimestampString();
+
+            $newContactModels[] = $newContact;
+            $newContactPivots[] = [
+                'contact_id' => $newContact->getKey(),
+                'replicated_contact_id' => $contact->getKey(),
+                'worldwide_distribution_id' => $replicatedDistributorQuote->getKey(),
+                'is_default' => $contact->pivot->is_default
+            ];
+        }
+
+        return new ReplicatedContactsData($newContactModels, $newContactPivots);
     }
 }

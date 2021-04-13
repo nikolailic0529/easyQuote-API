@@ -2,7 +2,9 @@
 
 namespace App\Services\WorldwideQuote;
 
-use App\Models\{Quote\DistributionFieldColumn,
+use App\Models\{Address,
+    Contact,
+    Quote\DistributionFieldColumn,
     Quote\WorldwideDistribution,
     Quote\WorldwideQuote,
     Quote\WorldwideQuoteVersion,
@@ -96,6 +98,10 @@ class WorldwideQuoteVersionGuard
         $version->user_version_sequence_number = $this->resolveNewVersionNumberForActingUser();
 
         $distributorQuoteBatch = [];
+        $addressDataBatch = [];
+        $addressPivotBatch = [];
+        $contactDataBatch = [];
+        $contactPivotBatch = [];
         $mappingBatch = [];
         $distributorFileBatch = [];
         $scheduleFileBatch = [];
@@ -108,6 +114,13 @@ class WorldwideQuoteVersionGuard
 
         foreach ($replicatedDistributorQuotes as $distributorQuoteData) {
             $distributorQuoteBatch[] = $distributorQuoteData->getDistributorQuote()->getAttributes();
+
+            $addressDataBatch = array_merge($addressDataBatch, array_map(fn(Address $address) => $address->getAttributes(), $distributorQuoteData->getReplicatedAddressesData()->getAddressModels()));
+            $addressPivotBatch = array_merge($addressPivotBatch, $distributorQuoteData->getReplicatedAddressesData()->getAddressPivots());
+
+            $contactDataBatch = array_merge($contactDataBatch, array_map(fn(Contact $contact) => $contact->getAttributes(), $distributorQuoteData->getReplicatedContactsData()->getContactModels()));
+            $contactPivotBatch = array_merge($contactPivotBatch, $distributorQuoteData->getReplicatedContactsData()->getContactPivots());
+
 
             $distributorMapping = array_map(fn(DistributionFieldColumn $fieldColumn) => $fieldColumn->getAttributes(), $distributorQuoteData->getMapping());
 
@@ -144,6 +157,10 @@ class WorldwideQuoteVersionGuard
 
         $connection->transaction(function () use (
             $distributorQuoteBatch,
+            $addressDataBatch,
+            $addressPivotBatch,
+            $contactDataBatch,
+            $contactPivotBatch,
             $distributorFileBatch,
             $mappingBatch,
             $importedRowBatch,
@@ -168,6 +185,24 @@ class WorldwideQuoteVersionGuard
 
             if (!empty($distributorQuoteBatch)) {
                 WorldwideDistribution::query()->insert($distributorQuoteBatch);
+            }
+
+            if (!empty($addressDataBatch)) {
+                Address::query()->insert($addressDataBatch);
+            }
+
+            if (!empty($addressPivotBatch)) {
+                $connection->table((new WorldwideDistribution())->addresses()->getTable())
+                    ->insert($addressPivotBatch);
+            }
+
+            if (!empty($contactDataBatch)) {
+                Contact::query()->insert($contactDataBatch);
+            }
+
+            if (!empty($contactPivotBatch)) {
+                $connection->table((new WorldwideDistribution())->contacts()->getTable())
+                    ->insert($contactPivotBatch);
             }
 
             if (!empty($mappingBatch)) {

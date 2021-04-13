@@ -15,8 +15,10 @@ use App\Models\Quote\Discount\PromotionalDiscount;
 use App\Models\Quote\Discount\SND;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\Quote\WorldwideQuoteVersion;
+use App\Models\Role;
 use App\Models\Template\ContractTemplate;
 use App\Models\Template\QuoteTemplate;
+use App\Models\User;
 use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
 use Faker\Generator;
@@ -186,6 +188,108 @@ class WorldwidePackQuoteTest extends TestCase
 //        $this->getJson('api/ww-quotes/submitted?order_by_support_start_date=asc')->assertOk();
 //        $this->getJson('api/ww-quotes/submitted?order_by_support_end_date=asc')->assertOk();
 //        $this->getJson('api/ww-quotes/submitted?order_by_created_at=asc')->assertOk();
+    }
+
+    /**
+     * Test an ability to view own paginated drafted worldwide pack quotes.
+     *
+     * @return void
+     */
+    public function testCanViewOwnPaginatedDraftedWorldwidePackQuotes()
+    {
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions('view_own_ww_quotes');
+
+        /** @var User $user */
+        $user = factory(User::class)->create();
+
+        $user->syncRoles($role);
+
+        // Own WorldwideQuote entity.
+        $quote = factory(WorldwideQuote::class)->create([
+            'user_id' => $user->getKey(),
+            'contract_type_id' => CT_PACK,
+            'submitted_at' => null
+        ]);
+
+        // WorldwideQuote entity own by another user.
+        factory(WorldwideQuote::class)->create([
+            'contract_type_id' => CT_PACK,
+            'submitted_at' => null
+        ]);
+
+        $this->actingAs($user, 'api');
+
+        $response = $this->getJson('api/ww-quotes/drafted')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id'
+                    ]
+                ]
+            ]);
+
+        $this->assertNotEmpty($response->json('data'));
+
+        foreach ($response->json('data.*.user_id') as $ownerUserKey) {
+            $this->assertSame($user->getKey(), $ownerUserKey);
+        }
+    }
+
+    /**
+     * Test an ability to view own paginated submitted worldwide pack quotes.
+     *
+     * @return void
+     */
+    public function testCanViewOwnPaginatedSubmittedWorldwidePackQuotes()
+    {
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions('view_own_ww_quotes');
+
+        /** @var User $user */
+        $user = factory(User::class)->create();
+
+        $user->syncRoles($role);
+
+        // Own WorldwideQuote entity.
+        $quote = factory(WorldwideQuote::class)->create([
+            'user_id' => $user->getKey(),
+            'contract_type_id' => CT_PACK,
+            'submitted_at' => now()
+        ]);
+
+        // WorldwideQuote entity own by another user.
+        factory(WorldwideQuote::class)->create([
+            'contract_type_id' => CT_PACK,
+            'submitted_at' => now()
+        ]);
+
+        $this->actingAs($user, 'api');
+
+        $response = $this->getJson('api/ww-quotes/submitted')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id'
+                    ]
+                ]
+            ]);
+
+        $this->assertNotEmpty($response->json('data'));
+
+        foreach ($response->json('data.*.user_id') as $ownerUserKey) {
+            $this->assertSame($user->getKey(), $ownerUserKey);
+        }
     }
 
     /**

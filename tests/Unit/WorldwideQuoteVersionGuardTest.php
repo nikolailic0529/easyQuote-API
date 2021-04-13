@@ -2,6 +2,8 @@
 
 namespace Tests\Unit;
 
+use App\Models\Address;
+use App\Models\Contact;
 use App\Models\Opportunity;
 use App\Models\OpportunitySupplier;
 use App\Models\Quote\WorldwideDistribution;
@@ -66,13 +68,27 @@ class WorldwideQuoteVersionGuardTest extends TestCase
             'schedule_file_id' => $scheduleFile->getKey(),
         ]);
 
+        $distributorQuoteAddresses = factory(Address::class, 2)->create();
+        $distributorQuoteContacts = factory(Contact::class, 2)->create();
+
+        $distributorQuoteAddressDictionary = $distributorQuoteAddresses->getDictionary();
+        $distributorQuoteContactDictionary = $distributorQuoteContacts->getDictionary();
+
+        $distributorQuote->addresses()->sync($distributorQuoteAddresses);
+        $distributorQuote->contacts()->sync($distributorQuoteContacts);
+
         /** @var User $actingUser */
         $actingUser = factory(User::class)->create();
 
         $versionGuard = new WorldwideQuoteVersionGuard($quote, $actingUser);
 
-        /** @var WorldwideQuoteVersion $newVersion */
         $newVersion = $versionGuard->resolveModelForActingUser();
+
+        $this->assertDatabaseHas('worldwide_quotes', [
+            'id' => $quote->getKey(),
+            'active_version_id' => $newVersion->getKey(),
+            'deleted_at' => null
+        ]);
 
         $this->assertInstanceOf(WorldwideQuoteVersion::class, $newVersion);
 
@@ -99,10 +115,16 @@ class WorldwideQuoteVersionGuardTest extends TestCase
             $this->assertArrayNotHasKey($row->getKey(), $mappedRowDictionary);
         }
 
-        $this->assertDatabaseHas('worldwide_quotes', [
-            'id' => $quote->getKey(),
-            'active_version_id' => $newVersion->getKey(),
-            'deleted_at' => null
-        ]);
+        foreach ($newDistributorQuote->addresses as $address) {
+            $this->assertArrayHasKey($address->pivot->replicated_address_id, $distributorQuoteAddressDictionary);
+
+            $this->assertArrayNotHasKey($address->getKey(), $distributorQuoteAddressDictionary);
+        }
+
+        foreach ($newDistributorQuote->contacts as $contact) {
+            $this->assertArrayHasKey($contact->pivot->replicated_contact_id, $distributorQuoteContactDictionary);
+
+            $this->assertArrayNotHasKey($contact->getKey(), $distributorQuoteContactDictionary);
+        }
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API\WorldwideQuotes;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\WorldwideQuote\PaginateWorldwideQuotes;
 use App\Http\Resources\WorldwideQuote\WorldwideQuoteDraft;
 use App\Models\Quote\WorldwideQuote;
 use App\Queries\WorldwideQuoteQueries;
@@ -15,16 +16,16 @@ class WorldwideQuoteDraftedController extends Controller
     /**
      * Display a listing of the existing alive drafted quotes.
      *
-     * @param Request $request
+     * @param \App\Http\Requests\WorldwideQuote\PaginateWorldwideQuotes $request
      * @param WorldwideQuoteQueries $queries
      * @return AnonymousResourceCollection
-     * @throws AuthorizationException
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function __invoke(Request $request, WorldwideQuoteQueries $queries): AnonymousResourceCollection
+    public function __invoke(PaginateWorldwideQuotes $request, WorldwideQuoteQueries $queries): AnonymousResourceCollection
     {
         $this->authorize('viewAny', WorldwideQuote::class);
 
-        $pagination = $queries->aliveDraftedListingQuery($request)->apiPaginate();
+        $pagination = $request->transformWorldwideQuotesQuery($queries->aliveDraftedListingQuery($request))->apiPaginate();
 
         return tap(WorldwideQuoteDraft::collection($pagination), function (AnonymousResourceCollection $resourceCollection) use ($pagination) {
             $resourceCollection->additional([
@@ -42,16 +43,16 @@ class WorldwideQuoteDraftedController extends Controller
     /**
      * Display a listing of the existing dead drafted quotes.
      *
-     * @param Request $request
+     * @param PaginateWorldwideQuotes $request
      * @param WorldwideQuoteQueries $queries
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function paginateDeadDraftedQuotes(Request $request, WorldwideQuoteQueries $queries): AnonymousResourceCollection
+    public function paginateDeadDraftedQuotes(PaginateWorldwideQuotes $request, WorldwideQuoteQueries $queries): AnonymousResourceCollection
     {
         $this->authorize('viewAny', WorldwideQuote::class);
 
-        $pagination = $queries->deadDraftedListingQuery($request)->apiPaginate();
+        $pagination = $request->transformWorldwideQuotesQuery($queries->deadDraftedListingQuery($request))->apiPaginate();
 
         return WorldwideQuoteDraft::collection($pagination);
     }
