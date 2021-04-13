@@ -82,6 +82,7 @@ class SalesOrderDataMapper
             $priceSummary = $this->quoteCalc->calculatePriceSummaryOfQuote($salesOrder->worldwideQuote);
 
             $quotePriceData->total_price_value = $priceSummary->total_price;
+            $quotePriceData->total_price_value_after_margin = $priceSummary->total_price_after_margin;
             $quotePriceData->final_total_price_value = $priceSummary->final_total_price;
             $quotePriceData->final_total_price_value_excluding_tax = $priceSummary->final_total_price_excluding_tax;
             $quotePriceData->applicable_discounts_value = $priceSummary->applicable_discounts_value;

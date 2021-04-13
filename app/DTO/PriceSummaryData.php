@@ -9,6 +9,8 @@ final class PriceSummaryData extends DataTransferObject
 {
     public float $total_price;
 
+    public float $total_price_after_margin;
+
     public float $buy_price;
 
     public float $final_total_price = 0.0;

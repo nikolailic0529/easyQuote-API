@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\API\Templates;
 
 use App\Http\Controllers\Controller;
+use App\Models\Quote\WorldwideQuote;
+use App\Models\SalesOrder;
 use App\Http\Requests\QuoteTemplate\{DeleteTemplate,
     FilterQuoteTemplatesByCompany,
     FilterQuoteTemplatesByMultipleVendors,
@@ -92,7 +94,7 @@ class QuoteTemplateController extends Controller
      */
     public function filterWorldwideTemplates(FilterQuoteTemplatesByMultipleVendors $request, QuoteTemplateQueries $queries): JsonResponse
     {
-        $this->authorize('viewAny', QuoteTemplate::class);
+        $this->authorize('viewAny', WorldwideQuote::class);
 
         return response()->json(
             $queries->filterWorldwideQuoteTemplatesByMultipleVendorsQuery(
@@ -113,7 +115,7 @@ class QuoteTemplateController extends Controller
      */
     public function filterWorldwidePackTemplates(FilterQuoteTemplatesByCompany $request, QuoteTemplateQueries $queries): JsonResponse
     {
-        $this->authorize('viewAny', QuoteTemplate::class);
+        $this->authorize('viewAny', WorldwideQuote::class);
 
         return response()->json(
             $queries->filterWorldwidePackQuoteTemplatesByCompanyQuery(
@@ -132,7 +134,7 @@ class QuoteTemplateController extends Controller
      */
     public function filterWorldwideContractTemplates(FilterQuoteTemplatesByMultipleVendors $request, QuoteTemplateQueries $queries): JsonResponse
     {
-        $this->authorize('viewAny', QuoteTemplate::class);
+        $this->authorize('viewAny', WorldwideQuote::class);
 
         return response()->json(
             $queries->filterWorldwideContractQuoteTemplatesByMultipleVendorsQuery(

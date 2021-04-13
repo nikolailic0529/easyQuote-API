@@ -2,7 +2,6 @@
 
 namespace App\Services\Opportunity;
 
-use App\Services\ExchangeRate\CurrencyConverter;
 use App\DTO\{Opportunity\BatchOpportunityUploadResult,
     Opportunity\BatchSaveOpportunitiesData,
     Opportunity\CreateOpportunityData,
@@ -10,8 +9,7 @@ use App\DTO\{Opportunity\BatchOpportunityUploadResult,
     Opportunity\ImportedOpportunityData,
     Opportunity\MarkOpportunityAsLostData,
     Opportunity\UpdateOpportunityData,
-    Opportunity\UpdateSupplierData
-};
+    Opportunity\UpdateSupplierData};
 use App\Enum\AccountCategory;
 use App\Enum\Lock;
 use App\Enum\OpportunityStatus;
@@ -20,8 +18,7 @@ use App\Events\{Opportunity\OpportunityCreated,
     Opportunity\OpportunityDeleted,
     Opportunity\OpportunityMarkedAsLost,
     Opportunity\OpportunityMarkedAsNotLost,
-    Opportunity\OpportunityUpdated
-};
+    Opportunity\OpportunityUpdated};
 use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
@@ -31,6 +28,7 @@ use App\Models\Opportunity;
 use App\Models\OpportunitySupplier;
 use App\Models\User;
 use App\Services\Exceptions\ValidationException;
+use App\Services\ExchangeRate\CurrencyConverter;
 use App\Services\Opportunity\Models\PipelinerOppMap;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Database\ConnectionInterface;
@@ -66,6 +64,8 @@ class OpportunityEntityService
     protected CurrencyConverter $currencyConverter;
 
     private array $accountOwnerCache = [];
+
+    private array $countryNameOfSupplierCache = [];
 
     public function __construct(ConnectionInterface $connection,
                                 LockProvider $lockProvider,
@@ -578,7 +578,7 @@ class OpportunityEntityService
         $suppliers = with($valueRetriever($row, PipelinerOppMap::SUPPLIERS, []), function (array $suppliersData) {
             $suppliers = array_map(fn(array $supplier) => [
                 'supplier_name' => $supplier['supplier'] ?? null,
-                'country_name' => $supplier['country'] ?? null,
+                'country_name' => $this->normalizeCountryNameOfSupplier($supplier['country'] ?? null),
                 'contact_name' => $supplier['contact_name'] ?? null,
                 'contact_email' => $supplier['email_address'] ?? null,
             ], $suppliersData);
@@ -659,6 +659,26 @@ class OpportunityEntityService
 
             'create_suppliers' => $suppliers,
         ]);
+    }
+
+    private function normalizeCountryNameOfSupplier(?string $countryName): ?string
+    {
+        if (is_null($countryName) || trim($countryName) === '') {
+            return null;
+        }
+
+        return $this->countryNameOfSupplierCache[$countryName] ??= with(trim($countryName), function (string $countryName) {
+
+            $normalizedCountryName = [
+                    'UK' => 'GB'
+                ][$countryName] ?? $countryName;
+
+            return Country::query()
+                ->where('iso_3166_2', $normalizedCountryName)
+                ->orWhere('name', $normalizedCountryName)
+                ->value('name');
+
+        });
     }
 
     private function resolveAccountOwner(?string $accountOwnerName): ?string

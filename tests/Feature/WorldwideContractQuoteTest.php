@@ -1068,7 +1068,7 @@ class WorldwideContractQuoteTest extends TestCase
                 ],
             ]);
 
-        $this->assertSame('$ 1,000.00', $response->json('quote_summary.list_price'));
+        $this->assertSame('$ 1,111.11', $response->json('quote_summary.list_price'));
         $this->assertSame('$ 1,086.96', $response->json('quote_summary.final_price'));
         $this->assertSame('$ 24.15', $response->json('quote_summary.applicable_discounts'));
         $this->assertSame('$ 1,106.96', $response->json('quote_summary.total_value_including_tax'));

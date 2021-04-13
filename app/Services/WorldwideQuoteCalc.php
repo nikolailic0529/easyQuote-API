@@ -129,6 +129,7 @@ class WorldwideQuoteCalc
 
         return PriceSummaryData::immutable([
             'total_price' => $totalPrice,
+            'total_price_after_margin' => $totalPriceAfterMarginExcludingCustomDiscount,
             'buy_price' => $buyPrice,
             'final_total_price' => $finalTotalPriceValue,
             'final_total_price_excluding_tax' => $totalPriceAfterDiscounts,
@@ -141,6 +142,7 @@ class WorldwideQuoteCalc
     protected function calculatePriceSummaryOfContractQuote(WorldwideQuote $quote): ImmutablePriceSummaryData
     {
         $quoteTotalPrice = 0.0;
+        $quoteTotalPriceAfterMargin = 0.0;
         $quoteBuyPrice = 0.0;
         $quoteFinalTotalPrice = 0.0;
         $quoteFinalTotalPriceExcludingTax = 0.0;
@@ -153,6 +155,7 @@ class WorldwideQuoteCalc
             $distributorPriceSummary = $this->distributionCalc->calculatePriceSummaryOfDistributorQuote($distributorQuote);
 
             $quoteTotalPrice += $distributorPriceSummary->total_price;
+            $quoteTotalPriceAfterMargin += $distributorPriceSummary->total_price_after_margin;
             $quoteBuyPrice += $distributorPriceSummary->buy_price;
             $quoteFinalTotalPrice += $distributorPriceSummary->final_total_price;
             $quoteFinalTotalPriceExcludingTax += $distributorPriceSummary->final_total_price_excluding_tax;
@@ -165,6 +168,7 @@ class WorldwideQuoteCalc
 
         return PriceSummaryData::immutable([
             'total_price' => $quoteTotalPrice,
+            'total_price_after_margin' => $quoteTotalPriceAfterMargin,
             'buy_price' => $quoteBuyPrice,
             'final_total_price' => $quoteFinalTotalPrice,
             'final_total_price_excluding_tax' => $quoteFinalTotalPriceExcludingTax,
@@ -235,6 +239,7 @@ class WorldwideQuoteCalc
 
         $distributorQuotePriceSummaryCollection = [];
         $quoteTotalPrice = 0.0;
+        $quoteTotalPriceAfterMargin = 0.0;
         $quoteFinalTotalPrice = 0.0;
         $quoteFinalTotalPriceExcludingTax = 0.0;
         $quoteTotalBuyPrice = 0.0;
@@ -253,6 +258,7 @@ class WorldwideQuoteCalc
             ];
 
             $quoteTotalPrice += $distributorQuotePriceSummary->total_price;
+            $quoteTotalPriceAfterMargin += $distributorQuotePriceSummary->total_price_after_margin;
             $quoteFinalTotalPrice += $distributorQuotePriceSummary->final_total_price;
             $quoteFinalTotalPriceExcludingTax += $distributorQuotePriceSummary->final_total_price_excluding_tax;
             $quoteTotalBuyPrice += $distributorQuotePriceSummary->buy_price;
@@ -263,6 +269,7 @@ class WorldwideQuoteCalc
 
         $quotePriceSummary = PriceSummaryData::immutable([
             'total_price' => $quoteTotalPrice,
+            'total_price_after_margin' => $quoteTotalPriceAfterMargin,
             'final_total_price' => $quoteFinalTotalPrice,
             'final_total_price_excluding_tax' => $quoteFinalTotalPriceExcludingTax,
             'buy_price' => $quoteTotalBuyPrice,
@@ -290,6 +297,7 @@ class WorldwideQuoteCalc
 
         $distributorQuotePriceSummaryCollection = [];
         $quoteTotalPrice = 0.0;
+        $quoteTotalPriceAfterMargin = 0.0;
         $quoteFinalTotalPrice = 0.0;
         $quoteFinalTotalPriceExcludingTax = 0.0;
         $quoteTotalBuyPrice = 0.0;
@@ -319,6 +327,7 @@ class WorldwideQuoteCalc
             ];
 
             $quoteTotalPrice += $distributorQuotePriceSummary->total_price;
+            $quoteTotalPriceAfterMargin += $distributorQuotePriceSummary->total_price_after_margin;
             $quoteFinalTotalPrice += $distributorQuotePriceSummary->final_total_price;
             $quoteFinalTotalPriceExcludingTax += $distributorQuotePriceSummary->final_total_price_excluding_tax;
             $quoteTotalBuyPrice += $distributorQuotePriceSummary->buy_price;
@@ -329,6 +338,7 @@ class WorldwideQuoteCalc
 
         $quotePriceSummary = PriceSummaryData::immutable([
             'total_price' => $quoteTotalPrice,
+            'total_price_after_margin' => $quoteTotalPriceAfterMargin,
             'final_total_price' => $quoteFinalTotalPrice,
             'final_total_price_excluding_tax' => $quoteFinalTotalPriceExcludingTax,
             'buy_price' => $quoteTotalBuyPrice,
@@ -395,6 +405,7 @@ class WorldwideQuoteCalc
 
         return PriceSummaryData::immutable([
             'total_price' => $priceInputData->total_price,
+            'total_price_after_margin' => $totalPriceAfterMargin,
             'final_total_price' => $totalPriceAfterCustomDiscountAndTax,
             'buy_price' => $priceInputData->buy_price,
             'margin_after_custom_discount' => $marginValueAfterCustomDiscount,
@@ -415,6 +426,7 @@ class WorldwideQuoteCalc
 
         $priceSummary = PriceSummaryData::immutable([
             'total_price' => $priceInputData->total_price,
+            'total_price_after_margin' => $totalPriceAfterMargin,
             'final_total_price' => $totalPriceAfterMargin,
             'buy_price' => $priceInputData->buy_price,
         ]);
@@ -463,6 +475,8 @@ class WorldwideQuoteCalc
 
         $totalPriceAfterMargin = $this->calculateTotalPriceAfterMargin($quoteTotalPrice, (float)$marginTaxData->margin_value, (float)$quote->activeVersion->custom_discount);
 
+        $totalPriceAfterMarginWithoutCustomDiscount = $this->calculateTotalPriceAfterMargin($quoteTotalPrice, (float)$marginTaxData->margin_value, 0.0);
+
         $applicableDiscounts = $this->predefinedQuoteDiscountsToApplicableDiscounts($quote);
 
         $totalPriceAfterDiscounts = (float)$this->calculateTotalPriceAfterPredefinedDiscounts($totalPriceAfterMargin, $applicableDiscounts);
@@ -475,6 +489,7 @@ class WorldwideQuoteCalc
 
         $quotePriceSummary = PriceSummaryData::immutable([
             'total_price' => $quoteTotalPrice,
+            'total_price_after_margin' => $totalPriceAfterMarginWithoutCustomDiscount,
             'final_total_price' => $finalTotalPrice,
             'buy_price' => $buyPrice,
             'final_margin' => $quoteMarginValue

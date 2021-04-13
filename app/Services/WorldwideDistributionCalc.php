@@ -104,6 +104,7 @@ class WorldwideDistributionCalc
 
         return PriceSummaryData::immutable([
             'total_price' => $quoteTotalPrice,
+            'total_price_after_margin' => $totalPriceAfterMarginWithoutCustomDiscount,
             'buy_price' => (float)$distribution->buy_price,
             'final_total_price' => $totalPriceAfterTax,
             'final_total_price_excluding_tax' => $totalPriceAfterDiscounts,
@@ -192,6 +193,8 @@ class WorldwideDistributionCalc
 
         $totalPriceAfterMargin = $this->calculateTotalPriceAfterMargin($distributionTotalPrice, (float)$marginTaxData->margin_value, (float)$distribution->custom_discount);
 
+        $totalPriceAfterMarginWithoutCustomDiscount = $this->calculateTotalPriceAfterMargin($distributionTotalPrice, (float)$marginTaxData->margin_value, 0.0);
+
         $predefinedDiscounts = $this->predefinedDistributionDiscountsToApplicableDiscounts($distribution);
 
         $totalPriceAfterPredefinedDiscounts = $this->calculateTotalPriceAfterPredefinedDiscounts($totalPriceAfterMargin, $predefinedDiscounts);
@@ -204,6 +207,7 @@ class WorldwideDistributionCalc
 
         return new ImmutablePriceSummaryData(new PriceSummaryData([
             'total_price' => $distributionTotalPrice,
+            'total_price_after_margin' => $totalPriceAfterMarginWithoutCustomDiscount,
             'final_total_price' => $finalTotalPrice,
             'final_total_price_excluding_tax' => $totalPriceAfterPredefinedDiscounts,
             'buy_price' => $distributionBuyPrice,
@@ -238,6 +242,7 @@ class WorldwideDistributionCalc
 
         return new ImmutablePriceSummaryData(new PriceSummaryData([
             'total_price' => $distributionTotalPrice,
+            'total_price_after_margin' => $totalPriceAfterMargin,
             'final_total_price' => $totalPriceAfterCustomDiscountAndTax,
             'final_total_price_excluding_tax' => $totalPriceAfterCustomDiscount,
             'buy_price' => $distributionBuyPrice,
@@ -262,6 +267,7 @@ class WorldwideDistributionCalc
 
         $priceSummary = new ImmutablePriceSummaryData(new PriceSummaryData([
             'total_price' => $distributionTotalPrice,
+            'total_price_after_margin' => $totalPriceAfterMargin,
             'final_total_price' => $totalPriceAfterMargin,
             'buy_price' => $distributionBuyPrice,
         ]));

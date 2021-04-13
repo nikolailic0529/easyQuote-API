@@ -8,6 +8,8 @@ final class QuotePriceData extends DataTransferObject
 {
     public float $total_price_value = 0.0;
 
+    public float $total_price_value_after_margin = 0.0;
+
     public float $final_total_price_value = 0.0;
 
     public float $final_total_price_value_excluding_tax = 0.0;

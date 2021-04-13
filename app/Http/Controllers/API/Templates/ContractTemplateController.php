@@ -8,6 +8,7 @@ use App\Http\Requests\ContractTemplate\DeleteContractTemplate;
 use App\Http\Requests\ContractTemplate\FilterContractTemplatesByCompanyVendorCountry;
 use App\Http\Requests\ContractTemplate\StoreContractTemplate;
 use App\Http\Requests\ContractTemplate\UpdateContractTemplate;
+use App\Models\SalesOrder;
 use App\Services\Template\TemplateSchemaDataMapper;
 use App\Http\Resources\TemplateRepository\{TemplateCollection, TemplateResourceListing, TemplateResourceWithIncludes};
 use App\Models\Template\ContractTemplate;
@@ -99,7 +100,7 @@ class ContractTemplateController extends Controller
     public function filterWorldwideContractContractTemplates(FilterContractTemplatesByCompanyVendorCountry $request,
                                                              ContractTemplateQueries $queries): JsonResponse
     {
-        $this->authorize('viewAny', ContractTemplate::class);
+        $this->authorize('viewAny', SalesOrder::class);
 
         $data = $queries->filterWorldwideContractServiceContractTemplatesQuery(
             $request->getCompanyId(),
@@ -123,7 +124,7 @@ class ContractTemplateController extends Controller
     public function filterWorldwidePackContractTemplates(FilterContractTemplatesByCompanyVendorCountry $request,
                                                          ContractTemplateQueries $queries): JsonResponse
     {
-        $this->authorize('viewAny', ContractTemplate::class);
+        $this->authorize('viewAny', SalesOrder::class);
 
         $data = $queries->filterWorldwidePackContractTemplatesQuery(
             $request->getCompanyId(),

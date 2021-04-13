@@ -1256,7 +1256,7 @@ class WorldwidePackQuoteTest extends TestCase
                 ]
             ]);
 
-        $this->assertSame('£ 5,000.00', $response->json('quote_summary.list_price'));
+        $this->assertSame('£ 5,555.56', $response->json('quote_summary.list_price'));
         $this->assertSame('£ 5,263.16', $response->json('quote_summary.final_price'));
         $this->assertSame('£ 292.40', $response->json('quote_summary.applicable_discounts'));
         $this->assertSame('£ 5,263.16', $response->json('quote_summary.sub_total_value'));

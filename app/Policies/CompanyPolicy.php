@@ -65,10 +65,7 @@ class CompanyPolicy
             return true;
         }
 
-        if (
-            $user->can('update_companies') &&
-            $user->getKey() === $company->{$company->user()->getForeignKeyName()}
-        ) {
+        if ($user->can('update_companies')) {
             return true;
         }
     }

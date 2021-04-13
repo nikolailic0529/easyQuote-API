@@ -326,22 +326,10 @@ class WorldwideQuoteDataMapper
 
         $opportunity = $worldwideQuote->opportunity;
 
-        /** @var Contact|null $quoteHardwareContact */
-        $quoteHardwareContact = $opportunity->contacts
-            ->sortByDesc('pivot.is_default')
-            ->first(fn(Contact $contact) => $contact->contact_type === 'Hardware');
-
-        /** @var Contact|null $quoteSoftwareContact */
-        $quoteSoftwareContact = $opportunity->contacts
-            ->sortByDesc('pivot.is_default')
-            ->first(fn(Contact $contact) => $contact->contact_type === 'Software');
-
         return $worldwideQuote->activeVersion->worldwideDistributions->map(function (WorldwideDistribution $distribution) use (
             $paymentScheduleFields,
             $worldwideQuote,
-            $outputCurrency,
-            $quoteHardwareContact,
-            $quoteSoftwareContact
+            $outputCurrency
         ) {
             if (is_null($distribution->total_price)) {
                 $distribution->total_price = $this->worldwideDistributionCalc->calculateDistributionTotalPrice($distribution);
@@ -411,6 +399,16 @@ class WorldwideQuoteDataMapper
             $quoteSoftwareAddress = $distribution->addresses
                 ->sortByDesc('pivot.is_default')
                 ->first(fn(Address $address) => $address->address_type === 'Software');
+
+            /** @var Contact|null $quoteHardwareContact */
+            $quoteHardwareContact = $distribution->contacts
+                ->sortByDesc('pivot.is_default')
+                ->first(fn(Contact $contact) => $contact->contact_type === 'Hardware');
+
+            /** @var Contact|null $quoteSoftwareContact */
+            $quoteSoftwareContact = $distribution->contacts
+                ->sortByDesc('pivot.is_default')
+                ->first(fn(Contact $contact) => $contact->contact_type === 'Software');
 
             return new WorldwideDistributionData([
                 'supplier' => [
@@ -492,6 +490,7 @@ class WorldwideQuoteDataMapper
             $priceSummary = $this->worldwideQuoteCalc->calculatePriceSummaryOfQuote($worldwideQuote);
 
             $quotePriceData->total_price_value = $priceSummary->total_price;
+            $quotePriceData->total_price_value_after_margin = $priceSummary->total_price_after_margin;
             $quotePriceData->final_total_price_value = $priceSummary->final_total_price;
             $quotePriceData->final_total_price_value_excluding_tax = $priceSummary->final_total_price_excluding_tax;
             $quotePriceData->applicable_discounts_value = $priceSummary->applicable_discounts_value;
@@ -593,7 +592,7 @@ class WorldwideQuoteDataMapper
             'support_end_assumed_char' => $opportunity->is_opportunity_end_date_assumed ? '*' : '',
             'valid_until' => static::formatDate($opportunityClosingDate),
 
-            'list_price' => static::formatPriceValue($quotePriceData->total_price_value, $outputCurrency->symbol),
+            'list_price' => static::formatPriceValue($quotePriceData->total_price_value_after_margin, $outputCurrency->symbol),
             'applicable_discounts' => static::formatPriceValue($quotePriceData->applicable_discounts_value, $outputCurrency->symbol),
             'final_price' => static::formatPriceValue($quotePriceData->final_total_price_value_excluding_tax, $outputCurrency->symbol),
 

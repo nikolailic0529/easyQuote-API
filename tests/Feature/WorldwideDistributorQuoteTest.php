@@ -1272,6 +1272,8 @@ class WorldwideDistributorQuoteTest extends TestCase
         $this->postJson('api/ww-distributions/discounts', ['worldwide_distributions' => $discountsData->all(), 'stage' => 'Discount'])->assertNoContent();
 
         $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'?include[]=worldwide_distributions.predefined_discounts')
+//            ->dump()
+            ->assertOk()
             ->assertJsonStructure([
                 'stage',
                 'worldwide_distributions' => [
@@ -1552,7 +1554,9 @@ class WorldwideDistributorQuoteTest extends TestCase
         );
         $wwDistribution->save();
 
-        $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'?include[]=worldwide_distributions.summary&include[]=worldwide_distributions.predefined_discounts')->assertOk()
+        $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'?include[]=worldwide_distributions.summary&include[]=worldwide_distributions.predefined_discounts')
+//            ->dump()
+            ->assertOk()
             ->assertJsonStructure([
                 'worldwide_distributions' => [
                     '*' => [
