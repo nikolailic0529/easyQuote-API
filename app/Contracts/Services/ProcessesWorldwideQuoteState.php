@@ -2,6 +2,8 @@
 
 namespace App\Contracts\Services;
 
+use App\DTO\DistributionDetailsCollection;
+use App\DTO\ProcessableDistributionCollection;
 use App\DTO\QuoteStages\AddressesContactsStage;
 use App\DTO\QuoteStages\PackAssetsCreationStage;
 use App\DTO\QuoteStages\ContractDetailsStage;
@@ -58,11 +60,19 @@ interface ProcessesWorldwideQuoteState
     public function syncQuoteWithOpportunityData(WorldwideQuote $quote): void;
 
     /**
+     * Process import of distributor quote files.
+     *
+     * @param \App\Models\Quote\WorldwideQuoteVersion $version
+     * @param \App\DTO\ProcessableDistributionCollection $collection
+     */
+    public function processImportOfDistributorQuotes(WorldwideQuoteVersion $version, ProcessableDistributionCollection $collection): void;
+
+    /**
      * Process Quote import step.
      *
      * @param WorldwideQuoteVersion $quoteVersion
      * @param \App\DTO\QuoteStages\ImportStage $stage
-     * @return \App\Models\Quote\WorldwideQuote
+     * @return \App\Models\Quote\WorldwideQuoteVersion
      */
     public function processQuoteImportStep(WorldwideQuoteVersion $quoteVersion, ImportStage $stage): WorldwideQuoteVersion;
 

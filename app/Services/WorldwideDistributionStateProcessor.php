@@ -136,14 +136,6 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
                 $distribution->country()->associate(
                     Country::query()->where('name', $supplier->country_name)->first()
                 );
-
-                $distribution->buy_price = $supplier->opportunity->purchase_price;
-
-                if (!is_null($supplier->opportunity->purchase_price_currency_code)) {
-                    $distribution->distributionCurrency()->associate(
-                        Currency::query()->where('code', $supplier->opportunity->purchase_price_currency_code)->first()
-                    );
-                }
             }
 
             $templateFields = TemplateField::query()
@@ -168,19 +160,7 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
 
         $opportunity = $supplier->opportunity;
 
-        if (is_null($distributorQuote->country_id)) {
-            $distributorQuote->country()->associate($supplier->country);
-        }
-
-        if (is_null($distributorQuote->buy_price)) {
-            $distributorQuote->buy_price = $opportunity->purchase_price;
-
-            if (!is_null($opportunity->purchase_price_currency_code)) {
-                $distributorQuote->distributionCurrency()->associate(
-                    Currency::query()->where('code', $opportunity->purchase_price_currency_code)->first()
-                );
-            }
-        }
+        $distributorQuote->country()->associate($supplier->country);
 
         $newAddressModelsOfDistributorQuote = [];
         $newContactModelsOfDistributorQuote = [];

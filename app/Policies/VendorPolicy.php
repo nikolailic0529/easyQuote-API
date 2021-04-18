@@ -2,10 +2,7 @@
 
 namespace App\Policies;
 
-use App\Models\{
-    User,
-    Vendor
-};
+use App\Models\{User, Vendor};
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class VendorPolicy
@@ -15,7 +12,7 @@ class VendorPolicy
     /**
      * Determine whether the user can view any vendors.
      *
-     * @param  \App\Models\User  $user
+     * @param \App\Models\User $user
      * @return mixed
      */
     public function viewAny(User $user)
@@ -26,10 +23,35 @@ class VendorPolicy
     }
 
     /**
+     * Determine whether the user can view a list of entities.
+     *
+     * @param \App\Models\User $user
+     * @return mixed
+     */
+    public function viewList(User $user)
+    {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if ($user->can('view_vendors')) {
+            return true;
+        }
+
+        if ($user->can('create_quotes')) {
+            return true;
+        }
+
+        if ($user->can('create_ww_quotes')) {
+            return true;
+        }
+    }
+
+    /**
      * Determine whether the user can view the vendor.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Vendor  $vendor
+     * @param \App\Models\User $user
+     * @param \App\Models\Vendor $vendor
      * @return mixed
      */
     public function view(User $user, Vendor $vendor)
@@ -42,7 +64,7 @@ class VendorPolicy
     /**
      * Determine whether the user can create vendors.
      *
-     * @param  \App\Models\User  $user
+     * @param \App\Models\User $user
      * @return mixed
      */
     public function create(User $user)
@@ -55,8 +77,8 @@ class VendorPolicy
     /**
      * Determine whether the user can update the vendor.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Vendor  $vendor
+     * @param \App\Models\User $user
+     * @param \App\Models\Vendor $vendor
      * @return mixed
      */
     public function update(User $user, Vendor $vendor)
@@ -73,8 +95,8 @@ class VendorPolicy
     /**
      * Determine whether the user can delete the vendor.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Vendor  $vendor
+     * @param \App\Models\User $user
+     * @param \App\Models\Vendor $vendor
      * @return mixed
      */
     public function delete(User $user, Vendor $vendor)

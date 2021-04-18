@@ -12,7 +12,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * @property string|null $quote_total_id
  * @property string|null $customer_name
  * @property string|null $location_id
  * @property string|null $country_id

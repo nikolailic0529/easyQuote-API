@@ -8,6 +8,10 @@ use Illuminate\Support\Str;
 
 class ChangesDetector
 {
+    const OLD_ATTRS_KEY = 'old';
+
+    const NEW_ATTRS_KEY = 'attributes';
+
     /**
      * Get attribute values of the model to be logged.
      *
@@ -25,19 +29,19 @@ class ChangesDetector
         $model->refresh();
 
         $properties = [
-            'attributes' => $this->getModelChanges($model, $logAttributes),
+            self::NEW_ATTRS_KEY => $this->getModelChanges($model, $logAttributes),
         ];
 
         if (!empty($oldAttributeValues)) {
             $nullProperties = array_fill_keys($logAttributes, null);
 
-            $properties['old'] = array_merge($nullProperties, $oldAttributeValues);
+            $properties[self::OLD_ATTRS_KEY] = array_merge($nullProperties, $oldAttributeValues);
         }
 
-        if (isset($properties['old'])) {
-            $properties['attributes'] = array_udiff_assoc(
-                $properties['attributes'],
-                $properties['old'],
+        if (isset($properties[self::OLD_ATTRS_KEY])) {
+            $properties[self::NEW_ATTRS_KEY] = array_udiff_assoc(
+                $properties[self::NEW_ATTRS_KEY],
+                $properties[self::OLD_ATTRS_KEY],
                 function ($new, $old) {
                     if ($old === null || $new === null) {
                         return $new === $old ? 0 : 1;
@@ -47,8 +51,34 @@ class ChangesDetector
                 }
             );
 
-            $properties['old'] = Arr::only($properties['old'], $logAttributes);
+            $properties[self::OLD_ATTRS_KEY] = Arr::only($properties[self::OLD_ATTRS_KEY], $logAttributes);
         }
+
+        return $properties;
+    }
+
+    public function diffAttributeValues(array $oldAttributeValues, array $newAttributeValues, array $logAttributes = null): array
+    {
+        $logAttributes ??= array_keys($newAttributeValues);
+
+        $properties = [
+            self::NEW_ATTRS_KEY => $newAttributeValues,
+            self::OLD_ATTRS_KEY => array_merge(array_fill_keys($logAttributes, null), $oldAttributeValues)
+        ];
+
+        $properties[self::NEW_ATTRS_KEY] = array_udiff_assoc(
+            $properties[self::NEW_ATTRS_KEY],
+            $properties[self::OLD_ATTRS_KEY],
+            function ($new, $old) {
+                if ($old === null || $new === null) {
+                    return $new === $old ? 0 : 1;
+                }
+
+                return $new <=> $old;
+            }
+        );
+
+        $properties[self::OLD_ATTRS_KEY] = Arr::only($properties[self::OLD_ATTRS_KEY], array_keys($properties[self::NEW_ATTRS_KEY]));
 
         return $properties;
     }

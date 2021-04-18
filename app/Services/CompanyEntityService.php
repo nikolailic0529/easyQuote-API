@@ -5,9 +5,11 @@ namespace App\Services;
 use App\DTO\Company\CreateCompanyData;
 use App\DTO\Company\UpdateCompanyContactData;
 use App\DTO\Company\UpdateCompanyData;
+use App\Events\Company\CompanyUpdated;
 use App\Models\Company;
 use App\Models\Contact;
 use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -22,22 +24,27 @@ class CompanyEntityService
 
     protected LockProvider $lockProvider;
 
+    protected EventDispatcher $eventDispatcher;
+
     /**
      * CompanyService constructor.
      * @param LoggerInterface $logger
      * @param ValidatorInterface $validator
      * @param ConnectionInterface $connection
      * @param LockProvider $lockProvider
+     * @param \Illuminate\Contracts\Events\Dispatcher $eventDispatcher
      */
     public function __construct(LoggerInterface $logger,
                                 ValidatorInterface $validator,
                                 ConnectionInterface $connection,
-                                LockProvider $lockProvider)
+                                LockProvider $lockProvider,
+                                EventDispatcher $eventDispatcher)
     {
         $this->logger = $logger;
         $this->validator = $validator;
         $this->connection = $connection;
         $this->lockProvider = $lockProvider;
+        $this->eventDispatcher = $eventDispatcher;
     }
 
     /**
@@ -154,6 +161,10 @@ class CompanyEntityService
                     $company->image()->flushQueryCache()->delete();
                 }
             });
+
+            $this->eventDispatcher->dispatch(
+                new CompanyUpdated($company)
+            );
         });
     }
 

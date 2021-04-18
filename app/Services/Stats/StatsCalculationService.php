@@ -11,8 +11,6 @@ use App\Models\{Address,
     Company,
     Customer\CustomerTotal,
     Location,
-    Opportunity,
-    OpportunityTotal,
     Quote\Quote,
     Quote\QuoteTotal,
     Quote\WorldwideQuote};
@@ -26,7 +24,6 @@ use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\StyleInterface;
 use Throwable;
-use Webpatser\Uuid\Uuid;
 
 class StatsCalculationService implements Stats
 {
@@ -62,68 +59,6 @@ class StatsCalculationService implements Stats
         return tap($this, function () use ($output) {
             $this->output = $output;
         });
-    }
-
-    public function denormalizeSummaryOfOpportunities(): void
-    {
-        $this->progressStart(Opportunity::query()->count());
-
-        $this->connection->transaction(function () {
-
-            OpportunityTotal::query()->doesntHave('opportunity')->delete();
-
-            Opportunity::query()
-                ->chunkById(500, function (Collection $chunk) {
-
-                    foreach ($chunk as $opportunity) {
-                        $this->denormalizeSummaryOfOpportunity($opportunity);
-
-                        $this->progressAdvance();
-                    }
-
-                });
-
-        });
-
-        $this->logger->info('Summary by Opportunities has been calculated.');
-
-        $this->progressFinish();
-
-    }
-
-    public function denormalizeSummaryOfOpportunity(Opportunity $opportunity): void
-    {
-        $baseOpportunityAmount = $opportunity->opportunity_amount * $this->resolveBaseRateOfOpportunityAmount($opportunity);
-
-        $opportunityTotal = OpportunityTotal::query()
-            ->where('opportunity_id', $opportunity->getKey())
-            ->firstOrNew();
-
-        tap($opportunityTotal, function (OpportunityTotal $opportunityTotal) use ($baseOpportunityAmount, $opportunity) {
-            $opportunityTotal->{$opportunityTotal->getKeyName()} ??= (string)Uuid::generate(4);
-            $opportunityTotal->opportunity_id = $opportunity->getKey();
-            $opportunityTotal->account_manager_id = $opportunity->account_manager_id;
-
-            $opportunityTotal->base_opportunity_amount = $baseOpportunityAmount;
-            $opportunityTotal->opportunity_status = $opportunity->status;
-            $opportunityTotal->opportunity_created_at = $opportunity->{$opportunity->getCreatedAtColumn()};
-
-            $opportunityTotal->save();
-
-            if (!is_null($opportunity->primaryAccount)) {
-                $countries = $opportunity->primaryAccount->countries()->distinct('countries.id')->pluck('countries.id')->all();
-
-                $opportunityTotal->countries()->sync($countries);
-            }
-        });
-    }
-
-    private function resolveBaseRateOfOpportunityAmount(Opportunity $opportunity): float
-    {
-        $currencyCode = $opportunity->opportunity_amount_currency_code;
-        $currencyCode ??= 'GPB';
-
-        return $this->exchangeRateService->getBaseRateByCurrencyCode($currencyCode, $opportunity->created_at);
     }
 
     public function denormalizeSummaryOfQuotes(): void
@@ -278,7 +213,7 @@ class StatsCalculationService implements Stats
 
     public function denormalizeSummaryOfCustomers(): void
     {
-        $this->progressStart(QuoteTotal::query()->distinct('customer_name')->count());
+        $this->progressStart();
 
         $this->connection->transaction(function () {
 
@@ -286,7 +221,7 @@ class StatsCalculationService implements Stats
                 ->toBase()
                 ->selectRaw('SUM(`total_price`) as `total_value`')
                 ->selectRaw('COUNT(*) AS `total_count`')
-                ->addSelect('company_id', 'customer_name', 'user_id')
+                ->addSelect('company_id', 'user_id')
                 ->groupBy('company_id', 'user_id')
                 ->orderBy('company_id')
                 ->chunk(100, function (BaseCollection $chunk) {
@@ -439,8 +374,6 @@ class StatsCalculationService implements Stats
     {
         $company = Company::query()
             ->whereKey($total->company_id)
-            ->where(['type' => 'External', 'category' => 'End User'])
-            ->with('locations')
             ->first();
 
         if (!$company instanceof Company) {
@@ -465,13 +398,12 @@ class StatsCalculationService implements Stats
             $company->addresses->each(function (Address $address) use ($company, $total) {
 
                 $customerTotal = CustomerTotal::query()
-                    ->where('quote_total_id', $total->quote_total_id)
-                    ->where('location_id', $address->location_id)
                     ->where('company_id', $company->getKey())
+                    ->where('user_id', $total->user_id)
+                    ->where('location_id', $address->location_id)
                     ->firstOrNew();
 
                 tap($customerTotal, function (CustomerTotal $customerTotal) use ($total, $address, $company) {
-                    $customerTotal->quote_total_id = $total->quote_total_id;
                     $customerTotal->customer_name = $company->name;
                     $customerTotal->location_id = $address->location_id;
                     $customerTotal->country_id = $address->location->country->getKey();

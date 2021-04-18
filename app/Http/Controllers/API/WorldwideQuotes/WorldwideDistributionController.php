@@ -5,25 +5,25 @@ namespace App\Http\Controllers\API\WorldwideQuotes;
 use App\Contracts\Services\ProcessesWorldwideDistributionState;
 use App\Contracts\Services\ProcessesWorldwideQuoteState;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\MappedRow\UpdateDistributionMappedRow;
-use App\Http\Requests\WorldwideQuote\ApplyDiscounts;
-use App\Http\Requests\WorldwideQuote\CreateRowsGroup;
-use App\Http\Requests\WorldwideQuote\DeleteRowsGroup;
-use App\Http\Requests\WorldwideQuote\InitDistribution;
-use App\Http\Requests\WorldwideQuote\MoveRowsBetweenGroups;
-use App\Http\Requests\WorldwideQuote\ProcessDistributions;
-use App\Http\Requests\WorldwideQuote\RowsLookup;
-use App\Http\Requests\WorldwideQuote\SelectDistributionsRows;
-use App\Http\Requests\WorldwideQuote\SetDistributionsMargin;
-use App\Http\Requests\WorldwideQuote\ShowDistributionApplicableDiscounts;
-use App\Http\Requests\WorldwideQuote\ShowMarginAfterCustomDiscount;
-use App\Http\Requests\WorldwideQuote\ShowMarginAfterPredefinedDiscounts;
-use App\Http\Requests\WorldwideQuote\ShowPriceDataAfterMarginTax;
-use App\Http\Requests\WorldwideQuote\StoreDistributorFile;
-use App\Http\Requests\WorldwideQuote\StoreScheduleFile;
-use App\Http\Requests\WorldwideQuote\UpdateDetails;
-use App\Http\Requests\WorldwideQuote\UpdateDistributionsMapping;
-use App\Http\Requests\WorldwideQuote\UpdateRowsGroup;
+use App\Http\Requests\{MappedRow\UpdateDistributionMappedRow,
+    WorldwideQuote\ApplyDiscounts,
+    WorldwideQuote\CreateRowsGroup,
+    WorldwideQuote\DeleteRowsGroup,
+    WorldwideQuote\InitDistribution,
+    WorldwideQuote\MoveRowsBetweenGroups,
+    WorldwideQuote\ProcessDistributions,
+    WorldwideQuote\RowsLookup,
+    WorldwideQuote\SelectDistributionsRows,
+    WorldwideQuote\SetDistributionsMargin,
+    WorldwideQuote\ShowDistributionApplicableDiscounts,
+    WorldwideQuote\ShowMarginAfterCustomDiscount,
+    WorldwideQuote\ShowMarginAfterPredefinedDiscounts,
+    WorldwideQuote\ShowPriceDataAfterMarginTax,
+    WorldwideQuote\StoreDistributorFile,
+    WorldwideQuote\StoreScheduleFile,
+    WorldwideQuote\UpdateDetails,
+    WorldwideQuote\UpdateDistributionsMapping,
+    WorldwideQuote\UpdateRowsGroup};
 use App\Http\Resources\Discount\ApplicableDiscountCollection;
 use App\Http\Resources\PriceSummary;
 use App\Http\Resources\QuoteFile\StoredQuoteFile;
@@ -77,17 +77,18 @@ class WorldwideDistributionController extends Controller
      * Process Worldwide distributions import.
      *
      * @param ProcessDistributions $request
+     * @param \App\Contracts\Services\ProcessesWorldwideQuoteState $quoteProcessor
      * @return JsonResponse
-     * @throws AuthorizationException
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Throwable
      */
-    public function processDistributions(ProcessDistributions $request): JsonResponse
+    public function processDistributions(ProcessDistributions $request, ProcessesWorldwideQuoteState $quoteProcessor): JsonResponse
     {
         $this->authorize('update', $request->getQuote());
 
         $version = (new WorldwideQuoteVersionGuard($request->getQuote(), $request->user()))->resolveModelForActingUser();
 
-        $this->processor->processDistributionsImport($version, $request->getDistributionCollection());
+        $quoteProcessor->processImportOfDistributorQuotes($version, $request->getDistributionCollection());
 
         return with($this->processor->validateDistributionsAfterImport($request->getDistributionCollection()), function (MessageBag $messageBag) use ($request) {
             if ($messageBag->isEmpty()) {
@@ -112,8 +113,6 @@ class WorldwideDistributionController extends Controller
 
         $version = (new WorldwideQuoteVersionGuard($request->getQuote(), $request->user()))->resolveModelForActingUser();
 
-        $this->processor->processDistributionsMapping($version, $request->getMappingCollection());
-
         $quoteProcessor->processQuoteMappingStep($version, $request->getStage());
 
         return response()->noContent();
@@ -132,8 +131,6 @@ class WorldwideDistributionController extends Controller
         $this->authorize('update', $request->getQuote());
 
         $version = (new WorldwideQuoteVersionGuard($request->getQuote(), $request->user()))->resolveModelForActingUser();
-
-        $this->processor->updateRowsSelection($version, $request->getSelectedDistributionRowsCollection());
 
         $quoteProcessor->processQuoteMappingReviewStep($version, $request->getStage());
 
@@ -154,8 +151,6 @@ class WorldwideDistributionController extends Controller
 
         $version = (new WorldwideQuoteVersionGuard($request->getQuote(), $request->user()))->resolveModelForActingUser();
 
-        $this->processor->setDistributionsMargin($version, $request->getDistributionMarginCollection());
-
         $quoteProcessor->processQuoteMarginStep($version, $request->getStage());
 
         return response()->noContent();
@@ -175,6 +170,7 @@ class WorldwideDistributionController extends Controller
 
         $version = (new WorldwideQuoteVersionGuard($worldwideDistribution->worldwideQuote->worldwideQuote, $request->user()))->resolveModelForActingUser();
 
+        // TODO: process inside WorldwideQuoteStateProcessor.
         $resource = $this->processor->createRowsGroup($version, $worldwideDistribution, $request->getRowsGroupData());
 
         return response()->json(
@@ -198,6 +194,7 @@ class WorldwideDistributionController extends Controller
 
         $version = (new WorldwideQuoteVersionGuard($worldwideDistribution->worldwideQuote->worldwideQuote, $request->user()))->resolveModelForActingUser();
 
+        // TODO: process inside WorldwideQuoteStateProcessor.
         $resource = $this->processor->updateRowsGroup(
             $version,
             $worldwideDistribution,
@@ -218,7 +215,7 @@ class WorldwideDistributionController extends Controller
      * @param WorldwideDistribution $worldwideDistribution
      * @param DistributionRowsGroup $rowsGroup
      * @return Response
-     * @throws AuthorizationException
+     * @throws AuthorizationException|\Throwable
      */
     public function deleteRowsGroup(DeleteRowsGroup $request, WorldwideDistribution $worldwideDistribution, DistributionRowsGroup $rowsGroup): Response
     {
@@ -226,6 +223,7 @@ class WorldwideDistributionController extends Controller
 
         $version = (new WorldwideQuoteVersionGuard($worldwideDistribution->worldwideQuote->worldwideQuote, $request->user()))->resolveModelForActingUser();
 
+        // TODO: process inside WorldwideQuoteStateProcessor.
         $this->processor->deleteRowsGroup($version, $worldwideDistribution, $rowsGroup);
 
         return response()->noContent();
@@ -237,7 +235,7 @@ class WorldwideDistributionController extends Controller
      * @param MoveRowsBetweenGroups $request
      * @param WorldwideDistribution $worldwideDistribution
      * @return JsonResponse
-     * @throws AuthorizationException
+     * @throws AuthorizationException|\Throwable
      */
     public function moveRowsBetweenGroups(MoveRowsBetweenGroups $request, WorldwideDistribution $worldwideDistribution): JsonResponse
     {
@@ -245,6 +243,7 @@ class WorldwideDistributionController extends Controller
 
         $version = (new WorldwideQuoteVersionGuard($worldwideDistribution->worldwideQuote->worldwideQuote, $request->user()))->resolveModelForActingUser();
 
+        // TODO: process inside WorldwideQuoteStateProcessor.
         $this->processor->moveRowsBetweenGroups(
             $version,
             $worldwideDistribution,
@@ -369,18 +368,13 @@ class WorldwideDistributionController extends Controller
      * @param ApplyDiscounts $request
      * @param ProcessesWorldwideQuoteState $quoteProcessor
      * @return Response
-     * @throws AuthorizationException
+     * @throws AuthorizationException|\Throwable
      */
     public function applyDiscounts(ApplyDiscounts $request, ProcessesWorldwideQuoteState $quoteProcessor): Response
     {
         $this->authorize('update', $request->getQuote());
 
         $version = (new WorldwideQuoteVersionGuard($request->getQuote(), $request->user()))->resolveModelForActingUser();
-
-        $this->processor->applyDistributionsDiscount(
-            $version,
-            $request->getDistributionDiscountsCollection()
-        );
 
         $quoteProcessor->processQuoteDiscountStep(
             $version,
@@ -403,11 +397,6 @@ class WorldwideDistributionController extends Controller
         $this->authorize('update', $request->getQuote());
 
         $version = (new WorldwideQuoteVersionGuard($request->getQuote(), $request->user()))->resolveModelForActingUser();
-
-        $this->processor->updateDistributionsDetails(
-            $version,
-            $request->getDistributionDetailsCollection()
-        );
 
         $quoteProcessor->processContractQuoteDetailsStep(
             $version,
@@ -486,6 +475,7 @@ class WorldwideDistributionController extends Controller
 
         $version = (new WorldwideQuoteVersionGuard($worldwideDistribution->worldwideQuote->worldwideQuote, $request->user()))->resolveModelForActingUser();
 
+        // TODO: process inside WorldwideQuoteStateProcessor.
         $resource = $this->processor->updateMappedRowOfDistribution(
             $version,
             $worldwideDistribution,

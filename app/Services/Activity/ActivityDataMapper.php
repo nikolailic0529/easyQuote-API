@@ -9,9 +9,9 @@ use Illuminate\Support\Str;
 
 class ActivityDataMapper
 {
-    const OLD_ATTRS_KEY = 'old';
+    const OLD_ATTRS_KEY = ChangesDetector::OLD_ATTRS_KEY;
 
-    const NEW_ATTRS_KEY = 'attributes';
+    const NEW_ATTRS_KEY = ChangesDetector::NEW_ATTRS_KEY;
 
     const EXCLUDE_ATTRS = ['id'];
 

@@ -45,7 +45,7 @@ class VendorController extends Controller
      */
     public function showVendorsList(VendorQueries $queries): JsonResponse
     {
-        $this->authorize('viewAny', Vendor::class);
+        $this->authorize('viewList', Vendor::class);
 
         return response()->json(
             $queries->listingQuery()->get()

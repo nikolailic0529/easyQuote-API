@@ -38,7 +38,7 @@ use Illuminate\Support\Carbon;
  * @property-read bool|null $sales_order_exists
  *
  * @property User $user
- * @property Collection<WorldwideQuoteVersion> $versions
+ * @property Collection<WorldwideQuoteVersion>|\App\Models\Quote\WorldwideQuoteVersion[] $versions
  * @property WorldwideQuoteVersion|null $activeVersion
  * @property SalesOrder|null $salesOrder
  * @property ContractType|null $contractType

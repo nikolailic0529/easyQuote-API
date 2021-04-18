@@ -11,11 +11,10 @@ use App\Models\{Asset,
     Company,
     Customer\CustomerTotal,
     Data\Currency,
-    OpportunityTotal,
+    Opportunity,
     Quote\QuoteLocationTotal,
     Quote\QuoteTotal,
-    User
-};
+    User};
 use Grimzy\LaravelMysqlSpatial\{Types\Point, Types\Polygon};
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\JoinClause;
@@ -88,12 +87,13 @@ class StatsAggregationService
             ->toBase()
             ->first();
 
-        $lostOpportunitySummary = OpportunityTotal::query()
+        $lostOpportunitySummary = Opportunity::query()
             ->selectRaw("COUNT(0) as lost_opportunities_count")
             ->selectRaw('SUM(base_opportunity_amount) as lost_opportunities_value')
-            ->where('opportunity_status', OpportunityStatus::LOST)
+            ->where('status', OpportunityStatus::LOST)
+            ->doesntHave('worldwideQuotes')
             ->when(!is_null($summaryRequestData->period), function (Builder $builder) use ($summaryRequestData) {
-                $builder->whereBetween('opportunity_created_at', [$summaryRequestData->period->getStartDate(), $summaryRequestData->period->getEndDate()]);
+                $builder->whereBetween('created_at', [$summaryRequestData->period->getStartDate(), $summaryRequestData->period->getEndDate()]);
             })
             ->when(!is_null($summaryRequestData->country_id), function (Builder $builder) use ($summaryRequestData) {
                 $builder->whereHas('countries', function (Builder $relation) use ($summaryRequestData) {
@@ -220,16 +220,7 @@ class StatsAggregationService
             ->selectRaw('COUNT(*) AS `expiring_quotes_count`')
             ->selectRaw('SUM(`total_price`) AS `expiring_quotes_value`')
             ->where('quote_status', QuoteStatus::ALIVE)
-            ->when(
-                !is_null($summaryRequestData->period),
-                function (Builder $builder) use ($summaryRequestData) {
-                    $builder->whereBetween('valid_until_date', [$summaryRequestData->period->getStartDate(), $summaryRequestData->period->getEndDate()]);
-                },
-                function (Builder $builder) {
-                    $builder->where('valid_until_date', '>=', today());
-                }
-
-            )
+            ->where('valid_until_date', '>=', today())
             ->when(!is_null($summaryRequestData->country_id), function (Builder $builder) use ($summaryRequestData) {
                 $builder->whereHas('countries', function (Builder $relation) use ($summaryRequestData) {
                     $relation->whereKey($summaryRequestData->country_id);

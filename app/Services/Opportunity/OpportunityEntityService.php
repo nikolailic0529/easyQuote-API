@@ -2,6 +2,8 @@
 
 namespace App\Services\Opportunity;
 
+use Illuminate\Database\Query\Builder as BaseBuilder;
+use Illuminate\Database\Query\JoinClause;
 use App\DTO\{Opportunity\BatchOpportunityUploadResult,
     Opportunity\BatchSaveOpportunitiesData,
     Opportunity\CreateOpportunityData,
@@ -541,18 +543,30 @@ class OpportunityEntityService
                 return null;
             }
 
-            $contact = $primaryAccount->contacts()->where('contact_name', $primaryContactName)->first();
+            $primaryContactName = trim($primaryContactName);
+
+            [$contactFirstName, $contactLastName] = value(function () use ($primaryContactName): array {
+
+                if (str_contains($primaryContactName, ' ')) {
+                    return explode(' ', $primaryContactName, 2);
+                }
+
+                return [$primaryContactName, null];
+            });
+
+            $contact = $primaryAccount->contacts()
+                ->where('first_name', $contactFirstName)
+                ->where('last_name', $contactLastName)
+                ->first();
 
             if (is_null($contact)) {
 
-                $contact = tap(new Contact(), function (Contact $contact) use ($primaryContactName, $primaryAccount) {
+                $contact = tap(new Contact(), function (Contact $contact) use ($contactLastName, $contactFirstName, $primaryContactName, $primaryAccount) {
                     $contact->contact_type = 'Hardware';
                     $contact->contact_name = $primaryContactName;
-                    $contact->first_name = explode(' ', $primaryContactName, 2)[0];
-
-                    if (str_contains($primaryContactName, ' ')) {
-                        $contact->last_name = explode(' ', $primaryContactName, 2)[1];
-                    }
+                    $contact->first_name = $contactFirstName;
+                    $contact->last_name = $contactLastName;
+                    $contact->is_verified = true;
 
                     $contact->save();
                 });
@@ -619,7 +633,9 @@ class OpportunityEntityService
             'hardware_status' => $valueRetriever($row, PipelinerOppMap::HARDWARE_STATUS),
             'region_name' => $valueRetriever($row, PipelinerOppMap::REGION_NAME),
             'opportunity_start_date' => transform($valueRetriever($row, PipelinerOppMap::OPPORTUNITY_START_DATE), fn($date) => Carbon::parse($date)),
+            'is_opportunity_start_date_assumed' => strtolower($valueRetriever($row, PipelinerOppMap::IS_OPPORTUNITY_START_DATE_ASSUMED)) === 'yes',
             'opportunity_end_date' => transform($valueRetriever($row, PipelinerOppMap::OPPORTUNITY_END_DATE), fn($date) => Carbon::parse($date)),
+            'is_opportunity_end_date_assumed' => strtolower($valueRetriever($row, PipelinerOppMap::IS_OPPORTUNITY_END_DATE_ASSUMED)) === 'yes',
             'opportunity_closing_date' => transform($valueRetriever($row, PipelinerOppMap::OPPORTUNITY_CLOSING_DATE), fn($date) => Carbon::parse($date)),
 
             'base_opportunity_amount' => transform($valueRetriever($row, PipelinerOppMap::BASE_OPPORTUNITY_AMOUNT), fn(string $value) => (float)$value),
@@ -746,7 +762,9 @@ class OpportunityEntityService
             $opportunity->hardware_status = $data->hardware_status;
             $opportunity->region_name = $data->region_name;
             $opportunity->opportunity_start_date = optional($data->opportunity_start_date)->toDateString();
+            $opportunity->is_opportunity_start_date_assumed = $data->is_opportunity_start_date_assumed;
             $opportunity->opportunity_end_date = optional($data->opportunity_end_date)->toDateString();
+            $opportunity->is_opportunity_end_date_assumed = $data->is_opportunity_end_date_assumed;
             $opportunity->opportunity_closing_date = optional($data->opportunity_closing_date)->toDateString();
             $opportunity->expected_order_date = optional($data->expected_order_date)->toDateString();
             $opportunity->customer_order_date = optional($data->customer_order_date)->toDateString();
@@ -1299,5 +1317,24 @@ class OpportunityEntityService
         $this->eventDispatcher->dispatch(
             new OpportunityMarkedAsNotLost($opportunity)
         );
+    }
+
+    public function syncPrimaryAccountContacts(Company $primaryAccount): void
+    {
+        $opportunityModel = (new Opportunity());
+
+        // Set primary account contact to null,
+        // where primary account contact was detached from the corresponding primary account.
+        $opportunityModel->newQuery()
+            ->where($opportunityModel->primaryAccount()->getQualifiedForeignKeyName(), $primaryAccount->getKey())
+            ->whereNotNull($opportunityModel->primaryAccountContact()->getQualifiedForeignKeyName())
+            ->whereNotExists(function (BaseBuilder $builder) use ($opportunityModel, $primaryAccount) {
+                $builder->selectRaw(1)
+                    ->from($primaryAccount->contacts()->getTable())
+                    ->whereColumn($primaryAccount->contacts()->getQualifiedRelatedPivotKeyName(), $opportunityModel->primaryAccountContact()->getQualifiedForeignKeyName())
+                    ->where($primaryAccount->contacts()->getQualifiedForeignPivotKeyName(), $primaryAccount->getKey());
+            })
+//            ->get()
+            ->update([$opportunityModel->primaryAccountContact()->getForeignKeyName() => null]);
     }
 }

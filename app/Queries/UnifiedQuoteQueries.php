@@ -232,11 +232,11 @@ class UnifiedQuoteQueries
             ->join('customers', function (JoinClause $joinClause) {
                 $joinClause->on('customers.id', 'quotes.customer_id');
             })
-            ->join('companies', function (JoinClause $joinClause) {
+            ->leftJoin('companies', function (JoinClause $joinClause) {
                 $joinClause->on('companies.id', 'quote_versions.company_id')
                     ->orOn('companies.id', 'quotes.company_id');
             })
-            ->whereNull('quotes.submitted_at')
+//            ->whereNull('quotes.submitted_at')
             ->where('customers.valid_until', '>=', today())
             ->select([
                 'quotes.id as id',
@@ -265,16 +265,16 @@ class UnifiedQuoteQueries
             ->join('worldwide_quote_versions as quote_active_version', function (JoinClause $joinClause) {
                 $joinClause->on('quote_active_version.id', 'worldwide_quotes.active_version_id');
             })
-            ->join('companies as company', function (JoinClause $joinClause) {
+            ->leftJoin('companies as company', function (JoinClause $joinClause) {
                 $joinClause->on('company.id', 'quote_active_version.company_id');
             })
-            ->join('companies as primary_account', function (JoinClause $joinClause) {
+            ->leftJoin('companies as primary_account', function (JoinClause $joinClause) {
                 $joinClause->on('primary_account.id', 'opportunities.primary_account_id');
             })
             ->join('contract_types', function (JoinClause $joinClause) {
                 $joinClause->on('contract_types.id', 'worldwide_quotes.contract_type_id');
             })
-            ->whereNull('worldwide_quotes.submitted_at')
+//            ->whereNull('worldwide_quotes.submitted_at')
             ->where('opportunities.opportunity_closing_date', '>=', today())
             ->where('worldwide_quotes.status', QuoteStatus::ALIVE)
             ->select([
@@ -304,7 +304,7 @@ class UnifiedQuoteQueries
             ->join('customers', function (JoinClause $joinClause) {
                 $joinClause->on('customers.id', 'quotes.customer_id');
             })
-            ->join('companies', function (JoinClause $joinClause) {
+            ->leftJoin('companies', function (JoinClause $joinClause) {
                 $joinClause->on('companies.id', 'quote_versions.company_id')
                     ->orOn('companies.id', 'quotes.company_id');
             })
@@ -358,10 +358,10 @@ class UnifiedQuoteQueries
             ->join('worldwide_quote_versions as quote_active_version', function (JoinClause $joinClause) {
                 $joinClause->on('quote_active_version.id', 'worldwide_quotes.active_version_id');
             })
-            ->join('companies as company', function (JoinClause $joinClause) {
+            ->leftJoin('companies as company', function (JoinClause $joinClause) {
                 $joinClause->on('company.id', 'quote_active_version.company_id');
             })
-            ->join('companies as primary_account', function (JoinClause $joinClause) {
+            ->leftJoin('companies as primary_account', function (JoinClause $joinClause) {
                 $joinClause->on('primary_account.id', 'opportunities.primary_account_id');
             })
             ->join('contract_types', function (JoinClause $joinClause) {

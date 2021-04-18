@@ -40,9 +40,6 @@ class CalculateStats extends Command
         /** Calculate quote totals. */
         $this->call(CalculateQuotes::class);
 
-        /** Calculate opportunity totals. */
-        $this->call(CalculateOpportunities::class);
-
         /** Calculate quote location totals. */
         $this->call(CalculateQuoteLocations::class);
 

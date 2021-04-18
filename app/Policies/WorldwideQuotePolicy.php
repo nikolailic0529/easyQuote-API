@@ -184,7 +184,7 @@ class WorldwideQuotePolicy
                 return true;
             }
 
-            if ($user->can('view_own_ww_quotes') && $worldwideQuote->{$worldwideQuote->user()->getForeignKeyName()} !== $user->getKey()) {
+            if ($user->can('view_own_ww_quotes')) {
                 return true;
             }
 

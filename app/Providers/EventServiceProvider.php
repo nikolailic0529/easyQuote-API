@@ -2,7 +2,8 @@
 
 namespace App\Providers;
 
-use App\Events\{ExchangeRatesUpdated,
+use App\Events\{Company\CompanyUpdated,
+    ExchangeRatesUpdated,
     Opportunity\OpportunityUpdated,
     Permission\GrantedModulePermission,
     RfqReceived,
@@ -16,6 +17,7 @@ use App\Listeners\{ExchangeRatesListener,
     RfqReceivedListener,
     SalesOrderEventSubscriber,
     StatsDependentEntityEventSubscriber,
+    SyncOpportunityPrimaryAccountContacts,
     SyncWorldwideContractQuoteWithOpportunityData,
     TaskEventSubscriber,
     TeamEventSubscriber,
@@ -59,7 +61,11 @@ class EventServiceProvider extends ServiceProvider
         ],
 
         OpportunityUpdated::class => [
-            SyncWorldwideContractQuoteWithOpportunityData::class
+            SyncWorldwideContractQuoteWithOpportunityData::class,
+        ],
+
+        CompanyUpdated::class => [
+            SyncOpportunityPrimaryAccountContacts::class,
         ]
     ];
 

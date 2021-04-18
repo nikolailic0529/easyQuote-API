@@ -48,13 +48,13 @@ class OpportunityPolicy
             return true;
         }
 
-        if ($user->getKey() === $opportunity->primaryAccount()->getParentKey() && $user->cant('view_opportunities')) {
-            return $this->deny("You are an owner of the Opportunity, but you don't have permissions to view it. Contact with your Account Manager.");
-        }
-
-        if ($user->getKey() === $opportunity->user()->getParentKey() && $user->cant('view_opportunity')) {
-            return $this->deny("You are a creator of the Opportunity, but you don't have permissions to view it. Contact with your Account Manager.");
-        }
+//        if ($user->getKey() === $opportunity->primaryAccount()->getParentKey() && $user->cant('view_opportunities')) {
+//            return $this->deny("You are an owner of the Opportunity, but you don't have permissions to view it. Contact with your Account Manager.");
+//        }
+//
+//        if ($user->getKey() === $opportunity->user()->getParentKey() && $user->cant('view_opportunity')) {
+//            return $this->deny("You are a creator of the Opportunity, but you don't have permissions to view it. Contact with your Account Manager.");
+//        }
 
         if ($user->cant('view_opportunities')) {
             return $this->deny("You do not have permissions to view any Opportunity. Contact with your Account Manager.");

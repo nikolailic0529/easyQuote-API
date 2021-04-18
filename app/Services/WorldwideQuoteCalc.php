@@ -113,7 +113,7 @@ class WorldwideQuoteCalc
 
         $applicableDiscounts = $this->predefinedQuoteDiscountsToApplicableDiscounts($quote);
 
-        $totalPriceAfterDiscounts = (float)$this->calculateTotalPriceAfterPredefinedDiscounts($totalPriceAfterMargin, $applicableDiscounts);
+        $totalPriceAfterDiscounts = $this->calculateTotalPriceAfterPredefinedDiscounts($totalPriceAfterMargin, $applicableDiscounts);
 
         $applicableDiscountsValue = with($quote->activeVersion->custom_discount, function (?float $customDiscountValue) use ($totalPriceAfterMargin, $totalPriceAfterMarginExcludingCustomDiscount, $applicableDiscounts) {
             if (!is_null($customDiscountValue)) {
@@ -123,7 +123,7 @@ class WorldwideQuoteCalc
             return $this->calculateApplicableDiscountsValue($applicableDiscounts);
         });
 
-        $finalTotalPriceValue = $this->calculateTotalPriceAfterTax($totalPriceAfterDiscounts, (float)$quote->tax_value);
+        $finalTotalPriceValue = $this->calculateTotalPriceAfterTax($totalPriceAfterDiscounts, (float)$quote->activeVersion->tax_value);
 
         $finalMarginPercentage = $this->calculateMarginPercentage($totalPriceAfterDiscounts, $buyPrice);
 

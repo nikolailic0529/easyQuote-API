@@ -9,13 +9,6 @@ interface Stats
     public function setOutput(OutputInterface $output): self;
 
     /**
-     * Calculate and denormalize opportunity totals.
-     *
-     * @return void
-     */
-    public function denormalizeSummaryOfOpportunities(): void;
-
-    /**
      * Calculate and denormalize quote totals.
      *
      * @return void

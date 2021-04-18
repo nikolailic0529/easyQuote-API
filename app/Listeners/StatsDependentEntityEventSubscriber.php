@@ -34,7 +34,6 @@ use App\Events\WorldwideQuote\{WorldwideContractQuoteDiscountStepProcessed,
     WorldwideQuoteMarkedAsDead,
     WorldwideQuoteSubmitted,
     WorldwideQuoteUnraveled};
-use App\Models\OpportunityTotal;
 use App\Models\Quote\QuoteTotal;
 use App\Services\Stats\StatsCalculationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -152,15 +151,13 @@ class StatsDependentEntityEventSubscriber implements ShouldQueue
     {
         $opportunity = $event->getOpportunity();
 
-        $this->statsCalculationService->denormalizeSummaryOfOpportunity($opportunity);
+        //
     }
 
     public function deleteAggregationOfOpportunity(WithOpportunityEntity $event)
     {
         $opportunity = $event->getOpportunity();
 
-        OpportunityTotal::query()
-            ->where('opportunity_id', $opportunity->getKey())
-            ->delete();
+        //
     }
 }

@@ -533,7 +533,7 @@ class OpportunityTest extends TestCase
 
         $data['suppliers_grid'] = factory(OpportunitySupplier::class, 10)->raw();
 
-        $this->patchJson('api/opportunities/'.$opportunity->getKey(), $data)
+        $response = $this->patchJson('api/opportunities/'.$opportunity->getKey(), $data)
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
@@ -604,6 +604,28 @@ class OpportunityTest extends TestCase
                     ]
                 ]
             ]);
+
+        $this->assertNotEmpty($response->json('primary_account_contact_id'));
+
+        // Test the primary account contact is detached from opportunity,
+        // once it's detached from the corresponding primary account.
+        $newContactOfPrimaryAccount = factory(Contact::class)->create();
+
+        $this->patchJson('api/companies/'.$primaryAccountID, [
+            'name' => $account->name,
+            'vat_type' => 'NO VAT',
+            'contacts' => [
+                ['id' => $newContactOfPrimaryAccount->getKey()]
+            ]
+        ])
+//            ->dump()
+            ->assertOk();
+
+        $response = $this->getJson('api/opportunities/'.$opportunity->getKey())
+//            ->dump()
+            ->assertOk();
+
+        $this->assertEmpty($response->json('primary_account_contact_id'));
     }
 
     /**

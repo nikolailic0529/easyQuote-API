@@ -431,11 +431,15 @@ class WorldwideQuoteDataMapper
 
                 'equipment_address' => self::formatMachineAddressToString($quoteHardwareAddress),
                 'hardware_phone' => $quoteHardwareContact->phone ?? '',
-                'hardware_contact' => $distribution->opportunitySupplier->contact_name,
+                'hardware_contact' => transform($quoteHardwareContact, function (Contact $contact) {
+                    return implode(' ', [$contact->first_name, $contact->last_name]);
+                }) ?? '',
 
                 'software_address' => self::formatMachineAddressToString($quoteSoftwareAddress),
                 'software_phone' => $quoteSoftwareContact->phone ?? '',
-                'software_contact' => $distribution->opportunitySupplier->contact_name,
+                'software_contact' => transform($quoteSoftwareContact, function (Contact $contact) {
+                        return implode(' ', [$contact->first_name, $contact->last_name]);
+                    }) ?? '',
 
                 'service_levels' => $serviceLevels,
                 'coverage_period' => $coveragePeriod,
@@ -464,20 +468,20 @@ class WorldwideQuoteDataMapper
             $opportunityStartDate = Carbon::createFromFormat('Y-m-d', $opportunity->opportunity_start_date);
             $opportunityEndDate = Carbon::createFromFormat('Y-m-d', $opportunity->opportunity_end_date);
 
-            $duration = $opportunityStartDate->longAbsoluteDiffForHumans($opportunityEndDate);
+            $duration = $opportunityStartDate->longAbsoluteDiffForHumans($opportunityEndDate->copy()->addDay());
         }
 
         foreach ($quote->activeVersion->worldwideDistributions as $worldwideDistribution) {
             /** @var WorldwideDistribution $worldwideDistribution */
 
-            $distributionPrice = $this->worldwideDistributionCalc->calculateDistributionTotalPrice($worldwideDistribution);
+            $priceSummaryOfDistributorQuote = $this->worldwideDistributionCalc->calculatePriceSummaryOfDistributorQuote($worldwideDistribution);
 
             $quoteDataAggregation[] = new DistributionSummary([
-                'vendor_name' => $worldwideDistribution->vendors->pluck('name')->join(' & '),
+                'vendor_name' => $worldwideDistribution->opportunitySupplier->supplier_name,
                 'country_name' => $worldwideDistribution->country->name,
                 'duration' => $duration,
                 'qty' => 1,
-                'total_price' => static::formatPriceValue($distributionPrice, $outputCurrency->symbol),
+                'total_price' => static::formatPriceValue($priceSummaryOfDistributorQuote->final_total_price_excluding_tax, $outputCurrency->symbol),
             ]);
         }
 
@@ -598,7 +602,9 @@ class WorldwideQuoteDataMapper
 
             'quote_price_value_coefficient' => $quotePriceData->price_value_coefficient,
 
-            'contact_name' => optional($opportunity->primaryAccountContact)->contact_name ?? '',
+            'contact_name' => transform($opportunity->primaryAccountContact, function (Contact $contact) {
+                return implode(' ', [$contact->first_name, $contact->last_name]);
+            }) ?? '',
             'contact_email' => optional($opportunity->primaryAccountContact)->email ?? '',
             'contact_phone' => optional($opportunity->primaryAccountContact)->phone ?? '',
 
@@ -607,7 +613,7 @@ class WorldwideQuoteDataMapper
 
             'sub_total_value' => static::formatPriceValue($quotePriceData->final_total_price_value_excluding_tax, $outputCurrency->symbol),
             'total_value_including_tax' => static::formatPriceValue($quotePriceData->final_total_price_value, $outputCurrency->symbol),
-            'grand_total_value' => '',
+            'grand_total_value' => static::formatPriceValue($quotePriceData->final_total_price_value, $outputCurrency->symbol),
 
             'equipment_address' => $addressStringFormatter($quoteHardwareAddress),
             'hardware_contact' => $contactStringFormatter($quoteHardwareContact),
