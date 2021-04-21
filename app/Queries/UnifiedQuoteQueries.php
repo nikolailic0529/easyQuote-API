@@ -237,7 +237,7 @@ class UnifiedQuoteQueries
                     ->orOn('companies.id', 'quotes.company_id');
             })
 //            ->whereNull('quotes.submitted_at')
-            ->where('customers.valid_until', '>=', today())
+            ->where('customers.valid_until', '<=', today())
             ->select([
                 'quotes.id as id',
                 'quotes.user_id as user_id',
@@ -275,7 +275,7 @@ class UnifiedQuoteQueries
                 $joinClause->on('contract_types.id', 'worldwide_quotes.contract_type_id');
             })
 //            ->whereNull('worldwide_quotes.submitted_at')
-            ->where('opportunities.opportunity_closing_date', '>=', today())
+            ->where('opportunities.opportunity_closing_date', '<=', today())
             ->where('worldwide_quotes.status', QuoteStatus::ALIVE)
             ->select([
                 'worldwide_quotes.id as id',

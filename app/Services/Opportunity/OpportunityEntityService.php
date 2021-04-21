@@ -45,6 +45,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Factory as ValidatorFactory;
 use Illuminate\Validation\Validator;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\Intl\Currencies;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Webpatser\Uuid\Uuid;
@@ -149,6 +150,12 @@ class OpportunityEntityService
 
         $imported = [];
 
+        static $baseCurrencySymbol;
+
+        if (!isset($baseCurrencySymbol)) {
+            $baseCurrencySymbol = Currencies::getSymbol('GBP');
+        }
+
         foreach ($opportunitiesDataFileReader->getRows() as $i => $row) {
             $validator = $this->validateBatchOpportunityRow($row);
 
@@ -174,7 +181,8 @@ class OpportunityEntityService
                 'opportunity_type' => optional($importedOpportunity->contractType)->type_short_name,
                 'account_name' => optional($importedOpportunity->primaryAccount)->name,
                 'account_manager_name' => optional($importedOpportunity->accountManager)->user_fullname,
-                'opportunity_amount' => (float)$importedOpportunity->opportunity_amount,
+                'opportunity_amount' => (float)$importedOpportunity->base_opportunity_amount,
+                'opportunity_amount_formatted' => sprintf('%s %s', $baseCurrencySymbol, number_format((float)$importedOpportunity->base_opportunity_amount, 2)),
                 'opportunity_start_date' => $importedOpportunity->opportunity_start_date,
                 'opportunity_end_date' => $importedOpportunity->opportunity_end_date,
                 'opportunity_closing_date' => $importedOpportunity->opportunity_closing_date,

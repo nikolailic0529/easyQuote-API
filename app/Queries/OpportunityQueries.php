@@ -51,7 +51,7 @@ class OpportunityQueries
                 'opportunities.project_name',
                 'users.user_fullname as account_manager_name',
                 'opportunities.opportunity_closing_date',
-                'opportunities.opportunity_amount',
+                'opportunities.base_opportunity_amount as opportunity_amount',
                 'opportunities.opportunity_start_date',
                 'opportunities.opportunity_end_date',
                 'opportunities.sale_action_name',
