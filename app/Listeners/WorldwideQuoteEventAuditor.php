@@ -20,13 +20,16 @@ use App\Events\WorldwideQuote\WorldwideQuoteDrafted;
 use App\Events\WorldwideQuote\WorldwideQuoteInitialized;
 use App\Events\WorldwideQuote\WorldwideQuoteSubmitted;
 use App\Events\WorldwideQuote\WorldwideQuoteUnraveled;
+use App\Models\Address;
 use App\Models\Company;
+use App\Models\Contact;
 use App\Models\Data\Currency;
 use App\Models\Quote\Discount\MultiYearDiscount;
 use App\Models\Quote\Discount\PrePayDiscount;
 use App\Models\Quote\Discount\PromotionalDiscount;
 use App\Models\Quote\Discount\SND;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\Template\QuoteTemplate;
 use App\Services\Activity\ActivityLogger;
 use App\Services\Activity\ChangesDetector;
@@ -196,16 +199,56 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
 
     public function handleContractQuoteDiscountStepProcessedEvent(WorldwideContractQuoteDiscountStepProcessed $event)
     {
+        $distributorQuoteDiscountsMapper = function (WorldwideQuoteVersion $quote) {
+            $discountsData = [
+                'multi_year_discounts' => [],
+                'promotional_discounts' => [],
+                'pre_pay_discounts' => [],
+                'special_negotiation_discounts' => [],
+                'custom_discounts' => [],
+            ];
+
+            foreach ($quote->worldwideDistributions as $distributorQuote) {
+
+                if (!is_null($distributorQuote->multiYearDiscount)) {
+                    $discountsData['multi_year_discounts'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->multiYearDiscount->name);
+                }
+
+                if (!is_null($distributorQuote->promotionalDiscount)) {
+                    $discountsData['promotional_discounts'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->promotionalDiscount->name);
+                }
+
+                if (!is_null($distributorQuote->prePayDiscount)) {
+                    $discountsData['pre_pay_discounts'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->prePayDiscount->name);
+                }
+
+                if (!is_null($distributorQuote->snDiscount)) {
+                    $discountsData['special_negotiation_discounts'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->snDiscount->name);
+                }
+
+                if (!is_null($distributorQuote->custom_discount)) {
+                    $discountsData['custom_discounts'][] = sprintf("Supplier '%s': %s%%", $distributorQuote->opportunitySupplier->supplier_name, number_format((float)$distributorQuote->custom_discount, 2));
+                }
+
+            }
+
+            return array_map(function (array $discounts) {
+
+                return implode("\n", $discounts);
+
+            }, $discountsData);
+        };
+
         $this->activityLogger
             ->performedOn($event->getQuote())
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
                         'stage' => $this->getActiveQuoteVersionStage($event->getOldQuote())
-                    ],
+                    ] + $distributorQuoteDiscountsMapper($event->getOldQuote()->activeVersion),
                     [
                         'stage' => $this->getActiveQuoteVersionStage($event->getQuote())
-                    ]
+                    ] + $distributorQuoteDiscountsMapper($event->getQuote()->activeVersion)
                 )
             )
             ->log('updated');
@@ -213,16 +256,80 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
 
     public function handleContractQuoteImportStepProcessedEvent(WorldwideContractQuoteImportStepProcessed $event)
     {
+        $addressToString = function (Address $address) {
+            return implode(', ', array_filter([$address->address_type, $address->address_1, $address->city, $address->state, $address->post_code, optional($address->country)->iso_3166_2]));
+        };
+
+        $contactToString = function (Contact $contact) {
+            return implode(', ', array_filter([$contact->contact_type, $contact->first_name, $contact->last_name, $contact->email, $contact->phone]));
+        };
+
+        $distributorQuoteSetupDataMapper = function (WorldwideQuoteVersion $quote) use ($contactToString, $addressToString) {
+            $setupData = [
+                'vendors' => [],
+                'countries' => [],
+                'currencies' => [],
+                'buy_prices' => [],
+                'expiry_dates' => [],
+                'distributor_files' => [],
+                'payment_schedule_files' => [],
+                'addresses' => [],
+                'contacts' => [],
+            ];
+
+            foreach ($quote->worldwideDistributions as $distributorQuote) {
+
+                if ($distributorQuote->vendors->isNotEmpty()) {
+                    $setupData['vendors'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->vendors->pluck('short_code')->join(', '));
+                }
+
+                if ($distributorQuote->addresses->isNotEmpty()) {
+                    $setupData['addresses'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->addresses->map($addressToString)->join('; '));
+                }
+
+                if ($distributorQuote->contacts->isNotEmpty()) {
+                    $setupData['contacts'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->contacts->map($contactToString)->join('; '));
+                }
+
+                if (!is_null($distributorQuote->country)) {
+                    $setupData['countries'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->country->iso_3166_2);
+                }
+
+                if (!is_null($distributorQuote->distributionCurrency)) {
+                    $setupData['currencies'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->distributionCurrency->code);
+                }
+
+                $setupData['buy_prices'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, number_format((float)$distributorQuote->buy_price, 2));
+
+                $setupData['expiry_dates'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->distribution_expiry_date);
+
+                if (!is_null($distributorQuote->distributorFile)) {
+                    $setupData['distributor_files'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->distributorFile->original_file_name);
+                }
+
+                if (!is_null($distributorQuote->scheduleFile)) {
+                    $setupData['payment_schedule_files'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->scheduleFile->original_file_name);
+                }
+
+            }
+
+            return array_map(function (array $discounts) {
+
+                return implode("\n", $discounts);
+
+            }, $setupData);
+        };
+
         $this->activityLogger
             ->performedOn($event->getQuote())
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
                         'stage' => $this->getActiveQuoteVersionStage($event->getOldQuote())
-                    ],
+                    ] + $distributorQuoteSetupDataMapper($event->getOldQuote()->activeVersion),
                     [
                         'stage' => $this->getActiveQuoteVersionStage($event->getQuote())
-                    ]
+                    ] + $distributorQuoteSetupDataMapper($event->getQuote()->activeVersion)
                 )
             )
             ->log('updated');

@@ -1532,8 +1532,17 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         return tap(new WorldwideQuote(), function (WorldwideQuote $baseQuote) use ($quote) {
             $baseQuote->setRawAttributes($quote->worldwideQuote->getRawOriginal());
             $oldVersion = (new WorldwideQuoteVersion())->setRawAttributes($quote->getRawOriginal());
+
             $oldDistributorQuotes = $quote->worldwideDistributions->map(function (WorldwideDistribution $distributorQuote) {
-                return (new WorldwideDistribution())->setRawAttributes($distributorQuote->getRawOriginal());
+
+                return tap(new WorldwideDistribution(), function (WorldwideDistribution $clonedDistributorQuote) use ($distributorQuote) {
+                    $clonedDistributorQuote->setRawAttributes($distributorQuote->getRawOriginal());
+
+                    $clonedDistributorQuote->setRelation('vendors', $distributorQuote->vendors);
+                    $clonedDistributorQuote->setRelation('addresses', $distributorQuote->addresses);
+                    $clonedDistributorQuote->setRelation('contacts', $distributorQuote->contacts);
+                });
+
             });
 
             $baseQuote->setRelation('activeVersion', $oldVersion);
