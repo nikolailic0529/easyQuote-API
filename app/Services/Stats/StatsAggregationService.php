@@ -221,6 +221,7 @@ class StatsAggregationService
             ->selectRaw('SUM(`total_price`) AS `expiring_quotes_value`')
             ->where('quote_status', QuoteStatus::ALIVE)
             ->where('valid_until_date', '<=', today())
+            ->whereIn('quote_type', $summaryRequestData->entity_types)
             ->when(!is_null($summaryRequestData->country_id), function (Builder $builder) use ($summaryRequestData) {
                 $builder->whereHas('countries', function (Builder $relation) use ($summaryRequestData) {
                     $relation->whereKey($summaryRequestData->country_id);

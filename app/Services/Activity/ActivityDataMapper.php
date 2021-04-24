@@ -5,6 +5,7 @@ namespace App\Services\Activity;
 use App\Models\System\Activity;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
 class ActivityDataMapper
@@ -53,8 +54,10 @@ class ActivityDataMapper
             ];
         }
 
+        $newAttributeKeys = array_keys($changes[self::NEW_ATTRS_KEY] ?? []);
+
         return [
-            self::OLD_ATTRS_KEY => $this->mapAttributeValues($changes[self::OLD_ATTRS_KEY] ?? []),
+            self::OLD_ATTRS_KEY => $this->mapAttributeValues(Arr::only($changes[self::OLD_ATTRS_KEY] ?? [], $newAttributeKeys)),
             self::NEW_ATTRS_KEY => $this->mapAttributeValues($changes[self::NEW_ATTRS_KEY] ?? [])
         ];
     }
@@ -89,7 +92,7 @@ class ActivityDataMapper
             return $value ? 'TRUE' : 'FALSE';
         }
 
-        return (string)$value;
+        return nl2br((string)$value);
     }
 
     public static function resolveNameOfAttribute(string $attributeName): string

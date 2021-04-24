@@ -12,7 +12,7 @@ use App\Listeners\{ExchangeRatesListener,
     LogSentMessage,
     ModulePermissionListener,
     NotifyNoteCreatedOnWorldwideQuote,
-    OpportunityEventSubscriber,
+    OpportunityEventAuditor,
     RescueQuoteEventAuditor,
     RfqReceivedListener,
     SalesOrderEventSubscriber,
@@ -78,7 +78,7 @@ class EventServiceProvider extends ServiceProvider
 
         TaskEventSubscriber::class,
 
-        OpportunityEventSubscriber::class,
+        OpportunityEventAuditor::class,
 
         SalesOrderEventSubscriber::class,
 

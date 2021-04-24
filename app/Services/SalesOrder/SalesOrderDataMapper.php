@@ -35,8 +35,7 @@ use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
 use App\Services\ThumbHelper;
 use App\Services\WorldwideQuote\AssetServiceLookupService;
-use App\Services\WorldwideQuoteCalc;
-use http\Exception\InvalidArgumentException;
+use App\Services\WorldwideQuote\WorldwideQuoteCalc;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -255,6 +254,7 @@ class SalesOrderDataMapper
             'order_no' => $salesOrder->order_number,
             'order_date' => now()->toDateString(),
             'bc_company_name' => transform($company, fn(Company $company) => $company->vs_company_code),
+            'company_id' => transform($company, fn (Company $company) => $company->getKey()),
             'exchange_rate' => $exchangeRateValue,
             'post_sales_id' => $salesOrder->getKey(),
             'customer_po' => $salesOrder->customer_po,
@@ -369,6 +369,7 @@ class SalesOrderDataMapper
             'order_no' => $salesOrder->order_number,
             'order_date' => now()->toDateString(),
             'bc_company_name' => transform($company, fn(Company $company) => $company->vs_company_code),
+            'company_id' => transform($company, fn (Company $company) => $company->getKey()),
             'exchange_rate' => $exchangeRateValue,
             'post_sales_id' => $salesOrder->getKey(),
             'customer_po' => $salesOrder->customer_po,

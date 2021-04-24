@@ -4,7 +4,8 @@ namespace App\Services;
 
 use App\Contracts\{Services\ManagesExchangeRates,
     Services\ProcessesWorldwideDistributionState,
-    Services\ProcessesWorldwideQuoteState};
+    Services\ProcessesWorldwideQuoteState
+};
 use App\DTO\ProcessableDistributionCollection;
 use App\DTO\QuoteStages\{AddressesContactsStage,
     ContractDetailsStage,
@@ -20,7 +21,8 @@ use App\DTO\QuoteStages\{AddressesContactsStage,
     PackDiscountStage,
     PackMarginTaxStage,
     ReviewStage,
-    SubmitStage};
+    SubmitStage
+};
 use App\DTO\WorldwideQuote\DistributionAddressData;
 use App\DTO\WorldwideQuote\DistributionContactData;
 use App\DTO\WorldwideQuote\DistributionImportData;
@@ -65,7 +67,8 @@ use App\Models\{Address,
     QuoteFile\QuoteFile,
     QuoteFile\ScheduleData,
     User,
-    WorldwideQuoteAsset};
+    WorldwideQuoteAsset
+};
 use App\Services\Exceptions\ValidationException;
 use App\Services\WorldwideQuote\Models\ReplicatedVersionData;
 use App\Services\WorldwideQuote\WorldwideQuoteReplicator;
@@ -198,31 +201,33 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                 }
 
                 // When a primary account is present on the opportunity,
-                // we will copy its' all addresses & contacts and attach to the opportunity.
+                // we will copy its' all default addresses & contacts and attach to the opportunity.
+                $addressPivots = $primaryAccount->addresses
+                    ->filter(function (Address $address) {
+                        return $address->pivot->is_default;
+                    })
+                    ->mapWithKeys(function (Address $address) use ($opportunity) {
+                        return [$address->getKey() => ['is_default' => $address->pivot->is_default]];
+                    })
+                    ->all();
 
-                $this->connection->transaction(function () use ($opportunity, $primaryAccount) {
-                    $opportunity->addresses()->delete();
-                    $opportunity->contacts()->delete();
+                $contactPivots = $primaryAccount->contacts
+                    ->filter(function (Contact $contact) {
+                        return $contact->pivot->is_default;
+                    })
+                    ->mapWithKeys(function (Contact $contact) use ($opportunity) {
+                        return [$contact->getKey() => ['is_default' => $contact->pivot->is_default]];
+                    })
+                    ->all();
 
-                    $addresses = $primaryAccount->addresses->mapWithKeys(function (Address $address) use ($opportunity) {
-                        $replicatedAddress = tap($address->replicate(), function (Address $address) {
-                            $address->save();
-                        });
+                $this->connection->transaction(function () use ($contactPivots, $addressPivots, $opportunity, $primaryAccount) {
+                    if (!empty($addressPivots)) {
+                        $opportunity->addresses()->syncWithoutDetaching($addressPivots);
+                    }
 
-                        return [$replicatedAddress->getKey() => ['is_default' => $address->pivot->is_default]];
-                    });
-
-                    $opportunity->addresses()->syncWithoutDetaching($addresses->all());
-
-                    $contacts = $primaryAccount->contacts->mapWithKeys(function (Contact $contact) use ($opportunity) {
-                        $replicatedContact = tap($contact->replicate(), function (Contact $contact) {
-                            $contact->save();
-                        });
-
-                        return [$replicatedContact->getKey() => ['is_default' => $contact->pivot->is_default]];
-                    });
-
-                    $opportunity->contacts()->syncWithoutDetaching($contacts->all());
+                    if (!empty($contactPivots)) {
+                        $opportunity->contacts()->syncWithoutDetaching($contactPivots);
+                    }
                 });
             });
 
@@ -295,24 +300,41 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             throw new ValidationException($violations);
         }
 
-        foreach ($stage->addresses as $addressData) {
-            $violations = $this->validator->validate($addressData);
-
-            if (count($violations)) {
-                throw new ValidationException($violations);
-            }
-        }
-
-        foreach ($stage->contacts as $contactData) {
-            $violations = $this->validator->validate($contactData);
-
-            if (count($violations)) {
-                throw new ValidationException($violations);
-            }
-        }
-
         return tap($quote, function (WorldwideQuoteVersion $quote) use ($stage) {
             $oldQuote = $this->cloneBaseQuoteEntityFromVersion($quote);
+
+            $opportunity = $quote->worldwideQuote->opportunity;
+            $primaryAccount = $opportunity->primaryAccount;
+
+            $addressOfPrimaryAccountDictionary = value(function () use ($primaryAccount): array {
+
+                if (is_null($primaryAccount)) {
+                    return [];
+                }
+
+                $dictionary = [];
+
+                foreach ($primaryAccount->addresses as $address) {
+                    $dictionary[$address->getKey()] = (bool)$address->pivot->is_default;
+                }
+
+                return $dictionary;
+            });
+
+            $contactOfPrimaryAccountDictionary = value(function () use ($primaryAccount): array {
+
+                if (is_null($primaryAccount)) {
+                    return [];
+                }
+
+                $dictionary = [];
+
+                foreach ($primaryAccount->contacts as $contact) {
+                    $dictionary[$contact->getKey()] = (bool)$contact->pivot->is_default;
+                }
+
+                return $dictionary;
+            });
 
             $quoteLock = $this->lockProvider->lock(
                 Lock::UPDATE_WWQUOTE($quote->getKey()),
@@ -336,98 +358,35 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                 10
             );
 
-            $opportunityLock->block(30, function () use ($quote, $stage) {
-                $opportunity = $quote->worldwideQuote->opportunity;
+            $opportunity = $quote->worldwideQuote->opportunity;
 
-                $existingAddressModelKeys = array_map(function (OpportunityAddressData $addressData) {
-                    return $addressData->address_id;
-                }, iterator_to_array($stage->addresses));
+            $addressPivots = value(function () use ($stage, $addressOfPrimaryAccountDictionary): array {
+                $pivots = [];
 
-                $existingAddressModelKeys = array_values(array_filter($existingAddressModelKeys));
+                foreach ($stage->address_ids as $id) {
+                    $pivots[$id] = ['is_default' => $addressOfPrimaryAccountDictionary[$id] ?? false];
+                }
 
-                $existingContactModelKeys = array_map(function (OpportunityContactData $contactData) {
-                    return $contactData->contact_id;
-                }, iterator_to_array($stage->contacts));
+                return $pivots;
+            });
 
-                $existingContactModelKeys = array_values(array_filter($existingContactModelKeys));
+            $contactPivots = value(function () use ($stage, $contactOfPrimaryAccountDictionary): array {
+                $pivots = [];
 
-                $this->connection->transaction(function () use ($opportunity, $stage, $existingAddressModelKeys, $existingContactModelKeys) {
-                    $opportunity->addresses()->whereKeyNot($existingAddressModelKeys)->delete();
-                    $opportunity->contacts()->whereKeyNot($existingContactModelKeys)->delete();
+                foreach ($stage->contact_ids as $id) {
+                    $pivots[$id] = ['is_default' => $contactOfPrimaryAccountDictionary[$id] ?? false];
+                }
 
-                    $stage->addresses->rewind();
-                    $stage->contacts->rewind();
+                return $pivots;
+            });
 
-                    $addressModelKeys = [];
-                    $contactModelKeys = [];
+            $opportunityLock->block(30, function () use ($opportunity, $addressPivots, $contactPivots) {
 
-                    foreach ($stage->addresses as $addressData) {
-                        if (!is_null($addressData->address_id)) {
-                            Address::query()->whereKey($addressData->address_id)
-                                ->update([
-                                    'address_type' => $addressData->address_type,
-                                    'address_1' => $addressData->address_1,
-                                    'address_2' => $addressData->address_2,
-                                    'city' => $addressData->city,
-                                    'state' => $addressData->state,
-                                    'post_code' => $addressData->post_code,
-                                    'country_id' => $addressData->country_id,
-                                ]);
-
-                            $addressModelKeys[$addressData->address_id] = ['is_default' => $addressData->is_default];
-                        } else {
-                            with(new Address(), function (Address $address) use ($addressData, &$addressModelKeys) {
-                                $address->address_type = $addressData->address_type;
-                                $address->address_1 = $addressData->address_1;
-                                $address->address_2 = $addressData->address_2;
-                                $address->city = $addressData->city;
-                                $address->state = $addressData->state;
-                                $address->post_code = $addressData->post_code;
-                                $address->country_id = $addressData->country_id;
-
-                                $address->save();
-
-                                $addressModelKeys[$address->getKey()] = ['is_default' => $addressData->is_default];
-                            });
-                        }
-                    }
-
-                    foreach ($stage->contacts as $contactData) {
-                        if (!is_null($contactData->contact_id)) {
-                            Contact::query()->whereKey($contactData->contact_id)
-                                ->update([
-                                    'contact_type' => $contactData->contact_type,
-                                    'first_name' => $contactData->first_name,
-                                    'last_name' => $contactData->last_name,
-                                    'email' => $contactData->email,
-                                    'mobile' => $contactData->mobile,
-                                    'phone' => $contactData->phone,
-                                    'job_title' => $contactData->job_title,
-                                    'is_verified' => $contactData->is_verified,
-                                ]);
-
-                            $contactModelKeys[$contactData->contact_id] = ['is_default' => $contactData->is_default];
-                        } else {
-                            with(new Contact(), function (Contact $contact) use ($contactData, &$contactModelKeys) {
-                                $contact->contact_type = $contactData->contact_type;
-                                $contact->first_name = $contactData->first_name;
-                                $contact->last_name = $contactData->last_name;
-                                $contact->email = $contactData->email;
-                                $contact->mobile = $contactData->mobile;
-                                $contact->phone = $contactData->phone;
-                                $contact->job_title = $contactData->job_title;
-                                $contact->is_verified = $contactData->is_verified;
-
-                                $contact->save();
-
-                                $contactModelKeys[$contact->getKey()] = ['is_default' => $contactData->is_default];
-                            });
-                        }
-                    }
-
-                    $opportunity->addresses()->sync($addressModelKeys);
-                    $opportunity->contacts()->sync($contactModelKeys);
+                $this->connection->transaction(function () use ($opportunity, $addressPivots, $contactPivots) {
+                    $opportunity->addresses()->sync($addressPivots);
+                    $opportunity->contacts()->sync($contactPivots);
                 });
+
             });
 
             $this->eventDispatcher->dispatch(
@@ -690,6 +649,39 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
         $oldQuote = $this->cloneBaseQuoteEntityFromVersion($quoteVersion);
 
+        $opportunity = $quoteVersion->worldwideQuote->opportunity;
+        $primaryAccount = $opportunity->primaryAccount;
+
+        $addressOfPrimaryAccountDictionary = value(function () use ($primaryAccount): array {
+
+            if (is_null($primaryAccount)) {
+                return [];
+            }
+
+            $dictionary = [];
+
+            foreach ($primaryAccount->addresses as $address) {
+                $dictionary[$address->getKey()] = (bool)$address->pivot->is_default;
+            }
+
+            return $dictionary;
+        });
+
+        $contactOfPrimaryAccountDictionary = value(function () use ($primaryAccount): array {
+
+            if (is_null($primaryAccount)) {
+                return [];
+            }
+
+            $dictionary = [];
+
+            foreach ($primaryAccount->contacts as $contact) {
+                $dictionary[$contact->getKey()] = (bool)$contact->pivot->is_default;
+            }
+
+            return $dictionary;
+        });
+
         $lock = $this->lockProvider->lock(
             Lock::UPDATE_WWQUOTE($quoteVersion->getKey()),
             10
@@ -735,103 +727,34 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $model->buy_price = $distributionData->buy_price;
             $model->calculate_list_price = $distributionData->calculate_list_price;
 
-            $existingAddressModelKeys = array_map(function (DistributionAddressData $addressData) {
-                return $addressData->address_id;
-            }, $distributionData->addresses);
+            $addressPivots = value(function () use ($distributionData, $addressOfPrimaryAccountDictionary) {
+                $pivots = [];
 
-            $existingAddressModelKeys = array_values(array_filter($existingAddressModelKeys));
+                foreach ($distributionData->address_ids as $id) {
+                    $pivots[$id] = ['is_default' => $addressOfPrimaryAccountDictionary[$id] ?? false];
+                }
 
-            $existingContactModelKeys = array_map(function (DistributionContactData $contactData) {
-                return $contactData->contact_id;
-            }, $distributionData->contacts);
+                return $pivots;
+            });
 
-            $existingContactModelKeys = array_values(array_filter($existingContactModelKeys));
+            $contactPivots = value(function () use ($distributionData, $contactOfPrimaryAccountDictionary) {
+                $pivots = [];
 
-            $lock->block(30, function () use ($existingAddressModelKeys, $existingContactModelKeys, $model, $distributionData) {
+                foreach ($distributionData->contact_ids as $id) {
+                    $pivots[$id] = ['is_default' => $contactOfPrimaryAccountDictionary[$id] ?? false];
+                }
 
-                $this->connection->transaction(function () use ($existingAddressModelKeys, $existingContactModelKeys, $model, $distributionData) {
+                return $pivots;
+            });
+
+            $lock->block(30, function () use ($contactPivots, $addressPivots, $model, $distributionData) {
+
+                $this->connection->transaction(function () use ($addressPivots, $contactPivots, $model, $distributionData) {
                     $model->save();
                     $model->vendors()->sync($distributionData->vendors);
 
-                    if (!empty($existingAddressModelKeys)) {
-                        $model->addresses()->whereKeyNot($existingAddressModelKeys)->delete();
-                    }
-
-                    $addressModelKeys = [];
-
-                    foreach ($distributionData->addresses as $addressData) {
-                        if (!is_null($addressData->address_id)) {
-                            Address::query()->whereKey($addressData->address_id)
-                                ->update([
-                                    'address_type' => $addressData->address_type,
-                                    'address_1' => $addressData->address_1,
-                                    'address_2' => $addressData->address_2,
-                                    'city' => $addressData->city,
-                                    'state' => $addressData->state,
-                                    'post_code' => $addressData->post_code,
-                                    'country_id' => $addressData->country_id,
-                                ]);
-
-                            $addressModelKeys[$addressData->address_id] = ['is_default' => $addressData->is_default];
-                        } else {
-                            with(new Address(), function (Address $address) use ($addressData, &$addressModelKeys) {
-                                $address->address_type = $addressData->address_type;
-                                $address->address_1 = $addressData->address_1;
-                                $address->address_2 = $addressData->address_2;
-                                $address->city = $addressData->city;
-                                $address->state = $addressData->state;
-                                $address->post_code = $addressData->post_code;
-                                $address->country_id = $addressData->country_id;
-
-                                $address->save();
-
-                                $addressModelKeys[$address->getKey()] = ['is_default' => $addressData->is_default];
-                            });
-                        }
-                    }
-
-                    $model->addresses()->sync($addressModelKeys);
-
-                    if (!empty($existingContactModelKeys)) {
-                        $model->contacts()->whereKeyNot($existingContactModelKeys)->delete();
-                    }
-
-                    $contactModelKeys = [];
-
-                    foreach ($distributionData->contacts as $contactData) {
-                        if (!is_null($contactData->contact_id)) {
-                            Contact::query()->whereKey($contactData->contact_id)
-                                ->update([
-                                    'contact_type' => $contactData->contact_type,
-                                    'first_name' => $contactData->first_name,
-                                    'last_name' => $contactData->last_name,
-                                    'email' => $contactData->email,
-                                    'mobile' => $contactData->mobile,
-                                    'phone' => $contactData->phone,
-                                    'job_title' => $contactData->job_title,
-                                    'is_verified' => $contactData->is_verified,
-                                ]);
-
-                            $contactModelKeys[$contactData->contact_id] = ['is_default' => $contactData->is_default];
-                        } else {
-                            with(new Contact(), function (Contact $contact) use ($contactData, &$contactModelKeys) {
-                                $contact->contact_type = $contactData->contact_type;
-                                $contact->first_name = $contactData->first_name;
-                                $contact->last_name = $contactData->last_name;
-                                $contact->email = $contactData->email;
-                                $contact->mobile = $contactData->mobile;
-                                $contact->phone = $contactData->phone;
-                                $contact->job_title = $contactData->job_title;
-                                $contact->is_verified = $contactData->is_verified;
-
-                                $contact->save();
-
-                                $contactModelKeys[$contact->getKey()] = ['is_default' => $contactData->is_default];
-                            });
-                        }
-                    }
-
-                    $model->contacts()->sync($contactModelKeys);
+                    $model->addresses()->sync($addressPivots);
+                    $model->contacts()->sync($contactPivots);
                 });
 
             });
@@ -1078,7 +1001,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
     public function processQuoteDraft(WorldwideQuoteVersion $quote, DraftStage $stage): WorldwideQuoteVersion
     {
         return tap($quote, function (WorldwideQuoteVersion $quote) use ($stage) {
-            $oldQuote = (new WorldwideQuote())->setRawAttributes($quote->worldwideQuote->getRawOriginal());
+            $oldQuote = $this->cloneBaseQuoteEntityFromVersion($quote);
 
             $lock = $this->lockProvider->lock(
                 Lock::UPDATE_WWQUOTE($quote->worldwideQuote->getKey()),
@@ -1541,6 +1464,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                     $clonedDistributorQuote->setRelation('vendors', $distributorQuote->vendors);
                     $clonedDistributorQuote->setRelation('addresses', $distributorQuote->addresses);
                     $clonedDistributorQuote->setRelation('contacts', $distributorQuote->contacts);
+                    $clonedDistributorQuote->setRelation('mapping', $distributorQuote->mapping);
                 });
 
             });

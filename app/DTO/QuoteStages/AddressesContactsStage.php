@@ -43,9 +43,19 @@ final class AddressesContactsStage extends DataTransferObject
      */
     public float $buy_price;
 
-    public OpportunityAddressDataCollection $addresses;
+    /**
+     * @Constraints\All(@Constraints\Uuid)
+     *
+     * @var array
+     */
+    public array $address_ids;
 
-    public OpportunityContactDataCollection $contacts;
+    /**
+     * @Constraints\All(@Constraints\Uuid)
+     *
+     * @var array
+     */
+    public array $contact_ids;
 
     public int $stage = PackQuoteStage::CONTACTS;
 }

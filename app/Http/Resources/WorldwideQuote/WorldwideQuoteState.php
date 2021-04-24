@@ -27,6 +27,9 @@ class WorldwideQuoteState extends JsonResource
         'opportunity.contacts',
         'opportunity.accountManager',
         'opportunity.primaryAccount',
+        'opportunity.primaryAccount.addresses',
+        'opportunity.primaryAccount.addresses.country',
+        'opportunity.primaryAccount.contacts',
         'opportunity.primaryAccountContact',
 
         'worldwideDistributions',

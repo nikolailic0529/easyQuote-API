@@ -1073,12 +1073,12 @@ class WorldwideDistributorQuoteTest extends TestCase
 
         $this->assertEquals('3000.00', $response->json('total_price'));
         $this->assertEquals('2000.00', $response->json('buy_price'));
-        $this->assertEquals('2649.01', $response->json('final_total_price'));
-        $this->assertEquals('684.33', $response->json('applicable_discounts_value'));
-        $this->assertEquals("38.78", $response->json('margin_after_multi_year_discount'));
-        $this->assertEquals("36.88", $response->json('margin_after_pre_pay_discount'));
-        $this->assertEquals("28.27", $response->json('margin_after_promotional_discount'));
-        $this->assertEquals("24.50", $response->json('margin_after_sn_discount'));
+        $this->assertEquals('2804.83', $response->json('final_total_price'));
+        $this->assertEquals('724.58', $response->json('applicable_discounts_value'));
+        $this->assertEquals("42.18", $response->json('margin_after_multi_year_discount'));
+        $this->assertEquals("40.39", $response->json('margin_after_pre_pay_discount'));
+        $this->assertEquals("32.26", $response->json('margin_after_promotional_discount'));
+        $this->assertEquals("28.69", $response->json('margin_after_sn_discount'));
     }
 
     /**
@@ -1137,8 +1137,8 @@ class WorldwideDistributorQuoteTest extends TestCase
 
         $this->assertEquals('3000.00', $response->json('total_price'));
         $this->assertEquals('2000.00', $response->json('buy_price'));
-        $this->assertEquals('3176.67', $response->json('final_total_price'));
-        $this->assertEquals('36.84', $response->json('final_margin'));
+        $this->assertEquals('3362.94', $response->json('final_total_price'));
+        $this->assertEquals('40.35', $response->json('final_margin'));
     }
 
     /**
@@ -1193,7 +1193,7 @@ class WorldwideDistributorQuoteTest extends TestCase
                 'total_price' => '3000.00',
                 'buy_price' => '2000.00',
                 'final_total_price' => '3000.00',
-                'applicable_discounts_value' => '333.33',
+                'applicable_discounts_value' => '529.41',
                 'margin_after_custom_discount' => '33.33',
             ]);
     }
@@ -1524,10 +1524,10 @@ class WorldwideDistributorQuoteTest extends TestCase
             ]);
 
         $this->assertEquals(10_000, $response->json('worldwide_distributions.0.summary.total_price'));
-        $this->assertEquals(round(10_000 / 1.05, 2), $response->json('worldwide_distributions.0.summary.final_total_price'));
+        $this->assertEquals(9_500, $response->json('worldwide_distributions.0.summary.final_total_price'));
         $this->assertEquals(9_500, $response->json('worldwide_distributions.0.summary.buy_price'));
         $this->assertEquals(5, $response->json('worldwide_distributions.0.summary.margin_percentage'));
-        $this->assertEquals(0.25, $response->json('worldwide_distributions.0.margin_percentage_after_custom_discount'));
+        $this->assertEquals(0.0, $response->json('worldwide_distributions.0.margin_percentage_after_custom_discount'));
 
         $wwDistribution->update(['custom_discount' => 0]);
 

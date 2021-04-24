@@ -816,6 +816,7 @@ class OpportunityTest extends TestCase
             ]);
 
         $this->patchJson('api/opportunities/'.$opportunity->getKey().'/restore-from-lost')
+//            ->dump()
             ->assertNoContent();
 
         $this->getJson('api/opportunities/'.$opportunity->getKey())

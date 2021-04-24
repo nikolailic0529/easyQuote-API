@@ -117,63 +117,55 @@ class SubmitSalesOrderService
 
     protected function mapSubmitSalesOrderDataToPostData(SubmitSalesOrderData $salesOrderData): array
     {
+        /** @var SubmitOrderAddressData|null $invoiceAddress */
+        $invoiceAddress = value(function () use ($salesOrderData): ?SubmitOrderAddressData {
+
+            foreach ($salesOrderData->addresses_data as $addressData) {
+                if ($addressData->address_type === 'Invoice') {
+                    return $addressData;
+                }
+            }
+
+            return null;
+
+        });
+
         return [
             'data' => [
-                'bc_customer_id' => null,
-                'vendor' => $salesOrderData->vendor_short_code,
+                'post_sales_id' => $salesOrderData->post_sales_id,
+                'company_id' => $salesOrderData->company_id,
+                'address_1' => $invoiceAddress->address_1 ?? null,
+                'address_2' => $invoiceAddress->address_2 ?? null,
+                'city' => $invoiceAddress->city ?? null,
+                'county' => $invoiceAddress->state ?? null,
+                'post_code' => $invoiceAddress->post_code ?? null,
+                'country_code' => $invoiceAddress->country_code ?? null,
+                'phone_no' => $salesOrderData->customer_data->phone_no,
+                'email' => $salesOrderData->customer_data->email,
+                'company_reg_no' => $salesOrderData->customer_data->company_reg_no,
+                'vat_reg_no' => $salesOrderData->customer_data->vat_reg_no,
+                'order_no' => $salesOrderData->order_no,
                 'user_agent' => self::USER_AGENT,
                 'in_contract' => $salesOrderData->contract_type,
-                'registration_customer_name' => $salesOrderData->registration_customer_name,
-                'currency_code' => $salesOrderData->currency_code,
-                'from_date' => $salesOrderData->from_date,
-                'to_date' => $salesOrderData->to_date,
-                'said' => $salesOrderData->service_agreement_id,
-                'order_no' => $salesOrderData->order_no,
-                'order_date' => Carbon::createFromFormat('Y-m-d', $salesOrderData->order_date)->format('m/d/Y'),
-                'bc_company' => $salesOrderData->bc_company_name,
-                'sales_person_name' => $salesOrderData->sales_person_name,
+                'created_date' => $salesOrderData->order_date,
+                'currency_code' => $salesOrderData->customer_data->currency_code,
                 'exchange_rate' => $salesOrderData->exchange_rate,
-                'post_sales_id' => $salesOrderData->post_sales_id,
                 'customer_po' => $salesOrderData->customer_po,
-                'business_division' => self::BUSINESS_DIVISION,
-
-                'customer' => [
-                    'company_reg_no' => $salesOrderData->customer_data->company_reg_no,
-                    'vat_reg_no' => $salesOrderData->customer_data->vat_reg_no,
-                    'currency_code' => $salesOrderData->customer_data->currency_code,
-                    'email' => $salesOrderData->customer_data->email,
-                    'customer_name' => $salesOrderData->customer_data->customer_name,
-                    'phone_no' => $salesOrderData->customer_data->phone_no,
-                    'fax_no' => $salesOrderData->customer_data->fax_no
-                ],
-                'addresses' => array_map(function (SubmitOrderAddressData $addressData) {
-                    return [
-                        'address_type' => $addressData->address_type,
-                        'address_1' => $addressData->address_1,
-                        'address_2' => $addressData->address_2,
-                        'city' => $addressData->city,
-                        'state' => $addressData->state,
-                        'state_code' => $addressData->state_code,
-                        'country_code' => $addressData->country_code,
-                        'post_code' => $addressData->post_code
-                    ];
-                }, $salesOrderData->addresses_data),
-                'sales_line' => array_map(function (SubmitOrderLineData $lineData) {
-                    return [
-                        'unit_price' => $lineData->unit_price,
-                        'sku' => $lineData->sku,
-                        'buy_price' => $lineData->buy_price,
-                        'service_description' => $lineData->service_description,
-                        'product_description' => $lineData->product_description,
-                        'serial_number' => $lineData->serial_number,
-                        'quantity' => $lineData->quantity,
-                        'service_sku' => $lineData->service_sku,
-                        'vendor_name' => $lineData->vendor_short_code,
-                        'distributor' => $lineData->distributor_name,
-                        'discount_applied' => $lineData->discount_applied,
-                        'machine_country_code' => $lineData->machine_country_code,
-                    ];
-                }, $salesOrderData->order_lines_data)
+                'name' => $salesOrderData->customer_data->customer_name,
+                'sales_person_name' => $salesOrderData->sales_person_name,
+                'nav_company' => $salesOrderData->bc_company_name,
+                'vendor' => $salesOrderData->vendor_short_code,
+                'sales_line' => array_map(fn(SubmitOrderLineData $lineData): array => [
+                    'service_sku' => $lineData->service_sku,
+                    'service_description' => $lineData->service_description,
+                    'serial_number' => $lineData->serial_number,
+                    'sku' => $lineData->sku,
+                    'quantity' => $lineData->quantity,
+                    'unit_price' => $lineData->unit_price,
+                    'machine_country_code' => $lineData->machine_country_code,
+                    'sales_group' => sprintf('%s %s', self::BUSINESS_DIVISION, $salesOrderData->contract_type),
+                    'short_name' => $lineData->vendor_short_code,
+                ], $salesOrderData->order_lines_data)
             ]
         ];
     }

@@ -120,7 +120,7 @@ class ActivityQueries
                 FilterByCustomPeriod::class,
                 FilterByCauserId::class,
                 FilterBySubjectEntityTypes::class,
-                DefaultOrderBy::class,
+                new DefaultOrderBy($model->getQualifiedCreatedAtColumn()),
             ])
             ->thenReturn();
     }

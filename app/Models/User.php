@@ -53,6 +53,8 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string|null $last_name
  * @property string|null $email
  * @property string|null $timezone_id
+ *
+ * @property-read string|null $user_fullname
  */
 class User extends Model implements
     ActivatableInterface,

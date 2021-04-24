@@ -17,6 +17,12 @@ use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
 use Illuminate\Database\Eloquent\{Builder, Model, Relations\BelongsTo, Relations\HasMany, SoftDeletes,};
 use Illuminate\Support\Str;
 
+/**
+ * Class ImportableColumn
+ *
+ * @property string|null $header
+ * @property string|null $name
+ */
 class ImportableColumn extends Model implements HasOrderedScope, ReindexQuery, SearchableEntity
 {
     use Uuid,

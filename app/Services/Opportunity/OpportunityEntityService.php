@@ -16,7 +16,8 @@ use App\Enum\AccountCategory;
 use App\Enum\Lock;
 use App\Enum\OpportunityStatus;
 use App\Enum\VAT;
-use App\Events\{Opportunity\OpportunityCreated,
+use App\Events\{Opportunity\OpportunityBatchFilesImported,
+    Opportunity\OpportunityCreated,
     Opportunity\OpportunityDeleted,
     Opportunity\OpportunityMarkedAsLost,
     Opportunity\OpportunityMarkedAsNotLost,
@@ -132,8 +133,15 @@ class OpportunityEntityService
             $accountContactsFile->getClientOriginalExtension()
         ));
 
-        $accountsDataDictionary = iterator_to_array($accountsDataFileReader->getRows());
+        $this->eventDispatcher->dispatch(
+            new OpportunityBatchFilesImported(
+                $opportunitiesDataFile,
+                $accountsDataFile,
+                $accountContactsFile,
+            )
+        );
 
+        $accountsDataDictionary = iterator_to_array($accountsDataFileReader->getRows());
 
         $accountContactsDictionary = value(function () use ($accountContactsFileReader): array {
             $dictionary = [];

@@ -15,26 +15,29 @@ use App\Models\{Address,
     QuoteFile\ScheduleData,
     User,
     WorldwideQuoteAsset};
+use App\Events\WorldwideQuote\NewVersionOfWorldwideQuoteCreated;
 use App\Services\WorldwideQuote\Models\ReplicatedVersionData;
+use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
+use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Model;
 
 class WorldwideQuoteVersionGuard
 {
-    protected WorldwideQuote $worldwideQuote;
+    protected ConnectionInterface $connection;
 
-    protected User $actingUser;
+    protected EventDispatcher $eventDispatcher;
 
     protected static string $activeVersionRelationKey = 'activeVersion';
 
     /**
      * WorldwideQuoteVersionGuard constructor.
-     * @param WorldwideQuote $worldwideQuote
-     * @param User $actingUser
+     * @param \Illuminate\Database\ConnectionInterface $connection
+     * @param \Illuminate\Contracts\Events\Dispatcher $eventDispatcher
      */
-    public function __construct(WorldwideQuote $worldwideQuote, User $actingUser)
+    public function __construct(ConnectionInterface $connection, EventDispatcher $eventDispatcher)
     {
-        $this->worldwideQuote = $worldwideQuote;
-        $this->actingUser = $actingUser;
+        $this->connection = $connection;
+        $this->eventDispatcher = $eventDispatcher;
     }
 
 
@@ -45,57 +48,76 @@ class WorldwideQuoteVersionGuard
      * When the acting user is not not owner of the active quote version,
      * perform versioning, set a new active version, and return the active version of the quote entity.
      *
+     * @param \App\Models\Quote\WorldwideQuote $worldwideQuote
+     * @param \App\Models\User $actingUser
      * @return WorldwideQuoteVersion
      * @throws \Throwable
      */
-    public function resolveModelForActingUser(): WorldwideQuoteVersion
+    public function resolveModelForActingUser(WorldwideQuote $worldwideQuote, User $actingUser): WorldwideQuoteVersion
     {
-        if ($this->isActingUserOwnerOfActiveModelVersion()) {
-            return $this->getActiveVersionOfModel();
+        if ($this->isActingUserOwnerOfActiveModelVersion($worldwideQuote, $actingUser)) {
+            return $this->getActiveVersionOfModel($worldwideQuote);
         }
 
-        return $this->performQuoteVersioning();
+        return $this->performQuoteVersioning($worldwideQuote, $actingUser);
     }
 
     /**
+     * @param \App\Models\Quote\WorldwideQuote $worldwideQuote
+     * @param \App\Models\User $actingUser
      * @return WorldwideQuoteVersion
      * @throws \Throwable
      */
-    protected function performQuoteVersioning(): WorldwideQuoteVersion
+    protected function performQuoteVersioning(WorldwideQuote $worldwideQuote, User $actingUser): WorldwideQuoteVersion
     {
-        $activeVersion = $this->getActiveVersionOfModel();
+        $originalActiveVersion = $this->getActiveVersionOfModel($worldwideQuote);
 
-        $activeVersion->refresh();
+        $originalActiveVersion->refresh();
 
         $replicatedVersionData = (new WorldwideQuoteReplicator())
             ->getReplicatedVersionData(
-                $activeVersion
+                $originalActiveVersion
             );
 
-        return tap($replicatedVersionData->getReplicatedVersion(), function (WorldwideQuoteVersion $replicatedVersion) use ($replicatedVersionData) {
-            $this->persistReplicatedVersionData($replicatedVersionData);
+        return tap($replicatedVersionData->getReplicatedVersion(), function (WorldwideQuoteVersion $replicatedVersion) use ($originalActiveVersion, $actingUser, $worldwideQuote, $replicatedVersionData) {
+            $this->persistReplicatedVersionData($replicatedVersionData, $worldwideQuote, $actingUser);
 
-            $this->worldwideQuote
-                ->activeVersion()
-                ->associate($replicatedVersion)
-                ->saveOrFail();
+            $this->associateActiveVersionToModel($worldwideQuote, $replicatedVersion);
+
+            $this->eventDispatcher->dispatch(
+                new NewVersionOfWorldwideQuoteCreated(
+                    $originalActiveVersion,
+                    $replicatedVersion
+                )
+            );
         });
+    }
+
+    protected function associateActiveVersionToModel(WorldwideQuote $worldwideQuote, WorldwideQuoteVersion $version): void
+    {
+        $worldwideQuote
+            ->activeVersion()
+            ->associate($version);
+
+        $this->connection->transaction(fn() => $worldwideQuote->save());
     }
 
     /**
      * @param ReplicatedVersionData $replicatedVersionData
+     * @param \App\Models\Quote\WorldwideQuote $worldwideQuote
+     * @param \App\Models\User $actingUser
      * @throws \Throwable
      */
-    protected function persistReplicatedVersionData(ReplicatedVersionData $replicatedVersionData): void
+    protected function persistReplicatedVersionData(ReplicatedVersionData $replicatedVersionData, WorldwideQuote $worldwideQuote, User $actingUser): void
     {
         $version = $replicatedVersionData->getReplicatedVersion();
         $replicatedPackAssets = $replicatedVersionData->getReplicatedPackAssets();
         $replicatedDistributorQuotes = $replicatedVersionData->getReplicatedDistributorQuotes();
 
-        $version->worldwideQuote()->associate($this->worldwideQuote);
+        $version->worldwideQuote()->associate($worldwideQuote);
         $version->unsetRelation('worldwideQuote');
-        $version->user()->associate($this->actingUser);
-        $version->user_version_sequence_number = $this->resolveNewVersionNumberForActingUser();
+        $version->user()->associate($actingUser);
+        $version->user_version_sequence_number = $this->resolveNewVersionNumberForActingUser($worldwideQuote, $actingUser);
 
         $distributorQuoteBatch = [];
         $addressDataBatch = [];
@@ -153,9 +175,7 @@ class WorldwideQuoteVersionGuard
             }
         }
 
-        $connection = $version->getConnection();
-
-        $connection->transaction(function () use (
+        $this->connection->transaction(function () use (
             $distributorQuoteBatch,
             $addressDataBatch,
             $addressPivotBatch,
@@ -170,7 +190,6 @@ class WorldwideQuoteVersionGuard
             $mappedRowBatch,
             $groupOfRowBatch,
             $rowOfGroupBatch,
-            $connection,
             $version
         ) {
             $version->save();
@@ -192,7 +211,7 @@ class WorldwideQuoteVersionGuard
             }
 
             if (!empty($addressPivotBatch)) {
-                $connection->table((new WorldwideDistribution())->addresses()->getTable())
+                $this->connection->table((new WorldwideDistribution())->addresses()->getTable())
                     ->insert($addressPivotBatch);
             }
 
@@ -201,7 +220,7 @@ class WorldwideQuoteVersionGuard
             }
 
             if (!empty($contactPivotBatch)) {
-                $connection->table((new WorldwideDistribution())->contacts()->getTable())
+                $this->connection->table((new WorldwideDistribution())->contacts()->getTable())
                     ->insert($contactPivotBatch);
             }
 
@@ -230,38 +249,32 @@ class WorldwideQuoteVersionGuard
             }
 
             if (!empty($rowOfGroupBatch)) {
-                $connection->table((new DistributionRowsGroup())->rows()->getTable())
+                $this->connection->table((new DistributionRowsGroup())->rows()->getTable())
                     ->insert($rowOfGroupBatch);
             }
         });
     }
 
-    protected function resolveNewVersionNumberForActingUser(): int
+    protected function resolveNewVersionNumberForActingUser(WorldwideQuote $worldwideQuote, User $actingUser): int
     {
-        $userVersionCount = $this->worldwideQuote->versions()
-            ->where((new WorldwideQuoteVersion())->user()->getQualifiedForeignKeyName(), $this->actingUser->getKey())
+        $userVersionCount = $worldwideQuote->versions()
+            ->where((new WorldwideQuoteVersion())->user()->getQualifiedForeignKeyName(), $actingUser->getKey())
             ->max('user_version_sequence_number');
 
         return ++$userVersionCount;
     }
 
-    public function getActiveVersionOfModel(): WorldwideQuoteVersion
+    public function getActiveVersionOfModel(WorldwideQuote $worldwideQuote): WorldwideQuoteVersion
     {
-        return $this->worldwideQuote->getRelationValue(static::$activeVersionRelationKey);
+        return $worldwideQuote->getRelationValue(static::$activeVersionRelationKey);
     }
 
-    public function isActingUserOwnerOfBaseModel(): bool
+    public function isActingUserOwnerOfActiveModelVersion(WorldwideQuote $worldwideQuote, User $actingUser): bool
     {
-        return $this->worldwideQuote->{$this->worldwideQuote->user()->getForeignKeyName()} ===
-            $this->actingUser->getKey();
-    }
-
-    public function isActingUserOwnerOfActiveModelVersion(): bool
-    {
-        $activeVersion = $this->getActiveVersionOfModel();
+        $activeVersion = $this->getActiveVersionOfModel($worldwideQuote);
 
         return
             $activeVersion->{$activeVersion->user()->getForeignKeyName()} ===
-            $this->actingUser->getKey();
+            $actingUser->getKey();
     }
 }

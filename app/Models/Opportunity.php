@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Contracts\SearchableEntity;
-use App\Models\Data\Country;
 use App\Models\Quote\WorldwideQuote;
 use App\Traits\Uuid;
 use Illuminate\Database\Eloquent\Collection;
@@ -11,8 +10,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasManyThrough;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
@@ -94,7 +91,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  *
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
-// * @property WorldwideQuote|null $worldwideQuote
+ * // * @property WorldwideQuote|null $worldwideQuote
  * @property Collection<WorldwideQuote>|WorldwideQuote[] $worldwideQuotes
  */
 class Opportunity extends Model implements SearchableEntity

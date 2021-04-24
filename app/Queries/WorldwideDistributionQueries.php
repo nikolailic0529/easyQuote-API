@@ -74,6 +74,7 @@ class WorldwideDistributionQueries
         $selectColumns = [
             'mapped_rows.id',
             'mapped_rows.product_no',
+            'mapped_rows.service_sku',
             'mapped_rows.description',
             'mapped_rows.serial_no',
             'mapped_rows.date_from',
@@ -84,14 +85,14 @@ class WorldwideDistributionQueries
             'mapped_rows.system_handle',
             'mapped_rows.searchable',
             'mapped_rows.service_level_description',
-            'mapped_rows.is_selected',
+            DB::raw('1 as is_selected'),
         ];
 
         return $distribution->mappedRows()->getQuery()
             ->where(function (Builder $builder) use ($data) {
                 $input = array_values($data->input);
 
-                $columns = ['product_no', 'description', 'serial_no', 'price', 'pricing_document', 'system_handle', 'searchable', 'service_level_description'];
+                $columns = ['product_no', 'service_sku', 'description', 'serial_no', 'price', 'pricing_document', 'system_handle', 'searchable', 'service_level_description'];
 
                 foreach ($input as $string) {
                     foreach ($columns as $column) {

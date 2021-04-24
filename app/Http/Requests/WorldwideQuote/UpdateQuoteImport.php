@@ -92,68 +92,17 @@ class UpdateQuoteImport extends FormRequest
             'worldwide_distributions.*.addresses' => [
                 'bail', 'required', 'array'
             ],
-            'worldwide_distributions.*.addresses.*.id' => [
-                'bail', 'nullable', 'uuid',
+            'worldwide_distributions.*.addresses.*' => [
+                'bail', 'uuid',
                 Rule::exists(Address::class, 'id')->whereNull('deleted_at')
-            ],
-            'worldwide_distributions.*.addresses.*.address_type' => [
-                'bail', 'required', 'string', 'in:Invoice,Machine,Client,Software'
-            ],
-            'worldwide_distributions.*.addresses.*.address_1' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'worldwide_distributions.*.addresses.*.address_2' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'worldwide_distributions.*.addresses.*.city' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'worldwide_distributions.*.addresses.*.post_code' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'worldwide_distributions.*.addresses.*.state' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'worldwide_distributions.*.addresses.*.country_id' => [
-                'bail', 'required', 'uuid', Rule::exists(Country::class, 'id')->whereNull('deleted_at')
-            ],
-            'worldwide_distributions.*.addresses.*.is_default' => [
-                'bail', 'nullable', 'boolean'
             ],
 
             'worldwide_distributions.*.contacts' => [
                 'bail', 'required', 'array'
             ],
-            'worldwide_distributions.*.contacts.*.id' => [
-                'bail', 'nullable', 'uuid',
+            'worldwide_distributions.*.contacts.*' => [
+                'bail', 'uuid',
                 Rule::exists(Contact::class, 'id')->whereNull('deleted_at')
-            ],
-            'worldwide_distributions.*.contacts.*.contact_type' => [
-                'bail', 'required', 'string', 'in:Hardware,Software'
-            ],
-            'worldwide_distributions.*.contacts.*.first_name' => [
-                'bail', 'required', 'string', 'filled', 'max:191'
-            ],
-            'worldwide_distributions.*.contacts.*.last_name' => [
-                'bail', 'required', 'string', 'filled', 'max:191'
-            ],
-            'worldwide_distributions.*.contacts.*.email' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'worldwide_distributions.*.contacts.*.mobile' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'worldwide_distributions.*.contacts.*.phone' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'worldwide_distributions.*.contacts.*.job_title' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'worldwide_distributions.*.contacts.*.is_verified' => [
-                'bail', 'nullable', 'boolean'
-            ],
-            'worldwide_distributions.*.contacts.*.is_default' => [
-                'bail', 'nullable', 'boolean'
             ],
 
             'worldwide_distributions.*.buy_price' => [
@@ -193,29 +142,8 @@ class UpdateQuoteImport extends FormRequest
                 'buy_price' => (float)$distributionData['buy_price'],
                 'calculate_list_price' => (bool)($distributionData['calculate_list_price'] ?? false),
                 'distribution_expiry_date' => Carbon::createFromFormat('Y-m-d', $distributionData['distribution_expiry_date']),
-                'addresses' => array_map(fn(array $address) => [
-                    'address_id' => $address['id'] ?? null,
-                    'address_1' => $address['address_1'] ?? null,
-                    'address_type' => $address['address_type'],
-                    'country_id' => $address['country_id'],
-                    'address_2' => $address['address_2'] ?? null,
-                    'city' => $address['city'] ?? null,
-                    'state' => $address['state'] ?? null,
-                    'post_code' => $address['post_code'] ?? null,
-                    'is_default' => (bool)($address['is_default'] ?? false),
-                ], $distributionData['addresses']),
-                'contacts' => array_map(fn(array $contact) => [
-                    'contact_id' => $contact['id'] ?? null,
-                    'contact_type' => $contact['contact_type'],
-                    'first_name' => $contact['first_name'],
-                    'last_name' => $contact['last_name'],
-                    'email' => $contact['email'] ?? null,
-                    'mobile' => $contact['mobile'] ?? null,
-                    'phone' => $contact['phone'] ?? null,
-                    'job_title' => $contact['job_title'] ?? null,
-                    'is_verified' => (bool)($contact['is_verified'] ?? false),
-                    'is_default' => (bool)($contact['is_default'] ?? false),
-                ], $distributionData['contacts']),
+                'address_ids' => $distributionData['addresses'],
+                'contact_ids' => $distributionData['contacts'],
             ], $this->input('worldwide_distributions')),
             'payment_terms' => $this->input('payment_terms'),
             'stage' => ContractQuoteStage::getValueOfLabel($this->input('stage')),

@@ -98,6 +98,13 @@ final class SubmitSalesOrderData extends DataTransferObject
      */
     public string $bc_company_name;
 
+    /**
+     * @Constraints\Uuid
+     *
+     * @var string
+     */
+    public string $company_id;
+
     public string $sales_person_name;
 
     /**

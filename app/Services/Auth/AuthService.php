@@ -90,7 +90,7 @@ class AuthService implements AuthServiceInterface
             $user->markAsLoggedOut();
         });
 
-        activity()->on($user)->by($user)->queue('deauthenticated');
+        activity()->on($user)->by($user)->queue('unauthenticated');
 
         return true;
     }

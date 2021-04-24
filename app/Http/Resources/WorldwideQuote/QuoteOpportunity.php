@@ -22,7 +22,25 @@ class QuoteOpportunity extends JsonResource
         return [
             'id' => $this->getKey(),
             'account_manager' => $this->whenLoaded('accountManager'),
-            'primary_account' => $this->whenLoaded('primaryAccount'),
+            'primary_account' => $this->whenLoaded('primaryAccount', function () {
+
+                /** @var Opportunity|QuoteOpportunity $this */
+
+                if ($this->primaryAccount->relationLoaded('addresses')) {
+                    $this->primaryAccount->addresses->each(function (Address $address) {
+                        $address->setAttribute('is_default', $address->pivot->is_default);
+                    });
+                }
+
+                if ($this->primaryAccount->relationLoaded('contacts')) {
+                    $this->primaryAccount->contacts->each(function (Contact $contact) {
+                        $contact->setAttribute('is_default', $contact->pivot->is_default);
+                    });
+                }
+
+                return $this->primaryAccount;
+
+            }),
             'primary_account_contact' => $this->whenLoaded('primaryAccountContact'),
             'addresses' => $this->whenLoaded('addresses', function () {
                 /** @var Opportunity|QuoteOpportunity $this */

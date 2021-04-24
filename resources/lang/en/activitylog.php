@@ -12,7 +12,7 @@ return [
         'copied' => 'Copied',
         'retrieved' => 'Retrieved',
         'authenticated' => 'Authenticated',
-        'deauthenticated' => 'Deauthenticated',
+        'unauthenticated' => 'Unauthenticated',
         'created_version' => 'Created Version'
     ],
     'totals' => [
@@ -27,7 +27,7 @@ return [
         'copied' => 'Copied',
         'retrieved' => 'Retrieved',
         'authenticated' => 'Authenticated',
-        'deauthenticated' => 'Deauthenticated',
+        'unauthenticated' => 'Unauthenticated',
         'created_version' => 'Created Version'
     ]
 ];

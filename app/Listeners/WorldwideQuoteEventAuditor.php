@@ -4,48 +4,58 @@ namespace App\Listeners;
 
 use App\Enum\ContractQuoteStage;
 use App\Enum\PackQuoteStage;
-use App\Events\WorldwideQuote\WorldwideContractQuoteDetailsStepProcessed;
-use App\Events\WorldwideQuote\WorldwideContractQuoteDiscountStepProcessed;
-use App\Events\WorldwideQuote\WorldwideContractQuoteImportStepProcessed;
-use App\Events\WorldwideQuote\WorldwideContractQuoteMappingReviewStepProcessed;
-use App\Events\WorldwideQuote\WorldwideContractQuoteMappingStepProcessed;
-use App\Events\WorldwideQuote\WorldwidePackQuoteAssetsCreationStepProcessed;
-use App\Events\WorldwideQuote\WorldwidePackQuoteAssetsReviewStepProcessed;
-use App\Events\WorldwideQuote\WorldwidePackQuoteContactsStepProcessed;
-use App\Events\WorldwideQuote\WorldwidePackQuoteDetailsStepProcessed;
-use App\Events\WorldwideQuote\WorldwidePackQuoteDiscountStepProcessed;
-use App\Events\WorldwideQuote\WorldwidePackQuoteMarginStepProcessed;
-use App\Events\WorldwideQuote\WorldwideQuoteDeleted;
-use App\Events\WorldwideQuote\WorldwideQuoteDrafted;
-use App\Events\WorldwideQuote\WorldwideQuoteInitialized;
-use App\Events\WorldwideQuote\WorldwideQuoteSubmitted;
-use App\Events\WorldwideQuote\WorldwideQuoteUnraveled;
-use App\Models\Address;
-use App\Models\Company;
-use App\Models\Contact;
-use App\Models\Data\Currency;
-use App\Models\Quote\Discount\MultiYearDiscount;
-use App\Models\Quote\Discount\PrePayDiscount;
-use App\Models\Quote\Discount\PromotionalDiscount;
-use App\Models\Quote\Discount\SND;
-use App\Models\Quote\WorldwideQuote;
-use App\Models\Quote\WorldwideQuoteVersion;
-use App\Models\Template\QuoteTemplate;
+use App\Events\{WorldwideQuote\NewVersionOfWorldwideQuoteCreated,
+    WorldwideQuote\WorldwideContractQuoteDetailsStepProcessed,
+    WorldwideQuote\WorldwideContractQuoteDiscountStepProcessed,
+    WorldwideQuote\WorldwideContractQuoteImportStepProcessed,
+    WorldwideQuote\WorldwideContractQuoteMappingReviewStepProcessed,
+    WorldwideQuote\WorldwideContractQuoteMappingStepProcessed,
+    WorldwideQuote\WorldwidePackQuoteAssetsCreationStepProcessed,
+    WorldwideQuote\WorldwidePackQuoteAssetsReviewStepProcessed,
+    WorldwideQuote\WorldwidePackQuoteContactsStepProcessed,
+    WorldwideQuote\WorldwidePackQuoteDetailsStepProcessed,
+    WorldwideQuote\WorldwidePackQuoteDiscountStepProcessed,
+    WorldwideQuote\WorldwidePackQuoteMarginStepProcessed,
+    WorldwideQuote\WorldwideQuoteDeleted,
+    WorldwideQuote\WorldwideQuoteDrafted,
+    WorldwideQuote\WorldwideQuoteInitialized,
+    WorldwideQuote\WorldwideQuoteSubmitted,
+    WorldwideQuote\WorldwideQuoteUnraveled};
+use App\Models\{Address,
+    Company,
+    Contact,
+    Data\Currency,
+    Quote\Discount\MultiYearDiscount,
+    Quote\Discount\PrePayDiscount,
+    Quote\Discount\PromotionalDiscount,
+    Quote\Discount\SND,
+    Quote\DistributionFieldColumn,
+    Quote\WorldwideDistribution,
+    Quote\WorldwideQuote,
+    Quote\WorldwideQuoteVersion,
+    Template\QuoteTemplate};
 use App\Services\Activity\ActivityLogger;
 use App\Services\Activity\ChangesDetector;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
+use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 class WorldwideQuoteEventAuditor implements ShouldQueue
 {
+    protected Config $config;
+
     protected BusDispatcher $busDispatcher;
 
     protected ActivityLogger $activityLogger;
 
     protected ChangesDetector $changesDetector;
 
-    public function __construct(BusDispatcher $busDispatcher, ActivityLogger $activityLogger, ChangesDetector $changesDetector)
+    public function __construct(Config $config,
+                                BusDispatcher $busDispatcher,
+                                ActivityLogger $activityLogger,
+                                ChangesDetector $changesDetector)
     {
+        $this->config = $config;
         $this->busDispatcher = $busDispatcher;
         $this->activityLogger = $activityLogger;
         $this->changesDetector = $changesDetector;
@@ -63,6 +73,7 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
         $events->listen(WorldwideQuoteUnraveled::class, [$this, 'handleUnraveledEvent']);
         $events->listen(WorldwideQuoteDrafted::class, [$this, 'handleDraftedEvent']);
         $events->listen(WorldwideQuoteDeleted::class, [$this, 'handleDeletedEvent']);
+        $events->listen(NewVersionOfWorldwideQuoteCreated::class, [$this, 'handleNewVersionCreatedEvent']);
 
         $events->listen(WorldwideContractQuoteDetailsStepProcessed::class, [$this, 'handleContractQuoteDetailsStepProcessedEvent']);
         $events->listen(WorldwideContractQuoteDiscountStepProcessed::class, [$this, 'handleContractQuoteDiscountStepProcessedEvent']);
@@ -88,6 +99,25 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
         }
 
         return null;
+    }
+
+    public function handleNewVersionCreatedEvent(NewVersionOfWorldwideQuoteCreated $event)
+    {
+        $newVersion = $event->getNewQuoteVersion();
+        $previousVersion = $event->getPreviousQuoteVersion();
+        $baseQuote = $newVersion->worldwideQuote;
+
+        $this->activityLogger
+            ->performedOn($baseQuote)
+            ->withProperties([
+                ChangesDetector::OLD_ATTRS_KEY => [
+                    'active_version' => sprintf('%s %s', $previousVersion->user->user_fullname, $previousVersion->user_version_sequence_number)
+                ],
+                ChangesDetector::NEW_ATTRS_KEY => [
+                    'active_version' => sprintf('%s %s', $newVersion->user->user_fullname, $newVersion->user_version_sequence_number)
+                ]
+            ])
+            ->log('created_version');
     }
 
     public function handleInitializedEvent(WorldwideQuoteInitialized $event)
@@ -337,15 +367,60 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
 
     public function handleContractQuoteMappingStepProcessedEvent(WorldwideContractQuoteMappingStepProcessed $event)
     {
+        $distributorQuoteMappingToString = function (WorldwideDistribution $distributorQuote): string {
+            $mappingData = array_map(function (DistributionFieldColumn $field) {
+
+                $value = value(function () use ($field) {
+                    $value = '';
+                    $properties = [];
+
+
+                    if (!is_null($field->importable_column_id)) {
+                        $value = sprintf("'%s'", $field->importableColumn->header);
+                    } else {
+                        $value = 'blank';
+                    }
+
+                    if ($field->is_default_enabled) {
+                        $properties[] = 'default';
+                    }
+
+                    if ($field->is_editable) {
+                        $properties[] = 'editable';
+                    }
+
+                    return sprintf('%s [%s]', $value, implode(', ', $properties));
+                });
+
+                return "$field->template_field_name -> $value";
+            }, $distributorQuote->mapping->all());
+
+            return implode("; ", $mappingData);
+        };
+
+        $distributorQuoteMappingMapper = function (WorldwideQuoteVersion $version) use ($distributorQuoteMappingToString) {
+            $mappingData = [];
+
+            foreach ($version->worldwideDistributions as $distributorQuote) {
+
+                $mappingData[] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuoteMappingToString($distributorQuote));
+
+            }
+
+            return implode("\n", $mappingData);
+        };
+
         $this->activityLogger
             ->performedOn($event->getQuote())
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
-                        'stage' => $this->getActiveQuoteVersionStage($event->getOldQuote())
+                        'stage' => $this->getActiveQuoteVersionStage($event->getOldQuote()),
+                        'mapping' => $distributorQuoteMappingMapper($event->getOldQuote()->activeVersion),
                     ],
                     [
-                        'stage' => $this->getActiveQuoteVersionStage($event->getQuote())
+                        'stage' => $this->getActiveQuoteVersionStage($event->getQuote()),
+                        'mapping' => $distributorQuoteMappingMapper($event->getQuote()->activeVersion),
                     ]
                 )
             )

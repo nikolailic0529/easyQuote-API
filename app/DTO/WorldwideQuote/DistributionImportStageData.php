@@ -23,14 +23,18 @@ final class DistributionImportStageData extends DataTransferObject
     public array $vendors;
 
     /**
-     * @var \App\DTO\WorldwideQuote\DistributionAddressData[]
+     * @Constraints\All(@Constraints\Uuid)
+     *
+     * @var array
      */
-    public array $addresses;
+    public array $address_ids;
 
     /**
-     * @var \App\DTO\WorldwideQuote\DistributionContactData[]
+     * @Constraints\All(@Constraints\Uuid)
+     *
+     * @var array
      */
-    public array $contacts;
+    public array $contact_ids;
 
     /**
      * @Constraints\Uuid

@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\WorldwideQuote;
 
-use App\DTO\WorldwideQuote\QuoteFinalTotalPrice;
 use App\Models\Quote\Discount\MultiYearDiscount;
 use App\Models\Quote\Discount\PrePayDiscount;
 use App\Models\Quote\Discount\PromotionalDiscount;
@@ -10,11 +9,10 @@ use App\Models\Quote\Discount\SND;
 use App\Models\Quote\DistributionFieldColumn;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
-use App\Models\Template\QuoteTemplate;
 use App\Models\Vendor;
 use App\Queries\DiscountQueries;
-use App\Services\WorldwideDistributionCalc;
-use App\Services\WorldwideQuoteCalc;
+use App\Services\WorldwideQuote\WorldwideDistributionCalc;
+use App\Services\WorldwideQuote\WorldwideQuoteCalc;
 use App\Services\WorldwideQuoteDataMapper;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -67,7 +65,23 @@ class ShowQuoteState extends FormRequest
             $this->container->call([$this, 'sortWorldwideQuoteAssetsWhenLoaded'], ['model' => $worldwideQuote]);
             $this->container->call([$this, 'normalizeWorldwideQuoteAssetAttributesWhenLoaded'], ['model' => $worldwideQuote]);
             $this->container->call([$this, 'prepareWorldwideDistributionMappingWhenLoaded'], ['model' => $worldwideQuote]);
+            $this->container->call([$this, 'includeCountryOfAddressesWhenLoaded'], ['model' => $worldwideQuote]);
         });
+    }
+
+    public function includeCountryOfAddressesWhenLoaded(WorldwideQuote $model)
+    {
+        if ($model->relationLoaded('opportunity') && $model->opportunity->relationLoaded('addresses')) {
+            $model->opportunity->addresses->load('country');
+        }
+
+        if ($model->activeVersion->relationLoaded('worldwideDistributions')) {
+            foreach ($model->activeVersion->worldwideDistributions as $distributorQuote) {
+                if ($distributorQuote->relationLoaded('addresses')) {
+                    $distributorQuote->addresses->load('country');
+                }
+            }
+        }
     }
 
     public function includeCompanyLogo(WorldwideQuote $model)

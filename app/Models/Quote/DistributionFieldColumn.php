@@ -17,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property string|null $template_field_name
  * @property string|null $template_field_header
  * @property bool|null $is_editable
+ *
+ * @property-read ImportableColumn|null $importableColumn
  */
 class DistributionFieldColumn extends Pivot
 {

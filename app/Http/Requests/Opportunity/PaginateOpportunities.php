@@ -41,6 +41,7 @@ class PaginateOpportunities extends FormRequest
             $builder
                 ->where($builder->qualifyColumn('user_id'), $user->getKey())
                 ->orWhere($builder->qualifyColumn('account_manager_id'), $user->getKey())
+                ->orWhereIn($builder->qualifyColumn('account_manager_id'), $ledTeamUsersQuery->select($ledTeamUsersQuery->qualifyColumn('id'))->toBase())
                 ->orWhereIn($builder->qualifyColumn('user_id'), $ledTeamUsersQuery->select($ledTeamUsersQuery->qualifyColumn('id'))->toBase());
         });
     }

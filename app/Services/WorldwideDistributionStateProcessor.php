@@ -22,7 +22,6 @@ use App\Events\DistributionProcessed;
 use App\Models\{Address,
     Contact,
     Data\Country,
-    Data\Currency,
     OpportunitySupplier,
     Quote\DistributionFieldColumn,
     Quote\WorldwideDistribution,
@@ -42,9 +41,8 @@ use Illuminate\Contracts\{Cache\Lock as LockContract,
 use Illuminate\Database\{ConnectionInterface,
     Eloquent\Builder,
     Eloquent\Collection,
-    Eloquent\Model,
     Eloquent\ModelNotFoundException,
-    Eloquent\Relations\Relation};
+    Eloquent\Relations\MorphToMany};
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\{Arr, Carbon, Collection as BaseCollection, Facades\App, Facades\Storage, MessageBag, Str};
@@ -162,119 +160,48 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
 
         $distributorQuote->country()->associate($supplier->country);
 
-        $newAddressModelsOfDistributorQuote = [];
-        $newContactModelsOfDistributorQuote = [];
-        $newAddressPivotsOfDistributorQuote = [];
-        $newContactPivotsOfDistributorQuote = [];
-
-        $addressToHash = static function (Address $address): string {
-            return md5(implode('~', [
-                $address->address_type,
-                $address->address_1,
-                $address->address_2,
-                $address->city,
-                $address->post_code,
-                $address->state,
-                $address->country_id
-            ]));
-        };
-
-        $contactToHash = static function (Contact $contact): string {
-            return md5(implode('~', [
-                $contact->first_name,
-                $contact->last_name,
-                $contact->email,
-                $contact->phone,
-                $contact->job_title,
-                $contact->is_verified
-            ]));
-        };
+//        $newAddressModelsOfDistributorQuote = [];
+//        $newContactModelsOfDistributorQuote = [];
+        $addressPivotsOfDistributorQuote = [];
+        $contactPivotsOfDistributorQuote = [];
 
         /**
          * If primary account is present on opportunity entity,
          * we replicate only new address, contact entities to the distributor quote.
          */
         if (!is_null($opportunity->primaryAccount)) {
-            $alreadyReplicatedAddressKeys = $distributorQuote
-                ->addresses()
-                ->wherePivotNotNull('replicated_address_id')
-                ->pluck('replicated_address_id')
-                ->all();
-
-            $alreadyReplicatedContactKeys = $distributorQuote
-                ->contacts()
-                ->wherePivotNotNull('replicated_contact_id')
-                ->pluck('replicated_contact_id')
-                ->all();
-
-            $opportunity->primaryAccount->load(['addresses' => function (Relation $relation) use ($alreadyReplicatedAddressKeys) {
-                $relation->whereKeyNot($alreadyReplicatedAddressKeys);
+            $opportunity->primaryAccount->load(['addresses' => function (MorphToMany $relation) {
+                $relation->wherePivot('is_default', true);
             }]);
 
-            $opportunity->primaryAccount->load(['contacts' => function (Relation $relation) use ($alreadyReplicatedContactKeys) {
-                $relation->whereKeyNot($alreadyReplicatedContactKeys);
+            $opportunity->primaryAccount->load(['contacts' => function (MorphToMany $relation) {
+                $relation->wherePivot('is_default', true);
             }]);
 
-            $existingAddressHashes = array_flip(array_map(fn(Address $address) => $addressToHash($address), $distributorQuote->addresses->all()));
-            $existingContactHashes = array_flip(array_map(fn(Contact $contact) => $contactToHash($contact), $distributorQuote->contacts->all()));
+            $addressPivotsOfDistributorQuote = $opportunity->primaryAccount->addresses->mapWithKeys(function (Address $address) {
+                return [$address->getKey() => ['is_default' => $address->pivot->is_default]];
+            })
+                ->all();
 
-
-            $newAddressModelsOfPrimaryAccount = value(function () use ($opportunity, $addressToHash, $existingAddressHashes) {
-                $newAddresses = [];
-
-                foreach ($opportunity->primaryAccount->addresses as $address) {
-                    $addressHash = $addressToHash($address);
-
-                    if (!isset($existingAddressHashes[$addressHash])) {
-                        $newAddresses[$addressHash] = $address;
-                    }
-                }
-
-                return $newAddresses;
-            });
-
-            $newContactModelsOfPrimaryAccount = value(function () use ($opportunity, $contactToHash, $existingContactHashes) {
-                $newContacts = [];
-
-                foreach ($opportunity->primaryAccount->contacts as $contact) {
-                    $contactHash = $contactToHash($contact);
-
-                    if (!isset($existingContactHashes[$contactHash])) {
-                        $newContacts[$contactHash] = $contact;
-                    }
-                }
-
-                return $newContacts;
-            });
-
-            [$newAddressModelsOfDistributorQuote, $newAddressPivotsOfDistributorQuote] = $this->replicateAddressModelsOfPrimaryAccount((new Collection($newAddressModelsOfPrimaryAccount)));
-            [$newContactModelsOfDistributorQuote, $newContactPivotsOfDistributorQuote] = $this->replicateContactModelsOfPrimaryAccount((new Collection($newContactModelsOfPrimaryAccount)));
+            $contactPivotsOfDistributorQuote = $opportunity->primaryAccount->contacts->mapWithKeys(function (Contact $contact) {
+                return [$contact->getKey() => ['is_default' => $contact->pivot->is_default]];
+            })
+                ->all();
         }
-
-        $newAddressBatch = array_map(fn(Model $model) => $model->getAttributes(), $newAddressModelsOfDistributorQuote);
-        $newContactBatch = array_map(fn(Model $model) => $model->getAttributes(), $newContactModelsOfDistributorQuote);
 
         $lock = $this->lockProvider->lock(Lock::UPDATE_WWDISTRIBUTION($distributorQuote->getKey()), 10);
 
         $lock->block(
             30,
-            fn() => $this->connection->transaction(function () use ($newAddressBatch, $newContactBatch, $newAddressPivotsOfDistributorQuote, $newContactPivotsOfDistributorQuote, $distributorQuote) {
+            fn() => $this->connection->transaction(function () use ($distributorQuote, $addressPivotsOfDistributorQuote, $contactPivotsOfDistributorQuote) {
                 $distributorQuote->save();
 
-                if (!empty($newAddressBatch)) {
-                    Address::query()->insert($newAddressBatch);
+                if (!empty($addressPivotsOfDistributorQuote)) {
+                    $distributorQuote->addresses()->syncWithoutDetaching($addressPivotsOfDistributorQuote);
                 }
 
-                if (!empty($newAddressPivotsOfDistributorQuote)) {
-                    $distributorQuote->addresses()->syncWithoutDetaching($newAddressPivotsOfDistributorQuote);
-                }
-
-                if (!empty($newContactBatch)) {
-                    Contact::query()->insert($newContactBatch);
-                }
-
-                if (!empty($newContactPivotsOfDistributorQuote)) {
-                    $distributorQuote->contacts()->syncWithoutDetaching($newContactPivotsOfDistributorQuote);
+                if (!empty($contactPivotsOfDistributorQuote)) {
+                    $distributorQuote->contacts()->syncWithoutDetaching($contactPivotsOfDistributorQuote);
                 }
 
             })

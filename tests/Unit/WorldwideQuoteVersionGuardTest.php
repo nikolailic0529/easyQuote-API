@@ -80,9 +80,7 @@ class WorldwideQuoteVersionGuardTest extends TestCase
         /** @var User $actingUser */
         $actingUser = factory(User::class)->create();
 
-        $versionGuard = new WorldwideQuoteVersionGuard($quote, $actingUser);
-
-        $newVersion = $versionGuard->resolveModelForActingUser();
+        $newVersion = $this->app->make(WorldwideQuoteVersionGuard::class)->resolveModelForActingUser($quote, $actingUser);
 
         $this->assertDatabaseHas('worldwide_quotes', [
             'id' => $quote->getKey(),
