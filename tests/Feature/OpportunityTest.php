@@ -395,7 +395,21 @@ class OpportunityTest extends TestCase
                 "contract_type_id",
                 "contract_type",
                 "primary_account_id",
-                "primary_account",
+                "primary_account" => [
+                    "id",
+                    "addresses" => [
+                        "*" => [
+                            "id",
+                            "is_default"
+                        ]
+                    ],
+                    "contacts" => [
+                        "*" => [
+                            "id",
+                            "is_default"
+                        ]
+                    ]
+                ],
                 "primary_account_contact_id",
                 "primary_account_contact",
                 "account_manager_id",

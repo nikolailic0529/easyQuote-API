@@ -5,7 +5,7 @@ namespace App\Services\Template;
 use App\Models\Company;
 use App\Models\Template\ContractTemplate;
 use App\Models\Template\QuoteTemplate;
-use App\Models\Template\TemplateSchema;
+use App\Models\Template\TemplateForm;
 use App\Models\Vendor;
 use App\Services\ThumbHelper;
 use Illuminate\Support\Str;
@@ -48,10 +48,10 @@ class TemplateSchemaDataMapper
 
         $templateSchema = with($template, function (QuoteTemplate $quoteTemplate) {
             if ($quoteTemplate->business_division_id === BD_WORLDWIDE) {
-                return TemplateSchema::getPages('ww_quote');
+                return TemplateForm::getPages('ww_quote');
             }
 
-            return TemplateSchema::getPages('quote');
+            return TemplateForm::getPages('quote');
         });
 
         $templateSchema['first_page'] = array_merge(
@@ -88,10 +88,10 @@ class TemplateSchemaDataMapper
 
         $templateSchema = with($template, function (ContractTemplate $quoteTemplate) {
             if ($quoteTemplate->business_division_id === BD_WORLDWIDE) {
-                return TemplateSchema::getPages('ww_quote');
+                return TemplateForm::getPages('ww_quote');
             }
 
-            return TemplateSchema::getPages('quote');
+            return TemplateForm::getPages('quote');
         });
 
         $templateSchema['first_page'] = array_merge(

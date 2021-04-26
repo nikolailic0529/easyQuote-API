@@ -76,17 +76,13 @@ class WorldwideDistributionState extends JsonResource
             'addresses' => $this->whenLoaded('addresses', function () {
                 /** @var WorldwideDistribution|WorldwideDistributionState $this */
 
-                return $this->addresses->each(function (Address $address) {
-                    $address->setAttribute('is_default', $address->pivot->is_default);
-                });
+                return $this->addresses;
             }),
 
             'contacts' => $this->whenLoaded('contacts', function () {
                 /** @var WorldwideDistribution|WorldwideDistributionState $this */
 
-                return $this->contacts->each(function (Contact $contact) {
-                   $contact->setAttribute('is_default', $contact->pivot->is_default);
-                });
+                return $this->contacts;
             }),
 
             'margin_value' => $this->margin_value,

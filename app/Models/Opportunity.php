@@ -86,8 +86,8 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property Contact|null $primaryAccountContact
  * @property User|null $accountManager
  * @property Collection<OpportunitySupplier>|OpportunitySupplier[] $opportunitySuppliers
- * @property Collection<Address>|Address[] $addresses
- * @property Collection<Contact>|Contact[] $contacts
+// * @property Collection<Address>|Address[] $addresses
+// * @property Collection<Contact>|Contact[] $contacts
  *
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -138,16 +138,6 @@ class Opportunity extends Model implements SearchableEntity
     public function worldwideQuotes(): HasMany
     {
         return $this->hasMany(WorldwideQuote::class);
-    }
-
-    public function addresses(): BelongsToMany
-    {
-        return $this->belongsToMany(Address::class)->withPivot('is_default');
-    }
-
-    public function contacts(): BelongsToMany
-    {
-        return $this->belongsToMany(Contact::class)->withPivot('is_default');
     }
 
     public function countries(): HasManyDeep

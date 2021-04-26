@@ -1230,9 +1230,9 @@ class WorldwidePackQuoteTest extends TestCase
         $defaultSoftwareAddress = factory(Address::class)->create(['address_type' => 'Software', 'address_1' => '-1 Default Software Address']);
         $softwareAddress2 = factory(Address::class)->create(['address_type' => 'Software']);
 
-        $quote->opportunity->addresses()->sync([
-            $softwareAddress2->getKey() => ['is_default' => false],
-            $defaultSoftwareAddress->getKey() => ['is_default' => true]
+        $quote->activeVersion->addresses()->sync([
+            $softwareAddress2->getKey(),
+            $defaultSoftwareAddress->getKey()
         ]);
 
         factory(WorldwideQuoteAsset::class, 5)->create([
@@ -1362,9 +1362,9 @@ class WorldwidePackQuoteTest extends TestCase
         $defaultSoftwareAddress = factory(Address::class)->create(['address_type' => 'Software', 'address_1' => '-1 Default Software Address']);
         $softwareAddress2 = factory(Address::class)->create(['address_type' => 'Software']);
 
-        $wwQuote->opportunity->addresses()->sync([
-            $softwareAddress2->getKey() => ['is_default' => false],
-            $defaultSoftwareAddress->getKey() => ['is_default' => true]
+        $wwQuote->activeVersion->addresses()->sync([
+            $softwareAddress2->getKey(),
+            $defaultSoftwareAddress->getKey()
         ]);
 
         factory(WorldwideQuoteAsset::class, 5)->create([
@@ -1455,8 +1455,8 @@ class WorldwidePackQuoteTest extends TestCase
             'contact_type' => 'Software'
         ]);
 
-        $wwQuote->opportunity->addresses()->sync([$machineAddress->getKey(), $softwareAddress->getKey()]);
-        $wwQuote->opportunity->contacts()->sync([$hardwareContact->getKey(), $softwareContact->getKey()]);
+        $wwQuote->activeVersion->addresses()->sync([$machineAddress->getKey(), $softwareAddress->getKey()]);
+        $wwQuote->activeVersion->contacts()->sync([$hardwareContact->getKey(), $softwareContact->getKey()]);
 
         factory(WorldwideQuoteAsset::class, 5)->create([
             'worldwide_quote_id' => $wwQuote->getKey(),

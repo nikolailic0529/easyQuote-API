@@ -33,6 +33,7 @@ use App\Models\Task;
 use App\Models\Template\ContractTemplate;
 use App\Models\Template\HpeContractTemplate;
 use App\Models\Template\QuoteTemplate;
+use App\Models\Template\SalesOrderTemplate;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Policies\ActivityPolicy;
@@ -61,6 +62,7 @@ use App\Policies\QuoteTaskTemplatePolicy;
 use App\Policies\QuoteTemplatePolicy;
 use App\Policies\RolePolicy;
 use App\Policies\SalesOrderPolicy;
+use App\Policies\SalesOrderTemplatePolicy;
 use App\Policies\SNDPolicy;
 use App\Policies\SystemSettingPolicy;
 use App\Policies\TaskPolicy;
@@ -92,6 +94,7 @@ class AuthServiceProvider extends ServiceProvider
         QuoteTemplate::class            => QuoteTemplatePolicy::class,
         ContractTemplate::class         => ContractTemplatePolicy::class,
         HpeContractTemplate::class      => HpeContractTemplatePolicy::class,
+        SalesOrderTemplate::class       => SalesOrderTemplatePolicy::class,
 
         Company::class                  => CompanyPolicy::class,
         Vendor::class                   => VendorPolicy::class,

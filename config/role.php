@@ -138,6 +138,22 @@ return [
                     'delete_own_hpe_contract_templates',
                 ],
             ],
+            'Sales Order Templates' => [
+                $R => [
+                    'view_sales_order_templates'
+                ],
+                $CRU => [
+                    'view_sales_order_templates',
+                    'create_sales_order_templates',
+                    'update_own_sales_order_templates'
+                ],
+                $CRUD => [
+                    'view_sales_order_templates',
+                    'create_sales_order_templates',
+                    'update_own_sales_order_templates',
+                    'delete_own_sales_order_templates'
+                ]
+            ],
             'Quote Task Template' => [
                 $R => [
                     'view_quote_task_template',

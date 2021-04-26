@@ -32,7 +32,7 @@ class Address extends Model implements SearchableEntity
 {
     use Uuid, SoftDeletes, Activatable, BelongsToCountry, Searchable, EloquentJoin;
 
-    public const TYPES = ['Invoice', 'Client', 'Machine', 'Equipment', 'Software'];
+    public const TYPES = ['Invoice', 'Client', 'Machine', 'Equipment', 'Hardware', 'Software'];
 
     protected $fillable = [
         'address_type',

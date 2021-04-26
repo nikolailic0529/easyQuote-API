@@ -18,7 +18,6 @@ class QuoteOpportunity extends JsonResource
     public function toArray($request)
     {
         /** @var Opportunity|QuoteOpportunity $this */
-
         return [
             'id' => $this->getKey(),
             'account_manager' => $this->whenLoaded('accountManager'),
@@ -42,23 +41,11 @@ class QuoteOpportunity extends JsonResource
 
             }),
             'primary_account_contact' => $this->whenLoaded('primaryAccountContact'),
-            'addresses' => $this->whenLoaded('addresses', function () {
-                /** @var Opportunity|QuoteOpportunity $this */
-
-                $this->addresses->each(function (Address $address) {
-                    $address->setAttribute('is_default', $address->pivot->is_default);
-                });
-
-                return $this->addresses;
+            'addresses' => $this->when(isset($this->additional['addresses']), function () {
+                return $this->additional['addresses'];
             }),
-            'contacts' => $this->whenLoaded('contacts', function () {
-                /** @var Opportunity|QuoteOpportunity $this */
-
-                $this->contacts->each(function (Contact $contact) {
-                    $contact->setAttribute('is_default', $contact->pivot->is_default);
-                });
-
-                return $this->contacts;
+            'contacts' => $this->when(isset($this->additional['contacts']), function () {
+                return $this->additional['contacts'];
             }),
             'project_name' => $this->project_name,
             'nature_of_service' => $this->nature_of_service,

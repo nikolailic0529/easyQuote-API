@@ -89,7 +89,7 @@ class WorldwideQuoteValidator
                         '*.addresses.*.address_1' => 'required|max:100',
                         '*.addresses.*.address_2' => 'present|nullable|max:50',
                         '*.addresses.*.city' => 'required|max:30',
-                        '*.addresses.*.state' => 'present:nullable|max:30',
+                        '*.addresses.*.state' => 'required|max:30',
                         '*.addresses.*.state_code' => 'present:nullable|max:2',
                         '*.addresses.*.post_code' => 'required|max:20',
                         '*.addresses.*.country_code' => 'required|max:2',
@@ -117,6 +117,7 @@ class WorldwideQuoteValidator
                         '*.addresses.invoice_address.address_1.max' => 'Invoice Address has Address 1 greater than :max characters.',
                         '*.addresses.invoice_address.city.required' => 'Invoice Address doesn\'t have a filled City.',
                         '*.addresses.invoice_address.city.max' => 'Invoice Address has City greater than :max characters.',
+                        '*.addresses.invoice_address.state.required' => 'Invoice Address doesn\'t have a filled State/County.',
                         '*.addresses.invoice_address.state.max' => 'Invoice Address has State greater than :max characters.',
                         '*.addresses.invoice_address.state_code.max' => 'Invoice Address has State Code greater than :max characters.',
                         '*.addresses.invoice_address.post_code.required' => 'Invoice Address doesn\'t have a filled Postal Code.',
@@ -127,21 +128,23 @@ class WorldwideQuoteValidator
                         '*.addresses.software_address.address_1.max' => 'Software Address has Address 1 greater than :max characters.',
                         '*.addresses.software_address.city.required' => 'Software Address doesn\'t have a filled City.',
                         '*.addresses.software_address.city.max' => 'Software Address has City greater than :max characters.',
+                        '*.addresses.software_address.state.required' => 'Software Address doesn\'t have a filled State/County.',
                         '*.addresses.software_address.state.max' => 'Software Address has State greater than :max characters.',
                         '*.addresses.software_address.state_code.max' => 'Software Address has State Code greater than :max characters.',
                         '*.addresses.software_address.post_code.required' => 'Software Address doesn\'t have a filled Postal Code.',
                         '*.addresses.software_address.post_code.max' => 'Software Address has State Postal Code greater than :max characters.',
                         '*.addresses.software_address.country_code.required' => 'Software Address doesn\'t have a filled Country.',
 
-                        '*.addresses.hardware_address.address_1.required' => 'Software Address doesn\'t have a filled Address 1.',
-                        '*.addresses.hardware_address.address_1.max' => 'Software Address has Address 1 greater than :max characters.',
-                        '*.addresses.hardware_address.city.required' => 'Software Address doesn\'t have a filled City.',
-                        '*.addresses.hardware_address.city.max' => 'Software Address has City greater than :max characters.',
-                        '*.addresses.hardware_address.state.max' => 'Software Address has State greater than :max characters.',
-                        '*.addresses.hardware_address.state_code.max' => 'Software Address has State Code greater than :max characters.',
-                        '*.addresses.hardware_address.post_code.required' => 'Software Address doesn\'t have a filled Postal Code.',
-                        '*.addresses.hardware_address.post_code.max' => 'Software Address has State Postal Code greater than :max characters.',
-                        '*.addresses.hardware_address.country_code.required' => 'Software Address doesn\'t have a filled Country.',
+                        '*.addresses.hardware_address.address_1.required' => 'Hardware Address doesn\'t have a filled Address 1.',
+                        '*.addresses.hardware_address.address_1.max' => 'Hardware Address has Address 1 greater than :max characters.',
+                        '*.addresses.hardware_address.city.required' => 'Hardware Address doesn\'t have a filled City.',
+                        '*.addresses.hardware_address.city.max' => 'Hardware Address has City greater than :max characters.',
+                        '*.addresses.hardware_address.state.required' => 'Hardware Address doesn\'t have a filled State/County.',
+                        '*.addresses.hardware_address.state.max' => 'Hardware Address has State greater than :max characters.',
+                        '*.addresses.hardware_address.state_code.max' => 'Hardware Address has State Code greater than :max characters.',
+                        '*.addresses.hardware_address.post_code.required' => 'Hardware Address doesn\'t have a filled Postal Code.',
+                        '*.addresses.hardware_address.post_code.max' => 'Hardware Address has State Postal Code greater than :max characters.',
+                        '*.addresses.hardware_address.country_code.required' => 'Hardware Address doesn\'t have a filled Country.',
 
                         '*.assets.*.service_sku.required' => 'One or more assets don\'t have a service sku.',
                         '*.assets.*.service_description.required' => 'One or more assets don\'t have service level description.',
@@ -169,8 +172,8 @@ class WorldwideQuoteValidator
         }
 
         return new WorldwideQuoteValidationResult(
-            !$customerDataValidator->fails(),
-            $customerDataValidator->errors()
+            $errorBag->isEmpty(),
+            $errorBag
         );
     }
 
@@ -196,7 +199,7 @@ class WorldwideQuoteValidator
             'addresses.*.address_1' => 'required|max:100',
             'addresses.*.address_2' => 'present:nullable|max:50',
             'addresses.*.city' => 'required|max:30',
-            'addresses.*.state' => 'present|nullable|max:30',
+            'addresses.*.state' => 'required|max:30',
             'addresses.*.state_code' => 'present|nullable|max:2',
             'addresses.*.post_code' => 'required|max:20',
             'addresses.*.country_code' => 'required|max:2',
@@ -233,6 +236,7 @@ class WorldwideQuoteValidator
             'addresses.invoice_address.address_1.max' => 'Invoice Address has Address 1 greater than :max characters.',
             'addresses.invoice_address.city.required' => 'Invoice Address doesn\'t have a filled City.',
             'addresses.invoice_address.city.max' => 'Invoice Address has City greater than :max characters.',
+            'addresses.invoice_address.state.required' => 'Invoice Address doesn\'t have a filled State/County.',
             'addresses.invoice_address.state.max' => 'Invoice Address has State greater than :max characters.',
             'addresses.invoice_address.state_code.max' => 'Invoice Address has State Code greater than :max characters.',
             'addresses.invoice_address.post_code.required' => 'Invoice Address doesn\'t have a filled Postal Code.',
@@ -243,21 +247,23 @@ class WorldwideQuoteValidator
             'addresses.software_address.address_1.max' => 'Software Address has Address 1 greater than :max characters.',
             'addresses.software_address.city.required' => 'Software Address doesn\'t have a filled City.',
             'addresses.software_address.city.max' => 'Software Address has City greater than :max characters.',
+            'addresses.software_address.state.required' => 'Software Address doesn\'t have a filled State/County.',
             'addresses.software_address.state.max' => 'Software Address has State greater than :max characters.',
             'addresses.software_address.state_code.max' => 'Software Address has State Code greater than :max characters.',
             'addresses.software_address.post_code.required' => 'Software Address doesn\'t have a filled Postal Code.',
             'addresses.software_address.post_code.max' => 'Software Address has State Postal Code greater than :max characters.',
             'addresses.software_address.country_code.required' => 'Software Address doesn\'t have a filled Country.',
 
-            'addresses.hardware_address.address_1.required' => 'Software Address doesn\'t have a filled Address 1.',
-            'addresses.hardware_address.address_1.max' => 'Software Address has Address 1 greater than :max characters.',
-            'addresses.hardware_address.city.required' => 'Software Address doesn\'t have a filled City.',
-            'addresses.hardware_address.city.max' => 'Software Address has City greater than :max characters.',
-            'addresses.hardware_address.state.max' => 'Software Address has State greater than :max characters.',
-            'addresses.hardware_address.state_code.max' => 'Software Address has State Code greater than :max characters.',
-            'addresses.hardware_address.post_code.required' => 'Software Address doesn\'t have a filled Postal Code.',
-            'addresses.hardware_address.post_code.max' => 'Software Address has State Postal Code greater than :max characters.',
-            'addresses.hardware_address.country_code.required' => 'Software Address doesn\'t have a filled Country.',
+            'addresses.hardware_address.address_1.required' => 'Hardware Address doesn\'t have a filled Address 1.',
+            'addresses.hardware_address.address_1.max' => 'Hardware Address has Address 1 greater than :max characters.',
+            'addresses.hardware_address.city.required' => 'Hardware Address doesn\'t have a filled City.',
+            'addresses.hardware_address.city.max' => 'Hardware Address has City greater than :max characters.',
+            'addresses.hardware_address.state.required' => 'Hardware Address doesn\'t have a filled State/County.',
+            'addresses.hardware_address.state.max' => 'Hardware Address has State greater than :max characters.',
+            'addresses.hardware_address.state_code.max' => 'Hardware Address has State Code greater than :max characters.',
+            'addresses.hardware_address.post_code.required' => 'Hardware Address doesn\'t have a filled Postal Code.',
+            'addresses.hardware_address.post_code.max' => 'Hardware Address has State Postal Code greater than :max characters.',
+            'addresses.hardware_address.country_code.required' => 'Hardware Address doesn\'t have a filled Country.',
 
             'assets.*.service_sku.required' => 'One or more assets don\'t have a service sku.',
             'assets.*.service_description.required' => 'One or more assets don\'t have service level description.',
@@ -437,11 +443,11 @@ class WorldwideQuoteValidator
 
     private function mapAddressesOfPackQuote(WorldwideQuote $quote): array
     {
-        $addressDictionary = $quote->opportunity->addresses->keyBy('address_type');
+        $addressDictionary = $quote->activeVersion->addresses->keyBy('address_type');
 
         $addresses = [
             'invoice_address' => $addressDictionary['Invoice'] ?? null,
-            'hardware_address' => $addressDictionary['Hardware'] ?? null,
+            'hardware_address' => $addressDictionary['Hardware'] ?? $addressDictionary['Machine'] ?? null,
             'software_address' => $addressDictionary['Software'] ?? null,
         ];
 
@@ -456,7 +462,7 @@ class WorldwideQuoteValidator
 
         $addresses = [
             'invoice_address' => $addressDictionary['Invoice'] ?? null,
-            'hardware_address' => $addressDictionary['Hardware'] ?? null,
+            'hardware_address' => $addressDictionary['Hardware'] ?? $addressDictionary['Machine'] ?? null,
             'software_address' => $addressDictionary['Software'] ?? null,
         ];
 

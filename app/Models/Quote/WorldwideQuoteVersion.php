@@ -2,7 +2,10 @@
 
 namespace App\Models\Quote;
 
+use App\Models\Address;
+use App\Models\Addressable;
 use App\Models\Company;
+use App\Models\Contact;
 use App\Models\ContractType;
 use App\Models\Data\Currency;
 use App\Models\Opportunity;
@@ -10,7 +13,6 @@ use App\Models\Quote\Discount\MultiYearDiscount;
 use App\Models\Quote\Discount\PrePayDiscount;
 use App\Models\Quote\Discount\PromotionalDiscount;
 use App\Models\Quote\Discount\SND;
-use App\Models\Task;
 use App\Models\Template\QuoteTemplate;
 use App\Models\User;
 use App\Models\Vendor;
@@ -19,14 +21,16 @@ use App\Traits\Uuid;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
+use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 /**
  * Class WorldwideQuoteVersion
  *
-/**
+ * /**
  * @property string|null $id
  * @property string|null $worldwide_quote_id
  * @property string|null $user_id
@@ -65,7 +69,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  *
  * @property User $user
  * @property ContractType|null $contractType
-// * @property Opportunity|null $opportunity
+ * // * @property Opportunity|null $opportunity
  * @property Collection|WorldwideDistribution[] $worldwideDistributions
  * @property QuoteTemplate|null $quoteTemplate
  * @property Currency $quoteCurrency
@@ -81,6 +85,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property Collection|null $applicablePrePayDiscounts
  * @property Collection|null $applicableMultiYearDiscounts
  * @property WorldwideQuote|null $worldwideQuote
+ *
+ * @property-read Collection<Address>|Address[] $addresses
+ * @property-read Collection<Contact>|Contact[] $contacts
  */
 class WorldwideQuoteVersion extends Model
 {
@@ -153,5 +160,15 @@ class WorldwideQuoteVersion extends Model
     public function snDiscount(): BelongsTo
     {
         return $this->belongsTo(SND::class);
+    }
+
+    public function addresses(): BelongsToMany
+    {
+        return $this->belongsToMany(Address::class);
+    }
+
+    public function contacts(): BelongsToMany
+    {
+        return $this->belongsToMany(Contact::class);
     }
 }

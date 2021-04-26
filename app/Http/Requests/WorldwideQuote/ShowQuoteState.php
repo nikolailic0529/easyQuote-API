@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\WorldwideQuote;
 
+use App\Models\Opportunity;
 use App\Models\Quote\Discount\MultiYearDiscount;
 use App\Models\Quote\Discount\PrePayDiscount;
 use App\Models\Quote\Discount\PromotionalDiscount;
@@ -14,6 +15,8 @@ use App\Queries\DiscountQueries;
 use App\Services\WorldwideQuote\WorldwideDistributionCalc;
 use App\Services\WorldwideQuote\WorldwideQuoteCalc;
 use App\Services\WorldwideQuoteDataMapper;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\JoinClause;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ShowQuoteState extends FormRequest
@@ -66,13 +69,75 @@ class ShowQuoteState extends FormRequest
             $this->container->call([$this, 'normalizeWorldwideQuoteAssetAttributesWhenLoaded'], ['model' => $worldwideQuote]);
             $this->container->call([$this, 'prepareWorldwideDistributionMappingWhenLoaded'], ['model' => $worldwideQuote]);
             $this->container->call([$this, 'includeCountryOfAddressesWhenLoaded'], ['model' => $worldwideQuote]);
+            $this->container->call([$this, 'includeReferencedAddressDataOfAddressesWhenLoaded'], ['model' => $worldwideQuote]);
+            $this->container->call([$this, 'includeReferencedContactDataOfContactsWhenLoaded'], ['model' => $worldwideQuote]);
         });
+    }
+
+    public function includeReferencedAddressDataOfAddressesWhenLoaded(WorldwideQuote $model)
+    {
+        if ($model->activeVersion->relationLoaded('addresses')) {
+
+            $referencedAddressPivotsOfPrimaryAccount = $model->referencedAddressPivotsOfPrimaryAccount->pluck('is_default', 'address_id');
+
+            foreach ($model->activeVersion->addresses as $address) {
+                $address->setAttribute('is_default', (bool)($referencedAddressPivotsOfPrimaryAccount[$address->getKey()] ?? false));
+            }
+        }
+
+        if ($model->activeVersion->relationLoaded('worldwideDistributions')) {
+
+            $referencedAddressPivotsOfPrimaryAccount = $model->referencedAddressPivotsOfPrimaryAccount->pluck('is_default', 'address_id');
+
+            foreach ($model->activeVersion->worldwideDistributions as $distributorQuote) {
+
+                if ($distributorQuote->relationLoaded('addresses')) {
+
+                    foreach ($distributorQuote->addresses as $address) {
+                        $address->setAttribute('is_default', (bool)($referencedAddressPivotsOfPrimaryAccount[$address->getKey()] ?? false));
+                    }
+
+                }
+
+            }
+
+        }
+    }
+
+    public function includeReferencedContactDataOfContactsWhenLoaded(WorldwideQuote $model)
+    {
+        if ($model->activeVersion->relationLoaded('contacts')) {
+
+            $referencedContactPivotsOfPrimaryAccount = $model->referencedContactPivotsOfPrimaryAccount->pluck('is_default', 'contact_id');
+
+            foreach ($model->activeVersion->contacts as $contact) {
+                $contact->setAttribute('is_default', (bool)($referencedContactPivotsOfPrimaryAccount[$contact->getKey()] ?? false));
+            }
+        }
+
+        if ($model->activeVersion->relationLoaded('worldwideDistributions')) {
+
+            $referencedContactPivotsOfPrimaryAccount = $model->referencedContactPivotsOfPrimaryAccount->pluck('is_default', 'contact_id');
+
+            foreach ($model->activeVersion->worldwideDistributions as $distributorQuote) {
+
+                if ($distributorQuote->relationLoaded('contacts')) {
+
+                    foreach ($distributorQuote->contacts as $contact) {
+                        $contact->setAttribute('is_default', (bool)($referencedContactPivotsOfPrimaryAccount[$contact->getKey()] ?? false));
+                    }
+
+                }
+
+            }
+
+        }
     }
 
     public function includeCountryOfAddressesWhenLoaded(WorldwideQuote $model)
     {
-        if ($model->relationLoaded('opportunity') && $model->opportunity->relationLoaded('addresses')) {
-            $model->opportunity->addresses->load('country');
+        if ($model->activeVersion->relationLoaded('addresses')) {
+            $model->activeVersion->addresses->load('country');
         }
 
         if ($model->activeVersion->relationLoaded('worldwideDistributions')) {

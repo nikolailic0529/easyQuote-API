@@ -353,9 +353,9 @@ class SalesOrderTest extends TestCase
         $defaultSoftwareAddress = factory(Address::class)->create(['address_type' => 'Software', 'address_1' => '-1 Default Software Address']);
         $softwareAddress2 = factory(Address::class)->create(['address_type' => 'Software']);
 
-        $quote->opportunity->addresses()->sync([
-            $softwareAddress2->getKey() => ['is_default' => false],
-            $defaultSoftwareAddress->getKey() => ['is_default' => true]
+        $quote->activeVersion->addresses()->sync([
+            $softwareAddress2->getKey(),
+            $defaultSoftwareAddress->getKey()
         ]);
 
         factory(WorldwideQuoteAsset::class, 5)->create([
@@ -525,14 +525,14 @@ class SalesOrderTest extends TestCase
             'country_id' => Country::query()->where('iso_3166_2', 'GB')->value('id')
         ]);
 
-        $opportunity->addresses()->sync([
-            $invoiceAddress->getKey(), $machineAddress->getKey()
-        ]);
-
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create([
             'contract_type_id' => CT_PACK,
             'opportunity_id' => $opportunity->getKey(),
+        ]);
+
+        $quote->activeVersion->addresses()->sync([
+            $invoiceAddress->getKey(), $machineAddress->getKey()
         ]);
 
         $quote->activeVersion->update([
@@ -603,14 +603,14 @@ class SalesOrderTest extends TestCase
             'country_id' => Country::query()->where('iso_3166_2', 'GB')->value('id')
         ]);
 
-        $opportunity->addresses()->sync([
-            $invoiceAddress->getKey(), $machineAddress->getKey()
-        ]);
-
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create([
             'contract_type_id' => CT_CONTRACT,
             'opportunity_id' => $opportunity->getKey(),
+        ]);
+
+        $quote->activeVersion->addresses()->sync([
+            $invoiceAddress->getKey(), $machineAddress->getKey()
         ]);
 
         $quote->activeVersion->update([

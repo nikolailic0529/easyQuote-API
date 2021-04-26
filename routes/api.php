@@ -52,6 +52,7 @@ use App\Http\Controllers\API\Templates\ContractTemplateController;
 use App\Http\Controllers\API\Templates\HpeContractTemplateController;
 use App\Http\Controllers\API\Templates\OpportunityTemplateController;
 use App\Http\Controllers\API\Templates\QuoteTemplateController;
+use App\Http\Controllers\API\Templates\SalesOrderTemplateController;
 use App\Http\Controllers\API\UnifiedQuoteController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\VendorController;
@@ -232,9 +233,7 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::post('templates/filter-ww', [QuoteTemplateController::class, 'filterWorldwideTemplates']);
         Route::post('templates/filter-ww/pack', [QuoteTemplateController::class, 'filterWorldwidePackTemplates']);
         Route::post('templates/filter-ww/contract', [QuoteTemplateController::class, 'filterWorldwideContractTemplates']);
-    });
 
-    Route::group(['middleware' => THROTTLE_RATE_01], function () {
         Route::get('contract-templates/designer/{contract_template}', [ContractTemplateController::class, 'designer']);
         Route::get('contract-templates/country/{country}', [ContractTemplateController::class, 'country']);
         Route::apiResource('contract-templates', ContractTemplateController::class);
@@ -244,9 +243,7 @@ Route::group(['middleware' => 'auth:api'], function () {
 
         Route::post('contract-templates/filter-ww/pack', [ContractTemplateController::class, 'filterWorldwidePackContractTemplates']);
         Route::post('contract-templates/filter-ww/contract', [ContractTemplateController::class, 'filterWorldwideContractContractTemplates']);
-    });
 
-    Route::group(['middleware' => THROTTLE_RATE_01], function () {
         Route::get('hpe-contract-templates/designer/{hpe_contract_template}', [HpeContractTemplateController::class, 'showTemplateSchema']);
         Route::get('hpe-contract-templates/country/{country}', [HpeContractTemplateController::class, 'filterTemplatesByCountry']);
         Route::post('hpe-contract-templates/filter', [HpeContractTemplateController::class, 'filterTemplates']);
@@ -258,6 +255,19 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::put('hpe-contract-templates/activate/{hpe_contract_template}', [HpeContractTemplateController::class, 'activateTemplate']);
         Route::put('hpe-contract-templates/deactivate/{hpe_contract_template}', [HpeContractTemplateController::class, 'deactivateTemplate']);
         Route::put('hpe-contract-templates/copy/{hpe_contract_template}', [HpeContractTemplateController::class, 'replicateTemplate']);
+
+        Route::get('sales-order-templates', [SalesOrderTemplateController::class, 'paginateSalesOrderTemplates']);
+        Route::get('sales-order-templates/{sales_order_template}', [SalesOrderTemplateController::class, 'showSalesOrderTemplate']);
+        Route::get('sales-order-templates/filter-ww/pack', [SalesOrderTemplateController::class, 'filterWorldwidePackSalesOrderTemplates']);
+        Route::get('sales-order-templates/filter-ww/contract', [SalesOrderTemplateController::class, 'filterWorldwideContractSalesOrderTemplates']);
+        Route::post('sales-order-templates', [SalesOrderTemplateController::class, 'storeSalesOrderTemplate']);
+        Route::patch('sales-order-templates/{sales_order_template}', [SalesOrderTemplateController::class, 'updateSalesOrderTemplate']);
+        Route::patch('sales-order-templates/{sales_order_template}/schema', [SalesOrderTemplateController::class, 'updateSchemaOfSalesOrderTemplate']);
+        Route::delete('sales-order-templates/{sales_order_template}', [SalesOrderTemplateController::class, 'destroySalesOrderTemplate']);
+        Route::put('sales-order-templates/{sales_order_template}/activate', [SalesOrderTemplateController::class, 'markAsActiveSalesOrderTemplate']);
+        Route::put('sales-order-templates/{sales_order_template}/deactivate', [SalesOrderTemplateController::class, 'markAsInactiveSalesOrderTemplate']);
+        Route::put('sales-order-templates/{sales_order_template}/copy', [SalesOrderTemplateController::class, 'replicateSalesOrderTemplate']);
+
     });
 
     Route::group(['middleware' => THROTTLE_RATE_01], function () {

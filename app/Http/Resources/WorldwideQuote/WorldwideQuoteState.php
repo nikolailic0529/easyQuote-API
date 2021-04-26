@@ -63,6 +63,11 @@ class WorldwideQuoteState extends JsonResource
         'quoteCurrency' => 'activeVersion.quoteCurrency',
         'outputCurrency' => 'activeVersion.outputCurrency',
         'quoteTemplate' => 'activeVersion.quoteTemplate',
+
+        'opportunity.addresses' => 'activeVersion.addresses',
+        'opportunity.addresses.country' => 'activeVersion.addresses.country',
+        'opportunity.contacts' => 'activeVersion.contacts',
+
         'worldwideDistributions.opportunitySupplier' => 'activeVersion.worldwideDistributions.opportunitySupplier',
         'worldwideDistributions.distributorFile' => 'activeVersion.worldwideDistributions.distributorFile',
         'worldwideDistributions.mappingRow' => 'activeVersion.worldwideDistributions.mappingRow',
@@ -112,7 +117,28 @@ class WorldwideQuoteState extends JsonResource
             'quote_number' => $this->quote_number,
 
             'opportunity_id' => $this->opportunity_id,
-            'opportunity' => QuoteOpportunity::make($this->whenLoaded('opportunity')),
+            'opportunity' => $this->when($this->relationLoaded('opportunity') || $this->activeVersion->relationLoaded('addresses') || $this->activeVersion->relationLoaded('contacts'),  function () {
+                /** @var WorldwideQuote|WorldwideQuoteState $this */
+
+                return tap(QuoteOpportunity::make($this->opportunity), function (QuoteOpportunity $resource) {
+
+                    /** @var WorldwideQuote|WorldwideQuoteState $this */
+
+                    $additionalData = [];
+
+                    if ($this->activeVersion->relationLoaded('addresses')) {
+                        $additionalData['addresses'] = $this->activeVersion->addresses;
+                    }
+
+                    if ($this->activeVersion->relationLoaded('contacts')) {
+                        $additionalData['contacts'] = $this->activeVersion->contacts;
+                    }
+
+                    $resource->additional($additionalData);
+
+                });
+
+            }),
 
             'company_id' => $this->activeVersion->company_id,
             'company' => $this->whenLoaded('company'),

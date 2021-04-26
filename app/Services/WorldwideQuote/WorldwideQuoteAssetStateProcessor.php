@@ -377,7 +377,7 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
 
             $opportunityLock->block(30, function () use ($machineAddressKeys, $quote) {
 
-                $this->connection->transaction(fn() => $quote->worldwideQuote->opportunity->addresses()->syncWithoutDetaching($machineAddressKeys));
+                $this->connection->transaction(fn() => $quote->addresses()->syncWithoutDetaching($machineAddressKeys));
 
             });
         }

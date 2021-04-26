@@ -4,8 +4,7 @@ namespace App\Services;
 
 use App\Contracts\{Services\ManagesExchangeRates,
     Services\ProcessesWorldwideDistributionState,
-    Services\ProcessesWorldwideQuoteState
-};
+    Services\ProcessesWorldwideQuoteState};
 use App\DTO\ProcessableDistributionCollection;
 use App\DTO\QuoteStages\{AddressesContactsStage,
     ContractDetailsStage,
@@ -21,14 +20,9 @@ use App\DTO\QuoteStages\{AddressesContactsStage,
     PackDiscountStage,
     PackMarginTaxStage,
     ReviewStage,
-    SubmitStage
-};
-use App\DTO\WorldwideQuote\DistributionAddressData;
-use App\DTO\WorldwideQuote\DistributionContactData;
+    SubmitStage};
 use App\DTO\WorldwideQuote\DistributionImportData;
 use App\DTO\WorldwideQuote\MarkWorldwideQuoteAsDeadData;
-use App\DTO\WorldwideQuote\OpportunityAddressData;
-use App\DTO\WorldwideQuote\OpportunityContactData;
 use App\Enum\{ContractQuoteStage, Lock, QuoteStatus};
 use App\Events\WorldwideQuote\ProcessedImportOfDistributorQuotes;
 use App\Events\WorldwideQuote\WorldwideContractQuoteDetailsStepProcessed;
@@ -67,8 +61,7 @@ use App\Models\{Address,
     QuoteFile\QuoteFile,
     QuoteFile\ScheduleData,
     User,
-    WorldwideQuoteAsset
-};
+    WorldwideQuoteAsset};
 use App\Services\Exceptions\ValidationException;
 use App\Services\WorldwideQuote\Models\ReplicatedVersionData;
 use App\Services\WorldwideQuote\WorldwideQuoteReplicator;
@@ -191,10 +184,11 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
             $opportunityLock = $this->lockProvider->lock(Lock::UPDATE_OPPORTUNITY($stage->opportunity_id), 10);
 
-            $opportunityLock->block(30, function () use ($stage, $quote) {
+            $activeQuoteVersion = $quote->activeVersion;
+            $opportunity = $quote->opportunity;
+            $primaryAccount = $opportunity->primaryAccount;
 
-                $opportunity = $quote->opportunity;
-                $primaryAccount = $opportunity->primaryAccount;
+            $opportunityLock->block(30, function () use ($stage, $quote, $activeQuoteVersion, $opportunity, $primaryAccount) {
 
                 if (is_null($primaryAccount)) {
                     return;
@@ -206,27 +200,21 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                     ->filter(function (Address $address) {
                         return $address->pivot->is_default;
                     })
-                    ->mapWithKeys(function (Address $address) use ($opportunity) {
-                        return [$address->getKey() => ['is_default' => $address->pivot->is_default]];
-                    })
-                    ->all();
+                    ->modelKeys();
 
                 $contactPivots = $primaryAccount->contacts
                     ->filter(function (Contact $contact) {
                         return $contact->pivot->is_default;
                     })
-                    ->mapWithKeys(function (Contact $contact) use ($opportunity) {
-                        return [$contact->getKey() => ['is_default' => $contact->pivot->is_default]];
-                    })
-                    ->all();
+                    ->modelKeys();
 
-                $this->connection->transaction(function () use ($contactPivots, $addressPivots, $opportunity, $primaryAccount) {
+                $this->connection->transaction(function () use ($activeQuoteVersion, $contactPivots, $addressPivots, $opportunity, $primaryAccount) {
                     if (!empty($addressPivots)) {
-                        $opportunity->addresses()->syncWithoutDetaching($addressPivots);
+                        $activeQuoteVersion->addresses()->syncWithoutDetaching($addressPivots);
                     }
 
                     if (!empty($contactPivots)) {
-                        $opportunity->contacts()->syncWithoutDetaching($contactPivots);
+                        $activeQuoteVersion->contacts()->syncWithoutDetaching($contactPivots);
                     }
                 });
             });
@@ -304,37 +292,6 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $oldQuote = $this->cloneBaseQuoteEntityFromVersion($quote);
 
             $opportunity = $quote->worldwideQuote->opportunity;
-            $primaryAccount = $opportunity->primaryAccount;
-
-            $addressOfPrimaryAccountDictionary = value(function () use ($primaryAccount): array {
-
-                if (is_null($primaryAccount)) {
-                    return [];
-                }
-
-                $dictionary = [];
-
-                foreach ($primaryAccount->addresses as $address) {
-                    $dictionary[$address->getKey()] = (bool)$address->pivot->is_default;
-                }
-
-                return $dictionary;
-            });
-
-            $contactOfPrimaryAccountDictionary = value(function () use ($primaryAccount): array {
-
-                if (is_null($primaryAccount)) {
-                    return [];
-                }
-
-                $dictionary = [];
-
-                foreach ($primaryAccount->contacts as $contact) {
-                    $dictionary[$contact->getKey()] = (bool)$contact->pivot->is_default;
-                }
-
-                return $dictionary;
-            });
 
             $quoteLock = $this->lockProvider->lock(
                 Lock::UPDATE_WWQUOTE($quote->getKey()),
@@ -358,36 +315,10 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                 10
             );
 
-            $opportunity = $quote->worldwideQuote->opportunity;
-
-            $addressPivots = value(function () use ($stage, $addressOfPrimaryAccountDictionary): array {
-                $pivots = [];
-
-                foreach ($stage->address_ids as $id) {
-                    $pivots[$id] = ['is_default' => $addressOfPrimaryAccountDictionary[$id] ?? false];
-                }
-
-                return $pivots;
-            });
-
-            $contactPivots = value(function () use ($stage, $contactOfPrimaryAccountDictionary): array {
-                $pivots = [];
-
-                foreach ($stage->contact_ids as $id) {
-                    $pivots[$id] = ['is_default' => $contactOfPrimaryAccountDictionary[$id] ?? false];
-                }
-
-                return $pivots;
-            });
-
-            $opportunityLock->block(30, function () use ($opportunity, $addressPivots, $contactPivots) {
-
-                $this->connection->transaction(function () use ($opportunity, $addressPivots, $contactPivots) {
-                    $opportunity->addresses()->sync($addressPivots);
-                    $opportunity->contacts()->sync($contactPivots);
-                });
-
-            });
+            $opportunityLock->block(30, fn() => $this->connection->transaction(function () use ($quote, $stage) {
+                $quote->addresses()->sync($stage->address_ids);
+                $quote->contacts()->sync($stage->contact_ids);
+            }));
 
             $this->eventDispatcher->dispatch(
                 new WorldwidePackQuoteContactsStepProcessed(
@@ -1083,6 +1014,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
     public function syncQuoteWithOpportunityData(WorldwideQuote $quote): void
     {
         $opportunity = $quote->opportunity;
+        $primaryAccount = $opportunity->primaryAccount;
         $activeVersion = $quote->activeVersion;
 
         if (!is_null($opportunity->contract_type_id) && $quote->contract_type_id !== $opportunity->contract_type_id) {
@@ -1098,6 +1030,25 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             });
 
         }
+
+        $addressModelKeysOfPrimaryAccount = value(function () use ($primaryAccount): array {
+
+            if (is_null($primaryAccount)) {
+                return [];
+            }
+
+            return $primaryAccount->addresses()->pluck('addresses.id')->all();
+
+        });
+
+        $contactModelKeysOfPrimaryAccount = value(function () use ($primaryAccount): array {
+            if (is_null($primaryAccount)) {
+                return [];
+            }
+
+            return $primaryAccount->contacts()->pluck('contacts.id')->all();
+
+        });
 
         if ($quote->contract_type_id === CT_PACK) {
 
@@ -1115,11 +1066,27 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
             $lock = $this->lockProvider->lock(Lock::UPDATE_WWQUOTE($quote->getKey()), 10);
 
-            $lock->block(30, function () use ($quote) {
+            $lock->block(30, function () use ($quote, $addressModelKeysOfPrimaryAccount, $contactModelKeysOfPrimaryAccount) {
 
-                $this->connection->transaction(function () use ($quote) {
+                $this->connection->transaction(function () use ($quote, $addressModelKeysOfPrimaryAccount, $contactModelKeysOfPrimaryAccount) {
 
                     foreach ($quote->versions as $version) {
+
+                        // Detaching of addresses & contacts which are not present in the primary account entity.
+                        if (!empty($addressModelKeysOfPrimaryAccount)) {
+                            $version->addresses()
+                                ->newPivotQuery()
+                                ->whereNotIn($version->addresses()->getQualifiedRelatedPivotKeyName(), $addressModelKeysOfPrimaryAccount)
+                                ->delete();
+                        }
+
+                        if (!empty($contactModelKeysOfPrimaryAccount)) {
+                            $version->contacts()
+                                ->newPivotQuery()
+                                ->whereNotIn($version->contacts()->getQualifiedRelatedPivotKeyName(), $contactModelKeysOfPrimaryAccount)
+                                ->delete();
+                        }
+
                         $version->save();
                     }
 
@@ -1158,6 +1125,21 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             foreach ($quote->opportunity->opportunitySuppliers as $supplier) {
 
                 foreach ($supplier->distributorQuotes as $distributorQuote) {
+
+                    // Detaching of addresses & contacts which are not present in the primary account entity.
+                    if (!empty($addressModelKeysOfPrimaryAccount)) {
+                        $distributorQuote->addresses()
+                            ->newPivotQuery()
+                            ->whereNotIn($distributorQuote->addresses()->getQualifiedRelatedPivotKeyName(), $addressModelKeysOfPrimaryAccount)
+                            ->delete();
+                    }
+
+                    if (!empty($contactModelKeysOfPrimaryAccount)) {
+                        $distributorQuote->contacts()
+                            ->newPivotQuery()
+                            ->whereNotIn($distributorQuote->contacts()->getQualifiedRelatedPivotKeyName(), $contactModelKeysOfPrimaryAccount)
+                            ->delete();
+                    }
 
                     $this->distributionProcessor->syncDistributionWithOwnOpportunitySupplier($distributorQuote);
 
@@ -1455,6 +1437,9 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         return tap(new WorldwideQuote(), function (WorldwideQuote $baseQuote) use ($quote) {
             $baseQuote->setRawAttributes($quote->worldwideQuote->getRawOriginal());
             $oldVersion = (new WorldwideQuoteVersion())->setRawAttributes($quote->getRawOriginal());
+
+            $oldVersion->setRelation('addresses', $quote->addresses);
+            $oldVersion->setRelation('contacts', $quote->contacts);
 
             $oldDistributorQuotes = $quote->worldwideDistributions->map(function (WorldwideDistribution $distributorQuote) {
 

@@ -2,7 +2,9 @@
 
 namespace App\Http\Resources\Opportunity;
 
+use App\Models\Address;
 use App\Models\Company;
+use App\Models\Contact;
 use App\Models\Opportunity;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -27,6 +29,16 @@ class OpportunityWithIncludes extends JsonResource
 
             'primary_account_id' => $this->primary_account_id,
             'primary_account' => transform($this->primaryAccount, function (Company $primaryAccount) {
+                $primaryAccount->loadMissing(['addresses.country', 'contacts']);
+
+                $primaryAccount->addresses->each(function (Address $address) {
+                   $address->setAttribute('is_default', (bool)$address->pivot->is_default);
+                });
+
+                $primaryAccount->contacts->each(function (Contact $contact) {
+                    $contact->setAttribute('is_default', (bool)$contact->pivot->is_default);
+                });
+
                 return $primaryAccount->setAttribute('vendor_ids', $primaryAccount->vendors->modelKeys());
             }),
 

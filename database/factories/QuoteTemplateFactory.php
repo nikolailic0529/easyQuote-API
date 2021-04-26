@@ -5,7 +5,7 @@
 use App\Models\Company;
 use Faker\Generator as Faker;
 use App\Models\Template\QuoteTemplate;
-use App\Models\Template\TemplateSchema;
+use App\Models\Template\TemplateForm;
 use App\Models\Vendor;
 use App\Services\ThumbHelper;
 
@@ -17,7 +17,7 @@ $factory->define(QuoteTemplate::class, function (Faker $faker) {
 
     $attributes = ThumbHelper::retrieveLogoFromModels(array_filter([$company, $vendor]), ThumbHelper::WITH_KEYS);
 
-    $form = TemplateSchema::parseTemplateDesign($design, $attributes);
+    $form = TemplateForm::parseTemplateDesign($design, $attributes);
 
     return [
         'name' => $faker->text(80),

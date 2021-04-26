@@ -313,13 +313,13 @@ class SalesOrderDataMapper
 
         $addresses = [];
 
-        $addresses[] = $opportunity->addresses
+        $addresses[] = $quoteActiveVersion->addresses
             ->sortByDesc('pivot.is_default')
             ->first(function (Address $address) {
                 return $address->address_type === 'Machine';
             });
 
-        $addresses[] = $opportunity->addresses
+        $addresses[] = $quoteActiveVersion->addresses
             ->sortByDesc('pivot.is_default')
             ->first(function (Address $address) {
                 return $address->address_type === 'Invoice';
@@ -463,15 +463,6 @@ class SalesOrderDataMapper
     {
         if (!is_null($opportunity->primaryAccount->email) && trim($opportunity->primaryAccount->email) !== '') {
             return $opportunity->primaryAccount->email;
-        }
-
-        $defaultContact = $opportunity->contacts
-            ->sortByDesc('pivot.is_default')
-            ->whereNotNull('email')
-            ->first();
-
-        if (!is_null($defaultContact)) {
-            return $defaultContact->email ?? '';
         }
 
         return '';

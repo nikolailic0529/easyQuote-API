@@ -1093,95 +1093,7 @@ class OpportunityEntityService
 
                 $batchCreateSupplierData = array_map(fn(OpportunitySupplier $supplier) => $supplier->getAttributes(), $newOpportunitySuppliers);
 
-                $addressToHash = static function (Address $address): string {
-                    return md5(implode('~', [
-                        $address->address_type,
-                        $address->address_1,
-                        $address->address_2,
-                        $address->city,
-                        $address->post_code,
-                        $address->state,
-                        $address->country_id
-                    ]));
-                };
-
-                $contactToHash = static function (Contact $contact): string {
-                    return md5(implode('~', [
-                        $contact->first_name,
-                        $contact->last_name,
-                        $contact->email,
-                        $contact->phone,
-                        $contact->job_title,
-                        $contact->is_verified
-                    ]));
-                };
-
-                $primaryAccount = $opportunity->primaryAccount;
-                $newOpportunityAddressModels = [];
-                $newOpportunityContactModels = [];
-                $newOpportunityAddressPivots = [];
-                $newOpportunityContactPivots = [];
-
-                if (!is_null($primaryAccount)) {
-                    $alreadyReplicatedAddressKeys = $opportunity
-                        ->addresses()
-                        ->wherePivotNotNull('replicated_address_id')
-                        ->pluck('replicated_address_id')
-                        ->all();
-
-                    $alreadyReplicatedContactKeys = $opportunity
-                        ->contacts()
-                        ->wherePivotNotNull('replicated_contact_id')
-                        ->pluck('replicated_contact_id')
-                        ->all();
-
-                    $primaryAccount->load(['addresses' => function (Relation $relation) use ($alreadyReplicatedAddressKeys) {
-                        $relation->whereKeyNot($alreadyReplicatedAddressKeys);
-                    }]);
-
-                    $primaryAccount->load(['contacts' => function (Relation $relation) use ($alreadyReplicatedContactKeys) {
-                        $relation->whereKeyNot($alreadyReplicatedContactKeys);
-                    }]);
-
-                    $existingAddressHashes = array_flip(array_map(fn(Address $address) => $addressToHash($address), $opportunity->addresses->all()));
-                    $existingContactHashes = array_flip(array_map(fn(Contact $contact) => $contactToHash($contact), $opportunity->contacts->all()));
-
-                    $newAddressModelsOfPrimaryAccount = value(function () use ($primaryAccount, $addressToHash, $existingAddressHashes) {
-                        $newAddresses = [];
-
-                        foreach ($primaryAccount->addresses as $address) {
-                            $addressHash = $addressToHash($address);
-
-                            if (!isset($existingAddressHashes[$addressHash])) {
-                                $newAddresses[$addressHash] = $address;
-                            }
-                        }
-
-                        return $newAddresses;
-                    });
-
-                    $newContactModelsOfPrimaryAccount = value(function () use ($primaryAccount, $contactToHash, $existingContactHashes) {
-                        $newContacts = [];
-
-                        foreach ($primaryAccount->contacts as $contact) {
-                            $contactHash = $contactToHash($contact);
-
-                            if (!isset($existingContactHashes[$contactHash])) {
-                                $newContacts[$contactHash] = $contact;
-                            }
-                        }
-
-                        return $newContacts;
-                    });
-
-                    [$newOpportunityAddressModels, $newOpportunityAddressPivots] = $this->replicateAddressModelsOfPrimaryAccount(new Collection($newAddressModelsOfPrimaryAccount));
-                    [$newOpportunityContactModels, $newOpportunityContactPivots] = $this->replicateContactModelsOfPrimaryAccount(new Collection($newContactModelsOfPrimaryAccount));
-                }
-
-                $newOpportunityAddressBatch = array_map(fn(Model $model) => $model->getAttributes(), $newOpportunityAddressModels);
-                $newOpportunityContactBatch = array_map(fn(Model $model) => $model->getAttributes(), $newOpportunityContactModels);
-
-                $this->connection->transaction(function () use ($newOpportunityContactPivots, $newOpportunityAddressPivots, $newOpportunityContactBatch, $newOpportunityAddressBatch, $batchCreateSupplierData, $data, $opportunity) {
+                $this->connection->transaction(function () use ($batchCreateSupplierData, $data, $opportunity) {
                     $opportunity->save();
 
                     $existingSupplierKeys = array_map(fn(UpdateSupplierData $supplierData) => $supplierData->supplier_id, $data->update_suppliers);
@@ -1200,22 +1112,6 @@ class OpportunityEntityService
                     }
 
                     OpportunitySupplier::query()->insert($batchCreateSupplierData);
-
-                    if (!empty($newOpportunityAddressBatch)) {
-                        Address::query()->insert($newOpportunityAddressBatch);
-                    }
-
-                    if (!empty($newOpportunityContactBatch)) {
-                        Contact::query()->insert($newOpportunityContactBatch);
-                    }
-
-                    if (!empty($newOpportunityAddressPivots)) {
-                        $opportunity->addresses()->syncWithoutDetaching($newOpportunityAddressPivots);
-                    }
-
-                    if (!empty($newOpportunityContactPivots)) {
-                        $opportunity->contacts()->syncWithoutDetaching($newOpportunityContactPivots);
-                    }
                 });
             });
 
@@ -1224,43 +1120,6 @@ class OpportunityEntityService
             );
         });
     }
-
-    private function replicateAddressModelsOfPrimaryAccount(Collection $addresses): array
-    {
-        $newAddressModels = [];
-        $newAddressPivots = [];
-
-        foreach ($addresses as $address) {
-            $newAddress = $address->replicate();
-            $newAddress->{$newAddress->getKeyName()} = (string)Uuid::generate(4);
-            $newAddress->{$newAddress->getCreatedAtColumn()} = $newAddress->freshTimestampString();
-            $newAddress->{$newAddress->getUpdatedAtColumn()} = $newAddress->freshTimestampString();
-
-            $newAddressModels[] = $newAddress;
-            $newAddressPivots[$newAddress->getKey()] = ['replicated_address_id' => $address->getKey()];
-        }
-
-        return [$newAddressModels, $newAddressPivots];
-    }
-
-    private function replicateContactModelsOfPrimaryAccount(Collection $contacts): array
-    {
-        $newContactModels = [];
-        $newContactPivots = [];
-
-        foreach ($contacts as $contact) {
-            $newContact = $contact->replicate();
-            $newContact->{$newContact->getKeyName()} = (string)Uuid::generate(4);
-            $newContact->{$newContact->getCreatedAtColumn()} = $newContact->freshTimestampString();
-            $newContact->{$newContact->getUpdatedAtColumn()} = $newContact->freshTimestampString();
-
-            $newContactModels[] = $newContact;
-            $newContactPivots[$newContact->getKey()] = ['replicated_contact_id' => $contact->getKey()];
-        }
-
-        return [$newContactModels, $newContactPivots];
-    }
-
 
     /**
      * @param Opportunity $opportunity

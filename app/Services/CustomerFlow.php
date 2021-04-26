@@ -67,7 +67,7 @@ class CustomerFlow implements Contract
     protected function findOrCreateCustomerCompany(Customer $customer): Company
     {
         return DB::transaction(function () use ($customer) {
-            /** @var Company */
+            /** @var Company $company */
             $company = $this->company->query()->firstOrNew([
                 'name' => $customer->name,
                 /** easyQuote customers need user_id to save a company for that user. */

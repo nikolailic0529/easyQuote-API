@@ -3,6 +3,9 @@
 namespace App\Models\Quote;
 
 use App\Contracts\SearchableEntity;
+use App\Models\Addressable;
+use App\Models\Company;
+use App\Models\Contactable;
 use App\Models\ContractType;
 use App\Models\Opportunity;
 use App\Models\SalesOrder;
@@ -16,9 +19,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
+use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 /**
  * @property string|null $id
@@ -43,10 +49,12 @@ use Illuminate\Support\Carbon;
  * @property SalesOrder|null $salesOrder
  * @property ContractType|null $contractType
  * @property Opportunity|null $opportunity
+ * @property Collection<Addressable> $referencedAddressPivotsOfPrimaryAccount
+ * @property Collection<Contactable> $referencedContactPivotsOfPrimaryAccount
  */
 class WorldwideQuote extends Model implements SearchableEntity
 {
-    use Uuid, SoftDeletes;
+    use Uuid, SoftDeletes, HasRelationships;
 
     protected $guarded = [];
 
@@ -68,6 +76,47 @@ class WorldwideQuote extends Model implements SearchableEntity
     public function versions(): HasMany
     {
         return $this->hasMany(WorldwideQuoteVersion::class);
+    }
+
+    public function referencedAddressPivotsOfPrimaryAccount(): HasManyThrough
+    {
+        return $this->hasManyDeep(
+            Addressable::class,
+            [
+                Opportunity::class, Company::class
+            ],
+            [
+                'id',
+                'id',
+                'addressable_id'
+            ],
+            [
+                'opportunity_id',
+                'primary_account_id',
+                null
+            ]
+        );
+    }
+
+
+    public function referencedContactPivotsOfPrimaryAccount(): HasManyThrough
+    {
+        return $this->hasManyDeep(
+            Contactable::class,
+            [
+                Opportunity::class, Company::class
+            ],
+            [
+                'id',
+                'id',
+                'contactable_id'
+            ],
+            [
+                'opportunity_id',
+                'primary_account_id',
+                null
+            ]
+        );
     }
 
     public function salesOrder(): HasOne

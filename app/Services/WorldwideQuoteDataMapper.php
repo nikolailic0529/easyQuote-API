@@ -529,22 +529,22 @@ class WorldwideQuoteDataMapper
         $quotePriceData = $this->getQuotePriceData($worldwideQuote);
 
         /** @var Address|null $quoteHardwareAddress */
-        $quoteHardwareAddress = $opportunity->addresses
+        $quoteHardwareAddress = $activeVersion->addresses
             ->sortByDesc('pivot.is_default')
             ->first(fn(Address $address) => $address->address_type === 'Machine');
 
         /** @var Address|null $quoteSoftwareAddress */
-        $quoteSoftwareAddress = $opportunity->addresses
+        $quoteSoftwareAddress = $activeVersion->addresses
             ->sortByDesc('pivot.is_default')
             ->first(fn(Address $address) => $address->address_type === 'Software');
 
         /** @var Contact|null $quoteHardwareContact */
-        $quoteHardwareContact = $opportunity->contacts
+        $quoteHardwareContact = $activeVersion->contacts
             ->sortByDesc('pivot.is_default')
             ->first(fn(Contact $contact) => $contact->contact_type === 'Hardware');
 
         /** @var Contact|null $quoteSoftwareContact */
-        $quoteSoftwareContact = $opportunity->contacts
+        $quoteSoftwareContact = $activeVersion->contacts
             ->sortByDesc('pivot.is_default')
             ->first(fn(Contact $contact) => $contact->contact_type === 'Software');
 

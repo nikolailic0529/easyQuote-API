@@ -146,6 +146,11 @@
     "update_own_hpe_contract_templates",
     "delete_own_hpe_contract_templates",
 
+    "view_sales_order_templates",
+    "create_sales_order_templates",
+    "update_own_sales_order_templates",
+    "delete_own_sales_order_templates",
+
     "view_quote_task_template",
     "update_quote_task_template",
 
