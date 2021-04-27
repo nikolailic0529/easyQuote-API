@@ -84,8 +84,8 @@ class WorldwideQuoteValidator
                     ],
                     [
                         '*.addresses.invoice_address' => 'bail|required|array',
-                        '*.addresses.hardware_address' => 'bail|required_without:addresses.*.software_address|array',
-                        '*.addresses.software_address' => 'bail|required_without:addresses.*.hardware_address|array',
+                        '*.addresses.hardware_address' => 'bail|required_without:*.addresses.software_address|array',
+                        '*.addresses.software_address' => 'bail|required_without:*.addresses.hardware_address|array',
                         '*.addresses.*.address_1' => 'required|max:100',
                         '*.addresses.*.address_2' => 'present|nullable|max:50',
                         '*.addresses.*.city' => 'required|max:30',
@@ -146,6 +146,7 @@ class WorldwideQuoteValidator
                         '*.addresses.hardware_address.post_code.max' => 'Hardware Address has State Postal Code greater than :max characters.',
                         '*.addresses.hardware_address.country_code.required' => 'Hardware Address doesn\'t have a filled Country.',
 
+                        '*.assets.required' => 'No assets are present.',
                         '*.assets.*.service_sku.required' => 'One or more assets don\'t have a service sku.',
                         '*.assets.*.service_description.required' => 'One or more assets don\'t have service level description.',
                         '*.assets.*.service_description.max' => 'One or more assets have service level description greater than :max characters.',

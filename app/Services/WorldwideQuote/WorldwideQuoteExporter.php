@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\WorldwideQuote;
 
 use App\DTO\Template\TemplateElement;
+use App\DTO\Template\TemplateElementChildControl;
 use App\DTO\WorldwideQuote\Export\TemplateData;
 use App\DTO\WorldwideQuote\Export\WorldwideQuotePreviewData;
 use App\Services\Exceptions\ValidationException;
@@ -12,6 +13,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use function with;
 
 class WorldwideQuoteExporter
 {
@@ -73,25 +75,26 @@ class WorldwideQuoteExporter
     {
         $templateData = $previewData->template_data;
 
-        // First page schema
-        foreach ($this->getTemplateControlsIterator($templateData->first_page_schema) as $control) {
-
+        $controlMapper = function (TemplateElementChildControl $control) use ($templateData, $previewData) : void {
             switch ($control->type) {
 
                 case 'img':
-//                    $control->value = $templateData->template_assets[$control->id] ?? '';
+
+                    if (isset($templateData->template_assets->{$control->id})) {
+                        $control->value = $templateData->template_assets->{$control->id} ?? '';
+                    }
+
                     break;
 
                 case 'tag':
+
                     $value = $previewData->quote_summary->{$control->id} ?? '';
 
                     if (Str::startsWith($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
                         $control->value = $this->viewFactory->make('ww-quotes.components.images_row', [
                             'class' => $control->class,
                             'images' => $templateData->template_assets->{$control->id}
-                        ]);
-                    } elseif (is_scalar($value)) {
-                        $control->value = $value;
+                        ])->render();
                     } elseif ($control->id === 'quote_data_aggregation') {
                         $control->value = $this->viewFactory->make('ww-quotes.components.quote_data_aggregation', [
                             'aggregation_data' => $previewData->quote_summary->quote_data_aggregation,
@@ -100,35 +103,22 @@ class WorldwideQuoteExporter
                             'total_value_including_tax' => $previewData->quote_summary->total_value_including_tax,
                             'grand_total_value' => $previewData->quote_summary->grand_total_value,
                         ])->render();
-                    }
-
-                    break;
-            }
-
-        }
-
-        // Assets page schema
-        foreach ($this->getTemplateControlsIterator($templateData->assets_page_schema) as $control) {
-            switch ($control->type) {
-
-                case 'img':
-//                    $control->value = $templateData->template_assets[$control->id] ?? '';
-                    break;
-
-                case 'tag':
-                    $value = $previewData->distributions[0]->{$control->id} ?? $previewData->quote_summary->{$control->id} ?? '';
-
-                    if (Str::startsWith($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
-                        $control->value = $this->viewFactory->make('ww-quotes.components.images_row', [
-                            'class' => $control->class,
-                            'images' => $templateData->template_assets->{$control->id}
-                        ]);
                     } elseif (is_scalar($value)) {
                         $control->value = $value;
                     }
 
                     break;
             }
+        };
+
+        // First page schema
+        foreach ($this->getTemplateControlsIterator($templateData->first_page_schema) as $control) {
+            $controlMapper($control);
+        }
+
+        // Assets page schema
+        foreach ($this->getTemplateControlsIterator($templateData->assets_page_schema) as $control) {
+            $controlMapper($control);
         }
 
         $assetsPageSchema = [];
@@ -268,26 +258,7 @@ class WorldwideQuoteExporter
         // Last page schema
 
         foreach ($this->getTemplateControlsIterator($templateData->last_page_schema) as $control) {
-            switch ($control->type) {
-
-                case 'img':
-//                    $control->value = $templateData->template_assets[$control->id] ?? '';
-                    break;
-
-                case 'tag':
-                    $value = $previewData->quote_summary->{$control->id} ?? '';
-
-                    if (Str::startsWith($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
-                        $control->value = $this->viewFactory->make('ww-quotes.components.images_row', [
-                            'class' => $control->class,
-                            'images' => $templateData->template_assets->{$control->id}
-                        ]);
-                    } elseif (is_scalar($value)) {
-                        $control->value = $value;
-                    }
-
-                    break;
-            }
+            $controlMapper($control);
         }
     }
 
@@ -295,27 +266,26 @@ class WorldwideQuoteExporter
     {
         $templateData = $previewData->template_data;
 
-        // Render & append Pack Assets table to the assets_page_schema.
-
-        // First page schema
-        foreach ($this->getTemplateControlsIterator($templateData->first_page_schema) as $control) {
-
+        $controlMapper = function (TemplateElementChildControl $control) use ($templateData, $previewData) : void {
             switch ($control->type) {
 
                 case 'img':
-//                    $control->value = $templateData->template_assets[$control->id] ?? '';
+
+                    if (isset($templateData->template_assets->{$control->id})) {
+                        $control->value = $templateData->template_assets->{$control->id} ?? '';
+                    }
+
                     break;
 
                 case 'tag':
+
                     $value = $previewData->quote_summary->{$control->id} ?? '';
 
                     if (Str::startsWith($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
                         $control->value = $this->viewFactory->make('ww-quotes.components.images_row', [
                             'class' => $control->class,
                             'images' => $templateData->template_assets->{$control->id}
-                        ]);
-                    } elseif (is_scalar($value)) {
-                        $control->value = $value;
+                        ])->render();
                     } elseif ($control->id === 'quote_data_aggregation') {
                         $control->value = $this->viewFactory->make('ww-quotes.components.quote_data_aggregation', [
                             'aggregation_data' => $previewData->quote_summary->quote_data_aggregation,
@@ -324,35 +294,24 @@ class WorldwideQuoteExporter
                             'total_value_including_tax' => $previewData->quote_summary->total_value_including_tax,
                             'grand_total_value' => $previewData->quote_summary->grand_total_value,
                         ])->render();
-                    }
-
-                    break;
-            }
-
-        }
-
-        // Assets page schema
-        foreach ($this->getTemplateControlsIterator($templateData->assets_page_schema) as $control) {
-            switch ($control->type) {
-
-                case 'img':
-//                    $control->value = $templateData->template_assets[$control->id] ?? '';
-                    break;
-
-                case 'tag':
-                    $value = $previewData->quote_summary->{$control->id} ?? $previewData->distributions[0]->{$control->id} ?? '';
-
-                    if (Str::startsWith($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
-                        $control->value = $this->viewFactory->make('ww-quotes.components.images_row', [
-                            'class' => $control->class,
-                            'images' => $templateData->template_assets->{$control->id}
-                        ]);
                     } elseif (is_scalar($value)) {
                         $control->value = $value;
                     }
 
                     break;
             }
+        };
+
+        // Render & append Pack Assets table to the assets_page_schema.
+
+        // First page schema
+        foreach ($this->getTemplateControlsIterator($templateData->first_page_schema) as $control) {
+            $controlMapper($control);
+        }
+
+        // Assets page schema
+        foreach ($this->getTemplateControlsIterator($templateData->assets_page_schema) as $control) {
+            $controlMapper($control);
         }
 
         with($previewData->template_data, function (TemplateData $templateData) use ($previewData) {
@@ -420,26 +379,7 @@ class WorldwideQuoteExporter
         // Last page schema
 
         foreach ($this->getTemplateControlsIterator($templateData->last_page_schema) as $control) {
-            switch ($control->type) {
-
-                case 'img':
-                    $control->value = $templateData->template_assets[$control->id] ?? '';
-                    break;
-
-                case 'tag':
-                    $value = $previewData->quote_summary->{$control->id} ?? '';
-
-                    if (Str::startsWith($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
-                        $control->value = $this->viewFactory->make('ww-quotes.components.images_row', [
-                            'class' => $control->class,
-                            'images' => $templateData->template_assets->{$control->id}
-                        ]);
-                    } elseif (is_scalar($value)) {
-                        $control->value = $value;
-                    }
-
-                    break;
-            }
+            $controlMapper($control);
         }
     }
 

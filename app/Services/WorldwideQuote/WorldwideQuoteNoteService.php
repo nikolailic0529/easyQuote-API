@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\WorldwideQuote;
 
 use App\Enum\Lock;
 use App\Events\WorldwideQuote\WorldwideQuoteNoteCreated;
@@ -15,6 +15,7 @@ use Illuminate\Database\ConnectionInterface;
 use Illuminate\Events\Dispatcher;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use function tap;
 
 class WorldwideQuoteNoteService
 {

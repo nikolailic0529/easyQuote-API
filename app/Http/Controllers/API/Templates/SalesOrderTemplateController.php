@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API\Templates;
 
 use App\Http\Controllers\Controller;
 use App\Models\SalesOrder;
+use App\Services\Template\TemplateSchemaDataMapper;
 use App\Http\Requests\{SalesOrderTemplate\FilterSalesOrderTemplatesByCompanyVendorCountry,
     SalesOrderTemplate\StoreSalesOrderTemplate,
     SalesOrderTemplate\UpdateSalesOrderTemplate,
@@ -50,6 +51,22 @@ class SalesOrderTemplateController extends Controller
         );
     }
 
+    /**
+     * Show template form for the existing sales order template.
+     *
+     * @param \App\Models\Template\SalesOrderTemplate $salesOrderTemplate
+     * @param \App\Services\Template\TemplateSchemaDataMapper $dataMapper
+     * @return \Illuminate\Http\JsonResponse
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
+    public function showTemplateForm(SalesOrderTemplate $salesOrderTemplate, TemplateSchemaDataMapper $dataMapper): JsonResponse
+    {
+        $this->authorize('view', $salesOrderTemplate);
+
+        return response()->json(
+            $dataMapper->mapSalesOrderTemplateSchema($salesOrderTemplate)
+        );
+    }
 
     /**
      * Filter worldwide pack sales order template entities

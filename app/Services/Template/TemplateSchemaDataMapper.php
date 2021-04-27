@@ -5,6 +5,7 @@ namespace App\Services\Template;
 use App\Models\Company;
 use App\Models\Template\ContractTemplate;
 use App\Models\Template\QuoteTemplate;
+use App\Models\Template\SalesOrderTemplate;
 use App\Models\Template\TemplateForm;
 use App\Models\Vendor;
 use App\Services\ThumbHelper;
@@ -88,6 +89,45 @@ class TemplateSchemaDataMapper
 
         $templateSchema = with($template, function (ContractTemplate $quoteTemplate) {
             if ($quoteTemplate->business_division_id === BD_WORLDWIDE) {
+                return TemplateForm::getPages('ww_quote');
+            }
+
+            return TemplateForm::getPages('quote');
+        });
+
+        $templateSchema['first_page'] = array_merge(
+            $templateSchema['first_page'],
+            $companyLogo,
+            $vendorLogo
+        );
+
+        return $templateSchema;
+    }
+
+    public function mapSalesOrderTemplateSchema(SalesOrderTemplate $template): array
+    {
+        $companyLogo = with($template->company, function (Company $company) {
+            if (is_null($company->image)) {
+                return [];
+            }
+
+            return ThumbHelper::getLogoDimensionsFromImage(
+                $company->image,
+                $company->thumbnailProperties(),
+                Str::snake(class_basename($company))
+            );
+        });
+
+        $vendorLogo = transform($template->vendor, function (Vendor $vendor) {
+            return ThumbHelper::getLogoDimensionsFromImage(
+                $vendor->image,
+                $vendor->thumbnailProperties(),
+                Str::snake(class_basename($vendor))
+            );
+        }, []);
+
+        $templateSchema = with($template, function (SalesOrderTemplate $salesOrderTemplate) {
+            if ($salesOrderTemplate->business_division_id === BD_WORLDWIDE) {
                 return TemplateForm::getPages('ww_quote');
             }
 

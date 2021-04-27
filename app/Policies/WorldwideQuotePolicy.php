@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\User;
+use App\Services\Auth\UserTeamGate;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Auth\Access\Response;
 use Symfony\Component\HttpFoundation\Response as HttpResponse;
@@ -13,11 +14,18 @@ class WorldwideQuotePolicy
 {
     use HandlesAuthorization;
 
+    protected UserTeamGate $userTeamGate;
+
+    public function __construct(UserTeamGate $userTeamGate)
+    {
+        $this->userTeamGate = $userTeamGate;
+    }
+
     /**
      * Determine whether the user can view any models.
      *
      * @param \App\Models\User $user
-     * @return mixed|void
+     * @return mixed
      */
     public function viewAny(User $user)
     {
@@ -48,15 +56,35 @@ class WorldwideQuotePolicy
      *
      * @param \App\Models\User $user
      * @param \App\Models\Quote\WorldwideQuote $worldwideQuote
-     * @return mixed|void
+     * @return mixed
      */
     public function view(User $user, WorldwideQuote $worldwideQuote)
     {
-        if ($user->hasRole(R_SUPER)) {
-            return true;
-        }
+        $hasPermissionTo = value(function () use ($user, $worldwideQuote): bool {
 
-        if ($user->can('view_own_ww_quotes') && $user->getKey() === $worldwideQuote->{$worldwideQuote->user()->getForeignKeyName()}) {
+            if ($user->hasRole(R_SUPER)) {
+                return true;
+            }
+
+            if (false === $user->can('view_own_ww_quotes')) {
+                return false;
+            }
+
+            $ownerKeyOfEntity = $worldwideQuote->{$worldwideQuote->user()->getForeignKeyName()};
+
+            if ($user->getKey() === $ownerKeyOfEntity) {
+                return true;
+            }
+
+            if ($this->userTeamGate->isUserLedByUser($ownerKeyOfEntity, $user)) {
+                return true;
+            }
+
+            return false;
+
+        });
+
+        if ($hasPermissionTo) {
             return true;
         }
     }
@@ -65,7 +93,7 @@ class WorldwideQuotePolicy
      * Determine whether the user can create models.
      *
      * @param \App\Models\User $user
-     * @return mixed|void
+     * @return mixed
      */
     public function create(User $user)
     {
@@ -83,14 +111,35 @@ class WorldwideQuotePolicy
      *
      * @param \App\Models\User $user
      * @param \App\Models\Quote\WorldwideQuote $worldwideQuote
-     * @return mixed|void
+     * @return mixed
      */
     public function update(User $user, WorldwideQuote $worldwideQuote)
     {
-        if (
-            !$user->hasRole(R_SUPER) &&
-            !($user->can('update_own_ww_quotes') && $user->getKey() === $worldwideQuote->{$worldwideQuote->user()->getForeignKeyName()})
-        ) {
+        $hasPermissionTo = value(function () use ($user, $worldwideQuote): bool {
+
+            if ($user->hasRole(R_SUPER)) {
+                return true;
+            }
+
+            if (false === $user->can('update_own_ww_quotes')) {
+                return false;
+            }
+
+            $ownerKeyOfEntity = $worldwideQuote->{$worldwideQuote->user()->getForeignKeyName()};
+
+            if ($user->getKey() === $ownerKeyOfEntity) {
+                return true;
+            }
+
+            if ($this->userTeamGate->isUserLedByUser($ownerKeyOfEntity, $user)) {
+                return true;
+            }
+
+            return false;
+
+        });
+
+        if (false === $hasPermissionTo) {
             return false;
         }
 
@@ -113,11 +162,31 @@ class WorldwideQuotePolicy
      */
     public function deleteVersion(User $user, WorldwideQuote $worldwideQuote, WorldwideQuoteVersion $version)
     {
+        $hasPermissionTo = value(function () use ($user, $worldwideQuote): bool {
 
-        if (
-            !$user->hasRole(R_SUPER) &&
-            !($user->can('update_own_ww_quotes') && $user->getKey() === $worldwideQuote->{$worldwideQuote->user()->getForeignKeyName()})
-        ) {
+            if ($user->hasRole(R_SUPER)) {
+                return true;
+            }
+
+            if (false === $user->can('update_own_ww_quotes')) {
+                return false;
+            }
+
+            $ownerKeyOfEntity = $worldwideQuote->{$worldwideQuote->user()->getForeignKeyName()};
+
+            if ($user->getKey() === $ownerKeyOfEntity) {
+                return true;
+            }
+
+            if ($this->userTeamGate->isUserLedByUser($ownerKeyOfEntity, $user)) {
+                return true;
+            }
+
+            return false;
+
+        });
+
+        if (false === $hasPermissionTo) {
             return false;
         }
 
@@ -137,7 +206,7 @@ class WorldwideQuotePolicy
      *
      * @param User $user
      * @param WorldwideQuote $worldwideQuote
-     * @return bool|void
+     * @return mixed
      */
     public function changeStatus(User $user, WorldwideQuote $worldwideQuote)
     {
@@ -145,7 +214,25 @@ class WorldwideQuotePolicy
             return true;
         }
 
-        if ($user->can('update_own_ww_quotes') && $user->getKey() === $worldwideQuote->{$worldwideQuote->user()->getForeignKeyName()}) {
+        if (false === $user->can('update_own_ww_quotes')) {
+            return false;
+        }
+
+        $ownerOrLedBy = value(function () use ($user, $worldwideQuote): bool {
+            $ownerKeyOfEntity = $worldwideQuote->{$worldwideQuote->user()->getForeignKeyName()};
+
+            if ($user->getKey() === $ownerKeyOfEntity) {
+                return true;
+            }
+
+            if ($this->userTeamGate->isUserLedByUser($ownerKeyOfEntity, $user)) {
+                return true;
+            }
+
+            return false;
+        });
+
+        if ($ownerOrLedBy) {
             return true;
         }
     }
@@ -155,7 +242,7 @@ class WorldwideQuotePolicy
      *
      * @param \App\Models\User $user
      * @param \App\Models\Quote\WorldwideQuote $worldwideQuote
-     * @return mixed|void
+     * @return mixed
      */
     public function delete(User $user, WorldwideQuote $worldwideQuote)
     {
@@ -165,7 +252,25 @@ class WorldwideQuotePolicy
             return $this->ensureSalesOrderDoesNotExist($worldwideQuote, $salesOrderExistsMessage);
         }
 
-        if ($user->can('delete_own_ww_quotes') && $user->getKey() === $worldwideQuote->{$worldwideQuote->user()->getForeignKeyName()}) {
+        if (false === $user->can('delete_own_ww_quotes')) {
+            return false;
+        }
+
+        $ownerOrLedBy = value(function () use ($user, $worldwideQuote): bool {
+            $ownerKeyOfEntity = $worldwideQuote->{$worldwideQuote->user()->getForeignKeyName()};
+
+            if ($user->getKey() === $ownerKeyOfEntity) {
+                return true;
+            }
+
+            if ($this->userTeamGate->isUserLedByUser($ownerKeyOfEntity, $user)) {
+                return true;
+            }
+
+            return false;
+        });
+
+        if ($ownerOrLedBy) {
             return $this->ensureSalesOrderDoesNotExist($worldwideQuote, $salesOrderExistsMessage);
         }
     }
@@ -175,7 +280,7 @@ class WorldwideQuotePolicy
      *
      * @param \App\Models\User $user
      * @param \App\Models\Quote\WorldwideQuote $worldwideQuote
-     * @return mixed|void
+     * @return mixed
      */
     public function export(User $user, WorldwideQuote $worldwideQuote)
     {
@@ -207,19 +312,41 @@ class WorldwideQuotePolicy
      *
      * @param \App\Models\User $user
      * @param \App\Models\Quote\WorldwideQuote $worldwideQuote
-     * @return mixed|void
+     * @return mixed
      */
     public function unravel(User $user, WorldwideQuote $worldwideQuote)
     {
         $salesOrderExistsMessage = 'You have to delete the Sales Order in order to unravel the Quote.';
 
-        if ($user->hasRole(R_SUPER)) {
-            return $this->ensureSalesOrderDoesNotExist($worldwideQuote, $salesOrderExistsMessage);
+        $hasPermissionTo = value(function () use ($user, $worldwideQuote): bool {
+
+            if ($user->hasRole(R_SUPER)) {
+                return true;
+            }
+
+            if (false === $user->can('update_own_ww_quotes')) {
+                return false;
+            }
+
+            $ownerKeyOfEntity = $worldwideQuote->{$worldwideQuote->user()->getForeignKeyName()};
+
+            if ($user->getKey() === $ownerKeyOfEntity) {
+                return true;
+            }
+
+            if ($this->userTeamGate->isUserLedByUser($ownerKeyOfEntity, $user)) {
+                return true;
+            }
+
+            return false;
+
+        });
+
+        if (false === $hasPermissionTo) {
+            return false;
         }
 
-        if ($user->can('update_own_ww_quotes') && $user->getKey() === $worldwideQuote->{$worldwideQuote->user()->getForeignKeyName()}) {
-            return $this->ensureSalesOrderDoesNotExist($worldwideQuote, $salesOrderExistsMessage);
-        }
+        return $this->ensureSalesOrderDoesNotExist($worldwideQuote, $salesOrderExistsMessage);
     }
 
     /**

@@ -34,7 +34,7 @@ class CompanyPolicy
      */
     public function view(User $user, Company $company)
     {
-        if ($user->can('view_companies')) {
+        if ($user->canAny(['view_companies', 'view_opportunities'])) {
             return true;
         }
     }
@@ -65,7 +65,7 @@ class CompanyPolicy
             return true;
         }
 
-        if ($user->can('update_companies')) {
+        if ($user->canAny(['update_companies', 'update_own_opportunities'])) {
             return true;
         }
     }

@@ -571,7 +571,10 @@ class SalesOrderDataMapper
         $templateAssets = [
             'logo_set_x1' => [],
             'logo_set_x2' => [],
-            'logo_set_x3' => []
+            'logo_set_x3' => [],
+            'company_logo_x1' => '',
+            'company_logo_x2' => '',
+            'company_logo_x3' => '',
         ];
 
         $companyImages = transform($company->image, function (Image $image) use ($flags, $company) {
@@ -579,15 +582,13 @@ class SalesOrderDataMapper
             return ThumbHelper::getLogoDimensionsFromImage(
                 $image,
                 $company->thumbnailProperties(),
-                '',
+                'company_',
                 $flags
             );
 
         }, []);
 
-        $templateAssets['logo_set_x1'] = array_merge($templateAssets['logo_set_x1'], Arr::wrap($companyImages['x1'] ?? []));
-        $templateAssets['logo_set_x2'] = array_merge($templateAssets['logo_set_x2'], Arr::wrap($companyImages['x2'] ?? []));
-        $templateAssets['logo_set_x3'] = array_merge($templateAssets['logo_set_x3'], Arr::wrap($companyImages['x3'] ?? []));
+        $templateAssets = array_merge($templateAssets, $companyImages);
 
         /** @var Collection<Vendor>|Vendor[] $vendors */
 

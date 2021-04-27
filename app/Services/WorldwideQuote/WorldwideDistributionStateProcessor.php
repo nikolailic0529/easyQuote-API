@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\WorldwideQuote;
 
 use App\Contracts\Services\{ManagesDocumentProcessors, ManagesExchangeRates, ProcessesWorldwideDistributionState};
 use App\DTO\{Discounts\DistributionDiscountsCollection,
@@ -33,6 +33,7 @@ use App\Models\{Address,
     Template\TemplateField};
 use App\Process\ProcessPool\ProcessPool;
 use App\Queries\WorldwideDistributionQueries;
+use App\Services\QuoteFileService;
 use Illuminate\Contracts\{Cache\Lock as LockContract,
     Cache\LockProvider,
     Config\Repository as Config,
@@ -54,6 +55,14 @@ use Symfony\Component\{Process\Process,
     Validator\Validator\ValidatorInterface};
 use Throwable;
 use Webpatser\Uuid\Uuid;
+use function base_path;
+use function blank;
+use function collect;
+use function now;
+use function tap;
+use function transform;
+use function value;
+use function with;
 
 class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistributionState
 {

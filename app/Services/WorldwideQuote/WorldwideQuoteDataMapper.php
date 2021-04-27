@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\WorldwideQuote;
 
 use App\Contracts\Services\ManagesExchangeRates;
 use App\DTO\Template\TemplateElement;
@@ -37,8 +37,7 @@ use App\Models\Template\ContractTemplate;
 use App\Models\Template\QuoteTemplate;
 use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
-use App\Services\WorldwideQuote\WorldwideDistributionCalc;
-use App\Services\WorldwideQuote\WorldwideQuoteCalc;
+use App\Services\ThumbHelper;
 use App\Support\PriceParser;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Database\Eloquent\Collection;
@@ -48,6 +47,14 @@ use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection as BaseCollection;
+use function optional;
+use function tap;
+use function transform;
+use function value;
+use function with;
+use const BD_WORLDWIDE;
+use const CT_CONTRACT;
+use const CT_PACK;
 
 class WorldwideQuoteDataMapper
 {
@@ -927,7 +934,10 @@ class WorldwideQuoteDataMapper
         $templateAssets = [
             'logo_set_x1' => [],
             'logo_set_x2' => [],
-            'logo_set_x3' => []
+            'logo_set_x3' => [],
+            'company_logo_x1' => '',
+            'company_logo_x2' => '',
+            'company_logo_x3' => '',
         ];
 
         $companyImages = transform($company->image, function (Image $image) use ($flags, $company) {
@@ -935,15 +945,13 @@ class WorldwideQuoteDataMapper
             return ThumbHelper::getLogoDimensionsFromImage(
                 $image,
                 $company->thumbnailProperties(),
-                '',
+                'company_',
                 $flags
             );
 
         }, []);
 
-        $templateAssets['logo_set_x1'] = array_merge($templateAssets['logo_set_x1'], Arr::wrap($companyImages['x1'] ?? []));
-        $templateAssets['logo_set_x2'] = array_merge($templateAssets['logo_set_x2'], Arr::wrap($companyImages['x2'] ?? []));
-        $templateAssets['logo_set_x3'] = array_merge($templateAssets['logo_set_x3'], Arr::wrap($companyImages['x3'] ?? []));
+        $templateAssets = array_merge($templateAssets, $companyImages);
 
         /** @var Collection<Vendor>|Vendor[] $vendors */
 

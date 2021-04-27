@@ -3,6 +3,7 @@
 namespace App\Services\SalesOrderTemplate;
 
 use App\DTO\{SalesOrderTemplate\CreateSalesOrderTemplateData,
+    SalesOrderTemplate\TemplateDataHeader,
     SalesOrderTemplate\UpdateSalesOrderTemplateData,
     SalesOrderTemplate\UpdateSchemaOfSalesOrderTemplateData};
 use App\Models\Template\SalesOrderTemplate;
@@ -62,7 +63,15 @@ class SalesOrderTemplateEntityService
             $templateSchema->{$templateSchema->getKeyName()} = (string)Uuid::generate(4);
 
             $templateSchema->form_data = [];
-            $templateSchema->data_headers = __('template.contract_data_headers');
+            $templateSchema->data_headers = value(function (): array {
+                $headers = [];
+
+                foreach (__('template.contract_data_headers') as $key => $header) {
+                    $headers[$key] = $header['value'];
+                }
+
+                return $headers;
+            });
         });
     }
 
@@ -128,13 +137,25 @@ class SalesOrderTemplateEntityService
             $templateSchema = $salesOrderTemplate->templateSchema;
 
             $templateSchema->form_data = $data->form_data;
-            $templateSchema->data_headers = array_merge($templateSchema->data_headers, $data->data_headers);
+
+            $templateSchema->data_headers = array_merge( $templateSchema->data_headers, static::templateDataHeadersToDictionary(...$data->data_headers));
 
             $this->connection->transaction(function () use ($templateSchema) {
                 $templateSchema->save();
             });
 
         });
+    }
+
+    private static function templateDataHeadersToDictionary(TemplateDataHeader ...$dataHeaders): array
+    {
+        $dictionary = [];
+
+        foreach ($dataHeaders as $header) {
+            $dictionary[$header->key] = $header->value;
+        }
+
+        return $dictionary;
     }
 
     public function markAsActiveSalesOrderTemplate(SalesOrderTemplate $salesOrderTemplate): void

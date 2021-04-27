@@ -11,7 +11,9 @@ use Faker\Generator as Faker;
 
 $factory->define(SalesOrderTemplate::class, function (Faker $faker) {
     $templateSchema = factory(TemplateSchema::class)->create([
-        'data_headers' => __('template.contract_data_headers')
+        'data_headers' => array_map(function (array $header) {
+            return $header['value'];
+        }, __('template.contract_data_headers'))
     ]);
 
     return [

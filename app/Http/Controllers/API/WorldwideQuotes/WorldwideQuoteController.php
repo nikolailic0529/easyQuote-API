@@ -30,10 +30,10 @@ use App\Models\Quote\WorldwideQuote;
 use App\Models\Quote\WorldwideQuoteVersion;
 use App\Services\{WorldwideQuote\CollectWorldwideQuoteFilesService,
     WorldwideQuote\WorldwideQuoteCalc,
+    WorldwideQuote\WorldwideQuoteDataMapper,
+    WorldwideQuote\WorldwideQuoteExporter,
     WorldwideQuote\WorldwideQuoteValidator,
-    WorldwideQuote\WorldwideQuoteVersionGuard,
-    WorldwideQuoteDataMapper,
-    WorldwideQuoteExporter};
+    WorldwideQuote\WorldwideQuoteVersionGuard};
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -393,7 +393,7 @@ class WorldwideQuoteController extends Controller
      * Export the specified Worldwide Quote.
      *
      * @param WorldwideQuote $worldwideQuote
-     * @param WorldwideQuoteDataMapper $quoteViewService
+     * @param \App\Services\WorldwideQuote\WorldwideQuoteDataMapper $quoteViewService
      * @param WorldwideQuoteExporter $exporter
      * @return Response
      * @throws AuthorizationException
@@ -412,7 +412,7 @@ class WorldwideQuoteController extends Controller
      *
      * @param WorldwideQuote $worldwideQuote
      * @param WorldwideQuoteDataMapper $dataMapper
-     * @param WorldwideQuoteExporter $exporter
+     * @param \App\Services\WorldwideQuote\WorldwideQuoteExporter $exporter
      * @return View
      */
     public function showQuotePreview(WorldwideQuote $worldwideQuote, WorldwideQuoteDataMapper $dataMapper, WorldwideQuoteExporter $exporter): View

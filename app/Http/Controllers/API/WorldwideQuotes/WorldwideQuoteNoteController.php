@@ -10,7 +10,7 @@ use App\Models\Quote\WorldwideQuote;
 use App\Models\Quote\WorldwideQuoteNote;
 use App\Queries\Exceptions\ValidationException;
 use App\Queries\WorldwideQuoteNoteQueries;
-use App\Services\WorldwideQuoteNoteService;
+use App\Services\WorldwideQuote\WorldwideQuoteNoteService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -59,7 +59,7 @@ class WorldwideQuoteNoteController extends Controller
      *
      * @param CreateWorldwideQuoteNote $request
      * @param WorldwideQuote $worldwideQuote
-     * @param WorldwideQuoteNoteService $service
+     * @param \App\Services\WorldwideQuote\WorldwideQuoteNoteService $service
      * @return JsonResponse
      * @throws AuthorizationException
      * @throws ValidationException
@@ -99,7 +99,7 @@ class WorldwideQuoteNoteController extends Controller
      * @param UpdateWorldwideQuoteNote $request
      * @param WorldwideQuote $worldwideQuote
      * @param WorldwideQuoteNote $worldwideQuoteNote
-     * @param WorldwideQuoteNoteService $service
+     * @param \App\Services\WorldwideQuote\WorldwideQuoteNoteService $service
      * @return JsonResponse
      * @throws AuthorizationException
      * @throws ValidationException
@@ -120,7 +120,7 @@ class WorldwideQuoteNoteController extends Controller
      *
      * @param WorldwideQuote $worldwideQuote
      * @param WorldwideQuoteNote $worldwideQuoteNote
-     * @param WorldwideQuoteNoteService $service
+     * @param \App\Services\WorldwideQuote\WorldwideQuoteNoteService $service
      * @return Response
      * @throws AuthorizationException
      */

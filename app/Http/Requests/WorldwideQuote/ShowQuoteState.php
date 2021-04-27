@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\WorldwideQuote;
 
-use App\Models\Opportunity;
 use App\Models\Quote\Discount\MultiYearDiscount;
 use App\Models\Quote\Discount\PrePayDiscount;
 use App\Models\Quote\Discount\PromotionalDiscount;
@@ -14,9 +13,7 @@ use App\Models\Vendor;
 use App\Queries\DiscountQueries;
 use App\Services\WorldwideQuote\WorldwideDistributionCalc;
 use App\Services\WorldwideQuote\WorldwideQuoteCalc;
-use App\Services\WorldwideQuoteDataMapper;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Query\JoinClause;
+use App\Services\WorldwideQuote\WorldwideQuoteDataMapper;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ShowQuoteState extends FormRequest

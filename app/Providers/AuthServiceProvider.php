@@ -72,6 +72,7 @@ use App\Policies\VendorPolicy;
 use App\Policies\WorldwideDistributionPolicy;
 use App\Policies\WorldwideQuoteNotePolicy;
 use App\Policies\WorldwideQuotePolicy;
+use App\Services\Auth\UserTeamGate;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 use Laravel\Passport\{Client, Passport, PersonalAccessClient};
@@ -131,6 +132,8 @@ class AuthServiceProvider extends ServiceProvider
     public function register()
     {
         Passport::ignoreMigrations();
+
+        $this->app->singleton(UserTeamGate::class);
     }
 
     /**

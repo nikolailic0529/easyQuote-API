@@ -2,10 +2,12 @@
 
 namespace App\Http\Requests\SalesOrderTemplate;
 
+use App\DTO\SalesOrderTemplate\TemplateDataHeader;
 use App\DTO\SalesOrderTemplate\UpdateSchemaOfSalesOrderTemplateData;
 use App\Models\Template\QuoteTemplate;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Spatie\DataTransferObject\DataTransferObject;
 
 class UpdateSchemaOfSalesOrderTemplate extends FormRequest
 {
@@ -23,7 +25,7 @@ class UpdateSchemaOfSalesOrderTemplate extends FormRequest
                 'bail', 'required', 'array'
             ],
             'data_headers' => [
-                'bail', 'required', 'array'
+                'bail', 'array'
             ],
             'data_headers.*.key' => [
                 'required', 'string',
@@ -40,9 +42,20 @@ class UpdateSchemaOfSalesOrderTemplate extends FormRequest
      */
     public function getUpdateSchemaOfSalesOrderTemplateData(): UpdateSchemaOfSalesOrderTemplateData
     {
-        return $this->updateSchemaOfSalesOrderTemplateData ??= new UpdateSchemaOfSalesOrderTemplateData([
-            'form_data' => $this->input('form_data'),
-            'data_headers' => $this->input('data_headers')
-        ]);
+        return $this->updateSchemaOfSalesOrderTemplateData ??= value(function () {
+
+            /** @var \App\Models\Template\SalesOrderTemplate $salesOrderTemplate */
+            $salesOrderTemplate = $this->route('sales_order_template');
+
+            return new UpdateSchemaOfSalesOrderTemplateData([
+                'form_data' => $this->input('form_data'),
+                'data_headers' => array_values(array_map(function (array $dataHeader) {
+                    return new TemplateDataHeader([
+                        'key' => $dataHeader['key'],
+                        'value' => $dataHeader['value']
+                    ]);
+                }, $this->input('data_headers') ?? []))
+            ]);
+        });
     }
 }

@@ -212,7 +212,7 @@ class ContractTemplateController extends Controller
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function designer(ContractTemplate $contractTemplate, TemplateSchemaDataMapper $schemaDataMapper): JsonResponse
+    public function showTemplateForm(ContractTemplate $contractTemplate, TemplateSchemaDataMapper $schemaDataMapper): JsonResponse
     {
         $this->authorize('view', $contractTemplate);
 

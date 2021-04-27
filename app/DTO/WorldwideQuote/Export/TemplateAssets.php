@@ -20,4 +20,10 @@ final class TemplateAssets extends DataTransferObject
      * @var string[]
      */
     public array $logo_set_x3;
+
+    public string $company_logo_x1;
+
+    public string $company_logo_x2;
+
+    public string $company_logo_x3;
 }

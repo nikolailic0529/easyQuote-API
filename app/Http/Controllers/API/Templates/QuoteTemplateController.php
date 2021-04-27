@@ -246,7 +246,7 @@ class QuoteTemplateController extends Controller
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function showTemplateSchema(QuoteTemplate $template, TemplateSchemaDataMapper $schemaDataMapper): JsonResponse
+    public function showTemplateForm(QuoteTemplate $template, TemplateSchemaDataMapper $schemaDataMapper): JsonResponse
     {
         $this->authorize('view', $template);
 

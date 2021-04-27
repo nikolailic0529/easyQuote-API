@@ -4,11 +4,19 @@ namespace App\Policies;
 
 use App\Models\Opportunity;
 use App\Models\User;
+use App\Services\Auth\UserTeamGate;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class OpportunityPolicy
 {
     use HandlesAuthorization;
+
+    protected UserTeamGate $userTeamGate;
+
+    public function __construct(UserTeamGate $userTeamGate)
+    {
+        $this->userTeamGate = $userTeamGate;
+    }
 
     /**
      * Determine whether the user can view any models.
@@ -89,19 +97,27 @@ class OpportunityPolicy
             return true;
         }
 
-        if ($user->getKey() === $opportunity->primaryAccount()->getParentKey() && $user->cant('update_own_opportunities')) {
-            return $this->deny("You are an owner of the Opportunity, but you don't have permissions to update it. Contact with your Account Manager.");
-        }
-
-        if ($user->getKey() === $opportunity->user()->getParentKey() && $user->cant('update_own_opportunities')) {
-            return $this->deny("You are a creator of the Opportunity, but you don't have permissions to update it. Contact with your Account Manager.");
-        }
-
         if ($user->cant('update_own_opportunities')) {
             return $this->deny("You do not have permissions to update any Opportunity. Contact with your Account Manager.");
         }
 
-        return true;
+        if ($user->getKey() === $opportunity->primaryAccount()->getParentKey()) {
+            return true;
+        }
+
+        if ($user->getKey() === $opportunity->user()->getParentKey()) {
+            return true;
+        }
+
+        if ($this->userTeamGate->isUserLedByUser($opportunity->user()->getParentKey(), $user)) {
+            return true;
+        }
+
+        if ($this->userTeamGate->isUserLedByUser($opportunity->accountManager()->getParentKey(), $user)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -114,7 +130,18 @@ class OpportunityPolicy
     public function delete(User $user, Opportunity $opportunity)
     {
         $ensureOpportunityDoesntHaveQuotes = function (Opportunity $opportunity) {
-            if ($opportunity->worldwideQuotes()->exists()) {
+            $quotesExist = value(function () use ($opportunity): bool {
+                if (!is_null($opportunity->quotes_exist)) {
+
+                    return (bool)$opportunity->quotes_exist;
+
+                }
+
+                return $opportunity->worldwideQuotes()->exists();
+            });
+
+
+            if ($quotesExist) {
                 return $this->deny('You can\'nt to delete the Opportunity. It\'s already attached to one or more Quotes.');
             }
 
@@ -125,18 +152,26 @@ class OpportunityPolicy
             return $ensureOpportunityDoesntHaveQuotes($opportunity);
         }
 
-        if ($user->getKey() === $opportunity->primaryAccount()->getParentKey() && $user->cant('update_own_opportunities')) {
-            return $this->deny("You are an owner of the Opportunity, but you don't have permissions to update it. Contact with your Account Manager.");
+        if ($user->cant('delete_own_opportunities')) {
+            return $this->deny("You do not have permissions to delete any Opportunity. Contact with your Account Manager.");
         }
 
-        if ($user->getKey() === $opportunity->user()->getParentKey() && $user->cant('update_own_opportunities')) {
-            return $this->deny("You are a creator of the Opportunity, but you don't have permissions to update it. Contact with your Account Manager.");
+        if ($user->getKey() === $opportunity->primaryAccount()->getParentKey()) {
+            return $ensureOpportunityDoesntHaveQuotes($opportunity);
         }
 
-        if ($user->cant('update_own_opportunities')) {
-            return $this->deny("You do not have permissions to update any Opportunity. Contact with your Account Manager.");
+        if ($user->getKey() === $opportunity->user()->getParentKey()) {
+            return $ensureOpportunityDoesntHaveQuotes($opportunity);
         }
 
-        return $ensureOpportunityDoesntHaveQuotes($opportunity);
+        if ($this->userTeamGate->isUserLedByUser($opportunity->user()->getParentKey(), $user)) {
+            return $ensureOpportunityDoesntHaveQuotes($opportunity);
+        }
+
+        if ($this->userTeamGate->isUserLedByUser($opportunity->accountManager()->getParentKey(), $user)) {
+            return $ensureOpportunityDoesntHaveQuotes($opportunity);
+        }
+
+        return false;
     }
 }

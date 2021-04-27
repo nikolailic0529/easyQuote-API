@@ -5,15 +5,15 @@ namespace App\Http\Controllers\API\SalesOrders;
 use App\Contracts\Services\ProcessesSalesOrderState;
 use App\DTO\SalesOrder\Submit\SubmitSalesOrderResult;
 use App\Http\Controllers\Controller;
-use Illuminate\Contracts\Support\Responsable;
 use App\Http\Requests\{SalesOrder\CancelSalesOrder, SalesOrder\DraftSalesOrder, SalesOrder\UpdateSalesOrder};
 use App\Http\Resources\SalesOrder\SalesOrderState;
 use App\Models\SalesOrder;
 use App\Queries\CancelSalesOrderReasonQueries;
 use App\Services\SalesOrder\SalesOrderDataMapper;
-use App\Services\WorldwideQuoteDataMapper;
-use App\Services\WorldwideQuoteExporter;
+use App\Services\WorldwideQuote\WorldwideQuoteDataMapper;
+use App\Services\WorldwideQuote\WorldwideQuoteExporter;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 
@@ -76,7 +76,7 @@ class SalesOrderController extends Controller
      *
      * @param SalesOrder $salesOrder
      * @param SalesOrderDataMapper $salesOrderDataMapper
-     * @param WorldwideQuoteDataMapper $quoteDataMapper
+     * @param \App\Services\WorldwideQuote\WorldwideQuoteDataMapper $quoteDataMapper
      * @return JsonResponse
      * @throws AuthorizationException
      */
@@ -216,7 +216,7 @@ class SalesOrderController extends Controller
      * @param SalesOrder $salesOrder
      * @param SalesOrderDataMapper $salesOrderDataMapper
      * @param WorldwideQuoteDataMapper $quoteDataMapper
-     * @param WorldwideQuoteExporter $exporter
+     * @param \App\Services\WorldwideQuote\WorldwideQuoteExporter $exporter
      * @return Response
      * @throws AuthorizationException
      */

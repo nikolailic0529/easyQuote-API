@@ -51,6 +51,7 @@ class SalesOrderTemplateQueries
                     })
                     ->whereColumn($model->countries()->getQualifiedForeignPivotKeyName(), $model->getQualifiedKeyName()),
                 $model->qualifyColumn('created_at'),
+                $model->qualifyColumn('activated_at'),
             ])
             ->join('companies', function (JoinClause $join) use ($model) {
                 $join->on('companies.id', $model->qualifyColumn('company_id'));
@@ -64,7 +65,7 @@ class SalesOrderTemplateQueries
                 return $this->elasticsearch->search(
                     (new ElasticsearchQuery)
                         ->modelIndex($model)
-                        ->queryString('*'.trim($searchQuery, ' \t\n\r\0\x0B*').'*')
+                        ->queryString('*'.trim($searchQuery, " \t\n\r\0\x0B*").'*')
                         ->toArray()
                 );
             });

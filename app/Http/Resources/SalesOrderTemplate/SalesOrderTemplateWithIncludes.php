@@ -17,6 +17,22 @@ class SalesOrderTemplateWithIncludes extends JsonResource
     {
         /** @var \App\Models\Template\SalesOrderTemplate|\App\Http\Resources\SalesOrderTemplate\SalesOrderTemplateWithIncludes $this */
 
+        $dataHeaders = value(function (): array {
+            /** @var \App\Models\Template\SalesOrderTemplate|\App\Http\Resources\SalesOrderTemplate\SalesOrderTemplateWithIncludes $this */
+
+            $headers = [];
+
+            foreach (__('template.contract_data_headers') as $key => $header) {
+                $headers[$key] = [
+                    'key' => $key,
+                    'label' => $header['label'],
+                    'value' => $this->templateSchema->data_headers[$key] ?? $header['value'],
+                ];
+            }
+
+            return $headers;
+        });
+
         return [
             'id' => $this->id,
             'name' => $this->name,
@@ -36,8 +52,8 @@ class SalesOrderTemplateWithIncludes extends JsonResource
             ],
             'currency' => $this->currency,
             'form_data' => $this->templateSchema->form_data,
-            'data_headers' => array_values($this->templateSchema->data_headers),
-            'data_headers_keyed' => $this->templateSchema->data_headers,
+            'data_headers' => array_values($dataHeaders),
+            'data_headers_keyed' => $dataHeaders,
             'countries' => $this->countries->map->only(['id', 'name']),
             'created_at' => (string)$this->created_at,
             'activated_at' => $this->activated_at,

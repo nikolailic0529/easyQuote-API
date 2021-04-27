@@ -3,11 +3,19 @@
 namespace App\Policies;
 
 use App\Models\{Quote\Quote, Quote\QuoteVersion, User};
+use App\Services\Auth\UserTeamGate;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class QuotePolicy
 {
     use HandlesAuthorization;
+
+    protected UserTeamGate $userTeamGate;
+
+    public function __construct(UserTeamGate $userTeamGate)
+    {
+        $this->userTeamGate = $userTeamGate;
+    }
 
     /**
      * Determine whether the user can view any quotes.
@@ -43,7 +51,15 @@ class QuotePolicy
             return true;
         }
 
-        if ($user->can('view_own_quotes') && $user->getKey() === $quote->user()->getParentKey()) {
+        if (false === $user->can('view_own_quotes')) {
+            return false;
+        }
+
+        if ($user->getKey() === $quote->user()->getParentKey()) {
+            return true;
+        }
+
+        if ($this->userTeamGate->isUserLedByUser($quote->user()->getParentKey(), $user)) {
             return true;
         }
     }
@@ -84,7 +100,15 @@ class QuotePolicy
             return true;
         }
 
-        if ($user->can('update_own_quotes') && $user->getKey() === $quote->user()->getParentKey()) {
+        if (false === $user->can('update_own_quotes')) {
+            return false;
+        }
+
+        if ($user->getKey() === $quote->user()->getParentKey()) {
+            return true;
+        }
+
+        if ($this->userTeamGate->isUserLedByUser($quote->user()->getParentKey(), $user)) {
             return true;
         }
     }
@@ -110,7 +134,15 @@ class QuotePolicy
             return true;
         }
 
-        if ($user->can('update_own_quotes') && $user->getKey() === $quote->user()->getParentKey()) {
+        if (false === $user->can('update_own_quotes')) {
+            return false;
+        }
+
+        if ($user->getKey() === $quote->user()->getParentKey()) {
+            return true;
+        }
+
+        if ($this->userTeamGate->isUserLedByUser($quote->user()->getParentKey(), $user)) {
             return true;
         }
     }
@@ -208,7 +240,15 @@ class QuotePolicy
             return true;
         }
 
-        if ($user->can('delete_own_quotes') && $user->getKey() === $quote->user()->getParentKey()) {
+        if (false === $user->can('delete_own_quotes')) {
+            return false;
+        }
+
+        if ($user->getKey() === $quote->user()->getParentKey()) {
+            return true;
+        }
+
+        if ($this->userTeamGate->isUserLedByUser($quote->user()->getParentKey(), $user)) {
             return true;
         }
     }
@@ -235,7 +275,15 @@ class QuotePolicy
             return true;
         }
 
-        if ($user->can('delete_own_quotes') && $user->getKey() === $quote->user()->getParentKey()) {
+        if (false === $user->can('delete_own_quotes')) {
+            return false;
+        }
+
+        if ($user->getKey() === $quote->user()->getParentKey()) {
+            return true;
+        }
+
+        if ($this->userTeamGate->isUserLedByUser($quote->user()->getParentKey(), $user)) {
             return true;
         }
     }

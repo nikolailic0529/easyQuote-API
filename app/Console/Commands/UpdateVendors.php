@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use Illuminate\Database\Eloquent\Model;
 use App\Models\{
     Vendor,
     Data\Country
@@ -40,6 +41,7 @@ class UpdateVendors extends Command
      * Execute the console command.
      *
      * @return mixed
+     * @throws \Throwable
      */
     public function handle()
     {
@@ -53,15 +55,15 @@ class UpdateVendors extends Command
 
         $this->output->progressStart(count($vendors));
 
-        collect($vendors)->each(function ($data) {
+        $countryModelKeys = Country::query()->pluck((new Country())->getKeyName())->all();
+
+        collect($vendors)->each(function ($data) use ($countryModelKeys) {
             /** @var Vendor */
             $vendor = Vendor::firstOrNew(['short_code' => $data['short_code']], ['name' => $data['name'], 'is_system' => true]);
 
             $vendor->save();
 
-            $countries = Country::whereIn('iso_3166_2', $data['countries'])->get();
-
-            $vendor->countries()->sync($countries);
+            $vendor->countries()->sync($countryModelKeys);
 
             $vendor->createLogo($data['logo'], true);
 
@@ -79,5 +81,7 @@ class UpdateVendors extends Command
         activity()->enableLogging();
 
         $this->info("System Defined Vendors were updated!");
+
+        return Command::SUCCESS;
     }
 }

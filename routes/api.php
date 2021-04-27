@@ -222,7 +222,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     });
 
     Route::group(['middleware' => THROTTLE_RATE_01], function () {
-        Route::get('templates/designer/{template}', [QuoteTemplateController::class, 'showTemplateSchema']);
+        Route::get('templates/designer/{template}', [QuoteTemplateController::class, 'showTemplateForm']);
         Route::get('templates/country/{country}', [QuoteTemplateController::class, 'filterTemplatesByCountry']);
         Route::apiResource('templates', QuoteTemplateController::class);
         Route::put('templates/activate/{template}', [QuoteTemplateController::class, 'activate']);
@@ -234,7 +234,7 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::post('templates/filter-ww/pack', [QuoteTemplateController::class, 'filterWorldwidePackTemplates']);
         Route::post('templates/filter-ww/contract', [QuoteTemplateController::class, 'filterWorldwideContractTemplates']);
 
-        Route::get('contract-templates/designer/{contract_template}', [ContractTemplateController::class, 'designer']);
+        Route::get('contract-templates/designer/{contract_template}', [ContractTemplateController::class, 'showTemplateForm']);
         Route::get('contract-templates/country/{country}', [ContractTemplateController::class, 'country']);
         Route::apiResource('contract-templates', ContractTemplateController::class);
         Route::put('contract-templates/activate/{contract_template}', [ContractTemplateController::class, 'activate']);
@@ -259,6 +259,7 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::get('sales-order-templates', [SalesOrderTemplateController::class, 'paginateSalesOrderTemplates']);
         Route::get('sales-order-templates/{sales_order_template}', [SalesOrderTemplateController::class, 'showSalesOrderTemplate']);
         Route::get('sales-order-templates/filter-ww/pack', [SalesOrderTemplateController::class, 'filterWorldwidePackSalesOrderTemplates']);
+        Route::get('sales-order-templates/{sales_order_template}/form', [SalesOrderTemplateController::class, 'showTemplateForm']);
         Route::get('sales-order-templates/filter-ww/contract', [SalesOrderTemplateController::class, 'filterWorldwideContractSalesOrderTemplates']);
         Route::post('sales-order-templates', [SalesOrderTemplateController::class, 'storeSalesOrderTemplate']);
         Route::patch('sales-order-templates/{sales_order_template}', [SalesOrderTemplateController::class, 'updateSalesOrderTemplate']);

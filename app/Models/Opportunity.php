@@ -86,13 +86,11 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property Contact|null $primaryAccountContact
  * @property User|null $accountManager
  * @property Collection<OpportunitySupplier>|OpportunitySupplier[] $opportunitySuppliers
-// * @property Collection<Address>|Address[] $addresses
-// * @property Collection<Contact>|Contact[] $contacts
  *
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * // * @property WorldwideQuote|null $worldwideQuote
  * @property Collection<WorldwideQuote>|WorldwideQuote[] $worldwideQuotes
+ * @property-read bool|null $quotes_exist
  */
 class Opportunity extends Model implements SearchableEntity
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\WorldwideQuote;
 
 use App\Contracts\{Services\ManagesExchangeRates,
     Services\ProcessesWorldwideDistributionState,
@@ -64,13 +64,18 @@ use App\Models\{Address,
     WorldwideQuoteAsset};
 use App\Services\Exceptions\ValidationException;
 use App\Services\WorldwideQuote\Models\ReplicatedVersionData;
-use App\Services\WorldwideQuote\WorldwideQuoteReplicator;
 use Illuminate\Contracts\{Bus\Dispatcher as BusDispatcher, Cache\LockProvider, Events\Dispatcher as EventDispatcher};
 use Illuminate\Database\{ConnectionInterface, Eloquent\Builder, Eloquent\Collection, Eloquent\Model};
 use Illuminate\Support\{Carbon, Facades\DB};
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Webpatser\Uuid\Uuid;
+use function now;
+use function tap;
+use function value;
+use function with;
+use const CT_CONTRACT;
+use const CT_PACK;
 
 class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 {

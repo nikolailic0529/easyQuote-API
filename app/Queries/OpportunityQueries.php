@@ -4,7 +4,9 @@ namespace App\Queries;
 
 use App\Enum\OpportunityStatus;
 use App\Models\Opportunity;
+use App\Models\Quote\WorldwideQuote;
 use App\Services\ElasticsearchQuery;
+use DB;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\JoinClause;
@@ -40,9 +42,10 @@ class OpportunityQueries
         $request ??= new Request();
 
         $model = new Opportunity();
+        $quoteModel = new WorldwideQuote();
 
         $query = $model->newQuery()
-            ->select(
+            ->select([
                 'opportunities.id',
                 'opportunities.user_id',
                 'companies.id as company_id',
@@ -57,8 +60,9 @@ class OpportunityQueries
                 'opportunities.sale_action_name',
                 'opportunities.status',
                 'opportunities.status_reason',
-                'opportunities.created_at'
-            )
+                'opportunities.created_at',
+                DB::raw('0 as quotes_exist')
+            ])
             ->doesntHave('worldwideQuotes')
             ->leftJoin('contract_types', function (JoinClause $join) {
                 $join->on('contract_types.id', 'opportunities.contract_type_id');

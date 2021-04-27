@@ -29,7 +29,11 @@ class VendorSeeder extends Seeder
             ]);
         }, $vendors);
 
-        $connection->transaction(function () use ($connection, $vendors) {
+        $countries = $connection->table('countries')
+            ->whereNull('deleted_at')
+            ->pluck('id');
+
+        $connection->transaction(function () use ($countries, $connection, $vendors) {
 
             foreach ($vendors as $vendor) {
                 $connection->table('vendors')
@@ -43,14 +47,12 @@ class VendorSeeder extends Seeder
                         'activated_at' => now()
                     ]);
 
-                foreach ($vendor['country_model_keys'] as $countryModelKey) {
-
+                foreach ($countries as $countryModelKey) {
                     $connection->table('country_vendor')
                         ->insertOrIgnore([
                             'vendor_id' => $vendor['id'],
                             'country_id' => $countryModelKey
                         ]);
-
                 }
 
             }
