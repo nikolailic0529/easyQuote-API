@@ -8,8 +8,12 @@ class UserTeamGate
 {
     protected array $ledTeamUserCache = [];
 
-    public function isUserLedByUser(string $ledUserKey, User $user): bool
+    public function isUserLedByUser(?string $ledUserKey, User $user): bool
     {
+        if (is_null($ledUserKey)) {
+            return false;
+        }
+
         $ledTeamUserDictionary = $this->getLedTeamUserDictionary($user);
 
         return isset($ledTeamUserDictionary[$ledUserKey]);
