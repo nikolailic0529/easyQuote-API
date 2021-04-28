@@ -9,6 +9,7 @@ use App\Models\OpportunitySupplier;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\Quote\WorldwideQuoteVersion;
+use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Models\QuoteFile\MappedRow;
 use App\Models\QuoteFile\QuoteFile;
 use App\Models\QuoteFile\ScheduleData;
@@ -68,6 +69,13 @@ class WorldwideQuoteVersionGuardTest extends TestCase
             'schedule_file_id' => $scheduleFile->getKey(),
         ]);
 
+        /** @var DistributionRowsGroup $rowsGroup */
+        $rowsGroup = factory(DistributionRowsGroup::class)->create([
+            'worldwide_distribution_id' => $distributorQuote->getKey()
+        ]);
+
+        $rowsGroup->rows()->attach($mappedRows);
+
         $distributorQuoteAddresses = factory(Address::class, 2)->create();
         $distributorQuoteContacts = factory(Contact::class, 2)->create();
 
@@ -124,5 +132,7 @@ class WorldwideQuoteVersionGuardTest extends TestCase
 
             $this->assertArrayNotHasKey($contact->getKey(), $distributorQuoteContactDictionary);
         }
+
+        $this->assertNotEmpty($newDistributorQuote->rowsGroups);
     }
 }

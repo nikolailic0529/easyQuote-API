@@ -698,6 +698,36 @@ class OpportunityTest extends TestCase
     }
 
     /**
+     * Test an ability to batch upload the opportunities from a file without accounts data file.
+     *
+     * @return void
+     */
+    public function testCanBatchUploadOpportunitiesWithoutAccountsDataFiles()
+    {
+        $opportunitiesFile = UploadedFile::fake()->createWithContent('Opportunities-04042021.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/Opportunities-04042021.xlsx')));
+
+        $this->authenticateApi();
+
+        $this->app['db.connection']->table('companies')->where('type', 'External')->delete();
+
+        $response = $this->postJson('api/opportunities/upload', [
+            'opportunities_file' => $opportunitiesFile,
+        ])
+//            ->dump()
+            ->assertCreated()
+            ->assertJsonStructure([
+                'opportunities' => [
+                    '*' => [
+                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date', 'sale_action_name', 'campaign_name'
+                    ]
+                ],
+                'errors'
+            ]);
+
+        $this->assertNotEmpty($response->json('errors'));
+    }
+
+    /**
      * Test an ability to batch upload and save the opportunities from a file.
      *
      * @return void

@@ -101,7 +101,7 @@ class OpportunityPolicy
             return $this->deny("You do not have permissions to update any Opportunity. Contact with your Account Manager.");
         }
 
-        if ($user->getKey() === $opportunity->primaryAccount()->getParentKey()) {
+        if ($user->getKey() === $opportunity->accountManager()->getParentKey()) {
             return true;
         }
 
@@ -156,7 +156,7 @@ class OpportunityPolicy
             return $this->deny("You do not have permissions to delete any Opportunity. Contact with your Account Manager.");
         }
 
-        if ($user->getKey() === $opportunity->primaryAccount()->getParentKey()) {
+        if ($user->getKey() === $opportunity->accountManager()->getParentKey()) {
             return $ensureOpportunityDoesntHaveQuotes($opportunity);
         }
 

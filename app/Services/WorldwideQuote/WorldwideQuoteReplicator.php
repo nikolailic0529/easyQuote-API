@@ -152,10 +152,18 @@ class WorldwideQuoteReplicator
             $groupPivotKey = $rowsGroup->rows()->getForeignPivotKeyName();
             $rowPivotKey = $rowsGroup->rows()->getRelatedPivotKeyName();
 
-            return $groupRowKeys->map(fn(string $key) => [
-                $groupPivotKey => $rowsGroup->getKey(),
-                $rowPivotKey => $replicatedMappedRowsDictionary[$key]
-            ])->all();
+            $rowsOfGroup = [];
+
+            foreach ($groupRowKeys as $key) {
+                if (isset($replicatedMappedRowsDictionary[$key])) {
+                    $rowsOfGroup[] = [
+                        $groupPivotKey => $rowsGroup->getKey(),
+                        $rowPivotKey => $replicatedMappedRowsDictionary[$key]
+                    ];
+                }
+            }
+
+            return $rowsOfGroup;
         }, $replicatedRowsGroups);
 
         /** @var QuoteFile|null $replicatedScheduleFile */

@@ -2,13 +2,12 @@
 
 namespace App\Services\Opportunity;
 
-use Illuminate\Database\Query\Builder as BaseBuilder;
-use Illuminate\Database\Query\JoinClause;
 use App\DTO\{Opportunity\BatchOpportunityUploadResult,
     Opportunity\BatchSaveOpportunitiesData,
     Opportunity\CreateOpportunityData,
     Opportunity\CreateSupplierData,
     Opportunity\ImportedOpportunityData,
+    Opportunity\ImportOpportunityData,
     Opportunity\MarkOpportunityAsLostData,
     Opportunity\UpdateOpportunityData,
     Opportunity\UpdateSupplierData};
@@ -35,17 +34,14 @@ use App\Services\ExchangeRate\CurrencyConverter;
 use App\Services\Opportunity\Models\PipelinerOppMap;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Database\ConnectionInterface;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Events\Dispatcher as EventDispatcher;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Factory as ValidatorFactory;
-use Illuminate\Validation\Validator;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Intl\Currencies;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -108,50 +104,56 @@ class OpportunityEntityService
     /**
      * Perform batch Opportunity import.
      *
-     * @param UploadedFile $opportunitiesDataFile
-     * @param UploadedFile $accountsDataFile
-     * @param UploadedFile $accountContactsFile
+     * @param \App\DTO\Opportunity\ImportOpportunityData $data
      * @param User $user
      * @return BatchOpportunityUploadResult
-     * @throws ValidationException
+     * @throws \App\Services\Exceptions\ValidationException
      * @throws \Throwable
      */
-    public function batchImportOpportunities(UploadedFile $opportunitiesDataFile, UploadedFile $accountsDataFile, UploadedFile $accountContactsFile, User $user): BatchOpportunityUploadResult
+    public function batchImportOpportunities(ImportOpportunityData $data, User $user): BatchOpportunityUploadResult
     {
         $opportunitiesDataFileReader = (new OpportunityBatchFileReader(
-            $opportunitiesDataFile->getRealPath(),
-            $opportunitiesDataFile->getClientOriginalExtension()
+            $data->opportunities_file->getRealPath(),
+            $data->opportunities_file->getClientOriginalExtension()
         ));
 
-        $accountsDataFileReader = (new AccountsDataBatchFileReader(
-            $accountsDataFile->getRealPath(),
-            $accountsDataFile->getClientOriginalExtension()
-        ));
+        $opportunitiesFileName = $data->opportunities_file->getClientOriginalName();
 
-        $accountContactsFileReader = (new AccountContactBatchFileReader(
-            $accountContactsFile->getRealPath(),
-            $accountContactsFile->getClientOriginalExtension()
-        ));
+        $accountsDataFileReader = null;
+        $accountContactsFileReader = null;
 
-        $this->eventDispatcher->dispatch(
-            new OpportunityBatchFilesImported(
-                $opportunitiesDataFile,
-                $accountsDataFile,
-                $accountContactsFile,
-            )
-        );
+        if (!is_null($data->accounts_data_file)) {
+            $accountsDataFileReader = (new AccountsDataBatchFileReader(
+                $data->accounts_data_file->getRealPath(),
+                $data->accounts_data_file->getClientOriginalExtension()
+            ));
+        }
 
-        $accountsDataDictionary = iterator_to_array($accountsDataFileReader->getRows());
+        if (!is_null($data->account_contacts_file)) {
+            $accountContactsFileReader = (new AccountContactBatchFileReader(
+                $data->account_contacts_file->getRealPath(),
+                $data->account_contacts_file->getClientOriginalExtension()
+            ));
+        }
 
-        $accountContactsDictionary = value(function () use ($accountContactsFileReader): array {
-            $dictionary = [];
+        $accountsDataDictionary = [];
+        $accountContactsDictionary = [];
 
-            foreach ($accountContactsFileReader->getRows() as $key => $row) {
-                $dictionary[$key][] = $row;
-            }
+        if (!is_null($accountsDataFileReader)) {
+            $accountsDataDictionary = iterator_to_array($accountsDataFileReader->getRows());
+        }
 
-            return $dictionary;
-        });
+        if (!is_null($accountContactsFileReader)) {
+            $accountContactsDictionary = value(function () use ($accountContactsFileReader): array {
+                $dictionary = [];
+
+                foreach ($accountContactsFileReader->getRows() as $key => $row) {
+                    $dictionary[$key][] = $row;
+                }
+
+                return $dictionary;
+            });
+        }
 
         $errors = (new MessageBag())
             ->setFormat('Validation failure on :key row. :message');
@@ -165,10 +167,14 @@ class OpportunityEntityService
         }
 
         foreach ($opportunitiesDataFileReader->getRows() as $i => $row) {
-            $validator = $this->validateBatchOpportunityRow($row);
+            $rowFailures = $this->validateBatchOpportunityRow(
+                $row,
+                $accountsDataDictionary,
+                $accountContactsDictionary
+            );
 
-            if ($validator->fails()) {
-                foreach ($validator->errors()->all() as $error) {
+            if ($rowFailures->isNotEmpty()) {
+                foreach ($rowFailures->all() as $error) {
                     $errors->add($i + 1, $error);
                 }
 
@@ -201,169 +207,203 @@ class OpportunityEntityService
             ]);
         }
 
+        $this->eventDispatcher->dispatch(
+            new OpportunityBatchFilesImported(
+                $data->opportunities_file,
+                $data->account_contacts_file,
+                $data->account_contacts_file,
+            )
+        );
+
         return new BatchOpportunityUploadResult([
             'opportunities' => $imported,
-            'errors' => $errors->all()
+            'errors' => $errors->all("File: '$opportunitiesFileName', Row :key: :message")
         ]);
     }
 
-    private function validateBatchOpportunityRow(array $row): Validator
+    private function validateBatchOpportunityRow(array $row, array $accountsDataDictionary, array $accountContactsDataDictionary): MessageBag
     {
-        return $this->validatorFactory->make($row, [
-            'primary_account_name' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'primary_contact_name' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'nature_of_service' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'ren_month' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'start_date' => [
-                'bail', 'nullable', 'date'
-            ],
-            'ren_year' => [
-                'bail', 'nullable', 'integer'
-            ],
-            'end_date' => [
-                'bail', 'nullable', 'date'
-            ],
-            'customer_status' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'business_partner_name' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'enduser' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'hw_status' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'region' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'opportunity_value' => [
-                'bail', 'nullable', 'numeric'
-            ],
-            'opportunity_value_foreign_value' => [
-                'bail', 'nullable', 'numeric'
-            ],
-            'opportunity_value_base_value' => [
-                'bail', 'nullable', 'numeric'
-            ],
-            'opportunity_value_currency_code' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'list_price' => [
-                'bail', 'nullable', 'numeric'
-            ],
-            'list_price_foreign_value' => [
-                'bail', 'nullable', 'numeric'
-            ],
-            'list_price_base_value' => [
-                'bail', 'nullable', 'numeric'
-            ],
-            'list_price_currency_code' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'purchase_price' => [
-                'bail', 'nullable', 'numeric'
-            ],
-            'purchase_price_foreign_value' => [
-                'bail', 'nullable', 'numeric'
-            ],
-            'purchase_price_base_value' => [
-                'bail', 'nullable', 'numeric'
-            ],
-            'purchase_price_currency_code' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'ranking' => [
-                'bail', 'nullable', 'numeric', 'min:0', 'max:1'
-            ],
-            'personal_rating' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'margin' => [
-                'bail', 'nullable', 'numeric'
-            ],
-            'account_manager' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'closing_date' => [
-                'bail', 'required', 'date'
-            ],
-            'notes' => [
-                'bail', 'nullable', 'string', 'max:10000'
-            ],
-            'sla' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'competition' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'lead_source' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'campaign' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'sales_unit' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'drop_in' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'delayed_closing' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'estimated_upsell_amount' => [
-                'bail', 'nullable', 'numeric'
-            ],
-            'remark' => [
-                'bail', 'nullable', 'string', 'max:10000'
-            ],
-            'higher_sla' => [
-                'bail', 'nullable', 'string', 'in:Yes,No'
-            ],
-            'additional_hardware' => [
-                'bail', 'nullable', 'string', 'in:Yes,No'
-            ],
-            'multi_year' => [
-                'bail', 'nullable', 'string', 'in:Yes,No'
-            ],
-            'service_credits' => [
-                'bail', 'nullable', 'string', 'in:Yes,No'
-            ],
-            'suppliers' => [
-                'array'
-            ],
-            'suppliers.*.country' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'suppliers.*.supplier' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'suppliers.*.contact_name' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'suppliers.*.email_address' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'owner' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'sales_step' => [
-                'bail', 'nullable', 'string', 'max:191'
-            ],
-            'pipeline' => [
-                'bail', 'required', 'string', 'max:191'
-            ]
-        ]);
+        return tap(new MessageBag(), function (MessageBag $errors) use ($row, $accountsDataDictionary, $accountContactsDataDictionary) {
+            $validator = $this->validatorFactory->make($row, [
+                'primary_account_name' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'primary_contact_name' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'nature_of_service' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'ren_month' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'start_date' => [
+                    'bail', 'nullable', 'date'
+                ],
+                'ren_year' => [
+                    'bail', 'nullable', 'integer'
+                ],
+                'end_date' => [
+                    'bail', 'nullable', 'date'
+                ],
+                'customer_status' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'business_partner_name' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'enduser' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'hw_status' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'region' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'opportunity_value' => [
+                    'bail', 'nullable', 'numeric'
+                ],
+                'opportunity_value_foreign_value' => [
+                    'bail', 'nullable', 'numeric'
+                ],
+                'opportunity_value_base_value' => [
+                    'bail', 'nullable', 'numeric'
+                ],
+                'opportunity_value_currency_code' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'list_price' => [
+                    'bail', 'nullable', 'numeric'
+                ],
+                'list_price_foreign_value' => [
+                    'bail', 'nullable', 'numeric'
+                ],
+                'list_price_base_value' => [
+                    'bail', 'nullable', 'numeric'
+                ],
+                'list_price_currency_code' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'purchase_price' => [
+                    'bail', 'nullable', 'numeric'
+                ],
+                'purchase_price_foreign_value' => [
+                    'bail', 'nullable', 'numeric'
+                ],
+                'purchase_price_base_value' => [
+                    'bail', 'nullable', 'numeric'
+                ],
+                'purchase_price_currency_code' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'ranking' => [
+                    'bail', 'nullable', 'numeric', 'min:0', 'max:1'
+                ],
+                'personal_rating' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'margin' => [
+                    'bail', 'nullable', 'numeric'
+                ],
+                'account_manager' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'closing_date' => [
+                    'bail', 'required', 'date'
+                ],
+                'notes' => [
+                    'bail', 'nullable', 'string', 'max:10000'
+                ],
+                'sla' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'competition' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'lead_source' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'campaign' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'sales_unit' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'drop_in' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'delayed_closing' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'estimated_upsell_amount' => [
+                    'bail', 'nullable', 'numeric'
+                ],
+                'remark' => [
+                    'bail', 'nullable', 'string', 'max:10000'
+                ],
+                'higher_sla' => [
+                    'bail', 'nullable', 'string', 'in:Yes,No'
+                ],
+                'additional_hardware' => [
+                    'bail', 'nullable', 'string', 'in:Yes,No'
+                ],
+                'multi_year' => [
+                    'bail', 'nullable', 'string', 'in:Yes,No'
+                ],
+                'service_credits' => [
+                    'bail', 'nullable', 'string', 'in:Yes,No'
+                ],
+                'suppliers' => [
+                    'array'
+                ],
+                'suppliers.*.country' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'suppliers.*.supplier' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'suppliers.*.contact_name' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'suppliers.*.email_address' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'owner' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'sales_step' => [
+                    'bail', 'nullable', 'string', 'max:191'
+                ],
+                'pipeline' => [
+                    'bail', 'required', 'string', 'max:191'
+                ]
+            ]);
+
+            $errors->merge($validator->errors());
+
+            $accountName = $row['primary_account_name'] ?? null;
+
+            if (is_null($accountName)) {
+                return;
+            }
+
+            $accountNameHash = md5($accountName);
+
+            $accountExists = Company::query()->where('name', trim($accountName))->where('type', 'External')->exists();
+
+            $accountData = $accountsDataDictionary[$accountNameHash] ?? null;
+            $accountContactData = $accountContactsDataDictionary[$accountNameHash] ?? null;
+
+            if ($accountExists === true) {
+                return;
+            }
+
+            if (is_null($accountData)) {
+                $errors->add('primary_account_data', "No data provided for a new Primary Account, Name: '$accountName'.");
+            }
+        });
+
     }
 
     private function mapPrimaryAccountData(string $accountName, array $accountsDataDictionary, array $accountContactsDataDictionary): Company

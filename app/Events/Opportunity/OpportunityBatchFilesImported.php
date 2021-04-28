@@ -10,20 +10,19 @@ class OpportunityBatchFilesImported
     use Dispatchable;
 
     private UploadedFile $opportunitiesDataFile;
-    private UploadedFile $accountsDataFile;
-    private UploadedFile $accountContactsFile;
+    private ?UploadedFile $accountsDataFile;
+    private ?UploadedFile $accountContactsFile;
 
     /**
      * Create a new event instance.
      *
      * @param \Symfony\Component\HttpFoundation\File\UploadedFile $opportunitiesDataFile
-     * @param \Symfony\Component\HttpFoundation\File\UploadedFile $accountsDataFile
-     * @param \Symfony\Component\HttpFoundation\File\UploadedFile $accountContactsFile
-     * @return void
+     * @param \Symfony\Component\HttpFoundation\File\UploadedFile|null $accountsDataFile
+     * @param \Symfony\Component\HttpFoundation\File\UploadedFile|null $accountContactsFile
      */
     public function __construct(UploadedFile $opportunitiesDataFile,
-                                UploadedFile $accountsDataFile,
-                                UploadedFile $accountContactsFile)
+                                ?UploadedFile $accountsDataFile,
+                                ?UploadedFile $accountContactsFile)
     {
         $this->opportunitiesDataFile = $opportunitiesDataFile;
         $this->accountsDataFile = $accountsDataFile;
@@ -38,18 +37,12 @@ class OpportunityBatchFilesImported
         return $this->opportunitiesDataFile;
     }
 
-    /**
-     * @return \Symfony\Component\HttpFoundation\File\UploadedFile
-     */
-    public function getAccountsDataFile(): UploadedFile
+    public function getAccountsDataFile(): ?UploadedFile
     {
         return $this->accountsDataFile;
     }
 
-    /**
-     * @return \Symfony\Component\HttpFoundation\File\UploadedFile
-     */
-    public function getAccountContactsFile(): UploadedFile
+    public function getAccountContactsFile(): ?UploadedFile
     {
         return $this->accountContactsFile;
     }

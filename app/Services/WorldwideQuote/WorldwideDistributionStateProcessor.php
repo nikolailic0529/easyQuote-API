@@ -1413,11 +1413,16 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         $lock->block(30, function () use ($worldwideDistribution) {
 
             $this->connection->transaction(function () use ($worldwideDistribution) {
+                /** @var WorldwideDistribution $worldwideDistribution */
+
                 $worldwideDistribution->save();
+
+                $worldwideDistribution->rowsGroups()->delete();
 
                 // It's required to detach the existing mapped columns
                 // when a new file attached to the distributor quote.
                 $worldwideDistribution->templateFields()->update(['importable_column_id' => null]);
+
             });
 
         });
