@@ -187,13 +187,14 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                 });
             });
 
-            $opportunityLock = $this->lockProvider->lock(Lock::UPDATE_OPPORTUNITY($stage->opportunity_id), 10);
+            $quoteLock = $this->lockProvider->lock(Lock::UPDATE_WWQUOTE($quote->active_version_id), 10);
 
             $activeQuoteVersion = $quote->activeVersion;
             $opportunity = $quote->opportunity;
             $primaryAccount = $opportunity->primaryAccount;
+            $distributorQuotes = $activeQuoteVersion->worldwideDistributions;
 
-            $opportunityLock->block(30, function () use ($stage, $quote, $activeQuoteVersion, $opportunity, $primaryAccount) {
+            $quoteLock->block(30, function () use ($stage, $quote, $distributorQuotes, $activeQuoteVersion, $opportunity, $primaryAccount) {
 
                 if (is_null($primaryAccount)) {
                     return;
@@ -213,13 +214,25 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                     })
                     ->modelKeys();
 
-                $this->connection->transaction(function () use ($activeQuoteVersion, $contactPivots, $addressPivots, $opportunity, $primaryAccount) {
+                $this->connection->transaction(function () use ($activeQuoteVersion, $distributorQuotes, $contactPivots, $addressPivots, $opportunity, $primaryAccount) {
                     if (!empty($addressPivots)) {
                         $activeQuoteVersion->addresses()->syncWithoutDetaching($addressPivots);
                     }
 
                     if (!empty($contactPivots)) {
                         $activeQuoteVersion->contacts()->syncWithoutDetaching($contactPivots);
+                    }
+
+                    foreach ($distributorQuotes as $distributorQuote) {
+
+                        if (!empty($addressPivots)) {
+                            $distributorQuote->addresses()->syncWithoutDetaching($addressPivots);
+                        }
+
+                        if (!empty($contactPivots)) {
+                            $distributorQuote->contacts()->syncWithoutDetaching($contactPivots);
+                        }
+
                     }
                 });
             });
@@ -1020,7 +1033,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
     {
         $opportunity = $quote->opportunity;
         $primaryAccount = $opportunity->primaryAccount;
-        $activeVersion = $quote->activeVersion;
+        $quote->load(['versions.addresses', 'versions.contacts']);
 
         if (!is_null($opportunity->contract_type_id) && $quote->contract_type_id !== $opportunity->contract_type_id) {
 
@@ -1036,24 +1049,32 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
         }
 
-        $addressModelKeysOfPrimaryAccount = value(function () use ($primaryAccount): array {
+        /** @var Collection $addressModelsOfPrimaryAccount */
+        $addressModelsOfPrimaryAccount = value(function () use ($primaryAccount): Collection {
 
             if (is_null($primaryAccount)) {
-                return [];
+                return new Collection();
             }
 
-            return $primaryAccount->addresses()->pluck('addresses.id')->all();
+            return $primaryAccount->addresses;
 
         });
 
-        $contactModelKeysOfPrimaryAccount = value(function () use ($primaryAccount): array {
+        /** @var Collection $contactModelsOfPrimaryAccount */
+        $contactModelsOfPrimaryAccount = value(function () use ($primaryAccount): Collection {
             if (is_null($primaryAccount)) {
-                return [];
+                return new Collection();
             }
 
-            return $primaryAccount->contacts()->pluck('contacts.id')->all();
+            return $primaryAccount->contacts;
 
         });
+
+        $addressModelKeysOfPrimaryAccount = $addressModelsOfPrimaryAccount->modelKeys();
+        $contactModelKeysOfPrimaryAccount = $contactModelsOfPrimaryAccount->modelKeys();
+
+        $defaultAddressModelKeysOfPrimaryAccount = $addressModelsOfPrimaryAccount->filter(fn (Address $address) => $address->pivot->is_default)->modelKeys();
+        $defaultContactModelKeysOfPrimaryAccount = $contactModelsOfPrimaryAccount->filter(fn (Contact $contact) => $contact->pivot->is_default)->modelKeys();
 
         if ($quote->contract_type_id === CT_PACK) {
 
@@ -1071,33 +1092,43 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
             $lock = $this->lockProvider->lock(Lock::UPDATE_WWQUOTE($quote->getKey()), 10);
 
-            $lock->block(30, function () use ($quote, $addressModelKeysOfPrimaryAccount, $contactModelKeysOfPrimaryAccount) {
+            $lock->block(30,
+            fn() => $this->connection->transaction(function () use ($quote, $addressModelKeysOfPrimaryAccount, $contactModelKeysOfPrimaryAccount, $defaultAddressModelKeysOfPrimaryAccount, $defaultContactModelKeysOfPrimaryAccount) {
 
-                $this->connection->transaction(function () use ($quote, $addressModelKeysOfPrimaryAccount, $contactModelKeysOfPrimaryAccount) {
+                foreach ($quote->versions as $version) {
 
-                    foreach ($quote->versions as $version) {
-
-                        // Detaching of addresses & contacts which are not present in the primary account entity.
-                        if (!empty($addressModelKeysOfPrimaryAccount)) {
-                            $version->addresses()
-                                ->newPivotQuery()
-                                ->whereNotIn($version->addresses()->getQualifiedRelatedPivotKeyName(), $addressModelKeysOfPrimaryAccount)
-                                ->delete();
-                        }
-
-                        if (!empty($contactModelKeysOfPrimaryAccount)) {
-                            $version->contacts()
-                                ->newPivotQuery()
-                                ->whereNotIn($version->contacts()->getQualifiedRelatedPivotKeyName(), $contactModelKeysOfPrimaryAccount)
-                                ->delete();
-                        }
-
-                        $version->save();
+                    // Detaching of addresses which are not present in the primary account entity.
+                    if (!empty($addressModelKeysOfPrimaryAccount)) {
+                        $version->addresses()
+                            ->newPivotQuery()
+                            ->whereNotIn($version->addresses()->getQualifiedRelatedPivotKeyName(), $addressModelKeysOfPrimaryAccount)
+                            ->delete();
                     }
 
-                });
+                    // Detaching of contacts which are not present in the primary account entity.
+                    if (!empty($contactModelKeysOfPrimaryAccount)) {
+                        $version->contacts()
+                            ->newPivotQuery()
+                            ->whereNotIn($version->contacts()->getQualifiedRelatedPivotKeyName(), $contactModelKeysOfPrimaryAccount)
+                            ->delete();
+                    }
 
-            });
+                    // Attach default addresses of primary account,
+                    // if a version doesn't have any addresses.
+                    if ($version->addresses->isEmpty()) {
+                        $version->addresses()->sync($defaultAddressModelKeysOfPrimaryAccount);
+                    }
+
+                    // Attach default contacts of primary account,
+                    // if a version doesn't have any contact.
+                    if ($version->contacts->isEmpty()) {
+                        $version->contacts()->sync($defaultContactModelKeysOfPrimaryAccount);
+                    }
+
+                    $version->save();
+                }
+
+            }));
 
         }
 
@@ -1132,17 +1163,17 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                 foreach ($supplier->distributorQuotes as $distributorQuote) {
 
                     // Detaching of addresses & contacts which are not present in the primary account entity.
-                    if (!empty($addressModelKeysOfPrimaryAccount)) {
+                    if (!empty($addressModelsOfPrimaryAccount)) {
                         $distributorQuote->addresses()
                             ->newPivotQuery()
-                            ->whereNotIn($distributorQuote->addresses()->getQualifiedRelatedPivotKeyName(), $addressModelKeysOfPrimaryAccount)
+                            ->whereNotIn($distributorQuote->addresses()->getQualifiedRelatedPivotKeyName(), $addressModelsOfPrimaryAccount)
                             ->delete();
                     }
 
-                    if (!empty($contactModelKeysOfPrimaryAccount)) {
+                    if (!empty($contactModelsOfPrimaryAccount)) {
                         $distributorQuote->contacts()
                             ->newPivotQuery()
-                            ->whereNotIn($distributorQuote->contacts()->getQualifiedRelatedPivotKeyName(), $contactModelKeysOfPrimaryAccount)
+                            ->whereNotIn($distributorQuote->contacts()->getQualifiedRelatedPivotKeyName(), $contactModelsOfPrimaryAccount)
                             ->delete();
                     }
 
