@@ -24,6 +24,7 @@ class AssetTest extends TestCase
         factory(Asset::class, 20)->create();
 
         $this->getJson('api/assets')
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 'data' => [

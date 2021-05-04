@@ -331,7 +331,7 @@ class StatsCalculationService implements Stats
         });
     }
 
-    protected function denormalizeSummaryOfAsset(Location $location): void
+    public function denormalizeSummaryOfAsset(Location $location): void
     {
         $aggregatedAssetData = $this->assetQueries
             ->aggregateByUserAndLocationQuery($location->getKey())

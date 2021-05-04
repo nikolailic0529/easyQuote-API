@@ -88,7 +88,7 @@ class DatabaseSeeder extends Seeder
         $this->call(WorldwideQuoteTemplateSeeder::class);
         $this->command->info('Seeded the system defined worldwide quote templates!');
 
-        $this->call(WorldwideContractTemplateSeeder::class);
+        $this->call(WorldwideSalesOrderTemplateSeeder::class);
         $this->command->info('Seeded the system defined worldwide contract templates!');
 //
 //        $this->call(CustomersSeeder::class);

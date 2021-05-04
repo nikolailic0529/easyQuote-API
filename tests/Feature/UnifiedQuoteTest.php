@@ -230,7 +230,7 @@ class UnifiedQuoteTest extends TestCase
         ]);
 
         $ownQuote->customer->update([
-            'valid_until' => now()
+            'valid_until' => today()
         ]);
 
         /** @var Quote $ledUserOwnQuote */
@@ -240,7 +240,7 @@ class UnifiedQuoteTest extends TestCase
         ]);
 
         $ledUserOwnQuote->customer->update([
-            'valid_until' => now()
+            'valid_until' => today()
         ]);
 
         $this->actingAs($teamLeader, 'api');

@@ -85,6 +85,7 @@ class SalesOrderTemplateEntityService
             $replicatedSalesOrderTemplate->user()->associate($actingUser);
             $replicatedSalesOrderTemplate->templateSchema()->associate($replicatedTemplateSchema);
             $replicatedSalesOrderTemplate->name = "$replicatedSalesOrderTemplate->name [copy]";
+            $replicatedSalesOrderTemplate->is_system = false;
 
             $countryKeys = $salesOrderTemplate->countries()->pluck($salesOrderTemplate->countries()->getQualifiedRelatedKeyName());
 

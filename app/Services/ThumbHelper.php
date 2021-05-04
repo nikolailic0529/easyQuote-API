@@ -7,7 +7,9 @@ use App\Models\Image;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\{File as IlluminateFile, UploadedFile};
 use Illuminate\Support\{Arr, Collection as BaseCollection, Facades\Storage, Str};
+use Intervention\Image\Constraint;
 use Intervention\Image\ImageManagerStatic as ImageIntervention;
+use Symfony\Component\HttpFoundation\File\File;
 
 class ThumbHelper
 {
@@ -25,26 +27,42 @@ class ThumbHelper
 
         $modelImagesDir = $model->imagesDirectory();
 
-        $original = $fake
-            ? Str::after(Storage::putFile("public/{$modelImagesDir}", new IlluminateFile(base_path($file)), 'public'), 'public/')
-            : $file->store($modelImagesDir, 'public');
+        $originalFileName = with($file, function () use ($model, $modelImagesDir, $file, $fake): string {
 
-        $thumbnails = collect($model->thumbnailProperties())->mapWithKeys(function ($size, $key) use ($original, $modelImagesDir) {
+            if ($fake) {
+                $extension = pathinfo($file, PATHINFO_EXTENSION);
+                $fileName = sprintf('%s/%s.%s', $modelImagesDir, $model->getKey(), $extension);
+
+                Storage::put("public/$fileName", file_get_contents($file), 'public');
+
+                return $fileName;
+            }
+
+            $fileName = sprintf('%s.%s', $model->getKey(), $file->getClientOriginalExtension());
+
+            $file->storeAs($modelImagesDir, $fileName, ['disk' => 'public']);
+
+            return sprintf('%s/%s', $modelImagesDir, $fileName);
+
+        });
+
+        $thumbnails = collect($model->thumbnailProperties())->mapWithKeys(function ($size, $key) use ($model, $originalFileName, $modelImagesDir) {
             if (!isset($size['width']) || !isset($size['height'])) {
                 return true;
             }
 
-            $image = ImageIntervention::make(Storage::path("public/{$original}"));
-            $image->resize($size['width'], $size['height'], function ($constraint) {
+            $image = ImageIntervention::make(Storage::path("public/$originalFileName"));
+            $image
+//                ->trim()
+                ->resize($size['width'], $size['height'], function (Constraint $constraint) {
                 $constraint->aspectRatio();
                 $constraint->upsize();
-            })
-                ->resizeCanvas($size['width'], $size['height'], 'center');
+            });
 
-            $thumbnail = "{$modelImagesDir}/{$image->filename}@{$key}.{$image->extension}";
-            $image->save(Storage::path("public/{$thumbnail}"), 100);
+            $thumbFilePath = "$modelImagesDir/{$model->getKey()}@$key.$image->extension";
+            $image->save(Storage::path("public/$thumbFilePath"), 100);
 
-            return [$key => $thumbnail];
+            return [$key => $thumbFilePath];
         });
 
         if (blank($thumbnails)) {
@@ -53,7 +71,7 @@ class ThumbHelper
 
         $model->image()->delete();
         $model->image()->flushQueryCache();
-        $model->image()->create(compact('original', 'thumbnails'));
+        $model->image()->create(compact('originalFileName', 'thumbnails'));
 
         return $model->load('image');
     }

@@ -70,14 +70,10 @@ class UpdateCompanies extends Command
                 $vendors = $vendorRepository->findByCode($companyData['vendors']);
                 $company->vendors()->sync($vendors);
 
-                $companyLogo = $company->logo;
+                $company->createLogo($companyData['logo'], true);
 
-                if (empty($companyLogo)) {
-                    $company->createLogo($companyData['logo'], true);
-
-                    if (isset($companyData['svg_logo'])) {
-                        ThumbHelper::updateModelSvgThumbnails($company, base_path($companyData['svg_logo']));
-                    }
+                if (isset($companyData['svg_logo'])) {
+                    ThumbHelper::updateModelSvgThumbnails($company, base_path($companyData['svg_logo']));
                 }
 
                 $this->output->write('.');

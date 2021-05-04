@@ -114,6 +114,7 @@ class QuoteTemplateQueries
     public function filterWorldwidePackQuoteTemplatesByCompanyQuery(string $companyId): Builder
     {
         return QuoteTemplate::query()
+            ->whereNotNull('quote_templates.activated_at')
             ->where('quote_templates.company_id', $companyId)
             ->joinWhere('companies', 'companies.id', '=', $companyId)
             ->orderByRaw('FIELD(`quote_templates`.`id`, `companies`.`default_template_id`, NULL) desc')
@@ -130,6 +131,7 @@ class QuoteTemplateQueries
     public function filterQuoteTemplatesByMultipleVendorsQuery(string $companyId, array $vendors, ?string $countryId): Builder
     {
         return QuoteTemplate::query()
+            ->whereNotNull('quote_templates.activated_at')
             ->where('quote_templates.company_id', $companyId)
             ->whereHas('vendors', function (Builder $relation) use ($vendors) {
                 $relation->whereKey($vendors);

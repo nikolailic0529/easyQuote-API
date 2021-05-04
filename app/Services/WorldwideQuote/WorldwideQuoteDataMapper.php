@@ -35,6 +35,7 @@ use App\Models\QuoteFile\MappedRow;
 use App\Models\QuoteFile\QuoteFile;
 use App\Models\Template\ContractTemplate;
 use App\Models\Template\QuoteTemplate;
+use App\Models\Template\SalesOrderTemplate;
 use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
 use App\Services\ThumbHelper;
@@ -157,16 +158,19 @@ class WorldwideQuoteDataMapper
             'flag_url' => $country->flag
         ])->all();
 
-        $templates = ContractTemplate::query()
+        $templates = SalesOrderTemplate::query()
             ->where('business_division_id', BD_WORLDWIDE)
             ->where('contract_type_id', CT_PACK)
             ->where('company_id', $activeVersion->company_id)
+            ->whereNotNull('activated_at')
             ->get(['id', 'name']);
 
-        $templatesData = $templates->map(fn(ContractTemplate $template) => [
-            'id' => $template->getKey(),
-            'name' => $template->name,
-        ])->all();
+        $templatesData = $templates
+            ->sortBy('name', SORT_NATURAL)
+            ->map(fn(SalesOrderTemplate $template) => [
+                'id' => $template->getKey(),
+                'name' => $template->name,
+            ])->all();
 
         $customer = $worldwideQuote->opportunity->primaryAccount;
 
@@ -178,7 +182,7 @@ class WorldwideQuoteDataMapper
             'company' => $companyData,
             'vendors' => $vendorsData,
             'countries' => $countriesData,
-            'contract_templates' => $templatesData
+            'sales_order_templates' => $templatesData
         ]);
     }
 
@@ -214,16 +218,19 @@ class WorldwideQuoteDataMapper
             'flag_url' => $country->flag
         ])->all();
 
-        $templates = ContractTemplate::query()
+        $templates = SalesOrderTemplate::query()
             ->where('business_division_id', BD_WORLDWIDE)
             ->where('contract_type_id', CT_CONTRACT)
             ->where('company_id', $activeVersion->company_id)
+            ->whereNotNull('activated_at')
             ->get(['id', 'name']);
 
-        $templatesData = $templates->map(fn(ContractTemplate $template) => [
-            'id' => $template->getKey(),
-            'name' => $template->name,
-        ])->all();
+        $templatesData = $templates
+            ->sortBy('name', SORT_NATURAL)
+            ->map(fn(SalesOrderTemplate $template) => [
+                'id' => $template->getKey(),
+                'name' => $template->name,
+            ])->all();
 
         $customer = $worldwideQuote->opportunity->primaryAccount;
 
@@ -235,7 +242,7 @@ class WorldwideQuoteDataMapper
             'company' => $companyData,
             'vendors' => $vendorsData,
             'countries' => $countriesData,
-            'contract_templates' => $templatesData
+            'sales_order_templates' => $templatesData
         ]);
     }
 
@@ -441,8 +448,8 @@ class WorldwideQuoteDataMapper
                 'equipment_address' => self::formatMachineAddressToString($quoteHardwareAddress),
                 'hardware_phone' => $quoteHardwareContact->phone ?? '',
                 'hardware_contact' => transform($quoteHardwareContact, function (Contact $contact) {
-                    return implode(' ', [$contact->first_name, $contact->last_name]);
-                }) ?? '',
+                        return implode(' ', [$contact->first_name, $contact->last_name]);
+                    }) ?? '',
 
                 'software_address' => self::formatMachineAddressToString($quoteSoftwareAddress),
                 'software_phone' => $quoteSoftwareContact->phone ?? '',
@@ -612,8 +619,8 @@ class WorldwideQuoteDataMapper
             'quote_price_value_coefficient' => $quotePriceData->price_value_coefficient,
 
             'contact_name' => transform($opportunity->primaryAccountContact, function (Contact $contact) {
-                return implode(' ', [$contact->first_name, $contact->last_name]);
-            }) ?? '',
+                    return implode(' ', [$contact->first_name, $contact->last_name]);
+                }) ?? '',
             'contact_email' => optional($opportunity->primaryAccountContact)->email ?? '',
             'contact_phone' => optional($opportunity->primaryAccountContact)->phone ?? '',
 

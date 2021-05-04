@@ -5,6 +5,7 @@
 * [Submitted Dead Quotes List](#submitted-quotes-list)
 * [Quote Management](#quote-management)
     * [Init Quote](#init-quote)
+    * [Create a new Version of Quote](#create-a-new-version-of-quote)
     * [Show Quote State](#show-quote-state)
     * [Allowed Contract Stages](#allowed-contract-stages)
     * [Allowed Pack Stages](#allowed-pack-stages)
@@ -186,6 +187,20 @@
     {
         "opportunity_id": {opportunity_uuid},
         "contract_type": {contract_type_string} ("contract" or "pack")
+    }
+
+## Create a new Version of Quote
+
+    [POST] api/ww-quotes/{worldwide_quote_uuid}/versions
+
+    Response:
+    {
+        "id",
+        "worldwide_quote_id",
+        "version_name",
+        "is_active_version",
+        "created_at",
+        "updated_at"
     }
 
 ## Show Quote State

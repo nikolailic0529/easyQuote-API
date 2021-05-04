@@ -6,8 +6,8 @@
         "countries": [
             "GB", "US", "BE", "CA", "DK", "FR", "NL", "SE", "DE", "AT", "IE", "NO", "ZA", "CH", "PL", "CZ", "AE"
         ],
-        "logo": "/database/seeders/models/images/hpe.png",
-        "svg_logo": "/database/seeders/models/images/hpe.svg"
+        "logo": "database/seeders/models/images/hpe.png",
+        "svg_logo": "database/seeders/models/images/hpe.svg"
     },
     {
         "id": "ea960120-7478-44e3-9ac9-4ac6ad5d51eb",
@@ -16,7 +16,7 @@
         "countries": [
             "GB", "US", "BE", "CA", "DK", "FR", "NL", "SE", "DE", "AT", "IE", "NO", "ZA", "CH", "AE"
         ],
-        "logo": "/database/seeders/models/images/lenovo.png"
+        "logo": "database/seeders/models/images/lenovo.png"
     },
     {
         "id": "ede18a2d-72f3-43f2-bda9-81a9c2b4793c",
@@ -25,7 +25,7 @@
         "countries": [
             "GB", "US", "BE", "CA", "DK", "FR", "NL", "SE", "DE", "AT", "IE", "NO", "ZA", "CH", "AE"
         ],
-        "logo": "/database/seeders/models/images/ibm.png"
+        "logo": "database/seeders/models/images/ibm.png"
     },
     {
         "id": "3382050f-f649-48a3-bd29-fec151a5f4d3",
@@ -34,7 +34,7 @@
         "countries": [
             "GB", "US", "BE", "CA", "DK", "FR", "NL", "SE", "DE", "AT", "IE", "NO", "ZA", "CH", "AE"
         ],
-        "logo": "/database/seeders/models/images/cisco.png"
+        "logo": "database/seeders/models/images/cisco.png"
     },
     {
         "id": "4a04ca21-ae11-491b-8ae7-4e107e104204",
@@ -43,7 +43,7 @@
         "countries": [
             "GB", "US", "BE", "CA", "DK", "FR", "NL", "SE", "DE", "AT", "IE", "NO", "ZA", "CH", "AE"
         ],
-        "logo": "/database/seeders/models/images/aruba.png",
-        "svg_logo": "/database/seeders/models/images/aruba.svg"
+        "logo": "database/seeders/models/images/aruba.png",
+        "svg_logo": "database/seeders/models/images/aruba.svg"
     }
 ]

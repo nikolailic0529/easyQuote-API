@@ -24,6 +24,7 @@ use App\Http\Requests\{WorldwideQuote\DraftQuote,
     WorldwideQuote\UpdateQuoteImport};
 use App\Http\Resources\{Discount\ApplicableDiscountCollection,
     WorldwideQuote\ContractQuotePriceSummary,
+    WorldwideQuote\NewlyCreatedWorldwideQuoteVersion,
     WorldwideQuote\PackQuotePriceSummary,
     WorldwideQuote\WorldwideQuoteState};
 use App\Models\Quote\WorldwideQuote;
@@ -69,6 +70,56 @@ class WorldwideQuoteController extends Controller
 
         return response()->json(
             $resource,
+            Response::HTTP_CREATED
+        );
+    }
+
+    /**
+     * Create a new version of Worldwide Quote.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param \App\Models\Quote\WorldwideQuote $worldwideQuote
+     * @param \App\Services\WorldwideQuote\WorldwideQuoteVersionGuard $versionGuard
+     * @return \Illuminate\Http\JsonResponse
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     * @throws \Throwable
+     */
+    public function createVersionOfQuote(Request $request,
+                                         WorldwideQuote $worldwideQuote,
+                                         WorldwideQuoteVersionGuard $versionGuard): JsonResponse
+    {
+        $this->authorize('update', $worldwideQuote);
+
+        $version = $versionGuard->performQuoteVersioning($worldwideQuote, $request->user());
+
+        return response()->json(
+            NewlyCreatedWorldwideQuoteVersion::make($version),
+            Response::HTTP_CREATED
+        );
+    }
+
+
+    /**
+     * Create a new version of Worldwide Quote from the specified version.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param \App\Services\WorldwideQuote\WorldwideQuoteVersionGuard $versionGuard
+     * @param \App\Models\Quote\WorldwideQuote $worldwideQuote
+     * @param \App\Models\Quote\WorldwideQuoteVersion $version
+     * @return \Illuminate\Http\JsonResponse
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
+    public function createVersionOfQuoteFromVersion(Request $request,
+                                                    WorldwideQuoteVersionGuard $versionGuard,
+                                                    WorldwideQuote $worldwideQuote,
+                                                    WorldwideQuoteVersion $version): JsonResponse
+    {
+        $this->authorize('update', $worldwideQuote);
+
+        $version = $versionGuard->performQuoteVersioningFromVersion($worldwideQuote, $version, $request->user());
+
+        return response()->json(
+            NewlyCreatedWorldwideQuoteVersion::make($version),
             Response::HTTP_CREATED
         );
     }

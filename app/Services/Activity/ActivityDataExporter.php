@@ -7,6 +7,7 @@ use App\Models\System\ActivityExportCollection;
 use Barryvdh\Snappy\PdfWrapper;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use League\Csv\Writer as CsvWriter;
 use SplFileInfo;
 
@@ -94,27 +95,29 @@ class ActivityDataExporter
 
     public function getActivitySummary(Builder $query): array
     {
-        $query = $query->toBase()->cloneWithout(['columns']);
+        $query = $query->toBase()->cloneWithout(['columns', 'limit', 'offset']);
 
-        $types = $this->config->get('activitylog.types') ?? [];
+        $activityDescriptions = $this->config->get('activitylog.types') ?? [];
 
-        $query = $query
-            ->selectRaw('count(*) as `total`');
+        $totals = $query->groupBy('description')
+            ->select([
+                DB::raw('COUNT(*) as count'),
+                'description'
+            ])
+            ->pluck('count', 'description');
 
-        foreach ($types as $type) {
-            $query->selectRaw("count(case when `description` = '{$type}' then 1 end) as '{$type}'");
-        }
+        $summary = array_merge([
+            'total' => (int)$totals->sum(),
+        ], $totals->all());
 
-        $totals = (array)$query->first();
-
-        return array_values(array_map(function ($count, string $type) {
-            $type = __('activitylog.totals.'.$type);
+        return array_map(function (string $description) use ($summary) {
+            $type = __('activitylog.totals.'.$description);
 
             return [
                 'type' => $type,
-                'count' => $count
+                'count' => (int)($summary[$description] ?? 0)
             ];
-        }, $totals, array_keys($totals)));
+        }, ['total', ...$activityDescriptions]);
     }
 
     protected function makeExportFilepath(string $ext): string

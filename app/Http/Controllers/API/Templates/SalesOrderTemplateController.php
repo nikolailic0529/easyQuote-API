@@ -3,16 +3,14 @@
 namespace App\Http\Controllers\API\Templates;
 
 use App\Http\Controllers\Controller;
-use App\Models\SalesOrder;
-use App\Services\Template\TemplateSchemaDataMapper;
-use App\Http\Requests\{SalesOrderTemplate\FilterSalesOrderTemplatesByCompanyVendorCountry,
-    SalesOrderTemplate\StoreSalesOrderTemplate,
+use App\Http\Requests\{SalesOrderTemplate\StoreSalesOrderTemplate,
     SalesOrderTemplate\UpdateSalesOrderTemplate,
     SalesOrderTemplate\UpdateSchemaOfSalesOrderTemplate};
 use App\Http\Resources\{SalesOrderTemplate\SalesOrderTemplateList, SalesOrderTemplate\SalesOrderTemplateWithIncludes};
 use App\Models\Template\SalesOrderTemplate;
 use App\Queries\SalesOrderTemplateQueries;
 use App\Services\SalesOrderTemplate\SalesOrderTemplateEntityService;
+use App\Services\Template\TemplateSchemaDataMapper;
 use Illuminate\Http\{JsonResponse, Request, Resources\Json\AnonymousResourceCollection, Response};
 
 class SalesOrderTemplateController extends Controller
@@ -65,52 +63,6 @@ class SalesOrderTemplateController extends Controller
 
         return response()->json(
             $dataMapper->mapSalesOrderTemplateSchema($salesOrderTemplate)
-        );
-    }
-
-    /**
-     * Filter worldwide pack sales order template entities
-     * by company, vendor, country.
-     *
-     * @param \App\Http\Requests\SalesOrderTemplate\FilterSalesOrderTemplatesByCompanyVendorCountry $request
-     * @param \App\Queries\SalesOrderTemplateQueries $queries
-     * @return \Illuminate\Http\JsonResponse
-     * @throws \Illuminate\Auth\Access\AuthorizationException
-     */
-    public function filterWorldwidePackSalesOrderTemplates(FilterSalesOrderTemplatesByCompanyVendorCountry $request,
-                                                           SalesOrderTemplateQueries $queries): JsonResponse
-    {
-        $this->authorize('viewAny', SalesOrder::class);
-
-        return response()->json(
-            $queries->filterWorldwidePackSalesOrderTemplatesQuery(
-                $request->getCompanyId(),
-                $request->getVendorId(),
-                $request->getCountryId()
-            )->get()
-        );
-    }
-
-    /**
-     * Filter worldwide contract sales order template entities
-     * by company, vendor, country.
-     *
-     * @param \App\Http\Requests\SalesOrderTemplate\FilterSalesOrderTemplatesByCompanyVendorCountry $request
-     * @param \App\Queries\SalesOrderTemplateQueries $queries
-     * @return \Illuminate\Http\JsonResponse
-     * @throws \Illuminate\Auth\Access\AuthorizationException
-     */
-    public function filterWorldwideContractSalesOrderTemplates(FilterSalesOrderTemplatesByCompanyVendorCountry $request,
-                                                               SalesOrderTemplateQueries $queries): JsonResponse
-    {
-        $this->authorize('viewAny', SalesOrder::class);
-
-        return response()->json(
-            $queries->filterWorldwideContractSalesOrderTemplatesQuery(
-                $request->getCompanyId(),
-                $request->getVendorId(),
-                $request->getCountryId()
-            )->get()
         );
     }
 

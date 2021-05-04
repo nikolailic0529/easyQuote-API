@@ -995,7 +995,7 @@ class WorldwideContractQuoteTest extends TestCase
                         'id', 'name', 'flag_url'
                     ]
                 ],
-                'contract_templates' => [
+                'sales_order_templates' => [
                     '*' => [
                         'id', 'name'
                     ]
@@ -2614,6 +2614,124 @@ TEMPLATE;
             ]);
 
         $this->assertSame($replicatedQuoteKey, $response->json('data.0.id'));
+    }
+
+    /**
+     * Test an ability to explicitly create a new version of contract worldwide quote.
+     *
+     * @return void
+     */
+    public function testCanCreateNewVersionOfContractWorldwideQuote()
+    {
+        $quote = factory(WorldwideQuote::class)->create([
+            'contract_type_id' => CT_CONTRACT
+        ]);
+
+        $this->authenticateApi();
+
+        $response = $this->postJson('api/ww-quotes/'.$quote->getKey().'/versions')
+//            ->dump()
+            ->assertCreated()
+            ->assertJsonStructure([
+                'id',
+                'worldwide_quote_id',
+                'version_name',
+                'is_active_version',
+                'created_at',
+                'updated_at'
+            ]);
+
+        $this->getJson('api/ww-quotes/'.$quote->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'acting_user_is_version_owner',
+                'active_version_id',
+                'active_version_user_id'
+            ])
+            ->assertJsonFragment([
+                'acting_user_is_version_owner' => true,
+                'active_version_id' => $response->json('id'),
+                'active_version_user_id' => $this->app['auth.driver']->id(),
+            ]);
+    }
+
+    /**
+     * Test an ability to explicitly create a new version of contract worldwide quote.
+     *
+     * @return void
+     */
+    public function testCanCreateNewVersionOfContractWorldwideQuoteFromSpecifiedVersion()
+    {
+        $quote = factory(WorldwideQuote::class)->create([
+            'contract_type_id' => CT_CONTRACT
+        ]);
+
+        $this->authenticateApi();
+
+        $this->postJson('api/ww-quotes/'.$quote->getKey().'/versions')
+//            ->dump()
+            ->assertCreated()
+            ->assertJsonStructure([
+                'id',
+                'worldwide_quote_id',
+                'version_name',
+                'is_active_version',
+                'created_at',
+                'updated_at'
+            ]);
+
+        $response = $this->getJson('api/ww-quotes/'.$quote->getKey().'?include[]=versions')
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'active_version_id',
+                'versions' => [
+                    '*' => [
+                        'id'
+                    ]
+                ]
+            ]);
+
+        $nonActiveVersionID = value(function () use ($response) {
+            $activeVersionID = $response->json('active_version_id');
+
+            foreach ($response->json('versions.*.id') as $id) {
+                if ($id !== $activeVersionID) {
+                    return $id;
+                }
+            }
+
+            return null;
+        });
+
+        $this->assertNotEmpty($nonActiveVersionID);
+
+        $response = $this->postJson('api/ww-quotes/'.$quote->getKey().'/versions/'.$nonActiveVersionID)
+//            ->dump()
+            ->assertCreated()
+            ->assertJsonStructure([
+                'id',
+                'worldwide_quote_id',
+                'version_name',
+                'is_active_version',
+                'created_at',
+                'updated_at'
+            ]);
+
+        $this->getJson('api/ww-quotes/'.$quote->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'acting_user_is_version_owner',
+                'active_version_id',
+                'active_version_user_id'
+            ])
+            ->assertJsonFragment([
+                'acting_user_is_version_owner' => true,
+                'active_version_id' => $response->json('id'),
+                'active_version_user_id' => $this->app['auth.driver']->id(),
+            ]);
     }
 }
 

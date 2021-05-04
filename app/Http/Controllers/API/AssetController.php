@@ -6,13 +6,15 @@ use App\Contracts\Repositories\AssetCategoryRepository;
 use App\Contracts\Repositories\AssetRepository as Assets;
 use App\Contracts\Repositories\VendorRepositoryInterface as Vendors;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\{Asset\CreateAsset, Asset\UpdateAsset,};
+use App\Http\Resources\Asset\AssetList;
+use App\Queries\AssetQueries;
+use App\Http\Requests\{Asset\CreateAsset, Asset\PaginateAssets, Asset\UpdateAsset};
 use App\Http\Requests\Asset\Uniqueness;
 use App\Http\Resources\Asset\AssetCollection;
 use App\Http\Resources\Asset\AssetWithIncludes;
 use App\Models\Asset;
 use App\Services\Asset\AssetEntityService;
-use Illuminate\Http\{JsonResponse, Request, Response};
+use Illuminate\Http\{JsonResponse, Request, Resources\Json\AnonymousResourceCollection, Response};
 
 class AssetController extends Controller
 {
@@ -43,16 +45,15 @@ class AssetController extends Controller
     /**
      * Display a listing of the resource.
      *
-     * @param Request $request
-     * @return AssetCollection
+     * @param PaginateAssets $request
+     * @param \App\Queries\AssetQueries $queries
+     * @return \Illuminate\Http\Resources\Json\AnonymousResourceCollection
      */
-    public function index(Request $request)
+    public function index(PaginateAssets $request, AssetQueries $queries): AnonymousResourceCollection
     {
-        $resource = $request->filled('search')
-            ? $this->assets->search($request->search)
-            : $this->assets->paginate();
+        $pagination = $request->transformAssetsQuery($queries->paginateAssetsQuery($request))->apiPaginate();
 
-        return AssetCollection::make($resource);
+        return AssetList::collection($pagination);
     }
 
     /**

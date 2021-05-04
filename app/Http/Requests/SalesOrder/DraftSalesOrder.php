@@ -7,6 +7,7 @@ use App\Enum\VAT;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\SalesOrder;
 use App\Models\Template\ContractTemplate;
+use App\Models\Template\SalesOrderTemplate;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -27,9 +28,9 @@ class DraftSalesOrder extends FormRequest
                 Rule::exists(WorldwideQuote::class, 'id')->whereNull('deleted_at')->whereNotNull('submitted_at'),
                 Rule::unique(SalesOrder::class, 'worldwide_quote_id')->whereNull('deleted_at')
             ],
-            'contract_template_id' => [
+            'sales_order_template_id' => [
                 'bail', 'required', 'uuid',
-                Rule::exists(ContractTemplate::class, 'id')->whereNull('deleted_at')->whereNotNull('activated_at')
+                Rule::exists(SalesOrderTemplate::class, 'id')->whereNull('deleted_at')->whereNotNull('activated_at')
             ],
             'vat_number' => [
                 'bail',
@@ -58,7 +59,7 @@ class DraftSalesOrder extends FormRequest
         return $this->draftSalesOrderData ??= new DraftSalesOrderData([
             'user_id' => $this->user()->getKey(),
             'worldwide_quote_id' => $this->input('worldwide_quote_id'),
-            'contract_template_id' => $this->input('contract_template_id'),
+            'sales_order_template_id' => $this->input('sales_order_template_id'),
             'vat_number' => $this->input('vat_number'),
             'vat_type' => $this->input('vat_type'),
             'customer_po' => $this->input('customer_po')

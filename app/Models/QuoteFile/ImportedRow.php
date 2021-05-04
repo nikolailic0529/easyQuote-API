@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\{
 /**
  * @property Collection|null $columns_data
  * @property bool|null $is_one_pay
+ * @property int|null $page
  */
 class ImportedRow extends Model
 {

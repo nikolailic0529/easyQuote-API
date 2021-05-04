@@ -29,5 +29,5 @@ final class WorldwideQuoteToSalesOrderData extends DataTransferObject
     /**
      * @var \App\DTO\WorldwideQuote\SalesOrderTemplateData[]
      */
-    public array $contract_templates;
+    public array $sales_order_templates;
 }

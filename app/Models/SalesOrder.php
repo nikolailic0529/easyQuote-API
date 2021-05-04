@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Contracts\SearchableEntity;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\Template\ContractTemplate;
+use App\Models\Template\SalesOrderTemplate;
 use App\Services\SalesOrder\SalesOrderNumberHelper;
 use App\Traits\Uuid;
 use Illuminate\Database\Eloquent\Model;
@@ -31,7 +32,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $activated_at
  *
  * @property WorldwideQuote|null $worldwideQuote
- * @property ContractTemplate|null $contractTemplate
+ * @property SalesOrderTemplate|null $salesOrderTemplate
  *
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -55,9 +56,9 @@ class SalesOrder extends Model implements SearchableEntity
         return $this->belongsTo(WorldwideQuote::class);
     }
 
-    public function contractTemplate(): BelongsTo
+    public function salesOrderTemplate(): BelongsTo
     {
-        return $this->belongsTo(ContractTemplate::class);
+        return $this->belongsTo(SalesOrderTemplate::class)->withTrashed();
     }
 
     public function getSearchIndex(): string

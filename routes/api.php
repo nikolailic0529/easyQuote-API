@@ -258,9 +258,7 @@ Route::group(['middleware' => 'auth:api'], function () {
 
         Route::get('sales-order-templates', [SalesOrderTemplateController::class, 'paginateSalesOrderTemplates']);
         Route::get('sales-order-templates/{sales_order_template}', [SalesOrderTemplateController::class, 'showSalesOrderTemplate']);
-        Route::get('sales-order-templates/filter-ww/pack', [SalesOrderTemplateController::class, 'filterWorldwidePackSalesOrderTemplates']);
         Route::get('sales-order-templates/{sales_order_template}/form', [SalesOrderTemplateController::class, 'showTemplateForm']);
-        Route::get('sales-order-templates/filter-ww/contract', [SalesOrderTemplateController::class, 'filterWorldwideContractSalesOrderTemplates']);
         Route::post('sales-order-templates', [SalesOrderTemplateController::class, 'storeSalesOrderTemplate']);
         Route::patch('sales-order-templates/{sales_order_template}', [SalesOrderTemplateController::class, 'updateSalesOrderTemplate']);
         Route::patch('sales-order-templates/{sales_order_template}/schema', [SalesOrderTemplateController::class, 'updateSchemaOfSalesOrderTemplate']);
@@ -483,6 +481,8 @@ Route::group(['middleware' => 'auth:api'], function () {
 
     Route::post('ww-quotes', [WorldwideQuoteController::class, 'initializeQuote']);
     Route::put('ww-quotes/{worldwide_quote}/copy', [WorldwideQuoteController::class, 'replicateQuote']);
+    Route::post('ww-quotes/{worldwide_quote}/versions', [WorldwideQuoteController::class, 'createVersionOfQuote']);
+    Route::post('ww-quotes/{worldwide_quote}/versions/{version:id}', [WorldwideQuoteController::class, 'createVersionOfQuoteFromVersion']);
     Route::patch('ww-quotes/{worldwide_quote}/versions/{version:id}', [WorldwideQuoteController::class, 'switchActiveVersionOfQuote']);
     Route::delete('ww-quotes/{worldwide_quote}/versions/{version:id}', [WorldwideQuoteController::class, 'destroyQuoteVersion']);
     Route::get('ww-quotes/{worldwide_quote}', [WorldwideQuoteController::class, 'showQuoteState']);

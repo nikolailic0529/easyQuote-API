@@ -48,6 +48,7 @@ class OpportunityQueries
             ->select([
                 'opportunities.id',
                 'opportunities.user_id',
+                'opportunities.account_manager_id',
                 'companies.id as company_id',
                 'companies.name as account_name',
                 'contract_types.type_short_name as opportunity_type',

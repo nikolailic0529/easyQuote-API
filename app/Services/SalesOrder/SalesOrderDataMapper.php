@@ -540,7 +540,7 @@ class SalesOrderDataMapper
 
     public function getTemplateData(SalesOrder $salesOrder, bool $useLocalAssets = false): TemplateData
     {
-        $templateSchema = $salesOrder->contractTemplate->form_data;
+        $templateSchema = $salesOrder->salesOrderTemplate->templateSchema->form_data;
 
         return new TemplateData([
             'first_page_schema' => $this->templatePageSchemaToArrayOfTemplateElement($templateSchema['first_page'] ?? []),

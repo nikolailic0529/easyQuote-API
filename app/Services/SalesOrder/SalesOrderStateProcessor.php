@@ -72,7 +72,7 @@ class SalesOrderStateProcessor implements ProcessesSalesOrderState
 
             $salesOrder->user()->associate($data->user_id);
             $salesOrder->worldwideQuote()->associate($data->worldwide_quote_id);
-            $salesOrder->contractTemplate()->associate($data->contract_template_id);
+            $salesOrder->salesOrderTemplate()->associate($data->sales_order_template_id);
 
             if ($data->vat_type === VAT::VAT_NUMBER) {
                 $salesOrder->vat_number = $data->vat_number;
@@ -110,7 +110,7 @@ class SalesOrderStateProcessor implements ProcessesSalesOrderState
         }
 
         return tap($salesOrder, function (SalesOrder $salesOrder) use ($data) {
-            $salesOrder->contractTemplate()->associate($data->contract_template_id);
+            $salesOrder->salesOrderTemplate()->associate($data->sales_order_template_id);
 
             if ($data->vat_type === VAT::VAT_NUMBER) {
                 $salesOrder->vat_number = $data->vat_number;

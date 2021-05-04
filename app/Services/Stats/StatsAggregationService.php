@@ -104,7 +104,8 @@ class StatsAggregationService
                 $builder->where(function (Builder $builder) use ($summaryRequestData) {
                     $builder->where($builder->qualifyColumn('user_id'), $summaryRequestData->acting_user_id)
                         ->orWhere($builder->qualifyColumn('account_manager_id'), $summaryRequestData->acting_user_id)
-                        ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
+                        ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams))
+                        ->orWhereIn($builder->qualifyColumn('account_manager_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
                 });
             })
             ->toBase()

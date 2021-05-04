@@ -12,7 +12,7 @@ use Illuminate\Support\Collection;
 class PricesParsingTest extends ParsingTest
 {
     use DatabaseTransactions;
-    
+
     /**
      * Test Belgium Prices Processing.
      *
@@ -99,7 +99,6 @@ class PricesParsingTest extends ParsingTest
     protected function performFileAssertions(QuoteFile $quoteFile): void
     {
         $expectedRowsCount = $this->getMappingAttribute('count', $quoteFile->original_file_name);
-
 
         $this->assertEquals($expectedRowsCount, $quoteFile->rowsData()->count(), $this->message($quoteFile));
     }

@@ -112,7 +112,9 @@ class StatsDependentEntityEventSubscriber implements ShouldQueue
     {
         $asset = $event->getAsset();
 
-        $this->statsCalculationService->denormalizeSummaryOfAssets();
+        if (!is_null($asset->location)) {
+            $this->statsCalculationService->denormalizeSummaryOfAsset($asset->location);
+        }
     }
 
     public function updateAggregationOfRescueQuote(WithRescueQuoteEntity $event)

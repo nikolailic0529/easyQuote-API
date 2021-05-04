@@ -8,6 +8,7 @@ use App\Models\Contact;
 use App\Models\Vendor;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\{Arr, Str};
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 use Tests\Unit\Traits\{AssertsListing, WithFakeUser};
 
@@ -103,7 +104,9 @@ class CompanyTest extends TestCase
             ['id' => $contact2->getKey(), 'is_default' => "0"]
         ];
 
-        $this->postJson(url("api/companies/{$company->id}"), $newAttributes)
+        $newAttributes['logo'] = UploadedFile::fake()->createWithContent('company-logo.jpg', file_get_contents(base_path('tests/Feature/Data/images/epd.png')));
+
+        $this->postJson("api/companies/".$company->getKey(), $newAttributes)
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([

@@ -22,6 +22,7 @@ use App\Models\Role;
 use App\Models\SalesOrder;
 use App\Models\Template\ContractTemplate;
 use App\Models\Template\QuoteTemplate;
+use App\Models\Template\SalesOrderTemplate;
 use App\Models\Template\TemplateField;
 use App\Models\User;
 use App\Models\Vendor;
@@ -231,7 +232,7 @@ class SalesOrderTest extends TestCase
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create(['submitted_at' => now()]);
 
-        factory(ContractTemplate::class)->create([
+        factory(SalesOrderTemplate::class)->create([
             'business_division_id' => BD_WORLDWIDE,
             'contract_type_id' => CT_CONTRACT,
             'company_id' => $quote->activeVersion->company_id,
@@ -256,21 +257,21 @@ class SalesOrderTest extends TestCase
                         'id', 'name', 'flag_url'
                     ]
                 ],
-                'contract_templates' => [
+                'sales_order_templates' => [
                     '*' => [
                         'id', 'name'
                     ]
                 ]
             ]);
 
-        $this->assertNotEmpty($response->json('contract_templates'));
+        $this->assertNotEmpty($response->json('sales_order_templates'));
 
         $worldwideQuoteKey = $response->json('worldwide_quote_id');
-        $contractTemplateKey = $response->json('contract_templates.0.id');
+        $contractTemplateKey = $response->json('sales_order_templates.0.id');
 
         $this->postJson('api/sales-orders', [
             'worldwide_quote_id' => $worldwideQuoteKey,
-            'contract_template_id' => $contractTemplateKey,
+            'sales_order_template_id' => $contractTemplateKey,
             'vat_number' => $vatNumber = Str::random(191),
             'vat_type' => 'VAT Number',
             'customer_po' => $customerPo = Str::random(191)
@@ -280,7 +281,7 @@ class SalesOrderTest extends TestCase
             ->assertJsonStructure([
                 'id',
                 'worldwide_quote_id',
-                'contract_template_id',
+                'sales_order_template_id',
                 'vat_number',
                 'customer_po'
             ])
@@ -307,7 +308,7 @@ class SalesOrderTest extends TestCase
             ->assertJsonStructure([
                 'id',
                 'worldwide_quote_id',
-                'contract_template_id',
+                'sales_order_template_id',
                 'order_date',
                 'order_number',
                 'status',
@@ -449,14 +450,14 @@ class SalesOrderTest extends TestCase
 
         $salesOrder = factory(SalesOrder::class)->create();
 
-        $contractTemplate = factory(ContractTemplate::class)->create([
+        $salesOrderTemplate = factory(SalesOrderTemplate::class)->create([
             'business_division_id' => BD_WORLDWIDE,
             'contract_type_id' => CT_CONTRACT,
         ]);
 
         $this->patchJson('api/sales-orders/'.$salesOrder->getKey(), [
 
-            'contract_template_id' => $contractTemplate->getKey(),
+            'sales_order_template_id' => $salesOrderTemplate->getKey(),
             'vat_number' => $vatNumber = Str::random(191),
             'vat_type' => 'VAT Number',
             'customer_po' => $customerPo = Str::random(191)
@@ -469,19 +470,19 @@ class SalesOrderTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'contract_template_id',
+                'sales_order_template_id',
                 'vat_number',
                 'customer_po'
             ])
             ->assertJson([
-                'contract_template_id' => $contractTemplate->getKey(),
+                'sales_order_template_id' => $salesOrderTemplate->getKey(),
                 'vat_number' => $vatNumber,
                 'customer_po' => $customerPo
             ]);
 
         $this->patchJson('api/sales-orders/'.$salesOrder->getKey(), [
 
-            'contract_template_id' => $contractTemplate->getKey(),
+            'sales_order_template_id' => $salesOrderTemplate->getKey(),
             'vat_number' => null,
             'vat_type' => 'NO VAT',
             'customer_po' => $customerPo = Str::random(191)
@@ -494,12 +495,12 @@ class SalesOrderTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'contract_template_id',
+                'sales_order_template_id',
                 'vat_number',
                 'customer_po'
             ])
             ->assertJson([
-                'contract_template_id' => $contractTemplate->getKey(),
+                'sales_order_template_id' => $salesOrderTemplate->getKey(),
                 'vat_number' => null,
                 'customer_po' => $customerPo
             ]);
@@ -812,7 +813,7 @@ class SalesOrderTest extends TestCase
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create(['submitted_at' => now()]);
 
-        factory(ContractTemplate::class)->create([
+        factory(SalesOrderTemplate::class)->create([
             'business_division_id' => BD_WORLDWIDE,
             'contract_type_id' => CT_CONTRACT,
             'company_id' => $quote->activeVersion->company_id,
@@ -837,21 +838,21 @@ class SalesOrderTest extends TestCase
                         'id', 'name', 'flag_url'
                     ]
                 ],
-                'contract_templates' => [
+                'sales_order_templates' => [
                     '*' => [
                         'id', 'name'
                     ]
                 ]
             ]);
 
-        $this->assertNotEmpty($response->json('contract_templates'));
+        $this->assertNotEmpty($response->json('sales_order_templates'));
 
         $worldwideQuoteKey = $response->json('worldwide_quote_id');
-        $contractTemplateKey = $response->json('contract_templates.0.id');
+        $orderTemplateKey = $response->json('sales_order_templates.0.id');
 
         $response = $this->postJson('api/sales-orders', [
             'worldwide_quote_id' => $worldwideQuoteKey,
-            'contract_template_id' => $contractTemplateKey,
+            'sales_order_template_id' => $orderTemplateKey,
             'vat_number' => $vatNumber = Str::random(191),
             'vat_type' => 'VAT Number',
             'customer_po' => $customerPo = Str::random(191)
@@ -861,7 +862,7 @@ class SalesOrderTest extends TestCase
             ->assertJsonStructure([
                 'id',
                 'worldwide_quote_id',
-                'contract_template_id',
+                'sales_order_template_id',
                 'vat_number',
                 'customer_po'
             ])
@@ -889,7 +890,7 @@ class SalesOrderTest extends TestCase
         $this->authenticateApi();
 
         $quoteTemplate = factory(QuoteTemplate::class)->create(['business_division_id' => BD_WORLDWIDE, 'contract_type_id' => CT_CONTRACT]);
-        $contractTemplate = factory(ContractTemplate::class)->create(['business_division_id' => BD_WORLDWIDE, 'contract_type_id' => CT_CONTRACT]);
+        $salesOrderTemplate = factory(SalesOrderTemplate::class)->create(['business_division_id' => BD_WORLDWIDE, 'contract_type_id' => CT_CONTRACT]);
 
         /** @var WorldwideQuote $wwQuote */
         $wwQuote = factory(WorldwideQuote::class)->create([
@@ -976,7 +977,7 @@ class SalesOrderTest extends TestCase
 
         $salesOrder = factory(SalesOrder::class)->create([
             'worldwide_quote_id' => $wwQuote->getKey(),
-            'contract_template_id' => $contractTemplate->getKey(),
+            'sales_order_template_id' => $salesOrderTemplate->getKey(),
             'submitted_at' => now()
         ]);
 

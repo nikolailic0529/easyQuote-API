@@ -26,7 +26,7 @@ final class DraftSalesOrderData extends DataTransferObject
      *
      * @var string
      */
-    public string $contract_template_id;
+    public string $sales_order_template_id;
 
     /**
      * @Constraints\NotBlank(allowNull=true)

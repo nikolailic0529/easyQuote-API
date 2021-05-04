@@ -68,25 +68,30 @@ class WorldwideQuoteVersionGuard
      * @return WorldwideQuoteVersion
      * @throws \Throwable
      */
-    protected function performQuoteVersioning(WorldwideQuote $worldwideQuote, User $actingUser): WorldwideQuoteVersion
+    public function performQuoteVersioning(WorldwideQuote $worldwideQuote, User $actingUser): WorldwideQuoteVersion
     {
         $originalActiveVersion = $this->getActiveVersionOfModel($worldwideQuote);
 
-        $originalActiveVersion->refresh();
+        return $this->performQuoteVersioningFromVersion($worldwideQuote, $originalActiveVersion, $actingUser);
+    }
+
+    public function performQuoteVersioningFromVersion(WorldwideQuote $worldwideQuote, WorldwideQuoteVersion $quoteVersion, User $actingUser): WorldwideQuoteVersion
+    {
+        $quoteVersion->refresh();
 
         $replicatedVersionData = (new WorldwideQuoteReplicator())
             ->getReplicatedVersionData(
-                $originalActiveVersion
+                $quoteVersion
             );
 
-        return tap($replicatedVersionData->getReplicatedVersion(), function (WorldwideQuoteVersion $replicatedVersion) use ($originalActiveVersion, $actingUser, $worldwideQuote, $replicatedVersionData) {
+        return tap($replicatedVersionData->getReplicatedVersion(), function (WorldwideQuoteVersion $replicatedVersion) use ($quoteVersion, $actingUser, $worldwideQuote, $replicatedVersionData) {
             $this->persistReplicatedVersionData($replicatedVersionData, $worldwideQuote, $actingUser);
 
             $this->associateActiveVersionToModel($worldwideQuote, $replicatedVersion);
 
             $this->eventDispatcher->dispatch(
                 new NewVersionOfWorldwideQuoteCreated(
-                    $originalActiveVersion,
+                    $quoteVersion,
                     $replicatedVersion
                 )
             );

@@ -22,6 +22,8 @@ use Illuminate\Support\Str;
  *
  * @property string|null $header
  * @property string|null $name
+ * @property bool|null $is_temp
+ * @property bool|null $is_system
  */
 class ImportableColumn extends Model implements HasOrderedScope, ReindexQuery, SearchableEntity
 {

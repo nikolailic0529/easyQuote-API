@@ -507,7 +507,7 @@ class OpportunityEntityService
                 $contact->email = $contactData['primary_e_mail'] ?? null;
                 $contact->phone = $contactData['primary_phone'] ?? null;
                 $contact->job_title = $contactData['titlesalutation'] ?? null;
-                $contact->is_verified = true;
+                $contact->is_verified = false;
 
                 $contact->{$contact->getCreatedAtColumn()} = $contact->freshTimestampString();
                 $contact->{$contact->getUpdatedAtColumn()} = $contact->freshTimestampString();
@@ -524,7 +524,7 @@ class OpportunityEntityService
                 $address->city,
                 $address->post_code,
                 $address->state,
-                $address->country_id
+                $address->country_id,
             ]));
         };
 
@@ -535,7 +535,6 @@ class OpportunityEntityService
                 $contact->email,
                 $contact->phone,
                 $contact->job_title,
-                $contact->is_verified
             ]));
         };
 

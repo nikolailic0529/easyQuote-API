@@ -9,6 +9,7 @@ use Database\Seeders\{AssetCategorySeeder,
     CancelSalesOrderReasonSeeder,
     CompanySeeder,
     ContractTypeSeeder,
+    CountryFlagSeeder,
     CountrySeeder,
     CurrencySeeder,
     CustomFieldSeeder,
@@ -18,7 +19,7 @@ use Database\Seeders\{AssetCategorySeeder,
     TemplateFieldTypeSeeder,
     TimezoneSeeder,
     VendorSeeder,
-    WorldwideContractTemplateSeeder,
+    WorldwideSalesOrderTemplateSeeder,
     WorldwideQuoteTemplateSeeder};
 use Illuminate\Console\Command;
 use Illuminate\Database\Console\Seeds\SeedCommand;
@@ -87,6 +88,11 @@ class UpdateApplication extends Command
         ]);
 
         $this->call(SeedCommand::class, [
+           '--class' => CountryFlagSeeder::class,
+           '--force' => true
+        ]);
+
+        $this->call(SeedCommand::class, [
             '--class' => BusinessDivisionSeeder::class,
             '--force' => true
         ]);
@@ -122,7 +128,7 @@ class UpdateApplication extends Command
         ]);
 
         $this->call(SeedCommand::class, [
-            '--class' => WorldwideContractTemplateSeeder::class,
+            '--class' => WorldwideSalesOrderTemplateSeeder::class,
             '--force' => true
         ]);
 
