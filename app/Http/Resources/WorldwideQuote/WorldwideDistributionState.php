@@ -20,7 +20,7 @@ class WorldwideDistributionState extends JsonResource
         'vendors',
         'country',
         'distributionCurrency',
-        'mappingRow',
+//        'mappingRow',
         'mapping',
         'mappedRows',
         'rowsGroups',

@@ -26,6 +26,19 @@ class CompanyPolicy
     }
 
     /**
+     * Determine whether the user can view entities of any owner.
+     *
+     * @param \App\Models\User $user
+     * @return mixed
+     */
+    public function viewAnyOwnerEntities(User $user)
+    {
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+    }
+
+    /**
      * Determine whether the user can view the company.
      *
      * @param  \App\Models\User  $user

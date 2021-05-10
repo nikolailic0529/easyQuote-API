@@ -86,7 +86,21 @@ return [
         'importable_column' => \App\Models\QuoteFile\ImportableColumn::class,
         'invitation' => \App\Models\Collaboration\Invitation::class
     ],
-    'types' => ['created', 'updated', 'deleted', 'copied', 'retrieved', 'submitted', 'unravel', 'activated', 'deactivated', 'created_version', 'authenticated', 'unauthenticated'],
+    'types' => [
+        'created',
+        'updated',
+        'deleted',
+        'copied',
+        'retrieved',
+        'submitted',
+        'unravel',
+        'activated',
+        'deactivated',
+        'created_version',
+        'deleted_version',
+        'authenticated',
+        'unauthenticated'
+    ],
     'periods' => [
         'today',
         'yesterday',

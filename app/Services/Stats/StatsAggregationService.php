@@ -87,6 +87,26 @@ class StatsAggregationService
             ->toBase()
             ->first();
 
+        $opportunitySummary = $this->getOpportunitySummary($summaryRequestData);
+
+        $totals = (array)$quoteTotals +
+            (array)$expiringQuotesSummary +
+            (array)$customersSummary +
+            (array)$locationsSummary +
+            (array)$assetsSummary +
+            (array)$salesOrderSummary +
+            (array)$opportunitySummary;
+
+        return Summary::fromArrayOfTotals(
+            $totals,
+            $this->currencyRate($summaryRequestData->currency_id),
+            setting('base_currency'),
+            $summaryRequestData->period
+        );
+    }
+
+    public function getOpportunitySummary(SummaryRequestData $summaryRequestData): object
+    {
         $lostOpportunitySummary = Opportunity::query()
             ->selectRaw("COUNT(0) as lost_opportunities_count")
             ->selectRaw('SUM(base_opportunity_amount) as lost_opportunities_value')
@@ -111,20 +131,31 @@ class StatsAggregationService
             ->toBase()
             ->first();
 
-        $totals = (array)$quoteTotals +
-            (array)$expiringQuotesSummary +
-            (array)$customersSummary +
-            (array)$locationsSummary +
-            (array)$assetsSummary +
-            (array)$salesOrderSummary +
-            (array)$lostOpportunitySummary;
+        $aliveOpportunitySummary = Opportunity::query()
+            ->selectRaw("COUNT(0) as opportunities_count")
+            ->selectRaw('SUM(base_opportunity_amount) as opportunities_value')
+            ->where('status', OpportunityStatus::NOT_LOST)
+            ->doesntHave('worldwideQuotes')
+            ->when(!is_null($summaryRequestData->period), function (Builder $builder) use ($summaryRequestData) {
+                $builder->whereBetween('created_at', [$summaryRequestData->period->getStartDate(), $summaryRequestData->period->getEndDate()]);
+            })
+            ->when(!is_null($summaryRequestData->country_id), function (Builder $builder) use ($summaryRequestData) {
+                $builder->whereHas('countries', function (Builder $relation) use ($summaryRequestData) {
+                    $relation->whereKey($summaryRequestData->country_id);
+                });
+            })
+            ->when(false === $summaryRequestData->any_owner_entities, function (Builder $builder) use ($summaryRequestData) {
+                $builder->where(function (Builder $builder) use ($summaryRequestData) {
+                    $builder->where($builder->qualifyColumn('user_id'), $summaryRequestData->acting_user_id)
+                        ->orWhere($builder->qualifyColumn('account_manager_id'), $summaryRequestData->acting_user_id)
+                        ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams))
+                        ->orWhereIn($builder->qualifyColumn('account_manager_id'), User::query()->select('id')->whereIn('team_id', $summaryRequestData->acting_user_led_teams));
+                });
+            })
+            ->toBase()
+            ->first();
 
-        return Summary::fromArrayOfTotals(
-            $totals,
-            $this->currencyRate($summaryRequestData->currency_id),
-            setting('base_currency'),
-            $summaryRequestData->period
-        );
+        return (object)array_merge((array)$lostOpportunitySummary, (array)$aliveOpportunitySummary);
     }
 
     public function getQuoteLocations(Point $center, Polygon $polygon, ?string $userId = null)

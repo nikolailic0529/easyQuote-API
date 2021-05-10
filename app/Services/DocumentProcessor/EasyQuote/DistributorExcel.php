@@ -6,7 +6,7 @@ use App\Contracts\Services\ProcessesQuoteFile;
 use App\Enum\Lock;
 use App\Models\QuoteFile\ImportedRow;
 use App\Models\QuoteFile\QuoteFile;
-use App\Services\DocumentReaders\ExcelDocumentReader;
+use App\Services\DocumentReaders\ExcelPriceListReader;
 use App\Services\DocumentReaders\Models\Row;
 use Generator;
 use Illuminate\Contracts\Cache\LockProvider;
@@ -33,7 +33,7 @@ class DistributorExcel implements ProcessesQuoteFile
      */
     public function process(QuoteFile $quoteFile)
     {
-        $rows = (new ExcelDocumentReader())->readFile(Storage::path($quoteFile->original_file_path));
+        $rows = (new ExcelPriceListReader())->readFile(Storage::path($quoteFile->original_file_path));
 
         $rowModels = value(function () use ($quoteFile, $rows): array {
             $models = [];
@@ -69,7 +69,7 @@ class DistributorExcel implements ProcessesQuoteFile
         return tap(new ImportedRow(), function (ImportedRow $importedRow) use ($row, $quoteFile) {
             $importedRow->{$importedRow->getKeyName()} = (string)Uuid::generate(4);
             $importedRow->quoteFile()->associate($quoteFile);
-            $importedRow->page = $row->getHeadingRow()->getSheetIndex();
+            $importedRow->page = $row->getHeadingRow()->getSheetIndex() + 1;
             $importedRow->columns_data = array_map(function ($value, string $columnKey) use ($row) {
 
                 return [

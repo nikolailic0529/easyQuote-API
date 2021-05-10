@@ -96,15 +96,16 @@ class Contract extends Model implements SearchableEntity
         );
 
         return [
-            'company_name'           => $this->company->name,
-            'contract_number'        => $this->contract_number,
-            'customer_name'          => $this->customer_name,
-            'customer_rfq'           => $this->customer->rfq,
-            'customer_valid_until'   => $this->customer->valid_until,
+            'company_name' => $this->company->name,
+            'contract_number' => $this->contract_number,
+            'customer_name' => $this->customer->name,
+            'customer_rfq' => $this->customer->rfq,
+            'customer_valid_until' => $this->customer->valid_until,
             'customer_support_start' => $this->customer->support_start,
-            'customer_support_end'   => $this->customer->support_end,
-            'user_fullname'          => optional($this->user)->fullname,
-            'created_at'             => optional($this->created_at)->format(config('date.format')),
+            'customer_support_end' => $this->customer->support_end,
+            'user_fullname' => optional($this->user)->fullname,
+            'created_at' => $this->created_at,
+            'is_submitted' => !is_null($this->submitted_at),
         ];
     }
 

@@ -165,7 +165,8 @@ class HpeContract extends Model implements SearchableEntity
             'customer_support_start' => null,
             'customer_support_end' => null,
             'user_fullname' => optional($this->user)->fullname,
-            'created_at' => optional($this->created_at)->format(config('date.format')),
+            'created_at' => $this->created_at,
+            'is_submitted' => !is_null($this->submitted_at),
         ];
     }
 

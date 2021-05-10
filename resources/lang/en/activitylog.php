@@ -13,7 +13,8 @@ return [
         'retrieved' => 'Retrieved',
         'authenticated' => 'Authenticated',
         'unauthenticated' => 'Unauthenticated',
-        'created_version' => 'Created Version'
+        'created_version' => 'Created Version',
+        'deleted_version' => 'Deleted Version',
     ],
     'totals' => [
         'total' => 'Total',
@@ -28,6 +29,7 @@ return [
         'retrieved' => 'Retrieved',
         'authenticated' => 'Authenticated',
         'unauthenticated' => 'Unauthenticated',
-        'created_version' => 'Created Version'
+        'created_version' => 'Created Version',
+        'deleted_version' => 'Deleted Version',
     ]
 ];

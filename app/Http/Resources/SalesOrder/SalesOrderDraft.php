@@ -23,6 +23,7 @@ class SalesOrderDraft extends JsonResource
             'user_id' => $this->user_id,
             'contract_type_id' => $this->contract_type_id,
             'worldwide_quote_id' => $this->worldwide_quote_id,
+            'opportunity_id' => $this->opportunity_id,
             'order_number' => $this->order_number,
             'customer_name' => $this->customer_name,
             'rfq_number' => $this->rfq_number,

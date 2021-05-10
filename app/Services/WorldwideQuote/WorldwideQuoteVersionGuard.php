@@ -84,15 +84,23 @@ class WorldwideQuoteVersionGuard
                 $quoteVersion
             );
 
-        return tap($replicatedVersionData->getReplicatedVersion(), function (WorldwideQuoteVersion $replicatedVersion) use ($quoteVersion, $actingUser, $worldwideQuote, $replicatedVersionData) {
-            $this->persistReplicatedVersionData($replicatedVersionData, $worldwideQuote, $actingUser);
+        $replicatedVersion = tap($replicatedVersionData->getReplicatedVersion(), function (WorldwideQuoteVersion $version) use ($worldwideQuote, $actingUser) {
+            $version->worldwideQuote()->associate($worldwideQuote);
+            $version->unsetRelation('worldwideQuote');
+            $version->user()->associate($actingUser);
+            $version->user_version_sequence_number = $this->resolveNewVersionNumberForActingUser($worldwideQuote, $actingUser);
+        });
+
+        return tap($replicatedVersion, function (WorldwideQuoteVersion $replicatedVersion) use ($quoteVersion, $actingUser, $worldwideQuote, $replicatedVersionData) {
+            $this->persistReplicatedVersionData($replicatedVersionData);
 
             $this->associateActiveVersionToModel($worldwideQuote, $replicatedVersion);
 
             $this->eventDispatcher->dispatch(
                 new NewVersionOfWorldwideQuoteCreated(
                     $quoteVersion,
-                    $replicatedVersion
+                    $replicatedVersion,
+                    $actingUser
                 )
             );
         });
@@ -109,26 +117,20 @@ class WorldwideQuoteVersionGuard
 
     /**
      * @param ReplicatedVersionData $replicatedVersionData
-     * @param \App\Models\Quote\WorldwideQuote $worldwideQuote
-     * @param \App\Models\User $actingUser
      * @throws \Throwable
      */
-    protected function persistReplicatedVersionData(ReplicatedVersionData $replicatedVersionData, WorldwideQuote $worldwideQuote, User $actingUser): void
+    public function persistReplicatedVersionData(ReplicatedVersionData $replicatedVersionData): void
     {
         $version = $replicatedVersionData->getReplicatedVersion();
         $replicatedPackAssets = $replicatedVersionData->getReplicatedPackAssets();
         $replicatedDistributorQuotes = $replicatedVersionData->getReplicatedDistributorQuotes();
 
-        $version->worldwideQuote()->associate($worldwideQuote);
-        $version->unsetRelation('worldwideQuote');
-        $version->user()->associate($actingUser);
-        $version->user_version_sequence_number = $this->resolveNewVersionNumberForActingUser($worldwideQuote, $actingUser);
+        $versionAddressPivots = $replicatedVersionData->getAddressPivots();
+        $versionContactPivots = $replicatedVersionData->getContactPivots();
 
         $distributorQuoteBatch = [];
-        $addressDataBatch = [];
-        $addressPivotBatch = [];
-        $contactDataBatch = [];
-        $contactPivotBatch = [];
+        $distributorAddressPivotBatch = [];
+        $distributorContactPivotBatch = [];
         $mappingBatch = [];
         $distributorFileBatch = [];
         $scheduleFileBatch = [];
@@ -142,12 +144,9 @@ class WorldwideQuoteVersionGuard
         foreach ($replicatedDistributorQuotes as $distributorQuoteData) {
             $distributorQuoteBatch[] = $distributorQuoteData->getDistributorQuote()->getAttributes();
 
-            $addressDataBatch = array_merge($addressDataBatch, array_map(fn(Address $address) => $address->getAttributes(), $distributorQuoteData->getReplicatedAddressesData()->getAddressModels()));
-            $addressPivotBatch = array_merge($addressPivotBatch, $distributorQuoteData->getReplicatedAddressesData()->getAddressPivots());
+            $distributorAddressPivotBatch = array_merge($distributorAddressPivotBatch, $distributorQuoteData->getAddressPivots());
 
-            $contactDataBatch = array_merge($contactDataBatch, array_map(fn(Contact $contact) => $contact->getAttributes(), $distributorQuoteData->getReplicatedContactsData()->getContactModels()));
-            $contactPivotBatch = array_merge($contactPivotBatch, $distributorQuoteData->getReplicatedContactsData()->getContactPivots());
-
+            $distributorContactPivotBatch = array_merge($distributorContactPivotBatch, $distributorQuoteData->getContactPivots());
 
             $distributorMapping = array_map(fn(DistributionFieldColumn $fieldColumn) => $fieldColumn->getAttributes(), $distributorQuoteData->getMapping());
 
@@ -181,11 +180,11 @@ class WorldwideQuoteVersionGuard
         }
 
         $this->connection->transaction(function () use (
+            $versionContactPivots,
+            $versionAddressPivots,
             $distributorQuoteBatch,
-            $addressDataBatch,
-            $addressPivotBatch,
-            $contactDataBatch,
-            $contactPivotBatch,
+            $distributorAddressPivotBatch,
+            $distributorContactPivotBatch,
             $distributorFileBatch,
             $mappingBatch,
             $importedRowBatch,
@@ -199,6 +198,16 @@ class WorldwideQuoteVersionGuard
         ) {
             $version->save();
 
+            if (!empty($versionAddressPivots)) {
+                $this->connection->table($version->addresses()->getTable())
+                    ->insert($versionAddressPivots);
+            }
+
+            if (!empty($versionContactPivots)) {
+                $this->connection->table($version->contacts()->getTable())
+                    ->insert($versionContactPivots);
+            }
+
             if (!empty($distributorFileBatch)) {
                 QuoteFile::query()->insert($distributorFileBatch);
             }
@@ -211,22 +220,14 @@ class WorldwideQuoteVersionGuard
                 WorldwideDistribution::query()->insert($distributorQuoteBatch);
             }
 
-            if (!empty($addressDataBatch)) {
-                Address::query()->insert($addressDataBatch);
-            }
-
-            if (!empty($addressPivotBatch)) {
+            if (!empty($distributorAddressPivotBatch)) {
                 $this->connection->table((new WorldwideDistribution())->addresses()->getTable())
-                    ->insert($addressPivotBatch);
+                    ->insert($distributorAddressPivotBatch);
             }
 
-            if (!empty($contactDataBatch)) {
-                Contact::query()->insert($contactDataBatch);
-            }
-
-            if (!empty($contactPivotBatch)) {
+            if (!empty($distributorContactPivotBatch)) {
                 $this->connection->table((new WorldwideDistribution())->contacts()->getTable())
-                    ->insert($contactPivotBatch);
+                    ->insert($distributorContactPivotBatch);
             }
 
             if (!empty($mappingBatch)) {

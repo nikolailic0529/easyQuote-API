@@ -14,9 +14,11 @@ final class ReplicatedDistributorQuoteData
 {
     protected WorldwideDistribution $distributorQuote;
 
-    protected ReplicatedAddressesData $replicatedAddressesData;
+    /** @var array[]  */
+    protected array $addressPivots;
 
-    protected ReplicatedContactsData $replicatedContactsData;
+    /** @var array[]  */
+    protected array $contactPivots;
 
     protected array $mapping;
 
@@ -37,6 +39,8 @@ final class ReplicatedDistributorQuoteData
     /**
      * ReplicatedDistributorQuoteData constructor.
      * @param WorldwideDistribution $distributorQuote
+     * @param array $addressPivots
+     * @param array $contactPivots
      * @param array $mapping
      * @param array $rowsGroups
      * @param array $groupRows
@@ -47,8 +51,8 @@ final class ReplicatedDistributorQuoteData
      * @param ScheduleData|null $scheduleData
      */
     public function __construct(WorldwideDistribution $distributorQuote,
-                                ReplicatedAddressesData $replicatedAddressesData,
-                                ReplicatedContactsData $replicatedContactsData,
+                                array $addressPivots,
+                                array $contactPivots,
                                 array $mapping,
                                 array $rowsGroups,
                                 array $groupRows,
@@ -60,8 +64,8 @@ final class ReplicatedDistributorQuoteData
     {
         $this->distributorQuote = $distributorQuote;
 
-        $this->replicatedAddressesData = $replicatedAddressesData;
-        $this->replicatedContactsData = $replicatedContactsData;
+        $this->addressPivots = $addressPivots;
+        $this->contactPivots = $contactPivots;
         $this->mapping = $mapping;
         $this->rowsGroups = $rowsGroups;
         $this->groupRows = $groupRows;
@@ -78,22 +82,6 @@ final class ReplicatedDistributorQuoteData
     public function getDistributorQuote(): WorldwideDistribution
     {
         return $this->distributorQuote;
-    }
-
-    /**
-     * @return \App\Services\WorldwideQuote\Models\ReplicatedAddressesData
-     */
-    public function getReplicatedAddressesData(): ReplicatedAddressesData
-    {
-        return $this->replicatedAddressesData;
-    }
-
-    /**
-     * @return \App\Services\WorldwideQuote\Models\ReplicatedContactsData
-     */
-    public function getReplicatedContactsData(): ReplicatedContactsData
-    {
-        return $this->replicatedContactsData;
     }
 
     /**
@@ -158,5 +146,21 @@ final class ReplicatedDistributorQuoteData
     public function getGroupRows(): array
     {
         return $this->groupRows;
+    }
+
+    /**
+     * @return array[]
+     */
+    public function getAddressPivots(): array
+    {
+        return $this->addressPivots;
+    }
+
+    /**
+     * @return array[]
+     */
+    public function getContactPivots(): array
+    {
+        return $this->contactPivots;
     }
 }

@@ -28,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Query\JoinClause;
+use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
 use Staudenmeir\EloquentHasManyDeep\HasOneDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
@@ -215,6 +216,19 @@ class WorldwideDistribution extends Model
         $rowsRelation = $fileModel->rowsData();
 
         return $this->hasOneDeepFromRelations($this->distributorFile(), $rowsRelation)
+            ->whereColumn(
+                $rowsRelation->getRelated()->qualifyColumn('page'),
+                '>=',
+                $fileModel->qualifyColumn('imported_page')
+            );
+    }
+
+    public function mappingRows(): HasManyDeep
+    {
+        $fileModel = (new QuoteFile);
+        $rowsRelation = $fileModel->rowsData();
+
+        return $this->hasManyDeepFromRelations($this->distributorFile(), $rowsRelation)
             ->whereColumn(
                 $rowsRelation->getRelated()->qualifyColumn('page'),
                 '>=',

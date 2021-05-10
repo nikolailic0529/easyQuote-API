@@ -3,10 +3,9 @@
 namespace App\Http\Controllers\API;
 
 use App\Contracts\Repositories\{CompanyRepositoryInterface as CompanyRepository,
-    VendorRepositoryInterface as VendorRepository
-};
+    VendorRepositoryInterface as VendorRepository};
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Company\{StoreCompanyRequest, UpdateCompanyContact, UpdateCompanyRequest};
+use App\Http\Requests\Company\{PaginateCompanies, StoreCompanyRequest, UpdateCompanyContact, UpdateCompanyRequest};
 use App\Http\Resources\{Company\CompanyCollection, Company\ExternalCompanyList, Company\UpdatedCompany};
 use App\Models\Company;
 use App\Models\Contact;
@@ -29,30 +28,35 @@ class CompanyController extends Controller
     {
         $this->company = $company;
         $this->vendor = $vendor;
-        $this->authorizeResource(Company::class, 'company');
     }
 
     /**
      * Display a listing of the Companies.
      *
+     * @param \App\Http\Requests\Company\PaginateCompanies $request
+     * @param \App\Queries\CompanyQueries $queries
      * @return CompanyCollection
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function index(): CompanyCollection
+    public function paginateCompanies(PaginateCompanies $request, CompanyQueries $queries): CompanyCollection
     {
-        $resource = request()->filled('search')
-            ? $this->company->search(request('search'))
-            : $this->company->all();
+        $this->authorize('viewAny', Company::class);
 
-        return CompanyCollection::make($resource);
+        $pagination = $request->transformCompaniesQuery($queries->paginateCompaniesQuery($request))->apiPaginate();
+
+        return CompanyCollection::make($pagination);
     }
 
     /**
      * Data for creating a new Company.
      *
      * @return JsonResponse
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function create(): JsonResponse
+    public function showCompanyFormData(): JsonResponse
     {
+        $this->authorize('create', Company::class);
+
         $vendors = $this->vendor->allFlatten();
 
         return response()->json(
@@ -118,10 +122,13 @@ class CompanyController extends Controller
      * @param StoreCompanyRequest $request
      * @param CompanyEntityService $service
      * @return JsonResponse
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function store(StoreCompanyRequest $request,
-                          CompanyEntityService $service): JsonResponse
+    public function storeCompany(StoreCompanyRequest $request,
+                                 CompanyEntityService $service): JsonResponse
     {
+        $this->authorize('create', Company::class);
+
         $resource = $service->createCompany($request->getCreateCompanyData());
 
         return response()->json(
@@ -135,9 +142,12 @@ class CompanyController extends Controller
      *
      * @param Company $company
      * @return JsonResponse
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function show(Company $company): JsonResponse
+    public function showCompany(Company $company): JsonResponse
     {
+        $this->authorize('view', $company);
+
         return response()->json(
             UpdatedCompany::make($company)
         );
@@ -150,11 +160,14 @@ class CompanyController extends Controller
      * @param Company $company
      * @param CompanyEntityService $service
      * @return JsonResponse
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function update(UpdateCompanyRequest $request,
-                           CompanyEntityService $service,
-                           Company $company): JsonResponse
+    public function updateCompany(UpdateCompanyRequest $request,
+                                  CompanyEntityService $service,
+                                  Company $company): JsonResponse
     {
+        $this->authorize('update', $company);
+
         $resource = $service->updateCompany($company, $request->getUpdateCompanyData());
 
         return response()->json(
@@ -194,9 +207,12 @@ class CompanyController extends Controller
      * @param Company $company
      * @param CompanyEntityService $service
      * @return JsonResponse
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function destroy(CompanyEntityService $service, Company $company): JsonResponse
+    public function destroyCompany(CompanyEntityService $service, Company $company): JsonResponse
     {
+        $this->authorize('delete', $company);
+
         $service->deleteCompany($company);
 
         return response()->json(
@@ -213,7 +229,7 @@ class CompanyController extends Controller
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function activate(CompanyEntityService $service, Company $company): JsonResponse
+    public function markAsActiveCompany(CompanyEntityService $service, Company $company): JsonResponse
     {
         $this->authorize('update', $company);
 
@@ -233,7 +249,7 @@ class CompanyController extends Controller
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function deactivate(CompanyEntityService $service, Company $company): JsonResponse
+    public function markAsInactiveCompany(CompanyEntityService $service, Company $company): JsonResponse
     {
         $this->authorize('update', $company);
 

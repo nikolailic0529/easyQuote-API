@@ -20,7 +20,8 @@ use App\Events\{WorldwideQuote\NewVersionOfWorldwideQuoteCreated,
     WorldwideQuote\WorldwideQuoteDrafted,
     WorldwideQuote\WorldwideQuoteInitialized,
     WorldwideQuote\WorldwideQuoteSubmitted,
-    WorldwideQuote\WorldwideQuoteUnraveled};
+    WorldwideQuote\WorldwideQuoteUnraveled,
+    WorldwideQuote\WorldwideQuoteVersionDeleted};
 use App\Models\{Address,
     Company,
     Contact,
@@ -38,9 +39,8 @@ use App\Services\Activity\ActivityLogger;
 use App\Services\Activity\ChangesDetector;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Contracts\Config\Repository as Config;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
-class WorldwideQuoteEventAuditor implements ShouldQueue
+class WorldwideQuoteEventAuditor
 {
     protected Config $config;
 
@@ -68,24 +68,25 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
      */
     public function subscribe(\Illuminate\Events\Dispatcher $events)
     {
-        $events->listen(WorldwideQuoteInitialized::class, [$this, 'handleInitializedEvent']);
-        $events->listen(WorldwideQuoteSubmitted::class, [$this, 'handleSubmittedEvent']);
-        $events->listen(WorldwideQuoteUnraveled::class, [$this, 'handleUnraveledEvent']);
-        $events->listen(WorldwideQuoteDrafted::class, [$this, 'handleDraftedEvent']);
-        $events->listen(WorldwideQuoteDeleted::class, [$this, 'handleDeletedEvent']);
-        $events->listen(NewVersionOfWorldwideQuoteCreated::class, [$this, 'handleNewVersionCreatedEvent']);
+        $events->listen(WorldwideQuoteInitialized::class, [self::class, 'handleInitializedEvent']);
+        $events->listen(WorldwideQuoteSubmitted::class, [self::class, 'handleSubmittedEvent']);
+        $events->listen(WorldwideQuoteUnraveled::class, [self::class, 'handleUnraveledEvent']);
+        $events->listen(WorldwideQuoteDrafted::class, [self::class, 'handleDraftedEvent']);
+        $events->listen(WorldwideQuoteDeleted::class, [self::class, 'handleDeletedEvent']);
+        $events->listen(NewVersionOfWorldwideQuoteCreated::class, [self::class, 'handleNewVersionCreatedEvent']);
+        $events->listen(WorldwideQuoteVersionDeleted::class, [self::class, 'handleVersionDeletedEvent']);
 
-        $events->listen(WorldwideContractQuoteDetailsStepProcessed::class, [$this, 'handleContractQuoteDetailsStepProcessedEvent']);
-        $events->listen(WorldwideContractQuoteDiscountStepProcessed::class, [$this, 'handleContractQuoteDiscountStepProcessedEvent']);
-        $events->listen(WorldwideContractQuoteImportStepProcessed::class, [$this, 'handleContractQuoteImportStepProcessedEvent']);
-        $events->listen(WorldwideContractQuoteMappingStepProcessed::class, [$this, 'handleContractQuoteMappingStepProcessedEvent']);
-        $events->listen(WorldwideContractQuoteMappingReviewStepProcessed::class, [$this, 'handleContractQuoteMappingReviewStepProcessedEvent']);
-        $events->listen(WorldwidePackQuoteAssetsCreationStepProcessed::class, [$this, 'handlePackQuoteAssetsCreationStepProcessedEvent']);
-        $events->listen(WorldwidePackQuoteAssetsReviewStepProcessed::class, [$this, 'handlePackQuoteAssetsReviewStepProcessedEvent']);
-        $events->listen(WorldwidePackQuoteContactsStepProcessed::class, [$this, 'handlePackQuoteContactsStepProcessedEvent']);
-        $events->listen(WorldwidePackQuoteDetailsStepProcessed::class, [$this, 'handlePackQuoteDetailsStepProcessedEvent']);
-        $events->listen(WorldwidePackQuoteDiscountStepProcessed::class, [$this, 'handlePackQuoteDiscountStepProcessedEvent']);
-        $events->listen(WorldwidePackQuoteMarginStepProcessed::class, [$this, 'handlePackQuoteMarginStepProcessedEvent']);
+        $events->listen(WorldwideContractQuoteDetailsStepProcessed::class, [self::class, 'handleContractQuoteDetailsStepProcessedEvent']);
+        $events->listen(WorldwideContractQuoteDiscountStepProcessed::class, [self::class, 'handleContractQuoteDiscountStepProcessedEvent']);
+        $events->listen(WorldwideContractQuoteImportStepProcessed::class, [self::class, 'handleContractQuoteImportStepProcessedEvent']);
+        $events->listen(WorldwideContractQuoteMappingStepProcessed::class, [self::class, 'handleContractQuoteMappingStepProcessedEvent']);
+        $events->listen(WorldwideContractQuoteMappingReviewStepProcessed::class, [self::class, 'handleContractQuoteMappingReviewStepProcessedEvent']);
+        $events->listen(WorldwidePackQuoteAssetsCreationStepProcessed::class, [self::class, 'handlePackQuoteAssetsCreationStepProcessedEvent']);
+        $events->listen(WorldwidePackQuoteAssetsReviewStepProcessed::class, [self::class, 'handlePackQuoteAssetsReviewStepProcessedEvent']);
+        $events->listen(WorldwidePackQuoteContactsStepProcessed::class, [self::class, 'handlePackQuoteContactsStepProcessedEvent']);
+        $events->listen(WorldwidePackQuoteDetailsStepProcessed::class, [self::class, 'handlePackQuoteDetailsStepProcessedEvent']);
+        $events->listen(WorldwidePackQuoteDiscountStepProcessed::class, [self::class, 'handlePackQuoteDiscountStepProcessedEvent']);
+        $events->listen(WorldwidePackQuoteMarginStepProcessed::class, [self::class, 'handlePackQuoteMarginStepProcessedEvent']);
     }
 
     private function getActiveQuoteVersionStage(WorldwideQuote $quote): ?string
@@ -101,6 +102,23 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
         return null;
     }
 
+    public function handleVersionDeletedEvent(WorldwideQuoteVersionDeleted $event)
+    {
+        $quote = $event->getQuote();
+        $version = $event->getQuoteVersion();
+
+        $this->activityLogger
+            ->performedOn($quote)
+            ->by($event->getActingUser())
+            ->withProperties([
+                ChangesDetector::OLD_ATTRS_KEY => [],
+                ChangesDetector::NEW_ATTRS_KEY => [
+                    'deleted_version' => sprintf('%s %s', $version->user->user_fullname, $version->user_version_sequence_number)
+                ]
+            ])
+            ->log('deleted_version');
+    }
+
     public function handleNewVersionCreatedEvent(NewVersionOfWorldwideQuoteCreated $event)
     {
         $newVersion = $event->getNewQuoteVersion();
@@ -109,6 +127,7 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
 
         $this->activityLogger
             ->performedOn($baseQuote)
+            ->by($event->getActingUser())
             ->withProperties([
                 ChangesDetector::OLD_ATTRS_KEY => [
                     'active_version' => sprintf('%s %s', $previousVersion->user->user_fullname, $previousVersion->user_version_sequence_number)
@@ -126,6 +145,7 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
 
         $this->activityLogger
             ->performedOn($quote)
+            ->by($event->getActingUser())
             ->withProperties([
                 ChangesDetector::OLD_ATTRS_KEY => [],
                 ChangesDetector::NEW_ATTRS_KEY => [
@@ -145,6 +165,7 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
 
         $this->activityLogger
             ->performedOn($quote)
+            ->by($event->getActingUser())
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
@@ -164,6 +185,7 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
 
         $this->activityLogger
             ->performedOn($quote)
+            ->by($event->getActingUser())
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
@@ -184,6 +206,7 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
 
         $this->activityLogger
             ->performedOn($quote)
+            ->by($event->getActingUser())
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
@@ -207,6 +230,7 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
 
         $this->activityLogger
             ->performedOn($quote)
+            ->by($event->getActingUser())
             ->log('deleted');
     }
 
@@ -214,6 +238,7 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
     {
         $this->activityLogger
             ->performedOn($event->getQuote())
+            ->by($event->getActingUser())
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
@@ -271,6 +296,7 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
 
         $this->activityLogger
             ->performedOn($event->getQuote())
+            ->by($event->getActingUser())
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
@@ -352,6 +378,7 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
 
         $this->activityLogger
             ->performedOn($event->getQuote())
+            ->by($event->getActingUser())
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
@@ -412,6 +439,7 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
 
         $this->activityLogger
             ->performedOn($event->getQuote())
+            ->by($event->getActingUser())
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
@@ -431,6 +459,7 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
     {
         $this->activityLogger
             ->performedOn($event->getQuote())
+            ->by($event->getActingUser())
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
@@ -448,6 +477,7 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
     {
         $this->activityLogger
             ->performedOn($event->getQuote())
+            ->by($event->getActingUser())
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
@@ -468,6 +498,7 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
 
         $this->activityLogger
             ->performedOn($event->getQuote())
+            ->by($event->getActingUser())
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
@@ -494,6 +525,7 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
 
         $this->activityLogger
             ->performedOn($event->getQuote())
+            ->by($event->getActingUser())
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
@@ -526,6 +558,7 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
 
         $this->activityLogger
             ->performedOn($event->getQuote())
+            ->by($event->getActingUser())
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
@@ -554,6 +587,7 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
 
         $this->activityLogger
             ->performedOn($event->getQuote())
+            ->by($event->getActingUser())
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
@@ -584,6 +618,7 @@ class WorldwideQuoteEventAuditor implements ShouldQueue
 
         $this->activityLogger
             ->performedOn($event->getQuote())
+            ->by($event->getActingUser())
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [

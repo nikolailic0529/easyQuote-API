@@ -54,7 +54,7 @@ class ContractTemplatesSeeder extends Seeder
         $template = ContractTemplate::create([
             'name' => $name,
             'business_division_id' => BD_RESCUE,
-            'contract_type_id' => CT_PACK,
+            'contract_type_id' => CT_CONTRACT,
             'is_system' => true,
             'form_data' => $formData,
             'company_id' => $company->getKey(),

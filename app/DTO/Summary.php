@@ -43,7 +43,7 @@ class Summary extends DataTransferObject
         }
 
         if (str_contains($key, '_value')) {
-            return (float)$value * $base_rate;
+            return round((float)$value * $base_rate, 2);
         }
 
         return $value;

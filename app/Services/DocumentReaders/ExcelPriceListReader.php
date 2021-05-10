@@ -12,14 +12,18 @@ use Box\Spout\Reader\XLSX\RowIterator;
 use Box\Spout\Reader\XLSX\Sheet;
 use Generator;
 use Illuminate\Database\Query\JoinClause;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Webpatser\Uuid\Uuid;
 
-class ExcelDocumentReader
+class ExcelPriceListReader
 {
-    protected array $requiredHeaderColumnNames = ['product_no', 'price'];
+    protected array $requiredHeaderColumnNameCombinations = [
+        ['product_no', 'price'],
+        ['description', 'date_from', 'date_to']
+    ];
 
-    protected ?array $requiredHeaderColumnsCache = null;
+    protected ?array $requiredHeaderColumnCombinationsCache = null;
 
     protected ?array $systemColumnAliasMappingCache = null;
 
@@ -107,7 +111,7 @@ class ExcelDocumentReader
 
     protected function validateValuesOfRow(array $rowValues): bool
     {
-        $requiredHeaderColumns = $this->getRequiredHeaderColumns();
+        $requiredHeaderColumns = $this->getRequiredHeaderCombinations();
 
         $containsReferenceAboutOnePay = value(function () use ($rowValues): bool {
             foreach ($rowValues as $value) {
@@ -123,13 +127,25 @@ class ExcelDocumentReader
             return true;
         }
 
-        foreach ($requiredHeaderColumns as $name => $key) {
-            if ((false === isset($rowValues[$key])) || trim((string)$rowValues[$key]) === '') {
-                return false;
+        $combinationMatcher = function (array $columnCombination, array $rowValues): bool {
+            foreach ($columnCombination as $name => $key) {
+                if ((false === isset($rowValues[$key])) || trim((string)$rowValues[$key]) === '') {
+                    return false;
+                }
             }
+
+            return true;
+        };
+
+        foreach ($requiredHeaderColumns as $combination) {
+
+            if (true === $combinationMatcher($combination, $rowValues)) {
+                return true;
+            }
+
         }
 
-        return true;
+        return false;
     }
 
     protected function mapValuesOfRow(Row $row, array $headerMapping): array
@@ -166,26 +182,13 @@ class ExcelDocumentReader
      */
     protected function determineSheetHeaderRow(RowIterator $rowIterator): array
     {
-        $requiredHeaderColumns = $this->getRequiredHeaderColumns();
-
         while ($rowIterator->valid()) {
 
             $row = $rowIterator->current();
 
             $headerRowMapping = $this->mapHeaderRow($row);
 
-            $requiredColumnsArePresent = value(function () use ($headerRowMapping, $requiredHeaderColumns) {
-
-                foreach ($requiredHeaderColumns as $name => $key) {
-                    if (false === in_array($key, $headerRowMapping)) {
-                        return false;
-                    }
-                }
-
-                return true;
-            });
-
-            if ($requiredColumnsArePresent) {
+            if ($this->validateHeaderRow($headerRowMapping)) {
                 return $headerRowMapping;
             }
 
@@ -194,6 +197,41 @@ class ExcelDocumentReader
         }
 
         return [];
+    }
+
+    protected function validateHeaderRow(array $headerRowMapping): bool
+    {
+        $requiredHeaderColumns = $this->getRequiredHeaderCombinations();
+
+        $requiredColumnsArePresent = value(function () use ($headerRowMapping, $requiredHeaderColumns) {
+
+            foreach ($requiredHeaderColumns as $combination) {
+
+                $combinationMatched = value(function () use ($headerRowMapping, $combination) {
+
+                    foreach ($combination as $name => $key) {
+                        if (false === in_array($key, $headerRowMapping)) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+
+                });
+
+                if (true === $combinationMatched) {
+                    return true;
+                }
+            }
+
+            return false;
+        });
+
+        if (true === $requiredColumnsArePresent) {
+            return true;
+        }
+
+        return false;
     }
 
     protected function mapHeaderRow(Row $row): array
@@ -226,6 +264,8 @@ class ExcelDocumentReader
             $aliasMapping = $this->getSystemColumnAliasMapping() + $this->getCustomColumnAliasMapping($header);
 
             $knownColumn = value(function () use ($header, $aliasMapping): ?string {
+
+                $header = str_replace(["\n"], [" "], $header);
 
                 foreach ($aliasMapping as $alias => $key) {
                     $quotedAlias = preg_quote($alias, '#');
@@ -303,13 +343,27 @@ class ExcelDocumentReader
             ->all();
     }
 
-    private function getRequiredHeaderColumns(): array
+    private function getRequiredHeaderCombinations(): array
     {
-        return $this->requiredHeaderColumnsCache ??= ImportableColumn::query()
-            ->where('is_system', true)
-            ->whereIn('name', $this->requiredHeaderColumnNames)
-            ->pluck('id', 'name')
-            ->all();
+        return $this->requiredHeaderColumnCombinationsCache ??= value(function () {
+
+            $columns = ImportableColumn::query()
+                ->where('is_system', true)
+                ->whereIn('name', Arr::flatten($this->requiredHeaderColumnNameCombinations))
+                ->pluck('id', 'name')
+                ->all();
+
+            return array_map(function (array $columnCombination) use ($columns) {
+                $combinationDictionary = [];
+
+                foreach ($columnCombination as $columnName) {
+                    $combinationDictionary[$columnName] = $columns[$columnName];
+                }
+
+                return $combinationDictionary;
+            }, $this->requiredHeaderColumnNameCombinations);
+
+        });
     }
 
 

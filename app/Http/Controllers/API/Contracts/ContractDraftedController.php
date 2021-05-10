@@ -5,7 +5,12 @@ namespace App\Http\Controllers\API\Contracts;
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\Contract\ContractDraftedRepositoryInterface as Contracts;
 use App\Http\Requests\Quote\SubmitContractRequest;
+use App\Http\Requests\UnifiedContract\PaginateContracts;
 use App\Http\Resources\Contract\DraftedCollection;
+use App\Queries\UnifiedContractQueries;
+use App\Services\Contract\UnifiedContractDataMapper;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\JsonResponse;
 use App\Models\{
     Quote\Contract
 };
@@ -21,18 +26,23 @@ class ContractDraftedController extends Controller
     }
 
     /**
-     * Display a listing of the Drafted Contracts.
+     * Display a listing of unified contract entities.
      *
-     * @return \Illuminate\Http\Response
+     * @param PaginateContracts $request
+     * @param \App\Queries\UnifiedContractQueries $queries
+     * @param \App\Services\Contract\UnifiedContractDataMapper $dataMapper
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function index()
+    public function index(PaginateContracts $request,
+                          UnifiedContractQueries $queries,
+                          UnifiedContractDataMapper $dataMapper): JsonResponse
     {
-        $resource = request()->filled('search')
-            ? $this->contracts->search(request('search'))
-            : $this->contracts->paginate();
+        $pagination = with($request->transformContractsQuery($queries->paginateUnifiedDraftedContractsQuery($request))->apiPaginate(), function (LengthAwarePaginator $paginator) use ($dataMapper) {
+            return $dataMapper->mapUnifiedContractPaginator($paginator);
+        });
 
         return response()->json(
-            DraftedCollection::make($resource)
+            DraftedCollection::make($pagination)
         );
     }
 

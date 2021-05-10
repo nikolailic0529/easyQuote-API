@@ -21,7 +21,7 @@ class CountryFlagSeeder extends Seeder
 
         foreach ($countryCodes as $alpha3Code) {
             $fileName = sprintf('%s.svg', strtolower($alpha3Code));
-            $filePath = rtrim($countryFlagsDirectory, '/').'/'.$countryFlagsDirectory;
+            $filePath = rtrim($countryFlagsDirectory, '/').'/'.$fileName;
 
             if (file_exists($filePath)) {
                 $connection->table('countries')

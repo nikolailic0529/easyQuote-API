@@ -9,6 +9,7 @@ use App\Models\Quote\Discount\SND;
 use App\Models\Quote\DistributionFieldColumn;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\QuoteFile\ImportedRow;
 use App\Models\Vendor;
 use App\Queries\DiscountQueries;
 use App\Services\WorldwideQuote\WorldwideDistributionCalc;
@@ -28,6 +29,7 @@ class ShowQuoteState extends FormRequest
         'worldwide_distributions.summary' => 'includeWorldwideDistributionsSummaryAttribute',
         'worldwide_distributions.predefined_discounts' => 'includeWorldwideDistributionsPredefinedDiscounts',
         'worldwide_distributions.applicable_discounts' => 'includeWorldwideDistributionsApplicableDiscounts',
+        'worldwide_distributions.mapping_row' => 'includeWorldwideDistributionsMappingRow',
     ];
 
     /**
@@ -65,13 +67,24 @@ class ShowQuoteState extends FormRequest
             $this->container->call([$this, 'sortWorldwideQuoteAssetsWhenLoaded'], ['model' => $worldwideQuote]);
             $this->container->call([$this, 'normalizeWorldwideQuoteAssetAttributesWhenLoaded'], ['model' => $worldwideQuote]);
             $this->container->call([$this, 'prepareWorldwideDistributionMappingWhenLoaded'], ['model' => $worldwideQuote]);
-            $this->container->call([$this, 'includeCountryOfAddressesWhenLoaded'], ['model' => $worldwideQuote]);
-            $this->container->call([$this, 'includeReferencedAddressDataOfAddressesWhenLoaded'], ['model' => $worldwideQuote]);
-            $this->container->call([$this, 'includeReferencedContactDataOfContactsWhenLoaded'], ['model' => $worldwideQuote]);
+            $this->container->call([$this, 'loadCountryOfAddressesWhenLoaded'], ['model' => $worldwideQuote]);
+            $this->container->call([$this, 'loadReferencedAddressDataOfAddressesWhenLoaded'], ['model' => $worldwideQuote]);
+            $this->container->call([$this, 'loadReferencedContactDataOfContactsWhenLoaded'], ['model' => $worldwideQuote]);
         });
     }
 
-    public function includeReferencedAddressDataOfAddressesWhenLoaded(WorldwideQuote $model)
+    public function includeWorldwideDistributionsMappingRow(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper)
+    {
+        foreach ($model->activeVersion->worldwideDistributions as $distributorQuote) {
+
+            $distributorQuote->setRelation('mappingRow', new ImportedRow([
+                'columns_data' => $dataMapper->collectMappingColumnsOfDistributorQuote($distributorQuote)
+            ]));
+
+        }
+    }
+
+    public function loadReferencedAddressDataOfAddressesWhenLoaded(WorldwideQuote $model)
     {
         if ($model->activeVersion->relationLoaded('addresses')) {
 
@@ -101,7 +114,7 @@ class ShowQuoteState extends FormRequest
         }
     }
 
-    public function includeReferencedContactDataOfContactsWhenLoaded(WorldwideQuote $model)
+    public function loadReferencedContactDataOfContactsWhenLoaded(WorldwideQuote $model)
     {
         if ($model->activeVersion->relationLoaded('contacts')) {
 
@@ -131,7 +144,7 @@ class ShowQuoteState extends FormRequest
         }
     }
 
-    public function includeCountryOfAddressesWhenLoaded(WorldwideQuote $model)
+    public function loadCountryOfAddressesWhenLoaded(WorldwideQuote $model)
     {
         if ($model->activeVersion->relationLoaded('addresses')) {
             $model->activeVersion->addresses->load('country');

@@ -24,48 +24,41 @@ use App\DTO\QuoteStages\{AddressesContactsStage,
 use App\DTO\WorldwideQuote\DistributionImportData;
 use App\DTO\WorldwideQuote\MarkWorldwideQuoteAsDeadData;
 use App\Enum\{ContractQuoteStage, Lock, QuoteStatus};
-use App\Events\WorldwideQuote\ProcessedImportOfDistributorQuotes;
-use App\Events\WorldwideQuote\WorldwideContractQuoteDetailsStepProcessed;
-use App\Events\WorldwideQuote\WorldwideContractQuoteDiscountStepProcessed;
-use App\Events\WorldwideQuote\WorldwideContractQuoteImportStepProcessed;
-use App\Events\WorldwideQuote\WorldwideContractQuoteMappingReviewStepProcessed;
-use App\Events\WorldwideQuote\WorldwideContractQuoteMappingStepProcessed;
-use App\Events\WorldwideQuote\WorldwideContractQuoteMarginStepProcessed;
-use App\Events\WorldwideQuote\WorldwidePackQuoteAssetsCreationStepProcessed;
-use App\Events\WorldwideQuote\WorldwidePackQuoteAssetsReviewStepProcessed;
-use App\Events\WorldwideQuote\WorldwidePackQuoteContactsStepProcessed;
-use App\Events\WorldwideQuote\WorldwidePackQuoteDetailsStepProcessed;
-use App\Events\WorldwideQuote\WorldwidePackQuoteDiscountStepProcessed;
-use App\Events\WorldwideQuote\WorldwidePackQuoteMarginStepProcessed;
-use App\Events\WorldwideQuote\WorldwideQuoteActivated;
-use App\Events\WorldwideQuote\WorldwideQuoteDeactivated;
-use App\Events\WorldwideQuote\WorldwideQuoteDeleted;
-use App\Events\WorldwideQuote\WorldwideQuoteDrafted;
-use App\Events\WorldwideQuote\WorldwideQuoteInitialized;
-use App\Events\WorldwideQuote\WorldwideQuoteMarkedAsAlive;
-use App\Events\WorldwideQuote\WorldwideQuoteMarkedAsDead;
-use App\Events\WorldwideQuote\WorldwideQuoteSubmitted;
-use App\Events\WorldwideQuote\WorldwideQuoteUnraveled;
+use App\Events\{WorldwideQuote\ProcessedImportOfDistributorQuotes,
+    WorldwideQuote\WorldwideContractQuoteDetailsStepProcessed,
+    WorldwideQuote\WorldwideContractQuoteDiscountStepProcessed,
+    WorldwideQuote\WorldwideContractQuoteImportStepProcessed,
+    WorldwideQuote\WorldwideContractQuoteMappingReviewStepProcessed,
+    WorldwideQuote\WorldwideContractQuoteMappingStepProcessed,
+    WorldwideQuote\WorldwideContractQuoteMarginStepProcessed,
+    WorldwideQuote\WorldwidePackQuoteAssetsCreationStepProcessed,
+    WorldwideQuote\WorldwidePackQuoteAssetsReviewStepProcessed,
+    WorldwideQuote\WorldwidePackQuoteContactsStepProcessed,
+    WorldwideQuote\WorldwidePackQuoteDetailsStepProcessed,
+    WorldwideQuote\WorldwidePackQuoteDiscountStepProcessed,
+    WorldwideQuote\WorldwidePackQuoteMarginStepProcessed,
+    WorldwideQuote\WorldwideQuoteActivated,
+    WorldwideQuote\WorldwideQuoteDeactivated,
+    WorldwideQuote\WorldwideQuoteDeleted,
+    WorldwideQuote\WorldwideQuoteDrafted,
+    WorldwideQuote\WorldwideQuoteInitialized,
+    WorldwideQuote\WorldwideQuoteMarkedAsAlive,
+    WorldwideQuote\WorldwideQuoteMarkedAsDead,
+    WorldwideQuote\WorldwideQuoteSubmitted,
+    WorldwideQuote\WorldwideQuoteUnraveled,
+    WorldwideQuote\WorldwideQuoteVersionDeleted};
 use App\Jobs\IndexSearchableEntity;
 use App\Models\{Address,
     Contact,
     Data\Currency,
     Opportunity,
-    Quote\DistributionFieldColumn,
     Quote\WorldwideDistribution,
     Quote\WorldwideQuote,
     Quote\WorldwideQuoteVersion,
-    QuoteFile\DistributionRowsGroup,
-    QuoteFile\ImportedRow,
-    QuoteFile\MappedRow,
-    QuoteFile\QuoteFile,
-    QuoteFile\ScheduleData,
-    User,
-    WorldwideQuoteAsset};
+    User};
 use App\Services\Exceptions\ValidationException;
-use App\Services\WorldwideQuote\Models\ReplicatedVersionData;
 use Illuminate\Contracts\{Bus\Dispatcher as BusDispatcher, Cache\LockProvider, Events\Dispatcher as EventDispatcher};
-use Illuminate\Database\{ConnectionInterface, Eloquent\Builder, Eloquent\Collection, Eloquent\Model};
+use Illuminate\Database\{ConnectionInterface, Eloquent\Builder, Eloquent\Collection};
 use Illuminate\Support\{Carbon, Facades\DB};
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -92,10 +85,12 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
     protected ManagesExchangeRates $exchangeRateService;
 
     protected EventDispatcher $eventDispatcher;
-    /**
-     * @var ProcessesWorldwideDistributionState
-     */
-    private ProcessesWorldwideDistributionState $distributionProcessor;
+
+    protected ProcessesWorldwideDistributionState $distributionProcessor;
+
+    protected WorldwideQuoteVersionGuard $versionGuard;
+
+    protected ?User $actingUser = null;
 
     /**
      * WorldwideQuoteStateProcessor constructor.
@@ -106,6 +101,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
      * @param BusDispatcher $busDispatcher
      * @param EventDispatcher $eventDispatcher
      * @param ProcessesWorldwideDistributionState $distributionProcessor
+     * @param \App\Services\WorldwideQuote\WorldwideQuoteVersionGuard $versionGuard
      */
     public function __construct(ConnectionInterface $connection,
                                 LockProvider $lockProvider,
@@ -113,7 +109,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                                 ManagesExchangeRates $exchangeRateService,
                                 BusDispatcher $busDispatcher,
                                 EventDispatcher $eventDispatcher,
-                                ProcessesWorldwideDistributionState $distributionProcessor)
+                                ProcessesWorldwideDistributionState $distributionProcessor,
+                                WorldwideQuoteVersionGuard $versionGuard)
     {
         $this->connection = $connection;
         $this->lockProvider = $lockProvider;
@@ -122,6 +119,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         $this->busDispatcher = $busDispatcher;
         $this->eventDispatcher = $eventDispatcher;
         $this->distributionProcessor = $distributionProcessor;
+        $this->versionGuard = $versionGuard;
     }
 
     public function initializeQuote(InitStage $stage): WorldwideQuote
@@ -148,6 +146,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                 $quote->user()->associate($stage->user_id);
                 $this->assignNewQuoteNumber($quote);
 
+                /** @var WorldwideQuoteVersion $activeVersion */
                 $activeVersion = tap(new WorldwideQuoteVersion(), function (WorldwideQuoteVersion $version) use ($opportunity, $quote, $stage) {
                     $version->{$version->getKeyName()} = (string)Uuid::generate(4);
                     $version->user()->associate($stage->user_id);
@@ -174,6 +173,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                     $quote->save();
 
                     $activeVersion->worldwideQuote()->associate($quote)->save();
+
+                    $activeVersion->unsetRelation('worldwideQuote');
 
                     if ($quote->contract_type_id !== CT_CONTRACT) {
                         return;
@@ -242,7 +243,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             );
 
             $this->eventDispatcher->dispatch(
-                new WorldwideQuoteInitialized($quote)
+                new WorldwideQuoteInitialized($quote, $this->actingUser)
             );
         });
     }
@@ -292,6 +293,10 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             });
 
         });
+
+        $this->eventDispatcher->dispatch(
+            new WorldwideQuoteVersionDeleted($quote, $version, $this->actingUser)
+        );
     }
 
     public function processQuoteAddressesContactsStep(WorldwideQuoteVersion $quote, AddressesContactsStage $stage): WorldwideQuoteVersion
@@ -341,7 +346,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $this->eventDispatcher->dispatch(
                 new WorldwidePackQuoteContactsStepProcessed(
                     $quote->worldwideQuote,
-                    $oldQuote
+                    $oldQuote,
+                    $this->actingUser
                 )
             );
         });
@@ -380,7 +386,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $this->eventDispatcher->dispatch(
                 new WorldwidePackQuoteMarginStepProcessed(
                     $quote->worldwideQuote,
-                    $oldQuote
+                    $oldQuote,
+                    $this->actingUser
                 )
             );
 
@@ -429,7 +436,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $this->eventDispatcher->dispatch(
                 new WorldwidePackQuoteDiscountStepProcessed(
                     $quote->worldwideQuote,
-                    $oldQuote
+                    $oldQuote,
+                    $this->actingUser
                 )
             );
         });
@@ -468,7 +476,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $this->eventDispatcher->dispatch(
                 new WorldwidePackQuoteDetailsStepProcessed(
                     $quote->worldwideQuote,
-                    $oldQuote
+                    $oldQuote,
+                    $this->actingUser
                 )
             );
         });
@@ -501,7 +510,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $this->eventDispatcher->dispatch(
                 new WorldwidePackQuoteAssetsCreationStepProcessed(
                     $quote->worldwideQuote,
-                    $oldQuote
+                    $oldQuote,
+                    $this->actingUser
                 )
             );
 
@@ -560,7 +570,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $this->eventDispatcher->dispatch(
                 new WorldwidePackQuoteAssetsReviewStepProcessed(
                     $quote->worldwideQuote,
-                    $oldQuote
+                    $oldQuote,
+                    $this->actingUser
                 )
             );
 
@@ -756,7 +767,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $this->eventDispatcher->dispatch(
                 new WorldwideContractQuoteImportStepProcessed(
                     $quote->worldwideQuote,
-                    $oldQuote
+                    $oldQuote,
+                    $this->actingUser
                 )
             );
         });
@@ -782,7 +794,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $this->eventDispatcher->dispatch(
                 new WorldwideContractQuoteMappingStepProcessed(
                     $quote->worldwideQuote,
-                    $oldQuote
+                    $oldQuote,
+                    $this->actingUser
                 )
             );
         });
@@ -809,7 +822,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $this->eventDispatcher->dispatch(
                 new WorldwideContractQuoteMappingReviewStepProcessed(
                     $quote->worldwideQuote,
-                    $oldQuote
+                    $oldQuote,
+                    $this->actingUser
                 )
             );
 
@@ -839,7 +853,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $this->eventDispatcher->dispatch(
                 new WorldwideContractQuoteMarginStepProcessed(
                     $quote->worldwideQuote,
-                    $oldQuote
+                    $oldQuote,
+                    $this->actingUser
                 )
             );
 
@@ -869,7 +884,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $this->eventDispatcher->dispatch(
                 new WorldwideContractQuoteDiscountStepProcessed(
                     $quote->worldwideQuote,
-                    $oldQuote
+                    $oldQuote,
+                    $this->actingUser
                 )
             );
         });
@@ -907,7 +923,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $this->eventDispatcher->dispatch(
                 new WorldwideContractQuoteDetailsStepProcessed(
                     $quote->worldwideQuote,
-                    $oldQuote
+                    $oldQuote,
+                    $this->actingUser
                 )
             );
         });
@@ -941,7 +958,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $this->eventDispatcher->dispatch(
                 new WorldwideQuoteSubmitted(
                     $quote->worldwideQuote,
-                    $oldQuote
+                    $oldQuote,
+                    $this->actingUser
                 )
             );
         });
@@ -975,7 +993,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $this->eventDispatcher->dispatch(
                 new WorldwideQuoteDrafted(
                     $quote->worldwideQuote,
-                    $oldQuote
+                    $oldQuote,
+                    $this->actingUser
                 )
             );
         });
@@ -999,7 +1018,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
             $this->eventDispatcher->dispatch(
                 new WorldwideQuoteUnraveled(
-                    $quote
+                    $quote,
+                    $this->actingUser
                 )
             );
         });
@@ -1022,7 +1042,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         });
 
         $this->eventDispatcher->dispatch(
-            new WorldwideQuoteDeleted($quote)
+            new WorldwideQuoteDeleted($quote, $this->actingUser)
         );
     }
 
@@ -1073,19 +1093,19 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         $addressModelKeysOfPrimaryAccount = $addressModelsOfPrimaryAccount->modelKeys();
         $contactModelKeysOfPrimaryAccount = $contactModelsOfPrimaryAccount->modelKeys();
 
-        $defaultAddressModelKeysOfPrimaryAccount = $addressModelsOfPrimaryAccount->filter(fn (Address $address) => $address->pivot->is_default)->modelKeys();
-        $defaultContactModelKeysOfPrimaryAccount = $contactModelsOfPrimaryAccount->filter(fn (Contact $contact) => $contact->pivot->is_default)->modelKeys();
+        $defaultAddressModelKeysOfPrimaryAccount = $addressModelsOfPrimaryAccount->filter(fn(Address $address) => $address->pivot->is_default)->modelKeys();
+        $defaultContactModelKeysOfPrimaryAccount = $contactModelsOfPrimaryAccount->filter(fn(Contact $contact) => $contact->pivot->is_default)->modelKeys();
 
         if ($quote->contract_type_id === CT_PACK) {
 
-            $baseCurrencyModel = Currency::query()->where('code', $this->exchangeRateService->baseCurrency())->first();
+            $currencyModel = Currency::query()->where('code', $opportunity->purchase_price_currency_code)->first();
 
             foreach ($quote->versions as $version) {
 
-                $version->buy_price = $opportunity->base_purchase_price;
+                $version->buy_price = $opportunity->purchase_price;
 
                 $version->quoteCurrency()->associate(
-                    $baseCurrencyModel
+                    $currencyModel
                 );
 
             }
@@ -1093,42 +1113,42 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $lock = $this->lockProvider->lock(Lock::UPDATE_WWQUOTE($quote->getKey()), 10);
 
             $lock->block(30,
-            fn() => $this->connection->transaction(function () use ($quote, $addressModelKeysOfPrimaryAccount, $contactModelKeysOfPrimaryAccount, $defaultAddressModelKeysOfPrimaryAccount, $defaultContactModelKeysOfPrimaryAccount) {
+                fn() => $this->connection->transaction(function () use ($quote, $addressModelKeysOfPrimaryAccount, $contactModelKeysOfPrimaryAccount, $defaultAddressModelKeysOfPrimaryAccount, $defaultContactModelKeysOfPrimaryAccount) {
 
-                foreach ($quote->versions as $version) {
+                    foreach ($quote->versions as $version) {
 
-                    // Detaching of addresses which are not present in the primary account entity.
-                    if (!empty($addressModelKeysOfPrimaryAccount)) {
-                        $version->addresses()
-                            ->newPivotQuery()
-                            ->whereNotIn($version->addresses()->getQualifiedRelatedPivotKeyName(), $addressModelKeysOfPrimaryAccount)
-                            ->delete();
+                        // Detaching of addresses which are not present in the primary account entity.
+                        if (!empty($addressModelKeysOfPrimaryAccount)) {
+                            $version->addresses()
+                                ->newPivotQuery()
+                                ->whereNotIn($version->addresses()->getQualifiedRelatedPivotKeyName(), $addressModelKeysOfPrimaryAccount)
+                                ->delete();
+                        }
+
+                        // Detaching of contacts which are not present in the primary account entity.
+                        if (!empty($contactModelKeysOfPrimaryAccount)) {
+                            $version->contacts()
+                                ->newPivotQuery()
+                                ->whereNotIn($version->contacts()->getQualifiedRelatedPivotKeyName(), $contactModelKeysOfPrimaryAccount)
+                                ->delete();
+                        }
+
+                        // Attach default addresses of primary account,
+                        // if a version doesn't have any addresses.
+                        if ($version->addresses->isEmpty()) {
+                            $version->addresses()->sync($defaultAddressModelKeysOfPrimaryAccount);
+                        }
+
+                        // Attach default contacts of primary account,
+                        // if a version doesn't have any contact.
+                        if ($version->contacts->isEmpty()) {
+                            $version->contacts()->sync($defaultContactModelKeysOfPrimaryAccount);
+                        }
+
+                        $version->save();
                     }
 
-                    // Detaching of contacts which are not present in the primary account entity.
-                    if (!empty($contactModelKeysOfPrimaryAccount)) {
-                        $version->contacts()
-                            ->newPivotQuery()
-                            ->whereNotIn($version->contacts()->getQualifiedRelatedPivotKeyName(), $contactModelKeysOfPrimaryAccount)
-                            ->delete();
-                    }
-
-                    // Attach default addresses of primary account,
-                    // if a version doesn't have any addresses.
-                    if ($version->addresses->isEmpty()) {
-                        $version->addresses()->sync($defaultAddressModelKeysOfPrimaryAccount);
-                    }
-
-                    // Attach default contacts of primary account,
-                    // if a version doesn't have any contact.
-                    if ($version->contacts->isEmpty()) {
-                        $version->contacts()->sync($defaultContactModelKeysOfPrimaryAccount);
-                    }
-
-                    $version->save();
-                }
-
-            }));
+                }));
 
         }
 
@@ -1200,7 +1220,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         });
 
         $this->eventDispatcher->dispatch(
-            new WorldwideQuoteActivated($quote)
+            new WorldwideQuoteActivated($quote, $this->actingUser)
         );
     }
 
@@ -1220,7 +1240,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         });
 
         $this->eventDispatcher->dispatch(
-            new WorldwideQuoteDeactivated($quote)
+            new WorldwideQuoteDeactivated($quote, $this->actingUser)
         );
     }
 
@@ -1247,7 +1267,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         });
 
         $this->eventDispatcher->dispatch(
-            new WorldwideQuoteMarkedAsDead($quote)
+            new WorldwideQuoteMarkedAsDead($quote, $this->actingUser)
         );
     }
 
@@ -1268,7 +1288,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         });
 
         $this->eventDispatcher->dispatch(
-            new WorldwideQuoteMarkedAsAlive($quote)
+            new WorldwideQuoteMarkedAsAlive($quote, $this->actingUser)
         );
     }
 
@@ -1287,7 +1307,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $version->user_version_sequence_number = 1;
         });
 
-        $this->persistReplicatedVersionData($replicatedVersionData, $actingUser);
+        $this->versionGuard->persistReplicatedVersionData($replicatedVersionData);
 
         return tap(new WorldwideQuote(), function (WorldwideQuote $replicatedQuote) use ($quote, $replicatedVersion, $actingUser) {
             $replicatedQuote->{$replicatedQuote->getKeyName()} = (string)Uuid::generate(4);
@@ -1315,156 +1335,6 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                 });
 
             });
-        });
-    }
-
-    /**
-     * @param ReplicatedVersionData $replicatedVersionData
-     * @param User $actingUser
-     * @throws \Throwable
-     */
-    protected function persistReplicatedVersionData(ReplicatedVersionData $replicatedVersionData, User $actingUser): void
-    {
-        $version = $replicatedVersionData->getReplicatedVersion();
-        $replicatedPackAssets = $replicatedVersionData->getReplicatedPackAssets();
-        $replicatedDistributorQuotes = $replicatedVersionData->getReplicatedDistributorQuotes();
-
-        $version->worldwideQuote()->disassociate();
-        $version->user()->associate($actingUser);
-        $version->user_version_sequence_number = 1;
-
-        $distributorQuoteBatch = [];
-        $addressDataBatch = [];
-        $addressPivotBatch = [];
-        $contactDataBatch = [];
-        $contactPivotBatch = [];
-        $mappingBatch = [];
-        $distributorFileBatch = [];
-        $scheduleFileBatch = [];
-        $scheduleFileDataBatch = [];
-        $importedRowBatch = [];
-        $groupOfRowBatch = [];
-        $rowOfGroupBatch = [];
-        $mappedRowBatch = [];
-        $packAssetBatch = array_map(fn(WorldwideQuoteAsset $asset) => $asset->getAttributes(), $replicatedPackAssets);
-
-        foreach ($replicatedDistributorQuotes as $distributorQuoteData) {
-            $distributorQuoteBatch[] = $distributorQuoteData->getDistributorQuote()->getAttributes();
-
-            $addressDataBatch = array_merge($addressDataBatch, array_map(fn(Address $address) => $address->getAttributes(), $distributorQuoteData->getReplicatedAddressesData()->getAddressModels()));
-            $addressPivotBatch = array_merge($addressPivotBatch, $distributorQuoteData->getReplicatedAddressesData()->getAddressPivots());
-
-            $contactDataBatch = array_merge($contactDataBatch, array_map(fn(Contact $contact) => $contact->getAttributes(), $distributorQuoteData->getReplicatedContactsData()->getContactModels()));
-            $contactPivotBatch = array_merge($contactPivotBatch, $distributorQuoteData->getReplicatedContactsData()->getContactPivots());
-
-            $distributorMapping = array_map(fn(DistributionFieldColumn $fieldColumn) => $fieldColumn->getAttributes(), $distributorQuoteData->getMapping());
-
-            $mappingBatch = array_merge($mappingBatch, $distributorMapping);
-
-            $importedRowBatch = array_merge($importedRowBatch, array_map(fn(ImportedRow $row) => $row->getAttributes(), $distributorQuoteData->getImportedRows()));
-
-            $distributorFile = $distributorQuoteData->getDistributorFile();
-
-            $mappedRowBatch = array_merge($mappedRowBatch, array_map(fn(MappedRow $row) => $row->getAttributes(), $distributorQuoteData->getMappedRows()));
-
-            $groupOfRowBatch = array_merge($groupOfRowBatch, array_map(fn(Model $model) => $model->getAttributes(), $distributorQuoteData->getRowsGroups()));
-
-            $rowOfGroupBatch = array_merge($rowOfGroupBatch, array_merge([], ...$distributorQuoteData->getGroupRows()));
-
-            if (!is_null($distributorFile)) {
-                $distributorFileBatch[] = $distributorFile->getAttributes();
-            }
-
-            $scheduleFile = $distributorQuoteData->getScheduleFile();
-
-            if (!is_null($scheduleFile)) {
-                $scheduleFileBatch[] = $scheduleFile->getAttributes();
-            }
-
-            $scheduleFileData = $distributorQuoteData->getScheduleData();
-
-            if (!is_null($scheduleFileData)) {
-                $scheduleFileDataBatch[] = $scheduleFileData->getAttributes();
-            }
-        }
-
-        $this->connection->transaction(function () use (
-            $distributorQuoteBatch,
-            $distributorFileBatch,
-            $addressDataBatch,
-            $addressPivotBatch,
-            $contactDataBatch,
-            $contactPivotBatch,
-            $mappingBatch,
-            $importedRowBatch,
-            $scheduleFileBatch,
-            $scheduleFileDataBatch,
-            $packAssetBatch,
-            $mappedRowBatch,
-            $groupOfRowBatch,
-            $rowOfGroupBatch,
-            $version
-        ) {
-            $version->save();
-
-            if (!empty($distributorFileBatch)) {
-                QuoteFile::query()->insert($distributorFileBatch);
-            }
-
-            if (!empty($scheduleFileBatch)) {
-                QuoteFile::query()->insert($scheduleFileBatch);
-            }
-
-            if (!empty($distributorQuoteBatch)) {
-                WorldwideDistribution::query()->insert($distributorQuoteBatch);
-            }
-
-            if (!empty($addressDataBatch)) {
-                Address::query()->insert($addressDataBatch);
-            }
-
-            if (!empty($addressPivotBatch)) {
-                $this->connection->table((new WorldwideDistribution())->addresses()->getTable())
-                    ->insert($addressPivotBatch);
-            }
-
-            if (!empty($contactDataBatch)) {
-                Contact::query()->insert($contactDataBatch);
-            }
-
-            if (!empty($contactPivotBatch)) {
-                $this->connection->table((new WorldwideDistribution())->contacts()->getTable())
-                    ->insert($contactPivotBatch);
-            }
-
-            if (!empty($mappingBatch)) {
-                DistributionFieldColumn::query()->insert($mappingBatch);
-            }
-
-            if (!empty($importedRowBatch)) {
-                ImportedRow::query()->insert($importedRowBatch);
-            }
-
-            if (!empty($scheduleFileDataBatch)) {
-                ScheduleData::query()->insert($scheduleFileDataBatch);
-            }
-
-            if (!empty($packAssetBatch)) {
-                WorldwideQuoteAsset::query()->insert($packAssetBatch);
-            }
-
-            if (!empty($mappedRowBatch)) {
-                MappedRow::query()->insert($mappedRowBatch);
-            }
-
-            if (!empty($groupOfRowBatch)) {
-                DistributionRowsGroup::query()->insert($groupOfRowBatch);
-            }
-
-            if (!empty($rowOfGroupBatch)) {
-                $this->connection->table((new DistributionRowsGroup())->rows()->getTable())
-                    ->insert($rowOfGroupBatch);
-            }
         });
     }
 
@@ -1507,10 +1377,19 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         $this->eventDispatcher->dispatch(
             new ProcessedImportOfDistributorQuotes(
                 $version->worldwideQuote,
-                $oldQuote
+                $oldQuote,
+                $this->actingUser
             )
         );
     }
 
-
+    /**
+     * @inheritDoc
+     */
+    public function setActingUser(User $user = null): ProcessesWorldwideQuoteState
+    {
+        return tap($this, function () use ($user) {
+            $this->actingUser = $user;
+        });
+    }
 }

@@ -85,8 +85,10 @@ class PdfParser implements PdfParserInterface
 
             $attributes = $this->findPriceAttributes($content, $attributes);
 
-            if (blank($matches = $this->fetchPricePage($content, $page))) {
-                return compact('page', 'rows');
+            [$matches, $previousPageLineAttributes] = $this->parseDistributorFilePage($content, $page);
+
+            if (blank($matches)) {
+                return ['page' => $page, 'rows' => [], 'previous_page_line_attributes' => []];
             }
 
             static::cacheExactDatesMatches($matches);
@@ -98,11 +100,15 @@ class PdfParser implements PdfParserInterface
 
             $rows = $this->mapColumns($matches);
 
-            return compact('page', 'rows');
+            return ['page' => $page, 'rows' => $rows, 'previous_page_line_attributes' => $previousPageLineAttributes];
         });
 
-        $pages = collect($pages->all())
-            ->map(function ($page) {
+        $pages = $pages->all();
+
+        $pages = $this->mapMovedPageLineAttributes($pages);
+
+        $pages = collect($pages)
+            ->map(function (array $page) {
                 $rows = collect(static::setExactDatesMatches($page['rows']))
                     ->map(fn ($row) => Arr::set($row, PdfOptions::SYSTEM_HEADER_ONE_PAY, static::seekColumnsForOnePay($row)))
                     ->toArray();
@@ -112,6 +118,33 @@ class PdfParser implements PdfParserInterface
             ->toArray();
 
         return compact('pages', 'attributes');
+    }
+
+    protected function mapMovedPageLineAttributes(array $pages): array
+    {
+        $mappedPages = [];
+
+        foreach ($pages as $key => $page) {
+            if (empty($page['previous_page_line_attributes']) || !isset($mappedPages[$key - 1]) || empty($mappedPages[$key - 1]['rows'])) {
+                $mappedPages[] = $page;
+
+                continue;
+            }
+
+            $lastRowKey = last(array_keys($mappedPages[$key - 1]['rows']));
+
+            $mappedPages[$key - 1]['rows'][$lastRowKey] = array_map(function ($column) use (&$page) {
+                if (!is_null($column)) {
+                    return $column;
+                }
+
+                return array_shift($page['previous_page_line_attributes']);
+            }, $mappedPages[$key - 1]['rows'][$lastRowKey]);
+
+            $mappedPages[] = $page;
+        }
+
+        return $mappedPages;
     }
 
     public function parseSchedule(array $array)
@@ -156,7 +189,7 @@ class PdfParser implements PdfParserInterface
         return static::$columnNames = $this->importableColumns->allNames();
     }
 
-    private function fetchPricePage(string $content, $page = null): array
+    private function parseDistributorFilePage(string $content, $page = null): array
     {
         $matches = collect([
             PdfOptions::REGEXP_PRICE_LINES_01,
@@ -187,6 +220,18 @@ class PdfParser implements PdfParserInterface
             }
 
             return $column;
+        });
+
+        // There can be a case when a serial number is moved to the page from the previous page.
+        // We need to match the table header, and ensure if the first line does not have a product number.
+        $previousPageLineAttributes = with($content, function ($content) {
+            preg_match_all('/Product.+Description.+Serial.+Coverage.+Qty.+Price.+\s+from.+to.+\n+\h{20,}(.+)/im', $content, $matches);
+
+            if (empty($matches[1])) {
+                return [];
+            }
+
+            return preg_split('/\h{5,}/', $matches[1][0]);
         });
 
 
@@ -245,7 +290,7 @@ class PdfParser implements PdfParserInterface
         $searchable = array_fill(0, $count, $said);
         $matches->put('searchable', $searchable);
 
-        return $matches->toArray();
+        return [$matches->toArray(), $previousPageLineAttributes];
     }
 
     private function findPriceAttributes(string $content, array $attributes): array
@@ -285,10 +330,27 @@ class PdfParser implements PdfParserInterface
     {
         $payments = [];
 
-        if (preg_match_all('/Total\s*/i', $content, $totals, PREG_SET_ORDER)) {
+        if (preg_match_all('/(Total|Celkem)\s*/i', $content, $totals, PREG_SET_ORDER)) {
             $totals = Str::afterLast($content, head(last($totals)));
             preg_match_all(PdfOptions::REGEXP_SCHEDULE_PRICE, $totals, $payments, PREG_UNMATCHED_AS_NULL, 0);
-        };
+        }
+
+        if (empty($payments)) {
+            $contentLines = explode("\n", $content);
+
+            foreach ($contentLines as $line) {
+                preg_match_all(PdfOptions::REGEXP_SCHEDULE_PRICE, $line, $payments, PREG_UNMATCHED_AS_NULL, 0);
+
+                // Continue prices lookup if the payment dates are found as prices.
+                $priceMatches = array_filter($payments['price'] ?? [], fn(string $priceMatch) => substr_count($priceMatch, '.') < 2);
+
+                if (!empty($priceMatches)) {
+                    $payments['price'] = $priceMatches;
+
+                    break;
+                }
+            }
+        }
 
         return data_get($payments, 'price', []);
     }
@@ -361,6 +423,8 @@ class PdfParser implements PdfParserInterface
 
     private function scheduleColsMapping(string $firstLine): array
     {
+        $firstLine = Str::ascii($firstLine);
+
         preg_match_all(PdfOptions::REGEXP_SCHEDULE_COLUMNS, $firstLine, $matches, PREG_UNMATCHED_AS_NULL, 0);
 
         return collect($matches['cols'])->filter()
@@ -381,7 +445,7 @@ class PdfParser implements PdfParserInterface
         $periodFrom = $array[static::DT_FROM];
         $periodTo = $array[static::DT_TO];
 
-        /** Find line-breaked periods. */
+        /** Find line-broken periods. */
         foreach ($periodFrom as $key => $row) {
             $nextKey = $key + 1;
 
@@ -398,12 +462,12 @@ class PdfParser implements PdfParserInterface
             $periodTo[$nextKey] = null;
         }
 
-        $resettedPeriods = [
+        $resetPeriods = [
             static::DT_FROM => $periodFrom,
             static::DT_TO => $periodTo
         ];
 
-        return array_merge($array, $resettedPeriods);
+        return array_merge($array, $resetPeriods);
     }
 
     private static function cacheExactDatesMatches(array $matches): void

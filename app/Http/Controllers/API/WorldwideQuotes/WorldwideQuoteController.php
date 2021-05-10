@@ -62,7 +62,9 @@ class WorldwideQuoteController extends Controller
     {
         $this->authorize('create', WorldwideQuote::class);
 
-        $worldwideQuote = $this->processor->initializeQuote(
+        $worldwideQuote = $this->processor
+            ->setActingUser($request->user())
+            ->initializeQuote(
             $request->getStage()
         );
 
@@ -127,16 +129,21 @@ class WorldwideQuoteController extends Controller
     /**
      * Switch active version of Worldwide Quote.
      *
+     * @param \Illuminate\Http\Request $request
      * @param WorldwideQuote $worldwideQuote
      * @param WorldwideQuoteVersion $version
      * @return Response
-     * @throws AuthorizationException
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function switchActiveVersionOfQuote(WorldwideQuote $worldwideQuote, WorldwideQuoteVersion $version): Response
+    public function switchActiveVersionOfQuote(Request $request,
+                                               WorldwideQuote $worldwideQuote,
+                                               WorldwideQuoteVersion $version): Response
     {
         $this->authorize('update', $worldwideQuote);
 
-        $this->processor->switchActiveVersionOfQuote($worldwideQuote, $version);
+        $this->processor
+            ->setActingUser($request->user())
+            ->switchActiveVersionOfQuote($worldwideQuote, $version);
 
         return response()->noContent();
     }
@@ -144,16 +151,21 @@ class WorldwideQuoteController extends Controller
     /**
      * Delete inactive version of Worldwide Quote.
      *
+     * @param \Illuminate\Http\Request $request
      * @param WorldwideQuote $worldwideQuote
      * @param WorldwideQuoteVersion $version
      * @return Response
-     * @throws AuthorizationException
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function destroyQuoteVersion(WorldwideQuote $worldwideQuote, WorldwideQuoteVersion $version): Response
+    public function destroyQuoteVersion(Request $request,
+                                        WorldwideQuote $worldwideQuote,
+                                        WorldwideQuoteVersion $version): Response
     {
         $this->authorize('deleteVersion', [$worldwideQuote, $version]);
 
-        $this->processor->deleteVersionOfQuote($worldwideQuote, $version);
+        $this->processor
+            ->setActingUser($request->user())
+            ->deleteVersionOfQuote($worldwideQuote, $version);
 
         return response()->noContent();
     }
@@ -176,7 +188,9 @@ class WorldwideQuoteController extends Controller
 
         $version = $versionGuard->resolveModelForActingUser($worldwideQuote, $request->user());
 
-        $resource = $this->processor->processQuoteAddressesContactsStep(
+        $resource = $this->processor
+            ->setActingUser($request->user())
+            ->processQuoteAddressesContactsStep(
             $version,
             $request->getStage()
         );
@@ -207,7 +221,9 @@ class WorldwideQuoteController extends Controller
 
         $version = $versionGuard->resolveModelForActingUser($worldwideQuote, $request->user());
 
-        $resource = $this->processor->processQuoteImportStep(
+        $resource = $this->processor
+            ->setActingUser($request->user())
+            ->processQuoteImportStep(
             $version,
             $request->getStage()
         );
@@ -236,7 +252,9 @@ class WorldwideQuoteController extends Controller
 
         $version = $versionGuard->resolveModelForActingUser($worldwideQuote, $request->user());
 
-        $resource = $this->processor->processQuoteAssetsReviewStep(
+        $resource = $this->processor
+            ->setActingUser($request->user())
+            ->processQuoteAssetsReviewStep(
             $version,
             $request->getStage()
         );
@@ -265,7 +283,9 @@ class WorldwideQuoteController extends Controller
 
         $version = $versionGuard->resolveModelForActingUser($worldwideQuote, $request->user());
 
-        $resource = $this->processor->processPackQuoteMarginStep(
+        $resource = $this->processor
+            ->setActingUser($request->user())
+            ->processPackQuoteMarginStep(
             $version,
             $request->getStage()
         );
@@ -294,7 +314,9 @@ class WorldwideQuoteController extends Controller
 
         $version = $versionGuard->resolveModelForActingUser($worldwideQuote, $request->user());
 
-        $resource = $this->processor->processPackQuoteDiscountStep(
+        $resource = $this->processor
+            ->setActingUser($request->user())
+            ->processPackQuoteDiscountStep(
             $version,
             $request->getStage()
         );
@@ -323,7 +345,9 @@ class WorldwideQuoteController extends Controller
 
         $version = $versionGuard->resolveModelForActingUser($worldwideQuote, $request->user());
 
-        $resource = $this->processor->processPackQuoteDetailsStep(
+        $resource = $this->processor
+            ->setActingUser($request->user())
+            ->processPackQuoteDetailsStep(
             $version,
             $request->getStage()
         );
@@ -615,7 +639,9 @@ class WorldwideQuoteController extends Controller
 
         $version = $versionGuard->resolveModelForActingUser($worldwideQuote, $request->user());
 
-        $this->processor->processQuoteSubmission(
+        $this->processor
+            ->setActingUser($request->user())
+            ->processQuoteSubmission(
             $version,
             $request->getStage()
         );
@@ -639,7 +665,9 @@ class WorldwideQuoteController extends Controller
 
         $version = $versionGuard->resolveModelForActingUser($worldwideQuote, $request->user());
 
-        $this->processor->processQuoteDraft(
+        $this->processor
+            ->setActingUser($request->user())
+            ->processQuoteDraft(
             $version,
             $request->getStage()
         );
@@ -650,15 +678,18 @@ class WorldwideQuoteController extends Controller
     /**
      * Unravel the specified Worldwide Quote.
      *
+     * @param \Illuminate\Http\Request $request
      * @param WorldwideQuote $worldwideQuote
      * @return Response
-     * @throws AuthorizationException
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function unravelQuote(WorldwideQuote $worldwideQuote): Response
+    public function unravelQuote(Request $request, WorldwideQuote $worldwideQuote): Response
     {
         $this->authorize('unravel', $worldwideQuote);
 
-        $this->processor->processQuoteUnravel($worldwideQuote);
+        $this->processor
+            ->setActingUser($request->user())
+            ->processQuoteUnravel($worldwideQuote);
 
         return response()->noContent();
     }
@@ -666,15 +697,18 @@ class WorldwideQuoteController extends Controller
     /**
      * Mark the specified Worldwide Quote as active.
      *
+     * @param \Illuminate\Http\Request $request
      * @param WorldwideQuote $worldwideQuote
      * @return Response
-     * @throws AuthorizationException
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function activateQuote(WorldwideQuote $worldwideQuote): Response
+    public function activateQuote(Request $request, WorldwideQuote $worldwideQuote): Response
     {
         $this->authorize('changeStatus', $worldwideQuote);
 
-        $this->processor->activateQuote($worldwideQuote);
+        $this->processor
+            ->setActingUser($request->user())
+            ->activateQuote($worldwideQuote);
 
         return response()->noContent();
     }
@@ -682,15 +716,18 @@ class WorldwideQuoteController extends Controller
     /**
      * Mark the specified Worldwide Quote as inactive.
      *
+     * @param \Illuminate\Http\Request $request
      * @param WorldwideQuote $worldwideQuote
      * @return Response
-     * @throws AuthorizationException
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function deactivateQuote(WorldwideQuote $worldwideQuote): Response
+    public function deactivateQuote(Request $request, WorldwideQuote $worldwideQuote): Response
     {
         $this->authorize('changeStatus', $worldwideQuote);
 
-        $this->processor->deactivateQuote($worldwideQuote);
+        $this->processor
+            ->setActingUser($request->user())
+            ->deactivateQuote($worldwideQuote);
 
         return response()->noContent();
     }
@@ -698,15 +735,18 @@ class WorldwideQuoteController extends Controller
     /**
      * Remove the specified resource from storage.
      *
+     * @param \Illuminate\Http\Request $request
      * @param WorldwideQuote $worldwideQuote
      * @return Response
-     * @throws AuthorizationException
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function destroyQuote(WorldwideQuote $worldwideQuote): Response
+    public function destroyQuote(Request $request, WorldwideQuote $worldwideQuote): Response
     {
         $this->authorize('delete', $worldwideQuote);
 
-        $this->processor->deleteQuote($worldwideQuote);
+        $this->processor
+            ->setActingUser($request->user())
+            ->deleteQuote($worldwideQuote);
 
         return response()->noContent();
     }
@@ -738,7 +778,9 @@ class WorldwideQuoteController extends Controller
     {
         $this->authorize('changeStatus', $worldwideQuote);
 
-        $this->processor->markQuoteAsDead($worldwideQuote, $request->getMarkQuoteAsDeadData());
+        $this->processor
+            ->setActingUser($request->user())
+            ->markQuoteAsDead($worldwideQuote, $request->getMarkQuoteAsDeadData());
 
         return response()->noContent();
     }
@@ -746,15 +788,18 @@ class WorldwideQuoteController extends Controller
     /**
      * Mark the specified quote entity as 'alive'.
      *
+     * @param \Illuminate\Http\Request $request
      * @param WorldwideQuote $worldwideQuote
      * @return Response
-     * @throws AuthorizationException
+     * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function markQuoteAsAlive(WorldwideQuote $worldwideQuote): Response
+    public function markQuoteAsAlive(Request $request, WorldwideQuote $worldwideQuote): Response
     {
         $this->authorize('changeStatus', $worldwideQuote);
 
-        $this->processor->markQuoteAsAlive($worldwideQuote);
+        $this->processor
+            ->setActingUser($request->user())
+            ->markQuoteAsAlive($worldwideQuote);
 
         return response()->noContent();
     }
@@ -771,7 +816,9 @@ class WorldwideQuoteController extends Controller
     {
         $this->authorize('replicate', $worldwideQuote);
 
-        $replicatedQuote = $this->processor->processQuoteReplication($worldwideQuote, $request->user());
+        $replicatedQuote = $this->processor
+            ->setActingUser($request->user())
+            ->processQuoteReplication($worldwideQuote, $request->user());
 
         return response()->json(
             $replicatedQuote,

@@ -122,15 +122,11 @@ class WorldwideQuoteVersionGuardTest extends TestCase
         }
 
         foreach ($newDistributorQuote->addresses as $address) {
-            $this->assertArrayHasKey($address->pivot->replicated_address_id, $distributorQuoteAddressDictionary);
-
-            $this->assertArrayNotHasKey($address->getKey(), $distributorQuoteAddressDictionary);
+            $this->assertArrayHasKey($address->getKey(), $distributorQuoteAddressDictionary);
         }
 
         foreach ($newDistributorQuote->contacts as $contact) {
-            $this->assertArrayHasKey($contact->pivot->replicated_contact_id, $distributorQuoteContactDictionary);
-
-            $this->assertArrayNotHasKey($contact->getKey(), $distributorQuoteContactDictionary);
+            $this->assertArrayHasKey($contact->getKey(), $distributorQuoteContactDictionary);
         }
 
         $this->assertNotEmpty($newDistributorQuote->rowsGroups);

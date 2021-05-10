@@ -10,6 +10,7 @@ use App\Http\Controllers\API\ContactController;
 use App\Http\Controllers\API\Contracts\ContractDraftedController;
 use App\Http\Controllers\API\Contracts\ContractStateController;
 use App\Http\Controllers\API\Contracts\ContractSubmittedController;
+use App\Http\Controllers\API\Contracts\UnifiedContractController;
 use App\Http\Controllers\API\ContractTypeController;
 use App\Http\Controllers\API\Data\CountryController;
 use App\Http\Controllers\API\Data\CurrencyController;
@@ -275,10 +276,15 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::get('companies/countries', [CompanyController::class, 'showCompaniesWithCountries']);
         Route::get('external-companies', [CompanyController::class, 'paginateExternalCompanies']);
 
-        Route::resource('companies', CompanyController::class, ['only' => ROUTE_CRUD]);
+        Route::get('companies', [CompanyController::class, 'paginateCompanies']);
+        Route::get('companies/create', [CompanyController::class, 'showCompanyFormData']);
+        Route::get('companies/{company}', [CompanyController::class, 'showCompany']);
+        Route::post('companies', [CompanyController::class, 'storeCompany']);
+        Route::patch('companies/{company}', [CompanyController::class, 'updateCompany']);
+        Route::delete('companies/{company}', [CompanyController::class, 'destroyCompany']);
 
-        Route::put('companies/activate/{company}', [CompanyController::class, 'activate']);
-        Route::put('companies/deactivate/{company}', [CompanyController::class, 'deactivate']);
+        Route::put('companies/activate/{company}', [CompanyController::class, 'markAsActiveCompany']);
+        Route::put('companies/deactivate/{company}', [CompanyController::class, 'markAsInactiveCompany']);
 
         Route::patch('companies/{company}/contacts/{contact:id}', [CompanyController::class, 'updateCompanyContact']);
     });
@@ -333,6 +339,18 @@ Route::group(['middleware' => 'auth:api'], function () {
 
 
     Route::group(['prefix' => 'contracts', 'as' => 'contracts.'], function () {
+        Route::get('drafted/users', [UnifiedContractController::class, 'showUserNamesOfDraftedContracts']);
+        Route::get('submitted/users', [UnifiedContractController::class, 'showUserNamesOfSubmittedContracts']);
+
+        Route::get('drafted/customers', [UnifiedContractController::class, 'showCustomerNamesOfDraftedContracts']);
+        Route::get('submitted/customers', [UnifiedContractController::class, 'showCustomerNamesOfSubmittedContracts']);
+
+        Route::get('drafted/companies', [UnifiedContractController::class, 'showCompanyNamesOfDraftedContracts']);
+        Route::get('submitted/companies', [UnifiedContractController::class, 'showCompanyNamesOfSubmittedContracts']);
+
+        Route::get('drafted/contract-numbers', [UnifiedContractController::class, 'showNumbersOfDraftedContracts']);
+        Route::get('submitted/contract-numbers', [UnifiedContractController::class, 'showNumbersOfSubmittedContracts']);
+
         /**
          * Contract State.
          */

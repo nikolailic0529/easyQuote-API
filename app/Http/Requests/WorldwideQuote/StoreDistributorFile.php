@@ -14,7 +14,9 @@ class StoreDistributorFile extends FormRequest
      */
     public function rules()
     {
-        $supportedFileTypes = Setting::get('supported_file_types_request');
+        $supportedFileTypes = with(Setting::get('supported_file_types') ?? [], function (array $mimes) {
+            return implode(',', array_map('strtolower', $mimes));
+        });
         $maxFileSize = Setting::get('file_upload_size_kb');
 
         return [

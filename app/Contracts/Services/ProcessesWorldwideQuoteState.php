@@ -246,4 +246,12 @@ interface ProcessesWorldwideQuoteState
      * @return WorldwideQuote
      */
     public function processQuoteReplication(WorldwideQuote $quote, User $actingUser): WorldwideQuote;
+
+    /**
+     * Set acting user entity.
+     *
+     * @param \App\Models\User|null $user
+     * @return $this
+     */
+    public function setActingUser(User $user = null): self;
 }

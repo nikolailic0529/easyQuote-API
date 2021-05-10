@@ -2,38 +2,43 @@
 
 namespace App\Events\WorldwideQuote;
 
-use Illuminate\Broadcasting\Channel;
-use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use App\Models\Quote\WorldwideQuote;
+use App\Models\User;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class WorldwideQuoteDeactivated
+final class WorldwideQuoteDeactivated
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable, SerializesModels;
 
-    private \App\Models\Quote\WorldwideQuote $quote;
+    private WorldwideQuote $quote;
+    private ?User $actingUser;
 
     /**
      * Create a new event instance.
      *
      * @param \App\Models\Quote\WorldwideQuote $quote
+     * @param \App\Models\User|null $actingUser
      */
-    public function __construct(\App\Models\Quote\WorldwideQuote $quote)
+    public function __construct(WorldwideQuote $quote, ?User $actingUser = null)
     {
-        //
         $this->quote = $quote;
+        $this->actingUser = $actingUser;
     }
 
     /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return \Illuminate\Broadcasting\Channel|array
+     * @return \App\Models\Quote\WorldwideQuote
      */
-    public function broadcastOn()
+    public function getQuote(): WorldwideQuote
     {
-        return new PrivateChannel('channel-name');
+        return $this->quote;
+    }
+
+    /**
+     * @return \App\Models\User|null
+     */
+    public function getActingUser(): ?User
+    {
+        return $this->actingUser;
     }
 }

@@ -2,11 +2,9 @@
 
 namespace Tests\Unit\Parser;
 
-use App\Contracts\Services\{ManagesDocumentProcessors, PdfParserInterface, WordParserInterface};
-use App\Imports\ImportExcel;
-use App\Models\{Quote\Quote, QuoteFile\QuoteFileFormat, User};
+use App\Contracts\Services\{PdfParserInterface, WordParserInterface};
+use App\Models\{QuoteFile\QuoteFileFormat};
 use App\Models\QuoteFile\QuoteFile;
-use App\Queries\QuoteQueries;
 use App\Services\DocumentProcessor\EasyQuote\DistributorExcel;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\{Arr, Collection, Facades\File, Facades\Storage, Str};
@@ -15,35 +13,69 @@ use Tests\TestCase;
 /**
  * @group build
  */
-class DistributorFileTest extends TestCase
+class DistributorPriceListParsingTest extends TestCase
 {
     use DatabaseTransactions;
 
-//    public function test_parses_mcsa_uk_quote_xlsx()
-//    {
-//        $this->markTestSkipped();
-//
-//        $filePath = base_path('tests/Unit/Data/distributor-files-test/UK/MCSA UK Quote.xlsx');
-//
-//        $storage = Storage::fake();
-//
-//        $storage->put($fileName = Str::random(40).'.xlsx', file_get_contents($filePath));
-//
-//        /** @var QuoteFile $quoteFile */
-//        $quoteFile = factory(QuoteFile::class)->create([
-//            'original_file_path' => $fileName,
-//            'original_file_name' => 'MCSA UK Quote.xlsx',
-//            'file_type' => 'Distributor Price List',
-//            'pages' => 2,
-//            'quote_file_format_id' => QuoteFileFormat::value('id'),
-//            'imported_page' => 1
-//        ]);
-//
-//        $excelProcessor = $this->app[DistributorExcel::class];
-//
-//        $excelProcessor->process($quoteFile);
-//    }
+    /**
+     * @group parsing-price-list-xlsx
+     */
+    public function test_parses_td_9735_gt_movie_via_europlus_direct_renewal_sh4w3h_xlxs()
+    {
+        $filePath = base_path('tests/Unit/Data/distributor-files-test/TD-9735, GT Motive via EuroplusDirect, renewal SH4W3H.xlsx');
 
+        $storage = Storage::fake();
+
+        $storage->put($fileName = Str::random(40).'.xlsx', file_get_contents($filePath));
+
+        /** @var QuoteFile $quoteFile */
+        $quoteFile = factory(QuoteFile::class)->create([
+            'original_file_path' => $fileName,
+            'original_file_name' => 'TD-9735, GT Motive via EuroplusDirect, renewal SH4W3H.xlsx',
+            'file_type' => 'Distributor Price List',
+            'pages' => 2,
+            'quote_file_format_id' => QuoteFileFormat::value('id'),
+            'imported_page' => 2
+        ]);
+
+        $excelProcessor = $this->app[DistributorExcel::class];
+
+        $excelProcessor->process($quoteFile);
+
+        $this->assertCount(27, $quoteFile->rowsData);
+    }
+
+    /**
+     * @group parsing-price-list-xlsx
+     */
+    public function test_parses_europlusdirect_ltd_1044696_28_04_2021_xlsx()
+    {
+        $filePath = base_path('tests/Unit/Data/distributor-files-test/EUROPLUSDIRECT LTD_1044696_28-04-2021.xlsx');
+
+        $storage = Storage::fake();
+
+        $storage->put($fileName = Str::random(40).'.xlsx', file_get_contents($filePath));
+
+        /** @var QuoteFile $quoteFile */
+        $quoteFile = factory(QuoteFile::class)->create([
+            'original_file_path' => $fileName,
+            'original_file_name' => 'EUROPLUSDIRECT LTD_1044696_28-04-2021.xlsx',
+            'file_type' => 'Distributor Price List',
+            'pages' => 2,
+            'quote_file_format_id' => QuoteFileFormat::value('id'),
+            'imported_page' => 2
+        ]);
+
+        $excelProcessor = $this->app[DistributorExcel::class];
+
+        $excelProcessor->process($quoteFile);
+
+        $this->assertCount(4, $quoteFile->rowsData);
+    }
+
+    /**
+     * @group parsing-price-list-xlsx
+     */
     public function test_parses_unicredit_lenovo_tesedi_quote_tier1_zkh0d4_new_xlsx()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/Unicredit Lenovo Tesedi Quote Tier 1 ZKHOD4 NEW.xlsx');
@@ -140,8 +172,10 @@ class DistributorFileTest extends TestCase
 
     }
 
-    /** @group distributor-file-pdf */
-    public function test_can_parse_spw_bou_pdf()
+    /**
+     * @group parsing-price-list-pdf
+     */
+    public function test_parses_spw_bou_pdf()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/SPW-BOU.pdf');
 
@@ -976,7 +1010,7 @@ class DistributorFileTest extends TestCase
         $this->assertContains([
             "product_no" => "BD715A",
             "description" => "VMw vSphere EntPlus 1P 3yr SW",
-            "serial_no" => null,
+            "serial_no" => "H069H-083P4-F8K43-AL30H-2J315",
             "date_from" => null,
             "date_to" => null,
             "qty" => "1",
@@ -1480,7 +1514,7 @@ class DistributorFileTest extends TestCase
         $this->assertContains([
             "product_no" => "BD715A",
             "description" => "VMw vSphere EntPlus 1P 3yr SW",
-            "serial_no" => null,
+            "serial_no" => "H020K-081VP-F8V42-A922H-2X935",
             "date_from" => null,
             "date_to" => null,
             "qty" => "1",
@@ -1594,8 +1628,34 @@ class DistributorFileTest extends TestCase
         $this->assertEmpty($result[12]['rows']);
     }
 
-    /** @group distributor-file-docx */
-    public function testWidexV2DOCX()
+    protected static function storeText(string $filePath, array $raw)
+    {
+        $fileName = Str::slug(File::name($filePath), '_');
+
+        $dir = "tests/Unit/Data/distributor-files-test/$fileName";
+
+        if (!is_dir($dir)) {
+            mkdir($dir);
+        }
+
+        foreach ($raw as $text) {
+            $page = $text['page'];
+
+            $pagePath = base_path("$dir/{$fileName}_{$page}.txt");
+
+            file_put_contents($pagePath, $text['content']);
+        }
+    }
+
+    protected function pdfParser(): PdfParserInterface
+    {
+        return app(PdfParserInterface::class);
+    }
+
+    /**
+     * @group parsing-price-list-docx
+     */
+    public function test_parses_widex_v2_docx()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/Denmark/Widex V2.docx');
 
@@ -1623,8 +1683,10 @@ CONTENT
         );
     }
 
-    /** @group distributor-file-pdf */
-    public function test_can_parse_swcz_sps_hranice_1y_v1_pdf()
+    /**
+     * @group parsing-price-list-pdf
+     */
+    public function test_parses_swcz_sps_hranice_1y_v1_pdf()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/SWCZ-SPS-HRANICE_2020-12-09_1Y_v1.pdf');
 
@@ -1673,8 +1735,10 @@ CONTENT
         ], $result[1]['rows']);
     }
 
-    /** @group distributor-file-pdf */
-    public function test_can_parse_swcz_sps_hranice_20201209_2y_v1_pdf()
+    /**
+     * @group parsing-price-list-pdf
+     */
+    public function test_parses_swcz_sps_hranice_20201209_2y_v1_pdf()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/SWCZ-SPS-HRANICE_2020-12-09_2Y_v1.pdf');
 
@@ -1726,13 +1790,14 @@ CONTENT
         ], $result[1]['rows']);
     }
 
-
-    /** @group distributor-file-pdf */
-    public function test_can_parse_swcz_nemochice_hodonin_pdf()
+    /**
+     * @group parsing-price-list-pdf
+     */
+    public function test_parses_swcz_nemochice_hodonin_pdf()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/SWCZ-NEMOCNICE HODONIN_2020-12-02_in.disc_v1.pdf');
 
-        $content = $this->pdfParser()->getText($filePath, false);
+        $content = $this->pdfParser()->getText($filePath);
 
         $result = $this->pdfParser()->parse($content);
 
@@ -1843,12 +1908,14 @@ CONTENT
         $this->assertCount(0, $result[3]['rows']);
     }
 
-    /** @group distributor-file-pdf */
-    public function testQuoteRenewal71c896312PDF()
+    /**
+     * @group parsing-price-list-pdf
+     */
+    public function test_parses_quote_renewal71c896312_pdf()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/quote (renewal) 71-C896312 27.11.2020 0947 [TePr].pdf');
 
-        $content = $this->pdfParser()->getText($filePath, false);
+        $content = $this->pdfParser()->getText($filePath);
 
         $result = $this->pdfParser()->parse($content);
 
@@ -1970,20 +2037,24 @@ CONTENT
         ], $result[1]['rows']);
     }
 
-    /** @group distributor-file-pdf */
-    public function test569464751YEAR()
+    /**
+     * @group parsing-price-list-pdf
+     */
+    public function test_parses_56946475_1_year_pdf()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/56946475 1 YEAR.pdf');
 
-        $pagesContent = $this->pdfParser()->getText($filePath, false);
+        $pagesContent = $this->pdfParser()->getText($filePath);
 
         $result = $this->pdfParser()->parse($pagesContent)['pages'];
 
         $this->assertCount(5, $result[1]['rows']);
     }
 
-    /** @group distributor-file-excel */
-    public function testSupportWarehouseLtdJbtFoodtech4976610509302020xlsx()
+    /**
+     * @group parsing-price-list-xlsx
+     */
+    public function test_parses_support_warehouse_ltd_jbt_foodtech_49766105_09302020_xlsx()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/Support Warehouse Ltd-Jbt Foodtech-49766105-09302020.xlsx');
 
@@ -2010,8 +2081,10 @@ CONTENT
         $this->assertCount(5, $importedRows);
     }
 
-    /** @group distributor-file-excel */
-    public function testSupportWarehouseKromannReumenrtXlsx()
+    /**
+     * @group parsing-price-list-xlsx
+     */
+    public function test_parses_support_warehouse_kromann_reumenrt_xlsx()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/SupportWarehouse - Kromann Reumert.xlsx');
 
@@ -2038,8 +2111,10 @@ CONTENT
         $this->assertCount(7, $importedRows);
     }
 
-    /** @group distributor-file-excel */
-    public function testSupportWarehouseLtdSelectAdministrativeServices4969805508272020xlsx()
+    /**
+     * @group parsing-price-list-xlsx
+     */
+    public function test_parses_support_warehouse_ltd_select_administrative_services_49698055_08272020_xlsx()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/Support Warehouse Ltd-SELECT ADMINISTRATIVE SERVICES-49698055-08272020.xlsx');
 
@@ -2183,8 +2258,10 @@ CONTENT
 //        }
     }
 
-    /** @group distributor-file-docx */
-    public function testRenewalSupportWarehouseVanBaelBellisFc24x7docx()
+    /**
+     * @group parsing-price-list-docx
+     */
+    public function test_parses_renewal_support_warehouse_van_bael_bellis_fc_24x7_docx()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/Renewal Support Warehouse Van Bael  Bellis FC 24x7.docx');
 
@@ -2198,167 +2275,18 @@ CONTENT
 
         $rows = collect($lines)->map(fn($line) => array_map(fn($value) => filled($value) ? $value : null, preg_split('/\t/', $line)));
 
-        // $this->assertArrayHasEqualValues(
-        //     $rows[0],
-        //     [
-        //         "719064-B21",
-        //         "HPE DL380 Gen9 8SFF CTO Server",
-        //         "CZJ60408ZP",
-        //         "1",
-        //         "128,00",
-        //         null,
-        //         null,
-        //         null,
-        //     ]
-        // );
-
-        // $this->assertArrayHasEqualValues(
-        //     $rows[1],
-        //     [
-        //         "719064-B21",
-        //         "HPE DL380 Gen9 8SFF CTO Server",
-        //         "CZJ60408ZN",
-        //         "1",
-        //         "128,00",
-        //         null,
-        //         null,
-        //         null,
-        //     ]
-        // );
-
-        // $this->assertArrayHasEqualValues(
-        //     $rows[2],
-        //     [
-        //         "719064-B21",
-        //         "HPE DL380 Gen9 8SFF CTO Server",
-        //         "CZJ60408ZQ",
-        //         "1",
-        //         "128,00",
-        //         null,
-        //         null,
-        //         null,
-        //     ]
-        // );
-
-        // $this->assertArrayHasEqualValues(
-        //     $rows[3],
-        //     [
-        //         "719064-B21",
-        //         "HPE DL380 Gen9 8SFF CTO Server",
-        //         "CZJ60408XW",
-        //         "1",
-        //         "128,00",
-        //         null,
-        //         null,
-        //         null,
-        //     ]
-        // );
-
-        // $this->assertArrayHasEqualValues(
-        //     $rows[4],
-        //     [
-        //         "677278-421",
-        //         "HP DL380p Gen8 E5-2630 Enrgy Star EU Svr",
-        //         "CZ22420DVX",
-        //         "1",
-        //         "135,00",
-        //         null,
-        //         null,
-        //         null,
-        //     ]
-        // );
-
-        // $this->assertArrayHasEqualValues(
-        //     $rows[5],
-        //     [
-        //         "719064-B21",
-        //         "HPE DL380 Gen9 8SFF CTO Server",
-        //         "CZJ60408ZP",
-        //         "1",
-        //         "8,00",
-        //         null,
-        //         null,
-        //         null,
-        //     ]
-        // );
-
-        // $this->assertArrayHasEqualValues(
-        //     $rows[6],
-        //     [
-        //         "719064-B21",
-        //         "HPE DL380 Gen9 8SFF CTO Server",
-        //         "CZJ60408ZN",
-        //         "1",
-        //         "8,00",
-        //         null,
-        //         null,
-        //         null,
-        //     ]
-        // );
-
-        // $this->assertArrayHasEqualValues(
-        //     $rows[7],
-        //     [
-        //         "719064-B21",
-        //         "HPE DL380 Gen9 8SFF CTO Server",
-        //         "CZJ60408ZQ",
-        //         "1",
-        //         "8,00",
-        //         null,
-        //         null,
-        //         null,
-        //     ]
-        // );
-
-        // $this->assertArrayHasEqualValues(
-        //     $rows[8],
-        //     [
-        //         "719064-B21",
-        //         "HPE DL380 Gen9 8SFF CTO Server",
-        //         "CZJ60408XW",
-        //         "1",
-        //         "8,00",
-        //         null,
-        //         null,
-        //         null,
-        //     ]
-        // );
-
-        // $this->assertArrayHasEqualValues(
-        //     $rows[9],
-        //     [
-        //         "677278-421",
-        //         "HP DL380p Gen8 E5-2630 Enrgy Star EU Svr",
-        //         "CZ22420DVX",
-        //         "1",
-        //         "7,00",
-        //         null,
-        //         null,
-        //         null,
-        //     ]
-        // );
-
-        // $this->assertArrayHasEqualValues(
-        //     $rows[10],
-        //     [
-        //         "UJ558AC",
-        //         "HPE Ind Std Svrs Return to HW Supp",
-        //         "30.09.2020",
-        //         "7.235,00",
-        //         null,
-        //         null,
-        //         null,
-        //         "1",
-        //     ]
-        // );
-
         $filePathCsv = base_path('tests/Unit/Data/distributor-files-test/'.Str::slug('Renewal Support Warehouse Van Bael  Bellis FC 24x7', '-').'.csv');
-
-        // file_put_contents($filePathCsv, $pagesResult[0]['content']);
     }
 
-    /** @group distributor-file-pdf */
-    public function test_supp_inba_1_year_pdf()
+    protected function wordParser(): WordParserInterface
+    {
+        return app(WordParserInterface::class);
+    }
+
+    /**
+     * @group parsing-price-list-pdf
+     */
+    public function test_parses_supp_inba_1_year_pdf()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/SUPP-INBA_1 year.pdf');
 
@@ -2375,8 +2303,10 @@ CONTENT
         $pagesWithRows->each(fn($number) => $this->assertContains($number, $pagesContainLines));
     }
 
-    /** @group distributor-file-pdf */
-    public function testSuppInba2Years()
+    /**
+     * @group parsing-price-list-pdf
+     */
+    public function test_parses_supp_inba2_years_pdf()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/SUPP-INBA_2 years.pdf');
 
@@ -2705,8 +2635,10 @@ CONTENT
         // static::storeText($filePath, $pagesContent);
     }
 
-    /** @group distributor-file-pdf */
-    public function testSupportWarehouseTataTrygDL380G92PDF()
+    /**
+     * @group parsing-price-list-pdf
+     */
+    public function test_parses_support_warehouse_tata_tryg_d_l380_g92_pdf()
     {
         $filepath = base_path('tests/Unit/Data/distributor-files-test/SupportWarehouse_TATA_Tryg_DL380G9-2.pdf');
 
@@ -2758,8 +2690,10 @@ CONTENT
         ], $result[1]['rows']);
     }
 
-    /** @group distributor-file-pdf */
-    public function testSurwareAdsNc()
+    /**
+     * @group parsing-price-list-pdf
+     */
+    public function test_parses_surware_ads_nc_pdf()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/SUPWARE-ADS - NC.pdf');
 
@@ -2826,8 +2760,10 @@ CONTENT
         ], $page['rows']);
     }
 
-    /** @group distributor-file-excel */
-    public function test317052SupportWarehouseLtdPhlexglobalL()
+    /**
+     * @group parsing-price-list-xlsx
+     */
+    public function test_parses_317052_support_warehouse_ltd_phlexglobal_l_xlsx()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/317052-Support Warehouse Ltd-Phlexglobal L.xlsx');
 
@@ -2849,11 +2785,13 @@ CONTENT
 
         $excelProcessor->process($quoteFile);
 
-        $this->assertEquals(24, $quoteFile->rowsData()->count());
+        $this->assertEquals(46, $quoteFile->rowsData()->count());
     }
 
-    /** @group distributor-file-excel */
-    public function testCopyOfSupportWarehouseLimitedAlgonquinLakeshore07062020()
+    /**
+     * @group parsing-price-list-xlsx
+     */
+    public function test_parses_copy_of_support_warehouse_limited_algonquin_lakeshore_07062020_xlsx()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/Copy of SUPPORT WAREHOUSE LIMITED-ALGONQUIN  LAKESHORE-07062020.xlsx');
 
@@ -3167,8 +3105,10 @@ CONTENT
         $this->assertCount(count($assertRows), $quoteFile->rowsData);
     }
 
-    /** @group distributor-file-pdf */
-    public function testHPInvent1547101PDF()
+    /**
+     * @group parsing-price-list-pdf
+     */
+    public function test_parses_hp_invent_1547101_pdf()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/HPInvent1547101.pdf');
 
@@ -3390,8 +3330,10 @@ CONTENT
         ], $sixthPage['rows']);
     }
 
-    /** @group distributor-file-pdf */
-    public function testHPInvent0947161PDF()
+    /**
+     * @group parsing-price-list-pdf
+     */
+    public function test_hp_invent_0947161_pdf()
     {
         $filePath = base_path('tests/Unit/Data/distributor-files-test/HPInvent0947161.pdf');
 
@@ -3641,34 +3583,5 @@ CONTENT
             "searchable" => "1086 5485 6896",
             "_one_pay" => false,
         ], $rowsCZJ81303R8);
-    }
-
-    protected function pdfParser(): PdfParserInterface
-    {
-        return app(PdfParserInterface::class);
-    }
-
-    protected function wordParser(): WordParserInterface
-    {
-        return app(WordParserInterface::class);
-    }
-
-    protected static function storeText(string $filePath, array $raw)
-    {
-        $fileName = Str::slug(File::name($filePath), '_');
-
-        $dir = "tests/Unit/Data/distributor-files-test/$fileName";
-
-        if (!is_dir($dir)) {
-            mkdir($dir);
-        }
-
-        foreach ($raw as $text) {
-            $page = $text['page'];
-
-            $pagePath = base_path("$dir/{$fileName}_{$page}.txt");
-
-            file_put_contents($pagePath, $text['content']);
-        }
     }
 }

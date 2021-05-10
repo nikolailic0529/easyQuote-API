@@ -31,7 +31,6 @@ return [
         'csv' => [
             'text/csv',
             'text/plain',
-            'application/vnd.ms-excel',
         ]
     ]
 ];

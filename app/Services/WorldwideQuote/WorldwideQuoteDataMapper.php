@@ -19,6 +19,7 @@ use App\DTO\WorldwideQuote\Export\WorldwideDistributionData;
 use App\DTO\WorldwideQuote\Export\WorldwideQuotePreviewData;
 use App\DTO\WorldwideQuote\SalesOrderCompanyData;
 use App\DTO\WorldwideQuote\WorldwideQuoteToSalesOrderData;
+use App\Enum\AddressType;
 use App\Enum\VAT;
 use App\Models\Address;
 use App\Models\Company;
@@ -409,12 +410,12 @@ class WorldwideQuoteDataMapper
             /** @var Address|null $quoteHardwareAddress */
             $quoteHardwareAddress = $distribution->addresses
                 ->sortByDesc('pivot.is_default')
-                ->first(fn(Address $address) => $address->address_type === 'Machine');
+                ->first(fn(Address $address) => in_array($address->address_type, [AddressType::MACHINE, AddressType::HARDWARE, AddressType::EQUIPMENT], true));
 
             /** @var Address|null $quoteSoftwareAddress */
             $quoteSoftwareAddress = $distribution->addresses
                 ->sortByDesc('pivot.is_default')
-                ->first(fn(Address $address) => $address->address_type === 'Software');
+                ->first(fn(Address $address) => $address->address_type === AddressType::SOFTWARE);
 
             /** @var Contact|null $quoteHardwareContact */
             $quoteHardwareContact = $distribution->contacts
@@ -545,12 +546,12 @@ class WorldwideQuoteDataMapper
         /** @var Address|null $quoteHardwareAddress */
         $quoteHardwareAddress = $activeVersion->addresses
             ->sortByDesc('pivot.is_default')
-            ->first(fn(Address $address) => $address->address_type === 'Machine');
+            ->first(fn(Address $address) => in_array($address->address_type, [AddressType::MACHINE, AddressType::HARDWARE, AddressType::EQUIPMENT], true));
 
         /** @var Address|null $quoteSoftwareAddress */
         $quoteSoftwareAddress = $activeVersion->addresses
             ->sortByDesc('pivot.is_default')
-            ->first(fn(Address $address) => $address->address_type === 'Software');
+            ->first(fn(Address $address) => $address->address_type === AddressType::SOFTWARE);
 
         /** @var Contact|null $quoteHardwareContact */
         $quoteHardwareContact = $activeVersion->contacts
@@ -711,6 +712,59 @@ class WorldwideQuoteDataMapper
             ->values();
 
         $distribution->setRelation('rowsGroups', $results);
+    }
+
+    public function collectMappingColumnsOfDistributorQuote(WorldwideDistribution $distributorQuote): array
+    {
+        /** @var \App\Models\QuoteFile\ImportedRow[] $mappingRows */
+        $importableColumns = $distributorQuote->mappingRows()
+            ->toBase()
+            ->selectRaw("distinct(json_unquote(json_extract(columns_data, '$.*.importable_column_id'))) as importable_columns")
+            ->pluck('importable_columns');
+
+        $importableColumns = $importableColumns->reduce(function (array $carry, string $columns) {
+           return array_merge($carry, json_decode($columns, true));
+        }, []);
+
+        /** @var array $importableColumns */
+
+        if (empty($importableColumns)) {
+            return [];
+        }
+
+        $importableColumns = array_values(array_unique($importableColumns));
+
+        $columnValueQueryBuilder = function (string $columnKey) use ($distributorQuote): BaseBuilder {
+           return $distributorQuote->mappingRows()->getQuery()->toBase()
+                ->selectRaw(sprintf("json_unquote(json_extract(columns_data, '$.\"%s\".value')) as value", $columnKey))
+                ->selectRaw(sprintf("'%s' as importable_column_id", $columnKey))
+                ->selectRaw(sprintf("json_unquote(json_extract(columns_data, '$.\"%s\".header')) as header", $columnKey))
+                ->whereRaw(sprintf("json_unquote(json_extract(columns_data, '$.\"%s\".value')) is not null", $columnKey))
+                ->orderBy($distributorQuote->mappingRows()->qualifyColumn('created_at'))
+                ->limit(1);
+        };
+
+        $unionQuery = $columnValueQueryBuilder(array_shift($importableColumns));
+
+        foreach ($importableColumns as $columnKey) {
+            $unionQuery->unionAll(
+                $columnValueQueryBuilder($columnKey)
+            );
+        }
+
+        $columnValues = $unionQuery->get();
+
+        $columnsData = [];
+
+        foreach ($columnValues as $columnValue) {
+            $columnsData[$columnValue->importable_column_id] = [
+                'value' => $columnValue->value,
+                'header' => $columnValue->header,
+                'importable_column_id' => $columnValue->importable_column_id,
+            ];
+        }
+
+        return $columnsData;
     }
 
     private function getPackAssetFields(WorldwideQuote $quote, QuoteTemplate $quoteTemplate): array

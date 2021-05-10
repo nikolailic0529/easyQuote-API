@@ -24,7 +24,7 @@ class CacheServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(LockProvider::class, function () {
-            return $this->app['cache']->driver('redis')->getStore();
+            return $this->app['cache']->driver()->getStore();
         });
     }
 

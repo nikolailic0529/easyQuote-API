@@ -38,6 +38,8 @@ class DashboardTest extends TestCase
                 'dead_quotes_count',
                 'customers_count',
                 'locations_total',
+                'opportunities_count',
+                'opportunities_value',
                 'lost_opportunities_count',
                 'lost_opportunities_value'
             ],
@@ -68,6 +70,8 @@ class DashboardTest extends TestCase
             $this->assertIsNumeric($response->json('totals.dead_quotes_value'));
             $this->assertIsNumeric($response->json('totals.lost_opportunities_count'));
             $this->assertIsNumeric($response->json('totals.lost_opportunities_value'));
+            $this->assertIsNumeric($response->json('totals.opportunities_count'));
+            $this->assertIsNumeric($response->json('totals.opportunities_value'));
         };
 
         $this->assertEquals(null, $response->json('period.start_date'));
@@ -126,6 +130,8 @@ class DashboardTest extends TestCase
                 'dead_quotes_count',
                 'customers_count',
                 'locations_total',
+                'opportunities_count',
+                'opportunities_value',
                 'lost_opportunities_count',
                 'lost_opportunities_value'
             ],
@@ -156,6 +162,8 @@ class DashboardTest extends TestCase
             $this->assertIsNumeric($response->json('totals.dead_quotes_value'));
             $this->assertIsNumeric($response->json('totals.lost_opportunities_count'));
             $this->assertIsNumeric($response->json('totals.lost_opportunities_value'));
+            $this->assertIsNumeric($response->json('totals.opportunities_count'));
+            $this->assertIsNumeric($response->json('totals.opportunities_value'));
         };
 
         $this->assertEquals(null, $response->json('period.start_date'));
@@ -276,6 +284,8 @@ class DashboardTest extends TestCase
                     'customers_count',
                     'locations_total',
                     'lost_opportunities_count',
+                    'lost_opportunities_value',
+                    'lost_opportunities_count',
                     'lost_opportunities_value'
                 ],
                 'period' => [
@@ -300,6 +310,8 @@ class DashboardTest extends TestCase
             $this->assertIsNumeric($response->json('totals.dead_quotes_value'));
             $this->assertIsNumeric($response->json('totals.lost_opportunities_count'));
             $this->assertIsNumeric($response->json('totals.lost_opportunities_value'));
+            $this->assertIsNumeric($response->json('totals.opportunities_count'));
+            $this->assertIsNumeric($response->json('totals.opportunities_value'));
         };
 
         $validateTotalsFromResponse($response);

@@ -24,7 +24,9 @@
             "part number",
             "référence constructeur",
             "type",
-            "part number"
+            "part number",
+            "machine type",
+            "type-model"
         ]
     },
     {
@@ -39,7 +41,8 @@
             "desc",
             "beskrivelse",
             "description du produit",
-            "beskrivelse"
+            "beskrivelse",
+            "descrizione"
         ]
     },
     {
@@ -78,7 +81,9 @@
             "dæknings periode fra",
             "dekning fra",
             "fra",
-            "couverture du"
+            "couverture du",
+            "charges start",
+            "charge start date"
         ]
     },
     {
@@ -100,7 +105,9 @@
             "dæknings periode til",
             "dekning til",
             "til",
-            "couverture au"
+            "couverture au",
+            "charges stop",
+            "charge end date"
         ]
     },
     {
@@ -113,7 +120,8 @@
             "quantity",
             "qty",
             "antal",
-            "quantité"
+            "quantité",
+            "q.ta"
         ]
     },
     {
@@ -146,7 +154,9 @@
             "line item monthly net price",
             "totalt nok",
             "monthly cost/cad",
-            "total price ex. vat"
+            "total price ex. vat",
+            "bp charges",
+            "totale netto"
         ]
     },
     {
