@@ -541,6 +541,9 @@ class WorldwideQuoteDataMapper
         /** @var Carbon|null $opportunityClosingDate */
         $opportunityClosingDate = transform($opportunity->opportunity_closing_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date));
 
+        /** @var Carbon|null $quoteExpiryDate */
+        $quoteExpiryDate = transform($activeVersion->quote_expiry_date, fn (string $date) => Carbon::createFromFormat('Y-m-d', $date));
+
         $quotePriceData = $this->getQuotePriceData($worldwideQuote);
 
         /** @var Address|null $quoteHardwareAddress */
@@ -611,7 +614,7 @@ class WorldwideQuoteDataMapper
             'support_start_assumed_char' => $opportunity->is_opportunity_start_date_assumed ? '*' : '',
             'support_end' => static::formatDate($opportunityEndDate),
             'support_end_assumed_char' => $opportunity->is_opportunity_end_date_assumed ? '*' : '',
-            'valid_until' => static::formatDate($opportunityClosingDate),
+            'valid_until' => static::formatDate($quoteExpiryDate),
 
             'list_price' => static::formatPriceValue($quotePriceData->total_price_value_after_margin, $outputCurrency->symbol),
             'applicable_discounts' => static::formatPriceValue($quotePriceData->applicable_discounts_value, $outputCurrency->symbol),
@@ -950,8 +953,12 @@ class WorldwideQuoteDataMapper
         return $priceValue;
     }
 
-    private static function formatDate(Carbon $date): string
+    private static function formatDate(?Carbon $date): string
     {
+        if (is_null($date)) {
+            return '';
+        }
+
         return $date->format('d/m/Y');
     }
 
@@ -1000,6 +1007,10 @@ class WorldwideQuoteDataMapper
             'company_logo_x2' => '',
             'company_logo_x3' => '',
         ];
+
+        $logoSetX1 = [];
+        $logoSetX2 = [];
+        $logoSetX3 = [];
 
         $companyImages = transform($company->image, function (Image $image) use ($flags, $company) {
 
@@ -1057,10 +1068,44 @@ class WorldwideQuoteDataMapper
                 $flags
             );
 
-            $templateAssets['logo_set_x1'] = array_merge($templateAssets['logo_set_x1'], Arr::wrap($vendorImages['x1'] ?? []));
-            $templateAssets['logo_set_x2'] = array_merge($templateAssets['logo_set_x2'], Arr::wrap($vendorImages['x2'] ?? []));
-            $templateAssets['logo_set_x3'] = array_merge($templateAssets['logo_set_x3'], Arr::wrap($vendorImages['x3'] ?? []));
+            $logoSetX1 = array_merge($logoSetX1, Arr::wrap($vendorImages['x1'] ?? []));
+            $logoSetX2 = array_merge($logoSetX2, Arr::wrap($vendorImages['x2'] ?? []));
+            $logoSetX3 = array_merge($logoSetX3, Arr::wrap($vendorImages['x3'] ?? []));
 
+        }
+
+        $composeLogoSet = function (array $logoSet) {
+            static $whitespaceImg = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAfSURBVHgB7cqxAQAADAEw7f8/4wSDUeYcDYFHaLETBWmaBBDqHm1tAAAAAElFTkSuQmCC";
+
+            if (empty($logoSet)) {
+                return [];
+            }
+
+            if (count($logoSet) === 1) {
+                return [array_shift($logoSet)];
+            }
+
+            $composed = [];
+
+            $lastImgSource = array_pop($logoSet);
+
+            foreach ($logoSet as $imgSource) {
+                $composed[] = $imgSource;
+                $composed[] = $whitespaceImg;
+            }
+
+            $composed[] = $lastImgSource;
+
+            return $composed;
+        };
+
+        foreach ([
+            'logo_set_x1' => $logoSetX1,
+            'logo_set_x2' => $logoSetX2,
+            'logo_set_x3' => $logoSetX3
+                 ] as $key => $logoSet) {
+
+            $templateAssets[$key] = $composeLogoSet($logoSet);
         }
 
         return new TemplateAssets($templateAssets);

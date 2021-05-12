@@ -2,6 +2,16 @@
 
 namespace App\Queries;
 
+use App\Http\Query\{ActiveFirst,
+    DefaultOrderBy,
+    OrderByCompanyName,
+    OrderByCreatedAt,
+    OrderByCustomerName,
+    OrderByOrderNumber,
+    OrderByOrderType,
+    OrderByRfqNumber,
+    OrderByStatus,
+    OrderByUpdatedAt};
 use App\Models\SalesOrder;
 use App\Services\ElasticsearchQuery;
 use Elasticsearch\Client as Elasticsearch;
@@ -36,7 +46,8 @@ class SalesOrderQueries
                 'sales_orders.order_number',
                 'worldwide_quotes.quote_number as rfq_number',
                 'worldwide_quotes.sequence_number',
-                'companies.name as customer_name',
+                'primary_account.name as customer_name',
+                'companies.name as company_name',
                 'contract_types.type_short_name as order_type',
                 'sales_orders.status',
                 'sales_orders.created_at',
@@ -47,6 +58,12 @@ class SalesOrderQueries
             })
             ->join('worldwide_quote_versions as active_quote_version', function (JoinClause $join) {
                 $join->on('active_quote_version.id', 'worldwide_quotes.active_version_id');
+            })
+            ->join('opportunities', function (JoinClause $join) {
+                $join->on('opportunities.id', 'worldwide_quotes.opportunity_id');
+            })
+            ->join('companies as primary_account', function (JoinClause $join) {
+                $join->on('primary_account.id', 'opportunities.primary_account_id');
             })
             ->join('companies', function (JoinClause $join) {
                 $join->on('companies.id', 'active_quote_version.company_id');
@@ -72,15 +89,16 @@ class SalesOrderQueries
         return $this->pipeline
             ->send($query)
             ->through([
-                new \App\Http\Query\ActiveFirst('sales_orders.is_active'),
-                (new \App\Http\Query\OrderByCreatedAt)->qualifyColumnName(),
-                (new \App\Http\Query\OrderByUpdatedAt)->qualifyColumnName(),
-                \App\Http\Query\OrderByOrderType::class,
-                \App\Http\Query\OrderByRfqNumber::class,
-                \App\Http\Query\OrderByOrderNumber::class,
-                \App\Http\Query\OrderByStatus::class,
-                \App\Http\Query\OrderByCustomerName::class,
-                \App\Http\Query\DefaultOrderBy::class,
+                new ActiveFirst('sales_orders.is_active'),
+                (new OrderByCreatedAt)->qualifyColumnName(),
+                (new OrderByUpdatedAt)->qualifyColumnName(),
+                OrderByOrderType::class,
+                OrderByRfqNumber::class,
+                OrderByOrderNumber::class,
+                OrderByStatus::class,
+                OrderByCustomerName::class,
+                OrderByCompanyName::class,
+                DefaultOrderBy::class,
             ])
             ->thenReturn();
     }
@@ -99,7 +117,8 @@ class SalesOrderQueries
                 'sales_orders.order_number',
                 'worldwide_quotes.quote_number as rfq_number',
                 'worldwide_quotes.sequence_number',
-                'companies.name as customer_name',
+                'primary_account.name as customer_name',
+                'companies.name as company_name',
                 'contract_types.type_short_name as order_type',
                 'sales_orders.status',
                 'sales_orders.failure_reason',
@@ -112,6 +131,12 @@ class SalesOrderQueries
             })
             ->join('worldwide_quote_versions as active_quote_version', function (JoinClause $join) {
                 $join->on('active_quote_version.id', 'worldwide_quotes.active_version_id');
+            })
+            ->join('opportunities', function (JoinClause $join) {
+                $join->on('opportunities.id', 'worldwide_quotes.opportunity_id');
+            })
+            ->join('companies as primary_account', function (JoinClause $join) {
+                $join->on('primary_account.id', 'opportunities.primary_account_id');
             })
             ->join('companies', function (JoinClause $join) {
                 $join->on('companies.id', 'active_quote_version.company_id');
@@ -137,14 +162,15 @@ class SalesOrderQueries
         return $this->pipeline
             ->send($query)
             ->through([
-                new \App\Http\Query\ActiveFirst('sales_orders.is_active'),
-                \App\Http\Query\OrderByCreatedAt::class,
-                \App\Http\Query\OrderByOrderType::class,
-                \App\Http\Query\OrderByRfqNumber::class,
-                \App\Http\Query\OrderByOrderNumber::class,
-                \App\Http\Query\OrderByStatus::class,
-                \App\Http\Query\OrderByCustomerName::class,
-                \App\Http\Query\DefaultOrderBy::class,
+                new ActiveFirst('sales_orders.is_active'),
+                OrderByCreatedAt::class,
+                OrderByOrderType::class,
+                OrderByRfqNumber::class,
+                OrderByOrderNumber::class,
+                OrderByStatus::class,
+                OrderByCustomerName::class,
+                OrderByCompanyName::class,
+                DefaultOrderBy::class,
             ])
             ->thenReturn();
     }

@@ -2733,5 +2733,136 @@ TEMPLATE;
                 'active_version_user_id' => $this->app['auth.driver']->id(),
             ]);
     }
+
+    /**
+     * Test an ability to change quote currency,
+     * and see the converted price values of mapped rows.
+     *
+     * @return void
+     */
+    public function testCanSeeConvertedPricesOfMappedRowsWhenQuoteCurrencyIsChanged()
+    {
+        $this->authenticateApi();
+
+        /** @var Opportunity $opportunity */
+        $opportunity = factory(Opportunity::class)->create();
+
+        /** @var WorldwideQuote $quote */
+        $quote = factory(WorldwideQuote::class)->create([
+            'contract_type_id' => CT_CONTRACT,
+        ]);
+
+        $quoteTemplate = factory(QuoteTemplate::class)->create();
+
+        $quote->activeVersion->update([
+            'user_id' => $this->app['auth.driver']->id(),
+            'quote_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
+        ]);
+
+        $quoteFile = factory(QuoteFile::class)->create();
+
+        $opportunitySupplier = factory(OpportunitySupplier::class)->create(['opportunity_id' => $opportunity->getKey()]);
+
+        /** @var WorldwideDistribution $distributorQuote */
+        $distributorQuote = factory(WorldwideDistribution::class)->create([
+            'worldwide_quote_id' => $quote->activeVersion->getKey(),
+            'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
+            'distribution_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
+            'distributor_file_id' => $quoteFile->getKey(),
+            'opportunity_supplier_id' => $opportunitySupplier->getKey(),
+        ]);
+
+        $addresses = factory(Address::class, 2)->create();
+        $contacts = factory(Contact::class, 2)->create();
+
+        $mappedRows = factory(MappedRow::class, 2)->create(['quote_file_id' => $quoteFile->getKey(), 'original_price' => 1_000, 'price' => 1_000]);
+
+        // Assert that price values are not changed if the currencies are the same.
+        $this->postJson('api/ww-quotes/'.$quote->getKey().'/import', [
+            'company_id' => Company::query()->where('short_code', 'EPD')->value('id'),
+            'quote_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
+            'quote_template_id' => $quoteTemplate->getKey(),
+            'quote_expiry_date' => now()->toDateString(),
+            'payment_terms' => '30 Days',
+            'worldwide_distributions' => [
+                [
+                    'id' => $distributorQuote->getKey(),
+                    'vendors' => [Vendor::query()->where('short_code', 'HPE')->value('id')],
+                    'country_id' => Country::query()->where('iso_3166_2', 'GB')->value('id'),
+                    'distribution_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
+                    'distribution_expiry_date' => now()->toDateString(),
+                    'addresses' => $addresses->modelKeys(),
+                    'contacts' => $contacts->modelKeys(),
+                    'buy_price' => 2_000,
+                ]
+            ],
+            'stage' => 'Import'
+        ])
+            ->assertOk();
+
+        $response = $this->getJson('api/ww-quotes/'.$quote->getKey().'?'.Arr::query(['include' => ['worldwide_distributions.mapped_rows']]))
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'worldwide_distributions' => [
+                    '*' => [
+                        'id', 'mapped_rows' => [
+                            '*' => ['id', 'price']
+                        ]
+                    ]
+                ]
+            ]);
+
+        $this->assertNotEmpty($response->json('worldwide_distributions.*.mapped_rows.*.price'));
+
+        foreach ($response->json('worldwide_distributions.*.mapped_rows.*.price') as $priceValue) {
+            $this->assertSame(1000, $priceValue);
+        }
+
+        // Assert that price values are updated once the currencies come different.
+        $this->postJson('api/ww-quotes/'.$quote->getKey().'/import', [
+            'company_id' => Company::query()->where('short_code', 'EPD')->value('id'),
+            'quote_currency_id' => Currency::query()->where('code', 'USD')->value('id'),
+            'quote_template_id' => $quoteTemplate->getKey(),
+            'quote_expiry_date' => now()->toDateString(),
+            'payment_terms' => '30 Days',
+            'worldwide_distributions' => [
+                [
+                    'id' => $distributorQuote->getKey(),
+                    'vendors' => [Vendor::query()->where('short_code', 'HPE')->value('id')],
+                    'country_id' => Country::query()->where('iso_3166_2', 'GB')->value('id'),
+                    'distribution_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
+                    'distribution_expiry_date' => now()->toDateString(),
+                    'addresses' => $addresses->modelKeys(),
+                    'contacts' => $contacts->modelKeys(),
+                    'buy_price' => 2_000,
+                ]
+            ],
+            'stage' => 'Import'
+        ])
+//            ->dump()
+            ->assertOk();
+
+        $response = $this->getJson('api/ww-quotes/'.$quote->getKey().'?'.Arr::query(['include' => ['worldwide_distributions.mapped_rows']]))
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'worldwide_distributions' => [
+                    '*' => [
+                        'id', 'mapped_rows' => [
+                            '*' => ['id', 'price']
+                        ]
+                    ]
+                ]
+            ]);
+
+        $this->assertNotEmpty($response->json('worldwide_distributions.*.mapped_rows.*.price'));
+
+        foreach ($response->json('worldwide_distributions.*.mapped_rows.*.price') as $priceValue) {
+            $this->assertNotSame(1_000, $priceValue);
+        }
+    }
 }
 

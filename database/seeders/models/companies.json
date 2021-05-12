@@ -14,7 +14,7 @@
         "vendors": [
             "HPE", "LEN", "IBM", "CIS", "ARU"
         ],
-        "logo": "database/seeders/models/images/swh.png"
+        "logo": "database/seeders/models/images/swh-trimmed.png"
     },
     {
         "id": "b86170d9-ceca-4f58-8a04-99ed2b0acb87",
@@ -31,7 +31,7 @@
         "vendors": [
             "HPE", "LEN", "IBM", "CIS", "ARU"
         ],
-        "logo": "database/seeders/models/images/epd.png"
+        "logo": "database/seeders/models/images/epd-trimmed.png"
     },
     {
         "id": "ad8b3b8d-44ef-4c97-8b6d-cd69f030fb17",
@@ -48,7 +48,7 @@
         "vendors": [
             "HPE", "LEN", "IBM", "CIS", "ARU"
         ],
-        "logo": "database/seeders/models/images/tesedi.png",
+        "logo": "database/seeders/models/images/tesedi-trimmed.png",
         "svg_logo": "database/seeders/models/images/tesedi.svg"
     }
 ]

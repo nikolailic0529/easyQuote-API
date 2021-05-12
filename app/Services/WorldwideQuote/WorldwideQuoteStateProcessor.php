@@ -722,11 +722,11 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         }
 
         // Updating computed price of mapped rows of the quote distributions.
-        $distributions = $quoteVersion->worldwideDistributions()->with('distributionCurrency')->get(['id', 'worldwide_quote_id', 'distribution_currency_id', 'distribution_exchange_rate', 'created_at', 'updated_at']);
+        $distributions = $quoteVersion->worldwideDistributions()
+            ->with('distributionCurrency')
+            ->get(['id', 'worldwide_quote_id', 'distributor_file_id', 'distribution_currency_id', 'distribution_exchange_rate', 'created_at', 'updated_at']);
 
         $distributions->each(function (WorldwideDistribution $distribution) use ($quoteVersion, $distributionsDataDictionary) {
-            $originalDistributionExchangeRate = $distribution->distribution_exchange_rate ?? 1;
-
             $distribution->distribution_exchange_rate = with($distribution, function (WorldwideDistribution $distribution) use ($quoteVersion) {
                 if ($quoteVersion->quoteCurrency->is($distribution->distributionCurrency)) {
                     return 1.0;
@@ -746,11 +746,11 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                 10
             );
 
-            $lock->block(30, function () use ($originalDistributionExchangeRate, $distribution) {
+            $lock->block(30, function () use ($distribution) {
 
-                $this->connection->transaction(function () use ($originalDistributionExchangeRate, $distribution) {
+                $this->connection->transaction(function () use ($distribution) {
 
-                    $distribution->mappedRows()->update(['price' => DB::raw("(price / $originalDistributionExchangeRate) * $distribution->distribution_exchange_rate")]);
+                    $distribution->mappedRows()->update(['price' => DB::raw("original_price * $distribution->distribution_exchange_rate")]);
 
                     $distribution->save();
 

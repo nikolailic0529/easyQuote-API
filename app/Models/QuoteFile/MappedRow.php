@@ -7,21 +7,22 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * @property mixed $quote_file_id
+ * @property string|null $quote_file_id
  * @property string|null $replicated_mapped_row_id
- * @property mixed $product_no
+ * @property string|null $product_no
  * @property string|null $service_sku
- * @property mixed $description
- * @property mixed $serial_no
- * @property mixed $date_from
- * @property mixed $date_to
- * @property mixed $qty
- * @property mixed $price
- * @property mixed $pricing_document
- * @property mixed $system_handle
- * @property mixed $searchable
- * @property mixed $service_level_description
- * @property mixed $is_selected
+ * @property string|null $description
+ * @property string|null $serial_no
+ * @property string|null $date_from
+ * @property string|null $date_to
+ * @property int|null $qty
+ * @property float|null $price
+ * @property float|null $original_price
+ * @property string|null $pricing_document
+ * @property string|null $system_handle
+ * @property string|null $searchable
+ * @property string|null $service_level_description
+ * @property bool|null $is_selected
  */
 class MappedRow extends Model
 {

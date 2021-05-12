@@ -5,6 +5,7 @@ namespace App\Services\WorldwideQuote;
 use App\DTO\Template\TemplateElement;
 use App\DTO\Template\TemplateElementChildControl;
 use App\DTO\WorldwideQuote\Export\TemplateData;
+use App\DTO\WorldwideQuote\Export\WorldwideDistributionData;
 use App\DTO\WorldwideQuote\Export\WorldwideQuotePreviewData;
 use App\Services\Exceptions\ValidationException;
 use Barryvdh\Snappy\PdfWrapper;
@@ -111,13 +112,44 @@ class WorldwideQuoteExporter
             }
         };
 
+        $distributorQuoteControlMapper = function (TemplateElementChildControl $control, WorldwideDistributionData $distributorQuoteData) use ($templateData, $previewData) : void {
+            switch ($control->type) {
+
+                case 'img':
+
+                    if (isset($templateData->template_assets->{$control->id})) {
+                        $control->value = $templateData->template_assets->{$control->id} ?? '';
+                    }
+
+                    break;
+
+                case 'tag':
+
+                    $value = $distributorQuoteData->{$control->id} ?? $previewData->quote_summary->{$control->id} ?? '';
+
+                    if (Str::startsWith($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
+                        $control->value = $this->viewFactory->make('ww-quotes.components.images_row', [
+                            'class' => $control->class,
+                            'images' => $templateData->template_assets->{$control->id}
+                        ])->render();
+                    } elseif ($control->id === 'quote_data_aggregation') {
+                        $control->value = $this->viewFactory->make('ww-quotes.components.quote_data_aggregation', [
+                            'aggregation_data' => $previewData->quote_summary->quote_data_aggregation,
+                            'aggregation_fields' => $previewData->quote_summary->quote_data_aggregation_fields,
+                            'sub_total_value' => $previewData->quote_summary->sub_total_value,
+                            'total_value_including_tax' => $previewData->quote_summary->total_value_including_tax,
+                            'grand_total_value' => $previewData->quote_summary->grand_total_value,
+                        ])->render();
+                    } elseif (is_scalar($value)) {
+                        $control->value = $value;
+                    }
+
+                    break;
+            }
+        };
+
         // First page schema
         foreach ($this->getTemplateControlsIterator($templateData->first_page_schema) as $control) {
-            $controlMapper($control);
-        }
-
-        // Assets page schema
-        foreach ($this->getTemplateControlsIterator($templateData->assets_page_schema) as $control) {
             $controlMapper($control);
         }
 
@@ -125,6 +157,10 @@ class WorldwideQuoteExporter
 
         foreach ($previewData->distributions as $distribution) {
             $distributionAssetsSchema = $templateData->assets_page_schema;
+
+            foreach ($this->getTemplateControlsIterator($distributionAssetsSchema) as $control) {
+                $distributorQuoteControlMapper($control, $distribution);
+            }
 
             $assetsElement = with(true, function () use ($distribution) {
 

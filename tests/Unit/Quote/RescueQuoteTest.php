@@ -3,7 +3,12 @@
 namespace Tests\Unit\Quote;
 
 use App\DTO\RowsGroup;
-use App\Models\{QuoteFile\ImportableColumn, QuoteFile\ImportedRow, QuoteFile\QuoteFile, Template\TemplateField,};
+use App\Models\{Company,
+    QuoteFile\ImportableColumn,
+    QuoteFile\ImportedRow,
+    QuoteFile\QuoteFile,
+    Template\QuoteTemplate,
+    Template\TemplateField};
 use App\Models\Quote\Quote;
 use Illuminate\Database\Eloquent\JsonEncodingException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -359,8 +364,16 @@ class RescueQuoteTest extends TestCase
      */
     public function testSubmittedQuoteExport()
     {
-        $quote = $this->createQuote($this->user);
-        $quote->submit();
+        $quoteTemplate = factory(QuoteTemplate::class)->create([
+            'company_id' => Company::query()->where('short_code', 'EPD')->value('id'),
+        ]);
+
+        $quote = factory(Quote::class)->create([
+            'user_id' => $this->app['auth.driver']->id(),
+            'quote_template_id' => $quoteTemplate->getKey(),
+            'company_id' => Company::query()->where('short_code', 'EPD')->value('id'),
+            'submitted_at' => now()
+        ]);
 
         $response = $this->getJson(url("api/quotes/submitted/pdf/{$quote->id}"));
 

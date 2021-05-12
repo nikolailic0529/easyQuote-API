@@ -23,6 +23,8 @@ class MappedRow extends DataTransferObject
 
     public float $price;
 
+    public float $original_price;
+
     public ?string $pricing_document;
 
     public ?string $system_handle;

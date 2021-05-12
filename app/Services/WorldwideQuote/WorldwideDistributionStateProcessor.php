@@ -512,15 +512,15 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
 
                 with($model, function (WorldwideDistribution $model) use ($distribution) {
 
-                    $model->distribution_expiry_date = $distribution->distribution_expiry_date->toDateString();
-                    $model->country_id = $distribution->country_id;
-                    $model->distribution_currency_id = $distribution->distribution_currency_id;
-                    $model->buy_price = $distribution->buy_price;
-                    $model->calculate_list_price = (bool)$distribution->calculate_list_price;
+//                    $model->distribution_expiry_date = $distribution->distribution_expiry_date->toDateString();
+//                    $model->country_id = $distribution->country_id;
+//                    $model->distribution_currency_id = $distribution->distribution_currency_id;
+//                    $model->buy_price = $distribution->buy_price;
+//                    $model->calculate_list_price = (bool)$distribution->calculate_list_price;
 
                     $model->save();
 
-                    $model->vendors()->sync($distribution->vendors);
+//                    $model->vendors()->sync($distribution->vendors);
 
                 });
 

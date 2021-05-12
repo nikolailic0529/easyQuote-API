@@ -319,7 +319,8 @@ class QuoteViewService implements QuoteView
             return ThumbHelper::getLogoDimensionsFromImage(
                 $company->image,
                 $company->thumbnailProperties(),
-                Str::snake(class_basename($company))
+                Str::snake(class_basename($company)),
+                ThumbHelper::ABS_PATH | ThumbHelper::WITH_KEYS
             );
         });
 
@@ -333,11 +334,12 @@ class QuoteViewService implements QuoteView
                 return ThumbHelper::getLogoDimensionsFromImage(
                     $template->vendor->image,
                     $template->vendor->thumbnailProperties(),
-                    Str::snake(class_basename($template->vendor))
+                    Str::snake(class_basename($template->vendor)),
+                    ThumbHelper::ABS_PATH | ThumbHelper::WITH_KEYS
                 );
             }
 
-            return $template->vendors->map(function (Vendor $vendor, int $key) {
+            $logo = $template->vendors->map(function (Vendor $vendor, int $key) {
                 if (is_null($vendor->image)) {
                     return [];
                 }
@@ -345,9 +347,21 @@ class QuoteViewService implements QuoteView
                 return ThumbHelper::getLogoDimensionsFromImage(
                     $vendor->image,
                     $vendor->thumbnailProperties(),
-                    Str::snake(class_basename($vendor)).'_'.++$key
+                    Str::snake(class_basename($vendor)).'_'.++$key,
+                    ThumbHelper::ABS_PATH | ThumbHelper::WITH_KEYS
                 );
             })->collapse()->all();
+
+            $vendorLogoForBackCompatibility = transform($template->vendors->first(), function (Vendor $vendor) {
+                return ThumbHelper::getLogoDimensionsFromImage(
+                    $vendor->image,
+                    $vendor->thumbnailProperties(),
+                    Str::snake(class_basename($vendor)),
+                    ThumbHelper::ABS_PATH | ThumbHelper::WITH_KEYS
+                );
+            }, []);
+
+            return array_merge($vendorLogoForBackCompatibility, $logo);
         });
 
         return [

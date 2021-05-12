@@ -163,7 +163,7 @@ class ThumbHelper
         $logo = [];
 
         foreach ($models as $model) {
-            array_merge($logo, ThumbHelper::getLogoDimensionsFromImage(
+            $logo = array_merge($logo, ThumbHelper::getLogoDimensionsFromImage(
                 $model->image,
                 $model->thumbnailProperties(),
                 Str::snake(class_basename($model)),

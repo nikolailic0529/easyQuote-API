@@ -75,23 +75,6 @@ class SalesOrderDataMapper
         throw new \RuntimeException('Unsupported Quote Contract Type to map Submit Sales Order Data.');
     }
 
-    private function getSalesOrderPriceData(SalesOrder $salesOrder): QuotePriceData
-    {
-        return tap(new QuotePriceData(), function (QuotePriceData $quotePriceData) use ($salesOrder) {
-            $priceSummary = $this->quoteCalc->calculatePriceSummaryOfQuote($salesOrder->worldwideQuote);
-
-            $quotePriceData->total_price_value = $priceSummary->total_price;
-            $quotePriceData->total_price_value_after_margin = $priceSummary->total_price_after_margin;
-            $quotePriceData->final_total_price_value = $priceSummary->final_total_price;
-            $quotePriceData->final_total_price_value_excluding_tax = $priceSummary->final_total_price_excluding_tax;
-            $quotePriceData->applicable_discounts_value = $priceSummary->applicable_discounts_value;
-
-            if ($quotePriceData->final_total_price_value !== 0.0) {
-                $quotePriceData->price_value_coefficient = $quotePriceData->total_price_value / $quotePriceData->final_total_price_value;
-            }
-        });
-    }
-
     private function mapContractSalesOrderToSubmitSalesOrderData(SalesOrder $salesOrder): SubmitSalesOrderData
     {
         $quote = $salesOrder->worldwideQuote;
@@ -254,7 +237,7 @@ class SalesOrderDataMapper
             'order_no' => $salesOrder->order_number,
             'order_date' => now()->toDateString(),
             'bc_company_name' => transform($company, fn(Company $company) => $company->vs_company_code),
-            'company_id' => transform($company, fn (Company $company) => $company->getKey()),
+            'company_id' => transform($company, fn(Company $company) => $company->getKey()),
             'exchange_rate' => $exchangeRateValue,
             'post_sales_id' => $salesOrder->getKey(),
             'customer_po' => $salesOrder->customer_po,
@@ -262,6 +245,89 @@ class SalesOrderDataMapper
                 return sprintf('%s %s', $accountManager->first_name, $accountManager->last_name);
             }, '')
         ]);
+    }
+
+    private function getSalesOrderOutputCurrency(SalesOrder $salesOrder): Currency
+    {
+        $quoteActiveVersion = $salesOrder->worldwideQuote->activeVersion;
+
+        $currency = with($quoteActiveVersion, function (WorldwideQuoteVersion $worldwideQuote) {
+
+            if (is_null($worldwideQuote->output_currency_id)) {
+                return $worldwideQuote->quoteCurrency;
+            }
+
+            return $worldwideQuote->outputCurrency;
+
+        });
+
+        return tap($currency, function (Currency $currency) use ($quoteActiveVersion, $salesOrder) {
+
+            $currency->exchange_rate_value = $this->exchangeRateService->getTargetRate(
+                $quoteActiveVersion->quoteCurrency,
+                $quoteActiveVersion->outputCurrency
+            );
+
+        });
+    }
+
+    private function getSalesOrderPriceData(SalesOrder $salesOrder): QuotePriceData
+    {
+        return tap(new QuotePriceData(), function (QuotePriceData $quotePriceData) use ($salesOrder) {
+            $priceSummary = $this->quoteCalc->calculatePriceSummaryOfQuote($salesOrder->worldwideQuote);
+
+            $quotePriceData->total_price_value = $priceSummary->total_price;
+            $quotePriceData->total_price_value_after_margin = $priceSummary->total_price_after_margin;
+            $quotePriceData->final_total_price_value = $priceSummary->final_total_price;
+            $quotePriceData->final_total_price_value_excluding_tax = $priceSummary->final_total_price_excluding_tax;
+            $quotePriceData->applicable_discounts_value = $priceSummary->applicable_discounts_value;
+
+            if ($quotePriceData->final_total_price_value !== 0.0) {
+                $quotePriceData->price_value_coefficient = $quotePriceData->total_price_value / $quotePriceData->final_total_price_value;
+            }
+        });
+    }
+
+    private function resolveEmailOfPrimaryAccount(Opportunity $opportunity): string
+    {
+        if (!is_null($opportunity->primaryAccount->email) && trim($opportunity->primaryAccount->email) !== '') {
+            return $opportunity->primaryAccount->email;
+        }
+
+        return '';
+    }
+
+    private function resolveSalesOrderVat(SalesOrder $salesOrder): ?string
+    {
+        if ($salesOrder->vat_type === VAT::VAT_NUMBER) {
+            return $salesOrder->vat_number;
+        }
+
+        return $salesOrder->vat_type;
+    }
+
+    private function getExchangeRateValueOfCurrency(string $currencyCode): ?float
+    {
+        if ($currencyCode === $this->exchangeRateService->baseCurrency()) {
+            return 1.0;
+        }
+
+        $exchangeRateValue = ExchangeRate::query()
+            ->where('currency_code', $currencyCode)
+            ->whereBetween('date', [now()->startOfMonth(), now()->endOfMonth()])
+            ->value('exchange_rate');
+
+        if (!is_null($exchangeRateValue)) {
+            return (float)$exchangeRateValue;
+        }
+
+        $rateData = $this->exchangeRateService->getRateDataOfCurrency($currencyCode, now());
+
+        if (!is_null($rateData)) {
+            return $rateData->exchange_rate;
+        }
+
+        return null;
     }
 
     private function mapPackSalesOrderToSubmitSalesOrderData(SalesOrder $salesOrder): SubmitSalesOrderData
@@ -369,7 +435,7 @@ class SalesOrderDataMapper
             'order_no' => $salesOrder->order_number,
             'order_date' => now()->toDateString(),
             'bc_company_name' => transform($company, fn(Company $company) => $company->vs_company_code),
-            'company_id' => transform($company, fn (Company $company) => $company->getKey()),
+            'company_id' => transform($company, fn(Company $company) => $company->getKey()),
             'exchange_rate' => $exchangeRateValue,
             'post_sales_id' => $salesOrder->getKey(),
             'customer_po' => $salesOrder->customer_po,
@@ -379,6 +445,200 @@ class SalesOrderDataMapper
         ]);
     }
 
+    public function mapWorldwideQuotePreviewDataAsSalesOrderPreviewData(SalesOrder $salesOrder, WorldwideQuotePreviewData $quotePreviewData): WorldwideQuotePreviewData
+    {
+        return tap($quotePreviewData, function (WorldwideQuotePreviewData $quotePreviewData) use ($salesOrder) {
+            $quote = $salesOrder->worldwideQuote;
+
+            $quotePreviewData->pack_asset_fields = static::excludeAssetFields($quotePreviewData->pack_asset_fields, self::EXCLUDED_ASSET_FIELDS);
+
+            foreach ($quotePreviewData->distributions as $distribution) {
+                $distribution->asset_fields = static::excludeAssetFields($distribution->asset_fields, self::EXCLUDED_ASSET_FIELDS);
+            }
+
+            $quotePreviewData->template_data = $this->getTemplateData($salesOrder);
+
+            $quotePreviewData->quote_summary->vat_number = (string)$salesOrder->vat_number;
+            $quotePreviewData->quote_summary->purchase_order_number = (string)$salesOrder->customer_po;
+            $quotePreviewData->quote_summary->export_file_name = SalesOrderNumberHelper::makeSalesOrderNumber(
+                $quotePreviewData->contract_type_name,
+                $quote->sequence_number
+            );
+        });
+    }
+
+    /**
+     * @param array $assetFields
+     * @param array $fieldNames
+     * @return array
+     */
+    private static function excludeAssetFields(array $assetFields, array $fieldNames): array
+    {
+        return array_values(array_filter($assetFields, function (AssetField $assetField) use ($fieldNames) {
+            return !in_array($assetField->field_name, $fieldNames, true);
+        }));
+    }
+
+    public function getTemplateData(SalesOrder $salesOrder, bool $useLocalAssets = false): TemplateData
+    {
+        $templateSchema = $salesOrder->salesOrderTemplate->templateSchema->form_data;
+
+        return new TemplateData([
+            'first_page_schema' => $this->templatePageSchemaToArrayOfTemplateElement($templateSchema['first_page'] ?? []),
+            'assets_page_schema' => $this->templatePageSchemaToArrayOfTemplateElement($templateSchema['data_pages'] ?? []),
+            'payment_schedule_page_schema' => $this->templatePageSchemaToArrayOfTemplateElement($templateSchema['payment_schedule'] ?? []),
+            'last_page_schema' => $this->templatePageSchemaToArrayOfTemplateElement($templateSchema['last_page'] ?? []),
+            'template_assets' => $this->getTemplateAssets($salesOrder, $useLocalAssets),
+        ]);
+    }
+
+    /**
+     * @param array $pageSchema
+     * @return \App\DTO\Template\TemplateElement[]
+     */
+    private function templatePageSchemaToArrayOfTemplateElement(array $pageSchema): array
+    {
+        return array_map(function (array $element) {
+
+            return new TemplateElement([
+                'children' => $element['child'] ?? [],
+                'class' => $element['class'] ?? '',
+                'css' => $element['css'] ?? '',
+            ]);
+
+        }, $pageSchema);
+    }
+
+    /**
+     * @param SalesOrder $salesOrder
+     * @param bool $useLocalAssets
+     * @return TemplateAssets
+     */
+    private function getTemplateAssets(SalesOrder $salesOrder, bool $useLocalAssets = false): TemplateAssets
+    {
+        $quote = $salesOrder->worldwideQuote;
+
+        $company = $quote->activeVersion->company;
+
+        $flags = ThumbHelper::WITH_KEYS;
+
+        if ($useLocalAssets) {
+            $flags |= ThumbHelper::ABS_PATH;
+        }
+
+        $templateAssets = [
+            'logo_set_x1' => [],
+            'logo_set_x2' => [],
+            'logo_set_x3' => [],
+            'company_logo_x1' => '',
+            'company_logo_x2' => '',
+            'company_logo_x3' => '',
+        ];
+
+
+        $logoSetX1 = [];
+        $logoSetX2 = [];
+        $logoSetX3 = [];
+
+        $companyImages = transform($company->image, function (Image $image) use ($flags, $company) {
+
+            return ThumbHelper::getLogoDimensionsFromImage(
+                $image,
+                $company->thumbnailProperties(),
+                'company_',
+                $flags
+            );
+
+        }, []);
+
+        $templateAssets = array_merge($templateAssets, $companyImages);
+
+        /** @var Collection<Vendor>|Vendor[] $vendors */
+
+        $vendors = with($quote, function (WorldwideQuote $quote) {
+
+            if ($quote->contract_type_id === CT_PACK) {
+
+                return Vendor::query()
+                    ->whereIn((new Vendor())->getQualifiedKeyName(), function (BaseBuilder $builder) use ($quote) {
+                        return $builder->selectRaw('distinct(vendor_id)')
+                            ->from('worldwide_quote_assets')
+                            ->where($quote->assets()->getQualifiedForeignKeyName(), $quote->getKey())
+                            ->whereNotNull('vendor_id')
+                            ->where('is_selected', true);
+                    })
+                    ->has('image')
+                    ->get();
+
+            }
+
+            if ($quote->contract_type_id === CT_CONTRACT) {
+
+                $vendors = $quote->activeVersion->worldwideDistributions->load(['vendors' => function (BelongsToMany $relationship) {
+                    $relationship->has('image');
+                }])->pluck('vendors')->collapse();
+
+                $vendors = new Collection($vendors);
+
+                return $vendors->unique()->values();
+
+            }
+
+            return new Collection();
+        });
+
+        foreach ($vendors as $key => $vendor) {
+
+            $vendorImages = ThumbHelper::getLogoDimensionsFromImage(
+                $vendor->image,
+                $vendor->thumbnailProperties(),
+                '',
+                $flags
+            );
+
+            $logoSetX1 = array_merge($logoSetX1, Arr::wrap($vendorImages['x1'] ?? []));
+            $logoSetX2 = array_merge($logoSetX2, Arr::wrap($vendorImages['x2'] ?? []));
+            $logoSetX3 = array_merge($logoSetX3, Arr::wrap($vendorImages['x3'] ?? []));
+
+        }
+
+        $composeLogoSet = function (array $logoSet) {
+            static $whitespaceImg = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAfSURBVHgB7cqxAQAADAEw7f8/4wSDUeYcDYFHaLETBWmaBBDqHm1tAAAAAElFTkSuQmCC";
+
+            if (empty($logoSet)) {
+                return [];
+            }
+
+            if (count($logoSet) === 1) {
+                return [array_shift($logoSet)];
+            }
+
+            $composed = [];
+
+            $lastImgSource = array_pop($logoSet);
+
+            foreach ($logoSet as $imgSource) {
+                $composed[] = $imgSource;
+                $composed[] = $whitespaceImg;
+            }
+
+            $composed[] = $lastImgSource;
+
+            return $composed;
+        };
+
+        foreach ([
+                     'logo_set_x1' => $logoSetX1,
+                     'logo_set_x2' => $logoSetX2,
+                     'logo_set_x3' => $logoSetX3
+                 ] as $key => $logoSet) {
+
+            $templateAssets[$key] = $composeLogoSet($logoSet);
+        }
+
+        return new TemplateAssets($templateAssets);
+    }
+
     private function resolveCustomerVat(Company $company): ?string
     {
         if ($company->vat_type === VAT::VAT_NUMBER) {
@@ -386,15 +646,6 @@ class SalesOrderDataMapper
         }
 
         return $company->vat_type;
-    }
-
-    private function resolveSalesOrderVat(SalesOrder $salesOrder): ?string
-    {
-        if ($salesOrder->vat_type === VAT::VAT_NUMBER) {
-            return $salesOrder->vat_number;
-        }
-
-        return $salesOrder->vat_type;
     }
 
     private function populateServiceDataToSupportLines(SubmitOrderLineData ...$orderLines): void
@@ -457,217 +708,5 @@ class SalesOrderDataMapper
             }
 
         }
-    }
-
-    private function resolveEmailOfPrimaryAccount(Opportunity $opportunity): string
-    {
-        if (!is_null($opportunity->primaryAccount->email) && trim($opportunity->primaryAccount->email) !== '') {
-            return $opportunity->primaryAccount->email;
-        }
-
-        return '';
-    }
-
-    private function getExchangeRateValueOfCurrency(string $currencyCode): ?float
-    {
-        if ($currencyCode === $this->exchangeRateService->baseCurrency()) {
-            return 1.0;
-        }
-
-        $exchangeRateValue = ExchangeRate::query()
-            ->where('currency_code', $currencyCode)
-            ->whereBetween('date', [now()->startOfMonth(), now()->endOfMonth()])
-            ->value('exchange_rate');
-
-        if (!is_null($exchangeRateValue)) {
-            return (float)$exchangeRateValue;
-        }
-
-        $rateData = $this->exchangeRateService->getRateDataOfCurrency($currencyCode, now());
-
-        if (!is_null($rateData)) {
-            return $rateData->exchange_rate;
-        }
-
-        return null;
-    }
-
-    private function getSalesOrderOutputCurrency(SalesOrder $salesOrder): Currency
-    {
-        $quoteActiveVersion = $salesOrder->worldwideQuote->activeVersion;
-
-        $currency = with($quoteActiveVersion, function (WorldwideQuoteVersion $worldwideQuote) {
-
-            if (is_null($worldwideQuote->output_currency_id)) {
-                return $worldwideQuote->quoteCurrency;
-            }
-
-            return $worldwideQuote->outputCurrency;
-
-        });
-
-        return tap($currency, function (Currency $currency) use ($quoteActiveVersion, $salesOrder) {
-
-            $currency->exchange_rate_value = $this->exchangeRateService->getTargetRate(
-                $quoteActiveVersion->quoteCurrency,
-                $quoteActiveVersion->outputCurrency
-            );
-
-        });
-    }
-
-    public function mapWorldwideQuotePreviewDataAsSalesOrderPreviewData(SalesOrder $salesOrder, WorldwideQuotePreviewData $quotePreviewData): WorldwideQuotePreviewData
-    {
-        return tap($quotePreviewData, function (WorldwideQuotePreviewData $quotePreviewData) use ($salesOrder) {
-            $quote = $salesOrder->worldwideQuote;
-
-            $quotePreviewData->pack_asset_fields = static::excludeAssetFields($quotePreviewData->pack_asset_fields, self::EXCLUDED_ASSET_FIELDS);
-
-            foreach ($quotePreviewData->distributions as $distribution) {
-                $distribution->asset_fields = static::excludeAssetFields($distribution->asset_fields, self::EXCLUDED_ASSET_FIELDS);
-            }
-
-            $quotePreviewData->template_data = $this->getTemplateData($salesOrder);
-
-            $quotePreviewData->quote_summary->vat_number = (string)$salesOrder->vat_number;
-            $quotePreviewData->quote_summary->purchase_order_number = (string)$salesOrder->customer_po;
-            $quotePreviewData->quote_summary->export_file_name = SalesOrderNumberHelper::makeSalesOrderNumber(
-                $quotePreviewData->contract_type_name,
-                $quote->sequence_number
-            );
-        });
-    }
-
-    public function getTemplateData(SalesOrder $salesOrder, bool $useLocalAssets = false): TemplateData
-    {
-        $templateSchema = $salesOrder->salesOrderTemplate->templateSchema->form_data;
-
-        return new TemplateData([
-            'first_page_schema' => $this->templatePageSchemaToArrayOfTemplateElement($templateSchema['first_page'] ?? []),
-            'assets_page_schema' => $this->templatePageSchemaToArrayOfTemplateElement($templateSchema['data_pages'] ?? []),
-            'payment_schedule_page_schema' => $this->templatePageSchemaToArrayOfTemplateElement($templateSchema['payment_schedule'] ?? []),
-            'last_page_schema' => $this->templatePageSchemaToArrayOfTemplateElement($templateSchema['last_page'] ?? []),
-            'template_assets' => $this->getTemplateAssets($salesOrder, $useLocalAssets),
-        ]);
-    }
-
-    /**
-     * @param SalesOrder $salesOrder
-     * @param bool $useLocalAssets
-     * @return TemplateAssets
-     */
-    private function getTemplateAssets(SalesOrder $salesOrder, bool $useLocalAssets = false): TemplateAssets
-    {
-        $quote = $salesOrder->worldwideQuote;
-
-        $company = $quote->activeVersion->company;
-
-        $flags = ThumbHelper::WITH_KEYS;
-
-        if ($useLocalAssets) {
-            $flags |= ThumbHelper::ABS_PATH;
-        }
-
-        $templateAssets = [
-            'logo_set_x1' => [],
-            'logo_set_x2' => [],
-            'logo_set_x3' => [],
-            'company_logo_x1' => '',
-            'company_logo_x2' => '',
-            'company_logo_x3' => '',
-        ];
-
-        $companyImages = transform($company->image, function (Image $image) use ($flags, $company) {
-
-            return ThumbHelper::getLogoDimensionsFromImage(
-                $image,
-                $company->thumbnailProperties(),
-                'company_',
-                $flags
-            );
-
-        }, []);
-
-        $templateAssets = array_merge($templateAssets, $companyImages);
-
-        /** @var Collection<Vendor>|Vendor[] $vendors */
-
-        $vendors = with($quote, function (WorldwideQuote $quote) {
-
-            if ($quote->contract_type_id === CT_PACK) {
-
-                return Vendor::query()
-                    ->whereIn((new Vendor())->getQualifiedKeyName(), function (BaseBuilder $builder) use ($quote) {
-                        return $builder->selectRaw('distinct(vendor_id)')
-                            ->from('worldwide_quote_assets')
-                            ->where($quote->assets()->getQualifiedForeignKeyName(), $quote->getKey())
-                            ->whereNotNull('vendor_id')
-                            ->where('is_selected', true);
-                    })
-                    ->has('image')
-                    ->get();
-
-            }
-
-            if ($quote->contract_type_id === CT_CONTRACT) {
-
-                $vendors = $quote->activeVersion->worldwideDistributions->load(['vendors' => function (BelongsToMany $relationship) {
-                    $relationship->has('image');
-                }])->pluck('vendors')->collapse();
-
-                $vendors = new Collection($vendors);
-
-                return $vendors->unique()->values();
-
-            }
-
-            return new Collection();
-        });
-
-        foreach ($vendors as $key => $vendor) {
-
-            $vendorImages = ThumbHelper::getLogoDimensionsFromImage(
-                $vendor->image,
-                $vendor->thumbnailProperties(),
-                '',
-                $flags
-            );
-
-            $templateAssets['logo_set_x1'] = array_merge($templateAssets['logo_set_x1'], Arr::wrap($vendorImages['x1'] ?? []));
-            $templateAssets['logo_set_x2'] = array_merge($templateAssets['logo_set_x2'], Arr::wrap($vendorImages['x2'] ?? []));
-            $templateAssets['logo_set_x3'] = array_merge($templateAssets['logo_set_x3'], Arr::wrap($vendorImages['x3'] ?? []));
-
-        }
-
-        return new TemplateAssets($templateAssets);
-    }
-
-    /**
-     * @param array $pageSchema
-     * @return \App\DTO\Template\TemplateElement[]
-     */
-    private function templatePageSchemaToArrayOfTemplateElement(array $pageSchema): array
-    {
-        return array_map(function (array $element) {
-
-            return new TemplateElement([
-                'children' => $element['child'] ?? [],
-                'class' => $element['class'] ?? '',
-                'css' => $element['css'] ?? '',
-            ]);
-
-        }, $pageSchema);
-    }
-
-    /**
-     * @param array $assetFields
-     * @param array $fieldNames
-     * @return array
-     */
-    private static function excludeAssetFields(array $assetFields, array $fieldNames): array
-    {
-        return array_values(array_filter($assetFields, function (AssetField $assetField) use ($fieldNames) {
-            return !in_array($assetField->field_name, $fieldNames, true);
-        }));
     }
 }

@@ -571,12 +571,37 @@
     ],
     "first_page": [
         {
-            "id": "1a4397e2-4995-454e-9af8-7af7b0af1638",
-            "name": "Single Column",
+            "id": "769a5d52-25c8-48f0-94f0-8d40a21aa244",
+            "name": "Two Column",
             "child": [
                 {
-                    "id": "9e8f266b-5609-4cdb-b6ce-187844a40081",
-                    "class": "col-lg-12 border-right",
+                    "id": "4d3cad85-f5b0-46f0-84e2-76ab74ba9939",
+                    "class": "col-lg-3",
+                    "controls": [
+                        {
+                            "id": "company_logo_x3",
+                            "css": null,
+                            "src": "{{company_logo_x3}}",
+                            "name": "company_logo_x3",
+                            "show": false,
+                            "type": "img",
+                            "class": "s4-form-control",
+                            "label": "Logo 240X120",
+                            "value": null,
+                            "is_field": true,
+                            "is_image": true,
+                            "droppable": false,
+                            "is_system": true,
+                            "is_required": false,
+                            "attached_child_id": "4d3cad85-f5b0-46f0-84e2-76ab74ba9939",
+                            "attached_element_id": "769a5d52-25c8-48f0-94f0-8d40a21aa244"
+                        }
+                    ],
+                    "position": 1
+                },
+                {
+                    "id": "e9c15bc2-a914-4fc4-88f7-6838e3c1fda4",
+                    "class": "col-lg-9 border-right",
                     "controls": [
                         {
                             "id": "logo_set_x3",
@@ -592,19 +617,19 @@
                             "droppable": false,
                             "is_system": true,
                             "is_required": false,
-                            "attached_child_id": "9e8f266b-5609-4cdb-b6ce-187844a40081",
-                            "attached_element_id": "1a4397e2-4995-454e-9af8-7af7b0af1638"
+                            "attached_child_id": "e9c15bc2-a914-4fc4-88f7-6838e3c1fda4",
+                            "attached_element_id": "769a5d52-25c8-48f0-94f0-8d40a21aa244"
                         }
                     ],
-                    "position": 1
+                    "position": 2
                 }
             ],
-            "class": "single-column field-dragger",
+            "class": "two-column field-dragger",
             "order": 1,
             "controls": [],
             "is_field": false,
             "droppable": false,
-            "decoration": "1"
+            "decoration": "1+3"
         },
         {
             "id": "4915df8d-0480-4a10-b881-bc3f0e2cd110",

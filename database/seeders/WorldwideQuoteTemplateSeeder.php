@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\Company;
+use App\Services\ThumbHelper;
 use Illuminate\Database\Seeder;
 
 class WorldwideQuoteTemplateSeeder extends Seeder
@@ -14,11 +16,17 @@ class WorldwideQuoteTemplateSeeder extends Seeder
      */
     public function run()
     {
+        /** @var \App\Models\Company $epdCompanyModel */
+        $epdCompanyModel = Company::query()->where('short_code', 'EPD')->sole();
+        $templateAssets = ThumbHelper::retrieveLogoFromModels([$epdCompanyModel], ThumbHelper::WITH_KEYS);
+
         $wwContractQuoteTemplateUuid = '4f8bc11b-6109-41db-87f9-962c37dd8c7f';
         $wwContractQuoteTemplateSchema = file_get_contents(database_path('seeders/models/ww_contract_epd_master_quote_template_schema.json'));
+        $wwContractQuoteTemplateSchema = self::substituteTemplateSchemaAssets($wwContractQuoteTemplateSchema, $templateAssets);
 
         $wwPackQuoteTemplateUuid = '103167de-757d-49e5-aec1-33e4ea087a7a';
         $wwPackQuoteTemplateSchema = file_get_contents(database_path('seeders/models/ww_pack_epd_master_quote_template_schema.json'));
+        $wwPackQuoteTemplateSchema = self::substituteTemplateSchemaAssets($wwPackQuoteTemplateSchema, $templateAssets);
 
         $dataHeaders = file_get_contents(database_path('seeders/models/ww_master_quote_template_data_headers.json'));
 
@@ -122,5 +130,12 @@ class WorldwideQuoteTemplateSeeder extends Seeder
             }
 
         });
+    }
+
+    protected static function substituteTemplateSchemaAssets(string $templateSchema, array $templateAssets)
+    {
+        return preg_replace_callback('/{{(.*)}}/m', function ($item) use ($templateAssets) {
+            return $templateAssets[last($item)] ?? null;
+        }, $templateSchema);
     }
 }

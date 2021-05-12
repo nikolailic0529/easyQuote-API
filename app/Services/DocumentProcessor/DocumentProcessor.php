@@ -159,7 +159,7 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
             return (int)$quantity;
         });
 
-        $price = (float)transform($price, function ($price) use ($dateTo, $dateFrom, $row, $rowSettings) {
+        $originalPrice = (float)transform($price, function ($price) use ($dateTo, $dateFrom, $row, $rowSettings) {
             $value = PriceParser::parseAmount($price);
 
             if ($row->is_one_pay || false === $rowSettings->calculate_list_price) {
@@ -169,7 +169,7 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
             return $dateFrom->diffInMonths($dateTo) * $value;
         });
 
-        $price *= $rowSettings->exchange_rate_value;
+        $price = $originalPrice * $rowSettings->exchange_rate_value;
 
         return new MappedRowDTO([
             'product_no' => $productNo,
@@ -180,6 +180,7 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
             'date_to' => $dateTo,
             'qty' => $quantity,
             'price' => $price,
+            'original_price' => $originalPrice,
             'pricing_document' => $pricingDocument,
             'system_handle' => $systemHandle,
             'searchable' => $searchable,

@@ -30,6 +30,7 @@ class SalesOrderSubmitted extends JsonResource
             'failure_reason' => $this->failure_reason,
             'status_reason' => $this->status_reason,
             'customer_name' => $this->customer_name,
+            'company_name' => $this->company_name,
             'rfq_number' => $this->rfq_number,
             'order_type' => $this->order_type,
             'created_at' => $this->created_at,
