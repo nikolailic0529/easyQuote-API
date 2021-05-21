@@ -11,7 +11,7 @@ $factory->define(Contract::class, function (Faker $faker) {
 
     return [
         'quote_id' => $quote->getKey(),
-//        'customer_id' => $quote->customer_id,
+        'customer_id' => $quote->customer_id,
 //        'country_id' => $quote->country_id,
 //        'vendor_id' => $quote->vendor_id,
 //        'company_id' => $quote->company_id,

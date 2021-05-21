@@ -30,7 +30,6 @@ class SearchObserver
             $this->elasticsearch->delete([
                 'index' => $model->getSearchIndex(),
                 'id'    => $model->getKey(),
-                'type'  => $model->getSearchType(),
             ]);
         });
     }

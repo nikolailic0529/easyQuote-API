@@ -241,6 +241,8 @@ class OpportunityTest extends TestCase
             ->assertJsonStructure([
                 "id",
                 "user_id",
+                "pipeline_id",
+                "pipeline",
                 "contract_type_id",
                 "contract_type",
                 "primary_account_id",
@@ -392,6 +394,8 @@ class OpportunityTest extends TestCase
             ->assertJsonStructure([
                 "id",
                 "user_id",
+                "pipeline_id",
+                "pipeline",
                 "contract_type_id",
                 "contract_type",
                 "primary_account_id",
@@ -553,6 +557,8 @@ class OpportunityTest extends TestCase
             ->assertJsonStructure([
                 "id",
                 "user_id",
+                "pipeline_id",
+                "pipeline",
                 "contract_type_id",
                 "contract_type",
                 "primary_account_id",

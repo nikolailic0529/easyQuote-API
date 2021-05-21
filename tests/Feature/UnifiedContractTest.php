@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\HpeContract;
 use App\Models\Quote\Contract;
+use App\Models\Role;
+use App\Models\User;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Arr;
@@ -184,6 +186,100 @@ class UnifiedContractTest extends TestCase
     }
 
     /**
+     * Test an ability to view paginated unified drafted contracts.
+     *
+     * @return void
+     */
+    public function testCanViewOwnPaginatedDraftedContracts()
+    {
+        $this->app['db.connection']->table('quotes')->delete();
+        $this->app['db.connection']->table('hpe_contracts')->delete();
+
+        factory(HpeContract::class)->create([
+            'user_id' => factory(User::class)->create()->getKey()
+        ]);
+        factory(Contract::class)->create([
+            'user_id' => factory(User::class)->create()->getKey()
+        ]);
+
+        /** @var User $user */
+        $user = factory(User::class)->create();
+
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions(
+            'view_own_contracts'
+        );
+
+        $user->syncRoles($role);
+
+        $this->actingAs($user, 'api');
+
+        $ownHpeContract = factory(HpeContract::class)->create([
+            'user_id' => $user->getKey()
+        ]);
+        $ownRescueContract = factory(Contract::class)->create([
+            'user_id' => $user->getKey()
+        ]);
+
+        $response = $this->getJson('api/contracts/drafted')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'quote_id',
+                        'type',
+                        'user' => [
+                            'id', 'first_name', 'last_name'
+                        ],
+                        'company' => [
+                            'id', 'name'
+                        ],
+                        'contract_customer' => [
+                            'rfq'
+                        ],
+                        'permissions' => [
+                            'view', 'update', 'delete'
+                        ],
+                        'completeness',
+                        'last_drafted_step',
+                        'quote_customer' => [
+                            'id',
+                            'name',
+                            'rfq',
+                            'valid_until',
+                            'support_start',
+                            'support_end'
+                        ],
+                        'created_at',
+                        'updated_at',
+                        'activated_at'
+                    ]
+                ],
+                'current_page',
+                'first_page_url',
+                'from',
+                'last_page',
+                'last_page_url',
+                'next_page_url',
+                'path',
+                'per_page',
+                'prev_page_url',
+                'to',
+                'total'
+            ]);
+
+        $this->assertCount(2, $response->json('data'));
+
+        foreach ($response->json('data.*.user.id') as $userKey) {
+            $this->assertSame($user->getKey(), $userKey);
+        }
+    }
+
+    /**
      * Test an ability to filter unified drafted contracts.
      *
      * @return void
@@ -351,8 +447,12 @@ class UnifiedContractTest extends TestCase
         $this->app['db.connection']->table('quotes')->delete();
         $this->app['db.connection']->table('hpe_contracts')->delete();
 
-        factory(HpeContract::class)->create();
-        factory(Contract::class)->create();
+        factory(HpeContract::class)->create([
+            'submitted_at' => now()
+        ]);
+        factory(Contract::class)->create([
+            'submitted_at' => now(),
+        ]);
 
         $this->getJson('api/contracts/submitted')
 //            ->dump()
@@ -375,8 +475,6 @@ class UnifiedContractTest extends TestCase
                         'permissions' => [
                             'view', 'update', 'delete'
                         ],
-                        'completeness',
-                        'last_drafted_step',
                         'quote_customer' => [
                             'id',
                             'name',
@@ -386,7 +484,6 @@ class UnifiedContractTest extends TestCase
                             'support_end'
                         ],
                         'created_at',
-                        'updated_at',
                         'activated_at'
                     ]
                 ],
@@ -402,5 +499,100 @@ class UnifiedContractTest extends TestCase
                 'to',
                 'total'
             ]);
+    }
+
+    /**
+     * Test an ability to view paginated unified submitted contracts.
+     *
+     * @return void
+     */
+    public function testCanViewOwnPaginatedSubmittedContracts()
+    {
+        $this->app['db.connection']->table('quotes')->delete();
+        $this->app['db.connection']->table('hpe_contracts')->delete();
+
+        factory(HpeContract::class)->create([
+            'user_id' => factory(User::class)->create()->getKey(),
+            'submitted_at' => now(),
+        ]);
+        factory(Contract::class)->create([
+            'user_id' => factory(User::class)->create()->getKey(),
+            'submitted_at' => now(),
+        ]);
+
+        /** @var User $user */
+        $user = factory(User::class)->create();
+
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions(
+            'view_own_contracts'
+        );
+
+        $user->syncRoles($role);
+
+        $this->actingAs($user, 'api');
+
+        $ownHpeContract = factory(HpeContract::class)->create([
+            'user_id' => $user->getKey(),
+            'submitted_at' => now(),
+        ]);
+        $ownRescueContract = factory(Contract::class)->create([
+            'user_id' => $user->getKey(),
+            'submitted_at' => now(),
+        ]);
+
+        $response = $this->getJson('api/contracts/submitted')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'quote_id',
+                        'type',
+                        'user' => [
+                            'id', 'first_name', 'last_name'
+                        ],
+                        'company' => [
+                            'id', 'name'
+                        ],
+                        'contract_customer' => [
+                            'rfq'
+                        ],
+                        'permissions' => [
+                            'view', 'update', 'delete'
+                        ],
+                        'quote_customer' => [
+                            'id',
+                            'name',
+                            'rfq',
+                            'valid_until',
+                            'support_start',
+                            'support_end'
+                        ],
+                        'created_at',
+                        'activated_at'
+                    ]
+                ],
+                'current_page',
+                'first_page_url',
+                'from',
+                'last_page',
+                'last_page_url',
+                'next_page_url',
+                'path',
+                'per_page',
+                'prev_page_url',
+                'to',
+                'total'
+            ]);
+
+        $this->assertCount(2, $response->json('data'));
+
+        foreach ($response->json('data.*.user.id') as $userKey) {
+            $this->assertSame($user->getKey(), $userKey);
+        }
     }
 }

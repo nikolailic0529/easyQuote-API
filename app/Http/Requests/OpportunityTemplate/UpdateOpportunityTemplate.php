@@ -15,7 +15,7 @@ class UpdateOpportunityTemplate extends FormRequest
     {
         return [
             'form_data' => [
-                'bail', 'required', 'array'
+                'bail', 'present', 'array'
             ],
             'form_data.*' => [
                 'array'

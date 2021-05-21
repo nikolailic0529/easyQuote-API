@@ -260,14 +260,20 @@ class ExcelPriceListReader
             return $this->headerMappingCache[$header];
         }
 
-        $columnKey = value(function () use ($header, $allocatedColumnKeys) {
+        $allocatedColumnDictionary = array_fill_keys(array_values($allocatedColumnKeys), true);
+
+        $columnKey = value(function () use ($allocatedColumnDictionary, $header) {
             $aliasMapping = $this->getSystemColumnAliasMapping() + $this->getCustomColumnAliasMapping($header);
 
-            $knownColumn = value(function () use ($header, $aliasMapping): ?string {
+            $knownColumn = value(function () use ($allocatedColumnDictionary, $header, $aliasMapping): ?string {
 
                 $header = str_replace(["\n"], [" "], $header);
 
                 foreach ($aliasMapping as $alias => $key) {
+                    if (array_key_exists($key, $allocatedColumnDictionary)) {
+                        continue;
+                    }
+
                     $quotedAlias = preg_quote($alias, '#');
                     $pattern = "#^$quotedAlias(?![^\h]).*#i";
 

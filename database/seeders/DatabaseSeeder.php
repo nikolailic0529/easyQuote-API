@@ -103,6 +103,12 @@ class DatabaseSeeder extends Seeder
         $this->call(CountryMarginsSeeder::class);
         $this->command->info('Seeded the country margins!');
 
+        $this->call(SpaceSeeder::class);
+        $this->command->info('Seeded the spaces!');
+
+        $this->call(PipelineSeeder::class);
+        $this->command->info('Seeded the pipelines!');
+
         activity()->enableLogging();
     }
 }

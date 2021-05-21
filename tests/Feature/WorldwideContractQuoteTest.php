@@ -443,6 +443,7 @@ class WorldwideContractQuoteTest extends TestCase
         $this->assertCount(2, $response->json('worldwide_distributions'));
 
         $this->patchJson('api/opportunities/'.$opportunity->getKey(), [
+            'pipeline_id' => PL_WWDP,
             'contract_type_id' => CT_CONTRACT,
             'opportunity_start_date' => $this->faker->date(),
             'opportunity_end_date' => $this->faker->date(),
@@ -467,6 +468,7 @@ class WorldwideContractQuoteTest extends TestCase
         $this->assertEmpty($response->json('worldwide_distributions'));
 
         $this->patchJson('api/opportunities/'.$opportunity->getKey(), [
+            'pipeline_id' => PL_WWDP,
             'contract_type_id' => CT_CONTRACT,
             'opportunity_start_date' => $this->faker->date(),
             'opportunity_end_date' => $this->faker->date(),
@@ -2368,6 +2370,7 @@ TEMPLATE;
         $this->assertEmpty($response->json('worldwide_distributions'));
 
         $this->patchJson('api/opportunities/'.$opportunity->getKey(), [
+            'pipeline_id' => PL_WWDP,
             'primary_account_id' => $primaryAccount->getKey(),
             'contract_type_id' => CT_CONTRACT,
             'opportunity_start_date' => $this->faker->dateTimeBetween('-1 year', '+2 years')->format('Y-m-d'),
@@ -2446,6 +2449,7 @@ TEMPLATE;
             ->assertOk();
 
         $this->patchJson('api/opportunities/'.$opportunity->getKey(), [
+            'pipeline_id' => PL_WWDP,
             'primary_account_id' => $responseOfOpportunity->json('primary_account_id'),
             'contract_type_id' => $responseOfOpportunity->json('contract_type_id'),
             'opportunity_start_date' => $responseOfOpportunity->json('opportunity_start_date'),
@@ -2516,6 +2520,7 @@ TEMPLATE;
             ->assertOk();
 
         $this->patchJson('api/opportunities/'.$opportunity->getKey(), [
+            'pipeline_id' => PL_WWDP,
             'primary_account_id' => $responseOfOpportunity->json('primary_account_id'),
             'contract_type_id' => $responseOfOpportunity->json('contract_type_id'),
             'opportunity_start_date' => $responseOfOpportunity->json('opportunity_start_date'),

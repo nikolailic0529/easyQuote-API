@@ -6,7 +6,9 @@ use App\DTO\Opportunity\CreateOpportunityData;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\ContractType;
+use App\Models\Pipeline\Pipeline;
 use App\Models\User;
+use App\Queries\PipelineQueries;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
@@ -23,6 +25,10 @@ class CreateOpportunity extends FormRequest
     public function rules()
     {
         return [
+            'pipeline_id' => [
+              'bail', 'uuid',
+              Rule::exists(Pipeline::class, 'id')->whereNull('deleted_at')
+            ],
             'contract_type_id' => [
                 'bail', 'required', 'uuid',
                 Rule::exists(ContractType::class, 'id')
@@ -186,6 +192,12 @@ class CreateOpportunity extends FormRequest
     public function getOpportunityData(): CreateOpportunityData
     {
         return $this->createOpportunityData ??= new CreateOpportunityData([
+            'pipeline_id' => $this->input('pipeline_id', function () {
+                /** @var PipelineQueries $pipelineQueries */
+                $pipelineQueries = $this->container[PipelineQueries::class];
+
+                return $pipelineQueries->explicitlyDefaultPipelinesQuery()->sole()->getKey();
+            }),
             'user_id' => $this->user()->getKey(),
             'contract_type_id' => $this->input('contract_type_id'),
             'account_manager_id' => $this->input('account_manager_id'),

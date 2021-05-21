@@ -168,9 +168,9 @@ define('RSU_01', 'You could not update the system defined Role.');
 define('RSD_01', 'You could not delete the system defined Role.');
 define('R_SUPER', 'Administrator');
 define('R_RUD', 'read,update,delete');
-define('PL_R', 'read');
-define('PL_RU', 'read,update');
-define('PL_RUD', 'read,update,delete');
+define('ACL_R', 'read');
+define('ACL_RU', 'read,update');
+define('ACL_RUD', 'read,update,delete');
 
 /**
  * S4.
@@ -306,6 +306,16 @@ define('CT_CONTRACT', 'c3c9d470-cb8b-48a2-9d3f-3614534b24a3');
  */
 define('UT_RESCUE', '6a66a452-c177-4c2f-b1ce-c9f9bbaf4af4');
 define('UT_EPD_WW', '297a5395-a579-4190-8ffc-6856af4f5324');
+
+/**
+ * Spaces.
+ */
+define('SP_EPD', '38e1d441-e57a-466f-b60d-7f314f16adc3');
+
+/**
+ * Pipelines.
+ */
+define('PL_WWDP', 'e6a3a7bd-e9cb-4d0f-add7-b7cfc88768ac');
 
 /**
  * Elasticsearch

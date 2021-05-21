@@ -147,7 +147,7 @@ class UnifiedQuoteTest extends TestCase
         ]);
 
         $quote->customer->update([
-            'valid_until' => now()
+            'valid_until' => now()->subDay()
         ]);
 
         $response = $this->getJson('api/unified-quotes/expiring')
@@ -230,7 +230,7 @@ class UnifiedQuoteTest extends TestCase
         ]);
 
         $ownQuote->customer->update([
-            'valid_until' => today()
+            'valid_until' => today()->subDay()
         ]);
 
         /** @var Quote $ledUserOwnQuote */
@@ -240,7 +240,7 @@ class UnifiedQuoteTest extends TestCase
         ]);
 
         $ledUserOwnQuote->customer->update([
-            'valid_until' => today()
+            'valid_until' => today()->subDay()
         ]);
 
         $this->actingAs($teamLeader, 'api');

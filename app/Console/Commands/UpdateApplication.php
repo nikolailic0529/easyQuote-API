@@ -15,6 +15,8 @@ use Database\Seeders\{AssetCategorySeeder,
     CustomFieldSeeder,
     HpeContractTemplatesSeeder,
     MySQLSeeder,
+    PipelineSeeder,
+    SpaceSeeder,
     TeamSeeder,
     TemplateFieldTypeSeeder,
     TimezoneSeeder,
@@ -144,6 +146,16 @@ class UpdateApplication extends Command
 
         $this->call(SeedCommand::class, [
             '--class' => CancelSalesOrderReasonSeeder::class,
+            '--force' => true
+        ]);
+
+        $this->call(SeedCommand::class, [
+            '--class' => SpaceSeeder::class,
+            '--force' => true
+        ]);
+
+        $this->call(SeedCommand::class, [
+            '--class' => PipelineSeeder::class,
             '--force' => true
         ]);
 

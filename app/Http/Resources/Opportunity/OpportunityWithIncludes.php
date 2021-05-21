@@ -24,6 +24,9 @@ class OpportunityWithIncludes extends JsonResource
             'id' => $this->id,
             'user_id' => $this->user_id,
 
+            'pipeline_id' => $this->pipeline_id,
+            'pipeline' => $this->pipeline,
+
             'contract_type_id' => $this->contract_type_id,
             'contract_type' => $this->contractType,
 

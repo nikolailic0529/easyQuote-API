@@ -17,6 +17,25 @@ class DistributorPriceListParsingTest extends TestCase
 {
     use DatabaseTransactions;
 
+    protected static function storeText(string $filePath, array $raw)
+    {
+        $fileName = Str::slug(File::name($filePath), '_');
+
+        $dir = "tests/Unit/Data/distributor-files-test/$fileName";
+
+        if (!is_dir($dir)) {
+            mkdir($dir);
+        }
+
+        foreach ($raw as $text) {
+            $page = $text['page'];
+
+            $pagePath = base_path("$dir/{$fileName}_{$page}.txt");
+
+            file_put_contents($pagePath, $text['content']);
+        }
+    }
+
     /**
      * @group parsing-price-list-xlsx
      */
@@ -1626,25 +1645,6 @@ class DistributorPriceListParsingTest extends TestCase
         ], $result[11]['rows']);
 
         $this->assertEmpty($result[12]['rows']);
-    }
-
-    protected static function storeText(string $filePath, array $raw)
-    {
-        $fileName = Str::slug(File::name($filePath), '_');
-
-        $dir = "tests/Unit/Data/distributor-files-test/$fileName";
-
-        if (!is_dir($dir)) {
-            mkdir($dir);
-        }
-
-        foreach ($raw as $text) {
-            $page = $text['page'];
-
-            $pagePath = base_path("$dir/{$fileName}_{$page}.txt");
-
-            file_put_contents($pagePath, $text['content']);
-        }
     }
 
     protected function pdfParser(): PdfParserInterface
@@ -3583,5 +3583,37 @@ CONTENT
             "searchable" => "1086 5485 6896",
             "_one_pay" => false,
         ], $rowsCZJ81303R8);
+    }
+
+    /**
+     * @group parsing-price-list-xlsx
+     */
+    public function test_parses_copy_of_eu_q_00034206_2021_05_19_price_mubea_hzp_sro_xlsx()
+    {
+        $filePath = base_path('tests/Unit/Data/distributor-files-test/Copy of EU_Q-00034206_2021-05-19_Price_MUBEA - HZP S.R.O.xlsx');
+
+        $storage = Storage::fake();
+
+        $storage->put($fileName = Str::random(40).'.xlsx', file_get_contents($filePath));
+
+        /** @var QuoteFile $quoteFile */
+        $quoteFile = factory(QuoteFile::class)->create([
+            'original_file_path' => $fileName,
+            'original_file_name' => 'Copy of EU_Q-00034206_2021-05-19_Price_MUBEA - HZP S.R.O.xlsx',
+            'file_type' => 'Distributor Price List',
+            'pages' => 2,
+            'quote_file_format_id' => QuoteFileFormat::value('id'),
+            'imported_page' => 2
+        ]);
+
+        $excelProcessor = $this->app[DistributorExcel::class];
+
+        $excelProcessor->process($quoteFile);
+
+        $headers = $quoteFile->rowsData->pluck('columns_data.*.header')->collapse()->unique()->values();
+
+        $this->assertCount(16, $headers);
+
+        $this->assertCount(5, $quoteFile->rowsData);
     }
 }

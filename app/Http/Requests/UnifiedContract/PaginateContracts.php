@@ -23,22 +23,7 @@ class PaginateContracts extends FormRequest
     public function transformContractsQuery(BaseBuilder $builder): BaseBuilder
     {
         return tap($builder, function (BaseBuilder $builder) {
-
-            /** @var \App\Models\User $user */
-            $user = $this->user();
-
-            if ($user->hasRole(R_SUPER)) {
-                return;
-            }
-
-            $builder->where(function (BaseBuilder $builder) use ($user) {
-
-                $builder->whereIn('user_id', $user->getModulePermissionProviders('contracts.read')->push($user->getKey()))
-                    ->orWhereIn('quote_id', $user->getPermissionTargets('quotes.read'));
-
-            });
-
-
+            //
         });
     }
 }

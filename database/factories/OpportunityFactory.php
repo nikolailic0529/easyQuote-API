@@ -15,6 +15,7 @@ $factory->define(Opportunity::class, function (Faker $faker) {
     $primaryAccount = factory(Company::class)->create();
 
     return [
+        'pipeline_id' => PL_WWDP,
         'contract_type_id' => $faker->randomElement([CT_CONTRACT, CT_PACK]),
         'primary_account_id' => $primaryAccount->getKey(),
         'primary_account_contact_id' => \App\Models\Contact::value('id'),

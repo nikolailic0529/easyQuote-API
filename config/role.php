@@ -163,13 +163,18 @@ return [
                     'update_quote_task_template',
                 ],
             ],
-            'Opportunity Form Template' => [
+            'Pipelines' => [
                 $R => [
-                    'view_opportunity_form_template',
+                    'view_pipelines',
                 ],
                 $CRU => [
-                    'view_opportunity_form_template',
-                    'update_opportunity_form_template',
+                    'view_pipelines',
+                    'create_pipelines', 'update_pipelines',
+                ],
+                $CRUD => [
+                    'view_pipelines',
+                    'create_pipelines', 'update_pipelines',
+                    'delete_pipelines',
                 ],
             ],
         ],
@@ -216,17 +221,6 @@ return [
                     'update_invitations',
                     'delete_invitations',
                 ],
-            ],
-            'Teams' => [
-                $R => [
-                    'view_teams'
-                ],
-                $CRU => [
-                    'view_teams', 'create_teams', 'update_teams'
-                ],
-                $CRUD => [
-                    'view_teams', 'create_teams', 'update_teams', 'delete_teams'
-                ]
             ],
         ],
         'Discounts' => [

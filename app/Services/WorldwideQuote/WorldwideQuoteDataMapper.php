@@ -516,8 +516,8 @@ class WorldwideQuoteDataMapper
             $quotePriceData->final_total_price_value_excluding_tax = $priceSummary->final_total_price_excluding_tax;
             $quotePriceData->applicable_discounts_value = $priceSummary->applicable_discounts_value;
 
-            if ($quotePriceData->final_total_price_value !== 0.0) {
-                $quotePriceData->price_value_coefficient = $quotePriceData->total_price_value / $quotePriceData->final_total_price_value;
+            if ($quotePriceData->total_price_value !== 0.0) {
+                $quotePriceData->price_value_coefficient = $quotePriceData->final_total_price_value_excluding_tax / $quotePriceData->total_price_value;
             }
         });
     }

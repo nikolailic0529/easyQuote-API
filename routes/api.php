@@ -28,6 +28,7 @@ use App\Http\Controllers\API\InvitationController;
 use App\Http\Controllers\API\Margins\CountryMarginController;
 use App\Http\Controllers\API\OpportunityController;
 use App\Http\Controllers\API\PermissionController;
+use App\Http\Controllers\API\Pipeline\PipelineController;
 use App\Http\Controllers\API\Quotes\CustomerController;
 use App\Http\Controllers\API\Quotes\QuoteController;
 use App\Http\Controllers\API\Quotes\QuoteDraftedController;
@@ -41,6 +42,7 @@ use App\Http\Controllers\API\SalesOrders\SalesOrderController;
 use App\Http\Controllers\API\SalesOrders\SalesOrderDraftedController;
 use App\Http\Controllers\API\SalesOrders\SalesOrderSubmittedController;
 use App\Http\Controllers\API\ServiceController;
+use App\Http\Controllers\API\Space\SpaceController;
 use App\Http\Controllers\API\StatsController;
 use App\Http\Controllers\API\System\ActivityController;
 use App\Http\Controllers\API\System\CustomFieldController;
@@ -593,5 +595,24 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get('unified-quotes/expiring', [UnifiedQuoteController::class, 'paginateUnifiedExpiringQuotes']);
     Route::get('unified-quotes/submitted', [UnifiedQuoteController::class, 'paginateUnifiedSubmittedQuotes']);
     Route::get('unified-quotes/drafted', [UnifiedQuoteController::class, 'paginateUnifiedDraftedQuotes']);
+
+    /**
+     * Spaces.
+     */
+    Route::get('spaces', SpaceController::class);
+
+    /**
+     * Pipelines.
+     */
+    Route::get('pipelines', [PipelineController::class, 'paginatePipelines']);
+    Route::get('pipelines/list', [PipelineController::class, 'showListOfPipelines']);
+    Route::get('pipelines/{pipeline}', [PipelineController::class, 'showPipeline']);
+    Route::get('pipelines/default/opportunity-form', [PipelineController::class, 'showOpportunityFormSchemaOfDefaultPipeline']);
+    Route::get('pipelines/{pipeline}/opportunity-form', [PipelineController::class, 'showOpportunityFormSchemaOfPipeline']);
+    Route::patch('pipelines/{pipeline}/opportunity-form', [PipelineController::class, 'updateOpportunityFormSchemaOfPipeline']);
+    Route::post('pipelines', [PipelineController::class, 'storePipeline']);
+    Route::patch('pipelines/{pipeline}', [PipelineController::class, 'updatePipeline']);
+    Route::patch('pipelines/{pipeline}/default', [PipelineController::class, 'markPipelineAsDefault']);
+    Route::delete('pipelines/{pipeline}', [PipelineController::class, 'deletePipeline']);
 });
 

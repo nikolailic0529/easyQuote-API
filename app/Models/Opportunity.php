@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Contracts\SearchableEntity;
+use App\Models\Pipeline\Pipeline;
 use App\Models\Quote\WorldwideQuote;
 use App\Traits\Uuid;
 use Illuminate\Database\Eloquent\Collection;
@@ -19,6 +20,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * Class Opportunity
  *
  * @property string|null $user_id
+ * @property string|null $pipeline_id
  * @property string|null $contract_type_id
  * @property string|null $primary_account_id
  * @property string|null $primary_account_contact_id
@@ -81,15 +83,16 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property int|null $status
  * @property string|null $status_reason
  *
- * @property ContractType|null $contractType
- * @property Company|null $primaryAccount
- * @property Contact|null $primaryAccountContact
- * @property User|null $accountManager
- * @property Collection<OpportunitySupplier>|OpportunitySupplier[] $opportunitySuppliers
- *
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property Collection<WorldwideQuote>|WorldwideQuote[] $worldwideQuotes
+ *
+ * @property-read \App\Models\Pipeline\Pipeline|null $pipeline
+ * @property-read ContractType|null $contractType
+ * @property-read Company|null $primaryAccount
+ * @property-read Contact|null $primaryAccountContact
+ * @property-read User|null $accountManager
+ * @property-read Collection<OpportunitySupplier>|OpportunitySupplier[] $opportunitySuppliers
+ * @property-read Collection<WorldwideQuote>|WorldwideQuote[] $worldwideQuotes
  * @property-read bool|null $quotes_exist
  */
 class Opportunity extends Model implements SearchableEntity
@@ -101,6 +104,11 @@ class Opportunity extends Model implements SearchableEntity
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function pipeline(): BelongsTo
+    {
+        return $this->belongsTo(Pipeline::class);
     }
 
     public function contractType(): BelongsTo

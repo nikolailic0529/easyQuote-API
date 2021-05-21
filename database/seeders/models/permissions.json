@@ -195,5 +195,10 @@
     "view_teams",
     "create_teams",
     "update_teams",
-    "delete_teams"
+    "delete_teams",
+
+    "view_pipelines",
+    "create_pipelines",
+    "update_pipelines",
+    "delete_pipelines"
 ]

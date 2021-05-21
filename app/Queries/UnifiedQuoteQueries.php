@@ -275,7 +275,7 @@ class UnifiedQuoteQueries
                 $joinClause->on('contract_types.id', 'worldwide_quotes.contract_type_id');
             })
 //            ->whereNull('worldwide_quotes.submitted_at')
-            ->where('opportunities.opportunity_closing_date', '<=', today())
+            ->where('quote_active_version.quote_expiry_date', '<=', today())
             ->where('worldwide_quotes.status', QuoteStatus::ALIVE)
             ->select([
                 'worldwide_quotes.id as id',

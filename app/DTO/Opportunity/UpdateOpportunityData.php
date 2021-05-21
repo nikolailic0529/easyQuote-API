@@ -11,6 +11,13 @@ final class UpdateOpportunityData extends DataTransferObject
     /**
      * @Constraints\Uuid
      *
+     * @var string
+     */
+    public string $pipeline_id;
+
+    /**
+     * @Constraints\Uuid
+     *
      * @var string|null
      */
     public ?string $contract_type_id;

@@ -20,6 +20,10 @@ class QuoteOpportunity extends JsonResource
         /** @var Opportunity|QuoteOpportunity $this */
         return [
             'id' => $this->getKey(),
+
+            'pipeline_id' => $this->pipeline_id,
+            'pipeline' => $this->whenLoaded('pipeline'),
+
             'account_manager' => $this->whenLoaded('accountManager'),
             'primary_account' => $this->whenLoaded('primaryAccount', function () {
 

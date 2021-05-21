@@ -414,7 +414,10 @@ class UnifiedContractQueries
 
     public function paginateUnifiedSubmittedContractsQuery(Request $request = null): BaseBuilder
     {
-        $request ??= new \Symfony\Component\HttpFoundation\Request();
+        $request ??= new Request();
+
+        /** @var \App\Models\User|null $user */
+        $user = $request->user();
 
         $contractModel = new Contract();
         $hpeContractModel = new HpeContract();
@@ -482,6 +485,15 @@ class UnifiedContractQueries
                 $join->on('companies.id', $hpeContractModel->qualifyColumn('company_id'));
             });
 
+        if (false === is_null($user) && false === $user->hasRole(R_SUPER)) {
+
+            $rescueContractQuery->whereIn($rescueContractQuery->qualifyColumn('user_id'), $user->getModulePermissionProviders('contracts.read')->push($user->getKey()))
+                ->orWhereIn($rescueContractQuery->qualifyColumn('quote_id'), $user->getPermissionTargets('quotes.read'));
+
+            $hpeContractQuery->whereIn($hpeContractQuery->qualifyColumn('user_id'), $user->getModulePermissionProviders('contracts.read')->push($user->getKey()));
+
+        }
+
         with($this->buildContractLookupQueryDataFromRequest($request, true), function (ContractLookupQueryData $data) use ($rescueContractQuery, $hpeContractQuery) {
             if ($this->isLookupQueryDataEmpty($data)) {
                 return;
@@ -511,7 +523,7 @@ class UnifiedContractQueries
                 OrderBySupportStartDate::class,
                 OrderBySupportEndDate::class,
                 OrderByUserFullname::class,
-                OrderByCompleteness::class,
+                new OrderByCompleteness('completeness'),
                 new DefaultOrderBy('updated_at')
             ])
             ->thenReturn();
@@ -522,6 +534,9 @@ class UnifiedContractQueries
     public function paginateUnifiedDraftedContractsQuery(Request $request = null): BaseBuilder
     {
         $request ??= new Request();
+
+        /** @var \App\Models\User|null $user */
+        $user = $request->user();
 
         $contractModel = new Contract();
         $hpeContractModel = new HpeContract();
@@ -589,6 +604,15 @@ class UnifiedContractQueries
                 $join->on('companies.id', $hpeContractModel->qualifyColumn('company_id'));
             });
 
+        if (false === is_null($user) && false === $user->hasRole(R_SUPER)) {
+
+            $rescueContractQuery->whereIn($rescueContractQuery->qualifyColumn('user_id'), $user->getModulePermissionProviders('contracts.read')->push($user->getKey()))
+                ->orWhereIn($rescueContractQuery->qualifyColumn('quote_id'), $user->getPermissionTargets('quotes.read'));
+
+            $hpeContractQuery->whereIn($hpeContractQuery->qualifyColumn('user_id'), $user->getModulePermissionProviders('contracts.read')->push($user->getKey()));
+
+        }
+
         with($this->buildContractLookupQueryDataFromRequest($request, false), function (ContractLookupQueryData $data) use ($rescueContractQuery, $hpeContractQuery) {
             if ($this->isLookupQueryDataEmpty($data)) {
                 return;
@@ -618,7 +642,7 @@ class UnifiedContractQueries
                 OrderBySupportStartDate::class,
                 OrderBySupportEndDate::class,
                 OrderByUserFullname::class,
-                OrderByCompleteness::class,
+                new OrderByCompleteness('completeness'),
                 new DefaultOrderBy('updated_at')
             ])
             ->thenReturn();

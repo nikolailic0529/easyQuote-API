@@ -2,6 +2,7 @@
 
 namespace App\Services\WorldwideQuote;
 
+use App\Helpers\PipelineShortCodeResolver;
 use App\Contracts\{Services\ManagesExchangeRates,
     Services\ProcessesWorldwideDistributionState,
     Services\ProcessesWorldwideQuoteState};
@@ -72,7 +73,7 @@ use const CT_PACK;
 
 class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 {
-    const QUOTE_NUM_FMT = "EPD-WW-DP-%'.07d";
+    const QUOTE_NUM_FMT = "{space}-WW-{pipeline}-%'.07d";
 
     protected ConnectionInterface $connection;
 
@@ -253,7 +254,14 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         $highestNumber = $this->connection->table('worldwide_quotes')->max('sequence_number');
         $newNumber = $highestNumber + 1;
 
-        $quote->quote_number = sprintf(static::QUOTE_NUM_FMT, $newNumber);
+        $pipeline = $quote->opportunity->pipeline;
+        $space = $pipeline->space;
+
+        $pipelineShortCode = (new PipelineShortCodeResolver())($pipeline->pipeline_name);
+
+        $quoteNumberFormat = strtr(self::QUOTE_NUM_FMT, ['{space}' => $space->space_name, '{pipeline}' => $pipelineShortCode]);
+
+        $quote->quote_number = sprintf($quoteNumberFormat, $newNumber);
         $quote->sequence_number = $newNumber;
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Services\Opportunity;
 
+use App\Queries\PipelineQueries;
 use App\DTO\{Opportunity\BatchOpportunityUploadResult,
     Opportunity\BatchSaveOpportunitiesData,
     Opportunity\CreateOpportunityData,
@@ -51,20 +52,17 @@ class OpportunityEntityService
 {
     const DEFAULT_OPP_TYPE = CT_PACK;
 
+    const DEFAULT_PL_ID = PL_WWDP;
+
     protected ConnectionInterface $connection;
-
     protected LockProvider $lockProvider;
-
     protected ValidatorInterface $validator;
-
     protected EventDispatcher $eventDispatcher;
-
     protected ValidatorFactory $validatorFactory;
-
     protected CurrencyConverter $currencyConverter;
+    protected PipelineQueries $pipelineQueries;
 
     private array $accountOwnerCache = [];
-
     private array $countryNameOfSupplierCache = [];
 
     public function __construct(ConnectionInterface $connection,
@@ -72,7 +70,8 @@ class OpportunityEntityService
                                 ValidatorInterface $validator,
                                 EventDispatcher $eventDispatcher,
                                 ValidatorFactory $validatorFactory,
-                                CurrencyConverter $currencyConverter)
+                                CurrencyConverter $currencyConverter,
+    PipelineQueries $pipelineQueries)
     {
         $this->connection = $connection;
         $this->lockProvider = $lockProvider;
@@ -80,6 +79,7 @@ class OpportunityEntityService
         $this->eventDispatcher = $eventDispatcher;
         $this->validatorFactory = $validatorFactory;
         $this->currencyConverter = $currencyConverter;
+        $this->pipelineQueries = $pipelineQueries;
     }
 
     public function batchSaveOpportunities(BatchSaveOpportunitiesData $data): void
@@ -674,6 +674,9 @@ class OpportunityEntityService
         };
 
         return new CreateOpportunityData([
+            'pipeline_id' => value(function () {
+                return $this->pipelineQueries->explicitlyDefaultPipelinesQuery()->sole()->getKey();
+            }),
             'user_id' => $user->getKey(),
             'contract_type_id' => $contractTypeResolver($valueRetriever($row, PipelinerOppMap::CONTRACT_TYPE)),
             'account_manager_id' => $this->resolveAccountOwner($valueRetriever($row, PipelinerOppMap::ACCOUNT_MANAGER)),
@@ -803,6 +806,7 @@ class OpportunityEntityService
         }
 
         return tap(new Opportunity(), function (Opportunity $opportunity) use ($data) {
+            $opportunity->pipeline()->associate($data->pipeline_id);
             $opportunity->user_id = $data->user_id;
             $opportunity->contract_type_id = $data->contract_type_id;
             $opportunity->project_name = $data->project_name;
@@ -905,6 +909,7 @@ class OpportunityEntityService
         }
 
         return tap(new Opportunity(), function (Opportunity $opportunity) use ($data) {
+            $opportunity->pipeline()->associate($data->pipeline_id);
             $opportunity->user_id = $data->user_id;
             $opportunity->contract_type_id = $data->contract_type_id;
             $opportunity->project_name = $data->project_name;
@@ -1045,6 +1050,7 @@ class OpportunityEntityService
             $oldOpportunity = (new Opportunity())->setRawAttributes($opportunity->getRawOriginal());
 
             $lock->block(30, function () use ($opportunity, $data) {
+                $opportunity->pipeline()->associate($data->pipeline_id);
                 $opportunity->contract_type_id = $data->contract_type_id;
                 $opportunity->project_name = $data->project_name;
                 $opportunity->primary_account_id = $data->primary_account_id;
