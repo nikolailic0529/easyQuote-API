@@ -88,9 +88,13 @@ class UpdateQuoteImport extends FormRequest
                 'bail', 'required', 'uuid',
                 Rule::exists(Currency::class, 'id'),
             ],
+            'worldwide_distributions.*.buy_currency_id' => [
+                'bail', 'required', 'uuid',
+                Rule::exists(Currency::class, 'id'),
+            ],
 
             'worldwide_distributions.*.addresses' => [
-                'bail', 'required', 'array'
+                'bail', 'present', 'array'
             ],
             'worldwide_distributions.*.addresses.*' => [
                 'bail', 'uuid',
@@ -98,7 +102,7 @@ class UpdateQuoteImport extends FormRequest
             ],
 
             'worldwide_distributions.*.contacts' => [
-                'bail', 'required', 'array'
+                'bail', 'present', 'array'
             ],
             'worldwide_distributions.*.contacts.*' => [
                 'bail', 'uuid',
@@ -139,6 +143,7 @@ class UpdateQuoteImport extends FormRequest
                 'vendors' => $distributionData['vendors'],
                 'country_id' => $distributionData['country_id'],
                 'distribution_currency_id' => $distributionData['distribution_currency_id'],
+                'buy_currency_id' => $distributionData['buy_currency_id'],
                 'buy_price' => (float)$distributionData['buy_price'],
                 'calculate_list_price' => (bool)($distributionData['calculate_list_price'] ?? false),
                 'distribution_expiry_date' => Carbon::createFromFormat('Y-m-d', $distributionData['distribution_expiry_date']),

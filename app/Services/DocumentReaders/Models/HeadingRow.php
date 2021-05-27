@@ -6,19 +6,27 @@ final class HeadingRow
 {
     protected array $mapping;
 
+    protected array $missingHeaderMapping;
+
     protected int $sheetIndex;
 
     protected string $sheetName;
 
+
     /**
      * HeadingRow constructor.
      * @param array $mapping
+     * @param array $missingHeadersMapping
      * @param int $sheetIndex
      * @param string $sheetName
      */
-    public function __construct(array $mapping, int $sheetIndex, string $sheetName)
+    public function __construct(array $mapping,
+                                array $missingHeaderMapping,
+                                int $sheetIndex,
+                                string $sheetName)
     {
         $this->mapping = $mapping;
+        $this->missingHeaderMapping = $missingHeaderMapping;
         $this->sheetIndex = $sheetIndex;
         $this->sheetName = $sheetName;
     }
@@ -45,5 +53,13 @@ final class HeadingRow
     public function getSheetName(): string
     {
         return $this->sheetName;
+    }
+
+    /**
+     * @return array
+     */
+    public function getMissingHeaderMapping(): array
+    {
+        return $this->missingHeaderMapping;
     }
 }

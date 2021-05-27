@@ -197,8 +197,8 @@
     "update_teams",
     "delete_teams",
 
-    "view_pipelines",
-    "create_pipelines",
-    "update_pipelines",
-    "delete_pipelines"
+    "view_opportunity_forms",
+    "create_opportunity_forms",
+    "update_opportunity_forms",
+    "delete_opportunity_forms"
 ]

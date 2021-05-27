@@ -4,9 +4,7 @@ namespace App\Models;
 
 use App\Contracts\SearchableEntity;
 use App\Models\Quote\WorldwideQuote;
-use App\Models\Template\ContractTemplate;
 use App\Models\Template\SalesOrderTemplate;
-use App\Services\SalesOrder\SalesOrderNumberHelper;
 use App\Traits\Uuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -70,10 +68,7 @@ class SalesOrder extends Model implements SearchableEntity
     {
         return [
             'customer_name' => $this->worldwideQuote->activeVersion->company->name,
-            'order_number' => SalesOrderNumberHelper::makeSalesOrderNumber(
-                $this->worldwideQuote->contractType->type_short_name,
-                $this->worldwideQuote->sequence_number
-            ),
+            'order_number' => $this->order_number,
             'order_type' => $this->worldwideQuote->contractType->type_short_name,
             'rfq_number' => $this->worldwideQuote->quote_number,
             'created_at' => transform($this->created_at, fn(Carbon $carbon) => $carbon->toDateString())

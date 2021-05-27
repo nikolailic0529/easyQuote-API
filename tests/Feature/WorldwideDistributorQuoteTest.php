@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Events\DistributionProcessed;
+use App\Models\Address;
+use App\Models\Contact;
 use App\Models\Data\Country;
 use App\Models\Data\Currency;
 use App\Models\Data\ExchangeRate;
@@ -163,15 +165,19 @@ class WorldwideDistributorQuoteTest extends TestCase
         $data = $wwDistribution->map(function (WorldwideDistribution $distribution) use ($distributionExpiryDate, $distributorFile) {
             return [
                 'id' => $distribution->getKey(),
-//                'vendors' => Vendor::query()->whereIn('short_code', ['HPE', 'LEN', 'IBM'])->pluck('id')->all(),
-//                'country_id' => Country::query()->where('iso_3166_2', $this->faker->randomElement(['US', 'GB', 'AU']))->value('id'),
+                'vendors' => Vendor::query()->whereIn('short_code', ['HPE', 'LEN', 'IBM'])->pluck('id')->all(),
+                'country_id' => Country::query()->where('iso_3166_2', $this->faker->randomElement(['US', 'GB', 'AU']))->value('id'),
                 'distributor_file_id' => $distributorFile->getKey(),
                 'distributor_file_page' => null,
-//                'distribution_currency_id' => Currency::query()->where('code', $this->faker->randomElement(['USD', 'GBP']))->value('id'),
-//                'distribution_expiry_date' => $distributionExpiryDate->addDay()->toDateString(),
+                'buy_currency_id' => Currency::query()->where('code', $this->faker->randomElement(['USD', 'GBP']))->value('id'),
+                'distribution_currency_id' => Currency::query()->where('code', $this->faker->randomElement(['USD', 'GBP']))->value('id'),
+                'distribution_expiry_date' => $distributionExpiryDate->addDay()->toDateString(),
+
+                'addresses' => factory(Address::class, 2)->create()->modelKeys(),
+                'contacts' => factory(Contact::class, 2)->create()->modelKeys(),
 
                 'buy_price' => $this->faker->randomFloat(null, 1000, 999999),
-//                'calculate_list_price' => null,
+                'calculate_list_price' => null,
             ];
         })->all();
 
@@ -258,8 +264,12 @@ class WorldwideDistributorQuoteTest extends TestCase
                 'distributor_file_id' => $distributorFile->getKey(),
                 'distributor_file_page' => null,
                 'quote_template_id' => QuoteTemplate::value('id'),
+                'buy_currency_id' => Currency::where('code', $this->faker->randomElement(['USD', 'GBP']))->value('id'),
                 'distribution_currency_id' => Currency::where('code', $this->faker->randomElement(['USD', 'GBP']))->value('id'),
                 'distribution_expiry_date' => now()->toDateString(),
+
+                'addresses' => factory(Address::class, 2)->create()->modelKeys(),
+                'contacts' => factory(Contact::class, 2)->create()->modelKeys(),
 
                 'buy_price' => $this->faker->randomFloat(null, 1000, 999999),
                 'calculate_list_price' => null,

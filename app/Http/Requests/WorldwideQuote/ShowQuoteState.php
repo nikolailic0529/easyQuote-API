@@ -306,6 +306,7 @@ class ShowQuoteState extends FormRequest
             $distribution->applicable_discounts_value = $distributorPriceSummary->applicable_discounts_value;
             $distribution->final_margin = $distributorPriceSummary->final_margin;
             $distribution->margin_percentage_after_custom_discount = $distributorPriceSummary->margin_after_custom_discount;
+            $distribution->buy_price = $distributorPriceSummary->buy_price;
 
             $distribution->setAttribute('summary', [
                 'total_price' => $distribution->total_price,

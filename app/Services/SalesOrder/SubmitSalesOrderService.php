@@ -132,6 +132,9 @@ class SubmitSalesOrderService
 
         return [
             'data' => [
+                'said' => $salesOrderData->service_agreement_id,
+                'from_date' => $salesOrderData->from_date,
+                'to_date' => $salesOrderData->to_date,
                 'post_sales_id' => $salesOrderData->post_sales_id,
                 'company_id' => $salesOrderData->company_id,
                 'address_1' => $invoiceAddress->address_1 ?? null,

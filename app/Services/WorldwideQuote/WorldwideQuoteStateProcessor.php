@@ -3,6 +3,7 @@
 namespace App\Services\WorldwideQuote;
 
 use App\Helpers\PipelineShortCodeResolver;
+use App\Helpers\SpaceShortCodeResolver;
 use App\Contracts\{Services\ManagesExchangeRates,
     Services\ProcessesWorldwideDistributionState,
     Services\ProcessesWorldwideQuoteState};
@@ -159,8 +160,15 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                         $version->buy_price = $opportunity->purchase_price;
 
                         if (!is_null($opportunity->purchase_price_currency_code)) {
+                            $quoteCurrency = Currency::query()->where('code', $opportunity->purchase_price_currency_code)->first();
+                            $buyCurrency = Currency::query()->where('code', $opportunity->purchase_price_currency_code)->first();
+
                             $version->quoteCurrency()->associate(
-                                Currency::query()->where('code', $opportunity->purchase_price_currency_code)->first()
+                                $quoteCurrency
+                            );
+
+                            $version->buyCurrency()->associate(
+                                $buyCurrency
                             );
                         }
                     }
@@ -258,8 +266,9 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         $space = $pipeline->space;
 
         $pipelineShortCode = (new PipelineShortCodeResolver())($pipeline->pipeline_name);
+        $spaceShortCode = (new SpaceShortCodeResolver())($space->space_name);
 
-        $quoteNumberFormat = strtr(self::QUOTE_NUM_FMT, ['{space}' => $space->space_name, '{pipeline}' => $pipelineShortCode]);
+        $quoteNumberFormat = strtr(self::QUOTE_NUM_FMT, ['{space}' => $spaceShortCode, '{pipeline}' => $pipelineShortCode]);
 
         $quote->quote_number = sprintf($quoteNumberFormat, $newNumber);
         $quote->sequence_number = $newNumber;
@@ -331,6 +340,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
             $quote->company()->associate($stage->company_id);
             $quote->quoteCurrency()->associate($stage->quote_currency_id);
+            $quote->buyCurrency()->associate($stage->buy_currency_id);
             $quote->quoteTemplate()->associate($stage->quote_template_id);
             $quote->buy_price = $stage->buy_price;
             $quote->quote_expiry_date = $stage->quote_expiry_date->toDateString();
@@ -620,36 +630,6 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         $opportunity = $quoteVersion->worldwideQuote->opportunity;
         $primaryAccount = $opportunity->primaryAccount;
 
-        $addressOfPrimaryAccountDictionary = value(function () use ($primaryAccount): array {
-
-            if (is_null($primaryAccount)) {
-                return [];
-            }
-
-            $dictionary = [];
-
-            foreach ($primaryAccount->addresses as $address) {
-                $dictionary[$address->getKey()] = (bool)$address->pivot->is_default;
-            }
-
-            return $dictionary;
-        });
-
-        $contactOfPrimaryAccountDictionary = value(function () use ($primaryAccount): array {
-
-            if (is_null($primaryAccount)) {
-                return [];
-            }
-
-            $dictionary = [];
-
-            foreach ($primaryAccount->contacts as $contact) {
-                $dictionary[$contact->getKey()] = (bool)$contact->pivot->is_default;
-            }
-
-            return $dictionary;
-        });
-
         $lock = $this->lockProvider->lock(
             Lock::UPDATE_WWQUOTE($quoteVersion->getKey()),
             10
@@ -692,37 +672,19 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
             $model->country()->associate($distributionData->country_id);
             $model->distributionCurrency()->associate($distributionData->distribution_currency_id);
+            $model->buyCurrency()->associate($distributionData->buy_currency_id);
             $model->buy_price = $distributionData->buy_price;
             $model->calculate_list_price = $distributionData->calculate_list_price;
+            $model->distribution_expiry_date = $distributionData->distribution_expiry_date;
 
-            $addressPivots = value(function () use ($distributionData, $addressOfPrimaryAccountDictionary) {
-                $pivots = [];
+            $lock->block(30, function () use ($model, $distributionData) {
 
-                foreach ($distributionData->address_ids as $id) {
-                    $pivots[$id] = ['is_default' => $addressOfPrimaryAccountDictionary[$id] ?? false];
-                }
-
-                return $pivots;
-            });
-
-            $contactPivots = value(function () use ($distributionData, $contactOfPrimaryAccountDictionary) {
-                $pivots = [];
-
-                foreach ($distributionData->contact_ids as $id) {
-                    $pivots[$id] = ['is_default' => $contactOfPrimaryAccountDictionary[$id] ?? false];
-                }
-
-                return $pivots;
-            });
-
-            $lock->block(30, function () use ($contactPivots, $addressPivots, $model, $distributionData) {
-
-                $this->connection->transaction(function () use ($addressPivots, $contactPivots, $model, $distributionData) {
+                $this->connection->transaction(function () use ($model, $distributionData) {
                     $model->save();
-                    $model->vendors()->sync($distributionData->vendors);
 
-                    $model->addresses()->sync($addressPivots);
-                    $model->contacts()->sync($contactPivots);
+                    $model->vendors()->sync($distributionData->vendors);
+                    $model->addresses()->sync($distributionData->address_ids);
+                    $model->contacts()->sync($distributionData->contact_ids);
                 });
 
             });
@@ -1106,14 +1068,19 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
         if ($quote->contract_type_id === CT_PACK) {
 
-            $currencyModel = Currency::query()->where('code', $opportunity->purchase_price_currency_code)->first();
+            $quoteCurrency = Currency::query()->where('code', $opportunity->purchase_price_currency_code)->first();
+            $buyCurrency = Currency::query()->where('code', $opportunity->purchase_price_currency_code)->first();
 
             foreach ($quote->versions as $version) {
 
                 $version->buy_price = $opportunity->purchase_price;
 
                 $version->quoteCurrency()->associate(
-                    $currencyModel
+                    $quoteCurrency
+                );
+
+                $version->buyCurrency()->associate(
+                    $buyCurrency
                 );
 
             }

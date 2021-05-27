@@ -4,6 +4,8 @@ namespace App\Http\Requests\WorldwideQuote;
 
 use App\DTO\ProcessableDistribution;
 use App\DTO\ProcessableDistributionCollection;
+use App\Models\Address;
+use App\Models\Contact;
 use App\Models\Data\Country;
 use App\Models\Data\Currency;
 use App\Models\Quote\WorldwideDistribution;
@@ -43,6 +45,53 @@ class ProcessDistributions extends FormRequest
                     ->where('worldwide_quote_id', $this->getQuote()->active_version_id)
                     ->whereNull('deleted_at'),
             ],
+
+            'worldwide_distributions.*.vendors' => [
+                'bail', 'required', 'array', 'distinct',
+            ],
+            'worldwide_distributions.*.vendors.*' => [
+                'bail', 'required', 'uuid',
+                Rule::exists(Vendor::class, 'id')->whereNull('deleted_at')->whereNotNull('activated_at'),
+            ],
+            'worldwide_distributions.*.country_id' => [
+                'bail', 'required', 'uuid',
+                Rule::exists(Country::class, 'id')->whereNull('deleted_at')->whereNotNull('activated_at'),
+            ],
+            'worldwide_distributions.*.distribution_currency_id' => [
+                'bail', 'required', 'uuid',
+                Rule::exists(Currency::class, 'id'),
+            ],
+            'worldwide_distributions.*.buy_currency_id' => [
+                'bail', 'required', 'uuid',
+                Rule::exists(Currency::class, 'id'),
+            ],
+
+            'worldwide_distributions.*.addresses' => [
+                'bail', 'required', 'array'
+            ],
+            'worldwide_distributions.*.addresses.*' => [
+                'bail', 'uuid',
+                Rule::exists(Address::class, 'id')->whereNull('deleted_at')
+            ],
+
+            'worldwide_distributions.*.contacts' => [
+                'bail', 'required', 'array'
+            ],
+            'worldwide_distributions.*.contacts.*' => [
+                'bail', 'uuid',
+                Rule::exists(Contact::class, 'id')->whereNull('deleted_at')
+            ],
+
+            'worldwide_distributions.*.buy_price' => [
+                'bail', 'required', 'numeric', 'min:0', 'max:999999999',
+            ],
+            'worldwide_distributions.*.calculate_list_price' => [
+                'bail', 'nullable', 'boolean',
+            ],
+            'worldwide_distributions.*.distribution_expiry_date' => [
+                'bail', 'required', 'date_format:Y-m-d',
+            ],
+
             'worldwide_distributions.*.distributor_file_id' => [
                 'bail', 'required', 'uuid',
                 Rule::exists(QuoteFile::class, 'id')->whereNull('deleted_at'),
@@ -87,10 +136,21 @@ class ProcessDistributions extends FormRequest
             $collection = array_map(function (array $distribution) {
                 return new ProcessableDistribution([
                     'id' => $distribution['id'],
+
+                    'vendors' => $distribution['vendors'],
+                    'country_id' => $distribution['country_id'],
+                    'distribution_currency_id' => $distribution['distribution_currency_id'],
+                    'buy_currency_id' => $distribution['buy_currency_id'],
+                    'buy_price' => (float)$distribution['buy_price'],
+                    'calculate_list_price' => (bool)($distribution['calculate_list_price'] ?? false),
+                    'distribution_expiry_date' => Carbon::createFromFormat('Y-m-d', $distribution['distribution_expiry_date']),
+                    'address_ids' => $distribution['addresses'],
+                    'contact_ids' => $distribution['contacts'],
+
                     'distributor_file_id' => $distribution['distributor_file_id'],
                     'distributor_file_page' => (int)($distribution['distributor_file_page'] ?? null),
                     'schedule_file_id' => $distribution['schedule_file_id'] ?? null,
-                    'schedule_file_page' => $distribution['schedule_file_page'] ?? null,
+                    'schedule_file_page' => transform($distribution['schedule_file_page'] ?? null, fn (string $value) => (int)$value),
                 ]);
             }, $distributions);
 

@@ -3,7 +3,6 @@
 namespace App\Http\Resources\SalesOrder;
 
 use App\Models\SalesOrder;
-use App\Services\SalesOrder\SalesOrderNumberHelper;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class SalesOrderSubmitted extends JsonResource
@@ -11,7 +10,7 @@ class SalesOrderSubmitted extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return array
      */
     public function toArray($request)

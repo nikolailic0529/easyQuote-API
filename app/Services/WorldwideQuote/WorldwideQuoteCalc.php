@@ -2,6 +2,7 @@
 
 namespace App\Services\WorldwideQuote;
 
+use App\Services\ExchangeRate\CurrencyConverter;
 use App\DTO\{Discounts\ApplicablePredefinedDiscounts,
     Discounts\ImmutableCustomDiscountData,
     Discounts\ImmutableMultiYearDiscountData,
@@ -65,22 +66,21 @@ use const CT_PACK;
 class WorldwideQuoteCalc
 {
     protected ValidatorInterface $validator;
-
+    protected CurrencyConverter $currencyConverter;
     protected WorldwideQuoteQueries $quoteQueries;
-
     protected WorldwideDistributionQueries $distributionQueries;
-
     protected WorldwideDistributionCalc $distributionCalc;
-
     protected Pipeline $pipeline;
 
     public function __construct(ValidatorInterface $validator,
+                                CurrencyConverter $currencyConverter,
                                 WorldwideQuoteQueries $quoteQueries,
                                 WorldwideDistributionQueries $distributionQueries,
                                 WorldwideDistributionCalc $distributionCalc,
                                 Pipeline $pipeline)
     {
         $this->validator = $validator;
+        $this->currencyConverter = $currencyConverter;
         $this->quoteQueries = $quoteQueries;
         $this->distributionQueries = $distributionQueries;
         $this->distributionCalc = $distributionCalc;
@@ -100,11 +100,24 @@ class WorldwideQuoteCalc
         throw new \RuntimeException('Contract Type of the Quote either is not set or unsupported to compute price summary.');
     }
 
+    protected function calculatePackQuoteBuyPrice(WorldwideQuote $quote): float
+    {
+        if ($quote->activeVersion->quoteCurrency->exists === false || $quote->activeVersion->buyCurrency->exists === false) {
+            return (float)$quote->activeVersion->buy_price;
+        }
+
+        return $this->currencyConverter->convertCurrencies(
+          $quote->activeVersion->buyCurrency->code,
+          $quote->activeVersion->quoteCurrency->code,
+            (float)$quote->activeVersion->buy_price
+        );
+    }
+
     protected function calculatePriceSummaryOfPackQuote(WorldwideQuote $quote): ImmutablePriceSummaryData
     {
         $totalPrice = $this->calculatePackQuoteTotalPrice($quote);
 
-        $buyPrice = (float)$quote->activeVersion->buy_price;
+        $buyPrice = $this->calculatePackQuoteBuyPrice($quote);
 
         $rawMarginPercentage = $this->calculateMarginPercentage($totalPrice, $buyPrice);
 
@@ -506,7 +519,7 @@ class WorldwideQuoteCalc
     {
         $quoteTotalPrice = $this->calculatePackQuoteTotalPrice($quote);
 
-        $buyPrice = (float)$quote->activeVersion->buy_price;
+        $buyPrice = $this->calculatePackQuoteBuyPrice($quote);
 
         $totalPriceAfterMargin = $this->calculateTotalPriceAfterBottomUp(
             $quoteTotalPrice,

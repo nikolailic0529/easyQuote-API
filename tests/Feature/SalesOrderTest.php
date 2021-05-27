@@ -979,6 +979,7 @@ class SalesOrderTest extends TestCase
 
         $salesOrder = factory(SalesOrder::class)->create([
             'worldwide_quote_id' => $wwQuote->getKey(),
+            'order_number' => sprintf("EPD-WW-DP-CSO%'.07d", $wwQuote->sequence_number),
             'sales_order_template_id' => $salesOrderTemplate->getKey(),
             'submitted_at' => now()
         ]);

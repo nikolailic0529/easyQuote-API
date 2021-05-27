@@ -571,6 +571,7 @@ class WorldwidePackQuoteTest extends TestCase
         $stageData = [
             'company_id' => $companyKey = Company::query()->where('type', 'Internal')->value('id'),
             'quote_currency_id' => $quoteCurrencyKey = Currency::query()->where('code', 'GBP')->value('id'),
+            'buy_currency_id' => $quoteCurrencyKey = Currency::query()->where('code', 'GBP')->value('id'),
             'quote_template_id' => $templateKey = $template->getKey(),
             'quote_expiry_date' => $quoteExpiryDateString = $quoteExpiryDate->toDateString(),
             'addresses' => $addressesData,
@@ -2010,6 +2011,124 @@ class WorldwidePackQuoteTest extends TestCase
                 'acting_user_is_version_owner' => true,
                 'active_version_id' => $response->json('id'),
                 'active_version_user_id' => $this->app['auth.driver']->id(),
+            ]);
+    }
+
+    /**
+     * Test an ability to affect on the pack quote data by updating of opportunity entity.
+     *
+     * @return void
+     */
+    public function testCanAffectOnPackQuoteDataByUpdatingOfOpportunity()
+    {
+        /** @var Opportunity $opportunity */
+        $opportunity = factory(Opportunity::class)->create([
+            'contract_type_id' => CT_PACK,
+        ]);
+
+        /** @var \App\Models\Quote\Quote $quote */
+        $quote = factory(WorldwideQuote::class)->create([
+            'opportunity_id' => $opportunity->getKey(),
+            'contract_type_id' => CT_PACK
+        ]);
+
+        $this->authenticateApi();
+
+        $this->getJson('api/ww-quotes/'.$quote->getKey().'?'.Arr::query([
+                'include' => [
+                    'buy_currency', 'quote_currency'
+                ]
+            ]))
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'quote_currency_id',
+                'buy_currency_id'
+            ]);
+
+        $this->patchJson('api/opportunities/'.$opportunity->getKey(), [
+            'contract_type_id' => $opportunity->contract_type_id,
+            'opportunity_start_date' => now()->toDateString(),
+            'opportunity_end_date' => now()->addYear()->toDateString(),
+            'opportunity_closing_date' => now()->addYear()->toDateString(),
+            'purchase_price_currency_code' => 'AUD'
+        ])
+            ->assertOk();
+
+        $this->getJson('api/ww-quotes/'.$quote->getKey().'?'.Arr::query([
+                'include' => [
+                    'buy_currency', 'quote_currency'
+                ]
+            ]))
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'quote_currency_id',
+                'quote_currency' => [
+                    'id',
+                    'name',
+                    'code'
+                ],
+                'buy_currency_id',
+                'buy_currency' => [
+                    'id',
+                    'name',
+                    'code'
+                ],
+            ])
+            ->assertJson([
+                'quote_currency' => [
+                    'code' => 'AUD'
+                ]
+            ])
+            ->assertJson([
+                'buy_currency' => [
+                    'code' => 'AUD'
+                ]
+            ]);
+
+        $this->patchJson('api/opportunities/'.$opportunity->getKey(), [
+            'contract_type_id' => $opportunity->contract_type_id,
+            'opportunity_start_date' => now()->toDateString(),
+            'opportunity_end_date' => now()->addYear()->toDateString(),
+            'opportunity_closing_date' => now()->addYear()->toDateString(),
+            'purchase_price_currency_code' => 'USD'
+        ])
+            ->assertOk();
+
+        $this->getJson('api/ww-quotes/'.$quote->getKey().'?'.Arr::query([
+                'include' => [
+                    'buy_currency', 'quote_currency'
+                ]
+            ]))
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'quote_currency_id',
+                'quote_currency' => [
+                    'id',
+                    'name',
+                    'code'
+                ],
+                'buy_currency_id',
+                'buy_currency' => [
+                    'id',
+                    'name',
+                    'code'
+                ],
+            ])
+            ->assertJson([
+                'quote_currency' => [
+                    'code' => 'USD'
+                ]
+            ])
+            ->assertJson([
+                'buy_currency' => [
+                    'code' => 'USD'
+                ]
             ]);
 
 

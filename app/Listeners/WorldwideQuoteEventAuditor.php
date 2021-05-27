@@ -266,23 +266,23 @@ class WorldwideQuoteEventAuditor
             foreach ($quote->worldwideDistributions as $distributorQuote) {
 
                 if (!is_null($distributorQuote->multiYearDiscount)) {
-                    $discountsData['multi_year_discounts'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->multiYearDiscount->name);
+                    $discountsData['multi_year_discounts'][] = sprintf("[%s]: %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->multiYearDiscount->name);
                 }
 
                 if (!is_null($distributorQuote->promotionalDiscount)) {
-                    $discountsData['promotional_discounts'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->promotionalDiscount->name);
+                    $discountsData['promotional_discounts'][] = sprintf("[%s]: %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->promotionalDiscount->name);
                 }
 
                 if (!is_null($distributorQuote->prePayDiscount)) {
-                    $discountsData['pre_pay_discounts'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->prePayDiscount->name);
+                    $discountsData['pre_pay_discounts'][] = sprintf("[%s]: %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->prePayDiscount->name);
                 }
 
                 if (!is_null($distributorQuote->snDiscount)) {
-                    $discountsData['special_negotiation_discounts'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->snDiscount->name);
+                    $discountsData['special_negotiation_discounts'][] = sprintf("[%s]: %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->snDiscount->name);
                 }
 
                 if (!is_null($distributorQuote->custom_discount)) {
-                    $discountsData['custom_discounts'][] = sprintf("Supplier '%s': %s%%", $distributorQuote->opportunitySupplier->supplier_name, number_format((float)$distributorQuote->custom_discount, 2));
+                    $discountsData['custom_discounts'][] = sprintf("[%s]: %s%%", $distributorQuote->opportunitySupplier->supplier_name, number_format((float)$distributorQuote->custom_discount, 2));
                 }
 
             }
@@ -324,7 +324,8 @@ class WorldwideQuoteEventAuditor
             $setupData = [
                 'vendors' => [],
                 'countries' => [],
-                'currencies' => [],
+                'distributor_quote_currencies' => [],
+                'buy_quote_currencies' => [],
                 'buy_prices' => [],
                 'expiry_dates' => [],
                 'distributor_files' => [],
@@ -336,35 +337,39 @@ class WorldwideQuoteEventAuditor
             foreach ($quote->worldwideDistributions as $distributorQuote) {
 
                 if ($distributorQuote->vendors->isNotEmpty()) {
-                    $setupData['vendors'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->vendors->pluck('short_code')->join(', '));
+                    $setupData['vendors'][] = sprintf("[%s]: %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->vendors->pluck('short_code')->join(', '));
                 }
 
                 if ($distributorQuote->addresses->isNotEmpty()) {
-                    $setupData['addresses'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->addresses->map($addressToString)->join('; '));
+                    $setupData['addresses'][] = sprintf("[%s]: %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->addresses->map($addressToString)->join('; '));
                 }
 
                 if ($distributorQuote->contacts->isNotEmpty()) {
-                    $setupData['contacts'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->contacts->map($contactToString)->join('; '));
+                    $setupData['contacts'][] = sprintf("[%s]: %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->contacts->map($contactToString)->join('; '));
                 }
 
                 if (!is_null($distributorQuote->country)) {
-                    $setupData['countries'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->country->iso_3166_2);
+                    $setupData['countries'][] = sprintf("[%s]: %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->country->iso_3166_2);
                 }
 
                 if (!is_null($distributorQuote->distributionCurrency)) {
-                    $setupData['currencies'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->distributionCurrency->code);
+                    $setupData['distributor_quote_currencies'][] = sprintf("[%s]: %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->distributionCurrency->code);
                 }
 
-                $setupData['buy_prices'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, number_format((float)$distributorQuote->buy_price, 2));
+                if (!is_null($distributorQuote->buyCurrency)) {
+                    $setupData['buy_quote_currencies'][] = sprintf("[%s]: %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->buyCurrency->code);
+                }
 
-                $setupData['expiry_dates'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->distribution_expiry_date);
+                $setupData['buy_prices'][] = sprintf("[%s]: %s", $distributorQuote->opportunitySupplier->supplier_name, number_format((float)$distributorQuote->buy_price, 2));
+
+                $setupData['expiry_dates'][] = sprintf("[%s]: %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->distribution_expiry_date);
 
                 if (!is_null($distributorQuote->distributorFile)) {
-                    $setupData['distributor_files'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->distributorFile->original_file_name);
+                    $setupData['distributor_files'][] = sprintf("[%s]: %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->distributorFile->original_file_name);
                 }
 
                 if (!is_null($distributorQuote->scheduleFile)) {
-                    $setupData['payment_schedule_files'][] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->scheduleFile->original_file_name);
+                    $setupData['payment_schedule_files'][] = sprintf("[%s]: %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuote->scheduleFile->original_file_name);
                 }
 
             }
@@ -430,7 +435,7 @@ class WorldwideQuoteEventAuditor
 
             foreach ($version->worldwideDistributions as $distributorQuote) {
 
-                $mappingData[] = sprintf("Supplier '%s': %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuoteMappingToString($distributorQuote));
+                $mappingData[] = sprintf("[%s]: %s", $distributorQuote->opportunitySupplier->supplier_name, $distributorQuoteMappingToString($distributorQuote));
 
             }
 
@@ -532,6 +537,7 @@ class WorldwideQuoteEventAuditor
                         'stage' => $this->getActiveQuoteVersionStage($oldQuote),
                         'company' => transform($oldQuote->activeVersion->company, fn(Company $company) => $company->name),
                         'quote_currency' => transform($oldQuote->activeVersion->quoteCurrency, fn(Currency $currency) => $currency->code),
+                        'buy_currency' => transform($oldQuote->activeVersion->buyCurrency, fn (Currency $currency) => $currency->code),
                         'quote_template' => transform($oldQuote->activeVersion->quoteTemplate, fn(QuoteTemplate $template) => $template->name),
                         'buy_price' => $oldQuote->activeVersion->buy_price,
                         'quote_expiry_date' => $oldQuote->activeVersion->quote_expiry_date,
@@ -541,6 +547,7 @@ class WorldwideQuoteEventAuditor
                         'stage' => $this->getActiveQuoteVersionStage($quote),
                         'company' => transform($quote->activeVersion->company, fn(Company $company) => $company->name),
                         'quote_currency' => transform($quote->activeVersion->quoteCurrency, fn(Currency $currency) => $currency->code),
+                        'buy_currency' => transform($quote->activeVersion->buyCurrency, fn (Currency $currency) => $currency->code),
                         'quote_template' => transform($quote->activeVersion->quoteTemplate, fn(QuoteTemplate $template) => $template->name),
                         'buy_price' => $quote->activeVersion->buy_price,
                         'quote_expiry_date' => $quote->activeVersion->quote_expiry_date,

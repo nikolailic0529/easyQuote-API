@@ -2,9 +2,11 @@
 
 namespace App\Models\Pipeline;
 
+use App\Contracts\SearchableEntity;
+use App\Models\OpportunityForm\OpportunityForm;
 use App\Models\Space;
 use App\Traits\Uuid;
-use Illuminate\Database\Eloquent\{Model, Relations\BelongsTo, Relations\HasMany, SoftDeletes};
+use Illuminate\Database\Eloquent\{Model, Relations\BelongsTo, Relations\HasMany, Relations\HasOne, SoftDeletes};
 
 /**
  * Class Pipeline
@@ -13,12 +15,13 @@ use Illuminate\Database\Eloquent\{Model, Relations\BelongsTo, Relations\HasMany,
  * @property bool|null $is_default
  * @property string|null $space_id
  * @property string|null $pipeline_name
+ * @property int|null $pipeline_order
  *
  * @property-read Space|null $space
  * @property-read \Illuminate\Database\Eloquent\Collection<PipelineStage>|PipelineStage[] $pipelineStages
- * @property-read OpportunityFormSchema|null $opportunityFormSchema
+ * @property-read \App\Models\OpportunityForm\OpportunityForm|null $opportunityForm
  */
-class Pipeline extends Model
+class Pipeline extends Model implements SearchableEntity
 {
     use Uuid, SoftDeletes;
 
@@ -31,11 +34,24 @@ class Pipeline extends Model
 
     public function pipelineStages(): HasMany
     {
-        return $this->hasMany(PipelineStage::class);
+        return $this->hasMany(PipelineStage::class)->orderBy('stage_order');
     }
 
-    public function opportunityFormSchema(): BelongsTo
+    public function opportunityForm(): HasOne
     {
-        return $this->belongsTo(OpportunityFormSchema::class);
+        return $this->hasOne(OpportunityForm::class);
+    }
+
+    public function getSearchIndex(): string
+    {
+        return $this->getTable();
+    }
+
+    public function toSearchArray(): array
+    {
+        return [
+            'space_name' => $this->space->space_name,
+            'pipeline_name' => $this->pipeline_name,
+        ];
     }
 }

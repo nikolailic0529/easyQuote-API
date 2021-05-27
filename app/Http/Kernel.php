@@ -42,7 +42,8 @@ class Kernel extends HttpKernel
             'throttle:600,1',
             'bindings',
             \App\Http\Middleware\PerformUserActivity::class,
-            \App\Http\Middleware\EnforceChangePassword::class
+            \App\Http\Middleware\EnforceChangePassword::class,
+            \Spatie\HttpLogger\Middlewares\HttpLogger::class,
         ],
     ];
 

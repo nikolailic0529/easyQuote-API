@@ -76,6 +76,7 @@ class WorldwideQuoteReplicator
             $version->company_id = $activeVersion->company_id;
             $version->quote_currency_id = $activeVersion->quote_currency_id;
             $version->output_currency_id = $activeVersion->output_currency_id;
+            $version->buy_currency_id = $activeVersion->buy_currency_id;
             $version->quote_template_id = $activeVersion->quote_template_id;
             $version->exchange_rate_margin = $activeVersion->exchange_rate_margin;
             $version->completeness = $activeVersion->completeness;

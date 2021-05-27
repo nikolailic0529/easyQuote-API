@@ -217,42 +217,6 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         );
     }
 
-    private function replicateAddressModelsOfPrimaryAccount(Collection $addressCollection): array
-    {
-        $newAddressModels = [];
-        $newAddressPivots = [];
-
-        foreach ($addressCollection as $address) {
-            $newAddress = $address->replicate();
-            $newAddress->{$newAddress->getKeyName()} = (string)Uuid::generate(4);
-            $newAddress->{$newAddress->getCreatedAtColumn()} = $newAddress->freshTimestampString();
-            $newAddress->{$newAddress->getUpdatedAtColumn()} = $newAddress->freshTimestampString();
-
-            $newAddressModels[] = $newAddress;
-            $newAddressPivots[$newAddress->getKey()] = ['replicated_address_id' => $address->getKey()];
-        }
-
-        return [$newAddressModels, $newAddressPivots];
-    }
-
-    private function replicateContactModelsOfPrimaryAccount(Collection $contactCollection): array
-    {
-        $newContactModels = [];
-        $newContactPivots = [];
-
-        foreach ($contactCollection as $contact) {
-            $newContact = $contact->replicate();
-            $newContact->{$newContact->getKeyName()} = (string)Uuid::generate(4);
-            $newContact->{$newContact->getCreatedAtColumn()} = $newContact->freshTimestampString();
-            $newContact->{$newContact->getUpdatedAtColumn()} = $newContact->freshTimestampString();
-
-            $newContactModels[] = $newContact;
-            $newContactPivots[$newContact->getKey()] = ['replicated_contact_id' => $contact->getKey()];
-        }
-
-        return [$newContactModels, $newContactPivots];
-    }
-
     public function applyDistributionsDiscount(WorldwideQuoteVersion $quote, DistributionDiscountsCollection $collection)
     {
         $newVersionResolved = $quote->wasRecentlyCreated;
@@ -512,15 +476,18 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
 
                 with($model, function (WorldwideDistribution $model) use ($distribution) {
 
-//                    $model->distribution_expiry_date = $distribution->distribution_expiry_date->toDateString();
-//                    $model->country_id = $distribution->country_id;
-//                    $model->distribution_currency_id = $distribution->distribution_currency_id;
-//                    $model->buy_price = $distribution->buy_price;
-//                    $model->calculate_list_price = (bool)$distribution->calculate_list_price;
+                    $model->country()->associate($distribution->country_id);
+                    $model->distributionCurrency()->associate($distribution->distribution_currency_id);
+                    $model->buyCurrency()->associate($distribution->buy_currency_id);
+                    $model->buy_price = $distribution->buy_price;
+                    $model->calculate_list_price = $distribution->calculate_list_price;
+                    $model->distribution_expiry_date = $distribution->distribution_expiry_date;
 
                     $model->save();
 
-//                    $model->vendors()->sync($distribution->vendors);
+                    $model->vendors()->sync($distribution->vendors);
+                    $model->addresses()->sync($distribution->address_ids);
+                    $model->contacts()->sync($distribution->contact_ids);
 
                 });
 
@@ -559,70 +526,6 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         (new ProcessPool($processIterator()))
             ->setConcurrency(4)
             ->wait();
-    }
-
-    public function validateDistributionsAfterImport(ProcessableDistributionCollection $collection): MessageBag
-    {
-        $collection->rewind();
-
-        $modelKeys = [];
-
-        foreach ($collection as $distribution) {
-            $modelKeys[] = $distribution->id;
-        }
-
-        /** @var Collection<WorldwideDistribution>|WorldwideDistribution[] $distributionModels */
-        $distributionModels = WorldwideDistribution::query()
-            ->whereKey($modelKeys)
-            ->with('distributorFile', 'scheduleFile')
-            ->get(['id', 'worldwide_quote_id', 'distributor_file_id', 'schedule_file_id']);
-
-        $getDistributionName = function (WorldwideDistribution $distribution) {
-            $distributionName = $this->distributionQueries->distributionQualifiedNameQuery($distribution->getKey(), $as = 'qualified_distribution_name')->value($as);
-
-            if (blank($distributionName)) {
-                return $distribution->getKey();
-            }
-
-            return $distributionName;
-        };
-
-        $errors = new MessageBag();
-
-        foreach ($distributionModels as $distribution) {
-            $distributionName = $getDistributionName($distribution);
-
-            if (is_null($distribution->distributorFile)) {
-                $errors->add($distributionName, 'No Distributor File uploaded.');
-            }
-
-            if ($distribution->distributorFile->rowsData()->getBaseQuery()->doesntExist()) {
-                $fileName = $distribution->distributorFile->original_file_name;
-
-                $errors->add($distributionName, "No Rows found in the Distributor File '$fileName'.");
-            }
-
-            if (!is_null($distribution->scheduleFile)) {
-                with($distribution->scheduleFile->scheduleData, function (?ScheduleData $scheduleData) use ($distribution, $distributionName, $errors) {
-                    $fileName = $distribution->scheduleFile->original_file_name;
-
-                    if (is_null($scheduleData)) {
-                        $errors->add($distributionName, "No Payment Data found in the Payment Schedule File '$fileName'.");
-
-                        return;
-                    }
-
-                    $scheduleDataValue = $scheduleData->value;
-
-                    if (empty($scheduleDataValue)) {
-                        $errors->add($distributionName, "No Payment Data found in the Payment Schedule File '$fileName'.");
-                    }
-                });
-            }
-
-        }
-
-        return $errors;
     }
 
     protected function compileDistributionImportCommand(WorldwideDistribution $worldwideDistribution): Process
@@ -760,37 +663,68 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         });
     }
 
-    protected function transitDistributionMappingToRowMapping(DistributionMappingCollection $distributionMapping): RowMapping
+    public function validateDistributionsAfterImport(ProcessableDistributionCollection $collection): MessageBag
     {
-        $mapping = Arr::pluck($distributionMapping, 'importable_column_id', 'template_field_id');
+        $collection->rewind();
 
-        $templateFields = TemplateField::query()->whereKey(array_keys($mapping))->pluck('name', 'id');
+        $modelKeys = [];
 
-        $rowMapping = [];
-
-        foreach ($templateFields as $key => $name) {
-            $rowMapping[$name] = $mapping[$key] ?? null;
+        foreach ($collection as $distribution) {
+            $modelKeys[] = $distribution->id;
         }
 
-        return new RowMapping($rowMapping);
-    }
+        /** @var Collection<WorldwideDistribution>|WorldwideDistribution[] $distributionModels */
+        $distributionModels = WorldwideDistribution::query()
+            ->whereKey($modelKeys)
+            ->with('distributorFile', 'scheduleFile')
+            ->get(['id', 'worldwide_quote_id', 'distributor_file_id', 'schedule_file_id']);
 
-    protected function getMappedRowSettings(WorldwideDistribution $worldwideDistribution): MappedRowSettings
-    {
-        $version = $worldwideDistribution->worldwideQuote;
+        $getDistributionName = function (WorldwideDistribution $distribution) {
+            $distributionName = $this->distributionQueries->distributionQualifiedNameQuery($distribution->getKey(), $as = 'qualified_distribution_name')->value($as);
 
-        $exchangeRateValue = $this->exchangeRateService->getTargetRate(
-            $worldwideDistribution->getRelationValue('distributionCurrency') ?? $version->quoteCurrency,
-            $version->quoteCurrency
-        );
+            if (blank($distributionName)) {
+                return $distribution->getKey();
+            }
 
-        return new MappedRowSettings([
-            'default_date_from' => transform($version->worldwideQuote->opportunity->opportunity_start_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
-            'default_date_to' => transform($version->worldwideQuote->opportunity->opportunity_end_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
-            'default_qty' => 1,
-            'calculate_list_price' => (bool)$worldwideDistribution->calculate_list_price,
-            'exchange_rate_value' => $exchangeRateValue,
-        ]);
+            return $distributionName;
+        };
+
+        $errors = new MessageBag();
+
+        foreach ($distributionModels as $distribution) {
+            $distributionName = $getDistributionName($distribution);
+
+            if (is_null($distribution->distributorFile)) {
+                $errors->add($distributionName, 'No Distributor File uploaded.');
+            }
+
+            if ($distribution->distributorFile->rowsData()->getBaseQuery()->doesntExist()) {
+                $fileName = $distribution->distributorFile->original_file_name;
+
+                $errors->add($distributionName, "No Rows found in the Distributor File '$fileName'.");
+            }
+
+            if (!is_null($distribution->scheduleFile)) {
+                with($distribution->scheduleFile->scheduleData, function (?ScheduleData $scheduleData) use ($distribution, $distributionName, $errors) {
+                    $fileName = $distribution->scheduleFile->original_file_name;
+
+                    if (is_null($scheduleData)) {
+                        $errors->add($distributionName, "No Payment Data found in the Payment Schedule File '$fileName'.");
+
+                        return;
+                    }
+
+                    $scheduleDataValue = $scheduleData->value;
+
+                    if (empty($scheduleDataValue)) {
+                        $errors->add($distributionName, "No Payment Data found in the Payment Schedule File '$fileName'.");
+                    }
+                });
+            }
+
+        }
+
+        return $errors;
     }
 
     public function processDistributionsMapping(WorldwideQuoteVersion $quote, DistributionMappingCollection $collection)
@@ -951,6 +885,39 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         return $changes;
     }
 
+    protected function getMappedRowSettings(WorldwideDistribution $worldwideDistribution): MappedRowSettings
+    {
+        $version = $worldwideDistribution->worldwideQuote;
+
+        $exchangeRateValue = $this->exchangeRateService->getTargetRate(
+            $worldwideDistribution->getRelationValue('distributionCurrency') ?? $version->quoteCurrency,
+            $version->quoteCurrency
+        );
+
+        return new MappedRowSettings([
+            'default_date_from' => transform($version->worldwideQuote->opportunity->opportunity_start_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
+            'default_date_to' => transform($version->worldwideQuote->opportunity->opportunity_end_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
+            'default_qty' => 1,
+            'calculate_list_price' => (bool)$worldwideDistribution->calculate_list_price,
+            'exchange_rate_value' => $exchangeRateValue,
+        ]);
+    }
+
+    protected function transitDistributionMappingToRowMapping(DistributionMappingCollection $distributionMapping): RowMapping
+    {
+        $mapping = Arr::pluck($distributionMapping, 'importable_column_id', 'template_field_id');
+
+        $templateFields = TemplateField::query()->whereKey(array_keys($mapping))->pluck('name', 'id');
+
+        $rowMapping = [];
+
+        foreach ($templateFields as $key => $name) {
+            $rowMapping[$name] = $mapping[$key] ?? null;
+        }
+
+        return new RowMapping($rowMapping);
+    }
+
     public function updateRowsSelection(WorldwideQuoteVersion $quote, SelectedDistributionRowsCollection $collection)
     {
         $newVersionResolved = $quote->wasRecentlyCreated;
@@ -974,6 +941,7 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
             })
             ->get(['id', 'replicated_distributor_quote_id', 'distributor_file_id', 'created_at', 'updated_at']);
 
+        /** @var Collection $distributions */
         $distributions = value(function () use ($distributions, $newVersionResolved): Collection {
             if ($newVersionResolved) {
                 return $distributions->keyBy('replicated_distributor_quote_id');
@@ -981,6 +949,12 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
 
             return $distributions->keyBy('id');
         });
+
+        $missingModelKeys = array_diff($modelKeys, $distributions->keys()->all());
+
+        if (!empty($missingModelKeys)) {
+            throw (new ModelNotFoundException())->setModel(WorldwideDistribution::class, array_values($missingModelKeys));
+        }
 
         foreach ($collection as $selection) {
             /** @var WorldwideDistribution */
@@ -1525,5 +1499,41 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         $this->connection->transaction(fn() => $mappedRow->save());
 
         return $mappedRow;
+    }
+
+    private function replicateAddressModelsOfPrimaryAccount(Collection $addressCollection): array
+    {
+        $newAddressModels = [];
+        $newAddressPivots = [];
+
+        foreach ($addressCollection as $address) {
+            $newAddress = $address->replicate();
+            $newAddress->{$newAddress->getKeyName()} = (string)Uuid::generate(4);
+            $newAddress->{$newAddress->getCreatedAtColumn()} = $newAddress->freshTimestampString();
+            $newAddress->{$newAddress->getUpdatedAtColumn()} = $newAddress->freshTimestampString();
+
+            $newAddressModels[] = $newAddress;
+            $newAddressPivots[$newAddress->getKey()] = ['replicated_address_id' => $address->getKey()];
+        }
+
+        return [$newAddressModels, $newAddressPivots];
+    }
+
+    private function replicateContactModelsOfPrimaryAccount(Collection $contactCollection): array
+    {
+        $newContactModels = [];
+        $newContactPivots = [];
+
+        foreach ($contactCollection as $contact) {
+            $newContact = $contact->replicate();
+            $newContact->{$newContact->getKeyName()} = (string)Uuid::generate(4);
+            $newContact->{$newContact->getCreatedAtColumn()} = $newContact->freshTimestampString();
+            $newContact->{$newContact->getUpdatedAtColumn()} = $newContact->freshTimestampString();
+
+            $newContactModels[] = $newContact;
+            $newContactPivots[$newContact->getKey()] = ['replicated_contact_id' => $contact->getKey()];
+        }
+
+        return [$newContactModels, $newContactPivots];
     }
 }

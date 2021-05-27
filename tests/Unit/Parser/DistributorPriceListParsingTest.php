@@ -6,8 +6,10 @@ use App\Contracts\Services\{PdfParserInterface, WordParserInterface};
 use App\Models\{QuoteFile\QuoteFileFormat};
 use App\Models\QuoteFile\QuoteFile;
 use App\Services\DocumentProcessor\EasyQuote\DistributorExcel;
+use App\Services\DocumentReaders\ExcelPriceListReader;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\{Arr, Collection, Facades\File, Facades\Storage, Str};
+use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
 /**
@@ -2785,7 +2787,7 @@ CONTENT
 
         $excelProcessor->process($quoteFile);
 
-        $this->assertEquals(46, $quoteFile->rowsData()->count());
+        $this->assertEquals(44, $quoteFile->rowsData()->count());
     }
 
     /**
@@ -3615,5 +3617,1069 @@ CONTENT
         $this->assertCount(16, $headers);
 
         $this->assertCount(5, $quoteFile->rowsData);
+    }
+
+    /**
+     * @group parsing-price-list-xlsx
+     */
+    public function test_parses_disti_epd_almac_7200_value_seller_end_12_31_2021_5yr_24x7_sv351964_xlsx()
+    {
+        $filePath = base_path('tests/Unit/Data/distributor-files-test/Disti - EPD - Almac 7200 - ValueSeller end 12-31-2021 - 5yr 24x7 - SV351964.xlsx');
+
+        $rows = $this->app[ExcelPriceListReader::class]->readFile($filePath);
+
+        $this->assertCount(9, iterator_to_array($rows));
+    }
+
+    /**
+     * @group parsing-price-list-xlsx
+     */
+    public function test_parses_copy_of_quote_501_sq637159_1_uk_1yr_lenovo_xlsx()
+    {
+        $filePath = base_path('tests/Unit/Data/distributor-files-test/Copy of Quote-501-SQ637159-1 - UK 1Yr Lenovo.xlsx');
+
+        $rows = $this->app[ExcelPriceListReader::class]->readFile($filePath);
+
+        $this->assertCount(138, iterator_to_array($rows));
+    }
+
+    /**
+     * @group parsing-price-list-pdf
+     */
+    public function test_parses_autocont_pro_eurowag_062021_list_v2_pdf()
+    {
+        $filePath = base_path('tests/Unit/Data/distributor-files-test/Autocont pro Eurowag_062021_LIST_v2.pdf');
+
+        $parser = $this->app[\App\Contracts\Services\PdfParserInterface::class];
+
+        $fileContent = $parser->getText($filePath);
+        $fileData = $parser->parse($fileContent);
+
+        $this->assertEmpty($fileData['pages'][0]['rows']);
+
+        $this->assertCount(19, $fileData['pages'][1]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '804326-B21',
+            'description' => 'HPE Smart Array E208i-a SR Gen10 Ctrlr',
+            'serial_no' => 'PEYHB0ARH830JA',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][1]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '835955-B21',
+            'description' => 'HPE 16GB 2Rx8 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RWEZNAVTGAH03R',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][1]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '835955-B21',
+            'description' => 'HPE 16GB 2Rx8 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RWEZNAVTGAH03S',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][1]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '835955-B21',
+            'description' => 'HPE 16GB 2Rx8 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RWEZNAVTGAH03T',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][1]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '835955-B21',
+            'description' => 'HPE 16GB 2Rx8 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RWEZNAVTGAH03V',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][1]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '860657-B21',
+            'description' => 'HPE DL360 Gen10 Xeon-S 4114 Kit',
+            'serial_no' => 'AWCTN0AK8A91B3',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][1]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '860657-L21',
+            'description' => 'HPE DL360 Gen10 Xeon-S 4114 FIO Kit',
+            'serial_no' => 'EWCTK04J2811TF',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][1]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '865414-B21',
+            'description' => 'HPE 800W FS Plat Ht Plg LH Pwr Sply Kit',
+            'serial_no' => '5WBXT0B4DA61YJ',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][1]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '726537-B21',
+            'description' => 'HP 9.5mm SATA DVD-RW Jb Gen9 Kit',
+            'serial_no' => NULL,
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][1]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '804326-B21',
+            'description' => 'HPE Smart Array E208i-a SR Gen10 Ctrlr',
+            'serial_no' => 'PEYHB0ARH830JA',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][1]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '835955-B21',
+            'description' => 'HPE 16GB 2Rx8 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RWEZNAVTGAH03R',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][1]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '835955-B21',
+            'description' => 'HPE 16GB 2Rx8 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RWEZNAVTGAH03S',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][1]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '835955-B21',
+            'description' => 'HPE 16GB 2Rx8 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RWEZNAVTGAH03T',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][1]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '835955-B21',
+            'description' => 'HPE 16GB 2Rx8 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RWEZNAVTGAH03V',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][1]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '860657-B21',
+            'description' => 'HPE DL360 Gen10 Xeon-S 4114 Kit',
+            'serial_no' => 'AWCTN0AK8A91B3',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][1]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '860657-L21',
+            'description' => 'HPE DL360 Gen10 Xeon-S 4114 FIO Kit',
+            'serial_no' => 'EWCTK04J2811TF',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][1]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '865414-B21',
+            'description' => 'HPE 800W FS Plat Ht Plg LH Pwr Sply Kit',
+            'serial_no' => '5WBXT0B4DA61YJ',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][1]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '865414-B21',
+            'description' => 'HPE 800W FS Plat Ht Plg LH Pwr Sply Kit',
+            'serial_no' => NULL,
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][1]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => 'H7J35AC',
+            'description' => 'HPE Foundation Care 24x7 wDMR SVC',
+            'serial_no' => NULL,
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => NULL,
+            'price' => NULL,
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][1]['rows']);
+
+
+        $this->assertCount(8, $fileData['pages'][2]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '867959-B21',
+            'description' => 'HPE DL360 Gen10 8SFF CTO Server',
+            'serial_no' => 'MXQ80700YR',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '3.008,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][2]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '867959-B21',
+            'description' => 'HPE DL360 Gen10 8SFF CTO Server',
+            'serial_no' => 'MXQ80700YR',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '201,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][2]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '875483-B21',
+            'description' => 'HPE 240GB SATA MU SFF SC DS SSD',
+            'serial_no' => 'UWEZF01ZR96IWT',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][2]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '875483-B21',
+            'description' => 'HPE 240GB SATA MU SFF SC DS SSD',
+            'serial_no' => 'UWEZF01ZR983U5',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][2]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '874543-B21',
+            'description' => 'HPE 1U Gen10 SFF Easy Install Rail Kit',
+            'serial_no' => NULL,
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][2]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '875483-B21',
+            'description' => 'HPE 240GB SATA MU SFF SC DS SSD',
+            'serial_no' => 'UWEZF01ZR96IWT',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][2]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '875483-B21',
+            'description' => 'HPE 240GB SATA MU SFF SC DS SSD',
+            'serial_no' => 'UWEZF01ZR983U5',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][2]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => 'BD505A',
+            'description' => 'HPE iLO Adv 1-svr Lic 3yr Support',
+            'serial_no' => NULL,
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '107,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][2]['rows']);
+
+
+        $this->assertCount(17, $fileData['pages'][3]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '875483-B21',
+            'description' => 'HPE 240GB SATA MU SFF SC DS SSD',
+            'serial_no' => 'UWEZF01ZR96KJ9',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][3]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '875483-B21',
+            'description' => 'HPE 240GB SATA MU SFF SC DS SSD',
+            'serial_no' => 'UWEZF01ZR98708',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][3]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '872479-B21',
+            'description' => 'HPE 1.2TB SAS 10K SFF SC DS HDD',
+            'serial_no' => '2WJNQ0183ABAQ0',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][3]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '872479-B21',
+            'description' => 'HPE 1.2TB SAS 10K SFF SC DS HDD',
+            'serial_no' => '2WJNQ0183ABB14',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][3]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '872479-B21',
+            'description' => 'HPE 1.2TB SAS 10K SFF SC DS HDD',
+            'serial_no' => '2WJNQ0183ABB18',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][3]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '872479-B21',
+            'description' => 'HPE 1.2TB SAS 10K SFF SC DS HDD',
+            'serial_no' => '2WJNQ0183ABB2Q',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][3]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '872479-B21',
+            'description' => 'HPE 1.2TB SAS 10K SFF SC DS HDD',
+            'serial_no' => '2WJNQ0183ABB2S',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][3]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '872479-B21',
+            'description' => 'HPE 1.2TB SAS 10K SFF SC DS HDD',
+            'serial_no' => '2WJNQ0183ABB3J',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][3]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '875483-B21',
+            'description' => 'HPE 240GB SATA MU SFF SC DS SSD',
+            'serial_no' => 'UWEZF01ZR96KJ9',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][3]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '875483-B21',
+            'description' => 'HPE 240GB SATA MU SFF SC DS SSD',
+            'serial_no' => 'UWEZF01ZR98708',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][3]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '872479-B21',
+            'description' => 'HPE 1.2TB SAS 10K SFF SC DS HDD',
+            'serial_no' => '2WJNQ0183ABAQ0',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][3]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '872479-B21',
+            'description' => 'HPE 1.2TB SAS 10K SFF SC DS HDD',
+            'serial_no' => '2WJNQ0183ABB14',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][3]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '872479-B21',
+            'description' => 'HPE 1.2TB SAS 10K SFF SC DS HDD',
+            'serial_no' => '2WJNQ0183ABB18',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][3]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '872479-B21',
+            'description' => 'HPE 1.2TB SAS 10K SFF SC DS HDD',
+            'serial_no' => '2WJNQ0183ABB2Q',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][3]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '872479-B21',
+            'description' => 'HPE 1.2TB SAS 10K SFF SC DS HDD',
+            'serial_no' => '2WJNQ0183ABB2S',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][3]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '872479-B21',
+            'description' => 'HPE 1.2TB SAS 10K SFF SC DS HDD',
+            'serial_no' => '2WJNQ0183ABB3J',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][3]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => 'H7J35AC',
+            'description' => 'HPE Foundation Care 24x7 wDMR SVC',
+            'serial_no' => NULL,
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => NULL,
+            'price' => NULL,
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][3]['rows']);
+
+
+        $this->assertCount(38, $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '875966-B21',
+            'description' => 'HPE DL360 Gen10 TAA 8SFF CTO Svr',
+            'serial_no' => 'MXQ80702G9',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '3.008,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '875966-B21',
+            'description' => 'HPE DL360 Gen10 TAA 8SFF CTO Svr',
+            'serial_no' => 'MXQ80702G9',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '201,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '865414-B21',
+            'description' => 'HPE 800W FS Plat Ht Plg LH Pwr Sply Kit',
+            'serial_no' => '5WEBP0B8JA7217',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '865414-B21',
+            'description' => 'HPE 800W FS Plat Ht Plg LH Pwr Sply Kit',
+            'serial_no' => '5WEBP0B8JA721F',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '860691-L21',
+            'description' => 'HPE DL360 Gen10 Xeon-G 6136 FIO Kit',
+            'serial_no' => 'TWGHTAVVXAH019',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '860691-B21',
+            'description' => 'HPE DL360 Gen10 Xeon-G 6136 Kit',
+            'serial_no' => 'AWCTN0AK8A71T2',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07N',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07O',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07P',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07Q',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07R',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07S',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07T',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07U',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07V',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07W',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07X',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07Y',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '804331-B21',
+            'description' => 'HPE Smart Array P408i-a SR Gen10 Ctrlr',
+            'serial_no' => 'PEYHC0CRHAF1LH',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '865414-B21',
+            'description' => 'HPE 800W FS Plat Ht Plg LH Pwr Sply Kit',
+            'serial_no' => '5WEBP0B8JA7217',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '865414-B21',
+            'description' => 'HPE 800W FS Plat Ht Plg LH Pwr Sply Kit',
+            'serial_no' => '5WEBP0B8JA721F',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '860691-L21',
+            'description' => 'HPE DL360 Gen10 Xeon-G 6136 FIO Kit',
+            'serial_no' => 'TWGHTAVVXAH019',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '860691-B21',
+            'description' => 'HPE DL360 Gen10 Xeon-G 6136 Kit',
+            'serial_no' => 'AWCTN0AK8A71T2',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07N',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07O',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07P',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07Q',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07R',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07S',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07T',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07U',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07V',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07W',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07X',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '815098-B21',
+            'description' => 'HPE 16GB 1Rx4 PC4-2666V-R Smart Kit',
+            'serial_no' => 'RVYDUAVTHAH07Y',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '804331-B21',
+            'description' => 'HPE Smart Array P408i-a SR Gen10 Ctrlr',
+            'serial_no' => 'PEYHC0CRHAF1LH',
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '726537-B21',
+            'description' => 'HP 9.5mm SATA DVD-RW Jb Gen9 Kit',
+            'serial_no' => NULL,
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => '874543-B21',
+            'description' => 'HPE 1U Gen10 SFF Easy Install Rail Kit',
+            'serial_no' => NULL,
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '0,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][4]['rows']);
+
+
+        $this->assertCount(2, $fileData['pages'][5]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => 'UJ558AC',
+            'description' => 'HPE Ind Std Svrs Return to HW Supp',
+            'serial_no' => NULL,
+            'date_from' => '06.07.2021',
+            'date_to' => NULL,
+            'qty' => NULL,
+            'price' => '4.579,29',
+            'searchable' => NULL,
+            '_one_pay' => true,
+        ], $fileData['pages'][5]['rows']);
+
+        $this->assertContainsEquals([
+            'product_no' => 'BD505A',
+            'description' => 'HPE iLO Adv 1-svr Lic 3yr Support',
+            'serial_no' => NULL,
+            'date_from' => NULL,
+            'date_to' => NULL,
+            'qty' => '1',
+            'price' => '107,00',
+            'searchable' => NULL,
+            '_one_pay' => false,
+        ], $fileData['pages'][5]['rows']);
+
+
+        $this->assertEmpty($fileData['pages'][6]['rows']);
     }
 }

@@ -23,13 +23,11 @@ class SpaceSeeder extends Seeder
             foreach ($seeds as $seed) {
 
                 $connection->table('spaces')
-                    ->upsert([
+                    ->insertOrIgnore([
                         'id' => $seed['id'],
                         'space_name' => $seed['space_name']
-                    ], null, [
-                        'space_name' => $seed['space_name']
                     ]);
-                
+
             }
 
         });

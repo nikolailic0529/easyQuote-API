@@ -6,8 +6,12 @@ final class PipelineShortCodeResolver
 {
     public function __invoke(string $pipelineName): string
     {
-        preg_match_all('/\b[a-zA-Z0-9]/', $pipelineName, $matches);
+        $value = $pipelineName;
 
-        return strtoupper(implode('', $matches[0]));
+        $value = ucwords(str_replace(['-', '_'], ' ', $value));
+
+        preg_match_all('/[A-Z]+/', $value, $matches);
+
+        return implode('', $matches[0]);
     }
 }

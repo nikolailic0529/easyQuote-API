@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use Illuminate\Pipeline\Pipeline;
+use Illuminate\Support\Arr;
 
 class PipelineQueries
 {
@@ -67,14 +68,36 @@ class PipelineQueries
             ->where('is_default', true);
     }
 
-    public function pipelineListQuery(): Builder
+    public function pipelineListQuery(Request $request = null): Builder
+    {
+        $query = PipelineModel::query()
+            ->select([
+                'id',
+                'space_id',
+                'is_default',
+                'pipeline_name'
+            ])
+            ->orderBy('is_default', 'desc')
+            ->orderBy('pipeline_order');
+
+        return tap($query, function (Builder $query) use ($request) {
+
+            if ($request->has('filter.space_id')) {
+                $query->whereIn('space_id', Arr::wrap($request->input('filter.space_id')));
+            }
+
+        });
+    }
+
+    public function pipelineWithoutOpportunityFormListQuery(): Builder
     {
         return PipelineModel::query()
             ->select([
                 'id',
                 'pipeline_name'
             ])
+            ->whereDoesntHave('opportunityForm')
             ->orderBy('is_default', 'desc')
-            ->orderBy('pipeline_name');
+            ->orderBy('pipeline_order');
     }
 }

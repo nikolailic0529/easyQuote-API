@@ -36,6 +36,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string|null $user_id
  * @property string|null $company_id
  * @property string|null $quote_currency_id
+ * @property string|null $buy_currency_id
  * @property string|null $output_currency_id
  * @property string|null $quote_template_id
  * @property float|null $exchange_rate_margin
@@ -69,10 +70,10 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  *
  * @property User $user
  * @property ContractType|null $contractType
- * // * @property Opportunity|null $opportunity
  * @property Collection|WorldwideDistribution[] $worldwideDistributions
  * @property QuoteTemplate|null $quoteTemplate
  * @property Currency $quoteCurrency
+ * @property Currency|null $buyCurrency
  * @property Currency $outputCurrency
  * @property Company|null $company
  * @property Collection<WorldwideQuoteAsset>|WorldwideQuoteAsset[] $assets
@@ -116,6 +117,11 @@ class WorldwideQuoteVersion extends Model
     }
 
     public function quoteCurrency(): BelongsTo
+    {
+        return $this->belongsTo(Currency::class)->withDefault();
+    }
+
+    public function buyCurrency(): BelongsTo
     {
         return $this->belongsTo(Currency::class)->withDefault();
     }

@@ -42,6 +42,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string|null $company_id
  * @property string|null $country_id
  * @property string|null $distribution_currency_id
+ * @property string|null $buy_currency_id
  * @property mixed $multi_year_discount_id
  * @property mixed $pre_pay_discount_id
  * @property mixed $promotional_discount_id
@@ -68,22 +69,23 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string $distribution_expiry_date
  * @property mixed $quote_type
  * @property mixed $margin_method
- * @property WorldwideQuoteVersion $worldwideQuote
- * @property Currency|null $distributionCurrency
- * @property QuoteFile|null $distributorFile
- * @property QuoteFile|null $scheduleFile
- * @property Collection<Vendor> $vendors
- * @property Collection<MappedRow> $mappedRows
- * @property Collection<DistributionRowsGroup> $rowsGroups
- * @property Collection<DistributionFieldColumn> $mapping
- * @property MultiYearDiscount|null $multiYearDiscount
- * @property PromotionalDiscount|null $promotionalDiscount
- * @property PrePayDiscount|null $prePayDiscount
- * @property SND|null $snDiscount
- * @property Collection|null $applicableSnDiscounts
- * @property Collection|null $applicablePromotionalDiscounts
- * @property Collection|null $applicablePrePayDiscounts
- * @property Collection|null $applicableMultiYearDiscounts
+ * @property-read WorldwideQuoteVersion $worldwideQuote
+ * @property-read Currency|null $distributionCurrency
+ * @property-read Currency|null $buyCurrency
+ * @property-read QuoteFile|null $distributorFile
+ * @property-read QuoteFile|null $scheduleFile
+ * @property-read Collection<Vendor> $vendors
+ * @property-read Collection<MappedRow> $mappedRows
+ * @property-read Collection<DistributionRowsGroup> $rowsGroups
+ * @property-read Collection<DistributionFieldColumn> $mapping
+ * @property-read MultiYearDiscount|null $multiYearDiscount
+ * @property-read PromotionalDiscount|null $promotionalDiscount
+ * @property-read PrePayDiscount|null $prePayDiscount
+ * @property-read SND|null $snDiscount
+ * @property-read Collection|null $applicableSnDiscounts
+ * @property-read Collection|null $applicablePromotionalDiscounts
+ * @property-read Collection|null $applicablePrePayDiscounts
+ * @property-read Collection|null $applicableMultiYearDiscounts
  * @property float|null $final_total_price
  * @property float|null $final_total_price_excluding_tax
  * @property float|null $total_price
@@ -91,15 +93,15 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property float|null $margin_percentage_after_custom_discount
  * @property float|null $final_margin
  * @property float|null $distribution_exchange_rate
- * @property Country|null $country
  * @property float|null $applicable_discounts_value
+ * @property-read Country|null $country
  * @property string|null $imported_at
  *
- * @property Collection<Address>|Address[] $addresses
- * @property Collection<Contact>|Contact[] $contacts
- * @property OpportunitySupplier|null $opportunitySupplier
- * @property ImportedRow|null $mappingRow
- * @property Collection<TemplateField>|TemplateField[] $templateFields
+ * @property-read Collection<Address>|Address[] $addresses
+ * @property-read Collection<Contact>|Contact[] $contacts
+ * @property-read OpportunitySupplier|null $opportunitySupplier
+ * @property-read ImportedRow|null $mappingRow
+ * @property-read Collection<TemplateField>|TemplateField[] $templateFields
  */
 class WorldwideDistribution extends Model
 {
@@ -152,6 +154,11 @@ class WorldwideDistribution extends Model
     }
 
     public function distributionCurrency(): BelongsTo
+    {
+        return $this->belongsTo(Currency::class);
+    }
+
+    public function buyCurrency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);
     }

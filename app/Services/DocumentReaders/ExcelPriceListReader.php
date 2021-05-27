@@ -6,10 +6,18 @@ use App\Models\QuoteFile\ImportableColumn;
 use App\Models\QuoteFile\ImportableColumnAlias;
 use App\Services\DocumentReaders\Models\HeadingRow;
 use App\Services\DocumentReaders\Models\Row as DocumentRow;
+use App\Services\DocumentReaders\Validation\RowContainsOnePayMention;
+use App\Services\DocumentReaders\Validation\RowContainsOnlySerialNumberMention;
+use App\Services\DocumentReaders\Validation\RowContainsOnlySubtotal;
+use App\Services\DocumentReaders\Validation\RowIsNotSameAsHeader;
+use App\Services\DocumentReaders\Validation\RowValidationPayload;
+use App\Services\DocumentReaders\Validation\RowValidationPipeline;
+use App\Services\DocumentReaders\Validation\RowValuesMatchAnyCombination;
 use Box\Spout\Common\Entity\Row;
 use Box\Spout\Reader\Common\Creator\ReaderFactory;
 use Box\Spout\Reader\XLSX\RowIterator;
 use Box\Spout\Reader\XLSX\Sheet;
+use Carbon\Carbon;
 use Generator;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Arr;
@@ -81,7 +89,7 @@ class ExcelPriceListReader
 
         $rows->rewind();
 
-        $headerMapping = $this->determineSheetHeaderRow($rows);
+        [$headerMapping, $missingHeaderMapping] = $this->determineSheetHeaderRow($rows);
 
         if (empty($headerMapping)) {
             return null;
@@ -91,6 +99,7 @@ class ExcelPriceListReader
 
         $headingRow = new HeadingRow(
             array_flip($headerMapping),
+            $missingHeaderMapping,
             $sheet->getIndex(),
             $sheet->getName()
         );
@@ -98,7 +107,7 @@ class ExcelPriceListReader
         while ($rows->valid()) {
             $valuesOfRow = $this->mapValuesOfRow($rows->current(), $headerMapping);
 
-            if ($this->validateValuesOfRow($valuesOfRow)) {
+            if ($this->validateValuesOfRow($valuesOfRow, $headingRow)) {
                 yield new DocumentRow(
                     $headingRow,
                     $valuesOfRow
@@ -107,73 +116,6 @@ class ExcelPriceListReader
 
             $rows->next();
         }
-    }
-
-    protected function validateValuesOfRow(array $rowValues): bool
-    {
-        $requiredHeaderColumns = $this->getRequiredHeaderCombinations();
-
-        $containsReferenceAboutOnePay = value(function () use ($rowValues): bool {
-            foreach ($rowValues as $value) {
-                if (preg_match('/return to/i', $value)) {
-                    return true;
-                }
-            }
-
-            return false;
-        });
-
-        if ($containsReferenceAboutOnePay) {
-            return true;
-        }
-
-        $combinationMatcher = function (array $columnCombination, array $rowValues): bool {
-            foreach ($columnCombination as $name => $key) {
-                if ((false === isset($rowValues[$key])) || trim((string)$rowValues[$key]) === '') {
-                    return false;
-                }
-            }
-
-            return true;
-        };
-
-        foreach ($requiredHeaderColumns as $combination) {
-
-            if (true === $combinationMatcher($combination, $rowValues)) {
-                return true;
-            }
-
-        }
-
-        return false;
-    }
-
-    protected function mapValuesOfRow(Row $row, array $headerMapping): array
-    {
-        $values = $row->toArray();
-
-        ksort($values);
-
-        $values = array_slice($values, 0, count($headerMapping));
-
-        while (count($values) < count($headerMapping)) {
-            $values[] = null;
-        }
-
-        // Transform all values of row to scalar.
-        $values = array_map(function ($value) {
-            if (is_scalar($value)) {
-                return $value;
-            }
-
-            if ($value instanceof \DateTimeInterface) {
-                return $value->format(DATE_ISO8601);
-            }
-
-            return null;
-        }, $values);
-
-        return array_combine($headerMapping, $values);
     }
 
     /**
@@ -186,64 +128,30 @@ class ExcelPriceListReader
 
             $row = $rowIterator->current();
 
-            $headerRowMapping = $this->mapHeaderRow($row);
+            [$headerRowMapping, $missingHeaderMapping] = $this->mapHeaderRow($row);
 
             if ($this->validateHeaderRow($headerRowMapping)) {
-                return $headerRowMapping;
+                return [$headerRowMapping, $missingHeaderMapping];
             }
 
             $rowIterator->next();
 
         }
 
-        return [];
-    }
-
-    protected function validateHeaderRow(array $headerRowMapping): bool
-    {
-        $requiredHeaderColumns = $this->getRequiredHeaderCombinations();
-
-        $requiredColumnsArePresent = value(function () use ($headerRowMapping, $requiredHeaderColumns) {
-
-            foreach ($requiredHeaderColumns as $combination) {
-
-                $combinationMatched = value(function () use ($headerRowMapping, $combination) {
-
-                    foreach ($combination as $name => $key) {
-                        if (false === in_array($key, $headerRowMapping)) {
-                            return false;
-                        }
-                    }
-
-                    return true;
-
-                });
-
-                if (true === $combinationMatched) {
-                    return true;
-                }
-            }
-
-            return false;
-        });
-
-        if (true === $requiredColumnsArePresent) {
-            return true;
-        }
-
-        return false;
+        return [[], []];
     }
 
     protected function mapHeaderRow(Row $row): array
     {
         $mapping = [];
+        $missingHeaderMapping = [];
 
         foreach ($row->toArray() as $key => $cellValue) {
             if (false === is_string($cellValue) || trim($cellValue) === '') {
                 $headerNumber = $key + 1;
                 $headerName = "Unknown header $headerNumber";
 
-                $mapping[$headerName] = $this->mapHeaderColumnWithImportableColumn($headerName, $mapping);
+                $mapping[$headerName] = $missingHeaderMapping[] = $this->mapHeaderColumnWithImportableColumn($headerName, $mapping);
 
                 continue;
             }
@@ -251,7 +159,7 @@ class ExcelPriceListReader
             $mapping[$cellValue] = $this->mapHeaderColumnWithImportableColumn($cellValue, $mapping);
         }
 
-        return $mapping;
+        return [$mapping, $missingHeaderMapping];
     }
 
     protected function mapHeaderColumnWithImportableColumn(string $header, array $allocatedColumnKeys = []): string
@@ -349,6 +257,41 @@ class ExcelPriceListReader
             ->all();
     }
 
+    protected function validateHeaderRow(array $headerRowMapping): bool
+    {
+        $requiredHeaderColumns = $this->getRequiredHeaderCombinations();
+
+        $requiredColumnsArePresent = value(function () use ($headerRowMapping, $requiredHeaderColumns) {
+
+            foreach ($requiredHeaderColumns as $combination) {
+
+                $combinationMatched = value(function () use ($headerRowMapping, $combination) {
+
+                    foreach ($combination as $name => $key) {
+                        if (false === in_array($key, $headerRowMapping)) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+
+                });
+
+                if (true === $combinationMatched) {
+                    return true;
+                }
+            }
+
+            return false;
+        });
+
+        if (true === $requiredColumnsArePresent) {
+            return true;
+        }
+
+        return false;
+    }
+
     private function getRequiredHeaderCombinations(): array
     {
         return $this->requiredHeaderColumnCombinationsCache ??= value(function () {
@@ -370,6 +313,69 @@ class ExcelPriceListReader
             }, $this->requiredHeaderColumnNameCombinations);
 
         });
+    }
+
+    protected function mapValuesOfRow(Row $row, array $headerMapping): array
+    {
+        $values = $row->toArray();
+
+        ksort($values);
+
+        $values = array_slice($values, 0, count($headerMapping));
+
+        while (count($values) < count($headerMapping)) {
+            $values[] = null;
+        }
+
+        // Transform all values of row to scalar.
+        $values = array_map(function ($value) {
+            if (is_scalar($value)) {
+                return $value;
+            }
+
+            if ($value instanceof \DateTimeInterface) {
+                return value(function () use ($value) {
+                    $value = Carbon::instance($value);
+
+                    $hasTime = $value->hour !== 0 || $value->minute !== 0 || $value->second !== 0 || $value->microsecond !== 0;
+
+                    if (false === $hasTime) {
+                        return $value->format('d-m-Y');
+                    }
+
+                    return $value->format('d-m-Y H:i:s');
+                });
+            }
+
+            return null;
+        }, $values);
+
+        return array_combine($headerMapping, $values);
+    }
+
+    protected function validateValuesOfRow(array $rowValues, HeadingRow $headingRow): bool
+    {
+        $requiredHeaderColumns = $this->getRequiredHeaderCombinations();
+
+        $validationPayload = new RowValidationPayload($headingRow, $rowValues, $requiredHeaderColumns);
+
+        return (new RowValidationPipeline())
+            // Computing the difference of row values with heading row values,
+            // The validation should fail if they are exactly the same.
+            ->pipe(new RowIsNotSameAsHeader())
+            // When the row values contain mention about the one pay row,
+            // The validation should be passed without any additional checks.
+            ->pipe(new RowContainsOnePayMention())
+            // When the row values contain mention about the serial number,
+            // The validation should be passed without any additional checks.
+            ->pipe(new RowContainsOnlySerialNumberMention())
+            // Checking the filled values in the required columns,
+            // The validation should pass if any of the combination is passed.
+            ->pipe(new RowValuesMatchAnyCombination())
+            // When the row values contain only subtotal value,
+            // The validation should fail.
+            ->pipe(new RowContainsOnlySubtotal())
+            ->process($validationPayload);
     }
 
 

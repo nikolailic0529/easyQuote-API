@@ -26,7 +26,8 @@
             "type",
             "part number",
             "machine type",
-            "type-model"
+            "type-model",
+            "machine"
         ]
     },
     {
@@ -42,7 +43,8 @@
             "beskrivelse",
             "description du produit",
             "beskrivelse",
-            "descrizione"
+            "descrizione",
+            "line item description"
         ]
     },
     {
@@ -83,7 +85,8 @@
             "fra",
             "couverture du",
             "charges start",
-            "charge start date"
+            "charge start date",
+            "service start date"
         ]
     },
     {
@@ -107,7 +110,8 @@
             "til",
             "couverture au",
             "charges stop",
-            "charge end date"
+            "charge end date",
+            "service end date"
         ]
     },
     {
@@ -156,7 +160,8 @@
             "monthly cost/cad",
             "total price ex. vat",
             "bp charges",
-            "totale netto"
+            "totale netto",
+            "ext list cost"
         ]
     },
     {
@@ -192,7 +197,8 @@
             "searchable",
             "service agreement",
             "service agreement id",
-            "n° accord service"
+            "n° accord service",
+            "service coverage"
         ]
     }
 ]

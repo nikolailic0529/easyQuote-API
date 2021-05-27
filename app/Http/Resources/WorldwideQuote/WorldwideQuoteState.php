@@ -34,6 +34,7 @@ class WorldwideQuoteState extends JsonResource
 
         'worldwideDistributions',
         'quoteCurrency',
+        'buyCurrency',
         'outputCurrency',
         'quoteTemplate',
 
@@ -61,6 +62,7 @@ class WorldwideQuoteState extends JsonResource
         'assets.machineAddress.country' => 'activeVersion.assets.machineAddress.country',
         'worldwideDistributions' => 'activeVersion.worldwideDistributions',
         'quoteCurrency' => 'activeVersion.quoteCurrency',
+        'buyCurrency' => 'activeVersion.buyCurrency',
         'outputCurrency' => 'activeVersion.outputCurrency',
         'quoteTemplate' => 'activeVersion.quoteTemplate',
 
@@ -117,7 +119,7 @@ class WorldwideQuoteState extends JsonResource
             'quote_number' => $this->quote_number,
 
             'opportunity_id' => $this->opportunity_id,
-            'opportunity' => $this->when($this->relationLoaded('opportunity') || $this->activeVersion->relationLoaded('addresses') || $this->activeVersion->relationLoaded('contacts'),  function () {
+            'opportunity' => $this->when($this->relationLoaded('opportunity') || $this->activeVersion->relationLoaded('addresses') || $this->activeVersion->relationLoaded('contacts'), function () {
                 /** @var WorldwideQuote|WorldwideQuoteState $this */
 
                 return tap(QuoteOpportunity::make($this->opportunity), function (QuoteOpportunity $resource) {
@@ -144,7 +146,7 @@ class WorldwideQuoteState extends JsonResource
             'company' => $this->whenLoaded('company'),
 
             'quote_template_id' => $this->activeVersion->quote_template_id,
-            'quote_template' => value(function (){
+            'quote_template' => value(function () {
                 /** @var WorldwideQuote $this */
                 if (!$this->activeVersion->relationLoaded('quoteTemplate')) {
                     return new MissingValue();
@@ -161,6 +163,16 @@ class WorldwideQuoteState extends JsonResource
                 }
 
                 return $this->activeVersion->quoteCurrency;
+            }),
+
+            'buy_currency_id' => $this->activeVersion->buy_currency_id,
+            'buy_currency' => value(function () {
+                /** @var WorldwideQuote $this */
+                if (!$this->activeVersion->relationLoaded('buyCurrency')) {
+                    return new MissingValue();
+                }
+
+                return $this->activeVersion->buyCurrency;
             }),
 
             'output_currency_id' => $this->activeVersion->output_currency_id,

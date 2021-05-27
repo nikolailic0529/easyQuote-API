@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Pipeline\Pipeline;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -70,6 +71,68 @@ class PipelineTest extends TestCase
         $this->authenticateApi();
 
         $this->getJson('api/pipelines/list')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                '*' => [
+                    'id',
+                    'space_id',
+                    'pipeline_name',
+                    'is_default'
+                ]
+            ]);
+
+        // Test with includes.
+        $this->getJson('api/pipelines/list?include[]=pipeline_stages')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                '*' => [
+                    'id',
+                    'space_id',
+                    'pipeline_name',
+                    'is_default',
+                    'pipeline_stages' => [
+                        '*' => [
+                            'id',
+                            'pipeline_id',
+                            'stage_name',
+                            'stage_order',
+                        ]
+                    ]
+                ]
+            ]);
+
+        // Test with filtering by space.
+        $this->getJson('api/pipelines/list?'.Arr::query([
+                'filter' => [
+                    'space_id' => SP_EPD,
+                ]
+            ]))
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                '*' => [
+                    'id',
+                    'space_id',
+                    'pipeline_name',
+                    'is_default',
+                ]
+            ]);
+    }
+
+    /**
+     * Test an ability to view list of pipeline entities with opportunity form.
+     *
+     * @return void
+     */
+    public function testCanViewListOfPipelinesWithoutOpportunityForm()
+    {
+        factory(Pipeline::class, 10)->create();
+
+        $this->authenticateApi();
+
+        $this->getJson('api/pipelines/list/without-opportunity-form')
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
@@ -208,6 +271,73 @@ class PipelineTest extends TestCase
     }
 
     /**
+     * Test an ability to batch put pipeline entities.
+     *
+     * @return void
+     */
+    public function testCanBatchPutPipelines()
+    {
+        $this->authenticateApi();
+
+        /** @var Pipeline $existingPipeline */
+        $existingPipeline = factory(Pipeline::class)->create();
+
+        $pipelinesData = [
+            [
+                'id' => $existingPipeline->getKey(),
+                'space_id' => SP_EPD,
+                'pipeline_name' => $existingPipeline->pipeline_name,
+                'pipeline_stages' => [
+                    [
+                        'id' => null,
+                        'stage_name' => Str::random(40)
+                    ]
+                ],
+                'is_default' => false,
+            ],
+            [
+                'id' => null,
+                'space_id' => SP_EPD,
+                'pipeline_name' => Str::random(40),
+                'pipeline_stages' => [
+                    [
+                        'id' => null,
+                        'stage_name' => Str::random(40)
+                    ]
+                ],
+                'is_default' => true,
+            ]
+        ];
+
+        $this->putJson('api/pipelines', [
+            'pipelines' => $pipelinesData
+        ])
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                '*' => [
+                    'id',
+                    'space_id',
+                    'is_system',
+                    'pipeline_name',
+                    'pipeline_stages' => [
+                        '*' => [
+                            'id',
+                            'pipeline_id',
+                            'stage_name',
+                            'stage_order',
+                            'created_at',
+                            'updated_at'
+                        ]
+                    ],
+                    'created_at',
+                    'updated_at'
+                ]
+            ]);
+
+    }
+
+    /**
      * Test an ability to mark pipeline entity as default.
      *
      * @return void
@@ -336,34 +466,5 @@ class PipelineTest extends TestCase
             ]);
 
         $this->assertIsArray($response->json('form_data'));
-    }
-
-    /**
-     * Test an ability to update opportunity form schema of an existing pipeline entity.
-     *
-     * @return void
-     */
-    public function testCanUpdateOpportunityFormSchemaOfExistingPipeline()
-    {
-        $pipeline = factory(Pipeline::class)->create();
-
-        $this->authenticateApi();
-
-        $this->patchJson('api/pipelines/'.$pipeline->getKey().'/opportunity-form', [
-            'form_data' => []
-        ])
-//            ->dump()
-            ->assertNoContent();
-
-        $response = $this->getJson('api/pipelines/'.$pipeline->getKey().'/opportunity-form')
-//            ->dump()
-            ->assertOk()
-            ->assertJsonStructure([
-                'form_data'
-            ]);
-
-        $this->assertIsArray($response->json('form_data'));
-
-        $this->assertSame([], $response->json('form_data'));
     }
 }

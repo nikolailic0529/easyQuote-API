@@ -51,6 +51,13 @@ final class DistributionImportStageData extends DataTransferObject
     public string $distribution_currency_id;
 
     /**
+     * @Constraints\Uuid
+     *
+     * @var string
+     */
+    public string $buy_currency_id;
+
+    /**
      * @Constraints\PositiveOrZero
      *
      * @var float

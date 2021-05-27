@@ -2,27 +2,113 @@
 
 namespace App\Services\Pipeline;
 
-use App\DTO\{Pipeline\CreatePipelineData, Pipeline\PipelineStageData, Pipeline\UpdatePipelineData};
-use App\Models\{Pipeline\OpportunityFormSchema, Pipeline\Pipeline, Pipeline\PipelineStage};
+use App\DTO\{Pipeline\CreatePipelineData,
+    Pipeline\PipelineStageData,
+    Pipeline\PutPipelineDataCollection,
+    Pipeline\UpdatePipelineData};
+use App\Events\Pipeline\PipelineCreated;
+use App\Events\Pipeline\PipelineDeleted;
+use App\Events\Pipeline\PipelineUpdated;
+use App\Models\{Pipeline\Pipeline, Pipeline\PipelineStage};
+use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Symfony\Component\Validator\Exception\ValidationFailedException;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Webpatser\Uuid\Uuid;
 
 class PipelineEntityService
 {
     protected ConnectionInterface $connection;
+    protected EventDispatcher $eventDispatcher;
+    protected ValidatorInterface $validator;
 
-    public function __construct(ConnectionInterface $connection)
+    public function __construct(ConnectionInterface $connection, EventDispatcher $eventDispatcher, ValidatorInterface $validator)
     {
         $this->connection = $connection;
+        $this->eventDispatcher = $eventDispatcher;
+        $this->validator = $validator;
+    }
+
+    public function batchPutPipelines(PutPipelineDataCollection $collection): Collection
+    {
+        foreach ($collection as $data) {
+            $violations = $this->validator->validate($data);
+
+            if (count($violations)) {
+                throw new ValidationFailedException($data, $violations);
+            }
+        }
+
+        $collection->rewind();
+
+        $modelKeys = [];
+
+        foreach ($collection as $data) {
+            if (false === is_null($data->pipeline_id)) {
+                $modelKeys[] = $data->pipeline_id;
+            }
+        }
+
+        $collection->rewind();
+
+        /** @var Pipeline[] $pipelineDictionary */
+        $pipelineDictionary = Pipeline::query()->whereKey($modelKeys)->get()->getDictionary();
+        $missingPipelineModels = Pipeline::query()->whereKeyNot($modelKeys)->get();
+
+        $pipelineModels = [];
+
+        $pipelineOrder = 0;
+
+        foreach ($collection as $data) {
+            if (is_null($data->pipeline_id)) {
+
+                $pipelineModels[] = $this->createPipeline(new CreatePipelineData([
+                    'space_id' => $data->space_id,
+                    'pipeline_name' => $data->pipeline_name,
+                    'pipeline_stages' => $data->pipeline_stages,
+                    'is_default' => $data->is_default,
+                    'pipeline_order' => $pipelineOrder++,
+                ]));
+
+            } else {
+
+                $pipelineModels[] = $this->updatePipeline($pipelineDictionary[$data->pipeline_id], new UpdatePipelineData([
+                    'space_id' => $data->space_id,
+                    'pipeline_name' => $data->pipeline_name,
+                    'pipeline_stages' => $data->pipeline_stages,
+                    'is_default' => $data->is_default,
+                    'pipeline_order' => $pipelineOrder++,
+                ]));
+
+            }
+
+        }
+
+        foreach ($missingPipelineModels as $model) {
+
+            $this->deletePipeline($model);
+
+        }
+
+        return new Collection($pipelineModels);
     }
 
     public function createPipeline(CreatePipelineData $data): Pipeline
     {
+        $violations = $this->validator->validate($data);
+
+        if (count($violations)) {
+            throw new ValidationFailedException($data, $violations);
+        }
+
         return tap(new Pipeline(), function (Pipeline $pipeline) use ($data) {
             $pipeline->{$pipeline->getKeyName()} = (string)Uuid::generate(4);
             $pipeline->space()->associate($data->space_id);
             $pipeline->pipeline_name = $data->pipeline_name;
+            $pipeline->is_default = $data->is_default;
+            $pipeline->pipeline_order = $data->pipeline_order;
+            $pipeline->is_system = 0;
 
             $pipelineStages = array_map(function (PipelineStageData $stageData) use ($pipeline) {
                 return tap(new PipelineStage(), function (PipelineStage $pipelineStage) use ($stageData, $pipeline) {
@@ -46,16 +132,30 @@ class PipelineEntityService
 
             });
 
-            $pipeline->unsetRelation('pipelineStages');
+            foreach ($pipeline->pipelineStages as $stage) {
+                $stage->unsetRelation('pipeline');
+            }
+
+            $this->eventDispatcher->dispatch(
+                new PipelineCreated($pipeline)
+            );
 
         });
     }
 
     public function updatePipeline(Pipeline $pipeline, UpdatePipelineData $data): Pipeline
     {
+        $violations = $this->validator->validate($data);
+
+        if (count($violations)) {
+            throw new ValidationFailedException($data, $violations);
+        }
+
         return tap($pipeline, function (Pipeline $pipeline) use ($data) {
             $pipeline->space()->associate($data->space_id);
             $pipeline->pipeline_name = $data->pipeline_name;
+            $pipeline->pipeline_order = $data->pipeline_order;
+            $pipeline->is_default = $data->is_default;
 
             $pipelineStageDataKeys = array_filter(array_map(function (PipelineStageData $pipelineStageData) {
                 return $pipelineStageData->stage_id;
@@ -100,7 +200,13 @@ class PipelineEntityService
 
             });
 
-            $pipeline->unsetRelation('pipelineStages');
+            foreach ($pipeline->pipelineStages as $stage) {
+                $stage->unsetRelation('pipeline');
+            }
+
+            $this->eventDispatcher->dispatch(
+                new PipelineUpdated($pipeline)
+            );
 
         });
     }
@@ -123,34 +229,9 @@ class PipelineEntityService
         $this->connection->transaction(function () use ($pipeline) {
             $pipeline->delete();
         });
-    }
 
-    public function updateOpportunityFormSchemaOfPipeline(Pipeline $pipeline, array $formSchema): void
-    {
-        /** @var OpportunityFormSchema $opportunityFormSchema */
-        $opportunityFormSchema = with($pipeline->opportunityFormSchema, function (?OpportunityFormSchema $opportunityFormSchema) {
-
-            // Instantiate a new OpportunityFormSchema entity,
-            // if it is not present on Opportunity entity yet.
-            if (is_null($opportunityFormSchema)) {
-                return tap(new OpportunityFormSchema(), function (OpportunityFormSchema $opportunityFormSchema) {
-                    $opportunityFormSchema->{$opportunityFormSchema->getKeyName()} = (string)Uuid::generate(4);
-                });
-            }
-
-            return $opportunityFormSchema;
-
-        });
-
-        $opportunityFormSchema->form_data = $formSchema;
-
-        $pipeline->opportunityFormSchema()->associate($opportunityFormSchema);
-
-        $this->connection->transaction(function () use ($pipeline) {
-
-            $pipeline->opportunityFormSchema->save();
-            $pipeline->save();
-
-        });
+        $this->eventDispatcher->dispatch(
+            new PipelineDeleted($pipeline)
+        );
     }
 }

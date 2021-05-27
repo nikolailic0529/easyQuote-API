@@ -163,18 +163,18 @@ return [
                     'update_quote_task_template',
                 ],
             ],
-            'Pipelines' => [
+            'Opportunity Forms' => [
                 $R => [
-                    'view_pipelines',
+                    'view_opportunity_forms',
                 ],
                 $CRU => [
-                    'view_pipelines',
-                    'create_pipelines', 'update_pipelines',
+                    'view_opportunity_forms',
+                    'create_opportunity_forms', 'update_opportunity_forms',
                 ],
                 $CRUD => [
-                    'view_pipelines',
-                    'create_pipelines', 'update_pipelines',
-                    'delete_pipelines',
+                    'view_opportunity_forms',
+                    'create_opportunity_forms', 'update_opportunity_forms',
+                    'delete_opportunity_forms'
                 ],
             ],
         ],

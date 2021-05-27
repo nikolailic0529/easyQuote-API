@@ -134,7 +134,12 @@ class CustomFieldTest extends TestCase
             'field_values' => $fieldValues
         ])
 //            ->dump()
-            ->assertNoContent();
+            ->assertOk()
+            ->assertJsonStructure([
+                '*' => [
+                    'id', 'field_value', 'entity_order'
+                ]
+            ]);
 
         $response = $this->getJson('api/custom-field-values/opportunity_lost_reasons')
             ->assertOk()
@@ -191,7 +196,12 @@ class CustomFieldTest extends TestCase
             'field_values' => $fieldValues
         ])
 //            ->dump()
-            ->assertNoContent();
+            ->assertOk()
+            ->assertJsonStructure([
+                '*' => [
+                    'id', 'field_value', 'entity_order'
+                ]
+            ]);
 
         $response = $this->getJson('api/custom-field-values/quote_payment_terms')
             ->assertOk()
@@ -248,7 +258,12 @@ class CustomFieldTest extends TestCase
             'field_values' => $fieldValues
         ])
 //            ->dump()
-            ->assertNoContent();
+            ->assertOk()
+            ->assertJsonStructure([
+                '*' => [
+                    'id', 'field_value', 'entity_order'
+                ]
+            ]);
 
         $response = $this->getJson('api/custom-field-values/quote_dead_reasons')
             ->assertOk()
@@ -305,7 +320,12 @@ class CustomFieldTest extends TestCase
             'field_values' => $fieldValues
         ])
 //            ->dump()
-            ->assertNoContent();
+            ->assertOk()
+            ->assertJsonStructure([
+                '*' => [
+                    'id', 'field_value', 'entity_order'
+                ]
+            ]);
 
         $response = $this->getJson('api/custom-field-values/task_statuses')
             ->assertOk()

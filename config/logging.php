@@ -56,6 +56,14 @@ return [
             'permission' => 0777
         ],
 
+        'http-requests' => [
+            'driver' => 'daily',
+            'path' => env('STORAGE_PATH', storage_path()) . '/logs/http.log',
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

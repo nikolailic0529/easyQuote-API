@@ -21,10 +21,6 @@ class PipelinePolicy
         if ($user->hasRole(R_SUPER)) {
             return true;
         }
-
-        if ($user->canAny(['view_pipelines', 'view_opportunities'])) {
-            return true;
-        }
     }
 
     /**
@@ -37,10 +33,6 @@ class PipelinePolicy
     public function view(User $user, Pipeline $pipeline)
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
-        }
-
-        if ($user->canAny(['view_pipelines', 'view_opportunities'])) {
             return true;
         }
     }
@@ -56,10 +48,6 @@ class PipelinePolicy
         if ($user->hasRole(R_SUPER)) {
             return true;
         }
-
-        if ($user->can('create_pipelines')) {
-            return true;
-        }
     }
 
     /**
@@ -72,10 +60,6 @@ class PipelinePolicy
     public function update(User $user, Pipeline $pipeline)
     {
         if ($user->hasRole(R_SUPER)) {
-            return true;
-        }
-
-        if ($user->can('update_pipelines')) {
             return true;
         }
     }
@@ -98,10 +82,6 @@ class PipelinePolicy
         }
 
         if ($user->hasRole(R_SUPER)) {
-            return true;
-        }
-
-        if ($user->can('delete_pipelines')) {
             return true;
         }
     }

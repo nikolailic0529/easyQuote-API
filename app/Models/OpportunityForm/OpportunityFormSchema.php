@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\Pipeline;
+namespace App\Models\OpportunityForm;
 
 use App\Traits\Uuid;
 use Illuminate\Database\Eloquent\Model;
@@ -19,4 +19,6 @@ class OpportunityFormSchema extends Model
     protected $casts = [
         'form_data' => 'array'
     ];
+
+
 }

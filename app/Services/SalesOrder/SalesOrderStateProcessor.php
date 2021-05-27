@@ -19,6 +19,8 @@ use App\Events\SalesOrder\SalesOrderDrafted;
 use App\Events\SalesOrder\SalesOrderSubmitted;
 use App\Events\SalesOrder\SalesOrderUnravel;
 use App\Events\SalesOrder\SalesOrderUpdated;
+use App\Helpers\PipelineShortCodeResolver;
+use App\Helpers\SpaceShortCodeResolver;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\SalesOrder;
 use Illuminate\Contracts\Cache\LockProvider;
@@ -30,18 +32,14 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class SalesOrderStateProcessor implements ProcessesSalesOrderState
 {
+    const SO_NUM_FMT = "{space}-WW-{pipeline}-{contract_type}SO%'.07d";
+
     protected ConnectionInterface $connection;
-
     protected LockProvider $lockProvider;
-
     protected ValidatorInterface $validator;
-
     protected EventDispatcher $eventDispatcher;
-
     protected SubmitSalesOrderService $submitService;
-
     protected CancelSalesOrderService $cancelService;
-
     protected SalesOrderDataMapper $dataMapper;
 
     public function __construct(ConnectionInterface $connection,
@@ -67,9 +65,6 @@ class SalesOrderStateProcessor implements ProcessesSalesOrderState
     public function draftSalesOrder(DraftSalesOrderData $data): SalesOrder
     {
         return tap(new SalesOrder(), function (SalesOrder $salesOrder) use ($data) {
-            /** @var WorldwideQuote $quote */
-            $quote = WorldwideQuote::query()->findOrFail($data->worldwide_quote_id);
-
             $salesOrder->user()->associate($data->user_id);
             $salesOrder->worldwideQuote()->associate($data->worldwide_quote_id);
             $salesOrder->salesOrderTemplate()->associate($data->sales_order_template_id);
@@ -84,9 +79,7 @@ class SalesOrderStateProcessor implements ProcessesSalesOrderState
             $salesOrder->customer_po = $data->customer_po;
             $salesOrder->activated_at = $salesOrder->freshTimestampString();
 
-            $salesOrder->order_number = SalesOrderNumberHelper::makeSalesOrderNumber(
-                $quote->contractType->type_short_name, $quote->sequence_number
-            );
+            $this->assignNewSalesOrderNumber($salesOrder);
 
             $this->connection->transaction(fn() => $salesOrder->save());
 
@@ -96,6 +89,25 @@ class SalesOrderStateProcessor implements ProcessesSalesOrderState
                 new SalesOrderDrafted($salesOrder)
             );
         });
+    }
+
+    protected function assignNewSalesOrderNumber(SalesOrder $salesOrder): void
+    {
+        $quote = $salesOrder->worldwideQuote;
+        $pipeline = $quote->opportunity->pipeline;
+        $contractTypeName = $quote->contractType->type_short_name;
+        $space = $pipeline->space;
+
+        $pipelineShortCode = (new PipelineShortCodeResolver())($pipeline->pipeline_name);
+        $spaceShortCode = (new SpaceShortCodeResolver())($space->space_name);
+
+        $numberFormat = strtr(self::SO_NUM_FMT, [
+            '{space}' => $spaceShortCode,
+            '{pipeline}' => $pipelineShortCode,
+            '{contract_type}' => strtoupper(substr($contractTypeName, 0, 1))
+        ]);
+
+        $salesOrder->order_number = sprintf($numberFormat, $quote->sequence_number);
     }
 
     /**

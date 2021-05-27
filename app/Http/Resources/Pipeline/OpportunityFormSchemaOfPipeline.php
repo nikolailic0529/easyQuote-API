@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources\Pipeline;
 
-use App\Models\Pipeline\OpportunityFormSchema;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class OpportunityFormSchemaOfPipeline extends JsonResource
@@ -18,8 +17,8 @@ class OpportunityFormSchemaOfPipeline extends JsonResource
         /** @var \App\Models\Pipeline\Pipeline|\App\Http\Resources\Pipeline\OpportunityFormSchemaOfPipeline $this */
 
         return [
-            'form_data' => transform($this->opportunityFormSchema, function (OpportunityFormSchema $opportunityFormSchema) {
-                return $opportunityFormSchema->form_data;
+            'form_data' => transform($this->opportunityForm, function (\App\Models\OpportunityForm\OpportunityForm $opportunityForm) {
+                return $opportunityForm->formSchema->form_data;
             }, [])
         ];
     }

@@ -38,6 +38,10 @@ class ProcessQuoteAddressesContacts extends FormRequest
                 'bail', 'required', 'uuid',
                 Rule::exists(Currency::class, 'id'),
             ],
+            'buy_currency_id' => [
+                'bail', 'required', 'uuid',
+                Rule::exists(Currency::class, 'id'),
+            ],
             'quote_template_id' => [
                 'bail', 'required', 'uuid',
                 Rule::exists(QuoteTemplate::class, 'id')->whereNull('deleted_at')->whereNotNull('activated_at')
@@ -82,6 +86,7 @@ class ProcessQuoteAddressesContacts extends FormRequest
             return new AddressesContactsStage([
                 'company_id' => $this->input('company_id'),
                 'quote_currency_id' => $this->input('quote_currency_id'),
+                'buy_currency_id' => $this->input('buy_currency_id'),
                 'quote_template_id' => $this->input('quote_template_id'),
                 'quote_expiry_date' => Carbon::createFromFormat('Y-m-d', $this->input('quote_expiry_date')),
                 'buy_price' => (float)$this->input('buy_price'),

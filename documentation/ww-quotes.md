@@ -1,3 +1,4 @@
+
 * [Opportunities List](#opportunities-list)
 * [Drafted Alive Quotes List](#drafted-quotes-list)
 * [Drafted Dead Quotes List](#drafted-quotes-list)
@@ -228,6 +229,7 @@
 
         worldwide_distributions
         quote_currency
+        buy_currency
         output_currency
         quote_template
 
@@ -320,6 +322,7 @@
                 ],
                 "country_id": {country_uuid}, *
                 "distribution_currency_id": {distribution_currency_uuid}, *
+                "buy_currency_id": {buy_currency_uuid}, *
                 "buy_price": {numeric_value}, (min: 0, max: 999_999_999) *
                 "calculate_list_price": {boolean}, *
                 "distribution_expiry_date": {date_string} (Y-m-d) *
@@ -753,6 +756,7 @@
     {
         "company_id": {company_uuid}, *
         "quote_currency_id": {quote_currency_uuid}, *
+        "buy_currency_id": {buy_currency_uuid}, *
         "quote_template_id": {quote_template_uuid}, *
         "quote_expiry_date": {Y-m-d}, *
         "buy_price": {numeric_value}, *

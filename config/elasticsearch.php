@@ -9,6 +9,8 @@ use App\Models\Customer\WorldwideCustomer;
 use App\Models\Data\Country;
 use App\Models\HpeContract;
 use App\Models\Opportunity;
+use App\Models\OpportunityForm\OpportunityForm;
+use App\Models\Pipeline\Pipeline;
 use App\Models\Quote\Contract;
 use App\Models\Quote\Discount\MultiYearDiscount;
 use App\Models\Quote\Discount\PrePayDiscount;
@@ -56,6 +58,8 @@ return [
         ImportableColumn::class,
         Opportunity::class,
         SalesOrder::class,
-        Team::class
+        Team::class,
+        Pipeline::class,
+        OpportunityForm::class,
     ],
 ];

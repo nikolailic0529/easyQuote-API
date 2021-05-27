@@ -48,20 +48,23 @@ class CustomFieldController extends Controller
      * @param UpdateCustomFieldValues $request
      * @param CustomFieldEntityService $entityService
      * @param string $customFieldName
-     * @return Response
+     * @return \Illuminate\Http\JsonResponse
      * @throws AuthorizationException
      */
     public function updateValuesOfCustomField(UpdateCustomFieldValues $request,
                                               CustomFieldEntityService $entityService,
-                                              string $customFieldName): Response
+                                              string $customFieldName): JsonResponse
     {
         $this->authorize('viewAny', SystemSetting::class);
 
-        $entityService->updateValuesOfCustomField(
+        $resource = $entityService->updateValuesOfCustomField(
             $request->getCustomFieldModel(),
             $request->getUpdateCustomFieldValueCollection()
         );
 
-        return response()->noContent();
+        return response()->json(
+            $resource,
+            Response::HTTP_OK
+        );
     }
 }

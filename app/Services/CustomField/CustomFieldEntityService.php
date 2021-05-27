@@ -6,6 +6,7 @@ use App\DTO\CustomField\UpdateCustomFieldValueCollection;
 use App\Models\System\CustomField;
 use App\Models\System\CustomFieldValue;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Webpatser\Uuid\Uuid;
@@ -22,7 +23,7 @@ class CustomFieldEntityService
         $this->connection = $connection;
     }
 
-    public function updateValuesOfCustomField(CustomField $customField, UpdateCustomFieldValueCollection $collection): void
+    public function updateValuesOfCustomField(CustomField $customField, UpdateCustomFieldValueCollection $collection): Collection
     {
         foreach ($collection as $value) {
             $violations = $this->validator->validate($value);
@@ -75,5 +76,7 @@ class CustomFieldEntityService
                 $model->saveQuietly();
             }
         });
+
+        return new Collection($fieldValueModels);
     }
 }

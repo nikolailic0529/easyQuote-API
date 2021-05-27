@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\API\Pipeline;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\OpportunityTemplate\UpdateOpportunityTemplate;
+use App\Http\Requests\Pipeline\BatchPutPipelines;
 use App\Http\Requests\Pipeline\StorePipeline;
 use App\Http\Requests\Pipeline\UpdatePipeline;
 use App\Http\Resources\{Pipeline\OpportunityFormSchemaOfPipeline,
     Pipeline\PaginatedPipeline,
-    Pipeline\PipelineState,
-    Pipeline\PipelineWithIncludes};
-use App\Models\Opportunity;
+    Pipeline\PipelineCollection,
+    Pipeline\PipelineWithIncludes,
+    RequestQueryFilter};
 use App\Models\Pipeline\Pipeline;
 use App\Queries\PipelineQueries;
 use App\Services\Pipeline\PipelineEntityService;
@@ -22,18 +22,38 @@ use Illuminate\Http\Response;
 class PipelineController extends Controller
 {
     /**
-     * Show a list of existing pipelines.
+     * Show a list of existing pipeline entities.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param \App\Queries\PipelineQueries $queries
+     * @param \App\Http\Resources\RequestQueryFilter $requestQueryFilter
+     * @return \Illuminate\Http\JsonResponse
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
+    public function showListOfPipelines(Request $request,
+                                        PipelineQueries $queries,
+                                        RequestQueryFilter $requestQueryFilter): JsonResponse
+    {
+        $this->authorize('viewAny', Pipeline::class);
+
+        return response()->json(
+            $requestQueryFilter->attach(new PipelineCollection($queries->pipelineListQuery($request)->get()))
+        );
+    }
+
+    /**
+     * Show a list of existing pipeline entities without opportunity from.
      *
      * @param \App\Queries\PipelineQueries $queries
      * @return \Illuminate\Http\JsonResponse
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function showListOfPipelines(PipelineQueries $queries): JsonResponse
+    public function showListOfPipelinesWithoutOpportunityForm(PipelineQueries $queries): JsonResponse
     {
         $this->authorize('viewAny', Pipeline::class);
 
         return response()->json(
-            $queries->pipelineListQuery()->get()
+            $queries->pipelineWithoutOpportunityFormListQuery()->get()
         );
     }
 
@@ -52,6 +72,26 @@ class PipelineController extends Controller
         $pagination = $queries->paginatePipelinesQuery($request)->apiPaginate();
 
         return PaginatedPipeline::collection($pagination);
+    }
+
+    /**
+     * Batch put pipeline entities.
+     *
+     * @param \App\Http\Requests\Pipeline\BatchPutPipelines $request
+     * @param \App\Services\Pipeline\PipelineEntityService $entityService
+     * @return \Illuminate\Http\JsonResponse
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
+    public function batchPutPipelines(BatchPutPipelines $request, PipelineEntityService $entityService): JsonResponse
+    {
+        $this->authorize('create', Pipeline::class);
+
+        $resource = $entityService->batchPutPipelines($request->getPutPipelineDataCollection());
+
+        return response()->json(
+            $resource,
+            Response::HTTP_OK,
+        );
     }
 
     /**
@@ -178,28 +218,7 @@ class PipelineController extends Controller
         $this->authorize('viewAny', Pipeline::class);
 
         return response()->json(
-          OpportunityFormSchemaOfPipeline::make($queries->defaultPipelinesQuery()->first())
+            OpportunityFormSchemaOfPipeline::make($queries->defaultPipelinesQuery()->first())
         );
-    }
-
-    /**
-     * Update opportunity from schema of the specified pipeline entity.
-     *
-     * @param \App\Http\Requests\OpportunityTemplate\UpdateOpportunityTemplate $request
-     * @param \App\Services\Pipeline\PipelineEntityService $entityService
-     * @param \App\Models\Pipeline\Pipeline $pipeline
-     * @return \Illuminate\Http\Response
-     * @throws \Illuminate\Auth\Access\AuthorizationException
-     */
-    public function updateOpportunityFormSchemaOfPipeline(UpdateOpportunityTemplate $request,
-                                                          PipelineEntityService $entityService,
-                                                          Pipeline $pipeline): \Illuminate\Http\Response
-    {
-
-        $this->authorize('update', $pipeline);
-
-        $entityService->updateOpportunityFormSchemaOfPipeline($pipeline, $request->getTemplateSchema());
-
-        return response()->noContent();
     }
 }

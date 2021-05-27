@@ -53,7 +53,7 @@ use App\Http\Controllers\API\System\SystemSettingController;
 use App\Http\Controllers\API\TeamController;
 use App\Http\Controllers\API\Templates\ContractTemplateController;
 use App\Http\Controllers\API\Templates\HpeContractTemplateController;
-use App\Http\Controllers\API\Templates\OpportunityTemplateController;
+use App\Http\Controllers\API\Templates\OpportunityFormController;
 use App\Http\Controllers\API\Templates\QuoteTemplateController;
 use App\Http\Controllers\API\Templates\SalesOrderTemplateController;
 use App\Http\Controllers\API\UnifiedQuoteController;
@@ -468,8 +468,12 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::patch('opportunities/{opportunity}/lost', [OpportunityController::class, 'markOpportunityAsLost']);
     Route::patch('opportunities/{opportunity}/restore-from-lost', [OpportunityController::class, 'markOpportunityAsNotLost']);
 
-    Route::get('opportunity-template', [OpportunityTemplateController::class, 'showOpportunityTemplate']);
-    Route::put('opportunity-template', [OpportunityTemplateController::class, 'updateOpportunityTemplate']);
+    Route::get('opportunity-forms', [OpportunityFormController::class, 'paginateOpportunityForms']);
+    Route::get('opportunity-forms/{opportunity_form}', [OpportunityFormController::class, 'showOpportunityForm']);
+    Route::post('opportunity-forms', [OpportunityFormController::class, 'storeOpportunityForm']);
+    Route::patch('opportunity-forms/{opportunity_form}', [OpportunityFormController::class, 'updateOpportunityForm']);
+    Route::patch('opportunity-forms/{opportunity_form}/schema', [OpportunityFormController::class, 'updateSchemaOfOpportunityForm']);
+    Route::delete('opportunity-forms/{opportunity_form}', [OpportunityFormController::class, 'deleteOpportunityForm']);
 
     /**
      * Sales Orders.
@@ -600,17 +604,19 @@ Route::group(['middleware' => 'auth:api'], function () {
      * Spaces.
      */
     Route::get('spaces', SpaceController::class);
+    Route::put('spaces', [SpaceController::class, 'batchPutSpaces']);
 
     /**
      * Pipelines.
      */
     Route::get('pipelines', [PipelineController::class, 'paginatePipelines']);
     Route::get('pipelines/list', [PipelineController::class, 'showListOfPipelines']);
+    Route::get('pipelines/list/without-opportunity-form', [PipelineController::class, 'showListOfPipelinesWithoutOpportunityForm']);
     Route::get('pipelines/{pipeline}', [PipelineController::class, 'showPipeline']);
     Route::get('pipelines/default/opportunity-form', [PipelineController::class, 'showOpportunityFormSchemaOfDefaultPipeline']);
     Route::get('pipelines/{pipeline}/opportunity-form', [PipelineController::class, 'showOpportunityFormSchemaOfPipeline']);
-    Route::patch('pipelines/{pipeline}/opportunity-form', [PipelineController::class, 'updateOpportunityFormSchemaOfPipeline']);
     Route::post('pipelines', [PipelineController::class, 'storePipeline']);
+    Route::put('pipelines', [PipelineController::class, 'batchPutPipelines']);
     Route::patch('pipelines/{pipeline}', [PipelineController::class, 'updatePipeline']);
     Route::patch('pipelines/{pipeline}/default', [PipelineController::class, 'markPipelineAsDefault']);
     Route::delete('pipelines/{pipeline}', [PipelineController::class, 'deletePipeline']);

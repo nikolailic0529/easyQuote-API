@@ -46,6 +46,7 @@
         "spatie/geocoder": "^3.7",
         "spatie/laravel-activitylog": "^3.9",
         "spatie/laravel-db-snapshots": "^1.4",
+        "spatie/laravel-http-logger": "^1.7",
         "spatie/laravel-permission": "^3.0",
         "spatie/pdf-to-text": "^1.2",
         "spatie/valuestore": "^1.2",

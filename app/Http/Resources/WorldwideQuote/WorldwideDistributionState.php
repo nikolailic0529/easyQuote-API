@@ -108,6 +108,9 @@ class WorldwideDistributionState extends JsonResource
             'distribution_currency_id' => $this->distribution_currency_id,
             'distribution_currency' => $this->whenLoaded('distributionCurrency'),
 
+            'buy_currency_id' => $this->buy_currency_id,
+            'buy_currency' => $this->whenLoaded('buyCurrency'),
+
             'distribution_expiry_date' => $this->distribution_expiry_date,
 
             'custom_discount' => transform($this->custom_discount, fn() => (float)$this->custom_discount),
