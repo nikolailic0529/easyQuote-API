@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Parser;
 
-use App\Services\DocumentProcessor\DocumentEngine\DistributorFileDataMapper;
+use App\Services\DocumentProcessor\DocumentEngine\PriceListResponseDataMapper;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -11,8 +11,8 @@ use Illuminate\Support\Arr;
 use App\Models\QuoteFile\QuoteFile;
 use App\Services\DocumentEngine\ParseDistributorPDF;
 use App\Services\DocumentEngine\ParsePaymentPDF;
-use App\Services\DocumentProcessor\DocumentEngine\PaymentPDF;
-use App\Services\DocumentProcessor\DocumentEngine\DistributorPDF;
+use App\Services\DocumentProcessor\DocumentEngine\DePdfRescuePaymentScheduleProcessor;
+use App\Services\DocumentProcessor\DocumentEngine\DePdfRescuePriceListProcessor;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
@@ -80,7 +80,7 @@ class DocumentEngineTest extends TestCase
             'original_file_path' => $fileName
         ]);
 
-        (new DistributorPDF($this->app->make(LoggerInterface::class)))
+        (new DePdfRescuePriceListProcessor($this->app->make(LoggerInterface::class)))
             ->process($quoteFile);
 
         $this->assertTrue(true);
@@ -119,8 +119,8 @@ class DocumentEngineTest extends TestCase
      */
     public function testMapsDistributorFileResponse()
     {
-        /** @var DistributorPDF */
-        $parser = $this->app->make(DistributorFileDataMapper::class);
+        /** @var DePdfRescuePriceListProcessor */
+        $parser = $this->app->make(PriceListResponseDataMapper::class);
 
         $class = new ReflectionClass($parser);
         $method = $class->getMethod('mapDistributorResponse');
@@ -186,8 +186,8 @@ class DocumentEngineTest extends TestCase
      */
     public function testPaymentResponseMapping()
     {
-        /** @var PaymentPDF */
-        $parser = $this->app->make(PaymentPDF::class);
+        /** @var DePdfRescuePaymentScheduleProcessor */
+        $parser = $this->app->make(DePdfRescuePaymentScheduleProcessor::class);
 
         $class = new ReflectionClass($parser);
         $method = $class->getMethod('mapPaymentResponse');
@@ -231,8 +231,8 @@ class DocumentEngineTest extends TestCase
 
     public function testUnprocessablePaymentResponseMapping()
     {
-        /** @var PaymentPDF */
-        $parser = $this->app->make(PaymentPDF::class);
+        /** @var DePdfRescuePaymentScheduleProcessor */
+        $parser = $this->app->make(DePdfRescuePaymentScheduleProcessor::class);
 
         $class = new ReflectionClass($parser);
         $method = $class->getMethod('mapPaymentResponse');

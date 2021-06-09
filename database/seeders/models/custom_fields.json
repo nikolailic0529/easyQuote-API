@@ -91,7 +91,8 @@
         "field_values": [
             {"id":  "83b423cf-d528-4017-b7b8-d65d8364c69f", "field_value":  "30 Days", "is_default": true},
             {"id":  "f853550c-7636-4c70-9d32-75617aaa99e8", "field_value":  "60 Days", "is_default": false},
-            {"id":  "276f9390-2363-4c4e-bea6-7c25fd4101fe", "field_value":  "Proforma", "is_default": false}
+            {"id":  "276f9390-2363-4c4e-bea6-7c25fd4101fe", "field_value":  "Proforma", "is_default": false},
+            {"id":  "93b80797-2ef8-4910-a48d-94d42bd60a5d", "field_value":  "Credit", "is_default": false}
         ]
     },
     {

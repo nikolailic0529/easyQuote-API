@@ -65,13 +65,13 @@ class UpdateQuoteImport extends FormRequest
                 'bail', 'required', 'uuid',
                 Rule::exists(WorldwideDistribution::class, 'id')
                     ->where('worldwide_quote_id', $this->getQuote()->active_version_id)->whereNull('deleted_at')->where(function (BaseBuilder $builder) {
-                    $builder->whereExists(function (BaseBuilder $builder) {
-                        $builder->selectRaw('1')
-                            ->from('opportunity_suppliers')
-                            ->whereColumn('worldwide_distributions.opportunity_supplier_id', 'opportunity_suppliers.id')
-                            ->whereNull('opportunity_suppliers.deleted_at');
-                    });
-                }),
+                        $builder->whereExists(function (BaseBuilder $builder) {
+                            $builder->selectRaw('1')
+                                ->from('opportunity_suppliers')
+                                ->whereColumn('worldwide_distributions.opportunity_supplier_id', 'opportunity_suppliers.id')
+                                ->whereNull('opportunity_suppliers.deleted_at');
+                        });
+                    }),
             ],
             'worldwide_distributions.*.vendors' => [
                 'bail', 'required', 'array', 'distinct',
@@ -87,6 +87,12 @@ class UpdateQuoteImport extends FormRequest
             'worldwide_distributions.*.distribution_currency_id' => [
                 'bail', 'required', 'uuid',
                 Rule::exists(Currency::class, 'id'),
+            ],
+            'worldwide_distributions.*.distribution_currency_quote_currency_exchange_rate_margin' => [
+                'bail', 'nullable', 'numeric', 'min:0', 'max:999999',
+            ],
+            'worldwide_distributions.*.distribution_currency_quote_currency_exchange_rate_value' => [
+                'bail', 'nullable', 'numeric', 'min:0', 'max:999999'
             ],
             'worldwide_distributions.*.buy_currency_id' => [
                 'bail', 'required', 'uuid',
@@ -129,6 +135,12 @@ class UpdateQuoteImport extends FormRequest
         ];
     }
 
+    public function getQuote(): WorldwideQuote
+    {
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
+        return $this->worldwideQuote ??= $this->route('worldwide_quote');
+    }
+
     public function getStage(): ImportStage
     {
         return $this->importStage ??= new ImportStage([
@@ -144,6 +156,8 @@ class UpdateQuoteImport extends FormRequest
                 'country_id' => $distributionData['country_id'],
                 'distribution_currency_id' => $distributionData['distribution_currency_id'],
                 'buy_currency_id' => $distributionData['buy_currency_id'],
+                'distribution_currency_quote_currency_exchange_rate_margin' => transform($distributionData['distribution_currency_quote_currency_exchange_rate_margin'] ?? 0.0, fn($value) => (float)$value),
+                'distribution_currency_quote_currency_exchange_rate_value' => transform($distributionData['distribution_currency_quote_currency_exchange_rate_value'] ?? 1.0, fn($value) => (float)$value),
                 'buy_price' => (float)$distributionData['buy_price'],
                 'calculate_list_price' => (bool)($distributionData['calculate_list_price'] ?? false),
                 'distribution_expiry_date' => Carbon::createFromFormat('Y-m-d', $distributionData['distribution_expiry_date']),
@@ -153,11 +167,5 @@ class UpdateQuoteImport extends FormRequest
             'payment_terms' => $this->input('payment_terms'),
             'stage' => ContractQuoteStage::getValueOfLabel($this->input('stage')),
         ]);
-    }
-
-    public function getQuote(): WorldwideQuote
-    {
-        /** @noinspection PhpIncompatibleReturnTypeInspection */
-        return $this->worldwideQuote ??= $this->route('worldwide_quote');
     }
 }

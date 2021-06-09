@@ -30,13 +30,6 @@ final class AddressesContactsStage extends DataTransferObject
      *
      * @var string
      */
-    public string $buy_currency_id;
-
-    /**
-     * @Constraints\Uuid
-     *
-     * @var string
-     */
     public string $quote_template_id;
 
     public Carbon $quote_expiry_date;

@@ -15,7 +15,8 @@ class ExchangeRateController extends Controller
         $result = $currencyConverter->convertCurrencies(
             $request->getFromCurrencyCode(),
             $request->getToCurrencyCode(),
-            $request->getAmount()
+            $request->getAmount(),
+            $request->getExchangeDate()
         );
 
         return response()->json(ConvertCurrencyResult::make([
@@ -23,6 +24,7 @@ class ExchangeRateController extends Controller
             'to_currency_code' => $request->getToCurrencyCode(),
             'to_currency_symbol' => $request->getToCurrencySymbol(),
             'amount' => $request->getAmount(),
+            'exchange_date' => $request->getExchangeDate(),
             'result' => $result,
         ]));
     }

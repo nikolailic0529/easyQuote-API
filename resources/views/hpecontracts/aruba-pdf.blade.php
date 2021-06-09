@@ -47,14 +47,14 @@
 
     <script>
         // Handling overflowed columns.
-        document.addEventListener("DOMContentLoaded", function (event) {           
-            var overflowThreshold = 95;
+        document.addEventListener("DOMContentLoaded", function (event) {
+            var overflowThreshold = 120;
 
             var columns = document.querySelectorAll('.row > [class*=col-]');
 
             for (var i = 0; i < columns.length; i++) {
                 var element = columns[i];
-                
+
                 if (element.scrollWidth > element.offsetWidth + 15) {
                     var diff = Math.abs(element.scrollWidth - element.offsetWidth);
 

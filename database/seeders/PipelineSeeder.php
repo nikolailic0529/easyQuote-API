@@ -18,6 +18,17 @@ class PipelineSeeder extends Seeder
         /** @var \Illuminate\Database\ConnectionInterface $connection */
         $connection = $this->container['db.connection'];
 
+
+        $defaultPipelineId = value(function () use ($seeds): string {
+
+            foreach ($seeds as $pipelineSeed) {
+                if ($pipelineSeed['is_default']) {
+                    return $pipelineSeed['id'];
+                }
+            }
+
+        });
+
         $connection->transaction(function () use ($connection, $seeds) {
 
             foreach ($seeds as $pipelineSeed) {
@@ -69,5 +80,22 @@ class PipelineSeeder extends Seeder
             }
 
         });
+
+        $defaultPipelineDoesntExist = $connection->table('pipelines')
+            ->whereNull('deleted_at')
+            ->where('is_default', true)
+            ->doesntExist();
+
+        if ($defaultPipelineDoesntExist) {
+
+            $connection->transaction(function () use ($connection, $defaultPipelineId) {
+
+                $connection->table('pipelines')
+                    ->where('id', $defaultPipelineId)
+                    ->update(['is_default' => true]);
+
+            });
+
+        }
     }
 }

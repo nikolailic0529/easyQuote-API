@@ -42,6 +42,9 @@ class UpdateDistributionMappedRow extends FormRequest
             'price' => [
                 'bail', 'nullable', 'numeric', 'min:-999999', 'max:999999'
             ],
+            'original_price' => [
+                'bail', 'nullable', 'numeric', 'min:-999999', 'max:999999'
+            ],
             'pricing_document' => [
                 'bail', 'nullable', 'string', 'max:250'
             ],

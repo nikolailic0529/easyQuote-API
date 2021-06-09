@@ -7,7 +7,7 @@ use Box\Spout\Common\Entity\Row;
 use Box\Spout\Reader\Common\Creator\ReaderFactory;
 use Box\Spout\Reader\ReaderInterface;
 use Box\Spout\Reader\SheetInterface;
-use Illuminate\Support\Carbon;
+use Carbon\Carbon;
 use Illuminate\Support\Str;
 
 class OpportunityBatchFileReader
@@ -170,6 +170,10 @@ class OpportunityBatchFileReader
 
             if (is_string($value)) {
                 return trim($value);
+            }
+
+            if ($value instanceof \DateTimeInterface) {
+                return (string)Carbon::instance($value);
             }
 
             return $value;

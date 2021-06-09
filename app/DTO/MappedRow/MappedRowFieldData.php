@@ -18,6 +18,7 @@ final class MappedRowFieldData extends DataTransferObject implements GroupSequen
      *     "date_to",
      *     "qty",
      *     "price",
+     *     "original_price",
      *     "pricing_document",
      *     "searchable",
      *     "service_level_description"
@@ -30,7 +31,7 @@ final class MappedRowFieldData extends DataTransferObject implements GroupSequen
     /**
      * @Constraints\Type(type={"string", "null"}, groups={"product_no", "service_sku", "description", "serial_no", "date_from", "date_to", "pricing_document", "searchable", "service_level_description"})
      * @Constraints\Type(type={"integer", "null"}, groups={"qty"})
-     * @Constraints\Type(type={"numeric", "null"}, groups={"price"})
+     * @Constraints\Type(type={"numeric", "null"}, groups={"price", "original_price"})
      * @Constraints\Date(groups={"date_from", "date_to"})
      *
      * @var string|integer|float|null

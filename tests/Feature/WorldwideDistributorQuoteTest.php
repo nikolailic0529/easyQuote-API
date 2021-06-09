@@ -1626,7 +1626,8 @@ class WorldwideDistributorQuoteTest extends TestCase
             'description' => null,
             'date_from' => '2021-01-22',
             'date_to' => '2022-01-24',
-            'price' => '100000.00'
+            'price' => '120000.10',
+            'original_price' => 120000.10 * .9
         ];
 
         $this->patchJson('api/ww-distributions/'.$distributorQuote->getKey().'/mapped-rows/'.$row->getKey(), $rowFieldsData)

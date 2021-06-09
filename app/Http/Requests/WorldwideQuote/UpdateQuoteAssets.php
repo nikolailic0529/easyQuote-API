@@ -5,9 +5,9 @@ namespace App\Http\Requests\WorldwideQuote;
 use App\DTO\QuoteStages\PackAssetsCreationStage;
 use App\DTO\WorldwideQuote\WorldwideQuoteAssetData;
 use App\DTO\WorldwideQuote\WorldwideQuoteAssetDataCollection;
-use App\Enum\ContractQuoteStage;
 use App\Enum\PackQuoteStage;
 use App\Models\Address;
+use App\Models\Data\Currency;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
@@ -36,6 +36,10 @@ class UpdateQuoteAssets extends FormRequest
                 'bail', 'uuid',
                 Rule::exists(WorldwideQuoteAsset::class, 'id')
                     ->where('worldwide_quote_id', $this->getQuote()->active_version_id)
+            ],
+            'assets.*.buy_currency_id' => [
+                'bail', 'required', 'uuid',
+                Rule::exists(Currency::class, 'id')
             ],
             'assets.*.vendor_id' => [
                 'bail', 'required', 'uuid',
@@ -69,6 +73,15 @@ class UpdateQuoteAssets extends FormRequest
             'assets.*.price' => [
                 'bail', 'nullable', 'numeric', 'min:-999999', 'max:999999'
             ],
+            'assets.*.original_price' => [
+                'bail', 'nullable', 'numeric', 'min:-999999', 'max:999999'
+            ],
+            'assets.*.exchange_rate_margin' => [
+                'bail', 'nullable', 'numeric', 'min:0', 'max:999999',
+            ],
+            'assets.*.exchange_rate_value' => [
+                'bail', 'nullable', 'numeric', 'min:0', 'max:999999',
+            ],
             'stage' => [
                 'bail', 'required', Rule::in(PackQuoteStage::getLabels())
             ],
@@ -83,6 +96,14 @@ class UpdateQuoteAssets extends FormRequest
         return $model;
     }
 
+    public function messages()
+    {
+        return [
+            'assets.required' => "No assets provided.",
+            'assets.*.buy_currency_id.required' => "One or more assets don't have a buy currency.",
+        ];
+    }
+
     public function getAssetDataCollection(): WorldwideQuoteAssetDataCollection
     {
         return $this->assetDataCollection ??= with($this->input('assets'), function (array $assets) {
@@ -90,6 +111,7 @@ class UpdateQuoteAssets extends FormRequest
             $collection = array_map(function (array $asset) {
                 return new WorldwideQuoteAssetData([
                     'id' => $asset['id'],
+                    'buy_currency_id' => $asset['buy_currency_id'],
                     'vendor_id' => $asset['vendor_id'],
                     'machine_address_id' => $asset['machine_address_id'] ?? null,
                     'country_code' => $asset['country'] ?? null,
@@ -99,7 +121,10 @@ class UpdateQuoteAssets extends FormRequest
                     'product_name' => $asset['product_name'] ?? null,
                     'expiry_date' => transform($asset['expiry_date'] ?? null, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
                     'service_level_description' => $asset['service_level_description'] ?? null,
-                    'price' => transform($asset['price'] ?? null, fn(string $price) => (float)$price)
+                    'price' => transform($asset['price'] ?? null, fn(string $price) => (float)$price),
+                    'original_price' => transform($asset['original_price'] ?? null, fn(string $price) => (float)$price),
+                    'exchange_rate_value' => transform($asset['exchange_rate_value'] ?? null, fn(string $value) => (float)$value),
+                    'exchange_rate_margin' => transform($asset['exchange_rate_margin'] ?? null, fn(string $value) => (float)$value),
                 ]);
             }, $assets);
 

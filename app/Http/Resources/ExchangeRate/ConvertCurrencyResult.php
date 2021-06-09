@@ -17,6 +17,7 @@ class ConvertCurrencyResult extends JsonResource
         return [
             'from_currency_code' => $this->resource['from_currency_code'],
             'to_currency_code' => $this->resource['to_currency_code'],
+            'exchange_date' => $this->resource['exchange_date'],
             'amount' => $this->resource['amount'],
             'result' => $this->resource['result'],
             'result_formatted' => sprintf('%s %s', $this->resource['to_currency_symbol'], number_format((float)$this->resource['result'], 2))

@@ -6,9 +6,35 @@ use App\DTO\MappedRowSettings;
 use App\DTO\RowMapping;
 use App\Models\QuoteFile\QuoteFile;
 use App\Models\Quote\Quote;
+use Closure;
+use Illuminate\Support\Manager;
+use Psr\Log\LoggerInterface;
 
 interface ManagesDocumentProcessors
 {
+    /**
+     * Register a custom driver creator Closure.
+     *
+     * @param  string  $driver
+     * @param  \Closure  $callback
+     * @return $this
+     */
+    public function extend($driver, Closure $callback);
+
+    /**
+     * Get the container instance used by the manager.
+     *
+     * @return \Illuminate\Contracts\Container\Container
+     */
+    public function getContainer();
+
+    /**
+     * Get logger.
+     *
+     * @return \Psr\Log\LoggerInterface
+     */
+    public function getLogger(): LoggerInterface;
+
     /**
      * Resolve the appropriate document processor and perform processing.
      *

@@ -14,6 +14,8 @@ use App\Models\QuoteFile\ImportableColumn;
 use App\Models\QuoteFile\ImportedRow;
 use App\Models\QuoteFile\MappedRow;
 use App\Models\Template\TemplateField;
+use App\Services\DocumentProcessor\Concerns\HasFallbackProcessor;
+use App\Services\DocumentProcessor\Exceptions\NoDataFoundException;
 use App\Support\PriceParser;
 use Devengine\AnyDateParser\DateParser;
 use Illuminate\Contracts\Cache\LockProvider;
@@ -23,20 +25,28 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pipeline\Pipeline;
 use Illuminate\Support\{Carbon, Manager, Str};
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
+use Webpatser\Uuid\Uuid;
 
 class DocumentProcessor extends Manager implements ManagesDocumentProcessors
 {
+    protected LoggerInterface $logger;
     protected ConnectionInterface $connection;
-
     protected LockProvider $lockProvider;
 
-    public function __construct(Container $container, ConnectionInterface $connection, LockProvider $lockProvider)
+    public function __construct(Container $container)
     {
         parent::__construct($container);
-        $this->connection = $connection;
-        $this->lockProvider = $lockProvider;
+        $this->logger = $container->make('log')->channel('document-processor');
+        $this->connection = $container->make(ConnectionInterface::class);
+        $this->lockProvider = $container->make(LockProvider::class);
+    }
+
+    public function getLogger(): LoggerInterface
+    {
+        return $this->logger;
     }
 
     public function performProcess(Quote $quote, QuoteFile $quoteFile, ?int $importablePageNumber = null)
@@ -53,6 +63,68 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
         return $quoteFile->processing_state;
     }
 
+    protected function handleOrRetrieve(Quote $quote, QuoteFile $quoteFile, ?int $importablePageNumber = null): bool
+    {
+        app(Pipeline::class)
+            ->send($quoteFile)
+            ->through(
+                \App\Services\HandledCases\HasException::class,
+                \App\Services\HandledCases\HasNotBeenProcessed::class,
+                \App\Services\HandledCases\RequestedNewPageForPrice::class,
+                \App\Services\HandledCases\RequestedNewPageForSchedule::class,
+                \App\Services\HandledCases\RequestedNewSeparatorForCsv::class
+            )
+            ->thenReturn();
+
+        if ($quoteFile->shouldNotBeHandled) {
+            return false;
+        }
+
+        $version = $quote->activeVersionOrCurrent;
+
+        $lock = $this->lockProvider->lock(Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()), 10);
+        $lock->block(30);
+
+        try {
+            if (!is_null($importablePageNumber)) {
+                $quoteFile->setImportedPage($importablePageNumber);
+            }
+
+            $quoteFile->clearException();
+
+            if ($quoteFile->isPrice()) {
+                $version->priceList()->associate($quoteFile)->save();
+                $version->forgetCachedMappingReview();
+                $version->resetGroupDescription();
+            }
+
+            if ($quoteFile->isSchedule()) {
+                $version->paymentSchedule()->associate($quoteFile)->save();
+            }
+        } finally {
+            $lock->release();
+        }
+
+        $this->forwardProcessor($quoteFile);
+
+        if ($quoteFile->isPrice() && $quoteFile->rowsData()->where('page', '>=', $quoteFile->imported_page)->doesntExist()) {
+            $quoteFile->setException(QFNRF_02, 'QFNRF_02');
+        }
+
+        if ($quoteFile->isSchedule() && (is_null($quoteFile->scheduleData) || blank($quoteFile->scheduleData->value))) {
+            $quoteFile->setException(QFNS_01, 'QFNS_01');
+        }
+
+        if ($quoteFile->isPrice()) {
+            $this->mapColumnsToFields($quote, $quoteFile);
+        }
+
+        return true;
+    }
+
+    /**
+     * @throws \App\Services\DocumentProcessor\Exceptions\NoDataFoundException|\App\Services\DocumentProcessor\Exceptions\DocumentComparisonException
+     */
     public function forwardProcessor(QuoteFile $quoteFile): void
     {
         $ext = strtr($quoteFile->format->extension, [
@@ -66,7 +138,86 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
 
         $processor = $this->createDriver($processorName);
 
-        $processor->process($quoteFile);
+        try {
+            $processor->process($quoteFile);
+
+            if ($processor instanceof HasFallbackProcessor) {
+                $this->gracefullyProcessDocument($processor->getFallbackProcessor(), $quoteFile);
+            }
+
+        } catch (NoDataFoundException $e) {
+            $this->logger->warning(sprintf("Failed to process file '%s' using %s processor.", $quoteFile->original_file_name, get_class($processor)));
+
+            if (!$processor instanceof HasFallbackProcessor) {
+                $this->logger->warning(sprintf("File processor %s doesn't have a fallback processor.", get_class($processor)));
+
+                throw $e;
+            }
+
+            $this->logger->info(sprintf("File processor %s has a fallback processor.", get_class($processor)));
+
+            $fallbackProcessor = $processor->getFallbackProcessor();
+
+            $this->logger->info(sprintf("Trying to process the file using %s processor...", get_class($fallbackProcessor)));
+
+            $fallbackProcessor->process($quoteFile);
+        }
+    }
+
+    public function mapColumnsToFields(Quote $quote, QuoteFile $quoteFile): void
+    {
+        $quoteLock = $this->lockProvider->lock(Lock::UPDATE_QUOTE($quote->getKey()), 10);
+
+        $quoteLock->block(30);
+
+        try {
+            $templateFields = TemplateField::query()->pluck('id', 'name');
+
+            $row = $quoteFile->rowsData()
+                ->where('page', '>=', $quoteFile->imported_page ?? 1)
+                ->first();
+
+            $columns = optional($row)->columns_data;
+
+            if (blank($columns)) {
+                $quote->activeVersionOrCurrent->templateFields()->detach();
+
+                $quoteFileLock = $this->lockProvider->lock(
+                    Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()),
+                    10
+                );
+
+                $quoteFileLock->block(30, $quoteFile->markAsAutomapped());
+                return;
+            }
+
+            $defaultAttributes = [
+                'is_default_enabled' => false,
+                'is_preview_visible' => true,
+                'default_value' => null,
+                'sort' => null,
+            ];
+
+            $importableColumns = ImportableColumn::whereKey($columns->pluck('importable_column_id'))->pluck('id', 'name');
+
+            $map = $templateFields
+                ->mergeRecursive($importableColumns)
+                ->filter(fn($map) => is_array($map) && count($map) === 2)
+                ->mapWithKeys(fn($map, $key) => [
+                    $map[0] => ['importable_column_id' => $map[1]] + $defaultAttributes,
+                ]);
+
+            $quote->activeVersionOrCurrent->templateFields()->sync($map->toArray());
+
+            $quoteFileLock = $this->lockProvider->lock(
+                Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()),
+                10
+            );
+
+            $quoteFileLock->block(30, $quoteFile->markAsAutomapped());
+        } finally {
+            $quoteLock->release();
+        }
     }
 
     public function transitImportedRowsToMappedRows(QuoteFile $quoteFile, RowMapping $rowMapping, ?MappedRowSettings $rowSettings = null)
@@ -205,121 +356,6 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
         return false;
     }
 
-    public function mapColumnsToFields(Quote $quote, QuoteFile $quoteFile): void
-    {
-        $quoteLock = $this->lockProvider->lock(Lock::UPDATE_QUOTE($quote->getKey()), 10);
-
-        $quoteLock->block(30);
-
-        try {
-            $templateFields = TemplateField::query()->pluck('id', 'name');
-
-            $row = $quoteFile->rowsData()
-                ->where('page', '>=', $quoteFile->imported_page ?? 1)
-                ->first();
-
-            $columns = optional($row)->columns_data;
-
-            if (blank($columns)) {
-                $quote->activeVersionOrCurrent->templateFields()->detach();
-
-                $quoteFileLock = $this->lockProvider->lock(
-                    Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()),
-                    10
-                );
-
-                $quoteFileLock->block(30, $quoteFile->markAsAutomapped());
-                return;
-            }
-
-            $defaultAttributes = [
-                'is_default_enabled' => false,
-                'is_preview_visible' => true,
-                'default_value' => null,
-                'sort' => null,
-            ];
-
-            $importableColumns = ImportableColumn::whereKey($columns->pluck('importable_column_id'))->pluck('id', 'name');
-
-            $map = $templateFields
-                ->mergeRecursive($importableColumns)
-                ->filter(fn($map) => is_array($map) && count($map) === 2)
-                ->mapWithKeys(fn($map, $key) => [
-                    $map[0] => ['importable_column_id' => $map[1]] + $defaultAttributes,
-                ]);
-
-            $quote->activeVersionOrCurrent->templateFields()->sync($map->toArray());
-
-            $quoteFileLock = $this->lockProvider->lock(
-                Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()),
-                10
-            );
-
-            $quoteFileLock->block(30, $quoteFile->markAsAutomapped());
-        } finally {
-            $quoteLock->release();
-        }
-    }
-
-    protected function handleOrRetrieve(Quote $quote, QuoteFile $quoteFile, ?int $importablePageNumber = null): bool
-    {
-        app(Pipeline::class)
-            ->send($quoteFile)
-            ->through(
-                \App\Services\HandledCases\HasException::class,
-                \App\Services\HandledCases\HasNotBeenProcessed::class,
-                \App\Services\HandledCases\RequestedNewPageForPrice::class,
-                \App\Services\HandledCases\RequestedNewPageForSchedule::class,
-                \App\Services\HandledCases\RequestedNewSeparatorForCsv::class
-            )
-            ->thenReturn();
-
-        if ($quoteFile->shouldNotBeHandled) {
-            return false;
-        }
-
-        $version = $quote->activeVersionOrCurrent;
-
-        $lock = $this->lockProvider->lock(Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()), 10);
-        $lock->block(30);
-
-        try {
-            if (!is_null($importablePageNumber)) {
-                $quoteFile->setImportedPage($importablePageNumber);
-            }
-
-            $quoteFile->clearException();
-
-            if ($quoteFile->isPrice()) {
-                $version->priceList()->associate($quoteFile)->save();
-                $version->forgetCachedMappingReview();
-                $version->resetGroupDescription();
-            }
-
-            if ($quoteFile->isSchedule()) {
-                $version->paymentSchedule()->associate($quoteFile)->save();
-            }
-        } finally {
-            $lock->release();
-        }
-
-        $this->forwardProcessor($quoteFile);
-
-        if ($quoteFile->isPrice() && $quoteFile->rowsData()->where('page', '>=', $quoteFile->imported_page)->doesntExist()) {
-            $quoteFile->setException(QFNRF_02, 'QFNRF_02');
-        }
-
-        if ($quoteFile->isSchedule() && (is_null($quoteFile->scheduleData) || blank($quoteFile->scheduleData->value))) {
-            $quoteFile->setException(QFNS_01, 'QFNS_01');
-        }
-
-        if ($quoteFile->isPrice()) {
-            $this->mapColumnsToFields($quote, $quoteFile);
-        }
-
-        return true;
-    }
-
     public function getDefaultDriver()
     {
         throw new RuntimeException("The Document Processor must be explicitly defined");
@@ -328,5 +364,44 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
     public function driver($driver = null): ProcessesQuoteFile
     {
         return parent::driver($driver);
+    }
+
+    /**
+     * Process the quote file entity with the specified processor,
+     * and decide which data to use.
+     *
+     * @param \App\Contracts\Services\ProcessesQuoteFile $processor
+     * @param \App\Models\QuoteFile\QuoteFile $quoteFile
+     * @throws \App\Services\DocumentProcessor\Exceptions\DocumentComparisonException
+     */
+    protected function gracefullyProcessDocument(ProcessesQuoteFile $processor, QuoteFile $quoteFile): void
+    {
+        /** @var QuoteFile $bQuoteFile */
+        $bQuoteFile = tap($quoteFile->replicate(), function (QuoteFile $quoteFile) {
+            $quoteFile->{$quoteFile->getKeyName()} = (string)Uuid::generate(4);
+
+            $quoteFile->save();
+        });
+
+        $this->logger->info("Trying to process a copy of the quote file with the fallback processor.", ['quote_file_id' => $quoteFile->getKey(), 'replicated_quote_file_id' => $bQuoteFile->getKey()]);
+
+        $processor->process($bQuoteFile);
+
+        $quoteFileWithMoreCompleteData = (new DocumentDataComparator())($quoteFile, $bQuoteFile);
+
+        // When the file with more complete data is the file, processed by the fallback processor,
+        // we will process the original file using the fallback processor.
+        if ($quoteFileWithMoreCompleteData->is($bQuoteFile)) {
+
+            $this->logger->info("Decided the original quote file with the fallback processor.");
+
+            $processor->process($quoteFile);
+
+        }
+
+        $this->logger->info("Decided to keep the original data of the quote file.");
+
+        // Then we will delete the replicated quote file.
+        $bQuoteFile->forceDelete();
     }
 }

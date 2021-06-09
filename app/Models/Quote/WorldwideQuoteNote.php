@@ -15,7 +15,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $text
  * @property string|null $user_id
  * @property string|null $worldwide_quote_id
- * @property WorldwideQuote|null $worldwideQuote
+ * @property string|null $worldwide_quote_version_id
+ *
+ * @property-read WorldwideQuote|null $worldwideQuote
+ * @property-read \App\Models\Quote\WorldwideQuoteVersion|null $worldwideQuoteVersion
  */
 class WorldwideQuoteNote extends Model
 {
@@ -37,5 +40,10 @@ class WorldwideQuoteNote extends Model
     public function worldwideQuote(): BelongsTo
     {
         return $this->belongsTo(WorldwideQuote::class);
+    }
+
+    public function worldwideQuoteVersion(): BelongsTo
+    {
+        return $this->belongsTo(WorldwideQuoteVersion::class);
     }
 }

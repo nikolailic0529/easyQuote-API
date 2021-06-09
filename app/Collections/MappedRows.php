@@ -2,43 +2,69 @@
 
 namespace App\Collections;
 
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Arr, Str;
 
 class MappedRows extends Collection
 {
-    public function setCurrency(?string $symbol)
+    public function setCurrency(?string $symbol): MappedRows
     {
         if ($this->isGrouped()) {
-            return $this->map(function (Collection $group) use ($symbol) {
-                $group->put('total_price', Str::prepend(Str::decimal($group->get('total_price'), 2), $symbol));
+            return $this->each(function (Collection $group) use ($symbol) {
+                if ($group->has('total_price')) {
+                    $group->put('total_price', $symbol.' '.number_format((float)$group['total_price'], 2));
+                }
 
-                $rows = $group->getRows();
-                $rows instanceof static ? $rows : static::make($rows);
-                $rows = $rows->setCurrency($symbol);
-
-                return $group->put('rows', $rows);
+                return $group->put('rows', static::wrap($group->get('rows'))->setCurrency($symbol));
             });
         }
 
-        return $this->map(function ($row) use ($symbol) {
-            $price = Str::prepend(Str::decimal(data_get($row, 'price'), 2), $symbol);
-            return data_set($row, 'price', $price);
+        return $this->each(function (object $row) use ($symbol) {
+            if (isset($row->price)) {
+                $row->price = $symbol.' '.number_format((float)$row->price, 2);
+            }
         });
     }
 
-    public function sortKeysBy(iterable $keys)
+    public function multiplePriceValue(float $coef): MappedRows
     {
         if ($this->isGrouped()) {
-            return $this->map(fn (Collection $group) => $group->put('rows', $group->getRows()->sortKeysBy($keys)));
+            return $this->each(function (Collection $group) use ($coef) {
+                $group->put('rows', static::wrap($group->get('rows'))->multiplePriceValue($coef));
+            });
         }
 
-        $keys = array_flip($this->getArrayableItems($keys));
-
-        return $this->map(fn ($row) => array_replace($keys, array_intersect_key($this->getArrayableItems($row), $keys)));
+        return $this->each(function (object $row) use ($coef) {
+            if (isset($row->price)) {
+                $row->price *= $coef;
+            }
+        });
     }
 
-    public function setHeadersCount()
+    public function exceptHeaders(array $headers = []): MappedRows
+    {
+        if (empty($headers)) {
+            return $this;
+        }
+
+        if ($this->isGrouped()) {
+            return $this->each(function (Collection $group) use ($headers) {
+                $group->put('rows', $rows = static::wrap($group->get('rows'))->exceptHeaders($headers));
+
+                if ($group->has('headers_count')) {
+                    $group->put('headers_count', $this->countHeaders($rows->first()));
+                }
+            });
+        }
+
+        return $this->each(function (object $row) use ($headers) {
+            foreach ($headers as $header) {
+                unset($row->{$header});
+            }
+        });
+    }
+
+    public function setHeadersCount(): MappedRows
     {
         if (!$this->isGrouped()) {
             return $this;
@@ -48,35 +74,9 @@ class MappedRows extends Collection
 
         $headersCount = $this->countHeaders($first);
 
-        return $this->map(fn ($group) => data_set($group, 'headers_count', $headersCount));
-    }
-
-    public function exceptHeaders(array $headers = [])
-    {
-        if (blank($headers)) {
-            return $this;
-        }
-
-        if ($this->isGrouped()) {
-            return $this->map(function (Collection $group) use ($headers) {
-                $rows = $group->getRows()->exceptHeaders($headers);
-
-                $group->put('rows', $rows);
-
-                if ($group->has('headers_count')) {
-                    $group->put('headers_count', $this->countHeaders($rows->first()));
-                }
-
-                return $group;
-            });
-        }
-
-        return $this->map(fn ($row) => Arr::except((array) $row, $headers));
-    }
-
-    protected function getRows()
-    {
-        return static::wrap($this->get('rows'));
+        return $this->each(function (Collection $group) use ($headersCount) {
+            $group->put('headers_count', $headersCount);
+        });
     }
 
     protected function countHeaders($items): int

@@ -3,6 +3,7 @@
 namespace App\Services\WorldwideQuote;
 
 use App\Contracts\Services\ManagesExchangeRates;
+use App\DTO\Discounts\ImmutablePriceSummaryData;
 use App\DTO\Template\TemplateElement;
 use App\DTO\WorldwideQuote\Export\AggregationField;
 use App\DTO\WorldwideQuote\Export\AssetData;
@@ -126,7 +127,7 @@ class WorldwideQuoteDataMapper
             'id' => $activeVersion->company->getKey(),
             'name' => $activeVersion->company->name,
             'logo_url' => transform($activeVersion->company->logo, function (array $logo) {
-                return $logo['x1'] ?? '';
+                return $logo['x3'] ?? '';
             })
         ]);
 
@@ -138,7 +139,7 @@ class WorldwideQuoteDataMapper
             'id' => $vendor->getKey(),
             'name' => $vendor->name,
             'logo_url' => transform($vendor->logo, function (array $logo) {
-                return $logo['x1'] ?? '';
+                return $logo['x3'] ?? '';
             })
         ])->all();
 
@@ -195,7 +196,7 @@ class WorldwideQuoteDataMapper
             'id' => $activeVersion->company->getKey(),
             'name' => $activeVersion->company->name,
             'logo_url' => transform($activeVersion->company->logo, function (array $logo) {
-                return $logo['x1'] ?? '';
+                return $logo['x3'] ?? '';
             })
         ]);
 
@@ -207,7 +208,7 @@ class WorldwideQuoteDataMapper
             'id' => $vendor->getKey(),
             'name' => $vendor->name,
             'logo_url' => transform($vendor->logo, function (array $logo) {
-                return $logo['x1'] ?? '';
+                return $logo['x3'] ?? '';
             })
         ])->all();
 
@@ -313,7 +314,7 @@ class WorldwideQuoteDataMapper
         $this->sortWorldwidePackQuoteAssets($quote);
 
         foreach ($activeVersionOfQuote->assets as $asset) {
-            $asset->setAttribute('date_from', $quote->opportunity->opportunity_start_date);
+            $asset->setAttribute('date_to', $quote->opportunity->opportunity_end_date);
         }
 
         return $this->worldwideQuoteAssetsToArrayOfAssetData($activeVersionOfQuote->assets, $quotePriceData->price_value_coefficient, $outputCurrency);
@@ -358,12 +359,15 @@ class WorldwideQuoteDataMapper
                 $distribution->final_total_price = $distributionFinalTotalPrice->final_total_price_value;
             }
 
-            $priceValueCoeff = with($distribution, function (WorldwideDistribution $distribution) {
-                if (((float)$distribution->total_price) === 0.0) {
-                    return 0.0;
+            $priceSummaryOfDistributorQuote = $this->worldwideDistributionCalc->calculatePriceSummaryOfDistributorQuote($distribution);
+
+            $priceValueCoeff = with($priceSummaryOfDistributorQuote, function (ImmutablePriceSummaryData $priceSummaryData): float {
+
+                if ($priceSummaryData->total_price !== 0.0) {
+                    return $priceSummaryData->final_total_price_excluding_tax / $priceSummaryData->total_price;
                 }
 
-                return $distribution->final_total_price / $distribution->total_price;
+                return 0.0;
             });
 
             $assetsData = $this->getDistributionAssetsData($distribution, $priceValueCoeff, $outputCurrency);
@@ -1176,6 +1180,7 @@ class WorldwideQuoteDataMapper
     {
         return $rows->map(function (MappedRow $row) use ($priceValueCoeff, $outputCurrency) {
             return new AssetData([
+                'buy_currency_code' => '',
                 'vendor_short_code' => '',
                 'product_no' => $row->product_no ?? '',
                 'service_sku' => $row->service_sku ?? '',
@@ -1209,16 +1214,17 @@ class WorldwideQuoteDataMapper
                 $assetFloatPrice = (float)$asset->price * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value;
 
                 return new AssetData([
+                    'buy_currency_code' => transform($asset->buyCurrency, fn (Currency $currency) => $currency->code, ''),
                     'vendor_short_code' => $asset->vendor_short_code ?? '',
                     'product_no' => $asset->sku ?? '',
                     'service_sku' => $asset->service_sku ?? '',
                     'description' => $asset->product_name ?? '',
                     'serial_no' => $asset->serial_no ?? '',
-                    'date_from' => transform($asset->date_from, function (string $date) {
+                    'date_from' => transform($asset->expiry_date, function (string $date) {
                         /** @noinspection PhpParamsInspection */
-                        return static::formatDate(Carbon::createFromFormat('Y-m-d', $date));
+                        return static::formatDate(Carbon::createFromFormat('Y-m-d', $date)->addDay());
                     }, ''),
-                    'date_to' => transform($asset->expiry_date, function (string $date) {
+                    'date_to' => transform($asset->date_to, function (string $date) {
                         /** @noinspection PhpParamsInspection */
                         return static::formatDate(Carbon::createFromFormat('Y-m-d', $date));
                     }, ''),

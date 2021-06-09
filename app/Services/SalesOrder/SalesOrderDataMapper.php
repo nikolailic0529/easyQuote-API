@@ -3,6 +3,7 @@
 namespace App\Services\SalesOrder;
 
 use App\Contracts\Services\ManagesExchangeRates;
+use App\DTO\Discounts\ImmutablePriceSummaryData;
 use App\DTO\SalesOrder\Submit\SubmitOrderAddressData;
 use App\DTO\SalesOrder\Submit\SubmitOrderCustomerData;
 use App\DTO\SalesOrder\Submit\SubmitOrderLineData;
@@ -35,6 +36,7 @@ use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
 use App\Services\ThumbHelper;
 use App\Services\WorldwideQuote\AssetServiceLookupService;
+use App\Services\WorldwideQuote\WorldwideDistributionCalc;
 use App\Services\WorldwideQuote\WorldwideQuoteCalc;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -48,16 +50,19 @@ class SalesOrderDataMapper
     const EXCLUDED_ASSET_FIELDS = ['price'];
 
     protected ManagesExchangeRates $exchangeRateService;
-
     protected AssetServiceLookupService $lookupService;
-
     protected WorldwideQuoteCalc $quoteCalc;
+    protected WorldwideDistributionCalc $distributorQuoteCalc;
 
-    public function __construct(ManagesExchangeRates $exchangeRateService, AssetServiceLookupService $lookupService, WorldwideQuoteCalc $quoteCalc)
+    public function __construct(ManagesExchangeRates $exchangeRateService,
+                                AssetServiceLookupService $lookupService,
+                                WorldwideQuoteCalc $quoteCalc,
+                                WorldwideDistributionCalc $distributorQuoteCalc)
     {
         $this->exchangeRateService = $exchangeRateService;
         $this->lookupService = $lookupService;
         $this->quoteCalc = $quoteCalc;
+        $this->distributorQuoteCalc = $distributorQuoteCalc;
     }
 
     public function mapSalesOrderToSubmitSalesOrderData(SalesOrder $salesOrder): SubmitSalesOrderData
@@ -114,7 +119,19 @@ class SalesOrderDataMapper
         });
 
         $orderLinesData = $activeQuoteVersion->worldwideDistributions->reduce(function (array $orderLines, WorldwideDistribution $distribution) use ($quoteCurrency, $quotePriceData) {
-            $distributorQuoteLines = value(function () use ($quotePriceData, $quoteCurrency, $distribution): array {
+
+            $priceSummaryOfDistributorQuote = $this->distributorQuoteCalc->calculatePriceSummaryOfDistributorQuote($distribution);
+
+            $priceValueCoeff = with($priceSummaryOfDistributorQuote, function (ImmutablePriceSummaryData $priceSummaryData): float {
+
+                if ($priceSummaryData->total_price !== 0.0) {
+                    return $priceSummaryData->final_total_price_excluding_tax / $priceSummaryData->total_price;
+                }
+
+                return 0.0;
+            });
+
+            $distributorQuoteLines = value(function () use ($priceSummaryOfDistributorQuote, $priceValueCoeff, $quoteCurrency, $distribution): array {
                 /** @var Vendor $quoteVendor */
                 $quoteVendor = $distribution->vendors->first();
 
@@ -122,12 +139,12 @@ class SalesOrderDataMapper
 
                 if ($distribution->use_groups) {
 
-                    return $distribution->rowsGroups->reduce(function (array $rows, DistributionRowsGroup $rowsGroup) use ($supplier, $quoteVendor, $quotePriceData, $quoteCurrency, $distribution) {
+                    return $distribution->rowsGroups->reduce(function (array $rows, DistributionRowsGroup $rowsGroup) use ($supplier, $quoteVendor, $priceValueCoeff, $priceSummaryOfDistributorQuote, $quoteCurrency, $distribution) {
                         $rowsOfGroup = $rowsGroup->rows->map(fn(MappedRow $row) => new SubmitOrderLineData([
                             'line_id' => $row->getKey(),
                             'unit_price' => $row->price,
                             'sku' => $row->product_no ?? '',
-                            'buy_price' => $row->price * $quotePriceData->price_value_coefficient * (float)$quoteCurrency->exchange_rate_value,
+                            'buy_price' => $row->price * $priceValueCoeff * (float)$quoteCurrency->exchange_rate_value,
                             'service_description' => $row->service_level_description ?? '',
                             'product_description' => $row->description ?? '',
                             'serial_number' => $row->serial_no ?? '',
@@ -135,7 +152,7 @@ class SalesOrderDataMapper
                             'service_sku' => $row->service_sku ?? '',
                             'vendor_short_code' => $quoteVendor->short_code ?? '',
                             'distributor_name' => $supplier->supplier_name ?? '',
-                            'discount_applied' => $quotePriceData->applicable_discounts_value > 0,
+                            'discount_applied' => $priceSummaryOfDistributorQuote->applicable_discounts_value > 0,
                             'machine_country_code' => transform($distribution->country, fn(Country $country) => $country->iso_3166_2) ?? '',
                             'currency_code' => $quoteCurrency->code,
                         ]))->all();
@@ -145,12 +162,12 @@ class SalesOrderDataMapper
 
                 }
 
-                return $distribution->mappedRows->map(function (MappedRow $row) use ($distribution, $quoteCurrency, $supplier, $quoteVendor, $quotePriceData) {
+                return $distribution->mappedRows->map(function (MappedRow $row) use ($distribution, $quoteCurrency, $supplier, $quoteVendor, $priceValueCoeff, $priceSummaryOfDistributorQuote) {
                     return new SubmitOrderLineData([
                         'line_id' => $row->getKey(),
                         'unit_price' => $row->price,
                         'sku' => $row->product_no ?? '',
-                        'buy_price' => $row->price * $quotePriceData->price_value_coefficient * (float)$quoteCurrency->exchange_rate_value,
+                        'buy_price' => $row->price * $priceValueCoeff * (float)$quoteCurrency->exchange_rate_value,
                         'service_description' => $row->service_level_description ?? '',
                         'product_description' => $row->description ?? '',
                         'serial_number' => $row->serial_no ?? '',
@@ -158,7 +175,7 @@ class SalesOrderDataMapper
                         'service_sku' => $row->service_sku ?? '',
                         'vendor_short_code' => $quoteVendor->short_code ?? '',
                         'distributor_name' => $supplier->supplier_name ?? '',
-                        'discount_applied' => $quotePriceData->applicable_discounts_value > 0,
+                        'discount_applied' => $priceSummaryOfDistributorQuote->applicable_discounts_value > 0,
                         'machine_country_code' => transform($distribution->country, fn(Country $country) => $country->iso_3166_2) ?? '',
                         'currency_code' => $quoteCurrency->code,
                     ]);
@@ -171,8 +188,6 @@ class SalesOrderDataMapper
         if (empty($orderLinesData)) {
             throw new \InvalidArgumentException('At least one Order Line must exist on the Quote.');
         }
-
-//        $this->populateServiceDataToSupportLines(...$orderLinesData);
 
         $addresses = [];
 

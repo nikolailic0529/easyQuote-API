@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
@@ -89,6 +90,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  *
  * @property-read Collection<Address>|Address[] $addresses
  * @property-read Collection<Contact>|Contact[] $contacts
+ * @property-read \App\Models\Quote\WorldwideQuoteNote|null $note
  */
 class WorldwideQuoteVersion extends Model
 {
@@ -176,5 +178,10 @@ class WorldwideQuoteVersion extends Model
     public function contacts(): BelongsToMany
     {
         return $this->belongsToMany(Contact::class);
+    }
+
+    public function note(): HasOne
+    {
+        return $this->hasOne(WorldwideQuoteNote::class);
     }
 }

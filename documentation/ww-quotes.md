@@ -325,7 +325,10 @@
                 "buy_currency_id": {buy_currency_uuid}, *
                 "buy_price": {numeric_value}, (min: 0, max: 999_999_999) *
                 "calculate_list_price": {boolean}, *
-                "distribution_expiry_date": {date_string} (Y-m-d) *
+                "distribution_expiry_date": {date_string} (Y-m-d) *,
+
+                "distribution_currency_quote_currency_exchange_rate_value": {numeric},
+                "distribution_currency_quote_currency_exchange_rate_margin": {numeric}
             }
         ],
 

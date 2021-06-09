@@ -14,6 +14,9 @@ final class ReplicatedDistributorQuoteData
 {
     protected WorldwideDistribution $distributorQuote;
 
+    /** @var array[] */
+    protected array $vendorPivots;
+
     /** @var array[]  */
     protected array $addressPivots;
 
@@ -51,6 +54,7 @@ final class ReplicatedDistributorQuoteData
      * @param ScheduleData|null $scheduleData
      */
     public function __construct(WorldwideDistribution $distributorQuote,
+                                array $vendorPivots,
                                 array $addressPivots,
                                 array $contactPivots,
                                 array $mapping,
@@ -64,6 +68,7 @@ final class ReplicatedDistributorQuoteData
     {
         $this->distributorQuote = $distributorQuote;
 
+        $this->vendorPivots = $vendorPivots;
         $this->addressPivots = $addressPivots;
         $this->contactPivots = $contactPivots;
         $this->mapping = $mapping;
@@ -162,5 +167,13 @@ final class ReplicatedDistributorQuoteData
     public function getContactPivots(): array
     {
         return $this->contactPivots;
+    }
+
+    /**
+     * @return array[]
+     */
+    public function getVendorPivots(): array
+    {
+        return $this->vendorPivots;
     }
 }

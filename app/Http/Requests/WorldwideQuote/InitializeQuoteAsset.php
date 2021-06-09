@@ -4,6 +4,7 @@ namespace App\Http\Requests\WorldwideQuote;
 
 use App\DTO\WorldwideQuote\InitializeWorldwideQuoteAssetData;
 use App\Models\Address;
+use App\Models\Data\Currency;
 use App\Models\Vendor;
 use DateTime;
 use Illuminate\Foundation\Http\FormRequest;
@@ -26,9 +27,13 @@ class InitializeQuoteAsset extends FormRequest
                 'bail', 'nullable', 'uuid',
                 Rule::exists(Vendor::class, 'id')->whereNull('deleted_at')
             ],
-            'assets.*.machine_address_id' => [
+            'machine_address_id' => [
                 'bail', 'nullable', 'uuid',
                 Rule::exists(Address::class, 'id')->whereNull('deleted_at')
+            ],
+            'buy_currency_id' => [
+              'bail', 'nullable', 'uuid',
+              Rule::exists(Currency::class, 'id'),
             ],
             'country' => [
                 'bail', 'nullable', 'string', 'size:2'
@@ -54,6 +59,15 @@ class InitializeQuoteAsset extends FormRequest
             'price' => [
                 'bail', 'nullable', 'numeric', 'min:-999999', 'max:999999'
             ],
+            'original_price' => [
+                'bail', 'nullable', 'numeric', 'min:-999999', 'max:999999'
+            ],
+            'exchange_rate_margin' => [
+                'bail', 'nullable', 'numeric', 'min:0', 'max:999999',
+            ],
+            'exchange_rate_value' => [
+                'bail', 'nullable', 'numeric', 'min:0', 'max:999999',
+            ]
         ];
     }
 
@@ -61,15 +75,19 @@ class InitializeQuoteAsset extends FormRequest
     {
         return $this->assetData ??= new InitializeWorldwideQuoteAssetData([
             'vendor_id' => $this->input('vendor_id'),
+            'buy_currency_id' => $this->input('buy_currency_id'),
             'machine_address_id' => $this->input('machine_address_id'),
             'country_code' => $this->input('country'),
             'serial_no' => $this->input('serial_no'),
             'sku' => $this->input('sku'),
             'service_sku' => $this->input('service_sku'),
             'product_name' => $this->input('product_name'),
-            'expiry_date' => transform($this->input('expiry_date'), fn(string $date) => Carbon::createFromFormat(DateTime::RFC3339_EXTENDED, $date)),
+            'expiry_date' => transform($this->input('expiry_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d\TH:i:s.vP', $date)),
             'service_level_description' => $this->input('service_level_description'),
-            'price' => transform($this->input('price'), fn($value) => (float)$value)
+            'price' => transform($this->input('price'), fn($value) => (float)$value),
+            'original_price' => transform($this->input('original_price'), fn($value) => (float)$value),
+            'exchange_rate_margin' => transform($this->input('exchange_rate_margin'), fn ($value) => (float)$value),
+            'exchange_rate_value' => transform($this->input('exchange_rate_value'), fn ($value) => (float)$value),
         ]);
     }
 }

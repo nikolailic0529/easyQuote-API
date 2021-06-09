@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\Services\HpeContractState;
+use Illuminate\Database\Eloquent\Model;
 use App\DTO\{ImportResponse, HpeContractService, HpeContractAssetCollection, HpeContractServiceCollection, PreviewHpeContractData};
 use App\Models\{HpeContract, HpeContractData, HpeContractFile};
 use App\Models\Customer\Customer;
@@ -11,6 +12,7 @@ use App\Scopes\ContractTypeScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\{Arr, Carbon, Collection, Str, Facades\DB};
+use Spatie\DataTransferObject\DataTransferObject;
 
 class HpeContractStateProcessor implements HpeContractState
 {
@@ -307,7 +309,8 @@ class HpeContractStateProcessor implements HpeContractState
 
         $contractsData = Collection::wrap($hpeContract->contract_numbers)->keyBy('contract_number')->map(function ($contract) {
             $contract = collect($contract);
-            $dates = $contract->only('contract_start_date', 'contract_end_date')->map(fn ($date) => transform($date, fn ($date) => Carbon::parse($date)->format(config('date.format_ui'))));
+            $dates = $contract->only('contract_start_date', 'contract_end_date')
+                ->map(fn ($date) => transform($date, fn ($date) => Carbon::parse($date)->format(config('date.format_eu'))));
 
             return $contract->merge($dates)->toArray();
         });
@@ -399,11 +402,11 @@ class HpeContractStateProcessor implements HpeContractState
 
                 'support_services'              => $supportServices,
 
-                'purchase_order_date'           => optional($hpeContract->purchase_order_date)->format(config('date.format_ui')),
+                'purchase_order_date'           => optional($hpeContract->purchase_order_date)->format(config('date.format_eu')),
                 'purchase_order_no'             => $hpeContract->purchase_order_no,
                 'hpe_sales_order_no'            => $hpeContract->hpe_sales_order_no,
 
-                'contract_date'                 => optional($hpeContract->contract_date)->format(config('date.format_ui')),
+                'contract_date'                 => optional($hpeContract->contract_date)->format(config('date.format_eu')),
 
                 'service_overview'              => $allContractServices->values(),
                 'support_account_reference'     => $sars,

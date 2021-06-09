@@ -129,14 +129,24 @@ class RescueQuoteVersionTest extends TestCase
 
         $this->postJson(url('api/quotes/state'), $state)
 //            ->dump()
-            ->assertOk()->assertExactJson(['id' => $quote->id]);
+            ->assertOk()
+            ->assertExactJson(['id' => $quote->id]);
 
         Arr::set($state, 'quote_data.closing_date', Carbon::createFromFormat('Y-m-d', Arr::get($state, 'quote_data.closing_date'))->format('d/m/Y'));
 
         $resource = QuoteVersionResource::make($quote->refresh())->resolve();
 
-        collect($state['quote_data'])->each(fn ($value, $attribute) => $this->assertEquals($value, Arr::get($resource, $attribute)));
-        collect($state['margin'])->each(fn ($value, $attribute) => $this->assertEquals($value, Arr::get($resource, 'country_margin.' . $attribute)));
+        foreach (Arr::dot($state['quote_data']) as $attribute => $value) {
+
+            $this->assertEquals($value, Arr::get($resource, $attribute), $attribute);
+
+        }
+
+        foreach (Arr::dot($state['margin']) as $attribute => $value) {
+
+            $this->assertEquals($value, Arr::get($resource, 'country_margin.'.$attribute), $attribute);
+
+        }
     }
 
     protected function updateQuoteStateFromNewUser(Quote $quote): void

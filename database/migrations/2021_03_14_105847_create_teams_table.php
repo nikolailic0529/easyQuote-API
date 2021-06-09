@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class CreateTeamsTable extends Migration
@@ -25,10 +26,25 @@ class CreateTeamsTable extends Migration
             $table->softDeletes()->index();
         });
 
-        \Illuminate\Support\Facades\Artisan::call('db:seed', [
-            '--class' => \Database\Seeders\TeamSeeder::class,
-            '--force' => true
-        ]);
+        DB::transaction(function () {
+
+            DB::table('teams')->insertOrIgnore([
+                'id' => UT_RESCUE,
+                'team_name' => 'Rescue',
+                'is_system' => true,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            DB::table('teams')->insertOrIgnore([
+                'id' => UT_EPD_WW,
+                'team_name' => 'EPD Worldwide',
+                'is_system' => true,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+        });
     }
 
     /**

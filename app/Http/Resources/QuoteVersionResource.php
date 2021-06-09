@@ -5,8 +5,6 @@ namespace App\Http\Resources;
 use App\Http\Resources\ImportedRow\ImportedRowResource;
 use App\Http\Resources\TemplateRepository\TemplateResourceDesign;
 use App\Models\Quote\Quote;
-use App\Models\Template\QuoteTemplate;
-use App\Models\Template\TemplateField;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class QuoteVersionResource extends JsonResource
@@ -53,9 +51,10 @@ class QuoteVersionResource extends JsonResource
             'checkbox_status' => $this->activeVersionOrCurrent->checkbox_status,
             'closing_date' => optional($this->activeVersionOrCurrent->closing_date)->format(config('date.format_ui')),
             'additional_notes' => $this->activeVersionOrCurrent->additional_notes,
-            'list_price' => $this->activeVersionOrCurrent->list_price,
+            'list_price' => $this->asDecimal((float)$this->activeVersionOrCurrent->totalPrice),
             'calculate_list_price' => $this->activeVersionOrCurrent->calculate_list_price,
-            'buy_price' => $this->activeVersionOrCurrent->buy_price,
+            'buy_price_formatted' => $this->asDecimal((float)$this->activeVersionOrCurrent->buy_price),
+            'buy_price' => transform($this->activeVersionOrCurrent->buy_price, fn($value) => (float)$value),
             'group_description' => $this->activeVersionOrCurrent->group_description,
             'use_groups' => $this->activeVersionOrCurrent->use_groups && $this->activeVersionOrCurrent->has_group_description,
             'sort_group_description' => $this->activeVersionOrCurrent->sort_group_description,
@@ -97,5 +96,10 @@ class QuoteVersionResource extends JsonResource
             'created_at' => $this->activeVersionOrCurrent->created_at,
             'submitted_at' => $this->activeVersionOrCurrent->submitted_at
         ];
+    }
+
+    private function asDecimal(float $value): string
+    {
+        return number_format($value, 2);
     }
 }

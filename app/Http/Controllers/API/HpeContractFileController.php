@@ -22,9 +22,9 @@ class HpeContractFileController extends Controller
      * Store a newly uploaded hpe contract file.
      *
      * @param  StoreFile $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
-    public function __invoke(StoreFile $request)
+    public function __invoke(StoreFile $request): JsonResponse
     {
         return response()->json(
             $this->service->store($request->file('file')),

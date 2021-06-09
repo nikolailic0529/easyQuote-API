@@ -7,6 +7,7 @@ use App\Models\{Address,
     Quote\DistributionFieldColumn,
     Quote\WorldwideDistribution,
     Quote\WorldwideQuote,
+    Quote\WorldwideQuoteNote,
     Quote\WorldwideQuoteVersion,
     QuoteFile\DistributionRowsGroup,
     QuoteFile\ImportedRow,
@@ -91,6 +92,11 @@ class WorldwideQuoteVersionGuard
             $version->user_version_sequence_number = $this->resolveNewVersionNumberForActingUser($worldwideQuote, $actingUser);
         });
 
+        transform($replicatedVersionData->getReplicatedQuoteNote(), function (WorldwideQuoteNote $note) use ($actingUser, $worldwideQuote) {
+           $note->worldwideQuote()->associate($worldwideQuote);
+           $note->user()->associate($actingUser);
+        });
+
         return tap($replicatedVersion, function (WorldwideQuoteVersion $replicatedVersion) use ($quoteVersion, $actingUser, $worldwideQuote, $replicatedVersionData) {
             $this->persistReplicatedVersionData($replicatedVersionData);
 
@@ -122,6 +128,7 @@ class WorldwideQuoteVersionGuard
     public function persistReplicatedVersionData(ReplicatedVersionData $replicatedVersionData): void
     {
         $version = $replicatedVersionData->getReplicatedVersion();
+        $quoteNote = $replicatedVersionData->getReplicatedQuoteNote();
         $replicatedPackAssets = $replicatedVersionData->getReplicatedPackAssets();
         $replicatedDistributorQuotes = $replicatedVersionData->getReplicatedDistributorQuotes();
 
@@ -129,6 +136,7 @@ class WorldwideQuoteVersionGuard
         $versionContactPivots = $replicatedVersionData->getContactPivots();
 
         $distributorQuoteBatch = [];
+        $distributorVendorPivotBatch = [];
         $distributorAddressPivotBatch = [];
         $distributorContactPivotBatch = [];
         $mappingBatch = [];
@@ -144,11 +152,13 @@ class WorldwideQuoteVersionGuard
         foreach ($replicatedDistributorQuotes as $distributorQuoteData) {
             $distributorQuoteBatch[] = $distributorQuoteData->getDistributorQuote()->getAttributes();
 
+            $distributorVendorPivotBatch = array_merge($distributorVendorPivotBatch, $distributorQuoteData->getVendorPivots());
+
             $distributorAddressPivotBatch = array_merge($distributorAddressPivotBatch, $distributorQuoteData->getAddressPivots());
 
             $distributorContactPivotBatch = array_merge($distributorContactPivotBatch, $distributorQuoteData->getContactPivots());
 
-            $distributorMapping = array_map(fn(DistributionFieldColumn $fieldColumn) => $fieldColumn->getAttributes(), $distributorQuoteData->getMapping());
+            $distributorMapping = array_map(fn(DistributionFieldColumn $fieldColumn) => $fieldColumn->getAttributes(), array_values($distributorQuoteData->getMapping()));
 
             $mappingBatch = array_merge($mappingBatch, $distributorMapping);
 
@@ -183,6 +193,7 @@ class WorldwideQuoteVersionGuard
             $versionContactPivots,
             $versionAddressPivots,
             $distributorQuoteBatch,
+            $distributorVendorPivotBatch,
             $distributorAddressPivotBatch,
             $distributorContactPivotBatch,
             $distributorFileBatch,
@@ -194,9 +205,14 @@ class WorldwideQuoteVersionGuard
             $mappedRowBatch,
             $groupOfRowBatch,
             $rowOfGroupBatch,
-            $version
+            $version,
+            $quoteNote
         ) {
             $version->save();
+
+            if (!is_null($quoteNote)) {
+                $quoteNote->save();
+            }
 
             if (!empty($versionAddressPivots)) {
                 $this->connection->table($version->addresses()->getTable())
@@ -218,6 +234,11 @@ class WorldwideQuoteVersionGuard
 
             if (!empty($distributorQuoteBatch)) {
                 WorldwideDistribution::query()->insert($distributorQuoteBatch);
+            }
+
+            if (!empty($distributorVendorPivotBatch)) {
+                $this->connection->table((new WorldwideDistribution())->vendors()->getTable())
+                    ->insert($distributorVendorPivotBatch);
             }
 
             if (!empty($distributorAddressPivotBatch)) {

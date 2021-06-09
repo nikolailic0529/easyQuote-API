@@ -11,7 +11,9 @@ return [
             'qty',
             'price',
             'searchable',
-            'service_level_description'
+            'service_level_description',
+            'system_handle',
+            'pricing_document'
         ]
     ],
 

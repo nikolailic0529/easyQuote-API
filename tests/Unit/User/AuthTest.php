@@ -37,7 +37,9 @@ class AuthTest extends TestCase
 
         $response = $this->postJson(url('/api/auth/signin'), $attributes);
 
-        $response->assertOk()
+        $response
+//            ->dump()
+            ->assertOk()
             ->assertJsonStructure(['access_token', 'token_type', 'expires_at']);
     }
 

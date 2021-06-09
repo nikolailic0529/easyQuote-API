@@ -2,6 +2,7 @@
 
 namespace App\Traits\Quote;
 
+use App\Collections\MappedRows;
 use App\Models\{
     Quote\FieldColumn,
     QuoteFile\ImportableColumn,
@@ -21,9 +22,9 @@ use Illuminate\Support\Collection;
  */
 trait HasMapping
 {
-    protected ?Collection $computableRows = null;
+    protected ?MappedRows $computableRows = null;
 
-    protected ?Collection $renderableRows = null;
+    protected ?MappedRows $renderableRows = null;
 
     /**
      * Template Fields which will be displayed only for S4 Service.

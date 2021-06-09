@@ -118,6 +118,8 @@ class WorldwideDistributionState extends JsonResource
             'buy_price' => transform($this->buy_price, fn() => number_format((float)$this->buy_price, 2, '.', '')),
 
             'margin_percentage_after_custom_discount' => $this->transform($this->margin_percentage_after_custom_discount, fn() => number_format((float)$this->margin_percentage_after_custom_discount, 2, '.', '')),
+            'distribution_currency_quote_currency_exchange_rate_value' => transform($this->distribution_currency_quote_currency_exchange_rate_value, fn ($value) => (float)$value),
+            'distribution_currency_quote_currency_exchange_rate_margin' => transform($this->distribution_currency_quote_currency_exchange_rate_margin, fn ($value) => (float)$value),
 
             'summary' => $this->transform($this->summary, fn() => [
                 'total_price' => number_format((float)$this->total_price, 2, '.', ''),

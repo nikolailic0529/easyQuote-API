@@ -20,6 +20,13 @@ final class WorldwideQuoteAssetData extends DataTransferObject
      *
      * @var string
      */
+    public string $buy_currency_id;
+
+    /**
+     * @Constraints\Uuid
+     *
+     * @var string
+     */
     public string $vendor_id;
 
     /**
@@ -49,4 +56,10 @@ final class WorldwideQuoteAssetData extends DataTransferObject
     public ?string $service_level_description;
 
     public ?float $price;
+
+    public ?float $original_price;
+
+    public ?float $exchange_rate_margin;
+
+    public ?float $exchange_rate_value;
 }

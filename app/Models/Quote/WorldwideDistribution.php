@@ -54,6 +54,8 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string $buy_price
  * @property bool $calculate_list_price
  * @property bool $use_groups
+ * @property float|null $distribution_currency_quote_currency_exchange_rate_margin
+ * @property float|null $distribution_currency_quote_currency_exchange_rate_value
  * @property string|null $sort_rows_column
  * @property string|null $sort_rows_direction
  * @property string|null $sort_rows_groups_column
@@ -92,7 +94,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property float|null $margin_percentage
  * @property float|null $margin_percentage_after_custom_discount
  * @property float|null $final_margin
- * @property float|null $distribution_exchange_rate
+// * @property float|null $distribution_exchange_rate
  * @property float|null $applicable_discounts_value
  * @property-read Country|null $country
  * @property string|null $imported_at

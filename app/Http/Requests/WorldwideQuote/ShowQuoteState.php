@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\WorldwideQuote;
 
+use App\Models\Data\Currency;
 use App\Models\Quote\Discount\MultiYearDiscount;
 use App\Models\Quote\Discount\PrePayDiscount;
 use App\Models\Quote\Discount\PromotionalDiscount;
@@ -9,12 +10,12 @@ use App\Models\Quote\Discount\SND;
 use App\Models\Quote\DistributionFieldColumn;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
-use App\Models\QuoteFile\ImportedRow;
 use App\Models\Vendor;
 use App\Queries\DiscountQueries;
 use App\Services\WorldwideQuote\WorldwideDistributionCalc;
 use App\Services\WorldwideQuote\WorldwideQuoteCalc;
 use App\Services\WorldwideQuote\WorldwideQuoteDataMapper;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ShowQuoteState extends FormRequest
@@ -71,17 +72,6 @@ class ShowQuoteState extends FormRequest
             $this->container->call([$this, 'loadReferencedAddressDataOfAddressesWhenLoaded'], ['model' => $worldwideQuote]);
             $this->container->call([$this, 'loadReferencedContactDataOfContactsWhenLoaded'], ['model' => $worldwideQuote]);
         });
-    }
-
-    public function includeWorldwideDistributionsMappingRow(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper)
-    {
-        foreach ($model->activeVersion->worldwideDistributions as $distributorQuote) {
-
-            $distributorQuote->setRelation('mappingRow', new ImportedRow([
-                'columns_data' => $dataMapper->collectMappingColumnsOfDistributorQuote($distributorQuote)
-            ]));
-
-        }
     }
 
     public function loadReferencedAddressDataOfAddressesWhenLoaded(WorldwideQuote $model)
@@ -169,9 +159,9 @@ class ShowQuoteState extends FormRequest
     public function includeVendorsLogo(WorldwideQuote $model)
     {
         $model->activeVersion->worldwideDistributions->each(function (WorldwideDistribution $distribution) {
-           $distribution->vendors->each(function (Vendor $vendor) {
-              $vendor->setAttribute('logo', $vendor->logo);
-           });
+            $distribution->vendors->each(function (Vendor $vendor) {
+                $vendor->setAttribute('logo', $vendor->logo);
+            });
         });
     }
 
@@ -194,19 +184,52 @@ class ShowQuoteState extends FormRequest
 
         $quoteTemplate = $model->activeVersion->quoteTemplate;
 
-        $model->activeVersion->worldwideDistributions->each(function (WorldwideDistribution $distribution) use ($quoteTemplate, $dataMapper) {
+        $includesOriginalPrice = value(function (): bool {
+            foreach ($this->input('include') ?? [] as $include) {
+                if ($include === 'worldwide_distributions.mapping.original_price') {
+                    return true;
+                }
+            }
+
+            return false;
+        });
+
+        $model->activeVersion->worldwideDistributions->each(function (WorldwideDistribution $distribution) use ($quoteTemplate, $dataMapper, $includesOriginalPrice) {
 
             if (!$distribution->relationLoaded('mapping')) {
                 return;
             }
 
-            $distribution->mapping->each(function (DistributionFieldColumn $column) use ($quoteTemplate, $dataMapper) {
+            $mapping = [];
+
+
+            foreach ($distribution->mapping as $column) {
+                /** @var DistributionFieldColumn $column */
 
                 $column->setAttribute('is_required', $dataMapper->isMappingFieldRequired($column->template_field_name));
 
                 $column->setAttribute('template_field_header', $dataMapper->mapTemplateFieldHeader($column->template_field_name, $quoteTemplate) ?? $column->template_field_header);
 
-            });
+                if ($includesOriginalPrice && $column->template_field_name === 'price') {
+                    $mapping[] = tap(new DistributionFieldColumn(), function (DistributionFieldColumn $distributionFieldColumn) use ($column, $distribution) {
+                        $distributionFieldColumn->worldwide_distribution_id = $distribution->getKey();
+                        $distributionFieldColumn->template_field_id = null;
+                        $distributionFieldColumn->importable_column_id = null;
+                        $distributionFieldColumn->is_default_enabled = $column->is_default_enabled;
+                        $distributionFieldColumn->is_editable = $column->is_editable;
+                        $distributionFieldColumn->is_required = $column->is_required;
+                        $distributionFieldColumn->sort = null;
+                        $distributionFieldColumn->template_field_name = 'original_price';
+                        $distributionFieldColumn->template_field_header = 'Original Price';
+                    });
+
+                    $column->is_editable = false;
+                }
+
+                $mapping[] = $column;
+            }
+
+            $distribution->setRelation('mapping', new Collection($mapping));
 
         });
 
@@ -219,10 +242,14 @@ class ShowQuoteState extends FormRequest
     {
         if ($model->activeVersion->relationLoaded('assets')) {
 
+            $model->activeVersion->assets->loadMissing('buyCurrency');
+
             foreach ($model->activeVersion->assets as $asset) {
                 if ($asset->relationLoaded('machineAddress')) {
                     $asset->setAttribute('machine_address_string', WorldwideQuoteDataMapper::formatMachineAddressToString($asset->machineAddress));
                 }
+
+                $asset->setAttribute('buy_currency_code', transform($asset->buyCurrency, fn(Currency $currency) => $currency->code));
             }
 
         }

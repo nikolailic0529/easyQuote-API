@@ -105,6 +105,7 @@ abstract class ExchangeRateService implements ManagesExchangeRates
         $exchangeRateValue = ExchangeRate::query()
             ->where('currency_code', $currencyCode)
             ->where('base_currency', $this->baseCurrency())
+            ->orderBy('date', 'desc')
             ->when(!is_null($dateTime), function (Builder $builder) use ($dateTime) {
                 $carbon = Carbon::createFromTimestamp($dateTime->getTimestamp());
 

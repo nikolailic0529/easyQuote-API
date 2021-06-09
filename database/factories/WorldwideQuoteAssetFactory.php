@@ -8,8 +8,10 @@ use Faker\Generator as Faker;
 $factory->define(WorldwideQuoteAsset::class, function (Faker $faker) {
     $address = factory(\App\Models\Address::class)->create();
     $vendor = \App\Models\Vendor::query()->whereIn('short_code', ['HPE', 'LEN'])->first();
+    $currency = \App\Models\Data\Currency::query()->where('code', 'GBP')->first();
 
     return [
+        'buy_currency_id' => $currency->getKey(),
         'vendor_id' => $vendor->getKey(),
         'machine_address_id' => $address->getKey(),
         'country' => $faker->countryCode,

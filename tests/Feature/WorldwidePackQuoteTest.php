@@ -387,6 +387,7 @@ class WorldwidePackQuoteTest extends TestCase
         $machineAddress = factory(Address::class)->create();
 
         $this->postJson('api/ww-quotes/'.$quote->getKey().'/assets', [
+            'buy_currency_id' => Currency::query()->value('id'),
             'vendor_id' => Vendor::query()->value('id'),
             'machine_address_id' => $machineAddress->getKey(),
             'country' => 'GB',
@@ -975,10 +976,15 @@ class WorldwidePackQuoteTest extends TestCase
             'completeness' => PackQuoteStage::DISCOUNT,
             'margin_value' => 5,
             'custom_discount' => 2,
+            'quote_currency_id' => Currency::query()->where('code', 'GBP')->value('id')
 //            'sn_discount_id' => $snDiscount->getKey()
         ]);
 
-        factory(WorldwideQuoteAsset::class, 20)->create(['worldwide_quote_id' => $quote->activeVersion->getKey(), 'worldwide_quote_type' => $quote->activeVersion->getMorphClass(), 'price' => 150]);
+        factory(WorldwideQuoteAsset::class, 20)->create([
+            'worldwide_quote_id' => $quote->activeVersion->getKey(), 'worldwide_quote_type' => $quote->activeVersion->getMorphClass(), 'price' => 150,
+            'buy_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
+            'is_selected' => true
+        ]);
 
         $this->authenticateApi();
 
@@ -1553,9 +1559,15 @@ class WorldwidePackQuoteTest extends TestCase
             'activated_at' => now(),
         ]);
 
-        $quote->activeVersion->update(['buy_price' => 2000.00]);
+        $quote->activeVersion->update(['buy_price' => 2000.00, 'quote_currency_id' => Currency::query()->where('code', 'GBP')->value('id')]);
 
-        factory(WorldwideQuoteAsset::class)->create(['worldwide_quote_id' => $quote->activeVersion->getKey(), 'worldwide_quote_type' => $quote->activeVersion->getMorphClass(), 'price' => 3000.00]);
+        factory(WorldwideQuoteAsset::class)->create([
+            'worldwide_quote_id' => $quote->activeVersion->getKey(),
+            'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
+            'price' => 3000.00,
+            'buy_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
+            'is_selected' => true
+        ]);
 
         $this->authenticateApi();
 
@@ -1601,12 +1613,15 @@ class WorldwidePackQuoteTest extends TestCase
         $quote->activeVersion->update([
             'buy_price' => 2000.00,
             'tax_value' => 10.00,
+            'quote_currency_id' => Currency::query()->where('code', 'GBP')->value('id')
         ]);
 
         factory(WorldwideQuoteAsset::class)->create([
             'worldwide_quote_id' => $quote->activeVersion->getKey(),
             'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
-            'price' => 3000.00
+            'price' => 3000.00,
+            'buy_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
+            'is_selected' => true,
         ]);
 
         $this->authenticateApi();
@@ -1655,12 +1670,15 @@ class WorldwidePackQuoteTest extends TestCase
         $quote->activeVersion->update([
             'buy_price' => 2000.00,
             'tax_value' => 10.00,
+            'quote_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
         ]);
 
         factory(WorldwideQuoteAsset::class)->create([
             'worldwide_quote_id' => $quote->activeVersion->getKey(),
             'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
-            'price' => 3000.00
+            'price' => 3000.00,
+            'buy_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
+            'is_selected' => true
         ]);
 
         $this->authenticateApi();

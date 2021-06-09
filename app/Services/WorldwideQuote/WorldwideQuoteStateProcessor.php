@@ -2,8 +2,6 @@
 
 namespace App\Services\WorldwideQuote;
 
-use App\Helpers\PipelineShortCodeResolver;
-use App\Helpers\SpaceShortCodeResolver;
 use App\Contracts\{Services\ManagesExchangeRates,
     Services\ProcessesWorldwideDistributionState,
     Services\ProcessesWorldwideQuoteState};
@@ -49,6 +47,8 @@ use App\Events\{WorldwideQuote\ProcessedImportOfDistributorQuotes,
     WorldwideQuote\WorldwideQuoteSubmitted,
     WorldwideQuote\WorldwideQuoteUnraveled,
     WorldwideQuote\WorldwideQuoteVersionDeleted};
+use App\Helpers\PipelineShortCodeResolver;
+use App\Helpers\SpaceShortCodeResolver;
 use App\Jobs\IndexSearchableEntity;
 use App\Models\{Address,
     Contact,
@@ -56,6 +56,7 @@ use App\Models\{Address,
     Opportunity,
     Quote\WorldwideDistribution,
     Quote\WorldwideQuote,
+    Quote\WorldwideQuoteNote,
     Quote\WorldwideQuoteVersion,
     User};
 use App\Services\Exceptions\ValidationException;
@@ -155,6 +156,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                     $version->completeness = $stage->stage;
                     $version->quote_expiry_date = $stage->quote_expiry_date->toDateString();
                     $version->user_version_sequence_number = 1;
+
+                    $version->payment_terms = $opportunity->customer_status;
 
                     if ($quote->contract_type_id === CT_PACK) {
                         $version->buy_price = $opportunity->purchase_price;
@@ -340,7 +343,6 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
             $quote->company()->associate($stage->company_id);
             $quote->quoteCurrency()->associate($stage->quote_currency_id);
-            $quote->buyCurrency()->associate($stage->buy_currency_id);
             $quote->quoteTemplate()->associate($stage->quote_template_id);
             $quote->buy_price = $stage->buy_price;
             $quote->quote_expiry_date = $stage->quote_expiry_date->toDateString();
@@ -368,6 +370,33 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                     $this->actingUser
                 )
             );
+        });
+    }
+
+    private function cloneBaseQuoteEntityFromVersion(WorldwideQuoteVersion $quote): WorldwideQuote
+    {
+        return tap(new WorldwideQuote(), function (WorldwideQuote $baseQuote) use ($quote) {
+            $baseQuote->setRawAttributes($quote->worldwideQuote->getRawOriginal());
+            $oldVersion = (new WorldwideQuoteVersion())->setRawAttributes($quote->getRawOriginal());
+
+            $oldVersion->setRelation('addresses', $quote->addresses);
+            $oldVersion->setRelation('contacts', $quote->contacts);
+
+            $oldDistributorQuotes = $quote->worldwideDistributions->map(function (WorldwideDistribution $distributorQuote) {
+
+                return tap(new WorldwideDistribution(), function (WorldwideDistribution $clonedDistributorQuote) use ($distributorQuote) {
+                    $clonedDistributorQuote->setRawAttributes($distributorQuote->getRawOriginal());
+
+                    $clonedDistributorQuote->setRelation('vendors', $distributorQuote->vendors);
+                    $clonedDistributorQuote->setRelation('addresses', $distributorQuote->addresses);
+                    $clonedDistributorQuote->setRelation('contacts', $distributorQuote->contacts);
+                    $clonedDistributorQuote->setRelation('mapping', $distributorQuote->mapping);
+                });
+
+            });
+
+            $baseQuote->setRelation('activeVersion', $oldVersion);
+            $oldVersion->setRelation('worldwideDistributions', $oldDistributorQuotes);
         });
     }
 
@@ -676,6 +705,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $model->buy_price = $distributionData->buy_price;
             $model->calculate_list_price = $distributionData->calculate_list_price;
             $model->distribution_expiry_date = $distributionData->distribution_expiry_date;
+            $model->distribution_currency_quote_currency_exchange_rate_margin = $distributionData->distribution_currency_quote_currency_exchange_rate_margin;
+            $model->distribution_currency_quote_currency_exchange_rate_value = $distributionData->distribution_currency_quote_currency_exchange_rate_value;
 
             $lock->block(30, function () use ($model, $distributionData) {
 
@@ -694,20 +725,18 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         // Updating computed price of mapped rows of the quote distributions.
         $distributions = $quoteVersion->worldwideDistributions()
             ->with('distributionCurrency')
-            ->get(['id', 'worldwide_quote_id', 'distributor_file_id', 'distribution_currency_id', 'distribution_exchange_rate', 'created_at', 'updated_at']);
+            ->get(['id', 'worldwide_quote_id', 'distributor_file_id', 'distribution_currency_id', 'distribution_exchange_rate', 'distribution_currency_quote_currency_exchange_rate_value', 'distribution_currency_quote_currency_exchange_rate_margin', 'created_at', 'updated_at']);
 
         $distributions->each(function (WorldwideDistribution $distribution) use ($quoteVersion, $distributionsDataDictionary) {
-            $distribution->distribution_exchange_rate = with($distribution, function (WorldwideDistribution $distribution) use ($quoteVersion) {
+            $appliedExchangeRateValue = with($distribution, function (WorldwideDistribution $distribution) use ($quoteVersion) {
                 if ($quoteVersion->quoteCurrency->is($distribution->distributionCurrency)) {
                     return 1.0;
                 }
 
-                $rateValue = $this->exchangeRateService->getTargetRate(
-                    $distribution->distributionCurrency ?? new Currency(),
-                    $quoteVersion->quoteCurrency
-                );
+                $exchangeRateValue = (float)$distribution->distribution_currency_quote_currency_exchange_rate_value;
+                $exchangeRateMargin = (float)($distribution->distribution_currency_quote_currency_exchange_rate_margin ?? 0.0) / 100;
 
-                return $rateValue + ($rateValue * $quoteVersion->exchange_rate_margin / 100);
+                return $exchangeRateValue + ($exchangeRateValue * $exchangeRateMargin);
             });
 
 
@@ -715,14 +744,12 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                 Lock::UPDATE_WWDISTRIBUTION($distribution->getKey()),
                 10
             );
+            +
+            $lock->block(30, function () use ($distribution, $appliedExchangeRateValue) {
 
-            $lock->block(30, function () use ($distribution) {
+                $this->connection->transaction(function () use ($distribution, $appliedExchangeRateValue) {
 
-                $this->connection->transaction(function () use ($distribution) {
-
-                    $distribution->mappedRows()->update(['price' => DB::raw("original_price * $distribution->distribution_exchange_rate")]);
-
-                    $distribution->save();
+                    $distribution->mappedRows()->update(['price' => DB::raw("original_price * $appliedExchangeRateValue")]);
 
                 });
 
@@ -915,12 +942,28 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $quote->closing_date = $stage->quote_closing_date->toDateString();
             $quote->additional_notes = $stage->additional_notes;
 
+            /** @var WorldwideQuoteNote $quoteNote */
+            $quoteNote = tap($quote->note()->firstOrNew(), function (WorldwideQuoteNote $note) use ($quote, $stage) {
+                if (false === $note->exists) {
+                    $note->{$note->getKeyName()} = (string)Uuid::generate(4);
+                }
+
+                $note->user()->associate($quote->user_id);
+                $note->worldwideQuote()->associate($quote->worldwide_quote_id);
+                $note->worldwideQuoteVersion()->associate($quote);
+                $note->text = $stage->additional_notes;
+            });
+
+            $quote->setRelation('note', $quoteNote);
+
             $lock->block(30, function () use ($quote) {
 
                 $this->connection->transaction(function () use ($quote) {
                     $quote->save();
 
                     $quote->worldwideQuote->save();
+
+                    $quote->note->save();
                 });
 
             });
@@ -950,12 +993,28 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $quote->closing_date = $stage->quote_closing_date->toDateString();
             $quote->additional_notes = $stage->additional_notes;
 
+            /** @var WorldwideQuoteNote $quoteNote */
+            $quoteNote = tap($quote->note()->firstOrNew(), function (WorldwideQuoteNote $note) use ($quote, $stage) {
+                if (false === $note->exists) {
+                    $note->{$note->getKeyName()} = (string)Uuid::generate(4);
+                }
+
+                $note->user()->associate($quote->user_id);
+                $note->worldwideQuote()->associate($quote->worldwide_quote_id);
+                $note->worldwideQuoteVersion()->associate($quote);
+                $note->text = $stage->additional_notes;
+            });
+
+            $quote->setRelation('note', $quoteNote);
+
             $lock->block(30, function () use ($quote) {
 
                 $this->connection->transaction(function () use ($quote) {
                     $quote->save();
 
                     $quote->worldwideQuote->save();
+
+                    $quote->note->save();
                 });
 
             });
@@ -1039,6 +1098,41 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
         }
 
+        $quoteCurrency = Currency::query()->where('code', $opportunity->purchase_price_currency_code)->first();
+        $buyCurrency = Currency::query()->where('code', $opportunity->purchase_price_currency_code)->first();
+
+        // Populate attributes from opportunity to each version of the quote entity.
+        foreach ($quote->versions as $version) {
+
+            $version->payment_terms = $opportunity->customer_status;
+            $version->buy_price = $opportunity->purchase_price;
+
+            $version->quoteCurrency()->associate(
+                $quoteCurrency
+            );
+
+            $version->buyCurrency()->associate(
+                $buyCurrency
+            );
+
+        }
+
+        $lock = $this->lockProvider->lock(Lock::UPDATE_WWQUOTE($quote->getKey()), 10);
+
+        $lock->block(30, function () use ($quote) {
+
+            $this->connection->transaction(function () use ($quote) {
+
+                foreach ($quote->versions as $version) {
+
+                    $version->save();
+
+                }
+
+            });
+
+        });
+
         /** @var Collection $addressModelsOfPrimaryAccount */
         $addressModelsOfPrimaryAccount = value(function () use ($primaryAccount): Collection {
 
@@ -1067,24 +1161,6 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         $defaultContactModelKeysOfPrimaryAccount = $contactModelsOfPrimaryAccount->filter(fn(Contact $contact) => $contact->pivot->is_default)->modelKeys();
 
         if ($quote->contract_type_id === CT_PACK) {
-
-            $quoteCurrency = Currency::query()->where('code', $opportunity->purchase_price_currency_code)->first();
-            $buyCurrency = Currency::query()->where('code', $opportunity->purchase_price_currency_code)->first();
-
-            foreach ($quote->versions as $version) {
-
-                $version->buy_price = $opportunity->purchase_price;
-
-                $version->quoteCurrency()->associate(
-                    $quoteCurrency
-                );
-
-                $version->buyCurrency()->associate(
-                    $buyCurrency
-                );
-
-            }
-
             $lock = $this->lockProvider->lock(Lock::UPDATE_WWQUOTE($quote->getKey()), 10);
 
             $lock->block(30,
@@ -1276,6 +1352,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         $replicatedVersionData = (new WorldwideQuoteReplicator())
             ->getReplicatedVersionData($quote->activeVersion);
 
+        /** @var WorldwideQuoteVersion $replicatedVersion */
         $replicatedVersion = tap($replicatedVersionData->getReplicatedVersion(), function (WorldwideQuoteVersion $version) use ($actingUser) {
             $version->worldwideQuote()->disassociate();
             $version->user()->associate($actingUser);
@@ -1294,6 +1371,13 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $replicatedVersion->worldwideQuote()->associate($replicatedQuote);
             $replicatedQuote->submitted_at = null;
 
+            $quoteNote = $replicatedVersion->note;
+
+            if (!is_null($quoteNote)) {
+                $quoteNote->user()->associate($actingUser);
+                $quoteNote->worldwideQuote()->associate($replicatedQuote);
+            }
+
             $replicatedVersion->unsetRelation('worldwideQuote');
 
             $lock = $this->lockProvider->lock(
@@ -1301,42 +1385,19 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                 10
             );
 
-            $lock->block(30, function () use ($replicatedVersion, $replicatedQuote) {
+            $lock->block(30, function () use ($replicatedVersion, $replicatedQuote, $quoteNote) {
 
-                $this->connection->transaction(function () use ($replicatedVersion, $replicatedQuote) {
+                $this->connection->transaction(function () use ($replicatedVersion, $replicatedQuote, $quoteNote) {
                     $replicatedQuote->save();
 
                     $replicatedVersion->save();
+
+                    if (!is_null($quoteNote)) {
+                        $quoteNote->save();
+                    }
                 });
 
             });
-        });
-    }
-
-    private function cloneBaseQuoteEntityFromVersion(WorldwideQuoteVersion $quote): WorldwideQuote
-    {
-        return tap(new WorldwideQuote(), function (WorldwideQuote $baseQuote) use ($quote) {
-            $baseQuote->setRawAttributes($quote->worldwideQuote->getRawOriginal());
-            $oldVersion = (new WorldwideQuoteVersion())->setRawAttributes($quote->getRawOriginal());
-
-            $oldVersion->setRelation('addresses', $quote->addresses);
-            $oldVersion->setRelation('contacts', $quote->contacts);
-
-            $oldDistributorQuotes = $quote->worldwideDistributions->map(function (WorldwideDistribution $distributorQuote) {
-
-                return tap(new WorldwideDistribution(), function (WorldwideDistribution $clonedDistributorQuote) use ($distributorQuote) {
-                    $clonedDistributorQuote->setRawAttributes($distributorQuote->getRawOriginal());
-
-                    $clonedDistributorQuote->setRelation('vendors', $distributorQuote->vendors);
-                    $clonedDistributorQuote->setRelation('addresses', $distributorQuote->addresses);
-                    $clonedDistributorQuote->setRelation('contacts', $distributorQuote->contacts);
-                    $clonedDistributorQuote->setRelation('mapping', $distributorQuote->mapping);
-                });
-
-            });
-
-            $baseQuote->setRelation('activeVersion', $oldVersion);
-            $oldVersion->setRelation('worldwideDistributions', $oldDistributorQuotes);
         });
     }
 

@@ -2,7 +2,6 @@
 
 namespace App\Services\WorldwideQuote;
 
-use App\Services\ExchangeRate\CurrencyConverter;
 use App\DTO\{Discounts\ApplicablePredefinedDiscounts,
     Discounts\ImmutableCustomDiscountData,
     Discounts\ImmutableMultiYearDiscountData,
@@ -32,6 +31,8 @@ use App\Models\{Quote\Discount\MultiYearDiscount,
     Quote\WorldwideDistribution,
     Quote\WorldwideQuote};
 use App\Queries\{WorldwideDistributionQueries, WorldwideQuoteQueries};
+use App\Services\ExchangeRate\CurrencyConverter;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pipeline\Pipeline;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
@@ -87,6 +88,34 @@ class WorldwideQuoteCalc
         $this->pipeline = $pipeline;
     }
 
+    public static function multiYearDiscountToImmutableMultiYearDiscountData(MultiYearDiscount $discount): ImmutableMultiYearDiscountData
+    {
+        return new ImmutableMultiYearDiscountData(
+            new MultiYearDiscountData(['value' => (float)data_get($discount->durations, 'duration.value')])
+        );
+    }
+
+    public static function prePayDiscountToImmutablePrePayDiscountData(PrePayDiscount $discount): ImmutablePrePayDiscountData
+    {
+        return new ImmutablePrePayDiscountData(
+            new PrePayDiscountData(['value' => (float)data_get($discount->durations, 'duration.value')])
+        );
+    }
+
+    public static function promotionalDiscountToImmutablePromotionalDiscountData(PromotionalDiscount $discount): ImmutablePromotionalDiscountData
+    {
+        return new ImmutablePromotionalDiscountData(
+            new PromotionalDiscountData(['value' => (float)$discount->value, 'minimum_limit' => (float)$discount->minimum_limit])
+        );
+    }
+
+    public static function snDiscountToImmutableSpecialNegotiationData(SND $discount): ImmutableSpecialNegotiationDiscountData
+    {
+        return new ImmutableSpecialNegotiationDiscountData(
+            new SpecialNegotiationDiscountData(['value' => (float)$discount->value])
+        );
+    }
+
     public function calculatePriceSummaryOfQuote(WorldwideQuote $quote): ImmutablePriceSummaryData
     {
         if ($quote->contract_type_id === CT_PACK) {
@@ -98,19 +127,6 @@ class WorldwideQuoteCalc
         }
 
         throw new \RuntimeException('Contract Type of the Quote either is not set or unsupported to compute price summary.');
-    }
-
-    protected function calculatePackQuoteBuyPrice(WorldwideQuote $quote): float
-    {
-        if ($quote->activeVersion->quoteCurrency->exists === false || $quote->activeVersion->buyCurrency->exists === false) {
-            return (float)$quote->activeVersion->buy_price;
-        }
-
-        return $this->currencyConverter->convertCurrencies(
-          $quote->activeVersion->buyCurrency->code,
-          $quote->activeVersion->quoteCurrency->code,
-            (float)$quote->activeVersion->buy_price
-        );
     }
 
     protected function calculatePriceSummaryOfPackQuote(WorldwideQuote $quote): ImmutablePriceSummaryData
@@ -161,6 +177,169 @@ class WorldwideQuoteCalc
             'raw_margin' => $rawMarginPercentage,
             'final_margin' => $finalMarginPercentage
         ]);
+    }
+
+    public function calculatePackQuoteTotalPrice(WorldwideQuote $quote): float
+    {
+        return (float)$quote->activeVersion->assets()
+            ->getQuery()
+            ->where('is_selected', true)
+            ->sum('price');
+    }
+
+    protected function calculatePackQuoteBuyPrice(WorldwideQuote $quote): float
+    {
+        if ($quote->activeVersion->quoteCurrency->exists === false || $quote->activeVersion->buyCurrency->exists === false) {
+            return (float)$quote->activeVersion->buy_price;
+        }
+
+        return $this->currencyConverter->convertCurrencies(
+            $quote->activeVersion->buyCurrency->code,
+            $quote->activeVersion->quoteCurrency->code,
+            (float)$quote->activeVersion->buy_price,
+            Carbon::instance($quote->{$quote->getCreatedAtColumn()})
+        );
+    }
+
+    public function calculateMarginPercentage(float $totalPrice, float $buyPrice): float
+    {
+        if ($totalPrice === 0.0) {
+            return 0;
+        }
+
+        return (($totalPrice - $buyPrice) / $totalPrice) * 100;
+    }
+
+    public function calculateTotalPriceAfterBottomUp(float $totalPrice, float $buyPrice, float $countryMarginValue, float $customDiscountValue): float
+    {
+        if ($totalPrice === 0.0) {
+            return 0.0;
+        }
+
+        $initialMarginPercentage = (($totalPrice - $buyPrice) / $totalPrice) * 100;
+
+        $marginFloat = ($initialMarginPercentage + ($countryMarginValue - $customDiscountValue)) / 100;
+
+        $marginDivider = $marginFloat >= 1
+            ? 1 / ($marginFloat + 1)
+            : 1 - $marginFloat;
+
+        return $buyPrice / $marginDivider;
+    }
+
+    public function predefinedQuoteDiscountsToApplicableDiscounts(WorldwideQuote $quote): ApplicablePredefinedDiscounts
+    {
+        return new ApplicablePredefinedDiscounts([
+            'multi_year_discount' => transform($quote->activeVersion->multiYearDiscount, [static::class, 'multiYearDiscountToImmutableMultiYearDiscountData']),
+            'pre_pay_discount' => transform($quote->activeVersion->prePayDiscount, [static::class, 'prePayDiscountToImmutablePrePayDiscountData']),
+            'promotional_discount' => transform($quote->activeVersion->promotionalDiscount, [static::class, 'promotionalDiscountToImmutablePromotionalDiscountData']),
+            'special_negotiation_discount' => transform($quote->activeVersion->snDiscount, [static::class, 'snDiscountToImmutableSpecialNegotiationData']),
+        ]);
+    }
+
+    public function calculateTotalPriceAfterPredefinedDiscounts(float $totalPrice, ApplicablePredefinedDiscounts $applicableDiscounts): float
+    {
+        $pipes = [];
+
+        if (!is_null($applicableDiscounts->multi_year_discount)) {
+            $pipes[] = $this->calculatePriceAfterMultiYearDiscountPipe(
+                $applicableDiscounts->multi_year_discount,
+            );
+        }
+
+        if (!is_null($applicableDiscounts->pre_pay_discount)) {
+            $pipes[] = $this->calculatePriceAfterPrePayDiscountPipe(
+                $applicableDiscounts->pre_pay_discount,
+            );
+        }
+
+        if (!is_null($applicableDiscounts->promotional_discount)) {
+            $pipes[] = $this->calculatePriceAfterPromotionalDiscountPipe(
+                $applicableDiscounts->promotional_discount,
+            );
+        }
+
+        if (!is_null($applicableDiscounts->special_negotiation_discount)) {
+            $pipes[] = $this->calculatePriceAfterSpecialNegotiationDiscountPipe(
+                $applicableDiscounts->special_negotiation_discount,
+            );
+        }
+
+        return (float)$this->pipeline
+            ->send($totalPrice)
+            ->through($pipes)
+            ->thenReturn();
+    }
+
+    private function calculatePriceAfterMultiYearDiscountPipe(ImmutableMultiYearDiscountData $discountData): \Closure
+    {
+        return function (float $totalPrice, \Closure $next) use ($discountData) {
+            $discountPercentage = $discountData->value / 100;
+
+            $discountData->setApplicableValue($totalPrice * $discountPercentage);
+
+            $totalPrice = $totalPrice - $discountData->applicableValue;
+
+            return $next($totalPrice);
+        };
+    }
+
+    private function calculatePriceAfterPrePayDiscountPipe(ImmutablePrePayDiscountData $discountData): \Closure
+    {
+        return function (float $totalPrice, \Closure $next) use ($discountData) {
+            $discountPercentage = $discountData->value / 100;
+
+            $discountData->setApplicableValue($totalPrice * $discountPercentage);
+
+            $totalPrice = $totalPrice - $discountData->applicableValue;
+
+            return $next($totalPrice);
+        };
+    }
+
+    private function calculatePriceAfterPromotionalDiscountPipe(ImmutablePromotionalDiscountData $discountData): \Closure
+    {
+        return function (float $totalPrice, \Closure $next) use ($discountData) {
+            if ($discountData->minimum_limit > $totalPrice) {
+                return $next($totalPrice);
+            }
+
+            $discountPercentage = $discountData->value / 100;
+
+            $discountData->setApplicableValue($totalPrice * $discountPercentage);
+
+            $totalPrice = $totalPrice - $discountData->applicableValue;
+
+            return $next($totalPrice);
+        };
+    }
+
+    private function calculatePriceAfterSpecialNegotiationDiscountPipe(ImmutableSpecialNegotiationDiscountData $discountData): \Closure
+    {
+        return function (float $totalPrice, \Closure $next) use ($discountData) {
+            $discountPercentage = $discountData->value / 100;
+
+            $discountData->setApplicableValue($totalPrice * $discountPercentage);
+
+            $totalPrice = $totalPrice - $discountData->applicableValue;
+
+            return $next($totalPrice);
+        };
+    }
+
+    protected function calculateApplicableDiscountsValue(ApplicablePredefinedDiscounts $applicableDiscounts): float
+    {
+        return array_sum([
+            (float)transform($applicableDiscounts->multi_year_discount, fn(ImmutableMultiYearDiscountData $discountData) => $discountData->applicableValue),
+            (float)transform($applicableDiscounts->pre_pay_discount, fn(ImmutablePrePayDiscountData $discountData) => $discountData->applicableValue),
+            (float)transform($applicableDiscounts->promotional_discount, fn(ImmutablePromotionalDiscountData $discountData) => $discountData->applicableValue),
+            (float)transform($applicableDiscounts->special_negotiation_discount, fn(ImmutableSpecialNegotiationDiscountData $discountData) => $discountData->applicableValue),
+        ]);
+    }
+
+    public function calculateTotalPriceAfterTax(float $totalPrice, float $taxValue): float
+    {
+        return $totalPrice + $taxValue;
     }
 
     protected function calculatePriceSummaryOfContractQuote(WorldwideQuote $quote): ImmutablePriceSummaryData
@@ -226,33 +405,6 @@ class WorldwideQuoteCalc
 
             return $totalPrice + $distributionTotalPrice;
         }, 0.0);
-    }
-
-    public function calculatePackQuoteTotalPrice(WorldwideQuote $quote): float
-    {
-        return (float)$quote->activeVersion->assets()->sum('price');
-    }
-
-    public function calculateTotalPriceAfterBottomUp(float $totalPrice, float $buyPrice, float $countryMarginValue, float $customDiscountValue): float
-    {
-        if ($totalPrice === 0.0) {
-            return 0.0;
-        }
-
-        $initialMarginPercentage = (($totalPrice - $buyPrice) / $totalPrice) * 100;
-
-        $marginFloat = ($initialMarginPercentage + ($countryMarginValue - $customDiscountValue)) / 100;
-
-        $marginDivider = $marginFloat >= 1
-            ? 1 / ($marginFloat + 1)
-            : 1 - $marginFloat;
-
-        return $buyPrice / $marginDivider;
-    }
-
-    public function calculateTotalPriceAfterTax(float $totalPrice, float $taxValue): float
-    {
-        return $totalPrice + $taxValue;
     }
 
     public function calculateContractQuotePriceSummaryAfterCountryMarginTax(WorldwideQuote $quote, DistributorQuoteCountryMarginTaxCollection $collection): ContractQuotePriceSummaryData
@@ -515,217 +667,6 @@ class WorldwideQuoteCalc
         return $priceSummary;
     }
 
-    public function calculatePackQuotePriceSummaryAfterCountryMarginTax(WorldwideQuote $quote, ImmutableMarginTaxData $marginTaxData): PackQuotePriceSummaryData
-    {
-        $quoteTotalPrice = $this->calculatePackQuoteTotalPrice($quote);
-
-        $buyPrice = $this->calculatePackQuoteBuyPrice($quote);
-
-        $totalPriceAfterMargin = $this->calculateTotalPriceAfterBottomUp(
-            $quoteTotalPrice,
-            $buyPrice,
-            (float)$marginTaxData->margin_value,
-            (float)$quote->activeVersion->custom_discount
-        );
-
-        $totalPriceAfterMarginWithoutCustomDiscount = $this->calculateTotalPriceAfterBottomUp(
-            $quoteTotalPrice,
-            $buyPrice,
-            (float)$marginTaxData->margin_value,
-            0.0
-        );
-
-        $applicableDiscounts = $this->predefinedQuoteDiscountsToApplicableDiscounts($quote);
-
-        $totalPriceAfterDiscounts = (float)$this->calculateTotalPriceAfterPredefinedDiscounts($totalPriceAfterMargin, $applicableDiscounts);
-
-        $quoteMarginValue = $this->calculateMarginPercentage($totalPriceAfterDiscounts, $buyPrice);
-
-        $finalTotalPrice = $this->calculateTotalPriceAfterTax($totalPriceAfterDiscounts, (float)$marginTaxData->tax_value);
-
-        $quotePriceSummary = PriceSummaryData::immutable([
-            'total_price' => $quoteTotalPrice,
-            'total_price_after_margin' => $totalPriceAfterMarginWithoutCustomDiscount,
-            'final_total_price' => $finalTotalPrice,
-            'final_total_price_excluding_tax' => $totalPriceAfterDiscounts,
-            'buy_price' => $buyPrice,
-            'final_margin' => $quoteMarginValue
-        ]);
-
-        return new PackQuotePriceSummaryData([
-            'worldwide_quote_id' => $quote->getKey(),
-            'quote_price_summary' => $quotePriceSummary
-        ]);
-    }
-
-    public function calculateTotalPriceAfterPredefinedDiscounts(float $totalPrice, ApplicablePredefinedDiscounts $applicableDiscounts): float
-    {
-        $pipes = [];
-
-        if (!is_null($applicableDiscounts->multi_year_discount)) {
-            $pipes[] = $this->calculatePriceAfterMultiYearDiscountPipe(
-                $applicableDiscounts->multi_year_discount,
-            );
-        }
-
-        if (!is_null($applicableDiscounts->pre_pay_discount)) {
-            $pipes[] = $this->calculatePriceAfterPrePayDiscountPipe(
-                $applicableDiscounts->pre_pay_discount,
-            );
-        }
-
-        if (!is_null($applicableDiscounts->promotional_discount)) {
-            $pipes[] = $this->calculatePriceAfterPromotionalDiscountPipe(
-                $applicableDiscounts->promotional_discount,
-            );
-        }
-
-        if (!is_null($applicableDiscounts->special_negotiation_discount)) {
-            $pipes[] = $this->calculatePriceAfterSpecialNegotiationDiscountPipe(
-                $applicableDiscounts->special_negotiation_discount,
-            );
-        }
-
-        return (float)$this->pipeline
-            ->send($totalPrice)
-            ->through($pipes)
-            ->thenReturn();
-    }
-
-    public function calculateContractQuoteFinalTotalPrice(WorldwideQuote $quote): QuoteFinalTotalPrice
-    {
-        return $quote->activeVersion->worldwideDistributions->reduce(function (QuoteFinalTotalPrice $quoteFinalTotalPrice, WorldwideDistribution $distribution) {
-            if (is_null($distribution->total_price)) {
-                $distribution->total_price = $this->distributionCalc->calculateDistributionTotalPrice($distribution);
-            }
-
-            if (is_null($distribution->final_total_price) || is_null($distribution->applicable_discounts_value)) {
-                $finalTotalPrice = $this->distributionCalc->calculateDistributionFinalTotalPrice($distribution, $distribution->total_price);
-
-                $distribution->final_total_price = $finalTotalPrice->final_total_price_value;
-                $distribution->applicable_discounts_value = $finalTotalPrice->applicable_discounts_value;
-            }
-
-            $quoteFinalTotalPrice->final_total_price_value += (float)$distribution->final_total_price;
-            $quoteFinalTotalPrice->applicable_discounts_value += (float)$distribution->applicable_discounts_value;
-
-            return $quoteFinalTotalPrice;
-        }, new QuoteFinalTotalPrice());
-    }
-
-    public function predefinedQuoteDiscountsToApplicableDiscounts(WorldwideQuote $quote): ApplicablePredefinedDiscounts
-    {
-        return new ApplicablePredefinedDiscounts([
-            'multi_year_discount' => transform($quote->activeVersion->multiYearDiscount, [static::class, 'multiYearDiscountToImmutableMultiYearDiscountData']),
-            'pre_pay_discount' => transform($quote->activeVersion->prePayDiscount, [static::class, 'prePayDiscountToImmutablePrePayDiscountData']),
-            'promotional_discount' => transform($quote->activeVersion->promotionalDiscount, [static::class, 'promotionalDiscountToImmutablePromotionalDiscountData']),
-            'special_negotiation_discount' => transform($quote->activeVersion->snDiscount, [static::class, 'snDiscountToImmutableSpecialNegotiationData']),
-        ]);
-    }
-
-    public static function multiYearDiscountToImmutableMultiYearDiscountData(MultiYearDiscount $discount): ImmutableMultiYearDiscountData
-    {
-        return new ImmutableMultiYearDiscountData(
-            new MultiYearDiscountData(['value' => (float)data_get($discount->durations, 'duration.value')])
-        );
-    }
-
-    public static function prePayDiscountToImmutablePrePayDiscountData(PrePayDiscount $discount): ImmutablePrePayDiscountData
-    {
-        return new ImmutablePrePayDiscountData(
-            new PrePayDiscountData(['value' => (float)data_get($discount->durations, 'duration.value')])
-        );
-    }
-
-    public static function promotionalDiscountToImmutablePromotionalDiscountData(PromotionalDiscount $discount): ImmutablePromotionalDiscountData
-    {
-        return new ImmutablePromotionalDiscountData(
-            new PromotionalDiscountData(['value' => (float)$discount->value, 'minimum_limit' => (float)$discount->minimum_limit])
-        );
-    }
-
-    public static function snDiscountToImmutableSpecialNegotiationData(SND $discount): ImmutableSpecialNegotiationDiscountData
-    {
-        return new ImmutableSpecialNegotiationDiscountData(
-            new SpecialNegotiationDiscountData(['value' => (float)$discount->value])
-        );
-    }
-
-    public function calculateMarginPercentage(float $totalPrice, float $buyPrice): float
-    {
-        if ($totalPrice === 0.0) {
-            return 0;
-        }
-
-        return (($totalPrice - $buyPrice) / $totalPrice) * 100;
-    }
-
-    protected function calculateApplicableDiscountsValue(ApplicablePredefinedDiscounts $applicableDiscounts): float
-    {
-        return array_sum([
-            (float)transform($applicableDiscounts->multi_year_discount, fn(ImmutableMultiYearDiscountData $discountData) => $discountData->applicableValue),
-            (float)transform($applicableDiscounts->pre_pay_discount, fn(ImmutablePrePayDiscountData $discountData) => $discountData->applicableValue),
-            (float)transform($applicableDiscounts->promotional_discount, fn(ImmutablePromotionalDiscountData $discountData) => $discountData->applicableValue),
-            (float)transform($applicableDiscounts->special_negotiation_discount, fn(ImmutableSpecialNegotiationDiscountData $discountData) => $discountData->applicableValue),
-        ]);
-    }
-
-    private function calculatePriceAfterMultiYearDiscountPipe(ImmutableMultiYearDiscountData $discountData): \Closure
-    {
-        return function (float $totalPrice, \Closure $next) use ($discountData) {
-            $discountPercentage = $discountData->value / 100;
-
-            $discountData->setApplicableValue($totalPrice * $discountPercentage);
-
-            $totalPrice = $totalPrice - $discountData->applicableValue;
-
-            return $next($totalPrice);
-        };
-    }
-
-    private function calculatePriceAfterPrePayDiscountPipe(ImmutablePrePayDiscountData $discountData): \Closure
-    {
-        return function (float $totalPrice, \Closure $next) use ($discountData) {
-            $discountPercentage = $discountData->value / 100;
-
-            $discountData->setApplicableValue($totalPrice * $discountPercentage);
-
-            $totalPrice = $totalPrice - $discountData->applicableValue;
-
-            return $next($totalPrice);
-        };
-    }
-
-    private function calculatePriceAfterPromotionalDiscountPipe(ImmutablePromotionalDiscountData $discountData): \Closure
-    {
-        return function (float $totalPrice, \Closure $next) use ($discountData) {
-            if ($discountData->minimum_limit > $totalPrice) {
-                return $next($totalPrice);
-            }
-
-            $discountPercentage = $discountData->value / 100;
-
-            $discountData->setApplicableValue($totalPrice * $discountPercentage);
-
-            $totalPrice = $totalPrice - $discountData->applicableValue;
-
-            return $next($totalPrice);
-        };
-    }
-
-    private function calculatePriceAfterSpecialNegotiationDiscountPipe(ImmutableSpecialNegotiationDiscountData $discountData): \Closure
-    {
-        return function (float $totalPrice, \Closure $next) use ($discountData) {
-            $discountPercentage = $discountData->value / 100;
-
-            $discountData->setApplicableValue($totalPrice * $discountPercentage);
-
-            $totalPrice = $totalPrice - $discountData->applicableValue;
-
-            return $next($totalPrice);
-        };
-    }
-
     private function calculateMarginAfterMultiYearDiscountPipe(ImmutableMultiYearDiscountData $discountData): \Closure
     {
         return function (ImmutablePriceSummaryData $marginData, \Closure $next) use ($discountData) {
@@ -810,5 +751,69 @@ class WorldwideQuoteCalc
 
             return $next($marginData);
         };
+    }
+
+    public function calculatePackQuotePriceSummaryAfterCountryMarginTax(WorldwideQuote $quote, ImmutableMarginTaxData $marginTaxData): PackQuotePriceSummaryData
+    {
+        $quoteTotalPrice = $this->calculatePackQuoteTotalPrice($quote);
+
+        $buyPrice = $this->calculatePackQuoteBuyPrice($quote);
+
+        $totalPriceAfterMargin = $this->calculateTotalPriceAfterBottomUp(
+            $quoteTotalPrice,
+            $buyPrice,
+            (float)$marginTaxData->margin_value,
+            (float)$quote->activeVersion->custom_discount
+        );
+
+        $totalPriceAfterMarginWithoutCustomDiscount = $this->calculateTotalPriceAfterBottomUp(
+            $quoteTotalPrice,
+            $buyPrice,
+            (float)$marginTaxData->margin_value,
+            0.0
+        );
+
+        $applicableDiscounts = $this->predefinedQuoteDiscountsToApplicableDiscounts($quote);
+
+        $totalPriceAfterDiscounts = (float)$this->calculateTotalPriceAfterPredefinedDiscounts($totalPriceAfterMargin, $applicableDiscounts);
+
+        $quoteMarginValue = $this->calculateMarginPercentage($totalPriceAfterDiscounts, $buyPrice);
+
+        $finalTotalPrice = $this->calculateTotalPriceAfterTax($totalPriceAfterDiscounts, (float)$marginTaxData->tax_value);
+
+        $quotePriceSummary = PriceSummaryData::immutable([
+            'total_price' => $quoteTotalPrice,
+            'total_price_after_margin' => $totalPriceAfterMarginWithoutCustomDiscount,
+            'final_total_price' => $finalTotalPrice,
+            'final_total_price_excluding_tax' => $totalPriceAfterDiscounts,
+            'buy_price' => $buyPrice,
+            'final_margin' => $quoteMarginValue
+        ]);
+
+        return new PackQuotePriceSummaryData([
+            'worldwide_quote_id' => $quote->getKey(),
+            'quote_price_summary' => $quotePriceSummary
+        ]);
+    }
+
+    public function calculateContractQuoteFinalTotalPrice(WorldwideQuote $quote): QuoteFinalTotalPrice
+    {
+        return $quote->activeVersion->worldwideDistributions->reduce(function (QuoteFinalTotalPrice $quoteFinalTotalPrice, WorldwideDistribution $distribution) {
+            if (is_null($distribution->total_price)) {
+                $distribution->total_price = $this->distributionCalc->calculateDistributionTotalPrice($distribution);
+            }
+
+            if (is_null($distribution->final_total_price) || is_null($distribution->applicable_discounts_value)) {
+                $finalTotalPrice = $this->distributionCalc->calculateDistributionFinalTotalPrice($distribution, $distribution->total_price);
+
+                $distribution->final_total_price = $finalTotalPrice->final_total_price_value;
+                $distribution->applicable_discounts_value = $finalTotalPrice->applicable_discounts_value;
+            }
+
+            $quoteFinalTotalPrice->final_total_price_value += (float)$distribution->final_total_price;
+            $quoteFinalTotalPrice->applicable_discounts_value += (float)$distribution->applicable_discounts_value;
+
+            return $quoteFinalTotalPrice;
+        }, new QuoteFinalTotalPrice());
     }
 }

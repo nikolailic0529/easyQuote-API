@@ -110,7 +110,10 @@ class MigrateContractsToContractsTable extends Migration
                 'sort' => $pivot->sort,
             ])->all();
 
-            DB::table('contract_field_column')->insert($mappingPivot);
+            foreach (array_chunk($mappingPivot, 100) as $mappingChunk) {
+                DB::table('contract_field_column')->insert($mappingChunk);
+            }
+
         } catch (Throwable $e) {
             DB::rollBack();
 

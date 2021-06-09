@@ -451,7 +451,7 @@ class RescueQuoteTest extends TestCase
     {
         $quote = $this->createQuote($this->user);
         $quoteFile = $this->createFakeQuoteFile($quote);
-        $rows = factory(ImportedRow::class, 200)->create(['quote_file_id' => $quoteFile->id]);
+        $rows = factory(ImportedRow::class, 200)->create(['quote_file_id' => $quoteFile->id, 'is_selected' => true]);
 
         $templateFields = TemplateField::where('is_system', true)->pluck('id', 'name');
         $importableColumns = ImportableColumn::where('is_system', true)->pluck('id', 'name');
@@ -462,9 +462,13 @@ class RescueQuoteTest extends TestCase
 
         $quote->templateFields()->sync($map->toArray());
 
-        $this->putJson('/api/quotes/get/'.$quote->id)->assertOk();
+        $this->putJson('/api/quotes/get/'.$quote->id)
+//            ->dump()
+            ->assertOk();
 
-        $this->getJson('api/quotes/review/'.$quote->id)->assertOk();
+        $this->getJson('api/quotes/review/'.$quote->id)
+//            ->dump()
+            ->assertOk();
     }
 
     /**

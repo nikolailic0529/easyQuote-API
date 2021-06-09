@@ -2,6 +2,8 @@
 
 namespace Tests\Unit;
 
+use App\Models\Data\Country;
+use App\Models\Vendor;
 use Tests\TestCase;
 use Tests\Unit\Traits\{
     WithFakeUser,
@@ -82,9 +84,9 @@ class MarginTest extends TestCase
      */
     public function testMarginCreatingWithCountryNonRelatedToVendor()
     {
-        $vendor = app('vendor.repository')->random();
+        $vendor = factory(Vendor::class)->create();
 
-        $country = app('country.repository')->all()->whereNotIn('id', $vendor->countries->pluck('id'))->first();
+        $country = Country::query()->whereNotIn('id', $vendor->countries->pluck('id'))->first();
 
         $attributes = factory(CountryMargin::class)->raw(['vendor_id' => $vendor->id, 'country_id' => $country->id]);
 

@@ -149,7 +149,7 @@ class StatsCalculationService implements Stats
             $quoteTotal->rfq_number = $worldwideQuote->quote_number;
             $quoteTotal->quote_created_at = $worldwideQuote->{$worldwideQuote->getCreatedAtColumn()};
             $quoteTotal->quote_submitted_at = $worldwideQuote->submitted_at;
-            $quoteTotal->valid_until_date = $opportunity->opportunity_closing_date;
+            $quoteTotal->valid_until_date = $worldwideQuote->activeVersion->quote_expiry_date;
             $quoteTotal->quote_status = $worldwideQuote->status ?? QuoteStatus::ALIVE;
 
             $quoteTotal->save();
@@ -168,7 +168,7 @@ class StatsCalculationService implements Stats
             ->first();
 
         if (!$company instanceof Company) {
-            customlog(['message' => 'External Company does not exist']);
+            customlog(['message' => "External Company does not exist. Company Name: '{$quote->customer->name}'."]);
 
             return;
         }

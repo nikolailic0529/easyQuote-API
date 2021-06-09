@@ -2,6 +2,7 @@
 
 namespace App\Services\WorldwideQuote\Models;
 
+use App\Models\Quote\WorldwideQuoteNote;
 use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\WorldwideQuoteAsset;
 
@@ -21,6 +22,8 @@ final class ReplicatedVersionData
     /** @var ReplicatedDistributorQuoteData[] */
     protected array $replicatedDistributorQuotes;
 
+    protected ?WorldwideQuoteNote $replicatedQuoteNote;
+
     /**
      * ReplicatedVersionData constructor.
      * @param WorldwideQuoteVersion $replicatedVersion
@@ -28,18 +31,21 @@ final class ReplicatedVersionData
      * @param array $contactPivots
      * @param WorldwideQuoteAsset[] $replicatedPackAssets
      * @param ReplicatedDistributorQuoteData[] $replicatedDistributorQuotes
+     * @param \App\Models\Quote\WorldwideQuoteNote|null $replicatedQuoteNote
      */
     public function __construct(WorldwideQuoteVersion $replicatedVersion,
                                 array $addressPivots,
                                 array $contactPivots,
                                 array $replicatedPackAssets,
-                                array $replicatedDistributorQuotes)
+                                array $replicatedDistributorQuotes,
+                                ?WorldwideQuoteNote $replicatedQuoteNote)
     {
         $this->replicatedVersion = $replicatedVersion;
         $this->addressPivots = $addressPivots;
         $this->contactPivots = $contactPivots;
         $this->replicatedPackAssets = $replicatedPackAssets;
         $this->replicatedDistributorQuotes = $replicatedDistributorQuotes;
+        $this->replicatedQuoteNote = $replicatedQuoteNote;
     }
 
     /**
@@ -80,5 +86,13 @@ final class ReplicatedVersionData
     public function getContactPivots(): array
     {
         return $this->contactPivots;
+    }
+
+    /**
+     * @return \App\Models\Quote\WorldwideQuoteNote|null
+     */
+    public function getReplicatedQuoteNote(): ?WorldwideQuoteNote
+    {
+        return $this->replicatedQuoteNote;
     }
 }

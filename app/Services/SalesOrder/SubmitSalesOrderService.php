@@ -164,7 +164,7 @@ class SubmitSalesOrderService
                     'serial_number' => $lineData->serial_number,
                     'sku' => $lineData->sku,
                     'quantity' => $lineData->quantity,
-                    'unit_price' => $lineData->unit_price,
+                    'unit_price' => $lineData->buy_price,
                     'machine_country_code' => $lineData->machine_country_code,
                     'sales_group' => sprintf('%s %s', self::BUSINESS_DIVISION, $salesOrderData->contract_type),
                     'short_name' => $lineData->vendor_short_code,

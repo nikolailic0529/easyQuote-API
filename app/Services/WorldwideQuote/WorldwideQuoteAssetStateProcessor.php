@@ -74,6 +74,7 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
             $asset->is_selected = true;
 
             $asset->vendor()->associate($data->vendor_id);
+            $asset->buyCurrency()->associate($data->buy_currency_id);
             $asset->machineAddress()->associate($data->machine_address_id);
 
             $asset->country = $data->country_code;
@@ -84,6 +85,7 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
             $asset->expiry_date = transform($data->expiry_date, fn (\DateTimeInterface $dateTime) => $dateTime->format('Y-m-d'));
             $asset->service_level_description = $data->service_level_description;
             $asset->price = $data->price;
+            $asset->original_price = $data->original_price;
 
             $asset->makeHidden('worldwideQuote');
 
@@ -127,6 +129,7 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
             $asset = $assetModels[$assetData->id];
             with($asset, function (WorldwideQuoteAsset $asset) use ($assetData) {
 
+                $asset->buyCurrency()->associate($assetData->buy_currency_id);
                 $asset->vendor()->associate($assetData->vendor_id);
                 $asset->machineAddress()->associate($assetData->machine_address_id);
                 $asset->country = $assetData->country_code;
@@ -137,6 +140,9 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
                 $asset->expiry_date = transform($assetData->expiry_date, fn(Carbon $date) => $date->toDateString());
                 $asset->service_level_description = $assetData->service_level_description;
                 $asset->price = $assetData->price;
+                $asset->original_price = $assetData->original_price;
+                $asset->exchange_rate_margin = $assetData->exchange_rate_margin;
+                $asset->exchange_rate_value = $assetData->exchange_rate_value;
 
                 $lock = $this->lockProvider->lock(Lock::UPDATE_WWASSET($asset->getKey()), 10);
 
@@ -208,6 +214,8 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
 
             $asset->worldwideQuote()->associate($quote);
 
+            $asset->buyCurrency()->associate($quote->quote_currency_id);
+
             $asset->serial_no = transform($mapping->serial_no, function (string $serialNoColumn) use ($row) {
                 return $row[$serialNoColumn] ?? null;
             });
@@ -233,6 +241,16 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
                     } catch (\Throwable $e) {
                         return null;
                     }
+                }
+
+                return null;
+            });
+
+            $asset->original_price = transform($mapping->price, function (string $priceColumn) use ($row) {
+                $value = $row[$priceColumn] ?? null;
+
+                if (!is_null($value)) {
+                    return PriceParser::parseAmount($value);
                 }
 
                 return null;
@@ -437,7 +455,7 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
 
                         /** @var AssetServiceLevel $serviceLevel */
                         if ($serviceLevel->description === $asset->service_level_description) {
-                            $asset->price = $serviceLevel->price;
+                            $asset->price = $asset->original_price = $serviceLevel->price;
                             $asset->service_sku = $serviceLevel->code;
                         }
                     }

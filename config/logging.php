@@ -50,7 +50,7 @@ return [
 
         'daily' => [
             'driver' => 'daily',
-            'path' => env('STORAGE_PATH', storage_path()) . '/logs/laravel-' . get_current_user() . '.log',
+            'path' => env('STORAGE_PATH', storage_path()) . '/logs/laravel.log',
             'level' => 'debug',
             'days' => 365,
             'permission' => 0777
@@ -59,6 +59,14 @@ return [
         'http-requests' => [
             'driver' => 'daily',
             'path' => env('STORAGE_PATH', storage_path()) . '/logs/http.log',
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777
+        ],
+
+        'document-processor' => [
+            'driver' => 'daily',
+            'path' => env('STORAGE_PATH', storage_path()) . '/logs/document-processor.log',
             'level' => 'debug',
             'days' => 365,
             'permission' => 0777

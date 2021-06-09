@@ -7,6 +7,8 @@ use Spatie\DataTransferObject\DataTransferObject;
 
 final class AssetData extends DataTransferObject
 {
+    public string $buy_currency_code;
+
     public string $vendor_short_code;
 
     public string $product_no;

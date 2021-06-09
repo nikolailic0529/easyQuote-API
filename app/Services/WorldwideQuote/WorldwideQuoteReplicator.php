@@ -2,9 +2,9 @@
 
 namespace App\Services\WorldwideQuote;
 
-use App\Models\Address;
 use App\Models\Quote\DistributionFieldColumn;
 use App\Models\Quote\WorldwideDistribution;
+use App\Models\Quote\WorldwideQuoteNote;
 use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Models\QuoteFile\ImportedRow;
@@ -32,39 +32,16 @@ class WorldwideQuoteReplicator
 
         $replicatedDistributorQuotes = $this->replicateDistributorQuotesOfVersion($version, $replicatedVersion);
 
+        $replicatedQuoteNote = $this->replicateQuoteNote($version, $replicatedVersion);
+
         return new ReplicatedVersionData(
             $replicatedVersion,
             $versionAddressKeys,
             $versionContactKeys,
             $replicatedPackAssets,
-            $replicatedDistributorQuotes
+            $replicatedDistributorQuotes,
+            $replicatedQuoteNote
         );
-    }
-
-    protected function getAddressPivotsFromVersion(WorldwideQuoteVersion $activeVersion, WorldwideQuoteVersion $replicatedVersion): array
-    {
-        $addressKeys = $activeVersion->addresses()->pluck($activeVersion->addresses()->getQualifiedRelatedKeyName())->all();
-        $addressesRelation = $replicatedVersion->addresses();
-
-        return array_map(function (string $addressKey) use ($replicatedVersion, $addressesRelation) {
-            return [
-                $addressesRelation->getRelatedPivotKeyName() => $addressKey,
-                $addressesRelation->getForeignPivotKeyName() => $replicatedVersion->getKey(),
-            ];
-        }, $addressKeys);
-    }
-
-    protected function getContactPivotsFromVersion(WorldwideQuoteVersion $activeVersion, WorldwideQuoteVersion $replicatedVersion): array
-    {
-        $contactKeys = $activeVersion->contacts()->pluck($activeVersion->contacts()->getQualifiedRelatedKeyName())->all();
-        $contactsRelation = $replicatedVersion->contacts();
-
-        return array_map(function (string $contactKey) use ($replicatedVersion, $contactsRelation) {
-            return [
-                $contactsRelation->getRelatedPivotKeyName() => $contactKey,
-                $contactsRelation->getForeignPivotKeyName() => $replicatedVersion->getKey(),
-            ];
-        }, $contactKeys);
     }
 
     protected function replicateQuoteVersion(WorldwideQuoteVersion $activeVersion): WorldwideQuoteVersion
@@ -96,6 +73,49 @@ class WorldwideQuoteReplicator
             $version->sort_rows_column = $activeVersion->sort_rows_column;
             $version->sort_rows_direction = $activeVersion->sort_rows_direction;
         });
+    }
+
+    protected function replicateQuoteNote(WorldwideQuoteVersion $activeVersion, WorldwideQuoteVersion $replicatedVersion): ?WorldwideQuoteNote
+    {
+        if (is_null($activeVersion->note)) {
+            return null;
+        }
+
+        return tap(new WorldwideQuoteNote(), function (WorldwideQuoteNote $note) use ($activeVersion, $replicatedVersion) {
+            $note->{$note->getKeyName()} = (string)Uuid::generate(4);
+//            $note->user()->associate($replicatedVersion->user_id);
+            $note->worldwideQuote()->associate($replicatedVersion->worldwide_quote_id);
+            $note->worldwideQuoteVersion()->associate($replicatedVersion);
+            $note->text = $activeVersion->note->text;
+            $note->{$note->getCreatedAtColumn()} = $note->freshTimestampString();
+            $note->{$note->getUpdatedAtColumn()} = $note->freshTimestampString();
+        });
+    }
+
+    protected function getAddressPivotsFromVersion(WorldwideQuoteVersion $activeVersion, WorldwideQuoteVersion $replicatedVersion): array
+    {
+        $addressKeys = $activeVersion->addresses()->pluck($activeVersion->addresses()->getQualifiedRelatedKeyName())->all();
+        $addressesRelation = $replicatedVersion->addresses();
+
+        return array_map(function (string $addressKey) use ($replicatedVersion, $addressesRelation) {
+            return [
+                $addressesRelation->getRelatedPivotKeyName() => $addressKey,
+                $addressesRelation->getForeignPivotKeyName() => $replicatedVersion->getKey(),
+            ];
+        }, $addressKeys);
+    }
+
+    protected function getContactPivotsFromVersion(WorldwideQuoteVersion $activeVersion, WorldwideQuoteVersion $replicatedVersion): array
+    {
+        $contactKeys = $activeVersion->contacts()->pluck($activeVersion->contacts()->getQualifiedRelatedKeyName())->all();
+        $contactsRelation = $replicatedVersion->contacts();
+
+        return array_map(function (string $contactKey) use ($replicatedVersion, $contactsRelation) {
+            return [
+                $contactsRelation->getRelatedPivotKeyName() => $contactKey,
+                $contactsRelation->getForeignPivotKeyName() => $replicatedVersion->getKey(),
+            ];
+        }, $contactKeys);
     }
 
     protected function replicatePackQuoteAssets(WorldwideQuoteVersion $activeVersion, WorldwideQuoteVersion $replicatedVersion): array
@@ -236,11 +256,14 @@ class WorldwideQuoteReplicator
                 }, $quoteFile->rowsData->all());
             }) ?? [];
 
+
         $addressPivots = $this->getAddressPivotsFromDistributorQuote($distributorQuote, $replicatedDistributorQuote);
         $contactPivots = $this->getContactPivotsFromDistributorQuote($distributorQuote, $replicatedDistributorQuote);
+        $vendorPivots = $this->getVendorPivotsFromDistributorQuote($distributorQuote, $replicatedDistributorQuote);
 
         return new ReplicatedDistributorQuoteData(
             $replicatedDistributorQuote,
+            $vendorPivots,
             $addressPivots,
             $contactPivots,
             $replicatedMapping,
@@ -269,7 +292,7 @@ class WorldwideQuoteReplicator
 
     protected function getContactPivotsFromDistributorQuote(WorldwideDistribution $distributorQuote, WorldwideDistribution $replicatedDistributorQuote): array
     {
-        $contactKeys =  $distributorQuote->contacts()->pluck($distributorQuote->contacts()->getQualifiedRelatedKeyName())->all();
+        $contactKeys = $distributorQuote->contacts()->pluck($distributorQuote->contacts()->getQualifiedRelatedKeyName())->all();
         $contactsRelation = $replicatedDistributorQuote->contacts();
 
         return array_map(function (string $contactKey) use ($contactsRelation, $replicatedDistributorQuote) {
@@ -278,6 +301,20 @@ class WorldwideQuoteReplicator
                 $contactsRelation->getForeignPivotKeyName() => $replicatedDistributorQuote->getKey(),
             ];
         }, $contactKeys);
+    }
+
+    protected function getVendorPivotsFromDistributorQuote(WorldwideDistribution $distributorQuote, WorldwideDistribution $replicatedDistributorQuote): array
+    {
+        $vendorKeys = $distributorQuote->vendors()->pluck($distributorQuote->vendors()->getQualifiedRelatedPivotKeyName())->all();
+        $vendorsRelation = $replicatedDistributorQuote->vendors();
+
+        return array_map(function (string $vendorKey) use ($vendorsRelation, $replicatedDistributorQuote) {
+            return [
+              $vendorsRelation->getRelatedPivotKeyName() => $vendorKey,
+              $vendorsRelation->getForeignPivotKeyName() => $replicatedDistributorQuote->getKey(),
+            ];
+        }, $vendorKeys);
+
     }
 
     private function replicateAddressModelsOfDistributorQuote(WorldwideDistribution $originalDistributorQuote, WorldwideDistribution $replicatedDistributorQuote): ReplicatedAddressesData

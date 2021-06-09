@@ -2,30 +2,23 @@
 
 namespace App\Imports;
 
-use App\Models\HpeContract;
 use App\Models\HpeContractData;
 use App\Models\HpeContractFile;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
+use League\Csv\Reader;
 use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithCustomCsvSettings;
-use Maatwebsite\Excel\Concerns\WithStartRow;
-use Maatwebsite\Excel\Imports\HeadingRowFormatter;
-use Illuminate\Support\Str;
-use League\Csv\Reader;
-use Maatwebsite\Excel\Concerns\SkipsErrors;
-use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithCustomValueBinder;
-use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\WithStartRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
-use Normalizer;
-use PhpOffice\PhpSpreadsheet\Calculation\TextData;
 use PhpOffice\PhpSpreadsheet\Cell\Cell;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Shared\StringHelper;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use voku\helper\ASCII;
 
 class HpeContractDataImport implements ToModel, WithBatchInserts, WithChunkReading, WithCustomCsvSettings, WithStartRow, WithCustomValueBinder, WithValidation
@@ -98,46 +91,46 @@ class HpeContractDataImport implements ToModel, WithBatchInserts, WithChunkReadi
         }
 
         $attributes = [
-            'hpe_contract_file_id'          => $this->hpeContractFile->getKey(),
-            'amp_id'                        => $row[static::CELL_AMPID],
-            'support_account_reference'     => $this->supportAccountRef,
-            'contract_number'               => $row[static::CELL_CN],
-            'contract_start_date'           => static::parseDate($row[static::CELL_CSD]),
-            'contract_end_date'             => static::parseDate($row[static::CELL_CED]),
-            'price'                         => (float) $row[static::CELL_PR],
-            'order_authorization'           => $row[static::CELL_ORDAU],
-            'asset_type'                    => $row[static::CELL_AT],
-            'product_number'                => $row[static::CELL_PN],
-            'product_description'           => $row[static::CELL_PD],
-            'product_quantity'              => (int) $row[static::CELL_PQ],
-            'service_code'                  => $row[static::CELL_SC],
-            'service_description'           => $row[static::CELL_SD],
-            'service_code_2'                => $row[static::CELL_SC2],
-            'service_description_2'         => $row[static::CELL_SD2],
-            'service_levels'                => $row[static::CELL_SL],
-            'serial_number'                 => $row[static::CELL_SN],
-            'service_type'                  => $row[static::CELL_ST],
-            'hw_delivery_contact_name'      => $row[static::CELL_HWDCN],
-            'hw_delivery_contact_phone'     => $row[static::CELL_HWDCP],
-            'sw_delivery_contact_name'      => $row[static::CELL_SWDCN],
-            'sw_delivery_contact_phone'     => $row[static::CELL_SWDCP],
-            'pr_support_contact_name'       => $row[static::CELL_PRSCN],
-            'pr_support_contact_phone'      => $row[static::CELL_PRSCP],
+            'hpe_contract_file_id' => $this->hpeContractFile->getKey(),
+            'amp_id' => $row[static::CELL_AMPID],
+            'support_account_reference' => $this->supportAccountRef,
+            'contract_number' => $row[static::CELL_CN],
+            'contract_start_date' => static::parseDate($row[static::CELL_CSD]),
+            'contract_end_date' => static::parseDate($row[static::CELL_CED]),
+            'price' => (float)$row[static::CELL_PR],
+            'order_authorization' => $row[static::CELL_ORDAU],
+            'asset_type' => $row[static::CELL_AT],
+            'product_number' => $row[static::CELL_PN],
+            'product_description' => $row[static::CELL_PD],
+            'product_quantity' => (int)$row[static::CELL_PQ],
+            'service_code' => $row[static::CELL_SC],
+            'service_description' => $row[static::CELL_SD],
+            'service_code_2' => $row[static::CELL_SC2],
+            'service_description_2' => $row[static::CELL_SD2],
+            'service_levels' => $row[static::CELL_SL],
+            'serial_number' => $row[static::CELL_SN],
+            'service_type' => $row[static::CELL_ST],
+            'hw_delivery_contact_name' => $row[static::CELL_HWDCN],
+            'hw_delivery_contact_phone' => $row[static::CELL_HWDCP],
+            'sw_delivery_contact_name' => $row[static::CELL_SWDCN],
+            'sw_delivery_contact_phone' => $row[static::CELL_SWDCP],
+            'pr_support_contact_name' => $row[static::CELL_PRSCN],
+            'pr_support_contact_phone' => $row[static::CELL_PRSCP],
 
-            'customer_name'                 => $row[static::CELL_CSN],
-            'customer_address'              => $row[static::CELL_CSA],
-            'customer_city'                 => $row[static::CELL_CSC],
-            'customer_post_code'            => $row[static::CELL_CSPC],
-            'customer_state_code'           => $row[static::CELL_CSTC],
+            'customer_name' => $row[static::CELL_CSN],
+            'customer_address' => $row[static::CELL_CSA],
+            'customer_city' => $row[static::CELL_CSC],
+            'customer_post_code' => $row[static::CELL_CSPC],
+            'customer_state_code' => $row[static::CELL_CSTC],
 
-            'reseller_name'                 => $row[static::CELL_RLN],
-            'reseller_address'              => $row[static::CELL_RLA],
-            'reseller_city'                 => $row[static::CELL_RLC],
-            'reseller_post_code'            => $row[static::CELL_RLPC],
-            'reseller_state'           => $row[static::CELL_RLS],
+            'reseller_name' => $row[static::CELL_RLN],
+            'reseller_address' => $row[static::CELL_RLA],
+            'reseller_city' => $row[static::CELL_RLC],
+            'reseller_post_code' => $row[static::CELL_RLPC],
+            'reseller_state' => $row[static::CELL_RLS],
 
-            'support_start_date'            => static::parseDate($row[static::CELL_SSD]),
-            'support_end_date'              => static::parseDate($row[static::CELL_SED]),
+            'support_start_date' => $this->parseDate($row[static::CELL_SSD]),
+            'support_end_date' => $this->parseDate($row[static::CELL_SED]),
         ];
 
         return new HpeContractData($attributes);
@@ -146,25 +139,25 @@ class HpeContractDataImport implements ToModel, WithBatchInserts, WithChunkReadi
     public function rules(): array
     {
         return [
-            static::CELL_AMPID  => 'present',
-            static::CELL_SAR    => 'present',
-            static::CELL_CN     => 'present',
-            static::CELL_CSD    => 'present',
-            static::CELL_CED    => 'present',
-            static::CELL_ORDAU  => 'present',
-            static::CELL_PN     => 'present',
-            static::CELL_SC     => 'present',
-            static::CELL_HWDCN  => 'present',
-            static::CELL_HWDCP  => 'present',
-            static::CELL_SWDCN  => 'present',
-            static::CELL_SWDCP  => 'present',
-            static::CELL_PRSCN  => 'present',
-            static::CELL_PRSCP  => 'present',
-            static::CELL_CSN    => 'present',
-            static::CELL_CSA    => 'present',
-            static::CELL_CSC    => 'present',
-            static::CELL_SSD    => 'present',
-            static::CELL_SED    => 'present'
+            static::CELL_AMPID => 'present',
+            static::CELL_SAR => 'present',
+            static::CELL_CN => 'present',
+            static::CELL_CSD => 'present',
+            static::CELL_CED => 'present',
+            static::CELL_ORDAU => 'present',
+            static::CELL_PN => 'present',
+            static::CELL_SC => 'present',
+            static::CELL_HWDCN => 'present',
+            static::CELL_HWDCP => 'present',
+            static::CELL_SWDCN => 'present',
+            static::CELL_SWDCP => 'present',
+            static::CELL_PRSCN => 'present',
+            static::CELL_PRSCP => 'present',
+            static::CELL_CSN => 'present',
+            static::CELL_CSA => 'present',
+            static::CELL_CSC => 'present',
+            static::CELL_SSD => 'present',
+            static::CELL_SED => 'present'
         ];
     }
 
@@ -174,25 +167,25 @@ class HpeContractDataImport implements ToModel, WithBatchInserts, WithChunkReadi
     public function customValidationMessages()
     {
         return [
-            static::CELL_AMPID . '.present'   => 'AMP ID Column must be present.',
-            static::CELL_SAR . '.present'     => 'Support Account Reference Column must be present.',
-            static::CELL_CN . '.present'      => 'Contract Number Columns must be present.',
-            static::CELL_CSD . '.present'     => 'Contract Start Date Column must be present.',
-            static::CELL_CED . '.present'     => 'Contract End Date Column must be present.',
-            static::CELL_ORDAU . '.present'   => 'Order Authorization Column must be present.',
-            static::CELL_PN . '.present'      => 'Product Number Column must be present.',
-            static::CELL_SC . '.present'      => 'Service Code Column must be present.',
-            static::CELL_HWDCN . '.present'   => 'HW Delivery Contact Name Column must be present.',
-            static::CELL_HWDCP . '.present'   => 'HW Delivery Contact Phone Column must be present.',
-            static::CELL_SWDCN . '.present'   => 'SW Delivery Contact Name Column must be present.',
-            static::CELL_SWDCP . '.present'   => 'SW Delivery Contact Phone Column must be present.',
-            static::CELL_PRSCN . '.present'   => 'Primary Support Recipient Name Column must be present.',
-            static::CELL_PRSCP . '.present'   => 'Primary Support Recipient Phone Column must be present.',
-            static::CELL_CSN . '.present'     => 'Customer Name Column must be present.',
-            static::CELL_CSA . '.present'     => 'Customer Address Column must be present.',
-            static::CELL_CSC . '.present'     => 'Customer City Column must be present.',
-            static::CELL_SSD . '.present'     => 'Support Start Date Column must be present.',
-            static::CELL_SED . '.present'     => 'Support End Date Column must be present.',
+            static::CELL_AMPID.'.present' => 'AMP ID Column must be present.',
+            static::CELL_SAR.'.present' => 'Support Account Reference Column must be present.',
+            static::CELL_CN.'.present' => 'Contract Number Columns must be present.',
+            static::CELL_CSD.'.present' => 'Contract Start Date Column must be present.',
+            static::CELL_CED.'.present' => 'Contract End Date Column must be present.',
+            static::CELL_ORDAU.'.present' => 'Order Authorization Column must be present.',
+            static::CELL_PN.'.present' => 'Product Number Column must be present.',
+            static::CELL_SC.'.present' => 'Service Code Column must be present.',
+            static::CELL_HWDCN.'.present' => 'HW Delivery Contact Name Column must be present.',
+            static::CELL_HWDCP.'.present' => 'HW Delivery Contact Phone Column must be present.',
+            static::CELL_SWDCN.'.present' => 'SW Delivery Contact Name Column must be present.',
+            static::CELL_SWDCP.'.present' => 'SW Delivery Contact Phone Column must be present.',
+            static::CELL_PRSCN.'.present' => 'Primary Support Recipient Name Column must be present.',
+            static::CELL_PRSCP.'.present' => 'Primary Support Recipient Phone Column must be present.',
+            static::CELL_CSN.'.present' => 'Customer Name Column must be present.',
+            static::CELL_CSA.'.present' => 'Customer Address Column must be present.',
+            static::CELL_CSC.'.present' => 'Customer City Column must be present.',
+            static::CELL_SSD.'.present' => 'Support Start Date Column must be present.',
+            static::CELL_SED.'.present' => 'Support End Date Column must be present.',
         ];
     }
 
@@ -210,7 +203,7 @@ class HpeContractDataImport implements ToModel, WithBatchInserts, WithChunkReadi
     {
         return [
             'delimiter' => "\t",
-            'use_bom'   => Reader::BOM_UTF8,
+            'use_bom' => Reader::BOM_UTF8,
         ];
     }
 
@@ -230,24 +223,32 @@ class HpeContractDataImport implements ToModel, WithBatchInserts, WithChunkReadi
     public function bindValue(Cell $cell, $value)
     {
         if (is_string($value)) {
-            if (! ASCII::is_ascii($value)) {
+            if (!ASCII::is_ascii($value)) {
                 $value = ASCII::to_ascii(utf8_encode($value));
             }
 
             $value = StringHelper::sanitizeUTF8($value);
         }
 
-        $cell->setValueExplicit((string) $value, DataType::TYPE_STRING);
+        $cell->setValueExplicit((string)$value, DataType::TYPE_STRING);
 
         return true;
     }
 
-    private static function parseDate($value)
+    private function parseDate(?string $value): ?string
     {
-        if (blank($value) || Str::of($value)->match('/\d{1,2}\/\d{1,2}\/\d{4}/')->isEmpty()) {
+        if (is_null($value) || trim($value) === '') {
             return null;
         }
 
-        return transform($value, fn ($value) => Carbon::createFromFormat('m/d/Y', $value)->toDateString());
+        if (!is_null($this->hpeContractFile->date_format)) {
+            return Carbon::createFromFormat($this->hpeContractFile->date_format, $value)->toDateString();
+        }
+
+        if (str_contains($value, '/')) {
+            $value = str_replace('/', '-', $value);
+        }
+
+        return Carbon::parse($value)->toDateString();
     }
 }

@@ -5,7 +5,7 @@ namespace Tests\Unit\Parser;
 use App\Contracts\Services\{PdfParserInterface, WordParserInterface};
 use App\Models\{QuoteFile\QuoteFileFormat};
 use App\Models\QuoteFile\QuoteFile;
-use App\Services\DocumentProcessor\EasyQuote\DistributorExcel;
+use App\Services\DocumentProcessor\EasyQuote\EqExcelPriceListProcessor;
 use App\Services\DocumentReaders\ExcelPriceListReader;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\{Arr, Collection, Facades\File, Facades\Storage, Str};
@@ -59,7 +59,7 @@ class DistributorPriceListParsingTest extends TestCase
             'imported_page' => 2
         ]);
 
-        $excelProcessor = $this->app[DistributorExcel::class];
+        $excelProcessor = $this->app[EqExcelPriceListProcessor::class];
 
         $excelProcessor->process($quoteFile);
 
@@ -87,7 +87,7 @@ class DistributorPriceListParsingTest extends TestCase
             'imported_page' => 2
         ]);
 
-        $excelProcessor = $this->app[DistributorExcel::class];
+        $excelProcessor = $this->app[EqExcelPriceListProcessor::class];
 
         $excelProcessor->process($quoteFile);
 
@@ -115,7 +115,7 @@ class DistributorPriceListParsingTest extends TestCase
             'imported_page' => 2
         ]);
 
-        $excelProcessor = $this->app[DistributorExcel::class];
+        $excelProcessor = $this->app[EqExcelPriceListProcessor::class];
 
         $excelProcessor->process($quoteFile);
 
@@ -2074,7 +2074,7 @@ CONTENT
             'imported_page' => 2
         ]);
 
-        $excelProcessor = $this->app[DistributorExcel::class];
+        $excelProcessor = $this->app[EqExcelPriceListProcessor::class];
 
         $excelProcessor->process($quoteFile);
 
@@ -2104,7 +2104,7 @@ CONTENT
             'imported_page' => 2
         ]);
 
-        $excelProcessor = $this->app[DistributorExcel::class];
+        $excelProcessor = $this->app[EqExcelPriceListProcessor::class];
 
         $excelProcessor->process($quoteFile);
 
@@ -2134,7 +2134,7 @@ CONTENT
             'imported_page' => 2
         ]);
 
-        $excelProcessor = $this->app[DistributorExcel::class];
+        $excelProcessor = $this->app[EqExcelPriceListProcessor::class];
 
         $excelProcessor->process($quoteFile);
 
@@ -2783,7 +2783,7 @@ CONTENT
             'imported_page' => 2
         ]);
 
-        $excelProcessor = $this->app[DistributorExcel::class];
+        $excelProcessor = $this->app[EqExcelPriceListProcessor::class];
 
         $excelProcessor->process($quoteFile);
 
@@ -2811,7 +2811,7 @@ CONTENT
             'imported_page' => 2
         ]);
 
-        $excelProcessor = $this->app[DistributorExcel::class];
+        $excelProcessor = $this->app[EqExcelPriceListProcessor::class];
 
         $excelProcessor->process($quoteFile);
 
@@ -3608,7 +3608,7 @@ CONTENT
             'imported_page' => 2
         ]);
 
-        $excelProcessor = $this->app[DistributorExcel::class];
+        $excelProcessor = $this->app[EqExcelPriceListProcessor::class];
 
         $excelProcessor->process($quoteFile);
 

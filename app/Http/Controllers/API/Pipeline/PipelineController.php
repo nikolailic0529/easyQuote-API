@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Pipeline\BatchPutPipelines;
 use App\Http\Requests\Pipeline\StorePipeline;
 use App\Http\Requests\Pipeline\UpdatePipeline;
+use App\Models\Opportunity;
 use App\Http\Resources\{Pipeline\OpportunityFormSchemaOfPipeline,
     Pipeline\PaginatedPipeline,
     Pipeline\PipelineCollection,
@@ -215,7 +216,7 @@ class PipelineController extends Controller
      */
     public function showOpportunityFormSchemaOfDefaultPipeline(PipelineQueries $queries): JsonResponse
     {
-        $this->authorize('viewAny', Pipeline::class);
+        $this->authorize('viewAny', Opportunity::class);
 
         return response()->json(
             OpportunityFormSchemaOfPipeline::make($queries->defaultPipelinesQuery()->first())

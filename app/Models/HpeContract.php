@@ -2,10 +2,11 @@
 
 namespace App\Models;
 
-use App\Contracts\SearchableEntity;
 use App\Casts\{HpeContactCast, HpeServicesCast};
+use App\Contracts\SearchableEntity;
 use App\DTO\HpeContractContact;
 use App\Models\Template\HpeContractTemplate;
+use App\Scopes\ContractTypeScope;
 use App\Traits\{Activatable,
     Auth\Multitenantable,
     BelongsToCompany,
@@ -29,6 +30,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property HpeContractContact $sold_contact
  * @property HpeContractContact $bill_contact
  * @property Collection $services
+ * @property HpeContractTemplate|null $hpeContractTemplate
  */
 class HpeContract extends Model implements SearchableEntity
 {
@@ -44,6 +46,28 @@ class HpeContract extends Model implements SearchableEntity
         Activatable,
         Searchable,
         Submittable;
+
+    protected static $logAttributes = [
+        'amp_id',
+
+        'customer_name',
+        'customer_address',
+        'customer_city',
+        'customer_post_code',
+        'customer_country_code',
+
+        'purchase_order_no',
+        'hpe_sales_order_no',
+        'purchase_order_date',
+
+        'additional_notes',
+
+        'last_drafted_step',
+        'completeness',
+        'contract_date',
+    ];
+    protected static $logOnlyDirty = true;
+    protected static $submitEmptyLogs = false;
 
     protected $fillable = [
         'user_id',
@@ -104,30 +128,6 @@ class HpeContract extends Model implements SearchableEntity
         'orders_authorization' => 'array',
         'checkbox_status' => 'array',
     ];
-
-    protected static $logAttributes = [
-        'amp_id',
-
-        'customer_name',
-        'customer_address',
-        'customer_city',
-        'customer_post_code',
-        'customer_country_code',
-
-        'purchase_order_no',
-        'hpe_sales_order_no',
-        'purchase_order_date',
-
-        'additional_notes',
-
-        'last_drafted_step',
-        'completeness',
-        'contract_date',
-    ];
-
-    protected static $logOnlyDirty = true;
-
-    protected static $submitEmptyLogs = false;
 
     public function hpeContractTemplate(): BelongsTo
     {

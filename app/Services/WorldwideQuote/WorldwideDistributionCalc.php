@@ -2,6 +2,7 @@
 
 namespace App\Services\WorldwideQuote;
 
+use Carbon\Carbon;
 use App\DTO\{Discounts\ApplicablePredefinedDiscounts,
     Discounts\ImmutableCustomDiscountData,
     Discounts\ImmutableMultiYearDiscountData,
@@ -240,10 +241,13 @@ class WorldwideDistributionCalc
             return (float)$distribution->buy_price;
         }
 
+        $distributionCreationDate = transform($distribution->{$distribution->getCreatedAtColumn()}, fn ($date) => Carbon::instance($date));
+
         return $this->currencyConverter->convertCurrencies(
             $distribution->buyCurrency->code,
             $distribution->distributionCurrency->code,
-            (float)$distribution->buy_price
+            (float)$distribution->buy_price,
+            $distributionCreationDate
         );
     }
 
