@@ -1,4 +1,5 @@
 
+
 * [Opportunities List](#opportunities-list)
 * [Drafted Alive Quotes List](#drafted-quotes-list)
 * [Drafted Dead Quotes List](#drafted-quotes-list)
@@ -43,6 +44,12 @@
         * [Delete Rows Group](#delete-rows-group)
         * [Move Rows between Groups](#move-rows-between-groups)
         * [Rows Lookup](#rows-lookup)
+    * [Pack Assets Group Management](#pack-assets-group-management)
+        * [Create Pack Assets Group](#create-pack-assets-group)
+        * [Update Pack Assets Group](#update-pack-assets-group)
+        * [Delete Pack Assets Group](#delete-pack-assets-group)
+        * [Move Pack Assets between Groups](#move-pack-assets-between-groups)
+        * [Pack Assets Lookup](#pack-assets-lookup)
     * [Notes Management](#notes-management)
         * [Paginate Notes](#paginate-notes)
         * [Create Note](#create-note)
@@ -915,8 +922,18 @@
 
     Payload:
     {
-        "selected_rows": [{uuid}], (an empty array is allowed)
+        "selected_rows": [
+            "*": {uuid}
+        ], (an empty array is allowed)
+        "selected_groups": [
+            "*": {uuid}
+        ],
         "reject": {boolean},
+        "sort_assets_groups_column": {group_column_name},
+            (Any of: 'group_name', 'search_text', 'assets_sum', 'assets_count')
+        
+        "sort_assets_groups_direction": {sort_direction},
+            (Any of: 'asc', 'desc')
         
         "sort_rows_column": {rows_column_name},
             (Any of: 'sku', 'product_name', 'serial_no',
@@ -1062,6 +1079,91 @@
     {
         "input": {string} (max 250 characters, comma separated values are acceptable),
         "rows_group_id": {uuid}
+            (An ID of the group. Optional.)
+    }
+
+## Pack Assets Group Management
+
+### Create Pack Assets Group
+
+    [POST] api/ww-quotes/{ww_quote_uuid}/assets-groups
+
+    {
+        "group_name": {string}, (max 250 characters)
+        "search_text": {string}, (max 250 characters)
+        "assets": [
+            {asset_uuid},
+            {asset_uuid}
+            ...
+        ]
+    }
+
+### Update Pack Assets Group
+
+    [PATCH] api/ww-quotes/{ww_quote_uuid}/assets-groups/{assets_group_id}
+
+    {
+        "group_name": {string}, (max 250 characters)
+        "search_text": {string}, (max 250 characters)
+        "assets": [
+            {asset_uuid},
+            {asset_uuid}
+            ...
+        ]
+    }
+
+### Delete Pack Assets Group
+
+    [DELETE] api/ww-quotes/{ww_quote_uuid}/assets-groups/{assets_group_id}
+
+### Move Pack Assets between Groups
+
+    [PUT] api/ww-quotes/{ww_quote_uuid}/assets-groups
+
+    {
+        "output_assets_group_id": {uuid}
+        "assets": [
+            {asset_uuid},
+            {asset_uuid}
+            ...
+        ],
+        "input_assets_group_id": {uuid}
+    }
+
+***Response:***
+
+    {
+        "output_assets_group": {
+            "id",
+            "worldwide_quote_version_id",
+            "assets",
+            "assets_sum",
+            "assets_count",
+            "group_name",
+            "search_text",
+            "created_at",
+            "updated_at",
+        },
+        "input_assets_group": {
+            "id",
+            "worldwide_quote_version_id",
+            "assets",
+            "assets_sum",
+            "assets_count",
+            "group_name",
+            "search_text",
+            "created_at",
+            "updated_at",
+        }
+    }
+
+### Pack Assets Lookup
+
+    [POST] api/ww-quotes/{ww_quote_uuid}/assets-lookup
+
+    {
+        "input": {string} (max 250 characters, comma separated values are acceptable),
+        "assets_group_id": {uuid}
             (An ID of the group. Optional.)
     }
 

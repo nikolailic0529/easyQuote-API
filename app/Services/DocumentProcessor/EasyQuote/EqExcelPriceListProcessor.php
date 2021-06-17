@@ -12,6 +12,7 @@ use Generator;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Facades\Storage;
+use Ramsey\Uuid\UuidInterface;
 use Webpatser\Uuid\Uuid;
 
 class EqExcelPriceListProcessor implements ProcessesQuoteFile
@@ -93,5 +94,10 @@ class EqExcelPriceListProcessor implements ProcessesQuoteFile
             $importedRow->{$importedRow->getCreatedAtColumn()} = $importedRow->freshTimestampString();
             $importedRow->{$importedRow->getUpdatedAtColumn()} = $importedRow->freshTimestampString();
         });
+    }
+
+    public static function getProcessorUuid(): UuidInterface
+    {
+        return \Ramsey\Uuid\Uuid::fromString('4e26d29a-7af1-47ce-b08e-888b14b75adf');
     }
 }

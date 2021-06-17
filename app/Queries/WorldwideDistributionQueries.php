@@ -80,6 +80,7 @@ class WorldwideDistributionQueries
             'mapped_rows.date_from',
             'mapped_rows.date_to',
             'mapped_rows.qty',
+            'mapped_rows.original_price',
             'mapped_rows.price',
             'mapped_rows.pricing_document',
             'mapped_rows.system_handle',

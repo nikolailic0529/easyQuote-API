@@ -10,6 +10,7 @@ use App\Models\QuoteFile\ScheduleData;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Facades\Storage;
+use Ramsey\Uuid\UuidInterface;
 use Webpatser\Uuid\Uuid;
 
 class EqPdfRescuePaymentScheduleProcessor implements ProcessesQuoteFile
@@ -70,5 +71,10 @@ class EqPdfRescuePaymentScheduleProcessor implements ProcessesQuoteFile
             });
 
         });
+    }
+
+    public static function getProcessorUuid(): UuidInterface
+    {
+        return \Ramsey\Uuid\Uuid::fromString('87272c93-348e-4ca8-bd67-f10d422aaf53');
     }
 }

@@ -18,7 +18,7 @@ final class WorldwideQuotePreviewData extends DataTransferObject
 
     /**
      *
-     * @var \App\DTO\WorldwideQuote\Export\AssetData[]
+     * @var \App\DTO\WorldwideQuote\Export\AssetData[]|\App\DTO\WorldwideQuote\Export\AssetsGroupData[]
      */
     public array $pack_assets = [];
 
@@ -26,6 +26,8 @@ final class WorldwideQuotePreviewData extends DataTransferObject
      * @var \App\DTO\WorldwideQuote\Export\AssetField[]
      */
     public array $pack_asset_fields = [];
+
+    public bool $pack_assets_are_grouped;
 
     /**
      * @Constraints\Choice({"Pack", "Contract"})

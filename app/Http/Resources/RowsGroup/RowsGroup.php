@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\RowsGroup;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class RowsGroup extends JsonResource
@@ -21,7 +22,23 @@ class RowsGroup extends JsonResource
             'group_name' => $this->group_name,
             'search_text' => $this->search_text,
 
-            'rows' => $this->whenLoaded('rows'),
+            'rows' => $this->whenLoaded('rows', function () {
+
+                /** @var \App\Models\QuoteFile\DistributionRowsGroup $this */
+
+                return tap($this->rows, function (Collection $rows) {
+
+                    /** @var \App\Models\QuoteFile\MappedRow[] $rows */
+
+                    foreach ($rows as $row) {
+
+                       $row->setAttribute('is_selected', true);
+
+                   }
+
+                });
+
+            }),
 
 //            'rows_sum' => number_format((float) $this->rows_sum, 2, '.', ''),
             'rows_sum' => (float)$this->rows_sum,

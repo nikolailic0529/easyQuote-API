@@ -35,14 +35,15 @@ use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Models\QuoteFile\MappedRow;
 use App\Models\QuoteFile\QuoteFile;
-use App\Models\Template\ContractTemplate;
 use App\Models\Template\QuoteTemplate;
 use App\Models\Template\SalesOrderTemplate;
 use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
+use App\Models\WorldwideQuoteAssetsGroup;
 use App\Services\ThumbHelper;
 use App\Support\PriceParser;
 use Illuminate\Contracts\Config\Repository as Config;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -119,6 +120,66 @@ class WorldwideQuoteDataMapper
         throw new \RuntimeException('Unsupported Quote Contract Type to map into Sales Order Data.');
     }
 
+    private function mapContractWorldwideQuoteSalesOrderData(WorldwideQuote $worldwideQuote): WorldwideQuoteToSalesOrderData
+    {
+        $activeVersion = $worldwideQuote->activeVersion;
+
+        $companyData = new SalesOrderCompanyData([
+            'id' => $activeVersion->company->getKey(),
+            'name' => $activeVersion->company->name,
+            'logo_url' => transform($activeVersion->company->logo, function (array $logo) {
+                return $logo['x3'] ?? '';
+            })
+        ]);
+
+        $distributions = $activeVersion->worldwideDistributions()->with('country:id,name,iso_3166_2,flag', 'vendors:id,name,short_code', 'vendors.image')->get(['id', 'country_id']);
+
+        $vendors = $distributions->pluck('vendors')->collapse()->unique('id')->values();
+
+        $vendorsData = $vendors->map(fn(Vendor $vendor) => [
+            'id' => $vendor->getKey(),
+            'name' => $vendor->name,
+            'logo_url' => transform($vendor->logo, function (array $logo) {
+                return $logo['x3'] ?? '';
+            })
+        ])->all();
+
+        $countries = $distributions->pluck('country')->unique('id')->values();
+
+        $countriesData = $countries->map(fn(Country $country) => [
+            'id' => $country->getKey(),
+            'name' => $country->name,
+            'flag_url' => $country->flag
+        ])->all();
+
+        $templates = SalesOrderTemplate::query()
+            ->where('business_division_id', BD_WORLDWIDE)
+            ->where('contract_type_id', CT_CONTRACT)
+            ->where('company_id', $activeVersion->company_id)
+            ->whereNotNull('activated_at')
+            ->get(['id', 'name']);
+
+        $templatesData = $templates
+            ->sortBy('name', SORT_NATURAL)
+            ->map(fn(SalesOrderTemplate $template) => [
+                'id' => $template->getKey(),
+                'name' => $template->name,
+            ])->all();
+
+        $customer = $worldwideQuote->opportunity->primaryAccount;
+
+        return new WorldwideQuoteToSalesOrderData([
+            'worldwide_quote_id' => $worldwideQuote->getKey(),
+            'worldwide_quote_number' => $worldwideQuote->quote_number,
+            'vat_number' => transform($customer, fn(Company $company) => $company->vat) ?? '',
+            'vat_type' => transform($customer, fn(Company $company) => $company->vat_type) ?? VAT::VAT_NUMBER,
+            'company' => $companyData,
+            'vendors' => $vendorsData,
+            'countries' => $countriesData,
+            'sales_order_templates' => $templatesData
+        ]);
+    }
+
     private function mapPackWorldwideQuoteSalesOrderData(WorldwideQuote $worldwideQuote): WorldwideQuoteToSalesOrderData
     {
         $activeVersion = $worldwideQuote->activeVersion;
@@ -188,66 +249,6 @@ class WorldwideQuoteDataMapper
         ]);
     }
 
-    private function mapContractWorldwideQuoteSalesOrderData(WorldwideQuote $worldwideQuote): WorldwideQuoteToSalesOrderData
-    {
-        $activeVersion = $worldwideQuote->activeVersion;
-
-        $companyData = new SalesOrderCompanyData([
-            'id' => $activeVersion->company->getKey(),
-            'name' => $activeVersion->company->name,
-            'logo_url' => transform($activeVersion->company->logo, function (array $logo) {
-                return $logo['x3'] ?? '';
-            })
-        ]);
-
-        $distributions = $activeVersion->worldwideDistributions()->with('country:id,name,iso_3166_2,flag', 'vendors:id,name,short_code', 'vendors.image')->get(['id', 'country_id']);
-
-        $vendors = $distributions->pluck('vendors')->collapse()->unique('id')->values();
-
-        $vendorsData = $vendors->map(fn(Vendor $vendor) => [
-            'id' => $vendor->getKey(),
-            'name' => $vendor->name,
-            'logo_url' => transform($vendor->logo, function (array $logo) {
-                return $logo['x3'] ?? '';
-            })
-        ])->all();
-
-        $countries = $distributions->pluck('country')->unique('id')->values();
-
-        $countriesData = $countries->map(fn(Country $country) => [
-            'id' => $country->getKey(),
-            'name' => $country->name,
-            'flag_url' => $country->flag
-        ])->all();
-
-        $templates = SalesOrderTemplate::query()
-            ->where('business_division_id', BD_WORLDWIDE)
-            ->where('contract_type_id', CT_CONTRACT)
-            ->where('company_id', $activeVersion->company_id)
-            ->whereNotNull('activated_at')
-            ->get(['id', 'name']);
-
-        $templatesData = $templates
-            ->sortBy('name', SORT_NATURAL)
-            ->map(fn(SalesOrderTemplate $template) => [
-                'id' => $template->getKey(),
-                'name' => $template->name,
-            ])->all();
-
-        $customer = $worldwideQuote->opportunity->primaryAccount;
-
-        return new WorldwideQuoteToSalesOrderData([
-            'worldwide_quote_id' => $worldwideQuote->getKey(),
-            'worldwide_quote_number' => $worldwideQuote->quote_number,
-            'vat_number' => transform($customer, fn(Company $company) => $company->vat) ?? '',
-            'vat_type' => transform($customer, fn(Company $company) => $company->vat_type) ?? VAT::VAT_NUMBER,
-            'company' => $companyData,
-            'vendors' => $vendorsData,
-            'countries' => $countriesData,
-            'sales_order_templates' => $templatesData
-        ]);
-    }
-
     public function mapWorldwideQuotePreviewData(WorldwideQuote $worldwideQuote): WorldwideQuotePreviewData
     {
         if (is_null($worldwideQuote->activeVersion->quoteTemplate)) {
@@ -261,27 +262,32 @@ class WorldwideQuoteDataMapper
             'distributions' => $this->getContractQuoteDistributionsData($worldwideQuote, $outputCurrency),
             'pack_assets' => $this->getPackQuoteAssetsData($worldwideQuote, $outputCurrency),
             'pack_asset_fields' => $this->getPackAssetFields($worldwideQuote, $worldwideQuote->activeVersion->quoteTemplate),
+            'pack_assets_are_grouped' => (bool)$worldwideQuote->activeVersion->use_groups,
             'quote_summary' => $this->getQuoteSummary($worldwideQuote, $outputCurrency),
             'contract_type_name' => $worldwideQuote->contractType->type_short_name
         ]);
     }
 
-    public function mapWorldwideQuotePreviewDataForExport(WorldwideQuote $worldwideQuote): WorldwideQuotePreviewData
+    private function getQuoteOutputCurrency(WorldwideQuote $worldwideQuote): Currency
     {
-        if (is_null($worldwideQuote->activeVersion->quoteTemplate)) {
-            throw new \RuntimeException("Quote must have a Template to create an export data.");
-        }
+        $currency = with($worldwideQuote->activeVersion, function (WorldwideQuoteVersion $version) {
 
-        $outputCurrency = $this->getQuoteOutputCurrency($worldwideQuote);
+            if (is_null($version->output_currency_id)) {
+                return $version->quoteCurrency;
+            }
 
-        return new WorldwideQuotePreviewData([
-            'template_data' => $this->getTemplateData($worldwideQuote, true),
-            'distributions' => $this->getContractQuoteDistributionsData($worldwideQuote, $outputCurrency),
-            'pack_assets' => $this->getPackQuoteAssetsData($worldwideQuote, $outputCurrency),
-            'pack_asset_fields' => $this->getPackAssetFields($worldwideQuote, $worldwideQuote->activeVersion->quoteTemplate),
-            'quote_summary' => $this->getQuoteSummary($worldwideQuote, $outputCurrency),
-            'contract_type_name' => $worldwideQuote->contractType->type_short_name
-        ]);
+            return $version->outputCurrency;
+
+        });
+
+        return tap($currency, function (Currency $currency) use ($worldwideQuote) {
+
+            $currency->exchange_rate_value = $this->exchangeRateService->getTargetRate(
+                $worldwideQuote->activeVersion->quoteCurrency,
+                $worldwideQuote->activeVersion->outputCurrency
+            );
+
+        });
     }
 
     public function getTemplateData(WorldwideQuote $quote, bool $useLocalAssets = false): TemplateData
@@ -297,36 +303,148 @@ class WorldwideQuoteDataMapper
         ]);
     }
 
-    public function getPackQuoteAssetsData(WorldwideQuote $quote, Currency $outputCurrency): array
+    /**
+     * @param array $pageSchema
+     * @return \App\DTO\Template\TemplateElement[]
+     */
+    private function templatePageSchemaToArrayOfTemplateElement(array $pageSchema): array
     {
-        if ($quote->contract_type_id !== CT_PACK) {
-            return [];
-        }
+        return array_map(function (array $element) {
 
-        $quotePriceData = $this->getQuotePriceData($quote);
+            return new TemplateElement([
+                'children' => $element['child'] ?? [],
+                'class' => $element['class'] ?? '',
+                'css' => $element['css'] ?? '',
+            ]);
 
-        $activeVersionOfQuote = $quote->activeVersion;
-
-        $activeVersionOfQuote->load(['assets' => function (Relation $builder) {
-            $builder->where('is_selected', true);
-        }]);
-
-        $this->sortWorldwidePackQuoteAssets($quote);
-
-        foreach ($activeVersionOfQuote->assets as $asset) {
-            $asset->setAttribute('date_to', $quote->opportunity->opportunity_end_date);
-        }
-
-        return $this->worldwideQuoteAssetsToArrayOfAssetData($activeVersionOfQuote->assets, $quotePriceData->price_value_coefficient, $outputCurrency);
+        }, $pageSchema);
     }
 
-    public static function formatMachineAddressToString(?Address $address): string
+    /**
+     * @param WorldwideQuote $quote
+     * @param bool $useLocalAssets
+     * @return TemplateAssets
+     */
+    private function getTemplateAssets(WorldwideQuote $quote, bool $useLocalAssets = false): TemplateAssets
     {
-        if (is_null($address)) {
-            return '';
+        $company = $quote->activeVersion->company;
+
+        $flags = ThumbHelper::WITH_KEYS;
+
+        if ($useLocalAssets) {
+            $flags |= ThumbHelper::ABS_PATH;
         }
 
-        return implode(', ', array_filter([$address->address_1, $address->city, optional($address->country)->iso_3166_2]));
+        $templateAssets = [
+            'logo_set_x1' => [],
+            'logo_set_x2' => [],
+            'logo_set_x3' => [],
+            'company_logo_x1' => '',
+            'company_logo_x2' => '',
+            'company_logo_x3' => '',
+        ];
+
+        $logoSetX1 = [];
+        $logoSetX2 = [];
+        $logoSetX3 = [];
+
+        $companyImages = transform($company->image, function (Image $image) use ($flags, $company) {
+
+            return ThumbHelper::getLogoDimensionsFromImage(
+                $image,
+                $company->thumbnailProperties(),
+                'company_',
+                $flags
+            );
+
+        }, []);
+
+        $templateAssets = array_merge($templateAssets, $companyImages);
+
+        /** @var Collection<Vendor>|Vendor[] $vendors */
+
+        $vendors = with($quote, function (WorldwideQuote $quote) {
+
+            if ($quote->contract_type_id === CT_PACK) {
+
+                return Vendor::query()
+                    ->whereIn((new Vendor())->getQualifiedKeyName(), function (BaseBuilder $builder) use ($quote) {
+                        return $builder->selectRaw('distinct(vendor_id)')
+                            ->from('worldwide_quote_assets')
+                            ->where($quote->activeVersion->assets()->getQualifiedForeignKeyName(), $quote->activeVersion->getKey())
+                            ->whereNotNull('vendor_id')
+                            ->where('is_selected', true);
+                    })
+                    ->has('image')
+                    ->get();
+
+            }
+
+            if ($quote->contract_type_id === CT_CONTRACT) {
+
+                $vendors = $quote->activeVersion->worldwideDistributions->load(['vendors' => function (BelongsToMany $relationship) {
+                    $relationship->has('image');
+                }])->pluck('vendors')->collapse();
+
+                $vendors = new Collection($vendors);
+
+                return $vendors->unique()->values();
+
+            }
+
+            return new Collection();
+        });
+
+        foreach ($vendors as $key => $vendor) {
+
+            $vendorImages = ThumbHelper::getLogoDimensionsFromImage(
+                $vendor->image,
+                $vendor->thumbnailProperties(),
+                '',
+                $flags
+            );
+
+            $logoSetX1 = array_merge($logoSetX1, Arr::wrap($vendorImages['x1'] ?? []));
+            $logoSetX2 = array_merge($logoSetX2, Arr::wrap($vendorImages['x2'] ?? []));
+            $logoSetX3 = array_merge($logoSetX3, Arr::wrap($vendorImages['x3'] ?? []));
+
+        }
+
+        $composeLogoSet = function (array $logoSet) {
+            static $whitespaceImg = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAfSURBVHgB7cqxAQAADAEw7f8/4wSDUeYcDYFHaLETBWmaBBDqHm1tAAAAAElFTkSuQmCC";
+
+            if (empty($logoSet)) {
+                return [];
+            }
+
+            if (count($logoSet) === 1) {
+                return [array_shift($logoSet)];
+            }
+
+            $composed = [];
+
+            $lastImgSource = array_pop($logoSet);
+
+            foreach ($logoSet as $imgSource) {
+                $composed[] = $imgSource;
+                $composed[] = $whitespaceImg;
+            }
+
+            $composed[] = $lastImgSource;
+
+            return $composed;
+        };
+
+        foreach ([
+                     'logo_set_x1' => $logoSetX1,
+                     'logo_set_x2' => $logoSetX2,
+                     'logo_set_x3' => $logoSetX3
+                 ] as $key => $logoSet) {
+
+            $templateAssets[$key] = $composeLogoSet($logoSet);
+        }
+
+        return new TemplateAssets($templateAssets);
     }
 
     /**
@@ -477,36 +595,329 @@ class WorldwideQuoteDataMapper
         })->all();
     }
 
-    private function getContractQuoteDataAggregation(WorldwideQuote $quote, Currency $outputCurrency): array
+    /**
+     * @param QuoteTemplate $quoteTemplate
+     * @return PaymentScheduleField[]
+     */
+    private function getPaymentScheduleFields(QuoteTemplate $quoteTemplate): array
     {
-        $quoteDataAggregation = [];
+        $fields = static::getClassPublicProperties(PaymentData::class);
 
-        $opportunity = $quote->opportunity;
+        $defaultHeaders = ['from' => 'From Date', 'to' => 'To Date', 'price' => 'Price'];
 
-        $duration = 'Unknown';
+        return array_map(function (string $fieldName) use ($defaultHeaders, $quoteTemplate) {
 
-        if (!is_null($opportunity->opportunity_start_date) && !is_null($opportunity->opportunity_end_date)) {
-            $opportunityStartDate = Carbon::createFromFormat('Y-m-d', $opportunity->opportunity_start_date);
-            $opportunityEndDate = Carbon::createFromFormat('Y-m-d', $opportunity->opportunity_end_date);
+            $fieldHeader = with($fieldName, function (string $fieldName) use ($defaultHeaders, $quoteTemplate) {
 
-            $duration = $opportunityStartDate->longAbsoluteDiffForHumans($opportunityEndDate->copy()->addDay());
-        }
+                $templateDataHeaders = $quoteTemplate->data_headers;
+                $templateHeadersDictionary = QuoteTemplate::dataHeadersDictionary();
 
-        foreach ($quote->activeVersion->worldwideDistributions as $worldwideDistribution) {
-            /** @var WorldwideDistribution $worldwideDistribution */
+                if (isset($templateDataHeaders[$fieldName])) {
+                    return $templateDataHeaders[$fieldName]['value'];
+                }
 
-            $priceSummaryOfDistributorQuote = $this->worldwideDistributionCalc->calculatePriceSummaryOfDistributorQuote($worldwideDistribution);
+                if (isset($templateHeadersDictionary[$fieldName])) {
+                    return $templateHeadersDictionary[$fieldName]['value'];
+                }
 
-            $quoteDataAggregation[] = new DistributionSummary([
-                'vendor_name' => $worldwideDistribution->opportunitySupplier->supplier_name,
-                'country_name' => $worldwideDistribution->country->name,
-                'duration' => $duration,
-                'qty' => 1,
-                'total_price' => static::formatPriceValue($priceSummaryOfDistributorQuote->final_total_price_excluding_tax, $outputCurrency->symbol),
+                return $defaultHeaders[$fieldName] ?? $fieldName;
+
+            });
+
+            return new PaymentScheduleField([
+                'field_name' => $fieldName,
+                'field_header' => $fieldHeader,
             ]);
+
+        }, $fields);
+    }
+
+    private static function getClassPublicProperties(string $class): array
+    {
+        $reflection = new \ReflectionClass($class);
+        $reflectionProperties = $reflection->getProperties(\ReflectionProperty::IS_PUBLIC);
+
+        $fields = [];
+
+        foreach ($reflectionProperties as $property) {
+            if ($property->isStatic()) continue;
+
+            $fields[] = $property->getName();
         }
 
-        return $quoteDataAggregation;
+        return $fields;
+    }
+
+    /**
+     * @param WorldwideDistribution $distribution
+     * @param float $priceValueCoeff
+     * @param Currency $outputCurrency
+     * @return AssetData[]|AssetsGroupData[]
+     */
+    private function getDistributionAssetsData(WorldwideDistribution $distribution, float $priceValueCoeff, Currency $outputCurrency): array
+    {
+        if (!$distribution->use_groups) {
+            $distribution->load(['mappedRows' => function (Relation $builder) {
+                $builder->where('is_selected', true);
+            }]);
+
+            $this->sortWorldwideDistributionRows($distribution);
+
+            return $this->mappedRowsToArrayOfAssetData($distribution->mappedRows, $priceValueCoeff, $outputCurrency);
+        }
+
+        $distribution->load(['rowsGroups' => function (Relation $builder) {
+            $builder->where('is_selected', true);
+        }, 'rowsGroups.rows']);
+
+        $this->sortWorldwideDistributionRowsGroups($distribution);
+
+        return $distribution->rowsGroups->map(function (DistributionRowsGroup $rowsGroup) use ($priceValueCoeff, $outputCurrency, $distribution) {
+            $assets = $this->mappedRowsToArrayOfAssetData($rowsGroup->rows, $priceValueCoeff * (float)$outputCurrency->exchange_rate_value, $outputCurrency);
+
+            return new AssetsGroupData([
+                'group_name' => $rowsGroup->group_name,
+                'assets' => $assets,
+                'group_total_price' => static::formatPriceValue((float)$rowsGroup->rows_sum * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value, $outputCurrency->symbol),
+                'group_total_price_float' => (float)$rowsGroup->rows_sum * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value,
+            ]);
+
+        })->all();
+
+    }
+
+    /**
+     * @param WorldwideDistribution $distribution
+     */
+    public function sortWorldwideDistributionRows(WorldwideDistribution $distribution): void
+    {
+        if (is_null($distribution->sort_rows_column) || $distribution->sort_rows_column === '') {
+            return;
+        }
+
+        $results = $distribution->mappedRows->sortBy(
+            $distribution->sort_rows_column,
+            SORT_NATURAL,
+            $distribution->sort_rows_direction === 'desc'
+        )
+            ->values();
+
+        $distribution->setRelation('mappedRows', $results);
+    }
+
+    /**
+     * @param Collection<MappedRow> $rows
+     * @param float $priceValueCoeff
+     * @param Currency $outputCurrency
+     * @return AssetData[]
+     */
+    private function mappedRowsToArrayOfAssetData(Collection $rows, float $priceValueCoeff, Currency $outputCurrency): array
+    {
+        return $rows->map(function (MappedRow $row) use ($priceValueCoeff, $outputCurrency) {
+            return new AssetData([
+                'buy_currency_code' => '',
+                'vendor_short_code' => '',
+                'product_no' => $row->product_no ?? '',
+                'service_sku' => $row->service_sku ?? '',
+                'description' => $row->description ?? '',
+                'serial_no' => $row->serial_no ?? '',
+                'date_from' => transform($row->date_from, function (string $date) {
+                    /** @noinspection PhpParamsInspection */
+                    return static::formatDate(Carbon::createFromFormat('Y-m-d', $date));
+                }, ''),
+                'date_to' => transform($row->date_to, function (string $date) {
+                    /** @noinspection PhpParamsInspection */
+                    return static::formatDate(Carbon::createFromFormat('Y-m-d', $date));
+                }, ''),
+                'qty' => $row->qty ?? 1,
+                'price' => static::formatPriceValue((float)$row->price * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value, $outputCurrency->symbol),
+                'price_float' => (float)$row->price * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value,
+                'machine_address_string' => '',
+                'pricing_document' => $row->pricing_document ?? '',
+                'system_handle' => $row->system_handle ?? '',
+                'searchable' => $row->searchable ?? '',
+                'service_level_description' => $row->service_level_description ?? '',
+            ]);
+        })->all();
+    }
+
+    private static function formatDate(?Carbon $date): string
+    {
+        if (is_null($date)) {
+            return '';
+        }
+
+        return $date->format('d/m/Y');
+    }
+
+    private static function formatPriceValue(float $value, string $currencySymbol = ''): string
+    {
+        $priceValue = number_format($value, 2);
+
+        if ($currencySymbol !== '') {
+            $priceValue = $currencySymbol.' '.$priceValue;
+        }
+
+        return $priceValue;
+    }
+
+    /**
+     * @param WorldwideDistribution $distribution
+     */
+    public function sortWorldwideDistributionRowsGroups(WorldwideDistribution $distribution): void
+    {
+        if (is_null($distribution->sort_rows_groups_column) || $distribution->sort_rows_groups_column === '') {
+            return;
+        }
+
+        $results = $distribution->rowsGroups->sortBy(
+            $distribution->sort_rows_groups_column,
+            SORT_NATURAL,
+            $distribution->sort_rows_groups_direction === 'desc'
+        )
+            ->values();
+
+        $distribution->setRelation('rowsGroups', $results);
+    }
+
+    private function getDistributionAssetFields(WorldwideDistribution $distribution, QuoteTemplate $quoteTemplate): array
+    {
+        $assetFields = [];
+
+        $templateDataHeaders = $quoteTemplate->data_headers;
+        $templateHeadersDictionary = QuoteTemplate::dataHeadersDictionary();
+        $mapping = $distribution->mapping->keyBy('template_field_name');
+
+        $templateFieldNames = [
+            'product_no',
+            'description',
+            'serial_no',
+            'service_level_description',
+            'service_sku',
+            'date_from',
+            'date_to',
+            'qty',
+            'price',
+        ];
+
+        foreach ($templateFieldNames as $fieldName) {
+
+            /** @var DistributionFieldColumn $column */
+
+            $column = $mapping[$fieldName] ?? null;
+
+            if (is_null($column)) {
+                continue;
+            }
+
+            if (is_null($column->importable_column_id) && !$column->is_editable) {
+                continue;
+            }
+
+            $fieldHeader = with($column->template_field_name, function (string $fieldName) use ($templateDataHeaders, $templateHeadersDictionary) {
+
+                if (isset($templateDataHeaders[$fieldName])) {
+                    return $templateDataHeaders[$fieldName]['value'];
+                }
+
+                if (isset($templateHeadersDictionary[$fieldName])) {
+                    return $templateHeadersDictionary[$fieldName]['value'];
+                }
+
+                return $fieldName;
+
+            });
+
+            $assetFields[] = new AssetField([
+                'field_name' => $column->template_field_name,
+                'field_header' => $fieldHeader,
+            ]);
+
+        }
+
+        return $assetFields;
+    }
+
+    /**
+     * @param array $value
+     * @param float $priceValueCoeff
+     * @param Currency $outputCurrency
+     * @return PaymentData[]
+     */
+    private function paymentScheduleToArrayOfPaymentData(array $value, float $priceValueCoeff, Currency $outputCurrency): array
+    {
+        return array_map(function (array $payment) use ($priceValueCoeff, $outputCurrency) {
+
+            return new PaymentData([
+                'from' => $payment['from'],
+                'to' => $payment['to'],
+                'price' => static::formatPriceValue((float)PriceParser::parseAmount($payment['price'] ?? '') * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value, $outputCurrency->symbol),
+            ]);
+
+        }, $value);
+    }
+
+    public static function formatMachineAddressToString(?Address $address): string
+    {
+        if (is_null($address)) {
+            return '';
+        }
+
+        return implode(', ', array_filter([$address->address_1, $address->city, optional($address->country)->iso_3166_2]));
+    }
+
+    public function getPackQuoteAssetsData(WorldwideQuote $quote, Currency $outputCurrency): array
+    {
+        if ($quote->contract_type_id !== CT_PACK) {
+            return [];
+        }
+
+        $quotePriceData = $this->getQuotePriceData($quote);
+
+        $activeVersionOfQuote = $quote->activeVersion;
+
+        if (!$activeVersionOfQuote->use_groups) {
+
+            $activeVersionOfQuote->load(['assets' => function (Relation $builder) {
+                $builder->where('is_selected', true);
+            }]);
+
+            $this->sortWorldwidePackQuoteAssets($quote);
+
+            foreach ($activeVersionOfQuote->assets as $asset) {
+                $asset->setAttribute('date_to', $quote->opportunity->opportunity_end_date);
+            }
+
+            return $this->worldwideQuoteAssetsToArrayOfAssetData($activeVersionOfQuote->assets, $quotePriceData->price_value_coefficient, $outputCurrency);
+
+        }
+
+        $quote->activeVersion->load(['assetsGroups' => function (Relation $builder) {
+            $builder->where('is_selected', true);
+        }, 'assetsGroups.assets', 'assetsGroups.assets.vendor:id,short_code']);
+
+        $this->sortGroupsOfPackAssets($quote);
+
+        return $quote->activeVersion->assetsGroups->map(function (WorldwideQuoteAssetsGroup $assetsGroup) use ($quote, $outputCurrency, $quotePriceData) {
+
+            foreach ($assetsGroup->assets as $asset) {
+
+                $asset->setAttribute('vendor_short_code', transform($asset->vendor, fn (Vendor $vendor) => $vendor->short_code));
+                $asset->setAttribute('date_to', $quote->opportunity->opportunity_end_date);
+
+            }
+
+            $assets = $this->worldwideQuoteAssetsToArrayOfAssetData($assetsGroup->assets, $quotePriceData->price_value_coefficient, $outputCurrency);
+
+            $groupTotalPrice = (float)$assetsGroup->assets_sum_price * $quotePriceData->price_value_coefficient * (float)$outputCurrency->exchange_rate_value;
+
+            return new AssetsGroupData([
+                'group_name' => $assetsGroup->group_name,
+                'assets' => $assets,
+                'group_total_price' => static::formatPriceValue($groupTotalPrice, $outputCurrency->symbol),
+                'group_total_price_float' => $groupTotalPrice,
+            ]);
+        })->all();
     }
 
     private function getQuotePriceData(WorldwideQuote $worldwideQuote): QuotePriceData
@@ -524,6 +935,110 @@ class WorldwideQuoteDataMapper
                 $quotePriceData->price_value_coefficient = $quotePriceData->final_total_price_value_excluding_tax / $quotePriceData->total_price_value;
             }
         });
+    }
+
+    public function sortWorldwidePackQuoteAssets(WorldwideQuote $quote): void
+    {
+        $activeVersion = $quote->activeVersion;
+
+        $sortRowsColumn = $activeVersion->sort_rows_column;
+
+        if (!is_string($sortRowsColumn) || $sortRowsColumn === '') {
+            return;
+        }
+
+        $results = $activeVersion->assets->sortBy(
+            function (WorldwideQuoteAsset $asset) use ($sortRowsColumn) {
+                if ($sortRowsColumn === 'machine_address') {
+                    return self::formatMachineAddressToString($asset->machineAddress);
+                }
+
+                return $asset->{$sortRowsColumn};
+            },
+            SORT_NATURAL,
+            $activeVersion->sort_rows_direction === 'desc'
+        )
+            ->values();
+
+        $quote->setRelation('assets', $results);
+    }
+
+    private function worldwideQuoteAssetsToArrayOfAssetData(Collection $assets, float $priceValueCoeff, Currency $outputCurrency): array
+    {
+        return $assets
+            ->load('machineAddress.country')
+            ->map(function (WorldwideQuoteAsset $asset) use ($outputCurrency, $priceValueCoeff) {
+                $assetFloatPrice = (float)$asset->price * $priceValueCoeff  * (float)$outputCurrency->exchange_rate_value;
+
+                return new AssetData([
+                    'buy_currency_code' => transform($asset->buyCurrency, fn(Currency $currency) => $currency->code, ''),
+                    'vendor_short_code' => $asset->vendor_short_code ?? '',
+                    'product_no' => $asset->sku ?? '',
+                    'service_sku' => $asset->service_sku ?? '',
+                    'description' => $asset->product_name ?? '',
+                    'serial_no' => $asset->serial_no ?? '',
+                    'date_from' => transform($asset->expiry_date, function (string $date) {
+                        /** @noinspection PhpParamsInspection */
+                        return static::formatDate(Carbon::createFromFormat('Y-m-d', $date)->addDay());
+                    }, ''),
+                    'date_to' => transform($asset->date_to, function (string $date) {
+                        /** @noinspection PhpParamsInspection */
+                        return static::formatDate(Carbon::createFromFormat('Y-m-d', $date));
+                    }, ''),
+                    'qty' => 1,
+                    'price' => static::formatPriceValue($assetFloatPrice, $outputCurrency->symbol),
+                    'price_float' => $assetFloatPrice,
+                    'machine_address_string' => transform($asset->machineAddress, function (Address $address): string {
+                        return sprintf('%s %s', $address->address_1, optional($address->country)->iso_3166_2);
+                    }, ''),
+                    'pricing_document' => '',
+                    'system_handle' => '',
+                    'searchable' => '',
+                    'service_level_description' => $asset->service_level_description ?? '',
+                ]);
+            })->all();
+    }
+
+    private function getPackAssetFields(WorldwideQuote $quote, QuoteTemplate $quoteTemplate): array
+    {
+        $assetFields = [];
+
+        $templateDataHeaders = $quoteTemplate->data_headers;
+        $templateHeadersDictionary = QuoteTemplate::dataHeadersDictionary();
+
+        $assetFieldNames = [
+            'vendor_short_code',
+            'product_no',
+            'description',
+            'serial_no',
+            'service_level_description',
+            'service_sku',
+            'date_from',
+            'date_to',
+            'price',
+            'machine_address_string'
+        ];
+
+        foreach ($assetFieldNames as $fieldName) {
+            $fieldHeader = with($fieldName, function (string $fieldName) use ($templateDataHeaders, $templateHeadersDictionary) {
+                if (isset($templateDataHeaders[$fieldName])) {
+                    return $templateDataHeaders[$fieldName]['value'];
+                }
+
+                if (isset($templateHeadersDictionary[$fieldName])) {
+                    return $templateHeadersDictionary[$fieldName]['value'];
+                }
+
+                return $fieldName;
+            });
+
+            $assetFields[] = new AssetField([
+                'field_name' => $fieldName,
+                'field_header' => $fieldHeader,
+            ]);
+        }
+
+        return $assetFields;
     }
 
     public function getQuoteSummary(WorldwideQuote $worldwideQuote, Currency $outputCurrency): QuoteSummary
@@ -546,7 +1061,7 @@ class WorldwideQuoteDataMapper
         $opportunityClosingDate = transform($opportunity->opportunity_closing_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date));
 
         /** @var Carbon|null $quoteExpiryDate */
-        $quoteExpiryDate = transform($activeVersion->quote_expiry_date, fn (string $date) => Carbon::createFromFormat('Y-m-d', $date));
+        $quoteExpiryDate = transform($activeVersion->quote_expiry_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date));
 
         $quotePriceData = $this->getQuotePriceData($worldwideQuote);
 
@@ -657,258 +1172,36 @@ class WorldwideQuoteDataMapper
         ]);
     }
 
-    public function sortWorldwidePackQuoteAssets(WorldwideQuote $quote): void
+    private function getContractQuoteDataAggregation(WorldwideQuote $quote, Currency $outputCurrency): array
     {
-        $activeVersion = $quote->activeVersion;
+        $quoteDataAggregation = [];
 
-        $sortRowsColumn = $activeVersion->sort_rows_column;
+        $opportunity = $quote->opportunity;
 
-        if (!is_string($sortRowsColumn) || $sortRowsColumn === '') {
-            return;
+        $duration = 'Unknown';
+
+        if (!is_null($opportunity->opportunity_start_date) && !is_null($opportunity->opportunity_end_date)) {
+            $opportunityStartDate = Carbon::createFromFormat('Y-m-d', $opportunity->opportunity_start_date);
+            $opportunityEndDate = Carbon::createFromFormat('Y-m-d', $opportunity->opportunity_end_date);
+
+            $duration = $opportunityStartDate->longAbsoluteDiffForHumans($opportunityEndDate->copy()->addDay());
         }
 
-        $results = $activeVersion->assets->sortBy(
-            function (WorldwideQuoteAsset $asset) use ($sortRowsColumn) {
-                if ($sortRowsColumn === 'machine_address') {
-                    return self::formatMachineAddressToString($asset->machineAddress);
-                }
+        foreach ($quote->activeVersion->worldwideDistributions as $worldwideDistribution) {
+            /** @var WorldwideDistribution $worldwideDistribution */
 
-                return $asset->{$sortRowsColumn};
-            },
-            SORT_NATURAL,
-            $activeVersion->sort_rows_direction === 'desc'
-        )
-            ->values();
+            $priceSummaryOfDistributorQuote = $this->worldwideDistributionCalc->calculatePriceSummaryOfDistributorQuote($worldwideDistribution);
 
-        $quote->setRelation('assets', $results);
-    }
-
-    /**
-     * @param WorldwideDistribution $distribution
-     */
-    public function sortWorldwideDistributionRows(WorldwideDistribution $distribution): void
-    {
-        if (is_null($distribution->sort_rows_column) || $distribution->sort_rows_column === '') {
-            return;
-        }
-
-        $results = $distribution->mappedRows->sortBy(
-            $distribution->sort_rows_column,
-            SORT_NATURAL,
-            $distribution->sort_rows_direction === 'desc'
-        )
-            ->values();
-
-        $distribution->setRelation('mappedRows', $results);
-    }
-
-    /**
-     * @param WorldwideDistribution $distribution
-     */
-    public function sortWorldwideDistributionRowsGroups(WorldwideDistribution $distribution): void
-    {
-        if (is_null($distribution->sort_rows_groups_column) || $distribution->sort_rows_groups_column === '') {
-            return;
-        }
-
-        $results = $distribution->rowsGroups->sortBy(
-            $distribution->sort_rows_groups_column,
-            SORT_NATURAL,
-            $distribution->sort_rows_groups_direction === 'desc'
-        )
-            ->values();
-
-        $distribution->setRelation('rowsGroups', $results);
-    }
-
-    public function collectMappingColumnsOfDistributorQuote(WorldwideDistribution $distributorQuote): array
-    {
-        /** @var \App\Models\QuoteFile\ImportedRow[] $mappingRows */
-        $importableColumns = $distributorQuote->mappingRows()
-            ->toBase()
-            ->selectRaw("distinct(json_unquote(json_extract(columns_data, '$.*.importable_column_id'))) as importable_columns")
-            ->pluck('importable_columns');
-
-        $importableColumns = $importableColumns->reduce(function (array $carry, string $columns) {
-           return array_merge($carry, json_decode($columns, true));
-        }, []);
-
-        /** @var array $importableColumns */
-
-        if (empty($importableColumns)) {
-            return [];
-        }
-
-        $importableColumns = array_values(array_unique($importableColumns));
-
-        $columnValueQueryBuilder = function (string $columnKey) use ($distributorQuote): BaseBuilder {
-           return $distributorQuote->mappingRows()->getQuery()->toBase()
-                ->selectRaw(sprintf("json_unquote(json_extract(columns_data, '$.\"%s\".value')) as value", $columnKey))
-                ->selectRaw(sprintf("'%s' as importable_column_id", $columnKey))
-                ->selectRaw(sprintf("json_unquote(json_extract(columns_data, '$.\"%s\".header')) as header", $columnKey))
-                ->whereRaw(sprintf("json_unquote(json_extract(columns_data, '$.\"%s\".value')) is not null", $columnKey))
-                ->orderBy($distributorQuote->mappingRows()->qualifyColumn('created_at'))
-                ->limit(1);
-        };
-
-        $unionQuery = $columnValueQueryBuilder(array_shift($importableColumns));
-
-        foreach ($importableColumns as $columnKey) {
-            $unionQuery->unionAll(
-                $columnValueQueryBuilder($columnKey)
-            );
-        }
-
-        $columnValues = $unionQuery->get();
-
-        $columnsData = [];
-
-        foreach ($columnValues as $columnValue) {
-            $columnsData[$columnValue->importable_column_id] = [
-                'value' => $columnValue->value,
-                'header' => $columnValue->header,
-                'importable_column_id' => $columnValue->importable_column_id,
-            ];
-        }
-
-        return $columnsData;
-    }
-
-    private function getPackAssetFields(WorldwideQuote $quote, QuoteTemplate $quoteTemplate): array
-    {
-        $assetFields = [];
-
-        $templateDataHeaders = $quoteTemplate->data_headers;
-        $templateHeadersDictionary = QuoteTemplate::dataHeadersDictionary();
-
-        $assetFieldNames = [
-            'vendor_short_code',
-            'product_no',
-            'description',
-            'serial_no',
-            'service_level_description',
-            'service_sku',
-            'date_from',
-            'date_to',
-            'price',
-            'machine_address_string'
-        ];
-
-        foreach ($assetFieldNames as $fieldName) {
-            $fieldHeader = with($fieldName, function (string $fieldName) use ($templateDataHeaders, $templateHeadersDictionary) {
-                if (isset($templateDataHeaders[$fieldName])) {
-                    return $templateDataHeaders[$fieldName]['value'];
-                }
-
-                if (isset($templateHeadersDictionary[$fieldName])) {
-                    return $templateHeadersDictionary[$fieldName]['value'];
-                }
-
-                return $fieldName;
-            });
-
-            $assetFields[] = new AssetField([
-                'field_name' => $fieldName,
-                'field_header' => $fieldHeader,
+            $quoteDataAggregation[] = new DistributionSummary([
+                'vendor_name' => $worldwideDistribution->opportunitySupplier->supplier_name,
+                'country_name' => $worldwideDistribution->country->name,
+                'duration' => $duration,
+                'qty' => 1,
+                'total_price' => static::formatPriceValue($priceSummaryOfDistributorQuote->final_total_price_excluding_tax, $outputCurrency->symbol),
             ]);
         }
 
-        return $assetFields;
-    }
-
-    private function getDistributionAssetFields(WorldwideDistribution $distribution, QuoteTemplate $quoteTemplate): array
-    {
-        $assetFields = [];
-
-        $templateDataHeaders = $quoteTemplate->data_headers;
-        $templateHeadersDictionary = QuoteTemplate::dataHeadersDictionary();
-        $mapping = $distribution->mapping->keyBy('template_field_name');
-
-        $templateFieldNames = [
-            'product_no',
-            'description',
-            'serial_no',
-            'service_level_description',
-            'service_sku',
-            'date_from',
-            'date_to',
-            'qty',
-            'price',
-        ];
-
-        foreach ($templateFieldNames as $fieldName) {
-
-            /** @var DistributionFieldColumn $column */
-
-            $column = $mapping[$fieldName] ?? null;
-
-            if (is_null($column)) {
-                continue;
-            }
-
-            if (is_null($column->importable_column_id) && !$column->is_editable) {
-                continue;
-            }
-
-            $fieldHeader = with($column->template_field_name, function (string $fieldName) use ($templateDataHeaders, $templateHeadersDictionary) {
-
-                if (isset($templateDataHeaders[$fieldName])) {
-                    return $templateDataHeaders[$fieldName]['value'];
-                }
-
-                if (isset($templateHeadersDictionary[$fieldName])) {
-                    return $templateHeadersDictionary[$fieldName]['value'];
-                }
-
-                return $fieldName;
-
-            });
-
-            $assetFields[] = new AssetField([
-                'field_name' => $column->template_field_name,
-                'field_header' => $fieldHeader,
-            ]);
-
-        }
-
-        return $assetFields;
-    }
-
-    /**
-     * @param QuoteTemplate $quoteTemplate
-     * @return PaymentScheduleField[]
-     */
-    private function getPaymentScheduleFields(QuoteTemplate $quoteTemplate): array
-    {
-        $fields = static::getClassPublicProperties(PaymentData::class);
-
-        $defaultHeaders = ['from' => 'From Date', 'to' => 'To Date', 'price' => 'Price'];
-
-        return array_map(function (string $fieldName) use ($defaultHeaders, $quoteTemplate) {
-
-            $fieldHeader = with($fieldName, function (string $fieldName) use ($defaultHeaders, $quoteTemplate) {
-
-                $templateDataHeaders = $quoteTemplate->data_headers;
-                $templateHeadersDictionary = QuoteTemplate::dataHeadersDictionary();
-
-                if (isset($templateDataHeaders[$fieldName])) {
-                    return $templateDataHeaders[$fieldName]['value'];
-                }
-
-                if (isset($templateHeadersDictionary[$fieldName])) {
-                    return $templateHeadersDictionary[$fieldName]['value'];
-                }
-
-                return $defaultHeaders[$fieldName] ?? $fieldName;
-
-            });
-
-            return new PaymentScheduleField([
-                'field_name' => $fieldName,
-                'field_header' => $fieldHeader,
-            ]);
-
-        }, $fields);
+        return $quoteDataAggregation;
     }
 
     /**
@@ -946,334 +1239,101 @@ class WorldwideQuoteDataMapper
         }, $fields);
     }
 
-    private static function formatPriceValue(float $value, string $currencySymbol = ''): string
+    public function mapWorldwideQuotePreviewDataForExport(WorldwideQuote $worldwideQuote): WorldwideQuotePreviewData
     {
-        $priceValue = number_format($value, 2);
-
-        if ($currencySymbol !== '') {
-            $priceValue = $currencySymbol.' '.$priceValue;
+        if (is_null($worldwideQuote->activeVersion->quoteTemplate)) {
+            throw new \RuntimeException("Quote must have a Template to create an export data.");
         }
 
-        return $priceValue;
+        $outputCurrency = $this->getQuoteOutputCurrency($worldwideQuote);
+
+        return new WorldwideQuotePreviewData([
+            'template_data' => $this->getTemplateData($worldwideQuote, true),
+            'distributions' => $this->getContractQuoteDistributionsData($worldwideQuote, $outputCurrency),
+            'pack_assets' => $this->getPackQuoteAssetsData($worldwideQuote, $outputCurrency),
+            'pack_asset_fields' => $this->getPackAssetFields($worldwideQuote, $worldwideQuote->activeVersion->quoteTemplate),
+            'pack_assets_are_grouped' => (bool)$worldwideQuote->activeVersion->use_groups,
+            'quote_summary' => $this->getQuoteSummary($worldwideQuote, $outputCurrency),
+            'contract_type_name' => $worldwideQuote->contractType->type_short_name
+        ]);
     }
 
-    private static function formatDate(?Carbon $date): string
+    public function sortGroupsOfPackAssets(WorldwideQuote $quote): void
     {
-        if (is_null($date)) {
-            return '';
+        $sortColumn = (string)$quote->activeVersion->sort_assets_groups_column;
+
+        if ($sortColumn === '') {
+            return;
         }
 
-        return $date->format('d/m/Y');
-    }
+        /** @var string $sortColumn */
+        $sortColumn = with($sortColumn, function (string $sortColumn): string {
 
-    private function getQuoteOutputCurrency(WorldwideQuote $worldwideQuote): Currency
-    {
-        $currency = with($worldwideQuote->activeVersion, function (WorldwideQuoteVersion $version) {
-
-            if (is_null($version->output_currency_id)) {
-                return $version->quoteCurrency;
+            if ($sortColumn === 'assets_sum') {
+                return 'assets_sum_price';
             }
 
-            return $version->outputCurrency;
+            return $sortColumn;
 
         });
 
-        return tap($currency, function (Currency $currency) use ($worldwideQuote) {
+        $results = $quote->activeVersion->assetsGroups
+            ->sortBy($sortColumn, SORT_NATURAL, $quote->activeVersion->sort_assets_groups_direction === 'desc')
+            ->values();
 
-            $currency->exchange_rate_value = $this->exchangeRateService->getTargetRate(
-                $worldwideQuote->activeVersion->quoteCurrency,
-                $worldwideQuote->activeVersion->outputCurrency
-            );
-
-        });
+        $quote->activeVersion->setRelation('assetsGroups', $results);
     }
 
-    /**
-     * @param WorldwideQuote $quote
-     * @param bool $useLocalAssets
-     * @return TemplateAssets
-     */
-    private function getTemplateAssets(WorldwideQuote $quote, bool $useLocalAssets = false): TemplateAssets
+    public function collectMappingColumnsOfDistributorQuote(WorldwideDistribution $distributorQuote): array
     {
-        $company = $quote->activeVersion->company;
+        /** @var \App\Models\QuoteFile\ImportedRow[] $mappingRows */
+        $importableColumns = $distributorQuote->mappingRows()
+            ->toBase()
+            ->selectRaw("distinct(json_unquote(json_extract(columns_data, '$.*.importable_column_id'))) as importable_columns")
+            ->pluck('importable_columns');
 
-        $flags = ThumbHelper::WITH_KEYS;
-
-        if ($useLocalAssets) {
-            $flags |= ThumbHelper::ABS_PATH;
-        }
-
-        $templateAssets = [
-            'logo_set_x1' => [],
-            'logo_set_x2' => [],
-            'logo_set_x3' => [],
-            'company_logo_x1' => '',
-            'company_logo_x2' => '',
-            'company_logo_x3' => '',
-        ];
-
-        $logoSetX1 = [];
-        $logoSetX2 = [];
-        $logoSetX3 = [];
-
-        $companyImages = transform($company->image, function (Image $image) use ($flags, $company) {
-
-            return ThumbHelper::getLogoDimensionsFromImage(
-                $image,
-                $company->thumbnailProperties(),
-                'company_',
-                $flags
-            );
-
+        $importableColumns = $importableColumns->reduce(function (array $carry, string $columns) {
+            return array_merge($carry, json_decode($columns, true));
         }, []);
 
-        $templateAssets = array_merge($templateAssets, $companyImages);
+        /** @var array $importableColumns */
 
-        /** @var Collection<Vendor>|Vendor[] $vendors */
-
-        $vendors = with($quote, function (WorldwideQuote $quote) {
-
-            if ($quote->contract_type_id === CT_PACK) {
-
-                return Vendor::query()
-                    ->whereIn((new Vendor())->getQualifiedKeyName(), function (BaseBuilder $builder) use ($quote) {
-                        return $builder->selectRaw('distinct(vendor_id)')
-                            ->from('worldwide_quote_assets')
-                            ->where($quote->activeVersion->assets()->getQualifiedForeignKeyName(), $quote->activeVersion->getKey())
-                            ->whereNotNull('vendor_id')
-                            ->where('is_selected', true);
-                    })
-                    ->has('image')
-                    ->get();
-
-            }
-
-            if ($quote->contract_type_id === CT_CONTRACT) {
-
-                $vendors = $quote->activeVersion->worldwideDistributions->load(['vendors' => function (BelongsToMany $relationship) {
-                    $relationship->has('image');
-                }])->pluck('vendors')->collapse();
-
-                $vendors = new Collection($vendors);
-
-                return $vendors->unique()->values();
-
-            }
-
-            return new Collection();
-        });
-
-        foreach ($vendors as $key => $vendor) {
-
-            $vendorImages = ThumbHelper::getLogoDimensionsFromImage(
-                $vendor->image,
-                $vendor->thumbnailProperties(),
-                '',
-                $flags
-            );
-
-            $logoSetX1 = array_merge($logoSetX1, Arr::wrap($vendorImages['x1'] ?? []));
-            $logoSetX2 = array_merge($logoSetX2, Arr::wrap($vendorImages['x2'] ?? []));
-            $logoSetX3 = array_merge($logoSetX3, Arr::wrap($vendorImages['x3'] ?? []));
-
+        if (empty($importableColumns)) {
+            return [];
         }
 
-        $composeLogoSet = function (array $logoSet) {
-            static $whitespaceImg = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAfSURBVHgB7cqxAQAADAEw7f8/4wSDUeYcDYFHaLETBWmaBBDqHm1tAAAAAElFTkSuQmCC";
+        $importableColumns = array_values(array_unique($importableColumns));
 
-            if (empty($logoSet)) {
-                return [];
-            }
-
-            if (count($logoSet) === 1) {
-                return [array_shift($logoSet)];
-            }
-
-            $composed = [];
-
-            $lastImgSource = array_pop($logoSet);
-
-            foreach ($logoSet as $imgSource) {
-                $composed[] = $imgSource;
-                $composed[] = $whitespaceImg;
-            }
-
-            $composed[] = $lastImgSource;
-
-            return $composed;
+        $columnValueQueryBuilder = function (string $columnKey) use ($distributorQuote): BaseBuilder {
+            return $distributorQuote->mappingRows()->getQuery()->toBase()
+                ->selectRaw(sprintf("json_unquote(json_extract(columns_data, '$.\"%s\".value')) as value", $columnKey))
+                ->selectRaw(sprintf("'%s' as importable_column_id", $columnKey))
+                ->selectRaw(sprintf("json_unquote(json_extract(columns_data, '$.\"%s\".header')) as header", $columnKey))
+                ->whereRaw(sprintf("json_unquote(json_extract(columns_data, '$.\"%s\".value')) is not null", $columnKey))
+                ->orderBy($distributorQuote->mappingRows()->qualifyColumn('created_at'))
+                ->limit(1);
         };
 
-        foreach ([
-            'logo_set_x1' => $logoSetX1,
-            'logo_set_x2' => $logoSetX2,
-            'logo_set_x3' => $logoSetX3
-                 ] as $key => $logoSet) {
+        $unionQuery = $columnValueQueryBuilder(array_shift($importableColumns));
 
-            $templateAssets[$key] = $composeLogoSet($logoSet);
+        foreach ($importableColumns as $columnKey) {
+            $unionQuery->unionAll(
+                $columnValueQueryBuilder($columnKey)
+            );
         }
 
-        return new TemplateAssets($templateAssets);
-    }
+        $columnValues = $unionQuery->get();
 
-    /**
-     * @param array $pageSchema
-     * @return \App\DTO\Template\TemplateElement[]
-     */
-    private function templatePageSchemaToArrayOfTemplateElement(array $pageSchema): array
-    {
-        return array_map(function (array $element) {
+        $columnsData = [];
 
-            return new TemplateElement([
-                'children' => $element['child'] ?? [],
-                'class' => $element['class'] ?? '',
-                'css' => $element['css'] ?? '',
-            ]);
-
-        }, $pageSchema);
-    }
-
-    /**
-     * @param WorldwideDistribution $distribution
-     * @param float $priceValueCoeff
-     * @param Currency $outputCurrency
-     * @return AssetData[]|AssetsGroupData[]
-     */
-    private function getDistributionAssetsData(WorldwideDistribution $distribution, float $priceValueCoeff, Currency $outputCurrency): array
-    {
-        if (!$distribution->use_groups) {
-            $distribution->load(['mappedRows' => function (Relation $builder) {
-                $builder->where('is_selected', true);
-            }]);
-
-            $this->sortWorldwideDistributionRows($distribution);
-
-            return $this->mappedRowsToArrayOfAssetData($distribution->mappedRows, $priceValueCoeff, $outputCurrency);
+        foreach ($columnValues as $columnValue) {
+            $columnsData[$columnValue->importable_column_id] = [
+                'value' => $columnValue->value,
+                'header' => $columnValue->header,
+                'importable_column_id' => $columnValue->importable_column_id,
+            ];
         }
 
-        $distribution->load(['rowsGroups' => function (Relation $builder) {
-            $builder->where('is_selected', true);
-        }, 'rowsGroups.rows']);
-
-        $this->sortWorldwideDistributionRowsGroups($distribution);
-
-        return $distribution->rowsGroups->map(function (DistributionRowsGroup $rowsGroup) use ($priceValueCoeff, $outputCurrency, $distribution) {
-            $assets = $this->mappedRowsToArrayOfAssetData($rowsGroup->rows, $priceValueCoeff * (float)$outputCurrency->exchange_rate_value, $outputCurrency);
-
-            return new AssetsGroupData([
-                'group_name' => $rowsGroup->group_name,
-                'assets' => $assets,
-                'group_total_price' => static::formatPriceValue((float)$rowsGroup->rows_sum * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value, $outputCurrency->symbol),
-                'group_total_price_float' => (float)$rowsGroup->rows_sum * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value,
-            ]);
-
-        })->all();
-
-    }
-
-    /**
-     * @param Collection<MappedRow> $rows
-     * @param float $priceValueCoeff
-     * @param Currency $outputCurrency
-     * @return AssetData[]
-     */
-    private function mappedRowsToArrayOfAssetData(Collection $rows, float $priceValueCoeff, Currency $outputCurrency): array
-    {
-        return $rows->map(function (MappedRow $row) use ($priceValueCoeff, $outputCurrency) {
-            return new AssetData([
-                'buy_currency_code' => '',
-                'vendor_short_code' => '',
-                'product_no' => $row->product_no ?? '',
-                'service_sku' => $row->service_sku ?? '',
-                'description' => $row->description ?? '',
-                'serial_no' => $row->serial_no ?? '',
-                'date_from' => transform($row->date_from, function (string $date) {
-                    /** @noinspection PhpParamsInspection */
-                    return static::formatDate(Carbon::createFromFormat('Y-m-d', $date));
-                }, ''),
-                'date_to' => transform($row->date_to, function (string $date) {
-                    /** @noinspection PhpParamsInspection */
-                    return static::formatDate(Carbon::createFromFormat('Y-m-d', $date));
-                }, ''),
-                'qty' => $row->qty ?? 1,
-                'price' => static::formatPriceValue((float)$row->price * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value, $outputCurrency->symbol),
-                'price_float' => (float)$row->price * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value,
-                'machine_address_string' => '',
-                'pricing_document' => $row->pricing_document ?? '',
-                'system_handle' => $row->system_handle ?? '',
-                'searchable' => $row->searchable ?? '',
-                'service_level_description' => $row->service_level_description ?? '',
-            ]);
-        })->all();
-    }
-
-    private function worldwideQuoteAssetsToArrayOfAssetData(Collection $assets, float $priceValueCoeff, Currency $outputCurrency): array
-    {
-        return $assets
-            ->load('machineAddress.country')
-            ->map(function (WorldwideQuoteAsset $asset) use ($outputCurrency, $priceValueCoeff) {
-                $assetFloatPrice = (float)$asset->price * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value;
-
-                return new AssetData([
-                    'buy_currency_code' => transform($asset->buyCurrency, fn (Currency $currency) => $currency->code, ''),
-                    'vendor_short_code' => $asset->vendor_short_code ?? '',
-                    'product_no' => $asset->sku ?? '',
-                    'service_sku' => $asset->service_sku ?? '',
-                    'description' => $asset->product_name ?? '',
-                    'serial_no' => $asset->serial_no ?? '',
-                    'date_from' => transform($asset->expiry_date, function (string $date) {
-                        /** @noinspection PhpParamsInspection */
-                        return static::formatDate(Carbon::createFromFormat('Y-m-d', $date)->addDay());
-                    }, ''),
-                    'date_to' => transform($asset->date_to, function (string $date) {
-                        /** @noinspection PhpParamsInspection */
-                        return static::formatDate(Carbon::createFromFormat('Y-m-d', $date));
-                    }, ''),
-                    'qty' => 1,
-                    'price' => static::formatPriceValue($assetFloatPrice, $outputCurrency->symbol),
-                    'price_float' => $assetFloatPrice,
-                    'machine_address_string' => transform($asset->machineAddress, function (Address $address): string {
-                        return sprintf('%s %s', $address->address_1, optional($address->country)->iso_3166_2);
-                    }, ''),
-                    'pricing_document' => '',
-                    'system_handle' => '',
-                    'searchable' => '',
-                    'service_level_description' => $asset->service_level_description ?? '',
-                ]);
-            })->all();
-    }
-
-    /**
-     * @param array $value
-     * @param float $priceValueCoeff
-     * @param Currency $outputCurrency
-     * @return PaymentData[]
-     */
-    private function paymentScheduleToArrayOfPaymentData(array $value, float $priceValueCoeff, Currency $outputCurrency): array
-    {
-        return array_map(function (array $payment) use ($priceValueCoeff, $outputCurrency) {
-
-            return new PaymentData([
-                'from' => $payment['from'],
-                'to' => $payment['to'],
-                'price' => static::formatPriceValue((float)PriceParser::parseAmount($payment['price'] ?? '') * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value, $outputCurrency->symbol),
-            ]);
-
-        }, $value);
-    }
-
-    private static function getClassPublicProperties(string $class): array
-    {
-        $reflection = new \ReflectionClass($class);
-        $reflectionProperties = $reflection->getProperties(\ReflectionProperty::IS_PUBLIC);
-
-        $fields = [];
-
-        foreach ($reflectionProperties as $property) {
-            if ($property->isStatic()) continue;
-
-            $fields[] = $property->getName();
-        }
-
-        return $fields;
+        return $columnsData;
     }
 }

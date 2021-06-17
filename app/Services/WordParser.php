@@ -6,17 +6,14 @@ use App\Contracts\Services\WordParserInterface;
 use App\Contracts\Repositories\QuoteFile\{
     ImportableColumnRepositoryInterface as ImportableColumns,
 };
-use Devengine\PhpWord\{
-    IOFactory,
-    PhpWord,
-    Element\Table,
-    Element\TextRun,
-    Element\Text,
-    Element\Cell
-};
+use PhpOffice\PhpWord\Element\Table;
+use PhpOffice\PhpWord\Element\TextRun;
+use PhpOffice\PhpWord\Element\Text;
+use PhpOffice\PhpWord\Element\Cell;
+use PhpOffice\PhpWord\PhpWord;
+use PhpOffice\PhpWord\IOFactory;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\{Arr, Str, Collection as SupportCollection};
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\{Collection as SupportCollection};
 use voku\helper\ASCII;
 
 class WordParser implements WordParserInterface
@@ -29,7 +26,7 @@ class WordParser implements WordParserInterface
 
     public const REGEXP_ONE_PAY = '/return to/i';
 
-    protected ImportableColumns $importableColumn;
+    protected ImportableColumns $importableColumns;
 
     protected PhpWord $phpWord;
 

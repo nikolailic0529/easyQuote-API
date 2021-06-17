@@ -2,7 +2,7 @@
 
 namespace App\Contracts\Services;
 
-use Devengine\PhpWord\PhpWord;
+use PhpOffice\PhpWord\PhpWord;
 
 interface WordParserInterface
 {

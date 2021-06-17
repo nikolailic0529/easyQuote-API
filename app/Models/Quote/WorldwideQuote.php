@@ -12,6 +12,7 @@ use App\Models\SalesOrder;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\WorldwideQuoteAsset;
+use App\Models\WorldwideQuoteAssetsGroup;
 use App\Traits\Uuid;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -61,6 +62,11 @@ class WorldwideQuote extends Model implements SearchableEntity
     public function assets(): HasManyThrough
     {
         return $this->hasManyThrough(WorldwideQuoteAsset::class, WorldwideQuoteVersion::class, 'id', 'worldwide_quote_id', 'active_version_id');
+    }
+
+    public function assetsGroups(): HasManyThrough
+    {
+        return $this->hasManyThrough(WorldwideQuoteAssetsGroup::class, WorldwideQuoteVersion::class, 'id', 'worldwide_quote_version_id', 'active_version_id');
     }
 
     public function activeVersion(): BelongsTo

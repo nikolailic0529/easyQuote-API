@@ -11,11 +11,14 @@ use App\Models\QuoteFile\ImportedRow;
 use App\Models\QuoteFile\MappedRow;
 use App\Models\QuoteFile\QuoteFile;
 use App\Models\WorldwideQuoteAsset;
+use App\Models\WorldwideQuoteAssetsGroup;
 use App\Services\WorldwideQuote\Models\ReplicatedAddressesData;
 use App\Services\WorldwideQuote\Models\ReplicatedContactsData;
 use App\Services\WorldwideQuote\Models\ReplicatedDistributorQuoteData;
 use App\Services\WorldwideQuote\Models\ReplicatedVersionData;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection as BaseCollection;
 use Webpatser\Uuid\Uuid;
 
 class WorldwideQuoteReplicator
@@ -30,26 +33,66 @@ class WorldwideQuoteReplicator
 
         $replicatedPackAssets = $this->replicatePackQuoteAssets($version, $replicatedVersion);
 
+        [$replicatedAssetsGroups, $replicatedAssetsOfGroups] = $this->replicatePackQuoteAssetsGroups($version, $replicatedVersion, $replicatedPackAssets);
+
         $replicatedDistributorQuotes = $this->replicateDistributorQuotesOfVersion($version, $replicatedVersion);
 
         $replicatedQuoteNote = $this->replicateQuoteNote($version, $replicatedVersion);
 
         return new ReplicatedVersionData(
-            $replicatedVersion,
-            $versionAddressKeys,
-            $versionContactKeys,
-            $replicatedPackAssets,
-            $replicatedDistributorQuotes,
-            $replicatedQuoteNote
+            replicatedVersion: $replicatedVersion,
+            addressPivots: $versionAddressKeys,
+            contactPivots: $versionContactKeys,
+            replicatedPackAssets: $replicatedPackAssets,
+            replicatedAssetsGroups: $replicatedAssetsGroups,
+            replicatedAssetsOfGroups: $replicatedAssetsOfGroups,
+            replicatedDistributorQuotes: $replicatedDistributorQuotes,
+            replicatedQuoteNote: $replicatedQuoteNote
         );
+    }
+
+    protected function replicatePackQuoteAssetsGroups(WorldwideQuoteVersion $activeVersion, WorldwideQuoteVersion $replicatedVersion, array $replicatedAssets): array
+    {
+        $replicatedPackAssetDictionary = (new BaseCollection($replicatedAssets))->pluck('id', 'replicated_asset_id')->all();
+
+        $replicatedAssetsGroups = array_map(function (WorldwideQuoteAssetsGroup $assetsGroup) use ($replicatedVersion) {
+            $newAssetsGroup = $assetsGroup->replicate(['assets_count', 'assets_sum', 'assets_sum_price']);
+            $newAssetsGroup->replicated_assets_group_id = $assetsGroup->getKey();
+            $newAssetsGroup->{$newAssetsGroup->getKeyName()} = (string)Uuid::generate(4);
+            $newAssetsGroup->worldwideQuoteVersion()->associate($replicatedVersion);
+            $newAssetsGroup->{$newAssetsGroup->getCreatedAtColumn()} = $assetsGroup->{$assetsGroup->getCreatedAtColumn()};
+            $newAssetsGroup->{$newAssetsGroup->getUpdatedAtColumn()} = $assetsGroup->{$assetsGroup->getUpdatedAtColumn()};
+
+            return $newAssetsGroup;
+        }, $activeVersion->assetsGroups->all());
+
+        $assetsOfReplicatedGroups = array_map(function (WorldwideQuoteAssetsGroup $assetsGroup) use ($replicatedPackAssetDictionary) {
+            $groupRowKeys = $assetsGroup->replicatedGroupRows()->pluck($assetsGroup->replicatedGroupRows()->getRelated()->getQualifiedKeyName());
+
+            $groupPivotKey = $assetsGroup->assets()->getForeignPivotKeyName();
+            $assetPivotKey = $assetsGroup->assets()->getRelatedPivotKeyName();
+
+            $assetsOfGroup = [];
+
+            foreach ($groupRowKeys as $key) {
+                if (isset($replicatedPackAssetDictionary[$key])) {
+                    $assetsOfGroup[] = [
+                        $groupPivotKey => $assetsGroup->getKey(),
+                        $assetPivotKey => $replicatedPackAssetDictionary[$key],
+                    ];
+                }
+            }
+
+            return $assetsOfGroup;
+        }, $replicatedAssetsGroups);
+
+        return [$replicatedAssetsGroups, Arr::collapse($assetsOfReplicatedGroups)];
     }
 
     protected function replicateQuoteVersion(WorldwideQuoteVersion $activeVersion): WorldwideQuoteVersion
     {
         return tap(new WorldwideQuoteVersion(), function (WorldwideQuoteVersion $version) use ($activeVersion) {
             $version->{$version->getKeyName()} = (string)Uuid::generate(4);
-//            $version->worldwideQuote()->associate($activeVersion->worldwideQuote);
-//            $version->user()->associate($this->actingUser);
             $version->company_id = $activeVersion->company_id;
             $version->quote_currency_id = $activeVersion->quote_currency_id;
             $version->output_currency_id = $activeVersion->output_currency_id;
@@ -72,6 +115,7 @@ class WorldwideQuoteReplicator
             $version->additional_details = $activeVersion->additional_details;
             $version->sort_rows_column = $activeVersion->sort_rows_column;
             $version->sort_rows_direction = $activeVersion->sort_rows_direction;
+            $version->use_groups = $activeVersion->use_groups;
         });
     }
 
@@ -85,7 +129,7 @@ class WorldwideQuoteReplicator
             $note->{$note->getKeyName()} = (string)Uuid::generate(4);
 //            $note->user()->associate($replicatedVersion->user_id);
             $note->worldwideQuote()->associate($replicatedVersion->worldwide_quote_id);
-            $note->worldwideQuoteVersion()->associate($replicatedVersion);
+            $note->worldwideQuoteVersion()->associate($replicatedVersion->getKey());
             $note->text = $activeVersion->note->text;
             $note->{$note->getCreatedAtColumn()} = $note->freshTimestampString();
             $note->{$note->getUpdatedAtColumn()} = $note->freshTimestampString();
@@ -132,12 +176,9 @@ class WorldwideQuoteReplicator
 
     protected function replicateDistributorQuotesOfVersion(WorldwideQuoteVersion $activeVersion, WorldwideQuoteVersion $replicatedQuoteVersion): array
     {
-        return array_map(
-            function (WorldwideDistribution $distributorQuote) use ($replicatedQuoteVersion) {
-                return $this->replicateDistributorQuote($distributorQuote, $replicatedQuoteVersion);
-            },
-            $activeVersion->worldwideDistributions->all()
-        );
+        return array_map(function (WorldwideDistribution $distributorQuote) use ($replicatedQuoteVersion) {
+            return $this->replicateDistributorQuote($distributorQuote, $replicatedQuoteVersion);
+        }, $activeVersion->worldwideDistributions->all());
     }
 
     protected function replicateDistributorQuote(WorldwideDistribution $distributorQuote, WorldwideQuoteVersion $replicatedQuoteVersion): ReplicatedDistributorQuoteData
@@ -211,7 +252,7 @@ class WorldwideQuoteReplicator
                 if (isset($replicatedMappedRowsDictionary[$key])) {
                     $rowsOfGroup[] = [
                         $groupPivotKey => $rowsGroup->getKey(),
-                        $rowPivotKey => $replicatedMappedRowsDictionary[$key]
+                        $rowPivotKey => $replicatedMappedRowsDictionary[$key],
                     ];
                 }
             }
@@ -262,18 +303,18 @@ class WorldwideQuoteReplicator
         $vendorPivots = $this->getVendorPivotsFromDistributorQuote($distributorQuote, $replicatedDistributorQuote);
 
         return new ReplicatedDistributorQuoteData(
-            $replicatedDistributorQuote,
-            $vendorPivots,
-            $addressPivots,
-            $contactPivots,
-            $replicatedMapping,
-            $replicatedRowsGroups,
-            $groupRows,
-            $replicatedMappedRows,
-            $replicatedDistributorFile,
-            $replicatedImportedRows,
-            $replicatedScheduleFile,
-            $replicatedScheduleFileData
+            distributorQuote: $replicatedDistributorQuote,
+            vendorPivots: $vendorPivots,
+            addressPivots: $addressPivots,
+            contactPivots: $contactPivots,
+            mapping: $replicatedMapping,
+            rowsGroups: $replicatedRowsGroups,
+            groupRows: $groupRows,
+            mappedRows: $replicatedMappedRows,
+            distributorFile: $replicatedDistributorFile,
+            importedRows: $replicatedImportedRows,
+            scheduleFile: $replicatedScheduleFile,
+            scheduleData: $replicatedScheduleFileData
         );
     }
 
@@ -310,8 +351,8 @@ class WorldwideQuoteReplicator
 
         return array_map(function (string $vendorKey) use ($vendorsRelation, $replicatedDistributorQuote) {
             return [
-              $vendorsRelation->getRelatedPivotKeyName() => $vendorKey,
-              $vendorsRelation->getForeignPivotKeyName() => $replicatedDistributorQuote->getKey(),
+                $vendorsRelation->getRelatedPivotKeyName() => $vendorKey,
+                $vendorsRelation->getForeignPivotKeyName() => $replicatedDistributorQuote->getKey(),
             ];
         }, $vendorKeys);
 
@@ -333,7 +374,7 @@ class WorldwideQuoteReplicator
                 'address_id' => $newAddress->getKey(),
                 'replicated_address_id' => $address->getKey(),
                 'worldwide_distribution_id' => $replicatedDistributorQuote->getKey(),
-                'is_default' => $address->pivot->is_default
+                'is_default' => $address->pivot->is_default,
             ];
         }
 
@@ -356,10 +397,10 @@ class WorldwideQuoteReplicator
                 'contact_id' => $newContact->getKey(),
                 'replicated_contact_id' => $contact->getKey(),
                 'worldwide_distribution_id' => $replicatedDistributorQuote->getKey(),
-                'is_default' => $contact->pivot->is_default
+                'is_default' => $contact->pivot->is_default,
             ];
         }
 
-        return new ReplicatedContactsData($newContactModels, $newContactPivots);
+        return new ReplicatedContactsData(contactModels: $newContactModels, contactPivots: $newContactPivots);
     }
 }

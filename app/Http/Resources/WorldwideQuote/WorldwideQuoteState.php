@@ -20,6 +20,10 @@ class WorldwideQuoteState extends JsonResource
         'assets',
         'assets.machineAddress',
         'assets.machineAddress.country',
+        'assetsGroups',
+        'assetsGroups.assets',
+        'assetsGroups.assets.machineAddress',
+        'assetsGroups.assets.machineAddress.country',
 
         'opportunity',
         'opportunity.addresses',
@@ -60,6 +64,10 @@ class WorldwideQuoteState extends JsonResource
         'assets' => 'activeVersion.assets',
         'assets.machineAddress' => 'activeVersion.assets.machineAddress',
         'assets.machineAddress.country' => 'activeVersion.assets.machineAddress.country',
+        'assetsGroups' => 'activeVersion.assetsGroups',
+        'assetsGroups.assets' => 'activeVersion.assetsGroups.assets',
+        'assetsGroups.assets.machineAddress' => 'activeVersion.assetsGroups.assets.machineAddress',
+        'assetsGroups.assets.machineAddress.country' => 'activeVersion.assetsGroups.assets.machineAddress.country',
         'worldwideDistributions' => 'activeVersion.worldwideDistributions',
         'quoteCurrency' => 'activeVersion.quoteCurrency',
         'buyCurrency' => 'activeVersion.buyCurrency',
@@ -203,6 +211,20 @@ class WorldwideQuoteState extends JsonResource
 
                 return $this->activeVersion->assets;
             }),
+
+            'assets_groups' => value(function () {
+                /** @var WorldwideQuote $this */
+                if (!$this->activeVersion->relationLoaded('assetsGroups')) {
+                    return AssetsGroup::collection(new MissingValue());
+                }
+
+                return AssetsGroup::collection($this->activeVersion->assetsGroups);
+            }),
+
+            'use_groups' => (bool)$this->activeVersion->use_groups,
+
+            'sort_assets_groups_column' => $this->activeVersion->sort_assets_groups_column,
+            'sort_assets_groups_direction' => $this->activeVersion->sort_assets_groups_direction,
             'sort_rows_column' => $this->activeVersion->sort_rows_column,
             'sort_rows_direction' => $this->activeVersion->sort_rows_direction,
 

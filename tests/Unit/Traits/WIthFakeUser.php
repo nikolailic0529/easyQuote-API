@@ -2,10 +2,8 @@
 
 namespace Tests\Unit\Traits;
 
-use App\Http\Middleware\PerformUserActivity;
 use App\Models\User;
 use Illuminate\Foundation\Testing\WithFaker;
-use Illuminate\Support\Facades\DB;
 
 trait WithFakeUser
 {

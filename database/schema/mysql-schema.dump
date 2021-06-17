@@ -17,7 +17,7 @@ CREATE TABLE `access_attempts` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `activity_log`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -38,7 +38,7 @@ CREATE TABLE `activity_log` (
   KEY `activity_log_log_name_index` (`log_name`),
   KEY `subject` (`subject_id`,`subject_type`),
   KEY `causer` (`causer_id`,`causer_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `address_opportunity`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -52,7 +52,7 @@ CREATE TABLE `address_opportunity` (
   KEY `address_opportunity_address_id_foreign` (`address_id`),
   CONSTRAINT `address_opportunity_address_id_foreign` FOREIGN KEY (`address_id`) REFERENCES `addresses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `address_opportunity_opportunity_id_foreign` FOREIGN KEY (`opportunity_id`) REFERENCES `opportunities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `address_worldwide_distribution`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -66,7 +66,7 @@ CREATE TABLE `address_worldwide_distribution` (
   KEY `address_worldwide_distribution_address_id_foreign` (`address_id`),
   CONSTRAINT `address_worldwide_distribution_address_id_foreign` FOREIGN KEY (`address_id`) REFERENCES `addresses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `address_worldwide_distribution_worldwide_distribution_id_foreign` FOREIGN KEY (`worldwide_distribution_id`) REFERENCES `worldwide_distributions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `address_worldwide_quote_version`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -78,7 +78,7 @@ CREATE TABLE `address_worldwide_quote_version` (
   KEY `a_wqv_worldwide_quote_version_id_foreign` (`worldwide_quote_version_id`),
   CONSTRAINT `a_wqv_worldwide_quote_version_id_foreign` FOREIGN KEY (`worldwide_quote_version_id`) REFERENCES `worldwide_quote_versions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `address_worldwide_quote_version_address_id_foreign` FOREIGN KEY (`address_id`) REFERENCES `addresses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `addressables`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -91,7 +91,7 @@ CREATE TABLE `addressables` (
   PRIMARY KEY (`address_id`,`addressable_id`,`addressable_type`),
   KEY `addressables_addressable_id_addressable_type_index` (`addressable_id`,`addressable_type`),
   CONSTRAINT `addressables_address_id_foreign` FOREIGN KEY (`address_id`) REFERENCES `addresses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `addresses`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -121,7 +121,7 @@ CREATE TABLE `addresses` (
   KEY `addresses_location_id_foreign` (`location_id`),
   CONSTRAINT `addresses_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL,
   CONSTRAINT `addresses_location_id_foreign` FOREIGN KEY (`location_id`) REFERENCES `locations` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `asset_categories`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -135,7 +135,7 @@ CREATE TABLE `asset_categories` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `asset_categories_name_deleted_at_unique` (`name`,`deleted_at`),
   KEY `asset_categories_deleted_at_index` (`deleted_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `asset_totals`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -150,7 +150,7 @@ CREATE TABLE `asset_totals` (
   `lat` double GENERATED ALWAYS AS (st_y(`location_coordinates`)) STORED,
   `lng` double GENERATED ALWAYS AS (st_x(`location_coordinates`)) STORED,
   `total_value` double unsigned NOT NULL DEFAULT '0',
-  `total_count` bigint(20) unsigned NOT NULL DEFAULT '0',
+  `total_count` bigint unsigned NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -161,7 +161,7 @@ CREATE TABLE `asset_totals` (
   CONSTRAINT `asset_totals_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `asset_totals_location_id_foreign` FOREIGN KEY (`location_id`) REFERENCES `locations` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `asset_totals_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `assets`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -205,7 +205,7 @@ CREATE TABLE `assets` (
   CONSTRAINT `assets_quote_id_foreign` FOREIGN KEY (`quote_id`) REFERENCES `quotes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `assets_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `assets_vendor_id_foreign` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `attachables`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -217,7 +217,7 @@ CREATE TABLE `attachables` (
   PRIMARY KEY (`attachment_id`,`attachable_id`,`attachable_type`),
   KEY `attachables_attachable_type_attachable_id_index` (`attachable_type`,`attachable_id`),
   CONSTRAINT `attachables_attachment_id_foreign` FOREIGN KEY (`attachment_id`) REFERENCES `attachments` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `attachments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -228,14 +228,14 @@ CREATE TABLE `attachments` (
   `filepath` varchar(191) NOT NULL COMMENT 'Stored filepath',
   `filename` varchar(191) NOT NULL COMMENT 'Original filename',
   `extension` varchar(191) NOT NULL COMMENT 'File extension',
-  `size` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'File size in bytes',
+  `size` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'File size in bytes',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `attachments_type_index` (`type`),
   KEY `attachments_deleted_at_index` (`deleted_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `builds`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -243,7 +243,7 @@ DROP TABLE IF EXISTS `builds`;
 CREATE TABLE `builds` (
   `id` char(36) NOT NULL,
   `git_tag` varchar(191) DEFAULT NULL,
-  `build_number` bigint(20) unsigned DEFAULT NULL,
+  `build_number` bigint unsigned DEFAULT NULL,
   `maintenance_message` text,
   `start_time` timestamp NULL DEFAULT NULL,
   `end_time` timestamp NULL DEFAULT NULL,
@@ -252,7 +252,7 @@ CREATE TABLE `builds` (
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `builds_deleted_at_index` (`deleted_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `business_divisions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -261,7 +261,7 @@ CREATE TABLE `business_divisions` (
   `id` char(36) NOT NULL,
   `division_name` varchar(191) NOT NULL COMMENT 'Business Division Name',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `cancel_sales_order_reasons`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -274,7 +274,7 @@ CREATE TABLE `cancel_sales_order_reasons` (
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `cancel_sales_order_reasons_deleted_at_index` (`deleted_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `companies`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -317,7 +317,7 @@ CREATE TABLE `companies` (
   CONSTRAINT `companies_default_template_id_foreign` FOREIGN KEY (`default_template_id`) REFERENCES `quote_templates` (`id`) ON DELETE SET NULL,
   CONSTRAINT `companies_default_vendor_id_foreign` FOREIGN KEY (`default_vendor_id`) REFERENCES `vendors` (`id`) ON DELETE SET NULL,
   CONSTRAINT `companies_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `company_vendor`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -330,7 +330,7 @@ CREATE TABLE `company_vendor` (
   KEY `company_vendor_vendor_id_foreign` (`vendor_id`),
   CONSTRAINT `company_vendor_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `company_vendor_vendor_id_foreign` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `contact_opportunity`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -344,7 +344,7 @@ CREATE TABLE `contact_opportunity` (
   KEY `contact_opportunity_contact_id_foreign` (`contact_id`),
   CONSTRAINT `contact_opportunity_contact_id_foreign` FOREIGN KEY (`contact_id`) REFERENCES `contacts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `contact_opportunity_opportunity_id_foreign` FOREIGN KEY (`opportunity_id`) REFERENCES `opportunities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `contact_worldwide_distribution`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -358,7 +358,7 @@ CREATE TABLE `contact_worldwide_distribution` (
   KEY `contact_worldwide_distribution_contact_id_foreign` (`contact_id`),
   CONSTRAINT `contact_worldwide_distribution_contact_id_foreign` FOREIGN KEY (`contact_id`) REFERENCES `contacts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `contact_worldwide_distribution_worldwide_distribution_id_foreign` FOREIGN KEY (`worldwide_distribution_id`) REFERENCES `worldwide_distributions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `contact_worldwide_quote_version`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -370,7 +370,7 @@ CREATE TABLE `contact_worldwide_quote_version` (
   KEY `c_wqv_worldwide_quote_version_id_foreign` (`worldwide_quote_version_id`),
   CONSTRAINT `c_wqv_worldwide_quote_version_id_foreign` FOREIGN KEY (`worldwide_quote_version_id`) REFERENCES `worldwide_quote_versions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `contact_worldwide_quote_version_contact_id_foreign` FOREIGN KEY (`contact_id`) REFERENCES `contacts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `contactables`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -383,7 +383,7 @@ CREATE TABLE `contactables` (
   PRIMARY KEY (`contact_id`,`contactable_id`,`contactable_type`),
   KEY `contactables_contactable_id_contactable_type_index` (`contactable_id`,`contactable_type`),
   CONSTRAINT `contactables_contact_id_foreign` FOREIGN KEY (`contact_id`) REFERENCES `contacts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `contacts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -409,7 +409,7 @@ CREATE TABLE `contacts` (
   KEY `contacts_deleted_at_index` (`deleted_at`),
   KEY `contacts_activated_at_index` (`activated_at`),
   CONSTRAINT `contacts_image_id_foreign` FOREIGN KEY (`image_id`) REFERENCES `images` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `contract_field_column`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -428,7 +428,7 @@ CREATE TABLE `contract_field_column` (
   CONSTRAINT `contract_field_column_contract_id_foreign` FOREIGN KEY (`contract_id`) REFERENCES `contracts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `contract_field_column_importable_column_id_foreign` FOREIGN KEY (`importable_column_id`) REFERENCES `importable_columns` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `contract_field_column_template_field_id_foreign` FOREIGN KEY (`template_field_id`) REFERENCES `template_fields` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `contract_templates`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -465,7 +465,7 @@ CREATE TABLE `contract_templates` (
   CONSTRAINT `contract_templates_currency_id_foreign` FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `contract_templates_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `contract_templates_vendor_id_foreign` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `contract_types`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -475,7 +475,7 @@ CREATE TABLE `contract_types` (
   `type_name` varchar(191) NOT NULL COMMENT 'Contract Type Name',
   `type_short_name` varchar(191) NOT NULL COMMENT 'Contract Type Short Name',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `contracts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -493,7 +493,7 @@ CREATE TABLE `contracts` (
   `contract_template_id` char(36) DEFAULT NULL COMMENT 'Foreign key on contract_templates table',
   `contract_number` varchar(191) NOT NULL COMMENT 'Contract number',
   `customer_name` varchar(191) DEFAULT NULL COMMENT 'Customer name',
-  `completeness` tinyint(3) unsigned NOT NULL DEFAULT '1' COMMENT 'Contract completeness value',
+  `completeness` tinyint unsigned NOT NULL DEFAULT '1' COMMENT 'Contract completeness value',
   `group_description` json DEFAULT NULL COMMENT 'Contract group description',
   `sort_group_description` json DEFAULT NULL COMMENT 'Groups sorting columns',
   `use_groups` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether shall use or not grouped rows',
@@ -532,7 +532,7 @@ CREATE TABLE `contracts` (
   CONSTRAINT `contracts_schedule_file_id_foreign` FOREIGN KEY (`schedule_file_id`) REFERENCES `quote_files` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `contracts_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `contracts_vendor_id_foreign` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `countries`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -566,7 +566,7 @@ CREATE TABLE `countries` (
   KEY `countries_activated_at_index` (`activated_at`),
   CONSTRAINT `countries_default_currency_id_foreign` FOREIGN KEY (`default_currency_id`) REFERENCES `currencies` (`id`) ON DELETE SET NULL,
   CONSTRAINT `countries_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `country_contract_template`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -578,7 +578,7 @@ CREATE TABLE `country_contract_template` (
   KEY `country_contract_template_contract_template_id_foreign` (`contract_template_id`),
   CONSTRAINT `country_contract_template_contract_template_id_foreign` FOREIGN KEY (`contract_template_id`) REFERENCES `contract_templates` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `country_contract_template_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `country_hpe_contract_template`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -590,7 +590,7 @@ CREATE TABLE `country_hpe_contract_template` (
   KEY `country_hpe_contract_template_hpe_contract_template_id_foreign` (`hpe_contract_template_id`),
   CONSTRAINT `country_hpe_contract_template_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `country_hpe_contract_template_hpe_contract_template_id_foreign` FOREIGN KEY (`hpe_contract_template_id`) REFERENCES `hpe_contract_templates` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `country_language`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -602,7 +602,7 @@ CREATE TABLE `country_language` (
   KEY `country_language_language_id_foreign` (`language_id`),
   CONSTRAINT `country_language_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE,
   CONSTRAINT `country_language_language_id_foreign` FOREIGN KEY (`language_id`) REFERENCES `languages` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `country_margins`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -629,7 +629,7 @@ CREATE TABLE `country_margins` (
   CONSTRAINT `country_margins_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE,
   CONSTRAINT `country_margins_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
   CONSTRAINT `country_margins_vendor_id_foreign` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `country_opportunity_total`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -641,7 +641,7 @@ CREATE TABLE `country_opportunity_total` (
   KEY `country_opportunity_total_country_id_foreign` (`country_id`),
   CONSTRAINT `country_opportunity_total_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `country_opportunity_total_opportunity_total_id_foreign` FOREIGN KEY (`opportunity_total_id`) REFERENCES `opportunity_totals` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `country_quote_template`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -654,7 +654,7 @@ CREATE TABLE `country_quote_template` (
   KEY `country_quote_template_quote_template_id_foreign` (`quote_template_id`),
   CONSTRAINT `country_quote_template_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `country_quote_template_quote_template_id_foreign` FOREIGN KEY (`quote_template_id`) REFERENCES `quote_templates` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `country_quote_total`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -666,7 +666,7 @@ CREATE TABLE `country_quote_total` (
   KEY `country_quote_total_country_id_foreign` (`country_id`),
   CONSTRAINT `country_quote_total_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `country_quote_total_quote_total_id_foreign` FOREIGN KEY (`quote_total_id`) REFERENCES `quote_totals` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `country_sales_order_template`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -678,7 +678,7 @@ CREATE TABLE `country_sales_order_template` (
   KEY `country_sales_order_template_sales_order_template_id_foreign` (`sales_order_template_id`),
   CONSTRAINT `country_sales_order_template_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `country_sales_order_template_sales_order_template_id_foreign` FOREIGN KEY (`sales_order_template_id`) REFERENCES `sales_order_templates` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `country_vendor`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -691,7 +691,7 @@ CREATE TABLE `country_vendor` (
   KEY `country_vendor_country_id_foreign` (`country_id`),
   CONSTRAINT `country_vendor_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `country_vendor_vendor_id_foreign` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `currencies`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -702,7 +702,7 @@ CREATE TABLE `currencies` (
   `code` varchar(191) NOT NULL,
   `symbol` varchar(191) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `custom_field_values`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -712,7 +712,7 @@ CREATE TABLE `custom_field_values` (
   `custom_field_id` char(36) NOT NULL,
   `field_value` varchar(250) NOT NULL COMMENT 'Custom Field Value',
   `is_default` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether the field value is default',
-  `entity_order` bigint(20) NOT NULL DEFAULT '0' COMMENT 'Entity Order',
+  `entity_order` bigint NOT NULL DEFAULT '0' COMMENT 'Entity Order',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -720,7 +720,7 @@ CREATE TABLE `custom_field_values` (
   KEY `custom_field_values_custom_field_id_foreign` (`custom_field_id`),
   KEY `custom_field_values_deleted_at_index` (`deleted_at`),
   CONSTRAINT `custom_field_values_custom_field_id_foreign` FOREIGN KEY (`custom_field_id`) REFERENCES `custom_fields` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `custom_fields`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -731,7 +731,7 @@ CREATE TABLE `custom_fields` (
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `custom_fields_deleted_at_index` (`deleted_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `customer_totals`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -749,7 +749,7 @@ CREATE TABLE `customer_totals` (
   `lng` double GENERATED ALWAYS AS (st_x(`location_coordinates`)) STORED,
   `location_address` varchar(191) NOT NULL COMMENT 'Location formatted address',
   `total_value` double unsigned NOT NULL DEFAULT '0' COMMENT 'Customer total value',
-  `total_count` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'Customer total count',
+  `total_count` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Customer total count',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -765,7 +765,7 @@ CREATE TABLE `customer_totals` (
   CONSTRAINT `customer_totals_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `customer_totals_location_id_foreign` FOREIGN KEY (`location_id`) REFERENCES `locations` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `customer_totals_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `customer_vendor`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -777,7 +777,7 @@ CREATE TABLE `customer_vendor` (
   KEY `customer_vendor_vendor_id_foreign` (`vendor_id`),
   CONSTRAINT `customer_vendor_customer_id_foreign` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `customer_vendor_vendor_id_foreign` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `customers`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -787,7 +787,7 @@ CREATE TABLE `customers` (
   `int_company_id` char(36) DEFAULT NULL,
   `name` varchar(191) NOT NULL,
   `rfq` varchar(20) NOT NULL,
-  `sequence_number` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'Customer sequence number for RFQ number',
+  `sequence_number` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Customer sequence number for RFQ number',
   `source` varchar(3) NOT NULL COMMENT 'Determines whether customer belongs to the specific source',
   `valid_until` datetime NOT NULL,
   `support_start` datetime NOT NULL,
@@ -818,7 +818,7 @@ CREATE TABLE `customers` (
   CONSTRAINT `customers_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL,
   CONSTRAINT `customers_int_company_id_foreign` FOREIGN KEY (`int_company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `customers_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `data_select_separators`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -829,7 +829,7 @@ CREATE TABLE `data_select_separators` (
   `separator` varchar(191) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `data_select_separators_name_unique` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `discounts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -841,7 +841,7 @@ CREATE TABLE `discounts` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `distribution_field_column`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -861,7 +861,7 @@ CREATE TABLE `distribution_field_column` (
   CONSTRAINT `distribution_field_column_importable_column_id_foreign` FOREIGN KEY (`importable_column_id`) REFERENCES `importable_columns` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `distribution_field_column_template_field_id_foreign` FOREIGN KEY (`template_field_id`) REFERENCES `template_fields` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `distribution_field_column_worldwide_distribution_id_foreign` FOREIGN KEY (`worldwide_distribution_id`) REFERENCES `worldwide_distributions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `distribution_rows_group_mapped_row`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -873,7 +873,7 @@ CREATE TABLE `distribution_rows_group_mapped_row` (
   KEY `distribution_rows_group_mapped_row_mapped_row_id_foreign` (`mapped_row_id`),
   CONSTRAINT `distribution_rows_group_mapped_row_mapped_row_id_foreign` FOREIGN KEY (`mapped_row_id`) REFERENCES `mapped_rows` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `distribution_rows_group_mapped_row_rows_group_id_foreign` FOREIGN KEY (`rows_group_id`) REFERENCES `distribution_rows_groups` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `distribution_rows_groups`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -891,7 +891,7 @@ CREATE TABLE `distribution_rows_groups` (
   KEY `distribution_rows_groups_worldwide_distribution_id_foreign` (`worldwide_distribution_id`),
   KEY `distribution_rows_groups_replicated_rows_group_id_index` (`replicated_rows_group_id`),
   CONSTRAINT `distribution_rows_groups_worldwide_distribution_id_foreign` FOREIGN KEY (`worldwide_distribution_id`) REFERENCES `worldwide_distributions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `exchange_rates`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -914,26 +914,26 @@ CREATE TABLE `exchange_rates` (
   KEY `exchange_rates_deleted_at_index` (`deleted_at`),
   CONSTRAINT `exchange_rates_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL,
   CONSTRAINT `exchange_rates_currency_id_foreign` FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `failed_jobs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `failed_jobs` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `connection` text NOT NULL,
   `queue` text NOT NULL,
   `payload` longtext NOT NULL,
   `exception` longtext NOT NULL,
   `failed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `hpe_contract_data`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `hpe_contract_data` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
   `hpe_contract_file_id` char(36) NOT NULL,
   `amp_id` varchar(191) DEFAULT NULL COMMENT 'AMP ID',
   `support_account_reference` varchar(191) DEFAULT NULL COMMENT 'Support Account Reference',
@@ -945,7 +945,7 @@ CREATE TABLE `hpe_contract_data` (
   `product_number` varchar(191) DEFAULT NULL COMMENT 'Product Number',
   `serial_number` varchar(191) DEFAULT NULL COMMENT 'Serial Number',
   `product_description` varchar(191) DEFAULT NULL COMMENT 'Product Description',
-  `product_quantity` mediumint(8) unsigned NOT NULL DEFAULT '0' COMMENT 'Product Quantity',
+  `product_quantity` mediumint unsigned NOT NULL DEFAULT '0' COMMENT 'Product Quantity',
   `asset_type` varchar(191) DEFAULT NULL COMMENT 'Asset Type',
   `service_type` varchar(191) DEFAULT NULL COMMENT 'Service Type',
   `service_code` varchar(191) DEFAULT NULL COMMENT 'Service Code',
@@ -976,7 +976,7 @@ CREATE TABLE `hpe_contract_data` (
   KEY `hpe_contract_data_hpe_contract_file_id_foreign` (`hpe_contract_file_id`),
   KEY `hpe_contract_data_is_selected_index` (`is_selected`),
   CONSTRAINT `hpe_contract_data_hpe_contract_file_id_foreign` FOREIGN KEY (`hpe_contract_file_id`) REFERENCES `hpe_contract_files` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `hpe_contract_files`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -995,7 +995,7 @@ CREATE TABLE `hpe_contract_files` (
   KEY `hpe_contract_files_user_id_foreign` (`user_id`),
   KEY `hpe_contract_files_deleted_at_index` (`deleted_at`),
   CONSTRAINT `hpe_contract_files_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `hpe_contract_templates`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1026,7 +1026,7 @@ CREATE TABLE `hpe_contract_templates` (
   CONSTRAINT `hpe_contract_templates_currency_id_foreign` FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `hpe_contract_templates_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `hpe_contract_templates_vendor_id_foreign` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `hpe_contracts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1041,7 +1041,7 @@ CREATE TABLE `hpe_contracts` (
   `contract_number` char(14) NOT NULL COMMENT 'HPE Contract Number',
   `purchase_order_no` varchar(191) DEFAULT NULL COMMENT 'Purchase Order Number',
   `hpe_sales_order_no` varchar(191) DEFAULT NULL COMMENT 'HPE Sales Order Number',
-  `sequence_number` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'Incrementable Sequence Number',
+  `sequence_number` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Incrementable Sequence Number',
   `amp_id` varchar(191) DEFAULT NULL COMMENT 'Contract AMP ID',
   `orders_authorization` json DEFAULT NULL COMMENT 'Orders Authorization Numbers',
   `contract_numbers` json DEFAULT NULL COMMENT 'Contract Numbers',
@@ -1052,7 +1052,7 @@ CREATE TABLE `hpe_contracts` (
   `customer_post_code` varchar(191) DEFAULT NULL COMMENT 'Customer Post Code',
   `customer_country_code` varchar(191) DEFAULT NULL COMMENT 'Customer Country Code',
   `support_account_reference` varchar(191) DEFAULT NULL COMMENT 'Support Account Reference',
-  `completeness` tinyint(3) unsigned NOT NULL DEFAULT '0' COMMENT 'Contract state completeness',
+  `completeness` tinyint unsigned NOT NULL DEFAULT '0' COMMENT 'Contract state completeness',
   `checkbox_status` json DEFAULT NULL COMMENT 'Checkbox status for UI purpose',
   `contract_date` date DEFAULT NULL COMMENT 'Contract opened date',
   `purchase_order_date` date DEFAULT NULL COMMENT 'Purchase Order Date',
@@ -1085,7 +1085,7 @@ CREATE TABLE `hpe_contracts` (
   CONSTRAINT `hpe_contracts_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `hpe_contracts_hpe_contract_file_id_foreign` FOREIGN KEY (`hpe_contract_file_id`) REFERENCES `hpe_contract_files` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `hpe_contracts_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `images`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1101,7 +1101,7 @@ CREATE TABLE `images` (
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `images_deleted_at_index` (`deleted_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `importable_column_aliases`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1120,7 +1120,7 @@ CREATE TABLE `importable_column_aliases` (
   KEY `importable_column_aliases_deleted_at_index` (`deleted_at`),
   CONSTRAINT `importable_column_aliases_importable_column_id_foreign` FOREIGN KEY (`importable_column_id`) REFERENCES `importable_columns` (`id`) ON DELETE CASCADE,
   CONSTRAINT `importable_column_aliases_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `importable_columns`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1132,7 +1132,7 @@ CREATE TABLE `importable_columns` (
   `header` varchar(191) NOT NULL,
   `name` varchar(191) NOT NULL,
   `type` varchar(191) DEFAULT NULL,
-  `order` tinyint(4) NOT NULL DEFAULT '0',
+  `order` tinyint NOT NULL DEFAULT '0',
   `is_system` tinyint(1) NOT NULL DEFAULT '0',
   `is_temp` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT NULL,
@@ -1146,7 +1146,7 @@ CREATE TABLE `importable_columns` (
   KEY `importable_columns_activated_at_index` (`activated_at`),
   CONSTRAINT `importable_columns_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL,
   CONSTRAINT `importable_columns_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `imported_raw_data`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1155,7 +1155,7 @@ CREATE TABLE `imported_raw_data` (
   `id` char(36) NOT NULL,
   `user_id` char(36) NOT NULL,
   `quote_file_id` char(36) NOT NULL,
-  `page` int(11) DEFAULT NULL,
+  `page` int DEFAULT NULL,
   `file_path` varchar(191) NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -1167,7 +1167,7 @@ CREATE TABLE `imported_raw_data` (
   KEY `imported_raw_data_deleted_at_index` (`deleted_at`),
   CONSTRAINT `imported_raw_data_quote_file_id_foreign` FOREIGN KEY (`quote_file_id`) REFERENCES `quote_files` (`id`) ON DELETE CASCADE,
   CONSTRAINT `imported_raw_data_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `imported_rows`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1176,7 +1176,7 @@ CREATE TABLE `imported_rows` (
   `id` char(36) NOT NULL,
   `replicated_row_id` char(36) DEFAULT NULL COMMENT 'Replicated row key',
   `quote_file_id` char(36) NOT NULL COMMENT 'Foreign key on quote files table',
-  `page` int(11) DEFAULT NULL COMMENT 'Imported Page number',
+  `page` int DEFAULT NULL COMMENT 'Imported Page number',
   `is_selected` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether the row is selected',
   `is_one_pay` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether the row is one pay',
   `columns_data` json DEFAULT NULL COMMENT 'Row data',
@@ -1189,7 +1189,7 @@ CREATE TABLE `imported_rows` (
   KEY `imported_rows_yqj9s891kutrxysm_replicated_row_id_index` (`replicated_row_id`),
   KEY `imported_rows_yqj9s891kutrxysm_deleted_at_index` (`deleted_at`),
   CONSTRAINT `imported_rows_yqj9s891kutrxysm_quote_file_id_foreign` FOREIGN KEY (`quote_file_id`) REFERENCES `quote_files` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `imported_rows_rtbfxdi6uqjxjwma`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1200,7 +1200,7 @@ CREATE TABLE `imported_rows_rtbfxdi6uqjxjwma` (
   `user_id` char(36) NOT NULL,
   `quote_file_id` char(36) NOT NULL,
   `columns_data` json DEFAULT NULL,
-  `page` tinyint(4) DEFAULT NULL,
+  `page` tinyint DEFAULT NULL,
   `is_selected` tinyint(1) NOT NULL DEFAULT '0',
   `is_one_pay` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Determine whether is one off pay',
   `processed_at` timestamp NULL DEFAULT NULL,
@@ -1218,7 +1218,7 @@ CREATE TABLE `imported_rows_rtbfxdi6uqjxjwma` (
   KEY `imported_rows_replicated_row_id_index` (`replicated_row_id`),
   CONSTRAINT `imported_rows_quote_file_id_foreign` FOREIGN KEY (`quote_file_id`) REFERENCES `quote_files` (`id`) ON DELETE CASCADE,
   CONSTRAINT `imported_rows_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `invitations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1241,7 +1241,7 @@ CREATE TABLE `invitations` (
   KEY `invitations_expires_at_index` (`expires_at`),
   CONSTRAINT `invitations_role_id_foreign` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`),
   CONSTRAINT `invitations_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `languages`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1252,7 +1252,7 @@ CREATE TABLE `languages` (
   `name` varchar(191) NOT NULL,
   `native_name` varchar(191) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `locations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1286,7 +1286,7 @@ CREATE TABLE `locations` (
   KEY `locations_formatted_address_index` (`formatted_address`),
   KEY `locations_deleted_at_index` (`deleted_at`),
   CONSTRAINT `locations_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `mapped_rows`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1301,7 +1301,7 @@ CREATE TABLE `mapped_rows` (
   `serial_no` varchar(191) DEFAULT NULL,
   `date_from` date DEFAULT NULL,
   `date_to` date DEFAULT NULL,
-  `qty` int(10) unsigned NOT NULL DEFAULT '1',
+  `qty` int unsigned NOT NULL DEFAULT '1',
   `price` double NOT NULL DEFAULT '0',
   `original_price` double(16,4) NOT NULL DEFAULT '0.0000' COMMENT 'Original Price value',
   `pricing_document` varchar(250) DEFAULT NULL,
@@ -1313,17 +1313,17 @@ CREATE TABLE `mapped_rows` (
   KEY `mapped_rows_quote_file_id_foreign` (`quote_file_id`),
   KEY `mapped_rows_replicated_mapped_row_id_index` (`replicated_mapped_row_id`),
   CONSTRAINT `mapped_rows_quote_file_id_foreign` FOREIGN KEY (`quote_file_id`) REFERENCES `quote_files` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `migrations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `migrations` (
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
   `migration` varchar(191) NOT NULL,
-  `batch` int(11) NOT NULL,
+  `batch` int NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `model_has_permissions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1335,7 +1335,7 @@ CREATE TABLE `model_has_permissions` (
   PRIMARY KEY (`permission_id`,`model_id`,`model_type`),
   KEY `model_has_permissions_model_id_model_type_index` (`model_id`,`model_type`),
   CONSTRAINT `model_has_permissions_permission_id_foreign` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `model_has_roles`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1347,7 +1347,7 @@ CREATE TABLE `model_has_roles` (
   PRIMARY KEY (`role_id`,`model_id`,`model_type`),
   KEY `model_has_roles_model_id_model_type_index` (`model_id`,`model_type`),
   CONSTRAINT `model_has_roles_role_id_foreign` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `model_notifications`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1361,7 +1361,7 @@ CREATE TABLE `model_notifications` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `model_notifications_notification_key_model_id_model_type_index` (`notification_key`,`model_id`,`model_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `multi_year_discounts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1387,7 +1387,7 @@ CREATE TABLE `multi_year_discounts` (
   CONSTRAINT `multi_year_discounts_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`),
   CONSTRAINT `multi_year_discounts_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `multi_year_discounts_vendor_id_foreign` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `notifications`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1400,7 +1400,7 @@ CREATE TABLE `notifications` (
   `message` varchar(191) NOT NULL,
   `url` varchar(191) DEFAULT NULL,
   `read_at` timestamp NULL DEFAULT NULL,
-  `priority` tinyint(4) NOT NULL DEFAULT '1',
+  `priority` tinyint NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -1408,7 +1408,7 @@ CREATE TABLE `notifications` (
   KEY `notifications_user_id_foreign` (`user_id`),
   KEY `notifications_deleted_at_index` (`deleted_at`),
   CONSTRAINT `notifications_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `oauth_access_tokens`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1426,7 +1426,7 @@ CREATE TABLE `oauth_access_tokens` (
   PRIMARY KEY (`id`),
   KEY `oauth_access_tokens_user_id_index` (`user_id`),
   KEY `oauth_access_tokens_expires_at_index` (`expires_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `oauth_auth_codes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1440,7 +1440,7 @@ CREATE TABLE `oauth_auth_codes` (
   `expires_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `oauth_auth_codes_expires_at_index` (`expires_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `oauth_clients`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1458,7 +1458,7 @@ CREATE TABLE `oauth_clients` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   KEY `oauth_clients_user_id_index` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `oauth_personal_access_clients`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1470,7 +1470,7 @@ CREATE TABLE `oauth_personal_access_clients` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `oauth_personal_access_clients_client_id_index` (`client_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `oauth_refresh_tokens`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1483,7 +1483,7 @@ CREATE TABLE `oauth_refresh_tokens` (
   PRIMARY KEY (`id`),
   KEY `oauth_refresh_tokens_access_token_id_index` (`access_token_id`),
   KEY `oauth_refresh_tokens_expires_at_index` (`expires_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `opportunities`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1491,6 +1491,7 @@ DROP TABLE IF EXISTS `opportunities`;
 CREATE TABLE `opportunities` (
   `id` char(36) NOT NULL,
   `user_id` char(36) DEFAULT NULL COMMENT 'Foreign key on users table(DC2Type:guid)',
+  `pipeline_id` char(36) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT 'Foreign key on pipelines table(DC2Type:guid)',
   `contract_type_id` char(36) DEFAULT NULL COMMENT 'Foreign key on contract_types table',
   `primary_account_id` char(36) DEFAULT NULL COMMENT 'Foreign key on companies table',
   `primary_account_contact_id` char(36) DEFAULT NULL COMMENT 'Foreign key on contacts table',
@@ -1522,7 +1523,7 @@ CREATE TABLE `opportunities` (
   `estimated_upsell_amount_currency_code` char(3) DEFAULT NULL COMMENT 'Estimated Upsell amount currency code',
   `margin_value` double(8,2) DEFAULT NULL COMMENT 'Margin value',
   `renewal_month` varchar(191) DEFAULT NULL COMMENT 'Renewal Month',
-  `renewal_year` smallint(5) unsigned DEFAULT NULL COMMENT 'Renewal Year',
+  `renewal_year` smallint unsigned DEFAULT NULL COMMENT 'Renewal Year',
   `opportunity_start_date` date DEFAULT NULL COMMENT 'Opportunity Start Date',
   `is_opportunity_start_date_assumed` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether the opportunity start date is assumed',
   `opportunity_end_date` date DEFAULT NULL COMMENT 'Opportunity End Date',
@@ -1542,7 +1543,7 @@ CREATE TABLE `opportunities` (
   `ranking` double(8,2) DEFAULT NULL COMMENT 'Opportunity Ranking percentage',
   `remarks` text COMMENT 'Opportunity remarks',
   `notes` text COMMENT 'Opportunity notes',
-  `status` mediumint(9) NOT NULL DEFAULT '1' COMMENT 'Opportunity Status',
+  `status` mediumint NOT NULL DEFAULT '1' COMMENT 'Opportunity Status',
   `status_reason` varchar(500) DEFAULT NULL COMMENT 'Opportunity Status Reason',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -1554,12 +1555,14 @@ CREATE TABLE `opportunities` (
   KEY `opportunities_deleted_at_index` (`deleted_at`),
   KEY `opportunities_user_id_foreign` (`user_id`),
   KEY `opportunities_contract_type_id_foreign` (`contract_type_id`),
+  KEY `opportunities_pipeline_id_foreign` (`pipeline_id`),
   CONSTRAINT `opportunities_account_manager_id_foreign` FOREIGN KEY (`account_manager_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `opportunities_contract_type_id_foreign` FOREIGN KEY (`contract_type_id`) REFERENCES `contract_types` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `opportunities_pipeline_id_foreign` FOREIGN KEY (`pipeline_id`) REFERENCES `pipelines` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `opportunities_primary_account_contact_id_foreign` FOREIGN KEY (`primary_account_contact_id`) REFERENCES `contacts` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `opportunities_primary_account_id_foreign` FOREIGN KEY (`primary_account_id`) REFERENCES `companies` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `opportunities_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `opportunity_form_schemas`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1570,7 +1573,30 @@ CREATE TABLE `opportunity_form_schemas` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `opportunity_forms`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `opportunity_forms` (
+  `id` char(36) NOT NULL,
+  `user_id` char(36) DEFAULT NULL COMMENT 'Foreign key on users table, Owner of the record',
+  `pipeline_id` char(36) NOT NULL COMMENT 'Foreign key on pipelines',
+  `form_schema_id` char(36) NOT NULL COMMENT 'Foreign key on template_schemas table',
+  `is_system` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether the record is system defined',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  `is_not_deleted` tinyint(1) GENERATED ALWAYS AS (if((`deleted_at` is null),1,NULL)) VIRTUAL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `opportunity_forms_pipeline_id_is_not_deleted_unique` (`pipeline_id`,`is_not_deleted`),
+  KEY `opportunity_forms_user_id_foreign` (`user_id`),
+  KEY `opportunity_forms_form_schema_id_foreign` (`form_schema_id`),
+  KEY `opportunity_forms_deleted_at_index` (`deleted_at`),
+  CONSTRAINT `opportunity_forms_form_schema_id_foreign` FOREIGN KEY (`form_schema_id`) REFERENCES `opportunity_form_schemas` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `opportunity_forms_pipeline_id_foreign` FOREIGN KEY (`pipeline_id`) REFERENCES `pipelines` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `opportunity_forms_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `opportunity_suppliers`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1589,7 +1615,7 @@ CREATE TABLE `opportunity_suppliers` (
   KEY `opportunity_suppliers_opportunity_id_foreign` (`opportunity_id`),
   KEY `opportunity_suppliers_deleted_at_index` (`deleted_at`),
   CONSTRAINT `opportunity_suppliers_opportunity_id_foreign` FOREIGN KEY (`opportunity_id`) REFERENCES `opportunities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `opportunity_totals`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1600,7 +1626,7 @@ CREATE TABLE `opportunity_totals` (
   `account_manager_id` char(36) DEFAULT NULL COMMENT 'Foreign key on users table',
   `opportunity_id` char(36) NOT NULL COMMENT 'Foreign key on opportunities table',
   `base_opportunity_amount` double(8,2) NOT NULL COMMENT 'Opportunity Amount in Base Currency',
-  `opportunity_status` mediumint(9) NOT NULL COMMENT 'Opportunity Status',
+  `opportunity_status` mediumint NOT NULL COMMENT 'Opportunity Status',
   `opportunity_created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Opportunity Created At Timestamp',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -1611,7 +1637,7 @@ CREATE TABLE `opportunity_totals` (
   CONSTRAINT `opportunity_totals_account_manager_id_foreign` FOREIGN KEY (`account_manager_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `opportunity_totals_opportunity_id_foreign` FOREIGN KEY (`opportunity_id`) REFERENCES `opportunities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `opportunity_totals_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `password_resets`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1631,7 +1657,7 @@ CREATE TABLE `password_resets` (
   KEY `password_resets_deleted_at_index` (`deleted_at`),
   KEY `password_resets_expires_at_index` (`expires_at`),
   CONSTRAINT `password_resets_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `permissions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1644,7 +1670,7 @@ CREATE TABLE `permissions` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `permissions_name_index` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `pipeline_stages`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1653,7 +1679,7 @@ CREATE TABLE `pipeline_stages` (
   `id` char(36) NOT NULL,
   `pipeline_id` char(36) NOT NULL COMMENT 'Foreign key on pipelines table',
   `stage_name` varchar(191) NOT NULL COMMENT 'Pipeline Stage name',
-  `stage_order` bigint(20) unsigned NOT NULL DEFAULT '0' COMMENT 'Pipeline Stage order',
+  `stage_order` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Pipeline Stage order',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -1661,7 +1687,7 @@ CREATE TABLE `pipeline_stages` (
   KEY `pipeline_stages_pipeline_id_foreign` (`pipeline_id`),
   KEY `pipeline_stages_deleted_at_index` (`deleted_at`),
   CONSTRAINT `pipeline_stages_pipeline_id_foreign` FOREIGN KEY (`pipeline_id`) REFERENCES `pipelines` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `pipelines`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1669,19 +1695,18 @@ DROP TABLE IF EXISTS `pipelines`;
 CREATE TABLE `pipelines` (
   `id` char(36) NOT NULL,
   `space_id` char(36) NOT NULL COMMENT 'Foreign key on spaces table(DC2Type:guid)',
-  `opportunity_form_schema_id` char(36) DEFAULT NULL COMMENT 'Foreign key on opportunity_form_schemas table',
   `is_system` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether the entity is system defined',
+  `is_default` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether the entity is default',
   `pipeline_name` varchar(191) NOT NULL COMMENT 'Pipeline name',
+  `pipeline_order` bigint unsigned NOT NULL DEFAULT '0' COMMENT 'Pipeline order',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `pipelines_deleted_at_index` (`deleted_at`),
-  KEY `pipelines_opportunity_form_schema_id_foreign` (`opportunity_form_schema_id`),
   KEY `pipelines_space_id_foreign` (`space_id`),
-  CONSTRAINT `pipelines_opportunity_form_schema_id_foreign` FOREIGN KEY (`opportunity_form_schema_id`) REFERENCES `opportunity_form_schemas` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `pipelines_space_id_foreign` FOREIGN KEY (`space_id`) REFERENCES `spaces` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `pre_pay_discounts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1707,7 +1732,7 @@ CREATE TABLE `pre_pay_discounts` (
   CONSTRAINT `pre_pay_discounts_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`),
   CONSTRAINT `pre_pay_discounts_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `pre_pay_discounts_vendor_id_foreign` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `promotional_discounts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1734,7 +1759,7 @@ CREATE TABLE `promotional_discounts` (
   CONSTRAINT `promotional_discounts_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`),
   CONSTRAINT `promotional_discounts_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `promotional_discounts_vendor_id_foreign` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `quote_discount`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1742,13 +1767,13 @@ DROP TABLE IF EXISTS `quote_discount`;
 CREATE TABLE `quote_discount` (
   `quote_id` char(36) NOT NULL,
   `discount_id` char(36) NOT NULL,
-  `duration` tinyint(3) unsigned DEFAULT NULL,
+  `duration` tinyint unsigned DEFAULT NULL,
   `margin_percentage` decimal(8,2) DEFAULT NULL,
   KEY `quote_discount_quote_id_foreign` (`quote_id`),
   KEY `quote_discount_discount_id_foreign` (`discount_id`),
   CONSTRAINT `quote_discount_discount_id_foreign` FOREIGN KEY (`discount_id`) REFERENCES `discounts` (`id`) ON DELETE CASCADE,
   CONSTRAINT `quote_discount_quote_id_foreign` FOREIGN KEY (`quote_id`) REFERENCES `quotes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `quote_field_column`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1767,7 +1792,7 @@ CREATE TABLE `quote_field_column` (
   CONSTRAINT `quote_field_column_importable_column_id_foreign` FOREIGN KEY (`importable_column_id`) REFERENCES `importable_columns` (`id`) ON DELETE CASCADE,
   CONSTRAINT `quote_field_column_quote_id_foreign` FOREIGN KEY (`quote_id`) REFERENCES `quotes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `quote_field_column_template_field_id_foreign` FOREIGN KEY (`template_field_id`) REFERENCES `template_fields` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `quote_file_formats`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1777,7 +1802,7 @@ CREATE TABLE `quote_file_formats` (
   `name` varchar(191) NOT NULL,
   `extension` varchar(191) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `quote_files`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1788,10 +1813,10 @@ CREATE TABLE `quote_files` (
   `user_id` char(36) DEFAULT NULL COMMENT '(DC2Type:guid)',
   `file_type` varchar(191) DEFAULT NULL,
   `original_file_path` varchar(250) NOT NULL,
-  `pages` int(11) NOT NULL,
+  `pages` int NOT NULL,
   `quote_file_format_id` char(36) DEFAULT NULL COMMENT '(DC2Type:guid)',
   `data_select_separator_id` char(36) DEFAULT NULL,
-  `imported_page` tinyint(4) DEFAULT NULL,
+  `imported_page` tinyint DEFAULT NULL,
   `original_file_name` varchar(250) NOT NULL DEFAULT 'unknown_file_name',
   `meta_attributes` json DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -1805,7 +1830,7 @@ CREATE TABLE `quote_files` (
   KEY `quote_files_deleted_at_index` (`deleted_at`),
   CONSTRAINT `quote_files_data_select_separator_id_foreign` FOREIGN KEY (`data_select_separator_id`) REFERENCES `data_select_separators` (`id`) ON DELETE CASCADE,
   CONSTRAINT `quote_files_quote_file_format_id_foreign` FOREIGN KEY (`quote_file_format_id`) REFERENCES `quote_file_formats` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `quote_location_totals`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1820,8 +1845,8 @@ CREATE TABLE `quote_location_totals` (
   `location_coordinates` point NOT NULL,
   `lat` double GENERATED ALWAYS AS (st_y(`location_coordinates`)) STORED,
   `lng` double GENERATED ALWAYS AS (st_x(`location_coordinates`)) STORED,
-  `total_drafted_count` bigint(20) unsigned NOT NULL DEFAULT '0',
-  `total_submitted_count` bigint(20) unsigned NOT NULL DEFAULT '0',
+  `total_drafted_count` bigint unsigned NOT NULL DEFAULT '0',
+  `total_submitted_count` bigint unsigned NOT NULL DEFAULT '0',
   `total_drafted_value` decimal(15,2) NOT NULL DEFAULT '0.00',
   `total_submitted_value` decimal(15,2) NOT NULL DEFAULT '0.00',
   `created_at` timestamp NULL DEFAULT NULL,
@@ -1836,7 +1861,7 @@ CREATE TABLE `quote_location_totals` (
   CONSTRAINT `quote_location_totals_location_id_foreign` FOREIGN KEY (`location_id`) REFERENCES `locations` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `quote_location_totals_quote_total_id_foreign` FOREIGN KEY (`quote_total_id`) REFERENCES `quote_totals` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `quote_location_totals_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `quote_notes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1855,7 +1880,7 @@ CREATE TABLE `quote_notes` (
   KEY `quote_notes_deleted_at_index` (`deleted_at`),
   CONSTRAINT `quote_notes_quote_id_foreign` FOREIGN KEY (`quote_id`) REFERENCES `quotes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `quote_notes_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `quote_template_company`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1867,7 +1892,7 @@ CREATE TABLE `quote_template_company` (
   KEY `quote_template_company_company_id_foreign` (`company_id`),
   CONSTRAINT `quote_template_company_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`),
   CONSTRAINT `quote_template_company_quote_template_id_foreign` FOREIGN KEY (`quote_template_id`) REFERENCES `quote_templates` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `quote_template_country`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1879,7 +1904,7 @@ CREATE TABLE `quote_template_country` (
   KEY `quote_template_country_country_id_foreign` (`country_id`),
   CONSTRAINT `quote_template_country_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`),
   CONSTRAINT `quote_template_country_quote_template_id_foreign` FOREIGN KEY (`quote_template_id`) REFERENCES `quote_templates` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `quote_template_template_field`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1892,7 +1917,7 @@ CREATE TABLE `quote_template_template_field` (
   KEY `quote_template_template_field_template_field_id_foreign` (`template_field_id`),
   CONSTRAINT `quote_template_template_field_quote_template_id_foreign` FOREIGN KEY (`quote_template_id`) REFERENCES `quote_templates` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `quote_template_template_field_template_field_id_foreign` FOREIGN KEY (`template_field_id`) REFERENCES `template_fields` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `quote_template_vendor`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1904,7 +1929,7 @@ CREATE TABLE `quote_template_vendor` (
   KEY `quote_template_vendor_vendor_id_foreign` (`vendor_id`),
   CONSTRAINT `quote_template_vendor_quote_template_id_foreign` FOREIGN KEY (`quote_template_id`) REFERENCES `quote_templates` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `quote_template_vendor_vendor_id_foreign` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `quote_templates`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1942,7 +1967,7 @@ CREATE TABLE `quote_templates` (
   CONSTRAINT `quote_templates_currency_id_foreign` FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`id`) ON DELETE SET NULL,
   CONSTRAINT `quote_templates_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `quote_templates_vendor_id_foreign` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `quote_totals`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1963,7 +1988,7 @@ CREATE TABLE `quote_totals` (
   `quote_created_at` timestamp NULL DEFAULT NULL,
   `quote_submitted_at` timestamp NULL DEFAULT NULL,
   `valid_until_date` timestamp NULL DEFAULT NULL,
-  `quote_status` mediumint(9) NOT NULL COMMENT 'Quote Status',
+  `quote_status` mediumint NOT NULL COMMENT 'Quote Status',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -1976,7 +2001,7 @@ CREATE TABLE `quote_totals` (
   CONSTRAINT `quote_totals_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `quote_totals_location_id_foreign` FOREIGN KEY (`location_id`) REFERENCES `locations` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `quote_totals_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `quote_version_discount`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1984,13 +2009,13 @@ DROP TABLE IF EXISTS `quote_version_discount`;
 CREATE TABLE `quote_version_discount` (
   `quote_version_id` char(36) NOT NULL COMMENT 'Foreign key on quote_versions table',
   `discount_id` char(36) NOT NULL COMMENT 'Foreign key on discounts table',
-  `duration` tinyint(3) unsigned DEFAULT NULL COMMENT 'Discount duration',
+  `duration` tinyint unsigned DEFAULT NULL COMMENT 'Discount duration',
   `margin_percentage` decimal(8,2) DEFAULT NULL COMMENT 'Calculated margin percentage',
   PRIMARY KEY (`quote_version_id`,`discount_id`),
   KEY `quote_version_discount_discount_id_foreign` (`discount_id`),
   CONSTRAINT `quote_version_discount_discount_id_foreign` FOREIGN KEY (`discount_id`) REFERENCES `discounts` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `quote_version_discount_quote_version_id_foreign` FOREIGN KEY (`quote_version_id`) REFERENCES `quote_versions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `quote_version_field_column`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2009,7 +2034,7 @@ CREATE TABLE `quote_version_field_column` (
   CONSTRAINT `quote_version_field_column_importable_column_id_foreign` FOREIGN KEY (`importable_column_id`) REFERENCES `importable_columns` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `quote_version_field_column_quote_version_id_foreign` FOREIGN KEY (`quote_version_id`) REFERENCES `quote_versions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `quote_version_field_column_template_field_id_foreign` FOREIGN KEY (`template_field_id`) REFERENCES `template_fields` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `quote_versions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2028,7 +2053,7 @@ CREATE TABLE `quote_versions` (
   `country_margin_id` char(36) DEFAULT NULL COMMENT 'Foreign key on country_margins table',
   `source_currency_id` char(36) DEFAULT NULL COMMENT 'Foreign key on currencies table',
   `target_currency_id` char(36) DEFAULT NULL COMMENT 'Foreign key on currencies table',
-  `completeness` tinyint(3) unsigned NOT NULL DEFAULT '1' COMMENT 'Quote completeness value',
+  `completeness` tinyint unsigned NOT NULL DEFAULT '1' COMMENT 'Quote completeness value',
   `group_description` json DEFAULT NULL COMMENT 'Quote group description',
   `sort_group_description` json DEFAULT NULL COMMENT 'Groups sorting columns',
   `custom_discount` decimal(8,2) DEFAULT NULL COMMENT 'Custom discount value',
@@ -2036,7 +2061,7 @@ CREATE TABLE `quote_versions` (
   `exchange_rate_margin` decimal(8,2) DEFAULT NULL COMMENT 'Exchange Rate margin per quote',
   `calculate_list_price` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether calculate or not list price',
   `use_groups` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether use or not grouped rows',
-  `version_number` int(10) unsigned NOT NULL DEFAULT '1' COMMENT 'Quote Version number',
+  `version_number` int unsigned NOT NULL DEFAULT '1' COMMENT 'Quote Version number',
   `pricing_document` text COMMENT 'Pricing document number',
   `service_agreement_id` text COMMENT 'Service agreement ID',
   `system_handle` text COMMENT 'System handle number',
@@ -2075,7 +2100,7 @@ CREATE TABLE `quote_versions` (
   CONSTRAINT `quote_versions_target_currency_id_foreign` FOREIGN KEY (`target_currency_id`) REFERENCES `currencies` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `quote_versions_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `quote_versions_vendor_id_foreign` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `quotes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2094,7 +2119,7 @@ CREATE TABLE `quotes` (
   `distributor_file_id` char(36) DEFAULT NULL COMMENT 'Foreign key on quotes table',
   `previous_state` json DEFAULT NULL,
   `country_margin_id` char(36) DEFAULT NULL,
-  `completeness` tinyint(4) NOT NULL DEFAULT '1',
+  `completeness` tinyint NOT NULL DEFAULT '1',
   `pricing_document` text,
   `service_agreement_id` text,
   `system_handle` text,
@@ -2148,7 +2173,7 @@ CREATE TABLE `quotes` (
   CONSTRAINT `quotes_target_currency_id_foreign` FOREIGN KEY (`target_currency_id`) REFERENCES `currencies` (`id`) ON DELETE SET NULL,
   CONSTRAINT `quotes_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `quotes_vendor_id_foreign` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `role_has_permissions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2160,7 +2185,7 @@ CREATE TABLE `role_has_permissions` (
   KEY `role_has_permissions_role_id_foreign` (`role_id`),
   CONSTRAINT `role_has_permissions_permission_id_foreign` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE,
   CONSTRAINT `role_has_permissions_role_id_foreign` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `roles`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2181,7 +2206,7 @@ CREATE TABLE `roles` (
   KEY `roles_deleted_at_index` (`deleted_at`),
   KEY `roles_activated_at_index` (`activated_at`),
   CONSTRAINT `roles_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `sales_order_templates`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2218,7 +2243,7 @@ CREATE TABLE `sales_order_templates` (
   CONSTRAINT `sales_order_templates_template_schema_id_foreign` FOREIGN KEY (`template_schema_id`) REFERENCES `template_schemas` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `sales_order_templates_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `sales_order_templates_vendor_id_foreign` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `sales_orders`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2234,7 +2259,7 @@ CREATE TABLE `sales_orders` (
   `vat_type` varchar(191) DEFAULT NULL COMMENT 'EXEMPT, NO VAT, VAT Number',
   `customer_po` varchar(191) NOT NULL COMMENT 'Purchase Order Number',
   `exchange_rate` double(15,4) unsigned DEFAULT NULL COMMENT 'Exchange Rate of Sales Order Currency',
-  `status` mediumint(8) unsigned NOT NULL DEFAULT '0' COMMENT 'Sales Order Status',
+  `status` mediumint unsigned NOT NULL DEFAULT '0' COMMENT 'Sales Order Status',
   `status_reason` varchar(500) DEFAULT NULL COMMENT 'Sales Order Status Reason',
   `failure_reason` varchar(500) DEFAULT NULL COMMENT 'Failure Reason Description',
   `created_at` timestamp NULL DEFAULT NULL,
@@ -2253,7 +2278,7 @@ CREATE TABLE `sales_orders` (
   CONSTRAINT `sales_orders_sales_order_template_id_foreign` FOREIGN KEY (`sales_order_template_id`) REFERENCES `sales_order_templates` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `sales_orders_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `sales_orders_worldwide_quote_id_foreign` FOREIGN KEY (`worldwide_quote_id`) REFERENCES `worldwide_quotes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `schedule_data`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2269,7 +2294,7 @@ CREATE TABLE `schedule_data` (
   KEY `schedule_data_quote_file_id_foreign` (`quote_file_id`),
   KEY `schedule_data_deleted_at_index` (`deleted_at`),
   CONSTRAINT `schedule_data_quote_file_id_foreign` FOREIGN KEY (`quote_file_id`) REFERENCES `quote_files` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `sessions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2280,9 +2305,9 @@ CREATE TABLE `sessions` (
   `ip_address` varchar(45) DEFAULT NULL,
   `user_agent` text,
   `payload` text NOT NULL,
-  `last_activity` int(11) NOT NULL,
+  `last_activity` int NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `sn_discounts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2308,7 +2333,7 @@ CREATE TABLE `sn_discounts` (
   CONSTRAINT `sn_discounts_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`),
   CONSTRAINT `sn_discounts_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `sn_discounts_vendor_id_foreign` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `spaces`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2318,8 +2343,10 @@ CREATE TABLE `spaces` (
   `space_name` varchar(191) NOT NULL COMMENT 'Space Name',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+  `deleted_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `spaces_deleted_at_index` (`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `system_settings`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2330,7 +2357,7 @@ CREATE TABLE `system_settings` (
   `section` varchar(191) NOT NULL,
   `value` text,
   `type` varchar(191) NOT NULL DEFAULT 'string',
-  `order` tinyint(3) unsigned NOT NULL DEFAULT '1',
+  `order` tinyint unsigned NOT NULL DEFAULT '1',
   `possible_values` json DEFAULT NULL,
   `is_read_only` tinyint(1) NOT NULL DEFAULT '0',
   `validation` json DEFAULT NULL,
@@ -2340,7 +2367,7 @@ CREATE TABLE `system_settings` (
   UNIQUE KEY `system_settings_key_unique` (`key`),
   KEY `system_settings_id_section_key_index` (`id`,`section`,`key`),
   KEY `system_settings_deleted_at_index` (`deleted_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `task_user`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2354,7 +2381,7 @@ CREATE TABLE `task_user` (
   KEY `task_user_user_id_foreign` (`user_id`),
   CONSTRAINT `task_user_task_id_foreign` FOREIGN KEY (`task_id`) REFERENCES `tasks` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `task_user_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `tasks`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2366,7 +2393,7 @@ CREATE TABLE `tasks` (
   `taskable_id` char(36) NOT NULL,
   `name` varchar(191) NOT NULL COMMENT 'Task name',
   `content` json NOT NULL COMMENT 'Task content',
-  `priority` tinyint(3) unsigned NOT NULL DEFAULT '1' COMMENT 'Task priority',
+  `priority` tinyint unsigned NOT NULL DEFAULT '1' COMMENT 'Task priority',
   `expiry_date` timestamp NULL DEFAULT NULL COMMENT 'Task expiry date',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -2376,7 +2403,7 @@ CREATE TABLE `tasks` (
   KEY `tasks_taskable_type_taskable_id_index` (`taskable_type`,`taskable_id`),
   KEY `tasks_deleted_at_index` (`deleted_at`),
   CONSTRAINT `tasks_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `team_team_leader`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2388,7 +2415,7 @@ CREATE TABLE `team_team_leader` (
   KEY `team_team_leader_team_leader_id_foreign` (`team_leader_id`),
   CONSTRAINT `team_team_leader_team_id_foreign` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `team_team_leader_team_leader_id_foreign` FOREIGN KEY (`team_leader_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `teams`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2406,7 +2433,7 @@ CREATE TABLE `teams` (
   KEY `teams_deleted_at_index` (`deleted_at`),
   KEY `teams_business_division_id_foreign` (`business_division_id`),
   CONSTRAINT `teams_business_division_id_foreign` FOREIGN KEY (`business_division_id`) REFERENCES `business_divisions` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `template_field_types`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2416,7 +2443,7 @@ CREATE TABLE `template_field_types` (
   `title` varchar(40) NOT NULL,
   `name` varchar(20) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `template_fields`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2425,14 +2452,14 @@ CREATE TABLE `template_fields` (
   `id` char(36) NOT NULL,
   `header` varchar(50) NOT NULL,
   `name` varchar(100) NOT NULL,
-  `order` tinyint(4) NOT NULL,
+  `order` tinyint NOT NULL,
   `is_required` tinyint(1) NOT NULL DEFAULT '0',
   `is_system` tinyint(1) NOT NULL DEFAULT '0',
   `template_field_type_id` char(36) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `template_fields_template_field_type_id_foreign` (`template_field_type_id`),
   CONSTRAINT `template_fields_template_field_type_id_foreign` FOREIGN KEY (`template_field_type_id`) REFERENCES `template_field_types` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `template_schemas`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2444,7 +2471,7 @@ CREATE TABLE `template_schemas` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `timezones`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2455,10 +2482,10 @@ CREATE TABLE `timezones` (
   `utc` varchar(191) NOT NULL,
   `text` varchar(191) NOT NULL,
   `value` varchar(191) NOT NULL,
-  `offset` int(11) NOT NULL,
+  `offset` int NOT NULL,
   PRIMARY KEY (`id`),
   KEY `timezones_abbr_index` (`abbr`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `unused_indexes`;
 /*!50001 DROP VIEW IF EXISTS `unused_indexes`*/;
@@ -2485,7 +2512,7 @@ CREATE TABLE `user_forms` (
   KEY `user_forms_key_index` (`key`),
   KEY `user_forms_deleted_at_index` (`deleted_at`),
   CONSTRAINT `user_forms_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `users`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2497,7 +2524,7 @@ CREATE TABLE `users` (
   `first_name` varchar(191) NOT NULL,
   `middle_name` varchar(191) DEFAULT NULL,
   `last_name` varchar(191) NOT NULL,
-  `user_fullname` varchar(191) GENERATED ALWAYS AS (concat(`first_name`,_utf8' ',`last_name`)) VIRTUAL,
+  `user_fullname` varchar(191) GENERATED ALWAYS AS (concat(`first_name`,_utf8mb3' ',`last_name`)) VIRTUAL,
   `phone` varchar(191) DEFAULT NULL,
   `password` varchar(191) NOT NULL,
   `remember_token` varchar(100) DEFAULT NULL,
@@ -2508,8 +2535,8 @@ CREATE TABLE `users` (
   `already_logged_in` tinyint(1) NOT NULL DEFAULT '0',
   `ip_address` varchar(191) DEFAULT NULL,
   `default_route` varchar(191) DEFAULT NULL,
-  `recent_notifications_limit` int(11) NOT NULL DEFAULT '10',
-  `failed_attempts` int(11) DEFAULT '0',
+  `recent_notifications_limit` int NOT NULL DEFAULT '10',
+  `failed_attempts` int DEFAULT '0',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -2531,7 +2558,7 @@ CREATE TABLE `users` (
   CONSTRAINT `users_hpe_contract_template_id_foreign` FOREIGN KEY (`hpe_contract_template_id`) REFERENCES `hpe_contract_templates` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `users_team_id_foreign` FOREIGN KEY (`team_id`) REFERENCES `teams` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `users_timezone_id_foreign` FOREIGN KEY (`timezone_id`) REFERENCES `timezones` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `vendor_worldwide_distribution`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2543,7 +2570,7 @@ CREATE TABLE `vendor_worldwide_distribution` (
   KEY `vendor_worldwide_distribution_vendor_id_foreign` (`vendor_id`),
   CONSTRAINT `vendor_worldwide_distribution_vendor_id_foreign` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `vendor_worldwide_distribution_worldwide_distribution_id_foreign` FOREIGN KEY (`worldwide_distribution_id`) REFERENCES `worldwide_distributions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `vendors`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2564,7 +2591,7 @@ CREATE TABLE `vendors` (
   KEY `vendors_deleted_at_index` (`deleted_at`),
   KEY `vendors_activated_at_index` (`activated_at`),
   CONSTRAINT `vendors_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `worldwide_customers`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2597,7 +2624,7 @@ CREATE TABLE `worldwide_customers` (
   CONSTRAINT `worldwide_customers_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `worldwide_customers_hardware_address_id_foreign` FOREIGN KEY (`hardware_address_id`) REFERENCES `addresses` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `worldwide_customers_software_address_id_foreign` FOREIGN KEY (`software_address_id`) REFERENCES `addresses` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `worldwide_distributions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2614,14 +2641,15 @@ CREATE TABLE `worldwide_distributions` (
   `country_id` char(36) DEFAULT NULL COMMENT 'Foreign key on countries table',
   `country_margin_id` char(36) DEFAULT NULL COMMENT 'Foreign key on country_margins table',
   `distribution_currency_id` char(36) DEFAULT NULL COMMENT 'Foreign key on currencies table',
+  `buy_currency_id` char(36) DEFAULT NULL COMMENT 'Foreign key on currencies table',
   `multi_year_discount_id` char(36) DEFAULT NULL COMMENT 'Foreign key on multi_year_discounts table',
   `pre_pay_discount_id` char(36) DEFAULT NULL COMMENT 'Foreign key on pre_pay_discounts table',
   `promotional_discount_id` char(36) DEFAULT NULL COMMENT 'Foreign key on promotional_discounts table',
   `sn_discount_id` char(36) DEFAULT NULL COMMENT 'Foreign key on sn_discounts table',
   `distribution_exchange_rate` double NOT NULL DEFAULT '1' COMMENT 'Exchange rate value for distribution based on quote currency',
   `quote_type` varchar(191) DEFAULT NULL COMMENT 'Distribution quote type (New, Renewal)',
-  `custom_discount` decimal(8,2) DEFAULT NULL COMMENT 'Custom discount value',
-  `margin_value` double(8,2) DEFAULT NULL COMMENT 'Distribution margin value',
+  `custom_discount` decimal(8,4) DEFAULT NULL COMMENT 'Custom discount value',
+  `margin_value` decimal(8,4) DEFAULT NULL COMMENT 'Distribution margin value',
   `tax_value` double(8,2) DEFAULT NULL COMMENT 'Quote Tax value',
   `margin_method` varchar(191) DEFAULT NULL COMMENT 'Distribution margin method',
   `buy_price` decimal(15,2) DEFAULT NULL COMMENT 'Quote Buy price',
@@ -2631,6 +2659,7 @@ CREATE TABLE `worldwide_distributions` (
   `sort_rows_direction` enum('asc','desc') NOT NULL DEFAULT 'asc' COMMENT 'Sorting direction of the mapped rows',
   `sort_rows_groups_column` enum('group_name','search_text','rows_count','rows_sum') DEFAULT NULL COMMENT 'Column name on the distribution_rows_groups table for sorting',
   `sort_rows_groups_direction` enum('asc','desc') NOT NULL DEFAULT 'asc' COMMENT 'Sorting direction of the distribution groups',
+  `distribution_currency_quote_currency_exchange_rate_margin` decimal(8,2) DEFAULT NULL COMMENT 'Exchange Rate Margin of Distributor Quote',
   `pricing_document` text COMMENT 'Pricing document number',
   `service_agreement_id` text COMMENT 'Service agreement ID',
   `system_handle` text COMMENT 'System handle number',
@@ -2644,6 +2673,7 @@ CREATE TABLE `worldwide_distributions` (
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `imported_at` timestamp NULL DEFAULT NULL COMMENT 'Import timestamp',
+  `distribution_currency_quote_currency_exchange_rate_value` decimal(12,4) DEFAULT NULL COMMENT 'Exchange Rate between Distributor Quote Currency and Quote Currency',
   PRIMARY KEY (`id`),
   KEY `worldwide_distributions_worldwide_quote_id_foreign` (`worldwide_quote_id`),
   KEY `worldwide_distributions_distributor_file_id_foreign` (`distributor_file_id`),
@@ -2658,6 +2688,8 @@ CREATE TABLE `worldwide_distributions` (
   KEY `worldwide_distributions_promotional_discount_id_foreign` (`promotional_discount_id`),
   KEY `worldwide_distributions_sn_discount_id_foreign` (`sn_discount_id`),
   KEY `worldwide_distributions_worldwide_quote_type_id_index` (`worldwide_quote_type`,`worldwide_quote_id`),
+  KEY `worldwide_distributions_buy_currency_id_foreign` (`buy_currency_id`),
+  CONSTRAINT `worldwide_distributions_buy_currency_id_foreign` FOREIGN KEY (`buy_currency_id`) REFERENCES `currencies` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `worldwide_distributions_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `worldwide_distributions_country_margin_id_foreign` FOREIGN KEY (`country_margin_id`) REFERENCES `country_margins` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `worldwide_distributions_distribution_currency_id_foreign` FOREIGN KEY (`distribution_currency_id`) REFERENCES `currencies` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -2668,7 +2700,7 @@ CREATE TABLE `worldwide_distributions` (
   CONSTRAINT `worldwide_distributions_schedule_file_id_foreign` FOREIGN KEY (`schedule_file_id`) REFERENCES `quote_files` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `worldwide_distributions_sn_discount_id_foreign` FOREIGN KEY (`sn_discount_id`) REFERENCES `sn_discounts` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `worldwide_distributions_vendor_id_foreign` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `worldwide_quote_assets`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2680,6 +2712,7 @@ CREATE TABLE `worldwide_quote_assets` (
   `worldwide_quote_type` char(36) DEFAULT NULL COMMENT '(DC2Type:guid)',
   `vendor_id` char(36) DEFAULT NULL COMMENT 'Foreign key on vendors table',
   `machine_address_id` char(36) DEFAULT NULL COMMENT 'Foreign key on addresses table',
+  `buy_currency_id` char(36) DEFAULT NULL COMMENT 'Foreign key on currencies table',
   `is_selected` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether the assets is selected',
   `country` char(2) DEFAULT NULL COMMENT 'Asset Country Code ISO-3166-2',
   `serial_no` varchar(191) DEFAULT NULL COMMENT 'Asset Serial Number',
@@ -2690,24 +2723,60 @@ CREATE TABLE `worldwide_quote_assets` (
   `service_level_description` varchar(191) DEFAULT NULL COMMENT 'Asset Service Level',
   `service_level_data` json DEFAULT NULL COMMENT 'Asset Service Level Lookup Result',
   `price` double(8,2) DEFAULT NULL COMMENT 'Asset Price',
+  `original_price` decimal(16,4) DEFAULT '0.0000' COMMENT 'Original Price value',
+  `exchange_rate_value` decimal(12,4) DEFAULT NULL COMMENT 'Exchange Rate Value of Asset',
+  `exchange_rate_margin` decimal(12,4) DEFAULT NULL COMMENT 'Exchange Rate Margin of Asset',
   PRIMARY KEY (`id`),
   KEY `worldwide_quote_assets_worldwide_quote_id_foreign` (`worldwide_quote_id`),
   KEY `worldwide_quote_assets_vendor_id_foreign` (`vendor_id`),
   KEY `worldwide_quote_assets_machine_address_id_foreign` (`machine_address_id`),
   KEY `worldwide_quote_assets_worldwide_quote_type_id_index` (`worldwide_quote_type`,`worldwide_quote_id`),
   KEY `worldwide_quote_assets_replicated_asset_id_index` (`replicated_asset_id`),
+  KEY `worldwide_quote_assets_buy_currency_id_foreign` (`buy_currency_id`),
+  CONSTRAINT `worldwide_quote_assets_buy_currency_id_foreign` FOREIGN KEY (`buy_currency_id`) REFERENCES `currencies` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `worldwide_quote_assets_machine_address_id_foreign` FOREIGN KEY (`machine_address_id`) REFERENCES `addresses` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `worldwide_quote_assets_vendor_id_foreign` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `worldwide_quote_assets_group_asset`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `worldwide_quote_assets_group_asset` (
+  `group_id` char(36) NOT NULL COMMENT 'Foreign key on worldwide_quote_assets_groups table',
+  `asset_id` char(36) NOT NULL COMMENT 'Foreign key on worldwide_quote_assets table',
+  PRIMARY KEY (`group_id`,`asset_id`),
+  KEY `worldwide_quote_assets_group_asset_asset_id_foreign` (`asset_id`),
+  CONSTRAINT `worldwide_quote_assets_group_asset_asset_id_foreign` FOREIGN KEY (`asset_id`) REFERENCES `worldwide_quote_assets` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `worldwide_quote_assets_group_asset_group_id_foreign` FOREIGN KEY (`group_id`) REFERENCES `worldwide_quote_assets_groups` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `worldwide_quote_assets_groups`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `worldwide_quote_assets_groups` (
+  `id` char(36) NOT NULL,
+  `replicated_assets_group_id` char(36) DEFAULT NULL COMMENT 'The assets group ID the group replicated from',
+  `worldwide_quote_version_id` char(36) NOT NULL COMMENT 'Foreign key on worldwide_quote_versions table',
+  `group_name` varchar(250) NOT NULL COMMENT 'Assets group name',
+  `search_text` varchar(500) NOT NULL COMMENT 'Assets search text',
+  `is_selected` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether the group is selected',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `worldwide_quote_assets_groups_worldwide_quote_version_id_foreign` (`worldwide_quote_version_id`),
+  KEY `worldwide_quote_assets_groups_replicated_assets_group_id_index` (`replicated_assets_group_id`),
+  CONSTRAINT `worldwide_quote_assets_groups_worldwide_quote_version_id_foreign` FOREIGN KEY (`worldwide_quote_version_id`) REFERENCES `worldwide_quote_versions` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `worldwide_quote_notes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `worldwide_quote_notes` (
   `id` char(36) NOT NULL,
-  `worldwide_quote_id` char(36) NOT NULL COMMENT 'Foreign key on worldwide_quotes table',
-  `user_id` char(36) NOT NULL COMMENT 'Foreign key on users table',
-  `text` text NOT NULL COMMENT 'Quote Note Text',
+  `worldwide_quote_id` char(36) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL COMMENT 'Foreign key on worldwide_quotes table(DC2Type:guid)',
+  `worldwide_quote_version_id` char(36) DEFAULT NULL COMMENT 'Foreign key on worldwide_quote_versions table',
+  `user_id` char(36) CHARACTER SET utf8 COLLATE utf8_general_ci DEFAULT NULL COMMENT 'Foreign key on users table(DC2Type:guid)',
+  `text` text CHARACTER SET utf8 COLLATE utf8_general_ci COMMENT 'Quote Note Text',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -2715,9 +2784,11 @@ CREATE TABLE `worldwide_quote_notes` (
   KEY `worldwide_quote_notes_worldwide_quote_id_foreign` (`worldwide_quote_id`),
   KEY `worldwide_quote_notes_user_id_foreign` (`user_id`),
   KEY `worldwide_quote_notes_deleted_at_index` (`deleted_at`),
-  CONSTRAINT `worldwide_quote_notes_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `worldwide_quote_notes_worldwide_quote_id_foreign` FOREIGN KEY (`worldwide_quote_id`) REFERENCES `worldwide_quotes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+  KEY `worldwide_quote_notes_worldwide_quote_version_id_foreign` (`worldwide_quote_version_id`),
+  CONSTRAINT `worldwide_quote_notes_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `worldwide_quote_notes_worldwide_quote_id_foreign` FOREIGN KEY (`worldwide_quote_id`) REFERENCES `worldwide_quotes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `worldwide_quote_notes_worldwide_quote_version_id_foreign` FOREIGN KEY (`worldwide_quote_version_id`) REFERENCES `worldwide_quote_versions` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `worldwide_quote_versions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2729,19 +2800,23 @@ CREATE TABLE `worldwide_quote_versions` (
   `company_id` char(36) DEFAULT NULL COMMENT 'Foreign key on companies table',
   `quote_template_id` char(36) DEFAULT NULL COMMENT 'Foreign key on quote_templates table',
   `quote_currency_id` char(36) DEFAULT NULL COMMENT 'Foreign key on currencies table',
+  `buy_currency_id` char(36) DEFAULT NULL COMMENT 'Foreign key on currencies table',
   `output_currency_id` char(36) DEFAULT NULL COMMENT 'Foreign key on currencies table',
   `multi_year_discount_id` char(36) DEFAULT NULL COMMENT 'Foreign key on multi_year_discounts table',
   `pre_pay_discount_id` char(36) DEFAULT NULL COMMENT 'Foreign key on pre_pay_discounts table',
   `promotional_discount_id` char(36) DEFAULT NULL COMMENT 'Foreign key on promotional_discounts table',
   `sn_discount_id` char(36) DEFAULT NULL COMMENT 'Foreign key on sn_discounts table',
-  `custom_discount` decimal(8,2) DEFAULT NULL COMMENT 'Custom discount value',
-  `user_version_sequence_number` int(10) unsigned NOT NULL COMMENT 'Sequence number of the Quote Version',
+  `custom_discount` decimal(8,4) DEFAULT NULL COMMENT 'Custom discount value',
+  `user_version_sequence_number` int unsigned NOT NULL COMMENT 'Sequence number of the Quote Version',
   `quote_type` varchar(191) DEFAULT NULL COMMENT 'Pack Quote Type (New, Renewal)',
-  `margin_value` double(8,2) DEFAULT NULL COMMENT 'Pack Quote Margin Value',
+  `margin_value` decimal(8,4) DEFAULT NULL COMMENT 'Pack Quote Margin Value',
   `margin_method` varchar(191) DEFAULT NULL COMMENT 'Pack Quote Margin Method',
   `tax_value` double(8,2) DEFAULT NULL COMMENT 'Pack Quote Tax Value',
   `buy_price` decimal(15,2) DEFAULT NULL COMMENT 'Quote Buy Price',
-  `sort_rows_column` enum('sku','serial_no','product_name','expiry_date','price','service_level_description','vendor_short_code','machine_address') DEFAULT NULL COMMENT 'Column name on the worldwide_quote_assets table for sorting',
+  `use_groups` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Whether use or not grouped assets',
+  `sort_rows_column` enum('sku','serial_no','product_name','expiry_date','price','service_level_description','vendor_short_code','machine_address','buy_currency_code') DEFAULT NULL COMMENT 'Column name on the worldwide_quote_assets table for sorting',
+  `sort_assets_groups_column` enum('group_name','search_text','assets_count','assets_sum') DEFAULT NULL COMMENT 'Column name on the assets group entity for sorting',
+  `sort_assets_groups_direction` enum('asc','desc') NOT NULL DEFAULT 'asc' COMMENT 'Sorting direction of the assets groups',
   `sort_rows_direction` enum('asc','desc') NOT NULL DEFAULT 'asc' COMMENT 'Sorting direction of the pack assets',
   `exchange_rate_margin` decimal(8,2) DEFAULT NULL COMMENT 'Exchange Rate Margin',
   `quote_expiry_date` date DEFAULT NULL COMMENT 'Quote Expiration Date',
@@ -2751,7 +2826,7 @@ CREATE TABLE `worldwide_quote_versions` (
   `system_handle` varchar(1000) DEFAULT NULL COMMENT 'Pack Quote System Handle',
   `additional_details` text COMMENT 'Pack Quote Additional Details',
   `additional_notes` text COMMENT 'Quote Additional Notes',
-  `completeness` tinyint(3) unsigned NOT NULL DEFAULT '1' COMMENT 'Quote completeness value',
+  `completeness` tinyint unsigned NOT NULL DEFAULT '1' COMMENT 'Quote completeness value',
   `closing_date` date DEFAULT NULL COMMENT 'Quote Closing Date',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -2769,6 +2844,8 @@ CREATE TABLE `worldwide_quote_versions` (
   KEY `worldwide_quote_versions_sn_discount_id_foreign` (`sn_discount_id`),
   KEY `worldwide_quote_versions_deleted_at_index` (`deleted_at`),
   KEY `worldwide_quote_versions_worldwide_quote_id_foreign` (`worldwide_quote_id`),
+  KEY `worldwide_quote_versions_buy_currency_id_foreign` (`buy_currency_id`),
+  CONSTRAINT `worldwide_quote_versions_buy_currency_id_foreign` FOREIGN KEY (`buy_currency_id`) REFERENCES `currencies` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `worldwide_quote_versions_company_id_foreign` FOREIGN KEY (`company_id`) REFERENCES `companies` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `worldwide_quote_versions_multi_year_discount_id_foreign` FOREIGN KEY (`multi_year_discount_id`) REFERENCES `multi_year_discounts` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `worldwide_quote_versions_output_currency_id_foreign` FOREIGN KEY (`output_currency_id`) REFERENCES `currencies` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -2779,7 +2856,7 @@ CREATE TABLE `worldwide_quote_versions` (
   CONSTRAINT `worldwide_quote_versions_sn_discount_id_foreign` FOREIGN KEY (`sn_discount_id`) REFERENCES `sn_discounts` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `worldwide_quote_versions_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `worldwide_quote_versions_worldwide_quote_id_foreign` FOREIGN KEY (`worldwide_quote_id`) REFERENCES `worldwide_quotes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `worldwide_quotes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2791,8 +2868,8 @@ CREATE TABLE `worldwide_quotes` (
   `opportunity_id` char(36) NOT NULL COMMENT 'Foreign key on opportunities table',
   `user_id` char(36) NOT NULL COMMENT 'Foreign key on users table',
   `quote_number` varchar(191) NOT NULL COMMENT 'Quotation number',
-  `sequence_number` bigint(20) unsigned NOT NULL COMMENT 'Unique Quotation Sequence number',
-  `status` mediumint(9) NOT NULL DEFAULT '1' COMMENT 'Quote Status',
+  `sequence_number` bigint unsigned NOT NULL COMMENT 'Unique Quotation Sequence number',
+  `status` mediumint NOT NULL DEFAULT '1' COMMENT 'Quote Status',
   `status_reason` varchar(500) DEFAULT NULL COMMENT 'Quote Status Reason',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -2813,7 +2890,7 @@ CREATE TABLE `worldwide_quotes` (
   CONSTRAINT `worldwide_quotes_contract_type_id_foreign` FOREIGN KEY (`contract_type_id`) REFERENCES `contract_types` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `worldwide_quotes_opportunity_id_foreign` FOREIGN KEY (`opportunity_id`) REFERENCES `opportunities` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `worldwide_quotes_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!50003 DROP FUNCTION IF EXISTS `ExtractDecimal` */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
@@ -2845,7 +2922,7 @@ BEGIN
                             SET sChar = SUBSTRING(in_string_parsed, inti, 1);
                             SET ctrNumber = FIND_IN_SET(sChar, '0,1,2,3,4,5,6,7,8,9,.');
                             IF ctrNumber > 0 AND (sChar != '.' OR LENGTH(digitsAndDotsNumber) > 0) THEN
-                                -- add first minus if needed
+                                
                                 IF digitSequenceStarted = false AND inti > 1 AND SUBSTRING(in_string_parsed, inti-1, 1) = '-' THEN
                                     SET negativeNumber = true;
                                 END IF;
@@ -3420,3 +3497,28 @@ INSERT INTO `migrations` VALUES (513,'2021_05_17_113430_add_opportunity_form_sch
 INSERT INTO `migrations` VALUES (515,'2021_05_17_140252_create_spaces_table',75);
 INSERT INTO `migrations` VALUES (518,'2021_05_17_140847_add_space_id_pipelines_table',76);
 INSERT INTO `migrations` VALUES (519,'2021_05_17_162347_add_is_system_column_pipelines_table',77);
+INSERT INTO `migrations` VALUES (520,'2021_05_18_143232_add_pipeline_id_opportunities_table',78);
+INSERT INTO `migrations` VALUES (521,'2021_05_21_113558_add_is_default_pipelines_table',78);
+INSERT INTO `migrations` VALUES (522,'2021_05_21_182804_create_opportunity_forms_table',78);
+INSERT INTO `migrations` VALUES (523,'2021_05_21_183545_drop_opportunity_form_schema_id_pipelines_table',78);
+INSERT INTO `migrations` VALUES (524,'2021_05_24_160406_add_softdeletes_spaces_table',78);
+INSERT INTO `migrations` VALUES (525,'2021_05_25_123532_add_buy_currency_id_worldwide_quote_versions_table',78);
+INSERT INTO `migrations` VALUES (526,'2021_05_25_123924_add_buy_currency_id_worldwide_distributions_table',78);
+INSERT INTO `migrations` VALUES (527,'2021_05_26_090023_add_pipeline_order_pipelines_table',78);
+INSERT INTO `migrations` VALUES (528,'2021_05_29_152758_increase_precision_custom_discount_margin_value_worldwide_quote_versions_table',78);
+INSERT INTO `migrations` VALUES (529,'2021_05_29_153019_increase_precision_custom_discount_margin_value_worldwide_distributions_table',78);
+INSERT INTO `migrations` VALUES (530,'2021_06_01_143747_add_buy_currency_id_worldwide_quote_assets_table',78);
+INSERT INTO `migrations` VALUES (531,'2021_06_02_071740_add_exchange_rate_margin_worldwide_distributions_table',78);
+INSERT INTO `migrations` VALUES (532,'2021_06_02_132242_add_distribution_currency_quote_currency_exchange_rate_column_worldwide_distributions_table',78);
+INSERT INTO `migrations` VALUES (533,'2021_06_02_144418_rename_exchange_rate_margin_to_distribution_currency_quote_currency_exchange_rate_margin_worldwide_distributions_table',78);
+INSERT INTO `migrations` VALUES (534,'2021_06_05_150020_add_worldwide_quote_version_id_worldwide_quote_notes_table',78);
+INSERT INTO `migrations` VALUES (535,'2021_06_05_154726_make_user_id_nullable_worldwide_quote_notes_table',78);
+INSERT INTO `migrations` VALUES (536,'2021_06_06_111128_add_original_price_worldwide_quote_assets_table',78);
+INSERT INTO `migrations` VALUES (537,'2021_06_08_094036_add_exchange_rate_value_exchange_rate_margin_worldwide_quote_assets_table',78);
+INSERT INTO `migrations` VALUES (538,'2021_06_08_112632_make_text_column_nullable_worldwide_quote_notes_table',78);
+INSERT INTO `migrations` VALUES (539,'2021_06_08_165446_create_worldwide_quote_assets_groups_table',78);
+INSERT INTO `migrations` VALUES (540,'2021_06_08_165817_create_worldwide_quote_assets_group_asset_table',78);
+INSERT INTO `migrations` VALUES (541,'2021_06_09_132340_add_use_groups_worldwide_quote_versions_table',78);
+INSERT INTO `migrations` VALUES (542,'2021_06_09_132811_add_sort_assets_groups_column_sort_assets_groups_direction_columns_worldwide_quote_versions_table',78);
+INSERT INTO `migrations` VALUES (543,'2021_06_10_080805_update_sort_rows_column_worldwide_quote_versions_table',78);
+INSERT INTO `migrations` VALUES (544,'2021_06_10_140114_make_nullable_worldwide_quote_id_worldwide_quote_notes_table',78);

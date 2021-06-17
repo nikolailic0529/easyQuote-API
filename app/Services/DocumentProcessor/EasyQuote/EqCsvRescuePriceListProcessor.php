@@ -9,6 +9,8 @@ use App\Models\QuoteFile\QuoteFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 use Throwable;
 
 class EqCsvRescuePriceListProcessor implements ProcessesQuoteFile
@@ -39,5 +41,10 @@ class EqCsvRescuePriceListProcessor implements ProcessesQuoteFile
         } finally {
             $lock->release();
         }
+    }
+
+    public static function getProcessorUuid(): UuidInterface
+    {
+        return Uuid::fromString('b1940067-46ea-44cd-aa65-82a9e29d3068');
     }
 }

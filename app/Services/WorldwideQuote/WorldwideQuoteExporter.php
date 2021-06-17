@@ -353,7 +353,9 @@ class WorldwideQuoteExporter
         with($previewData->template_data, function (TemplateData $templateData) use ($previewData) {
             $assetsElement = with(true, function () use ($previewData) {
 
-                $assetsViewName = 'ww-quotes.components.pack_assets';
+                $assetsViewName = $previewData->pack_assets_are_grouped
+                        ? 'ww-quotes.components.grouped_pack_assets'
+                        : 'ww-quotes.components.pack_assets';
 
                 $assetsView = $this->viewFactory->make(
                     $assetsViewName,

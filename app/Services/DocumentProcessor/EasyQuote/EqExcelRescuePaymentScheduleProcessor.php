@@ -9,6 +9,8 @@ use App\Models\QuoteFile\QuoteFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 use Throwable;
 
 class EqExcelRescuePaymentScheduleProcessor implements ProcessesQuoteFile
@@ -35,5 +37,10 @@ class EqExcelRescuePaymentScheduleProcessor implements ProcessesQuoteFile
         } finally {
             $lock->release();
         }
+    }
+
+    public static function getProcessorUuid(): UuidInterface
+    {
+        return Uuid::fromString('94102e0c-8cb4-4b0a-9dc4-4a78af90c624');
     }
 }

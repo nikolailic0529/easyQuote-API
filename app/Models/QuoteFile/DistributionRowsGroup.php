@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
  * @property mixed $group_name
  * @property mixed $search_text
  * @property mixed $worldwide_distribution_id
- * @property Collection<MappedRow> $rows
+ * @property Collection<MappedRow>|MappedRow[] $rows
  * @property mixed $is_selected
  * @property string|null $rows_sum
  */

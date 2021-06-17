@@ -66,6 +66,7 @@ class ShowQuoteState extends FormRequest
             $this->container->call([$this, 'sortWorldwideDistributionRowsWhenLoaded'], ['model' => $worldwideQuote]);
             $this->container->call([$this, 'sortWorldwideDistributionRowsGroupsWhenLoaded'], ['model' => $worldwideQuote]);
             $this->container->call([$this, 'sortWorldwideQuoteAssetsWhenLoaded'], ['model' => $worldwideQuote]);
+            $this->container->call([$this, 'sortWorldwideQuoteAssetsGroupsWhenLoaded'], ['model' => $worldwideQuote]);
             $this->container->call([$this, 'normalizeWorldwideQuoteAssetAttributesWhenLoaded'], ['model' => $worldwideQuote]);
             $this->container->call([$this, 'prepareWorldwideDistributionMappingWhenLoaded'], ['model' => $worldwideQuote]);
             $this->container->call([$this, 'loadCountryOfAddressesWhenLoaded'], ['model' => $worldwideQuote]);
@@ -253,6 +254,31 @@ class ShowQuoteState extends FormRequest
             }
 
         }
+
+        if ($model->activeVersion->relationLoaded('assetsGroups')) {
+
+            foreach ($model->activeVersion->assetsGroups as $assetsGroup) {
+
+                if (false === $assetsGroup->relationLoaded('assets')) {
+                    continue;
+                }
+
+                $assetsGroup->loadMissing(['assets.buyCurrency', 'assets.vendor:id,short_code']);
+
+                foreach ($assetsGroup->assets as $asset) {
+
+                    if ($asset->relationLoaded('machineAddress')) {
+                        $asset->setAttribute('machine_address_string', WorldwideQuoteDataMapper::formatMachineAddressToString($asset->machineAddress));
+                    }
+
+                    $asset->setAttribute('buy_currency_code', transform($asset->buyCurrency, fn(Currency $currency) => $currency->code));
+                    $asset->setAttribute('vendor_short_code', transform($asset->vendor, fn(Vendor $vendor) => $vendor->short_code));
+
+                }
+
+            }
+
+        }
     }
 
     public function sortWorldwideQuoteAssetsWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper)
@@ -286,6 +312,15 @@ class ShowQuoteState extends FormRequest
                 $dataMapper->sortWorldwideDistributionRowsGroups($distribution);
 
             }
+
+        }
+    }
+
+    public function sortWorldwideQuoteAssetsGroupsWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper)
+    {
+        if ($model->activeVersion->relationLoaded('assetsGroups')) {
+
+            $dataMapper->sortGroupsOfPackAssets($model);
 
         }
     }

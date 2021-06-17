@@ -54,13 +54,16 @@ class QuoteStateProcessor implements QuoteState
 
     protected QuoteFileRepository $quoteFileRepository;
 
+    protected QuoteQueries $quoteQueries;
+
     public function __construct(
         ConnectionInterface $connection,
         LockProvider $lockProvider,
         EventDispatcher $eventDispatcher,
         BusDispatcher $busDispatcher,
         QuoteService $quoteService,
-        QuoteFileRepository $quoteFileRepository
+        QuoteFileRepository $quoteFileRepository,
+        QuoteQueries $quoteQueries
     )
     {
         $this->connection = $connection;
@@ -69,6 +72,7 @@ class QuoteStateProcessor implements QuoteState
         $this->busDispatcher = $busDispatcher;
         $this->quoteFileRepository = $quoteFileRepository;
         $this->quoteService = $quoteService;
+        $this->quoteQueries = $quoteQueries;
     }
 
     /**
@@ -257,6 +261,10 @@ class QuoteStateProcessor implements QuoteState
          * We are reassigning the Quote Discounts Relation for Calculation new Margin Percentage after provided Discounts applying.
          */
         $quote->discounts = $providedDiscounts;
+
+        $quote->totalPrice = (float)$this->quoteQueries
+            ->mappedSelectedRowsQuery($quote)
+            ->sum('price');
 
         $this->setComputableRows($quote);
 

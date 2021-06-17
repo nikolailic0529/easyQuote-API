@@ -28,7 +28,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ContractTypeSeeder::class);
         $this->command->info('Seeded the Contract Types!');
 
-        $this->call(SystemSettingsSeeder::class);
+        $this->call(SystemSettingSeeder::class);
         $this->command->info('Seeded the default system settings!');
 
         $this->call(CountrySeeder::class);

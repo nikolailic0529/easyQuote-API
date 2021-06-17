@@ -3,35 +3,28 @@
 namespace App\Models\System;
 
 use App\Casts\ConditionalCast;
-use App\Traits\{
-    Activity\LogsActivity,
-    HasValidation,
-    Uuid
-};
-use Illuminate\Database\Eloquent\{
-    Model,
-    Collection,
-    SoftDeletes,
-};
+use App\Traits\{Activity\LogsActivity, Uuid};
+use Illuminate\Database\Eloquent\{Collection, Model,};
 use Illuminate\Support\Str;
 
 class SystemSetting extends Model
 {
-    use Uuid, LogsActivity, HasValidation, SoftDeletes;
+    use Uuid, LogsActivity;
 
     public $timestamps = false;
 
     protected $fillable = [
-        'possible_values', 'value', 'type', 'key', 'section', 'order'
+        'possible_values', 'value', 'type', 'key', 'section', 'order', 'validation'
     ];
 
     protected $hidden = [
-        'label_format', 'type', 'key', 'deleted_at'
+        'label_format', 'type', 'key'
     ];
 
     protected $casts = [
         'value' => ConditionalCast::class,
         'possible_values' => 'array',
+        'validation' => 'array',
         'is_read_only' => 'boolean'
     ];
 

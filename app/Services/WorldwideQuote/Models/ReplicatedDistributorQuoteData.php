@@ -12,36 +12,11 @@ use App\Models\QuoteFile\ScheduleData;
 
 final class ReplicatedDistributorQuoteData
 {
-    protected WorldwideDistribution $distributorQuote;
-
-    /** @var array[] */
-    protected array $vendorPivots;
-
-    /** @var array[]  */
-    protected array $addressPivots;
-
-    /** @var array[]  */
-    protected array $contactPivots;
-
-    protected array $mapping;
-
-    protected array $rowsGroups;
-
-    protected array $groupRows;
-
-    protected array $mappedRows;
-
-    protected ?QuoteFile $distributorFile;
-
-    protected array $importedRows;
-
-    protected ?QuoteFile $scheduleFile;
-
-    protected ?ScheduleData $scheduleData;
 
     /**
      * ReplicatedDistributorQuoteData constructor.
      * @param WorldwideDistribution $distributorQuote
+     * @param array $vendorPivots
      * @param array $addressPivots
      * @param array $contactPivots
      * @param array $mapping
@@ -53,32 +28,20 @@ final class ReplicatedDistributorQuoteData
      * @param QuoteFile|null $scheduleFile
      * @param ScheduleData|null $scheduleData
      */
-    public function __construct(WorldwideDistribution $distributorQuote,
-                                array $vendorPivots,
-                                array $addressPivots,
-                                array $contactPivots,
-                                array $mapping,
-                                array $rowsGroups,
-                                array $groupRows,
-                                array $mappedRows,
-                                ?QuoteFile $distributorFile,
-                                array $importedRows,
-                                ?QuoteFile $scheduleFile,
-                                ?ScheduleData $scheduleData)
+    public function __construct(protected WorldwideDistribution $distributorQuote,
+                                protected array $vendorPivots,
+                                protected array $addressPivots,
+                                protected array $contactPivots,
+                                protected array $mapping,
+                                protected array $rowsGroups,
+                                protected array $groupRows,
+                                protected array $mappedRows,
+                                protected ?QuoteFile $distributorFile,
+                                protected array $importedRows,
+                                protected ?QuoteFile $scheduleFile,
+                                protected ?ScheduleData $scheduleData)
     {
-        $this->distributorQuote = $distributorQuote;
 
-        $this->vendorPivots = $vendorPivots;
-        $this->addressPivots = $addressPivots;
-        $this->contactPivots = $contactPivots;
-        $this->mapping = $mapping;
-        $this->rowsGroups = $rowsGroups;
-        $this->groupRows = $groupRows;
-        $this->mappedRows = $mappedRows;
-        $this->distributorFile = $distributorFile;
-        $this->importedRows = $importedRows;
-        $this->scheduleFile = $scheduleFile;
-        $this->scheduleData = $scheduleData;
     }
 
     /**

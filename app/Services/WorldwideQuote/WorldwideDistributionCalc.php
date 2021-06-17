@@ -237,7 +237,7 @@ class WorldwideDistributionCalc
 
     public function calculateBuyPriceOfDistributorQuote(WorldwideDistribution $distribution): float
     {
-        if (is_null($distribution->distributionCurrency) || is_null($distribution->buyCurrency)) {
+        if (is_null($distribution->worldwideQuote->quoteCurrency) || is_null($distribution->buyCurrency)) {
             return (float)$distribution->buy_price;
         }
 
@@ -245,7 +245,7 @@ class WorldwideDistributionCalc
 
         return $this->currencyConverter->convertCurrencies(
             $distribution->buyCurrency->code,
-            $distribution->distributionCurrency->code,
+            $distribution->worldwideQuote->quoteCurrency->code,
             (float)$distribution->buy_price,
             $distributionCreationDate
         );

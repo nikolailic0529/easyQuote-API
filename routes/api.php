@@ -553,6 +553,12 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::post('ww-quotes/{worldwide_quote}/discounts', [WorldwideQuoteController::class, 'processQuoteDiscountStep']);
     Route::post('ww-quotes/{worldwide_quote}/details', [WorldwideQuoteController::class, 'processQuoteDetailsStep']);
 
+    Route::post('ww-quotes/{worldwide_quote}/assets-groups', [WorldwideQuoteAssetController::class, 'storeGroupOfAssets']);
+    Route::patch('ww-quotes/{worldwide_quote}/assets-groups/{assets_group:id}', [WorldwideQuoteAssetController::class, 'updateGroupOfAssets']);
+    Route::delete('ww-quotes/{worldwide_quote}/assets-groups/{assets_group:id}', [WorldwideQuoteAssetController::class, 'deleteGroupOfAssets']);
+    Route::put('ww-quotes/{worldwide_quote}/assets-groups', [WorldwideQuoteAssetController::class, 'moveAssetsBetweenGroupsOfAssets']);
+    Route::post('ww-quotes/{worldwide_quote}/assets-lookup', [WorldwideQuoteAssetController::class, 'performAssetsLookup']);
+
     Route::post('ww-quotes/{worldwide_quote}/contract/country-margin-tax-price-summary', [WorldwideQuoteController::class, 'showPriceSummaryOfContractQuoteAfterCountryMarginTax']);
     Route::post('ww-quotes/{worldwide_quote}/pack/country-margin-tax-price-summary', [WorldwideQuoteController::class, 'showPriceSummaryOfPackQuoteAfterCountryMarginTax']);
 

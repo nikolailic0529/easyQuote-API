@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Psr\Log\LoggerInterface;
+use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 use Throwable;
 
 class DePdfRescuePaymentScheduleProcessor implements ProcessesQuoteFile, DocumentEngineProcessor, HasFallbackProcessor
@@ -27,6 +29,11 @@ class DePdfRescuePaymentScheduleProcessor implements ProcessesQuoteFile, Documen
         $this->fallBackProcessor = $fallBackProcessor;
     }
 
+    /**
+     * @throws \App\Services\Exceptions\FileException
+     * @throws \Throwable
+     * @throws \App\Services\DocumentProcessor\Exceptions\NoDataFoundException
+     */
     public function process(QuoteFile $quoteFile)
     {
         $response = (new ParsePaymentPDF($this->logger))
@@ -101,5 +108,10 @@ class DePdfRescuePaymentScheduleProcessor implements ProcessesQuoteFile, Documen
         }
 
         return $payments;
+    }
+
+    public static function getProcessorUuid(): UuidInterface
+    {
+        return Uuid::fromString('31b77d6a-7321-42d3-9ba0-0ba1ca9e4c0e');
     }
 }

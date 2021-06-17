@@ -4,21 +4,13 @@ namespace App\Services\WorldwideQuote\Models;
 
 final class ReplicatedContactsData
 {
-    /** @var \App\Models\Contact[] */
-    protected array $contactModels;
-
-    /** @var array[] */
-    protected array $contactPivots;
-
     /**
      * ReplicatedContactsData constructor.
      * @param array $contactModels
      * @param array $contactPivots
      */
-    public function __construct(array $contactModels, array $contactPivots)
+    public function __construct(protected array $contactModels, protected array $contactPivots)
     {
-        $this->contactModels = $contactModels;
-        $this->contactPivots = $contactPivots;
     }
 
     /**

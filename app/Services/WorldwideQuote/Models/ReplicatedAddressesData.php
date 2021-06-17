@@ -4,21 +4,13 @@ namespace App\Services\WorldwideQuote\Models;
 
 final class ReplicatedAddressesData
 {
-    /** @var \App\Models\Address[] */
-    protected array $addressModels;
-
-    /** @var array[] */
-    protected array $addressPivots;
-
     /**
      * ReplicatedAddressesData constructor.
      * @param array $addressModels
      * @param array $addressPivots
      */
-    public function __construct(array $addressModels, array $addressPivots)
+    public function __construct(protected array $addressModels, protected array $addressPivots)
     {
-        $this->addressModels = $addressModels;
-        $this->addressPivots = $addressPivots;
     }
 
     /**

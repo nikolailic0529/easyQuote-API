@@ -17,6 +17,8 @@ use App\Models\QuoteFile\QuoteFile;
 use App\Models\QuoteFile\ScheduleData;
 use App\Models\Template\TemplateField;
 use App\Models\User;
+use App\Models\WorldwideQuoteAsset;
+use App\Models\WorldwideQuoteAssetsGroup;
 use App\Services\WorldwideQuote\WorldwideQuoteVersionGuard;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -39,14 +41,26 @@ class WorldwideQuoteVersionGuardTest extends TestCase
 
         /** @var OpportunitySupplier $supplier */
         $supplier = factory(OpportunitySupplier::class)->create([
-            'opportunity_id' => $opportunity->getKey()
+            'opportunity_id' => $opportunity->getKey(),
         ]);
 
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create([
             'user_id' => $quoteOwner->getKey(),
-            'opportunity_id' => $opportunity->getKey()
+            'opportunity_id' => $opportunity->getKey(),
         ]);
+
+        $packAssets = factory(WorldwideQuoteAsset::class, 5)->create([
+            'worldwide_quote_id' => $quote->active_version_id,
+            'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
+        ]);
+
+        /** @var WorldwideQuoteAssetsGroup $groupOfPackAssets */
+        $groupOfPackAssets = factory(WorldwideQuoteAssetsGroup::class)->create([
+            'worldwide_quote_version_id' => $quote->active_version_id,
+        ]);
+
+        $groupOfPackAssets->assets()->sync($packAssets);
 
         $quoteNote = tap(new WorldwideQuoteNote, function (WorldwideQuoteNote $note) use ($quote) {
             $note->worldwideQuote()->associate($quote);
@@ -63,11 +77,11 @@ class WorldwideQuoteVersionGuardTest extends TestCase
 
         /** @var ScheduleData $scheduleFileData */
         $scheduleFileData = factory(ScheduleData::class)->create([
-            'quote_file_id' => $scheduleFile->getKey()
+            'quote_file_id' => $scheduleFile->getKey(),
         ]);
 
         $mappedRows = factory(MappedRow::class, 10)->create([
-            'quote_file_id' => $distributorFile->getKey()
+            'quote_file_id' => $distributorFile->getKey(),
         ]);
 
         $mappedRowDictionary = $mappedRows->getDictionary();
@@ -89,7 +103,7 @@ class WorldwideQuoteVersionGuardTest extends TestCase
 
         /** @var DistributionRowsGroup $rowsGroup */
         $rowsGroup = factory(DistributionRowsGroup::class)->create([
-            'worldwide_distribution_id' => $distributorQuote->getKey()
+            'worldwide_distribution_id' => $distributorQuote->getKey(),
         ]);
 
         $rowsGroup->rows()->attach($mappedRows);
@@ -106,12 +120,13 @@ class WorldwideQuoteVersionGuardTest extends TestCase
         /** @var User $actingUser */
         $actingUser = factory(User::class)->create();
 
+        /** @var WorldwideQuoteVersion $newVersion */
         $newVersion = $this->app->make(WorldwideQuoteVersionGuard::class)->resolveModelForActingUser($quote, $actingUser);
 
         $this->assertDatabaseHas('worldwide_quotes', [
             'id' => $quote->getKey(),
             'active_version_id' => $newVersion->getKey(),
-            'deleted_at' => null
+            'deleted_at' => null,
         ]);
 
         $this->assertInstanceOf(WorldwideQuoteVersion::class, $newVersion);
@@ -150,6 +165,20 @@ class WorldwideQuoteVersionGuardTest extends TestCase
         }
 
         $this->assertNotEmpty($newDistributorQuote->rowsGroups);
+
+        $this->assertNotEmpty($newVersion->assetsGroups);
+
+        $packAssetDictionary = $groupOfPackAssets->assets->getDictionary();
+
+        $this->assertCount($groupOfPackAssets->assets->count(), $newVersion->assetsGroups[0]->assets);
+
+        foreach ($newVersion->assetsGroups[0]->assets as $asset) {
+
+            $this->assertNotNull($asset->replicated_asset_id);
+
+            $this->assertArrayHasKey($asset->replicated_asset_id, $packAssetDictionary);
+
+        }
     }
 
     /**
@@ -167,13 +196,13 @@ class WorldwideQuoteVersionGuardTest extends TestCase
 
         /** @var OpportunitySupplier $supplier */
         $supplier = factory(OpportunitySupplier::class)->create([
-            'opportunity_id' => $opportunity->getKey()
+            'opportunity_id' => $opportunity->getKey(),
         ]);
 
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create([
             'user_id' => $quoteOwner->getKey(),
-            'opportunity_id' => $opportunity->getKey()
+            'opportunity_id' => $opportunity->getKey(),
         ]);
 
         $distributorFile = factory(QuoteFile::class)->create();
@@ -183,11 +212,11 @@ class WorldwideQuoteVersionGuardTest extends TestCase
 
         /** @var ScheduleData $scheduleFileData */
         $scheduleFileData = factory(ScheduleData::class)->create([
-            'quote_file_id' => $scheduleFile->getKey()
+            'quote_file_id' => $scheduleFile->getKey(),
         ]);
 
         $mappedRows = factory(MappedRow::class, 10)->create([
-            'quote_file_id' => $distributorFile->getKey()
+            'quote_file_id' => $distributorFile->getKey(),
         ]);
 
         $mappedRowDictionary = $mappedRows->getDictionary();
@@ -209,7 +238,7 @@ class WorldwideQuoteVersionGuardTest extends TestCase
 
         /** @var DistributionRowsGroup $rowsGroup */
         $rowsGroup = factory(DistributionRowsGroup::class)->create([
-            'worldwide_distribution_id' => $distributorQuote->getKey()
+            'worldwide_distribution_id' => $distributorQuote->getKey(),
         ]);
 
         $rowsGroup->rows()->attach($mappedRows);

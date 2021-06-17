@@ -2,6 +2,7 @@
 
 namespace App\Contracts\Services;
 
+use App\DTO\AssetsGroupData;
 use App\DTO\DistributionDetailsCollection;
 use App\DTO\ProcessableDistributionCollection;
 use App\DTO\QuoteStages\AddressesContactsStage;
@@ -24,6 +25,7 @@ use App\Models\Opportunity;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\User;
+use App\Models\WorldwideQuoteAssetsGroup;
 
 interface ProcessesWorldwideQuoteState
 {
@@ -254,4 +256,41 @@ interface ProcessesWorldwideQuoteState
      * @return $this
      */
     public function setActingUser(User $user = null): self;
+
+    /**
+     * Create a new group of pack quote assets.
+     *
+     * @param \App\Models\Quote\WorldwideQuoteVersion $quote
+     * @param \App\DTO\AssetsGroupData $data
+     * @return \App\Models\WorldwideQuoteAssetsGroup
+     */
+    public function createGroupOfAssets(WorldwideQuoteVersion $quote, AssetsGroupData $data): WorldwideQuoteAssetsGroup;
+
+    /**
+     * Update the group of pack quote assets.
+     *
+     * @param \App\Models\Quote\WorldwideQuoteVersion $quote
+     * @param \App\Models\WorldwideQuoteAssetsGroup $assetsGroup
+     * @param \App\DTO\AssetsGroupData $data
+     * @return \App\Models\WorldwideQuoteAssetsGroup
+     */
+    public function updateGroupOfAssets(WorldwideQuoteVersion $quote, WorldwideQuoteAssetsGroup $assetsGroup, AssetsGroupData $data): WorldwideQuoteAssetsGroup;
+
+    /**
+     * Delete the group of pack quote assets.
+     *
+     * @param \App\Models\Quote\WorldwideQuoteVersion $quote
+     * @param \App\Models\WorldwideQuoteAssetsGroup $assetsGroup
+     */
+    public function deleteGroupOfAssets(WorldwideQuoteVersion $quote, WorldwideQuoteAssetsGroup $assetsGroup): void;
+
+    /**
+     * Move assets between the groups of pack quote assets.
+     *
+     * @param \App\Models\Quote\WorldwideQuoteVersion $quote
+     * @param \App\Models\WorldwideQuoteAssetsGroup $outputAssetsGroup
+     * @param \App\Models\WorldwideQuoteAssetsGroup $inputAssetsGroup
+     * @param array $assets
+     */
+    public function moveAssetsBetweenGroupsOfAssets(WorldwideQuoteVersion $quote, WorldwideQuoteAssetsGroup $outputAssetsGroup, WorldwideQuoteAssetsGroup $inputAssetsGroup, array $assets): void;
 }

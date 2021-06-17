@@ -29,7 +29,8 @@ use App\Models\{Quote\Discount\MultiYearDiscount,
     Quote\Discount\PromotionalDiscount,
     Quote\Discount\SND,
     Quote\WorldwideDistribution,
-    Quote\WorldwideQuote};
+    Quote\WorldwideQuote,
+    WorldwideQuoteAssetsGroup};
 use App\Queries\{WorldwideDistributionQueries, WorldwideQuoteQueries};
 use App\Services\ExchangeRate\CurrencyConverter;
 use Carbon\Carbon;
@@ -181,6 +182,17 @@ class WorldwideQuoteCalc
 
     public function calculatePackQuoteTotalPrice(WorldwideQuote $quote): float
     {
+        if ($quote->activeVersion->use_groups) {
+            $assetsGroups = $quote->assetsGroups()
+                ->withSum('assets', 'price')
+                ->where($quote->assetsGroups()->qualifyColumn('is_selected'), true)
+                ->get();
+
+            return (float)array_reduce($assetsGroups->all(), function (float $result, WorldwideQuoteAssetsGroup $assetsGroup) {
+                return $result + $assetsGroup->assets_sum_price;
+            }, 0.0);
+        }
+
         return (float)$quote->activeVersion->assets()
             ->getQuery()
             ->where('is_selected', true)
@@ -539,7 +551,7 @@ class WorldwideQuoteCalc
     {
         $quoteTotalPrice = $this->calculatePackQuoteTotalPrice($quote);
 
-        $quoteTotalBuyPrice = (float)$quote->activeVersion->buy_price;
+        $quoteTotalBuyPrice = $this->calculatePackQuoteBuyPrice($quote);
 
         $priceInputData = QuotePriceInputData::immutable([
             'total_price' => $quoteTotalPrice,

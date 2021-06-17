@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 use Throwable;
 
 class EqWordRescuePriceListProcessor implements ProcessesQuoteFile
@@ -64,5 +66,10 @@ class EqWordRescuePriceListProcessor implements ProcessesQuoteFile
         file_put_contents($filePath, head($parsedData)['content'] ?? '');
 
         return $filePath;
+    }
+
+    public static function getProcessorUuid(): UuidInterface
+    {
+        return Uuid::fromString('87ece929-0818-430f-be7b-93a1997299a9');
     }
 }

@@ -13,10 +13,12 @@ use Database\Seeders\{AssetCategorySeeder,
     CountrySeeder,
     CurrencySeeder,
     CustomFieldSeeder,
+    DocumentProcessorDriverSeeder,
     HpeContractTemplatesSeeder,
     MySQLSeeder,
     PipelineSeeder,
     SpaceSeeder,
+    SystemSettingSeeder,
     TeamSeeder,
     TemplateFieldTypeSeeder,
     TimezoneSeeder,
@@ -62,6 +64,16 @@ class UpdateApplication extends Command
     {
         $this->call('migrate', [
             '--force' => true
+        ]);
+
+        $this->call(SeedCommand::class, [
+           '--class' => SystemSettingSeeder::class,
+           '--force' => true,
+        ]);
+
+        $this->call(SeedCommand::class, [
+           '--class' => DocumentProcessorDriverSeeder::class,
+           '--force' => true
         ]);
 
         $this->call(SeedCommand::class, [
@@ -162,7 +174,6 @@ class UpdateApplication extends Command
         $this->call(UpdateCompanies::class);
         $this->call(UpdateVendors::class);
         $this->call(UpdateRoles::class);
-        $this->call(UpdateSystemSettings::class);
         $this->call(UpdateExchangeRates::class);
 
         $this->call(UpdateMappingData::class);

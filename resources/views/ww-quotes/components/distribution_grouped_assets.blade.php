@@ -21,7 +21,9 @@
             <tr>
                 @foreach ($asset_fields as $field)
 
-                    <td>{{ $row->{$field->field_name} ?? "" }}</td>
+                    <td
+                        @if ($field->field_name === 'price')style="white-space: nowrap"@endif
+                    >{{ $row->{$field->field_name} ?? "" }}</td>
 
                 @endforeach
             </tr>

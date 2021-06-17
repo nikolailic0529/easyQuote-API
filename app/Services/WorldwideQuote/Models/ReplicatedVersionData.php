@@ -8,21 +8,6 @@ use App\Models\WorldwideQuoteAsset;
 
 final class ReplicatedVersionData
 {
-    protected WorldwideQuoteVersion $replicatedVersion;
-
-    /** @var array[] */
-    protected array $addressPivots;
-
-    /** @var array[]  */
-    protected array $contactPivots;
-
-    /** @var WorldwideQuoteAsset[] */
-    protected array $replicatedPackAssets;
-
-    /** @var ReplicatedDistributorQuoteData[] */
-    protected array $replicatedDistributorQuotes;
-
-    protected ?WorldwideQuoteNote $replicatedQuoteNote;
 
     /**
      * ReplicatedVersionData constructor.
@@ -30,22 +15,20 @@ final class ReplicatedVersionData
      * @param array $addressPivots
      * @param array $contactPivots
      * @param WorldwideQuoteAsset[] $replicatedPackAssets
+     * @param array $replicatedAssetsGroups
+     * @param array $replicatedAssetsOfGroups
      * @param ReplicatedDistributorQuoteData[] $replicatedDistributorQuotes
      * @param \App\Models\Quote\WorldwideQuoteNote|null $replicatedQuoteNote
      */
-    public function __construct(WorldwideQuoteVersion $replicatedVersion,
-                                array $addressPivots,
-                                array $contactPivots,
-                                array $replicatedPackAssets,
-                                array $replicatedDistributorQuotes,
-                                ?WorldwideQuoteNote $replicatedQuoteNote)
+    public function __construct(protected WorldwideQuoteVersion $replicatedVersion,
+                                protected array $addressPivots,
+                                protected array $contactPivots,
+                                protected array $replicatedPackAssets,
+                                protected array $replicatedAssetsGroups,
+                                protected array $replicatedAssetsOfGroups,
+                                protected array $replicatedDistributorQuotes,
+                                protected ?WorldwideQuoteNote $replicatedQuoteNote)
     {
-        $this->replicatedVersion = $replicatedVersion;
-        $this->addressPivots = $addressPivots;
-        $this->contactPivots = $contactPivots;
-        $this->replicatedPackAssets = $replicatedPackAssets;
-        $this->replicatedDistributorQuotes = $replicatedDistributorQuotes;
-        $this->replicatedQuoteNote = $replicatedQuoteNote;
     }
 
     /**
@@ -94,5 +77,21 @@ final class ReplicatedVersionData
     public function getReplicatedQuoteNote(): ?WorldwideQuoteNote
     {
         return $this->replicatedQuoteNote;
+    }
+
+    /**
+     * @return \App\Models\WorldwideQuoteAssetsGroup[]
+     */
+    public function getReplicatedAssetsGroups(): array
+    {
+        return $this->replicatedAssetsGroups;
+    }
+
+    /**
+     * @return array[]
+     */
+    public function getReplicatedAssetsOfGroups(): array
+    {
+        return $this->replicatedAssetsOfGroups;
     }
 }

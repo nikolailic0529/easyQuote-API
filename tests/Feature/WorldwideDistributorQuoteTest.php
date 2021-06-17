@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Contracts\Repositories\SettingRepository;
 use App\Events\DistributionProcessed;
 use App\Models\Address;
 use App\Models\Contact;
@@ -182,6 +183,8 @@ class WorldwideDistributorQuoteTest extends TestCase
         })->all();
 
         Event::fake([DistributionProcessed::class]);
+
+        $this->app[SettingRepository::class]->set('use_legacy_doc_parsing_method', true);
 
         $this->postJson('api/ww-distributions/handle', ['worldwide_distributions' => $data])
 //            ->dump()

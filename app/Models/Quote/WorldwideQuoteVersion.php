@@ -13,18 +13,22 @@ use App\Models\Quote\Discount\MultiYearDiscount;
 use App\Models\Quote\Discount\PrePayDiscount;
 use App\Models\Quote\Discount\PromotionalDiscount;
 use App\Models\Quote\Discount\SND;
+use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Models\Template\QuoteTemplate;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
+use App\Models\WorldwideQuoteAssetsGroup;
 use App\Traits\Uuid;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Query\JoinClause;
 use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
@@ -61,6 +65,9 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string|null $additional_details
  * @property string|null $sort_rows_column
  * @property string|null $sort_rows_direction
+ * @property string|null $sort_assets_groups_column
+ * @property string|null $sort_assets_groups_direction
+ * @property bool|null $use_groups
  *
  * @property float|null $total_price
  * @property float|null $margin_percentage
@@ -91,6 +98,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read Collection<Address>|Address[] $addresses
  * @property-read Collection<Contact>|Contact[] $contacts
  * @property-read \App\Models\Quote\WorldwideQuoteNote|null $note
+ * @property-read WorldwideQuoteAssetsGroup[]|Collection<\App\Http\Resources\WorldwideQuote\AssetsGroup> $assetsGroups
  */
 class WorldwideQuoteVersion extends Model
 {
@@ -111,6 +119,16 @@ class WorldwideQuoteVersion extends Model
                     ->from('vendors')
                     ->whereColumn('vendors.id', 'worldwide_quote_assets.vendor_id')->limit(1)->toBase()
             ]);
+    }
+
+    public function assetsGroups(): HasMany
+    {
+        return tap($this->hasMany(WorldwideQuoteAssetsGroup::class), function (HasMany $relation) {
+            $relation
+                ->withCount('assets')
+                ->withSum('assets', 'price')
+                ->withCasts(['rows_sum' => 'float']);
+        });
     }
 
     public function user(): BelongsTo

@@ -10,6 +10,8 @@ use App\Services\DocumentProcessor\DocumentEngine\Concerns\DocumentEngineProcess
 use App\Services\DocumentProcessor\Exceptions\NoDataFoundException;
 use Illuminate\Support\Facades\Storage;
 use Psr\Log\LoggerInterface;
+use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 
 class DePdfRescuePriceListProcessor implements ProcessesQuoteFile, DocumentEngineProcessor, HasFallbackProcessor
 {
@@ -26,6 +28,11 @@ class DePdfRescuePriceListProcessor implements ProcessesQuoteFile, DocumentEngin
         $this->fallbackProcessor = $fallbackProcessor;
     }
 
+    /**
+     * @throws \Throwable
+     * @throws \App\Services\Exceptions\FileException
+     * @throws \App\Services\DocumentProcessor\Exceptions\NoDataFoundException
+     */
     public function process(QuoteFile $quoteFile)
     {
         $data = (new ParseDistributorPDF($this->logger))
@@ -45,5 +52,10 @@ class DePdfRescuePriceListProcessor implements ProcessesQuoteFile, DocumentEngin
     public function getFallbackProcessor(): ProcessesQuoteFile
     {
         return $this->fallbackProcessor;
+    }
+
+    public static function getProcessorUuid(): UuidInterface
+    {
+        return Uuid::fromString('256a550e-74a9-4ff1-a133-40bc645a13f5');
     }
 }

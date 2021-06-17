@@ -2,6 +2,7 @@
 
 namespace App\Services\DocumentProcessor;
 
+use App\Contracts\Repositories\SettingRepository;
 use App\Contracts\Services\ManagesDocumentProcessors;
 use App\Contracts\Services\ProcessesQuoteFile;
 use App\DTO\MappedRow as MappedRowDTO;
@@ -9,7 +10,7 @@ use App\DTO\MappedRowSettings;
 use App\DTO\RowMapping;
 use App\Enum\Lock;
 use App\Jobs\RetrievePriceAttributes;
-use App\Models\{Quote\Quote, QuoteFile\QuoteFile,};
+use App\Models\{DocumentProcessLog, Quote\Quote, QuoteFile\QuoteFile, System\SystemSetting};
 use App\Models\QuoteFile\ImportableColumn;
 use App\Models\QuoteFile\ImportedRow;
 use App\Models\QuoteFile\MappedRow;
@@ -22,6 +23,7 @@ use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pipeline\Pipeline;
 use Illuminate\Support\{Carbon, Manager, Str};
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
@@ -35,6 +37,7 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
     protected LoggerInterface $logger;
     protected ConnectionInterface $connection;
     protected LockProvider $lockProvider;
+    protected SettingRepository $settings;
 
     public function __construct(Container $container)
     {
@@ -42,6 +45,7 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
         $this->logger = $container->make('log')->channel('document-processor');
         $this->connection = $container->make(ConnectionInterface::class);
         $this->lockProvider = $container->make(LockProvider::class);
+        $this->settings = $container->make(SettingRepository::class);
     }
 
     public function getLogger(): LoggerInterface
@@ -136,10 +140,31 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
 
         $processorName = Str::snake($quoteFile->file_type.' '.$ext);
 
-        $processor = $this->createDriver($processorName);
+        $processor = $this->driver($processorName);
+
+        /** @var DocumentProcessLog $processLog */
+        $processLog = tap(new DocumentProcessLog(), function (DocumentProcessLog $log) use ($quoteFile, $processor) {
+
+            $log->{$log->getKeyName()} = (string)Uuid::generate(4);
+            $log->driver_id = (string)$processor->getProcessorUuid();
+            $log->original_file_name = $quoteFile->original_file_name;
+            $log->file_path = $quoteFile->original_file_path;
+            $log->file_type = $quoteFile->file_type;
+
+            $log->is_successful = false;
+
+            $log->save();
+
+        });
 
         try {
             $processor->process($quoteFile);
+
+            with($processLog, function (DocumentProcessLog $log) {
+                $log->is_successful = true;
+
+                $log->save();
+            });
 
             if ($processor instanceof HasFallbackProcessor) {
                 $this->gracefullyProcessDocument($processor->getFallbackProcessor(), $quoteFile);
@@ -147,6 +172,14 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
 
         } catch (NoDataFoundException $e) {
             $this->logger->warning(sprintf("Failed to process file '%s' using %s processor.", $quoteFile->original_file_name, get_class($processor)));
+
+            with($processLog, function (DocumentProcessLog $log) {
+
+                $log->comment = 'No data found';
+
+                $log->save();
+
+            });
 
             if (!$processor instanceof HasFallbackProcessor) {
                 $this->logger->warning(sprintf("File processor %s doesn't have a fallback processor.", get_class($processor)));
@@ -158,9 +191,32 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
 
             $fallbackProcessor = $processor->getFallbackProcessor();
 
+            $fallbackProcessLog = tap(new DocumentProcessLog(), function (DocumentProcessLog $log) use ($quoteFile, $fallbackProcessor) {
+
+                $log->{$log->getKeyName()} = (string) Uuid::generate(4);
+                $log->driver_id = (string)$fallbackProcessor->getProcessorUuid();
+
+                $log->original_file_name = $quoteFile->original_file_name;
+                $log->file_path = $quoteFile->original_file_path;
+                $log->file_type = $quoteFile->file_type;
+
+                $log->is_successful = false;
+
+                $log->save();
+
+            });
+
             $this->logger->info(sprintf("Trying to process the file using %s processor...", get_class($fallbackProcessor)));
 
             $fallbackProcessor->process($quoteFile);
+
+            with($fallbackProcessLog, function (DocumentProcessLog $log) {
+
+                $log->is_successful = true;
+
+                $log->save();
+
+            });
         }
     }
 
@@ -363,7 +419,17 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
 
     public function driver($driver = null): ProcessesQuoteFile
     {
-        return parent::driver($driver);
+        return with(parent::driver($driver), function (ProcessesQuoteFile $processor) {
+
+            if ($processor instanceof HasFallbackProcessor && $this->settings['use_legacy_doc_parsing_method']) {
+
+                return $processor->getFallbackProcessor();
+
+            }
+
+            return $processor;
+
+        });
     }
 
     /**
@@ -372,7 +438,7 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
      *
      * @param \App\Contracts\Services\ProcessesQuoteFile $processor
      * @param \App\Models\QuoteFile\QuoteFile $quoteFile
-     * @throws \App\Services\DocumentProcessor\Exceptions\DocumentComparisonException
+     * @throws \App\Services\DocumentProcessor\Exceptions\DocumentComparisonException|\App\Services\DocumentProcessor\Exceptions\NoDataFoundException
      */
     protected function gracefullyProcessDocument(ProcessesQuoteFile $processor, QuoteFile $quoteFile): void
     {
@@ -387,15 +453,38 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
 
         $processor->process($bQuoteFile);
 
-        $quoteFileWithMoreCompleteData = (new DocumentDataComparator())($quoteFile, $bQuoteFile);
+        $quoteFileWithMoreCompleteData = (new DocumentDataComparator())($bQuoteFile, $quoteFile);
 
         // When the file with more complete data is the file, processed by the fallback processor,
         // we will process the original file using the fallback processor.
         if ($quoteFileWithMoreCompleteData->is($bQuoteFile)) {
 
-            $this->logger->info("Decided the original quote file with the fallback processor.");
+            $processLog = tap(new DocumentProcessLog(), function (DocumentProcessLog $log) use ($quoteFile, $processor) {
+
+                $log->{$log->getKeyName()} = (string)Uuid::generate(4);
+                $log->driver_id = (string)$processor->getProcessorUuid();
+                $log->original_file_name = $quoteFile->original_file_name;
+                $log->file_path = $quoteFile->original_file_path;
+                $log->file_type = $quoteFile->file_type;
+
+                $log->is_successful = false;
+
+                $log->save();
+
+            });
+
+            $this->logger->info("Decided to use data for quote file from fallback processor.");
 
             $processor->process($quoteFile);
+
+            with($processLog, function (DocumentProcessLog $log) {
+
+                $log->comment = 'More complete data found';
+                $log->is_successful = true;
+
+                $log->save();
+
+            });
 
         }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\WorldwideQuote;
 
 use App\DTO\RowsGroupData;
+use App\Models\Quote\WorldwideDistribution;
 use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Models\QuoteFile\MappedRow;
 use Illuminate\Foundation\Http\FormRequest;
@@ -21,7 +22,9 @@ class CreateRowsGroup extends FormRequest
     {
         return [
             'group_name' => [
-                'bail', 'required', 'string', 'max:250'
+                'bail', 'required', 'string', 'max:250',
+                Rule::unique(DistributionRowsGroup::class, 'group_name')
+                    ->where('worldwide_distribution_id', $this->getWorldwideDistribution()->getKey())
             ],
             'search_text' => [
                 'bail', 'required', 'string', 'max:250'
@@ -36,7 +39,13 @@ class CreateRowsGroup extends FormRequest
         ];
     }
 
-    public function getRowsGroupData()
+    public function getWorldwideDistribution(): WorldwideDistribution
+    {
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
+        return $this->route('worldwide_distribution');
+    }
+
+    public function getRowsGroupData(): RowsGroupData
     {
         return $this->rowsGroupData ??= new RowsGroupData([
             'group_name' => $this->input('group_name'),

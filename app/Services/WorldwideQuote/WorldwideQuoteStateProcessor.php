@@ -5,6 +5,7 @@ namespace App\Services\WorldwideQuote;
 use App\Contracts\{Services\ManagesExchangeRates,
     Services\ProcessesWorldwideDistributionState,
     Services\ProcessesWorldwideQuoteState};
+use App\DTO\AssetsGroupData;
 use App\DTO\ProcessableDistributionCollection;
 use App\DTO\QuoteStages\{AddressesContactsStage,
     ContractDetailsStage,
@@ -58,7 +59,9 @@ use App\Models\{Address,
     Quote\WorldwideQuote,
     Quote\WorldwideQuoteNote,
     Quote\WorldwideQuoteVersion,
-    User};
+    User,
+    WorldwideQuoteAsset,
+    WorldwideQuoteAssetsGroup};
 use App\Services\Exceptions\ValidationException;
 use Illuminate\Contracts\{Bus\Dispatcher as BusDispatcher, Cache\LockProvider, Events\Dispatcher as EventDispatcher};
 use Illuminate\Database\{ConnectionInterface, Eloquent\Builder, Eloquent\Collection};
@@ -584,13 +587,45 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             );
 
             $quote->completeness = $stage->stage;
-            $quote->sort_rows_column = $stage->sort_rows_column;
-            $quote->sort_rows_direction = $stage->sort_rows_direction;
+            $quote->use_groups = $stage->use_groups;
+
+            if ($stage->use_groups) {
+                $quote->sort_assets_groups_column = $stage->sort_assets_groups_column;
+                $quote->sort_assets_groups_direction = $stage->sort_assets_groups_direction;
+            } else {
+                $quote->sort_rows_column = $stage->sort_rows_column;
+                $quote->sort_rows_direction = $stage->sort_rows_direction;
+            }
 
             $lock->block(30, function () use ($quote, $stage, $newVersionResolved) {
 
                 $this->connection->transaction(function () use ($quote, $stage, $newVersionResolved) {
-                    $quote->save();
+                    if ($stage->use_groups) {
+
+                        $quote->assetsGroups()->update(['is_selected' => false]);
+
+                        $quote->assetsGroups()->getQuery()
+                            ->when($stage->reject,
+
+                                function (Builder $builder) use ($stage, $newVersionResolved) {
+                                    if ($newVersionResolved) {
+                                        return $builder->whereNotIn('replicated_assets_group_id', $stage->selected_groups);
+                                    }
+
+                                    return $builder->whereKeyNot($stage->selected_groups);
+                                }, function (Builder $builder) use ($stage, $newVersionResolved) {
+                                    if ($newVersionResolved) {
+                                        return $builder->whereIn('replicated_assets_group_id', $stage->selected_groups);
+                                    }
+
+                                    return $builder->whereKey($stage->selected_groups);
+                                })
+                            ->update(['is_selected' => true]);
+
+                        $quote->save();
+
+                        return;
+                    }
 
                     $quote->assets()->update(['is_selected' => false]);
 
@@ -610,6 +645,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                             return $builder->whereKey($stage->selected_rows);
                         })
                         ->update(['is_selected' => true]);
+
+                    $quote->save();
                 });
 
             });
@@ -954,16 +991,31 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                 $note->text = $stage->additional_notes;
             });
 
+            $quoteNoteIsEmpty = trim(strip_tags((string)$quoteNote->text)) === '';
+
             $quote->setRelation('note', $quoteNote);
 
-            $lock->block(30, function () use ($quote) {
+            $lock->block(30, function () use ($quoteNoteIsEmpty, $quote) {
 
-                $this->connection->transaction(function () use ($quote) {
+                $this->connection->transaction(function () use ($quoteNoteIsEmpty, $quote) {
                     $quote->save();
 
                     $quote->worldwideQuote->save();
 
-                    $quote->note->save();
+                    // Persist the WorldwideQuoteNote entity if there is any text only,
+                    // otherwise the entity will be deleted if it exists.
+                    if ($quoteNoteIsEmpty) {
+
+                        if ($quote->note->exists) {
+                            $quote->note->delete();
+                        }
+
+                    } else {
+
+                        $quote->note->save();
+
+                    }
+
                 });
 
             });
@@ -1005,16 +1057,31 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                 $note->text = $stage->additional_notes;
             });
 
+            $quoteNoteIsEmpty = trim(strip_tags((string)$quoteNote->text)) === '';
+
             $quote->setRelation('note', $quoteNote);
 
-            $lock->block(30, function () use ($quote) {
+            $lock->block(30, function () use ($quoteNoteIsEmpty, $quote) {
 
-                $this->connection->transaction(function () use ($quote) {
+                $this->connection->transaction(function () use ($quoteNoteIsEmpty, $quote) {
                     $quote->save();
 
                     $quote->worldwideQuote->save();
 
-                    $quote->note->save();
+                    // Persist the WorldwideQuoteNote entity if there is any text only,
+                    // otherwise the entity will be deleted if it exists.
+                    if ($quoteNoteIsEmpty) {
+
+                        if ($quote->note->exists) {
+                            $quote->note->delete();
+                        }
+
+                    } else {
+
+                        $quote->note->save();
+
+                    }
+
                 });
 
             });
@@ -1234,17 +1301,17 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                 foreach ($supplier->distributorQuotes as $distributorQuote) {
 
                     // Detaching of addresses & contacts which are not present in the primary account entity.
-                    if (!empty($addressModelsOfPrimaryAccount)) {
+                    if ($addressModelsOfPrimaryAccount->isNotEmpty()) {
                         $distributorQuote->addresses()
                             ->newPivotQuery()
-                            ->whereNotIn($distributorQuote->addresses()->getQualifiedRelatedPivotKeyName(), $addressModelsOfPrimaryAccount)
+                            ->whereNotIn($distributorQuote->addresses()->getQualifiedRelatedPivotKeyName(), $addressModelsOfPrimaryAccount->modelKeys())
                             ->delete();
                     }
 
-                    if (!empty($contactModelsOfPrimaryAccount)) {
+                    if ($contactModelsOfPrimaryAccount->isNotEmpty()) {
                         $distributorQuote->contacts()
                             ->newPivotQuery()
-                            ->whereNotIn($distributorQuote->contacts()->getQualifiedRelatedPivotKeyName(), $contactModelsOfPrimaryAccount)
+                            ->whereNotIn($distributorQuote->contacts()->getQualifiedRelatedPivotKeyName(), $contactModelsOfPrimaryAccount->modelKeys())
                             ->delete();
                     }
 
@@ -1375,7 +1442,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
 
             if (!is_null($quoteNote)) {
                 $quoteNote->user()->associate($actingUser);
-                $quoteNote->worldwideQuote()->associate($replicatedQuote);
+                $quoteNote->worldwideQuote()->associate($replicatedQuote->getKey());
             }
 
             $replicatedVersion->unsetRelation('worldwideQuote');
@@ -1426,6 +1493,164 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
     {
         return tap($this, function () use ($user) {
             $this->actingUser = $user;
+        });
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function createGroupOfAssets(WorldwideQuoteVersion $quote, AssetsGroupData $data): WorldwideQuoteAssetsGroup
+    {
+        $violations = $this->validator->validate($data);
+
+        if (count($violations)) {
+            throw new ValidationFailedException($data, $violations);
+        }
+
+        return tap(new WorldwideQuoteAssetsGroup(), function (WorldwideQuoteAssetsGroup $assetsGroup) use ($quote, $data) {
+
+            $assetsGroup->{$assetsGroup->getKeyName()} = (string)Uuid::generate(4);
+            $assetsGroup->worldwideQuoteVersion()->associate($quote);
+            $assetsGroup->group_name = $data->group_name;
+            $assetsGroup->search_text = $data->search_text;
+
+            $lock = $this->lockProvider->lock(Lock::UPDATE_WWQUOTE($quote->getKey()), 10);
+
+            $lock->block(30, function () use ($assetsGroup, $data) {
+                $this->connection->transaction(function () use ($data, $assetsGroup) {
+
+                    $assetsGroup->save();
+
+                    $assetsGroup->assets()->sync($data->assets);
+
+                });
+            });
+
+        });
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function updateGroupOfAssets(WorldwideQuoteVersion $quote,
+                                        WorldwideQuoteAssetsGroup $assetsGroup,
+                                        AssetsGroupData $data): WorldwideQuoteAssetsGroup
+    {
+        $violations = $this->validator->validate($data);
+
+        if (count($violations)) {
+            throw new ValidationFailedException($data, $violations);
+        }
+
+        /** @var WorldwideQuoteAssetsGroup $assetsGroup */
+        $assetsGroup = value(function () use ($assetsGroup, $quote): WorldwideQuoteAssetsGroup {
+
+            if ($quote->wasRecentlyCreated) {
+                return $quote->assetsGroups()->where('replicated_assets_group_id', $assetsGroup->getKey())->sole();
+            }
+
+            return $assetsGroup;
+
+        });
+
+        return tap($assetsGroup, function (WorldwideQuoteAssetsGroup $assetsGroup) use ($quote, $data) {
+
+            $assetsGroup->group_name = $data->group_name;
+            $assetsGroup->search_text = $data->search_text;
+
+            $lock = $this->lockProvider->lock(Lock::UPDATE_WWQUOTE($quote->getKey()), 10);
+
+            $lock->block(30, function () use ($assetsGroup, $data) {
+                $this->connection->transaction(function () use ($data, $assetsGroup) {
+
+                    $assetsGroup->save();
+
+                    $assetsGroup->assets()->sync($data->assets);
+
+                });
+            });
+
+        });
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function deleteGroupOfAssets(WorldwideQuoteVersion $quote, WorldwideQuoteAssetsGroup $assetsGroup): void
+    {
+        /** @var WorldwideQuoteAssetsGroup $assetsGroup */
+        $assetsGroup = value(function () use ($assetsGroup, $quote): WorldwideQuoteAssetsGroup {
+
+            if ($quote->wasRecentlyCreated) {
+                return $quote->assetsGroups()->where('replicated_assets_group_id', $assetsGroup->getKey())->sole();
+            }
+
+            return $assetsGroup;
+
+        });
+
+        $lock = $this->lockProvider->lock(Lock::UPDATE_WWQUOTE($quote->getKey()), 10);
+
+        $lock->block(30, function () use ($assetsGroup) {
+            $this->connection->transaction(function () use ($assetsGroup) {
+                $assetsGroup->delete();
+            });
+        });
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function moveAssetsBetweenGroupsOfAssets(WorldwideQuoteVersion $quote,
+                                                    WorldwideQuoteAssetsGroup $outputAssetsGroup,
+                                                    WorldwideQuoteAssetsGroup $inputAssetsGroup,
+                                                    array $assets): void
+    {
+
+        /** @var WorldwideQuoteAssetsGroup $outputAssetsGroup */
+        $outputAssetsGroup = value(function () use ($quote, $outputAssetsGroup): WorldwideQuoteAssetsGroup {
+
+            if ($quote->wasRecentlyCreated) {
+                return $quote->assetsGroups()->where('replicated_assets_group_id', $outputAssetsGroup->getKey())->sole();
+            }
+
+            return $outputAssetsGroup;
+
+        });
+
+        /** @var WorldwideQuoteAssetsGroup $inputAssetsGroup */
+        $inputAssetsGroup = value(function () use ($quote, $inputAssetsGroup): WorldwideQuoteAssetsGroup {
+
+            if ($quote->wasRecentlyCreated) {
+                return $quote->assetsGroups()->where('replicated_assets_group_id', $inputAssetsGroup->getKey())->sole();
+            }
+
+            return $inputAssetsGroup;
+
+        });
+
+        /** @var array $assets */
+        $assets = value(function () use ($quote, $outputAssetsGroup, $assets): array {
+
+            if ($quote->wasRecentlyCreated) {
+                return $outputAssetsGroup->assets()->whereIn('replicated_asset_id', $assets)->pluck((new WorldwideQuoteAsset())->getQualifiedKeyName())->all();
+            }
+
+            return $assets;
+
+        });
+
+        $lock = $this->lockProvider->lock(Lock::UPDATE_WWQUOTE($quote->getKey()), 10);
+
+        $lock->block(30, function () use ($inputAssetsGroup, $assets, $outputAssetsGroup) {
+
+            $this->connection->transaction(function () use ($assets, $inputAssetsGroup, $outputAssetsGroup) {
+
+                $outputAssetsGroup->assets()->detach($assets);
+                $inputAssetsGroup->assets()->syncWithoutDetaching($assets);
+
+            });
+
         });
     }
 }

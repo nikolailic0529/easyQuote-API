@@ -86,6 +86,8 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
             $asset->service_level_description = $data->service_level_description;
             $asset->price = $data->price;
             $asset->original_price = $data->original_price;
+            $asset->exchange_rate_value = $data->exchange_rate_value;
+            $asset->exchange_rate_margin = $data->exchange_rate_margin;
 
             $asset->makeHidden('worldwideQuote');
 

@@ -34,6 +34,7 @@ use App\Models\SalesOrder;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
+use App\Models\WorldwideQuoteAssetsGroup;
 use App\Services\ThumbHelper;
 use App\Services\WorldwideQuote\AssetServiceLookupService;
 use App\Services\WorldwideQuote\WorldwideDistributionCalc;
@@ -44,6 +45,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\Arr;
+use Spatie\DataTransferObject\DataTransferObject;
 
 class SalesOrderDataMapper
 {
@@ -355,17 +357,9 @@ class SalesOrderDataMapper
         $accountManager = $opportunity->accountManager;
         $company = $quoteActiveVersion->company;
 
-        $quoteActiveVersion->load(['assets' => function (MorphMany $relation) {
-            $relation->where('is_selected', true);
-        }, 'assets.machineAddress.country']);
-
-        if ($quoteActiveVersion->assets->isEmpty()) {
-            throw new \InvalidArgumentException("At least one Pack Asset must exist on the Quote.");
-        }
-
         $quotePriceData = $this->getSalesOrderPriceData($salesOrder);
 
-        $orderLinesData = $quoteActiveVersion->assets->map(function (WorldwideQuoteAsset $row) use ($quoteCurrency, $quotePriceData) {
+        $quoteAssetToOrderLineData = function (WorldwideQuoteAsset $row) use ($quotePriceData, $quoteCurrency): SubmitOrderLineData {
             return new SubmitOrderLineData([
                 'line_id' => $row->getKey(),
                 'unit_price' => $row->price,
@@ -388,9 +382,40 @@ class SalesOrderDataMapper
                 }),
                 'currency_code' => $quoteCurrency->code,
             ]);
-        })->all();
+        };
 
-//        $this->populateServiceDataToSupportLines(...$orderLinesData);
+        $orderLinesData = value(function () use ($quoteAssetToOrderLineData, $quoteActiveVersion) {
+
+            if (!$quoteActiveVersion->use_groups) {
+
+                $quoteActiveVersion->load(['assets' => function (MorphMany $relation) {
+                    $relation->where('is_selected', true);
+                }, 'assets.machineAddress.country']);
+
+                return $quoteActiveVersion->assets->map($quoteAssetToOrderLineData)->all();
+
+            }
+
+            $quoteActiveVersion->load(['assetsGroups' => function (Relation $relation) {
+                $relation->where('is_selected', true);
+            }, 'assetsGroups.assets.machineAddress.country', 'assetsGroups.assets.vendor:id,short_code']);
+
+            return $quoteActiveVersion->assetsGroups->reduce(function (array $assets, WorldwideQuoteAssetsGroup $assetsGroup) use ($quoteAssetToOrderLineData) {
+
+                foreach ($assetsGroup->assets as $asset) {
+
+                    $asset->setAttribute('vendor_short_code', transform($asset->vendor, fn (Vendor $vendor) => $vendor->short_code));
+
+                }
+
+                return array_merge($assets, $assetsGroup->assets->map($quoteAssetToOrderLineData)->all());
+            }, []);
+
+        });
+
+        if (empty($orderLinesData)) {
+            throw new \InvalidArgumentException("At least one Pack Asset must be present on the Quote.");
+        }
 
         $addresses = [];
 

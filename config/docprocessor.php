@@ -2,8 +2,6 @@
 
 return [
 
-    'document_engine_parameters' => env('DE_DOCUMENT_PARAMETERS'),
-
     'default_drivers' => [
 
         'distributor_price_list_pdf' => App\Services\DocumentProcessor\EasyQuote\EqPdfRescuePriceListProcessor::class,

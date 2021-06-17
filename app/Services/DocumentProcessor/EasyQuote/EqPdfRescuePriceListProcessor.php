@@ -7,6 +7,8 @@ use App\Contracts\Services\ProcessesQuoteFile;
 use App\Models\QuoteFile\QuoteFile;
 use App\Services\DocumentProcessor\EasyQuote\Concerns\UpdatesDistributorFileData;
 use Illuminate\Support\Facades\Storage;
+use Ramsey\Uuid\Uuid;
+use Ramsey\Uuid\UuidInterface;
 
 class EqPdfRescuePriceListProcessor implements ProcessesQuoteFile
 {
@@ -26,5 +28,10 @@ class EqPdfRescuePriceListProcessor implements ProcessesQuoteFile
         ['pages' => $pages, 'attributes' => $attributes] = $this->parser->parse($rawData);
 
         $this->updateDistributorQuoteFileData($quoteFile, $pages, $attributes);
+    }
+
+    public static function getProcessorUuid(): UuidInterface
+    {
+        return Uuid::fromString('b873a78e-d950-438e-b8c6-fb791582cf98');
     }
 }

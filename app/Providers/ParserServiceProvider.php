@@ -10,19 +10,20 @@ use App\Contracts\Services\{CsvParserInterface,
 use App\Services\{CsvParser,
     DocumentProcessor\DocumentEngine\DePdfRescuePaymentScheduleProcessor,
     DocumentProcessor\DocumentEngine\DePdfRescuePriceListProcessor,
+    DocumentProcessor\DocumentEngine\DePdfWorldwidePriceListProcessor,
     DocumentProcessor\DocumentEngine\DeWordRescuePriceListProcessor,
     DocumentProcessor\DocumentProcessor,
+    DocumentProcessor\EasyQuote\EqCsvRescuePriceListProcessor,
+    DocumentProcessor\EasyQuote\EqExcelPriceListProcessor,
+    DocumentProcessor\EasyQuote\EqExcelRescuePaymentScheduleProcessor,
     DocumentProcessor\EasyQuote\EqPdfRescuePaymentScheduleProcessor,
     DocumentProcessor\EasyQuote\EqPdfRescuePriceListProcessor,
     DocumentProcessor\EasyQuote\EqWordRescuePriceListProcessor,
     PdfParser\PdfParser,
     WordParser};
-use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Support\DeferrableProvider;
-use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\ServiceProvider;
-use Psr\Log\LoggerInterface;
 
 class ParserServiceProvider extends ServiceProvider implements DeferrableProvider
 {
@@ -39,6 +40,20 @@ class ParserServiceProvider extends ServiceProvider implements DeferrableProvide
 
         $this->app->singleton(CsvParserInterface::class, CsvParser::class);
 
+        $this->app->tag([
+            EqCsvRescuePriceListProcessor::class,
+            EqExcelPriceListProcessor::class,
+            EqExcelRescuePaymentScheduleProcessor::class,
+            EqPdfRescuePriceListProcessor::class,
+            EqPdfRescuePaymentScheduleProcessor::class,
+            EqWordRescuePriceListProcessor::class,
+
+            DePdfRescuePaymentScheduleProcessor::class,
+            DePdfRescuePriceListProcessor::class,
+            DePdfWorldwidePriceListProcessor::class,
+            DeWordRescuePriceListProcessor::class,
+        ], ProcessesQuoteFile::class);
+
         $this->app->singleton(ManagesDocumentProcessors::class, function (Container $container) {
 
             $processor = $container->make(DocumentProcessor::class);
@@ -54,32 +69,31 @@ class ParserServiceProvider extends ServiceProvider implements DeferrableProvide
         $this->app->when(DePdfRescuePriceListProcessor::class)->needs(ProcessesQuoteFile::class)->give(EqPdfRescuePriceListProcessor::class);
 
         $this->app->when(DeWordRescuePriceListProcessor::class)->needs(ProcessesQuoteFile::class)->give(EqWordRescuePriceListProcessor::class);
+
+        $this->app->when(DePdfWorldwidePriceListProcessor::class)->needs(ProcessesQuoteFile::class)->give(EqPdfRescuePriceListProcessor::class);
     }
 
     protected function registerDrivers(ManagesDocumentProcessors $documentProcessor)
     {
-        $deParameters = $this->app['config']['docprocessor.document_engine_parameters'];
         $defaultDrivers = $this->app['config']['docprocessor.default_drivers'];
         $deDrivers = $this->app['config']['docprocessor.document_engine_drivers'];
 
         // Register default document drivers.
         foreach ($defaultDrivers as $name => $concrete) {
+
             $documentProcessor->extend($name, function (Container $container) use ($concrete) {
                 return $container->make($concrete);
             });
+
         }
 
-        // Register Document Engine drivers when they are set.
-        if (!is_null($deParameters)) {
-            foreach (explode(',', $deParameters) as $name) {
-                if (isset($deDrivers[$name])) {
-                    $concrete = $deDrivers[$name];
+        // Register document engine drivers.
+        foreach ($deDrivers as $name => $concrete) {
 
-                    $documentProcessor->extend($name, function (Container $container) use ($concrete) {
-                        return $container->make($concrete);
-                    });
-                }
-            }
+            $documentProcessor->extend($name, function (Container $container) use ($concrete) {
+                return $container->make($concrete);
+            });
+
         }
     }
 

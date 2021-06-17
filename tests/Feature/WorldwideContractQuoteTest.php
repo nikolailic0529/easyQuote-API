@@ -15,6 +15,7 @@ use App\Models\Quote\Discount\PromotionalDiscount;
 use App\Models\Quote\Discount\SND;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\Quote\WorldwideQuoteNote;
 use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Models\QuoteFile\ImportableColumn;
@@ -2716,6 +2717,11 @@ TEMPLATE;
         $quote = factory(WorldwideQuote::class)->create([
             'contract_type_id' => CT_CONTRACT,
             'submitted_at' => now()
+        ]);
+
+        $quoteNote = factory(WorldwideQuoteNote::class)->create([
+            'worldwide_quote_id' => $quote->getKey(),
+            'worldwide_quote_version_id' => $quote->activeVersion->getKey()
         ]);
 
         $this->authenticateApi();

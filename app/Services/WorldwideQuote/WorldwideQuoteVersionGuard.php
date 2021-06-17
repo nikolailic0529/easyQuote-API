@@ -15,7 +15,8 @@ use App\Models\{Address,
     QuoteFile\QuoteFile,
     QuoteFile\ScheduleData,
     User,
-    WorldwideQuoteAsset};
+    WorldwideQuoteAsset,
+    WorldwideQuoteAssetsGroup};
 use App\Events\WorldwideQuote\NewVersionOfWorldwideQuoteCreated;
 use App\Services\WorldwideQuote\Models\ReplicatedVersionData;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
@@ -130,6 +131,8 @@ class WorldwideQuoteVersionGuard
         $version = $replicatedVersionData->getReplicatedVersion();
         $quoteNote = $replicatedVersionData->getReplicatedQuoteNote();
         $replicatedPackAssets = $replicatedVersionData->getReplicatedPackAssets();
+        $replicatedPackAssetsGroups = $replicatedVersionData->getReplicatedAssetsGroups();
+        $replicatedPackAssetsOfGroups = $replicatedVersionData->getReplicatedAssetsOfGroups();
         $replicatedDistributorQuotes = $replicatedVersionData->getReplicatedDistributorQuotes();
 
         $versionAddressPivots = $replicatedVersionData->getAddressPivots();
@@ -148,6 +151,7 @@ class WorldwideQuoteVersionGuard
         $rowOfGroupBatch = [];
         $mappedRowBatch = [];
         $packAssetBatch = array_map(fn(WorldwideQuoteAsset $asset) => $asset->getAttributes(), $replicatedPackAssets);
+        $packAssetsGroupBatch = array_map(fn (WorldwideQuoteAssetsGroup $assetsGroup) => $assetsGroup->getAttributes(), $replicatedPackAssetsGroups);
 
         foreach ($replicatedDistributorQuotes as $distributorQuoteData) {
             $distributorQuoteBatch[] = $distributorQuoteData->getDistributorQuote()->getAttributes();
@@ -206,7 +210,9 @@ class WorldwideQuoteVersionGuard
             $groupOfRowBatch,
             $rowOfGroupBatch,
             $version,
-            $quoteNote
+            $quoteNote,
+            $packAssetsGroupBatch,
+            $replicatedPackAssetsOfGroups
         ) {
             $version->save();
 
@@ -265,6 +271,16 @@ class WorldwideQuoteVersionGuard
 
             if (!empty($packAssetBatch)) {
                 WorldwideQuoteAsset::query()->insert($packAssetBatch);
+            }
+
+            if (!empty($packAssetsGroupBatch)) {
+                $this->connection->table((new WorldwideQuoteAssetsGroup())->getTable())
+                    ->insert($packAssetsGroupBatch);
+            }
+
+            if (!empty($replicatedPackAssetsOfGroups)) {
+                $this->connection->table((new WorldwideQuoteAssetsGroup())->assets()->getTable())
+                    ->insert($replicatedPackAssetsOfGroups);
             }
 
             if (!empty($mappedRowBatch)) {
