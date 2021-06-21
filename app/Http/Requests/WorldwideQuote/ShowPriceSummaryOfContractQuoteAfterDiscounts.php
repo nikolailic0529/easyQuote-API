@@ -12,7 +12,8 @@ use App\Models\Quote\Discount\PromotionalDiscount;
 use App\Models\Quote\Discount\SND;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
-use App\Services\WorldwideQuote\WorldwideDistributionCalc;
+use App\Services\WorldwideQuote\Calculation\WorldwideDistributionCalc;
+use App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -95,26 +96,26 @@ class ShowPriceSummaryOfContractQuoteAfterDiscounts extends FormRequest
                             /** @var MultiYearDiscount $model */
                             $model = MultiYearDiscount::query()->findOrFail($modelKey);
 
-                            return WorldwideDistributionCalc::multiYearDiscountToImmutableMultiYearDiscountData($model);
+                            return WorldwideQuoteCalc::multiYearDiscountToImmutableMultiYearDiscountData($model);
                         }),
                         'pre_pay_discount' => transform($predefinedDiscounts['pre_pay_discount'] ?? null, function (string $modelKey) {
                             /** @var PrePayDiscount $model */
                             $model = PrePayDiscount::query()->findOrFail($modelKey);
 
-                            return WorldwideDistributionCalc::prePayDiscountToImmutablePrePayDiscountData($model);
+                            return WorldwideQuoteCalc::prePayDiscountToImmutablePrePayDiscountData($model);
                         }),
                         'promotional_discount' => transform($predefinedDiscounts['promotional_discount'] ?? null, function (string $modelKey) {
                             /** @var PromotionalDiscount $model */
                             $model = PromotionalDiscount::query()->findOrFail($modelKey);
 
-                            return WorldwideDistributionCalc::promotionalDiscountToImmutablePromotionalDiscountData($model);
+                            return WorldwideQuoteCalc::promotionalDiscountToImmutablePromotionalDiscountData($model);
 
                         }),
                         'special_negotiation_discount' => transform($predefinedDiscounts['sn_discount'] ?? null, function (string $modelKey) {
                             /** @var SND $model */
                             $model = SND::query()->findOrFail($modelKey);
 
-                            return WorldwideDistributionCalc::snDiscountToImmutableSpecialNegotiationData($model);
+                            return WorldwideQuoteCalc::snDiscountToImmutableSpecialNegotiationData($model);
                         }),
                     ];
                 }, []);

@@ -224,6 +224,7 @@ return [
         App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
+        App\Providers\TelescopeServiceProvider::class,
         App\Providers\CacheServiceProvider::class,
         Webpatser\Countries\CountriesServiceProvider::class,
         Maatwebsite\Excel\ExcelServiceProvider::class,

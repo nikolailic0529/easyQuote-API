@@ -1837,9 +1837,10 @@ class WorldwidePackQuoteTest extends TestCase
                 'price_summary' => [
                     'total_price' => '3000.00',
                     'buy_price' => '2000.00',
-                    'final_total_price' => '2860.00',
-                    'margin_after_sn_discount' => '29.82',
-                    'final_margin' => '29.82'
+                    'final_total_price' => '2800.70',
+                    'final_total_price_excluding_tax' => '2790.70',
+                    'margin_after_sn_discount' => '28.33',
+                    'final_margin' => '28.33'
                 ]
             ]);
     }
@@ -2380,6 +2381,73 @@ class WorldwidePackQuoteTest extends TestCase
                     'buy_currency_code'
                 ]
             ]);
+    }
+
+    /**
+     * Test an ability to view the specified group of pack quote assets.
+     *
+     * @return void
+     */
+    public function testCanViewGroupOfPackQuoteAssets()
+    {
+        $this->authenticateApi();
+
+        $opportunity = factory(Opportunity::class)->create();
+
+        /** @var WorldwideQuote $quote */
+        $quote = factory(WorldwideQuote::class)->create(['opportunity_id' => $opportunity->getKey()]);
+
+        $assets = factory(WorldwideQuoteAsset::class, 10)->create([
+            'worldwide_quote_id' => $quote->activeVersion->getKey(),
+            'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
+        ]);
+
+        /** @var WorldwideQuoteAssetsGroup $assetsGroup */
+        $assetsGroup = factory(WorldwideQuoteAssetsGroup::class)->create(['worldwide_quote_version_id' => $quote->activeVersion->getKey()]);
+
+        $assetsGroup->assets()->sync($assets);
+
+        $response = $this->getJson('api/ww-quotes/'.$quote->getKey().'/assets-groups/'.$assetsGroup->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'worldwide_quote_version_id',
+                'assets' => [
+                    '*' => [
+                        'id',
+                        'vendor_id',
+                        'machine_address_id',
+                        'buy_currency_id',
+                        'is_selected',
+                        'country',
+                        'serial_no',
+                        'sku',
+                        'service_sku',
+                        'product_name',
+                        'expiry_date',
+                        'service_level_description',
+                        'service_level_data',
+                        'price',
+                        'original_price',
+                        'exchange_rate_value',
+                        'exchange_rate_margin',
+                        'vendor_short_code',
+                        'buy_currency_code',
+                        'machine_address_string',
+                    ]
+                ],
+                'assets_sum',
+                'assets_count',
+                'group_name',
+                'search_text',
+                'is_selected',
+                'created_at',
+                'updated_at',
+            ]);
+
+        $this->assertNotNull($response->json('assets_sum'));
+        $this->assertNotNull($response->json('assets_count'));
     }
 
     /**

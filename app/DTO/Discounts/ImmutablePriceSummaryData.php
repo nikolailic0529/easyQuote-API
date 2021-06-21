@@ -6,12 +6,13 @@ use App\DTO\PriceSummaryData;
 use Spatie\DataTransferObject\ImmutableDataTransferObject;
 
 /**
- * Class ImmutableMarginAfterDiscountsData
+ * Class ImmutablePriceSummaryData
  * @property-read PriceSummaryData $dataTransferObject
  *
  * @property-read float $total_price
  * @property-read float $total_price_after_margin
  * @property-read float $buy_price
+ * @property-read float $country_margin
  * @property-read float $raw_margin
  * @property-read float $final_total_price
  * @property-read float $final_total_price_excluding_tax

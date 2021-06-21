@@ -37,15 +37,14 @@ use App\Models\WorldwideQuoteAsset;
 use App\Models\WorldwideQuoteAssetsGroup;
 use App\Services\ThumbHelper;
 use App\Services\WorldwideQuote\AssetServiceLookupService;
-use App\Services\WorldwideQuote\WorldwideDistributionCalc;
-use App\Services\WorldwideQuote\WorldwideQuoteCalc;
+use App\Services\WorldwideQuote\Calculation\WorldwideDistributionCalc;
+use App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\Arr;
-use Spatie\DataTransferObject\DataTransferObject;
 
 class SalesOrderDataMapper
 {

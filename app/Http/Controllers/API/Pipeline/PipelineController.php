@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API\Pipeline;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Pipeline\BatchPutPipelines;
+use App\Http\Requests\Pipeline\ShowDefaultPipeline;
 use App\Http\Requests\Pipeline\StorePipeline;
 use App\Http\Requests\Pipeline\UpdatePipeline;
 use App\Models\Opportunity;
@@ -190,6 +191,22 @@ class PipelineController extends Controller
 
         return response()->json(
             PipelineWithIncludes::make($pipeline)
+        );
+    }
+
+    /**
+     * Show the pipeline entity defined as default.
+     *
+     * @param ShowDefaultPipeline $request
+     * @return JsonResponse
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
+    public function showDefaultPipeline(ShowDefaultPipeline $request): JsonResponse
+    {
+        $this->authorize('viewAny', Opportunity::class);
+
+        return response()->json(
+            PipelineWithIncludes::make($request->getDefaultPipeline())
         );
     }
 

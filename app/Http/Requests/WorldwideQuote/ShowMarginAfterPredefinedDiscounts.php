@@ -7,7 +7,8 @@ use App\Models\Quote\Discount\MultiYearDiscount;
 use App\Models\Quote\Discount\PrePayDiscount;
 use App\Models\Quote\Discount\PromotionalDiscount;
 use App\Models\Quote\Discount\SND;
-use App\Services\WorldwideQuote\WorldwideDistributionCalc;
+use App\Services\WorldwideQuote\Calculation\WorldwideDistributionCalc;
+use App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -49,7 +50,7 @@ class ShowMarginAfterPredefinedDiscounts extends FormRequest
                 /** @var MultiYearDiscount $discount */
                 $discount = MultiYearDiscount::query()->findOrFail($modelKey);
 
-                return WorldwideDistributionCalc::multiYearDiscountToImmutableMultiYearDiscountData(
+                return WorldwideQuoteCalc::multiYearDiscountToImmutableMultiYearDiscountData(
                     $discount
                 );
             }),
@@ -58,7 +59,7 @@ class ShowMarginAfterPredefinedDiscounts extends FormRequest
 
                 $discount = PrePayDiscount::query()->findOrFail($modelKey);
 
-                return WorldwideDistributionCalc::prePayDiscountToImmutablePrePayDiscountData(
+                return WorldwideQuoteCalc::prePayDiscountToImmutablePrePayDiscountData(
                     $discount
                 );
             }),
@@ -67,7 +68,7 @@ class ShowMarginAfterPredefinedDiscounts extends FormRequest
 
                 $discount = PromotionalDiscount::query()->findOrFail($modelKey);
 
-                return WorldwideDistributionCalc::promotionalDiscountToImmutablePromotionalDiscountData(
+                return WorldwideQuoteCalc::promotionalDiscountToImmutablePromotionalDiscountData(
                     $discount
                 );
             }),
@@ -76,7 +77,7 @@ class ShowMarginAfterPredefinedDiscounts extends FormRequest
 
                 $discount = SND::query()->findOrFail($modelKey);
 
-                return WorldwideDistributionCalc::snDiscountToImmutableSpecialNegotiationData(
+                return WorldwideQuoteCalc::snDiscountToImmutableSpecialNegotiationData(
                     $discount
                 );
             }),

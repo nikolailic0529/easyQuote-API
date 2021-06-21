@@ -32,7 +32,7 @@ use App\Models\Quote\WorldwideDistribution;
 use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Models\QuoteFile\MappedRow;
 use App\Queries\WorldwideDistributionQueries;
-use App\Services\WorldwideQuote\WorldwideDistributionCalc;
+use App\Services\WorldwideQuote\Calculation\WorldwideDistributionCalc;
 use App\Services\WorldwideQuote\WorldwideQuoteVersionGuard;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
@@ -343,7 +343,7 @@ class WorldwideDistributionController extends Controller
     {
         $this->authorize('view', $worldwideDistribution->worldwideQuote->worldwideQuote);
 
-        $resource = $calcService->calculatePriceSummaryAfterPredefinedDiscounts(
+        $resource = $calcService->calculatePriceSummaryOfDistributorQuoteAfterPredefinedDiscounts(
             $worldwideDistribution, $request->getApplicableDiscounts()
         );
 
@@ -357,7 +357,7 @@ class WorldwideDistributionController extends Controller
      *
      * @param ShowMarginAfterCustomDiscount $request
      * @param WorldwideDistribution $worldwideDistribution
-     * @param \App\Services\WorldwideQuote\WorldwideDistributionCalc $calcService
+     * @param \App\Services\WorldwideQuote\Calculation\WorldwideDistributionCalc $calcService
      * @return JsonResponse
      * @throws AuthorizationException
      */
@@ -380,7 +380,7 @@ class WorldwideDistributionController extends Controller
      *
      * @param ShowPriceDataAfterMarginTax $request
      * @param WorldwideDistribution $worldwideDistribution
-     * @param \App\Services\WorldwideQuote\WorldwideDistributionCalc $calcService
+     * @param \App\Services\WorldwideQuote\Calculation\WorldwideDistributionCalc $calcService
      * @return JsonResponse
      * @throws AuthorizationException
      */

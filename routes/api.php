@@ -553,6 +553,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::post('ww-quotes/{worldwide_quote}/discounts', [WorldwideQuoteController::class, 'processQuoteDiscountStep']);
     Route::post('ww-quotes/{worldwide_quote}/details', [WorldwideQuoteController::class, 'processQuoteDetailsStep']);
 
+    Route::get('ww-quotes/{worldwide_quote}/assets-groups/{assets_group:id}', [WorldwideQuoteAssetController::class, 'showGroupOfAssets']);
     Route::post('ww-quotes/{worldwide_quote}/assets-groups', [WorldwideQuoteAssetController::class, 'storeGroupOfAssets']);
     Route::patch('ww-quotes/{worldwide_quote}/assets-groups/{assets_group:id}', [WorldwideQuoteAssetController::class, 'updateGroupOfAssets']);
     Route::delete('ww-quotes/{worldwide_quote}/assets-groups/{assets_group:id}', [WorldwideQuoteAssetController::class, 'deleteGroupOfAssets']);
@@ -618,6 +619,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get('pipelines', [PipelineController::class, 'paginatePipelines']);
     Route::get('pipelines/list', [PipelineController::class, 'showListOfPipelines']);
     Route::get('pipelines/list/without-opportunity-form', [PipelineController::class, 'showListOfPipelinesWithoutOpportunityForm']);
+    Route::get('pipelines/default', [PipelineController::class, 'showDefaultPipeline']);
     Route::get('pipelines/{pipeline}', [PipelineController::class, 'showPipeline']);
     Route::get('pipelines/default/opportunity-form', [PipelineController::class, 'showOpportunityFormSchemaOfDefaultPipeline']);
     Route::get('pipelines/{pipeline}/opportunity-form', [PipelineController::class, 'showOpportunityFormSchemaOfPipeline']);

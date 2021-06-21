@@ -7,6 +7,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Database\{
     Query\Builder as QueryBuilder,
     Query\JoinClause
@@ -59,39 +60,53 @@ class RetrievePriceAttributes implements ShouldQueue
             ->toBase()
             ->pluck('importable_column_id', 'template_fields.name');
 
+        if ($mapping->isEmpty()) {
+            return;
+        }
+
         $subQuery = $priceList->rowsData()->toBase()
             ->whereNotNull('columns_data')
             ->when(true, function (QueryBuilder $query) use ($mapping) {
                 $mapping->each(fn ($id, $column) => $this->unpivotJsonColumn($query, 'columns_data', "$.\"{$id}\".value", $column));
             });
 
+        /** @var BaseCollection $importedColumns */
         $importedColumns = DB::query()->fromSub($subQuery, 'columns')->groupBy(...$mapping->keys())->get();
 
-        $attributes = [];
+        $newAttributes = [];
 
-        $mapping->keys()->each(function ($column) use (&$attributes, $importedColumns) {
-            $attribute = data_get(array_flip(BaseQuote::PRICE_ATTRIBUTES_MAPPING), $column);
-            $values = $importedColumns->pluck($column)->reject(fn ($value) => blank($value) || $value === 'null')->toArray();
+        $priceAttributeDictionary = array_flip(BaseQuote::PRICE_ATTRIBUTES_MAPPING);
 
-            data_set($attributes, $attribute, $values);
-        });
+        foreach ($mapping->keys() as $column) {
 
-        $attributes = array_filter(array_merge_recursive($priceList->meta_attributes, $attributes), fn ($value) => is_array($value));
+            if (!isset($priceAttributeDictionary[$column])) {
+                continue;
+            }
 
-        $attributes = array_map(fn ($attribute) => array_values(
-            array_flip(
-                array_flip(array_filter($attribute))
-            )
-        ), $attributes);
+            $attribute = $priceAttributeDictionary[$column];
+
+            $values = $importedColumns->pluck($column)
+                ->reject(fn ($value) => blank($value) || $value === 'null')
+                ->all();
+
+            $newAttributes[$attribute] = $values;
+        }
+
+        $attributes = array_filter(array_merge_recursive(
+            $priceList->meta_attributes ?? [],
+            $newAttributes
+        ), 'is_array');
+
+        $attributes = array_map(fn (array $attributeValues) => array_values(array_unique($attributeValues)), $attributes);
 
         $fileLock = Cache::lock(Lock::UPDATE_QUOTE_FILE($priceList->getKey()), 10);
         $quoteLock = Cache::lock(Lock::UPDATE_QUOTE($this->quote->getKey()), 10);
 
         $quoteLock->block(60, function () use ($attributes) {
             $quoteAttributes = [
-                'pricing_document' => implode(', ', Arr::get($attributes, 'pricing_document')),
-                'system_handle' => implode(', ', Arr::get($attributes, 'system_handle')),
-                'service_agreement_id' => implode(', ', Arr::get($attributes, 'service_agreement_id')),
+                'pricing_document' => implode(', ', Arr::wrap(Arr::get($attributes, 'pricing_document'))),
+                'system_handle' => implode(', ', Arr::wrap(Arr::get($attributes, 'system_handle'))),
+                'service_agreement_id' => implode(', ', Arr::wrap(Arr::get($attributes, 'service_agreement_id'))),
             ];
 
             $this->quote->whereKey($this->quote->getKey())->toBase()->update($quoteAttributes);

@@ -49,7 +49,7 @@ class WorldwideQuoteAsset extends Model
     protected $guarded = [];
 
     protected $hidden = [
-        'worldwide_quote_id', 'worldwide_quote_type'
+        'worldwide_quote_id', 'worldwide_quote_type', 'pivot'
     ];
 
     protected $casts = [

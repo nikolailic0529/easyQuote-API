@@ -1896,9 +1896,9 @@ TEMPLATE;
                 'price_summary' => [
                     'total_price' => '6000.00',
                     'buy_price' => '4000.00',
-                    'final_total_price' => '6725.88',
-                    'final_total_price_excluding_tax' => '6705.88',
-                    'final_margin' => '40.35'
+                    'final_total_price' => '6506.49',
+                    'final_total_price_excluding_tax' => '6486.49',
+                    'final_margin' => '38.33'
                 ]
             ]);
 
@@ -1941,10 +1941,10 @@ TEMPLATE;
 
         $this->assertEquals('6000.00', $response->json('summary.total_price'));
         $this->assertEquals('4000.00', $response->json('summary.buy_price'));
-        $this->assertEquals('6725.88', $response->json('summary.final_total_price'));
-        $this->assertEquals('6705.88', $response->json('summary.final_total_price_excluding_tax'));
-        $this->assertEquals('352.94', $response->json('summary.applicable_discounts_value'));
-        $this->assertEquals('40.35', $response->json('summary.final_margin'));
+        $this->assertEquals('6506.49', $response->json('summary.final_total_price'));
+        $this->assertEquals('6486.49', $response->json('summary.final_total_price_excluding_tax'));
+        $this->assertEquals('572.34', $response->json('summary.applicable_discounts_value'));
+        $this->assertEquals('38.33', $response->json('summary.final_margin'));
 
 
     }
@@ -2049,10 +2049,10 @@ TEMPLATE;
                 'price_summary' => [
                     'total_price' => '6000.00',
                     'buy_price' => '4000.00',
-                    'final_total_price' => '5458.70',
-                    'final_total_price_excluding_tax' => '5458.70',
-                    'applicable_discounts_value' => '541.30',
-                    'final_margin' => '26.72'
+                    'final_total_price' => '5399.39',
+                    'final_total_price_excluding_tax' => '5399.39',
+                    'applicable_discounts_value' => '600.61',
+                    'final_margin' => '25.92'
                 ]
             ]);
 
@@ -2093,10 +2093,10 @@ TEMPLATE;
 
         $this->assertEquals('6000.00', $response->json('summary.total_price'));
         $this->assertEquals('4000.00', $response->json('summary.buy_price'));
-        $this->assertEquals('5458.70', $response->json('summary.final_total_price'));
-        $this->assertEquals('5458.70', $response->json('summary.final_total_price_excluding_tax'));
-        $this->assertEquals('541.30', $response->json('summary.applicable_discounts_value'));
-        $this->assertEquals('26.72', $response->json('summary.final_margin'));
+        $this->assertEquals('5399.39', $response->json('summary.final_total_price'));
+        $this->assertEquals('5399.39', $response->json('summary.final_total_price_excluding_tax'));
+        $this->assertEquals('600.61', $response->json('summary.applicable_discounts_value'));
+        $this->assertEquals('25.92', $response->json('summary.final_margin'));
     }
 
     /**
@@ -2563,6 +2563,7 @@ TEMPLATE;
             ],
 
         ])
+//            ->dump()
             ->assertOk();
 
         // Updating the opportunity entity to trigger an event

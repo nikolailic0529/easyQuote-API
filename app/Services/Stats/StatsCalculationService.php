@@ -16,7 +16,7 @@ use App\Models\{Address,
     Quote\WorldwideQuote};
 use App\Models\Quote\QuoteLocationTotal;
 use App\Queries\AssetQueries;
-use App\Services\WorldwideQuote\WorldwideQuoteCalc;
+use App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc;
 use Illuminate\Database\{ConnectionInterface, Eloquent\Collection, Query\JoinClause};
 use Illuminate\Support\{Collection as BaseCollection,};
 use Psr\Log\LoggerInterface;

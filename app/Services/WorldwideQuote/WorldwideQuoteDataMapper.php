@@ -41,9 +41,10 @@ use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
 use App\Models\WorldwideQuoteAssetsGroup;
 use App\Services\ThumbHelper;
+use App\Services\WorldwideQuote\Calculation\WorldwideDistributionCalc;
+use App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc;
 use App\Support\PriceParser;
 use Illuminate\Contracts\Config\Repository as Config;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -468,7 +469,7 @@ class WorldwideQuoteDataMapper
             $outputCurrency
         ) {
             if (is_null($distribution->total_price)) {
-                $distribution->total_price = $this->worldwideDistributionCalc->calculateDistributionTotalPrice($distribution);
+                $distribution->total_price = $this->worldwideDistributionCalc->calculateTotalPriceOfDistributorQuote($distribution);
             }
 
             if (is_null($distribution->final_total_price)) {

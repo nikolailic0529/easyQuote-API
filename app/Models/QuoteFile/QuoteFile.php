@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\{Builder,
  * @property ScheduleData|null scheduleData
  * @property Collection<MappedRow>|MappedRow[] $mappedRows
  * @property Collection<ImportedRow>|ImportedRow[] $rowsData
+ * @property array|null $meta_attributes
  */
 class QuoteFile extends Model
 {

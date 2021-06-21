@@ -29,8 +29,8 @@ use App\Http\Resources\{Discount\ApplicableDiscountCollection,
     WorldwideQuote\WorldwideQuoteState};
 use App\Models\Quote\WorldwideQuote;
 use App\Models\Quote\WorldwideQuoteVersion;
-use App\Services\{WorldwideQuote\CollectWorldwideQuoteFilesService,
-    WorldwideQuote\WorldwideQuoteCalc,
+use App\Services\{WorldwideQuote\Calculation\WorldwideQuoteCalc,
+    WorldwideQuote\CollectWorldwideQuoteFilesService,
     WorldwideQuote\WorldwideQuoteDataMapper,
     WorldwideQuote\WorldwideQuoteExporter,
     WorldwideQuote\WorldwideQuoteValidator,
@@ -522,7 +522,7 @@ class WorldwideQuoteController extends Controller
      *
      * @param ShowPriceSummaryOfContractQuoteAfterCountryMarginTax $request
      * @param WorldwideQuote $worldwideQuote
-     * @param WorldwideQuoteCalc $quoteCalcService
+     * @param \App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc $quoteCalcService
      * @return JsonResponse
      * @throws AuthorizationException
      */
@@ -548,7 +548,7 @@ class WorldwideQuoteController extends Controller
      *
      * @param ShowPriceSummaryOfContractQuoteAfterDiscounts $request
      * @param WorldwideQuote $worldwideQuote
-     * @param \App\Services\WorldwideQuote\WorldwideQuoteCalc $quoteCalcService
+     * @param \App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc $quoteCalcService
      * @return JsonResponse
      * @throws AuthorizationException
      */
@@ -574,7 +574,7 @@ class WorldwideQuoteController extends Controller
      *
      * @param ShowPriceSummaryOfPackQuoteAfterCountryMarginTax $request
      * @param WorldwideQuote $worldwideQuote
-     * @param \App\Services\WorldwideQuote\WorldwideQuoteCalc $quoteCalcService
+     * @param \App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc $quoteCalcService
      * @return JsonResponse
      * @throws AuthorizationException
      */
@@ -600,7 +600,7 @@ class WorldwideQuoteController extends Controller
      *
      * @param ShowPriceSummaryOfPackQuoteAfterDiscounts $request
      * @param WorldwideQuote $worldwideQuote
-     * @param WorldwideQuoteCalc $quoteCalcService
+     * @param \App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc $quoteCalcService
      * @return JsonResponse
      * @throws AuthorizationException
      */

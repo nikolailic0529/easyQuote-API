@@ -16,6 +16,10 @@ trait HasMetaAttributes
 
     public function getMetaAttributesAttribute($value)
     {
+        if (is_null($value)) {
+            return [];
+        }
+
         return json_decode($value, true) ?? [];
     }
 

@@ -1056,6 +1056,7 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
             throw new ValidationFailedException($data, $violations);
         }
 
+        /** @var WorldwideDistribution $distribution */
         $distribution = value(function () use ($distribution, $quote, $newVersionResolved): WorldwideDistribution {
             if ($newVersionResolved) {
                 /** @var WorldwideDistribution $model */
@@ -1065,6 +1066,21 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
             }
 
             return $distribution;
+        });
+
+        $data->rows = value(function () use ($data, $distribution, $newVersionResolved): array {
+
+            if ($newVersionResolved) {
+
+                return $distribution->mappedRows()
+                        ->whereIn('replicated_mapped_row_id', $data->rows)
+                        ->pluck($distribution->mappedRows()->getRelated()->getQualifiedKeyName())
+                        ->all();
+
+            }
+
+            return $data->rows;
+
         });
 
         $lock = $this->lockProvider->lock(
@@ -1128,6 +1144,21 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
             }
 
             return $rowsGroup;
+        });
+
+        $data->rows = value(function () use ($data, $distribution, $newVersionResolved): array {
+
+            if ($newVersionResolved) {
+
+                return $distribution->mappedRows()
+                    ->whereIn('replicated_mapped_row_id', $data->rows)
+                    ->pluck($distribution->mappedRows()->getRelated()->getQualifiedKeyName())
+                    ->all();
+
+            }
+
+            return $data->rows;
+
         });
 
         $lock = $this->lockProvider->lock(

@@ -1507,6 +1507,18 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             throw new ValidationFailedException($data, $violations);
         }
 
+        $data->assets = value(function () use ($data, $quote): array {
+
+            if ($quote->wasRecentlyCreated) {
+                return $quote->assets()->whereIn('replicated_asset_id', $data->assets)
+                    ->pluck($quote->assets()->getRelated()->getQualifiedKeyName())
+                    ->all();
+            }
+
+            return $data->assets;
+
+        });
+
         return tap(new WorldwideQuoteAssetsGroup(), function (WorldwideQuoteAssetsGroup $assetsGroup) use ($quote, $data) {
 
             $assetsGroup->{$assetsGroup->getKeyName()} = (string)Uuid::generate(4);
@@ -1550,6 +1562,18 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             }
 
             return $assetsGroup;
+
+        });
+
+        $data->assets = value(function () use ($data, $quote): array {
+
+            if ($quote->wasRecentlyCreated) {
+                return $quote->assets()->whereIn('replicated_asset_id', $data->assets)
+                    ->pluck($quote->assets()->getRelated()->getQualifiedKeyName())
+                    ->all();
+            }
+
+            return $data->assets;
 
         });
 

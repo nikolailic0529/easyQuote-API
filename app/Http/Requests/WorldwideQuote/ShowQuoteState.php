@@ -12,8 +12,7 @@ use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\Vendor;
 use App\Queries\DiscountQueries;
-use App\Services\WorldwideQuote\WorldwideDistributionCalc;
-use App\Services\WorldwideQuote\WorldwideQuoteCalc;
+use App\Services\WorldwideQuote\Calculation\WorldwideDistributionCalc;
 use App\Services\WorldwideQuote\WorldwideQuoteDataMapper;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Http\FormRequest;
@@ -325,7 +324,7 @@ class ShowQuoteState extends FormRequest
         }
     }
 
-    public function includeWorldwideQuoteSummaryAttribute(WorldwideQuote $model, WorldwideQuoteCalc $service)
+    public function includeWorldwideQuoteSummaryAttribute(WorldwideQuote $model, \App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc $service)
     {
         $priceSummary = $service->calculatePriceSummaryOfQuote($model);
 
@@ -393,7 +392,7 @@ class ShowQuoteState extends FormRequest
             ->each(function (WorldwideDistribution $distribution) use ($service) {
                 $applicableDiscounts = $service->predefinedDistributionDiscountsToApplicableDiscounts($distribution);
 
-                $marginAfterDiscounts = $service->calculatePriceSummaryAfterPredefinedDiscounts($distribution, $applicableDiscounts);
+                $marginAfterDiscounts = $service->calculatePriceSummaryOfDistributorQuoteAfterPredefinedDiscounts($distribution, $applicableDiscounts);
 
                 $marginPercentageAttribute = 'margin_percentage';
 
@@ -434,7 +433,7 @@ class ShowQuoteState extends FormRequest
             });
     }
 
-    public function includeWorldwideQuotePredefinedDiscounts(WorldwideQuote $model, WorldwideQuoteCalc $service)
+    public function includeWorldwideQuotePredefinedDiscounts(WorldwideQuote $model, \App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc $service)
     {
         $model->activeVersion->load([
             'multiYearDiscount:id,name,durations',

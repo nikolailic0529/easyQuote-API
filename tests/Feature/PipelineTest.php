@@ -467,4 +467,61 @@ class PipelineTest extends TestCase
 
         $this->assertIsArray($response->json('form_data'));
     }
+
+    /**
+     * Test an ability to view the default pipeline entity.
+     *
+     * @return void
+     */
+    public function testCanViewDefaultPipeline()
+    {
+        $this->authenticateApi();
+
+        $this->getJson('api/pipelines/default')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'space_id',
+                'pipeline_name',
+                'pipeline_stages' => [
+                    '*' => [
+                        'id',
+                        'pipeline_id',
+                        'stage_name',
+                        'stage_order'
+                    ]
+                ],
+                'created_at',
+                'updated_at'
+            ]);
+    }
+
+    /**
+     * Test an ability to view the specified pipeline entity.
+     */
+    public function testCanViewSpecifiedPipeline()
+    {
+        $pipeline = factory(Pipeline::class)->create();
+
+        $this->authenticateApi();
+
+        $this->getJson('api/pipelines/'.$pipeline->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'space_id',
+                'pipeline_name',
+                'pipeline_stages' => [
+                    '*' => [
+                        'id',
+                        'pipeline_id',
+                        'stage_name',
+                        'stage_order'
+                    ]
+                ],
+                'created_at',
+                'updated_at'
+            ]);
+    }
 }

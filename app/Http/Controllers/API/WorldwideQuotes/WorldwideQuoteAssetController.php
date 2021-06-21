@@ -10,6 +10,7 @@ use App\Http\Requests\WorldwideQuote\BatchWarrantyLookup;
 use App\Http\Requests\WorldwideQuote\ImportBatchAssetFile;
 use App\Http\Requests\WorldwideQuote\InitializeQuoteAsset;
 use App\Http\Requests\WorldwideQuote\MoveAssetsBetweenGroupsOfAssets;
+use App\Http\Requests\WorldwideQuote\ShowStateOfAssetsGroup;
 use App\Http\Requests\WorldwideQuote\StoreGroupOfAssets;
 use App\Http\Requests\WorldwideQuote\UpdateGroupOfAssets;
 use App\Http\Requests\WorldwideQuote\UpdateQuoteAssets;
@@ -230,6 +231,26 @@ class WorldwideQuoteAssetController extends Controller
         return response()->json(
             AssetsGroup::make($request->loadGroupAttributes($resource)),
             Response::HTTP_CREATED
+        );
+    }
+
+    /**
+     * Show the specified group of assets.
+     *
+     * @param ShowStateOfAssetsGroup $request
+     * @param WorldwideQuote $worldwideQuote
+     * @param WorldwideQuoteAssetsGroup $assetsGroup
+     * @return JsonResponse
+     * @throws AuthorizationException
+     */
+    public function showGroupOfAssets(ShowStateOfAssetsGroup $request,
+                                      WorldwideQuote $worldwideQuote,
+                                      WorldwideQuoteAssetsGroup $assetsGroup): JsonResponse
+    {
+        $this->authorize('view', $worldwideQuote);
+
+        return response()->json(
+            AssetsGroup::make($request->loadGroupAttributes($assetsGroup))
         );
     }
 

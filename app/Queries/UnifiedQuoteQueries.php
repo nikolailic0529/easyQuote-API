@@ -233,8 +233,7 @@ class UnifiedQuoteQueries
                 $joinClause->on('customers.id', 'quotes.customer_id');
             })
             ->leftJoin('companies', function (JoinClause $joinClause) {
-                $joinClause->on('companies.id', 'quote_versions.company_id')
-                    ->orOn('companies.id', 'quotes.company_id');
+                $joinClause->on('companies.id', DB::raw("COALESCE(quote_versions.company_id, quotes.company_id)"));
             })
 //            ->whereNull('quotes.submitted_at')
             ->where('customers.valid_until', '<=', today())
@@ -305,8 +304,7 @@ class UnifiedQuoteQueries
                 $joinClause->on('customers.id', 'quotes.customer_id');
             })
             ->leftJoin('companies', function (JoinClause $joinClause) {
-                $joinClause->on('companies.id', 'quote_versions.company_id')
-                    ->orOn('companies.id', 'quotes.company_id');
+                $joinClause->on('companies.id', DB::raw("COALESCE(quote_versions.company_id, quotes.company_id)"));
             })
             ->whereNull('quotes.submitted_at')
             ->select([
@@ -411,8 +409,7 @@ class UnifiedQuoteQueries
                 $joinClause->on('customers.id', 'quotes.customer_id');
             })
             ->join('companies', function (JoinClause $joinClause) {
-                $joinClause->on('companies.id', 'quote_versions.company_id')
-                    ->orOn('companies.id', 'quotes.company_id');
+                $joinClause->on('companies.id', DB::raw("COALESCE(quote_versions.company_id, quotes.company_id)"));
             })
             ->leftJoin('contracts', function (JoinClause $joinClause) {
                 $joinClause->on('contracts.quote_id', 'quotes.id')
