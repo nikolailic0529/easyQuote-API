@@ -1194,7 +1194,7 @@ class WorldwideQuoteDataMapper
             $priceSummaryOfDistributorQuote = $this->worldwideDistributionCalc->calculatePriceSummaryOfDistributorQuote($worldwideDistribution);
 
             $quoteDataAggregation[] = new DistributionSummary([
-                'vendor_name' => $worldwideDistribution->opportunitySupplier->supplier_name,
+                'vendor_name' => $worldwideDistribution->vendors->pluck('name')->implode(', '),
                 'country_name' => $worldwideDistribution->country->name,
                 'duration' => $duration,
                 'qty' => 1,

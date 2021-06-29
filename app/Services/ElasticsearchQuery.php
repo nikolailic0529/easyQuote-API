@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class ElasticsearchQuery implements Arrayable
 {
@@ -45,6 +46,20 @@ class ElasticsearchQuery implements Arrayable
     {
         $this->queryString = $string;
         $this->queryStringType = $type;
+
+        return $this;
+    }
+
+    public function escapeQueryString(): ElasticsearchQuery
+    {
+        $this->queryString = self::escapeReservedChars($this->queryString);
+
+        return $this;
+    }
+
+    public function wrapQueryString(string $char = '*'): ElasticsearchQuery
+    {
+        $this->queryString = Str::finish(Str::start($this->queryString, $char), $char);
 
         return $this;
     }

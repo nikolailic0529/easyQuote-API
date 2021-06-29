@@ -4682,4 +4682,33 @@ CONTENT
 
         $this->assertEmpty($fileData['pages'][6]['rows']);
     }
+
+    /**
+     * @group parsing-price-list-pdf
+     */
+    public function test_parses_5356429813_acr_4hr_exch_pdf()
+    {
+        $filePath = base_path('tests/Unit/Data/distributor-files-test/5356429813 ACR 4HR EXCH.PDF');
+
+        $parser = $this->app[\App\Contracts\Services\PdfParserInterface::class];
+
+        $fileContent = $parser->getText($filePath);
+        $fileData = $parser->parse($fileContent);
+
+        $this->assertEmpty($fileData['pages'][0]['rows']);
+
+        $this->assertCount(22, $fileData['pages'][1]['rows']);
+        $this->assertCount(50, $fileData['pages'][2]['rows']);
+        $this->assertCount(49, $fileData['pages'][3]['rows']);
+        $this->assertCount(50, $fileData['pages'][4]['rows']);
+        $this->assertCount(34, $fileData['pages'][5]['rows']);
+        $this->assertCount(50, $fileData['pages'][6]['rows']);
+        $this->assertCount(49, $fileData['pages'][7]['rows']);
+        $this->assertCount(44, $fileData['pages'][8]['rows']);
+        $this->assertCount(50, $fileData['pages'][9]['rows']);
+        $this->assertCount(49, $fileData['pages'][10]['rows']);
+        $this->assertCount(50, $fileData['pages'][11]['rows']);
+        $this->assertCount(14, $fileData['pages'][12]['rows']);
+        $this->assertEmpty($fileData['pages'][13]['rows']);
+    }
 }

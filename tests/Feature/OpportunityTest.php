@@ -93,7 +93,7 @@ class OpportunityTest extends TestCase
         $user->syncRoles($role);
 
         $opportunity = factory(Opportunity::class)->create([
-            'user_id' => $user->getKey()
+            'user_id' => $user->getKey(),
         ]);
 
         factory(Opportunity::class)->create();
@@ -106,9 +106,9 @@ class OpportunityTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
-                        'user_id'
-                    ]
-                ]
+                        'user_id',
+                    ],
+                ],
             ]);
 
         $this->assertCount(1, $response->json('data'));
@@ -138,7 +138,7 @@ class OpportunityTest extends TestCase
         ]);
 
         factory(Opportunity::class)->create([
-            'status' => 0
+            'status' => 0,
         ]);
 
         $this->actingAs($user, 'api');
@@ -149,9 +149,9 @@ class OpportunityTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
-                        'user_id'
-                    ]
-                ]
+                        'user_id',
+                    ],
+                ],
             ]);
 
         $this->assertCount(1, $response->json('data'));
@@ -171,7 +171,7 @@ class OpportunityTest extends TestCase
             ->create([
                 'user_id' => $this->app['auth.driver']->id(),
                 'status' => 0, // 'LOST',
-                'status_reason' => Str::random(40)
+                'status_reason' => Str::random(40),
             ]);
 
         $this->getJson('api/opportunities/lost')
@@ -228,7 +228,7 @@ class OpportunityTest extends TestCase
 
         /** @var Opportunity $opportunity */
         $opportunity = factory(Opportunity::class)->create([
-            'primary_account_id' => $primaryAccount->getKey()
+            'primary_account_id' => $primaryAccount->getKey(),
         ]);
 
         factory(OpportunitySupplier::class, 2)->create(['opportunity_id' => $opportunity->getKey()]);
@@ -248,7 +248,7 @@ class OpportunityTest extends TestCase
                 "primary_account_id",
                 "primary_account",
                 "primary_account" => [
-                  "vendor_ids"
+                    "vendor_ids",
                 ],
                 "primary_account_contact_id",
                 "primary_account_contact",
@@ -310,9 +310,9 @@ class OpportunityTest extends TestCase
 
                 "suppliers_grid" => [
                     "*" => [
-                        "id", "supplier_name", "country_name", "contact_name", "contact_email"
-                    ]
-                ]
+                        "id", "supplier_name", "country_name", "contact_name", "contact_email",
+                    ],
+                ],
             ]);
     }
 
@@ -404,15 +404,15 @@ class OpportunityTest extends TestCase
                     "addresses" => [
                         "*" => [
                             "id",
-                            "is_default"
-                        ]
+                            "is_default",
+                        ],
                     ],
                     "contacts" => [
                         "*" => [
                             "id",
-                            "is_default"
-                        ]
-                    ]
+                            "is_default",
+                        ],
+                    ],
                 ],
                 "primary_account_contact_id",
                 "primary_account_contact",
@@ -471,9 +471,9 @@ class OpportunityTest extends TestCase
 
                 "suppliers_grid" => [
                     "*" => [
-                        "id", "supplier_name", "country_name", "contact_name", "contact_email"
-                    ]
-                ]
+                        "id", "supplier_name", "country_name", "contact_name", "contact_email",
+                    ],
+                ],
             ]);
     }
 
@@ -620,9 +620,9 @@ class OpportunityTest extends TestCase
 
                 "suppliers_grid" => [
                     "*" => [
-                        "id", "supplier_name", "country_name", "contact_name", "contact_email"
-                    ]
-                ]
+                        "id", "supplier_name", "country_name", "contact_name", "contact_email",
+                    ],
+                ],
             ]);
 
         $this->assertNotEmpty($response->json('primary_account_contact_id'));
@@ -635,8 +635,8 @@ class OpportunityTest extends TestCase
             'name' => $account->name,
             'vat_type' => 'NO VAT',
             'contacts' => [
-                ['id' => $newContactOfPrimaryAccount->getKey()]
-            ]
+                ['id' => $newContactOfPrimaryAccount->getKey()],
+            ],
         ])
 //            ->dump()
             ->assertOk();
@@ -687,17 +687,17 @@ class OpportunityTest extends TestCase
         $response = $this->postJson('api/opportunities/upload', [
             'opportunities_file' => $opportunitiesFile,
             'accounts_data_file' => $accountsDataFile,
-            'account_contacts_file' => $accountContactsFile
+            'account_contacts_file' => $accountContactsFile,
         ])
 //            ->dump()
             ->assertCreated()
             ->assertJsonStructure([
                 'opportunities' => [
                     '*' => [
-                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date', 'sale_action_name', 'campaign_name'
-                    ]
+                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date', 'sale_action_name', 'campaign_name',
+                    ],
                 ],
-                'errors'
+                'errors',
             ]);
 
         $this->assertEmpty($response->json('errors'));
@@ -724,10 +724,10 @@ class OpportunityTest extends TestCase
             ->assertJsonStructure([
                 'opportunities' => [
                     '*' => [
-                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date', 'sale_action_name', 'campaign_name'
-                    ]
+                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date', 'sale_action_name', 'campaign_name',
+                    ],
                 ],
-                'errors'
+                'errors',
             ]);
 
         $this->assertNotEmpty($response->json('errors'));
@@ -753,17 +753,17 @@ class OpportunityTest extends TestCase
         $response = $this->postJson('api/opportunities/upload', [
             'opportunities_file' => $opportunitiesFile,
             'accounts_data_file' => $accountsDataFile,
-            'account_contacts_file' => $accountContactsFile
+            'account_contacts_file' => $accountContactsFile,
         ])
 //            ->dump()
             ->assertCreated()
             ->assertJsonStructure([
                 'opportunities' => [
                     '*' => [
-                        'id', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date'
-                    ]
+                        'id', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date',
+                    ],
                 ],
-                'errors'
+                'errors',
             ]);
 
         $keys = $response->json('opportunities.*.id');
@@ -773,8 +773,8 @@ class OpportunityTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'data' => [
-                    '*' => ['id']
-                ]
+                    '*' => ['id'],
+                ],
             ]);
 
         $keysOnListing = $response->json('data.*.id');
@@ -782,7 +782,7 @@ class OpportunityTest extends TestCase
         $this->assertEmpty($keysOnListing);
 
         $this->patchJson('api/opportunities/save', [
-            'opportunities' => $keys
+            'opportunities' => $keys,
         ])
 //            ->dump()
             ->assertNoContent();
@@ -797,8 +797,8 @@ class OpportunityTest extends TestCase
                 ->assertOk()
                 ->assertJsonStructure([
                     'data' => [
-                        '*' => ['id']
-                    ]
+                        '*' => ['id'],
+                    ],
                 ]);
 
             $keysOnListing = array_merge($keysOnListing, $response->json('data.*.id'));
@@ -818,13 +818,13 @@ class OpportunityTest extends TestCase
     {
         $opportunity = factory(Opportunity::class)->create([
             'status' => 1,
-            'status_reason' => null
+            'status_reason' => null,
         ]);
 
         $this->authenticateApi();
 
         $this->patchJson('api/opportunities/'.$opportunity->getKey().'/lost', [
-            'status_reason' => $statusReason = 'Hardware is no longer covered'
+            'status_reason' => $statusReason = 'Hardware is no longer covered',
         ])
             ->assertNoContent();
 
@@ -833,7 +833,7 @@ class OpportunityTest extends TestCase
             ->assertOk()
             ->assertJson([
                 'status' => 0,
-                'status_reason' => $statusReason
+                'status_reason' => $statusReason,
             ]);
     }
 
@@ -847,13 +847,13 @@ class OpportunityTest extends TestCase
     {
         $opportunity = factory(Opportunity::class)->create([
             'status' => 1,
-            'status_reason' => null
+            'status_reason' => null,
         ]);
 
         $this->authenticateApi();
 
         $this->patchJson('api/opportunities/'.$opportunity->getKey().'/lost', [
-            'status_reason' => $statusReason = 'Hardware is no longer covered'
+            'status_reason' => $statusReason = 'Hardware is no longer covered',
         ])
             ->assertNoContent();
 
@@ -862,7 +862,7 @@ class OpportunityTest extends TestCase
             ->assertOk()
             ->assertJson([
                 'status' => 0,
-                'status_reason' => $statusReason
+                'status_reason' => $statusReason,
             ]);
 
         $this->patchJson('api/opportunities/'.$opportunity->getKey().'/restore-from-lost')
@@ -874,7 +874,7 @@ class OpportunityTest extends TestCase
             ->assertOk()
             ->assertJson([
                 'status' => 1,
-                'status_reason' => null
+                'status_reason' => null,
             ]);
     }
 
@@ -888,7 +888,7 @@ class OpportunityTest extends TestCase
         $opportunity = factory(Opportunity::class)->create();
 
         $quote = factory(WorldwideQuote::class)->create([
-            'opportunity_id' => $opportunity->getKey()
+            'opportunity_id' => $opportunity->getKey(),
         ]);
 
         $this->authenticateApi();
@@ -896,5 +896,53 @@ class OpportunityTest extends TestCase
         $this->deleteJson('api/opportunities/'.$opportunity->getKey())
 //            ->dump()
             ->assertForbidden();
+    }
+
+    /**
+     * Test an ability to view opportunity entities grouped by pipeline stages.
+     *
+     * @return void
+     */
+    public function testCanViewOpportunitiesGroupedByPipelineStages()
+    {
+        $this->authenticateApi();
+
+        $this->getJson('api/pipelines/default/stage-opportunity')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                '*' => [
+                    'stage_id',
+                    'stage_name',
+                    'stage_order',
+                    'opportunities' => [
+                        '*' => [
+                            'id',
+                            'user_id',
+                            'account_manager_id',
+                            'primary_account.id',
+                            'primary_account.name',
+                            'primary_account.phone',
+                            'primary_account.email',
+                            'project_name',
+                            'account_manager_name',
+                            'opportunity_closing_date',
+                            'opportunity_amount',
+                            'base_opportunity_amount',
+                            'opportunity_amount_currency_code',
+                            'primary_account_contact.first_name',
+                            'primary_account_contact.last_name',
+                            'primary_account_contact.phone',
+                            'primary_account_contact.email',
+                            'opportunity_start_date',
+                            'opportunity_end_date',
+                            'ranking',
+                            'status',
+                            'status_reason',
+                            'created_at',
+                        ],
+                    ],
+                ],
+            ]);
     }
 }

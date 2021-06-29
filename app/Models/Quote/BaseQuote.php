@@ -4,7 +4,11 @@ namespace App\Models\Quote;
 
 use App\Casts\GroupDescription;
 use App\Contracts\{ActivatableInterface, HasOrderedScope, SearchableEntity};
-use App\Models\{QuoteFile\ImportedRow, QuoteFile\QuoteFile, QuoteFile\ScheduleData, Template\TemplateField};
+use App\Models\{Quote\Margin\CountryMargin,
+    QuoteFile\ImportedRow,
+    QuoteFile\QuoteFile,
+    QuoteFile\ScheduleData,
+    Template\TemplateField};
 use App\Traits\{Activity\LogsActivity,
     Auth\Multitenantable,
     BelongsToCompany,
@@ -35,10 +39,13 @@ use App\Queries\QuoteQueries;
 
 /**
  * @property \Illuminate\Support\Collection $group_description
- * @property mixed country_margin_id
- * @property mixed vendor_id
- * @property mixed country_id
+ * @property string|null $country_margin_id
+ * @property string|null $vendor_id
+ * @property string|null $country_id
+ * @property float|null $buy_price
+ * @property float|null $custom_discount
  * @property Collection<TemplateField>|TemplateField[] $templateFields
+ * @property CountryMargin|null $countryMargin
  */
 abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableInterface, SearchableEntity
 {
@@ -105,6 +112,7 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
 
     public float $applicableDiscounts = 0.0;
     public float $totalPrice = 0.0;
+    public float $totalPriceAfterMargin = 0.0;
     public float $finalTotalPrice = 0.0;
     public float $priceCoef = 1.0;
 

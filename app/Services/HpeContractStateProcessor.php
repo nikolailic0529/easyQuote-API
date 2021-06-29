@@ -449,7 +449,7 @@ class HpeContractStateProcessor implements HpeContractState
     {
         return $hpeContract->hpeContractData()
             ->getQuery()
-            ->whereIn('asset_type', ['Hardware', 'Software', 'JW'])
+            ->whereIn('asset_type', ['Environmental Service', 'Hardware', 'Software', 'JW'])
             // ->whereNotNull('serial_number')
             ->addSelect(
                 'id',

@@ -3,9 +3,12 @@
 namespace App\Queries;
 
 use App\Enum\OpportunityStatus;
+use App\Models\Company;
 use App\Models\Opportunity;
+use App\Models\Pipeline\PipelineStage;
 use App\Models\Quote\WorldwideQuote;
 use App\Services\ElasticsearchQuery;
+use App\Services\Pipeline\PipelineEntityService;
 use DB;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Database\Eloquent\Builder;
@@ -107,5 +110,49 @@ class OpportunityQueries
                 \App\Http\Query\DefaultOrderBy::class,
             ])
             ->thenReturn();
+    }
+
+    public function opportunitiesOfPipelineStageQuery(PipelineStage $pipelineStage): Builder
+    {
+        $opportunityModel = new Opportunity();
+
+        return $opportunityModel->newQuery()
+            ->where('pipeline_id', $pipelineStage->pipeline()->getParentKey())
+            ->where('sale_action_name', PipelineEntityService::qualifyPipelineStageName($pipelineStage))
+            ->select([
+                $opportunityModel->getQualifiedKeyName(),
+                $opportunityModel->qualifyColumn('user_id'),
+                $opportunityModel->qualifyColumn('account_manager_id'),
+                'companies.id as primary_account.id',
+                'companies.name as primary_account.name',
+                'companies.phone as primary_account.phone',
+                'companies.email as primary_account.email',
+                $opportunityModel->qualifyColumn('project_name'),
+                'users.user_fullname as account_manager_name',
+                $opportunityModel->qualifyColumn('opportunity_closing_date'),
+                $opportunityModel->qualifyColumn('base_opportunity_amount'),
+                $opportunityModel->qualifyColumn('opportunity_amount'),
+                $opportunityModel->qualifyColumn('opportunity_amount_currency_code'),
+//                "{$opportunityModel->qualifyColumn('base_opportunity_amount')} as opportunity_amount",
+                'primary_account_contact.first_name as primary_account_contact.first_name',
+                'primary_account_contact.last_name as primary_account_contact.last_name',
+                'primary_account_contact.phone as primary_account_contact.phone',
+                'primary_account_contact.email as primary_account_contact.email',
+                $opportunityModel->qualifyColumn('opportunity_start_date'),
+                $opportunityModel->qualifyColumn('opportunity_end_date'),
+                $opportunityModel->qualifyColumn('ranking'),
+                $opportunityModel->qualifyColumn('status'),
+                $opportunityModel->qualifyColumn('status_reason'),
+                $opportunityModel->qualifyColumn('created_at'),
+            ])
+            ->leftJoin('users', function (JoinClause $join) {
+                $join->on('users.id', 'opportunities.account_manager_id');
+            })
+            ->leftJoin('companies', function (JoinClause $join) {
+                $join->on('companies.id', 'opportunities.primary_account_id');
+            })
+            ->leftJoin('contacts as primary_account_contact', function (JoinClause $join) {
+                $join->on('primary_account_contact.id', 'opportunities.primary_account_contact_id');
+            });
     }
 }

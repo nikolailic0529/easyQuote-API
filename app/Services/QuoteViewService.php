@@ -13,11 +13,12 @@ use App\Models\{Company,
     Quote\Quote,
     Quote\QuoteVersion,
     Template\QuoteTemplate,
-    Vendor};
-use App\Repositories\Concerns\FetchesGroupDescription;
-use Illuminate\Support\{Collection, Str};
+    Vendor
+};
 use App\Queries\QuoteQueries;
+use App\Repositories\Concerns\FetchesGroupDescription;
 use Illuminate\Http\Response;
+use Illuminate\Support\{Collection, Str};
 
 class QuoteViewService implements QuoteView
 {
@@ -108,35 +109,46 @@ class QuoteViewService implements QuoteView
 
     public function interactWithMargin(BaseQuote $quote)
     {
-        $marginDivider = $this->getMarginDivider($quote);
+        $countryMarginValue = (float)$quote->countryMargin?->value;
+        $customDiscountValue = (float)$quote->custom_discount;
 
-        $quote->finalTotalPrice = $quote->totalPrice / $marginDivider;
+        $quote->totalPriceAfterMargin = self::calculateTotalPriceAfterBottomUp(
+            totalPrice: $quote->totalPrice,
+            buyPrice: (float)$quote->buy_price,
+            marginDiffValue: $countryMarginValue
+        );
 
-        if (is_null($quote->custom_discount) || (float)$quote->custom_discount === 0.0) {
-            return;
+        $quote->finalTotalPrice = self::calculateTotalPriceAfterBottomUp(
+            totalPrice: $quote->totalPrice,
+            buyPrice: (float)$quote->buy_price,
+            marginDiffValue: $countryMarginValue - $customDiscountValue
+        );
+
+        $quote->applicableDiscounts = $quote->totalPriceAfterMargin - $quote->finalTotalPrice;
+    }
+
+    final public static function calculateTotalPriceAfterBottomUp(float $totalPrice,
+                                                                  float $buyPrice,
+                                                                  float $marginDiffValue): float
+    {
+        if ($totalPrice === 0.0) {
+            return 0.0;
         }
 
-        $marginPercentage = $this->calculateMarginPercentage($quote->totalPrice, (float)$quote->buy_price);
+        $initialMarginPercentage = (($totalPrice - $buyPrice) / $totalPrice) * 100;
 
-        $bottomUpDivider = 1 - (($marginPercentage - (float)$quote->custom_discount) / 100);
+        $marginFloat = ($initialMarginPercentage + $marginDiffValue) / 100;
 
-        if ($bottomUpDivider > 0) {
-            $buyPriceAfterCustomDiscount = (float)$quote->buy_price / $bottomUpDivider;
+        $marginDivider = $marginFloat >= 1
+            ? 1 / ($marginFloat + 1)
+            : 1 - $marginFloat;
 
-            $quote->applicableDiscounts = (float)$quote->totalPrice - $buyPriceAfterCustomDiscount;
-        }
+        return $buyPrice / $marginDivider;
     }
 
     public function getMarginDivider(BaseQuote $quote): float
     {
-        /** @var float $countryMarginValue */
-        $countryMarginValue = with($quote->countryMargin, function (?CountryMargin $margin): float {
-            if (is_null($margin)) {
-                return 0.0;
-            }
-
-            return (float)$margin->value;
-        });
+        $countryMarginValue = (float)$quote->countryMargin?->value;
 
         $marginValue = ($countryMarginValue - (float)$quote->custom_discount) / 100;
 

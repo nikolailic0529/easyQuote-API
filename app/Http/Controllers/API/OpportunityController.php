@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Opportunities\BatchUpload;
+use App\Services\Opportunity\OpportunityAggregateService;
 use App\Http\Requests\Opportunity\{BatchSave,
     CreateOpportunity,
     MarkOpportunityAsLost,
@@ -52,6 +53,23 @@ class OpportunityController extends Controller
         $resource = $request->transformOpportunitiesQuery($queries->paginateLostOpportunitiesQuery($request))->apiPaginate();
 
         return OpportunityList::collection($resource);
+    }
+
+    /**
+     * Show opportunity entities grouped by their pipeline stages.
+     *
+     * @param OpportunityAggregateService $aggregateService
+     * @return JsonResponse
+     * @throws AuthorizationException
+     */
+    public function showOpportunitiesGroupedByPipelineStages(OpportunityAggregateService $aggregateService): JsonResponse
+    {
+        $this->authorize('viewAny', Opportunity::class);
+
+        return response()->json(
+            $aggregateService->getOpportunitiesGroupedByPipelineStages(),
+            Response::HTTP_OK
+        );
     }
 
     /**

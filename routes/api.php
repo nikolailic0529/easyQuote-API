@@ -620,6 +620,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::get('pipelines/list', [PipelineController::class, 'showListOfPipelines']);
     Route::get('pipelines/list/without-opportunity-form', [PipelineController::class, 'showListOfPipelinesWithoutOpportunityForm']);
     Route::get('pipelines/default', [PipelineController::class, 'showDefaultPipeline']);
+    Route::get('pipelines/default/stage-opportunity', [OpportunityController::class, 'showOpportunitiesGroupedByPipelineStages']);
     Route::get('pipelines/{pipeline}', [PipelineController::class, 'showPipeline']);
     Route::get('pipelines/default/opportunity-form', [PipelineController::class, 'showOpportunityFormSchemaOfDefaultPipeline']);
     Route::get('pipelines/{pipeline}/opportunity-form', [PipelineController::class, 'showOpportunityFormSchemaOfPipeline']);

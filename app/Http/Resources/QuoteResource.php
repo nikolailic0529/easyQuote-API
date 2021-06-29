@@ -38,7 +38,7 @@ class QuoteResource extends JsonResource
                     'valid_until'           => $this->when($this->isReview, $this->customer->valid_until_date, $this->customer->valid_until),
                     'quotation_number'      => $this->customer->rfq,
                     'service_levels'        => $this->when($this->isReview, $this->customer->service_levels_formatted, $this->customer->service_levels),
-                    'list_price'            => $this->currencySymbol.' '.$this->asDecimal($this->totalPrice),
+                    'list_price'            => $this->currencySymbol.' '.$this->asDecimal($this->totalPriceAfterMargin),
                     'applicable_discounts'  => $this->currencySymbol.' '.$this->asDecimal($this->applicableDiscounts),
                     'final_price'           => $this->currencySymbol.' '.$this->asDecimal($this->finalTotalPrice),
                     'invoicing_terms'       => $this->customer->invoicing_terms,

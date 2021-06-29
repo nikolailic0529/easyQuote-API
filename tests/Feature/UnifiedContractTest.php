@@ -7,9 +7,10 @@ use App\Models\Quote\Contract;
 use App\Models\Role;
 use App\Models\User;
 use Elasticsearch\Client as Elasticsearch;
+use Elasticsearch\ClientBuilder;
+use GuzzleHttp\Ring\Client\MockHandler;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class UnifiedContractTest extends TestCase
@@ -31,14 +32,14 @@ class UnifiedContractTest extends TestCase
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
-                'data'
+                'data',
             ]);
 
         $this->getJson('api/contracts/submitted/users')
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
-                'data'
+                'data',
             ]);
     }
 
@@ -57,14 +58,14 @@ class UnifiedContractTest extends TestCase
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
-                'data'
+                'data',
             ]);
 
         $this->getJson('api/contracts/submitted/customers')
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
-                'data'
+                'data',
             ]);
     }
 
@@ -83,14 +84,14 @@ class UnifiedContractTest extends TestCase
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
-                'data'
+                'data',
             ]);
 
         $this->getJson('api/contracts/submitted/contract-numbers')
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
-                'data'
+                'data',
             ]);
     }
 
@@ -109,14 +110,14 @@ class UnifiedContractTest extends TestCase
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
-                'data'
+                'data',
             ]);
 
         $this->getJson('api/contracts/submitted/companies')
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
-                'data'
+                'data',
             ]);
     }
 
@@ -145,16 +146,16 @@ class UnifiedContractTest extends TestCase
                         'quote_id',
                         'type',
                         'user' => [
-                            'id', 'first_name', 'last_name'
+                            'id', 'first_name', 'last_name',
                         ],
                         'company' => [
-                            'id', 'name'
+                            'id', 'name',
                         ],
                         'contract_customer' => [
-                            'rfq'
+                            'rfq',
                         ],
                         'permissions' => [
-                            'view', 'update', 'delete'
+                            'view', 'update', 'delete',
                         ],
                         'completeness',
                         'last_drafted_step',
@@ -164,12 +165,12 @@ class UnifiedContractTest extends TestCase
                             'rfq',
                             'valid_until',
                             'support_start',
-                            'support_end'
+                            'support_end',
                         ],
                         'created_at',
                         'updated_at',
-                        'activated_at'
-                    ]
+                        'activated_at',
+                    ],
                 ],
                 'current_page',
                 'first_page_url',
@@ -181,7 +182,7 @@ class UnifiedContractTest extends TestCase
                 'per_page',
                 'prev_page_url',
                 'to',
-                'total'
+                'total',
             ]);
     }
 
@@ -196,10 +197,10 @@ class UnifiedContractTest extends TestCase
         $this->app['db.connection']->table('hpe_contracts')->delete();
 
         factory(HpeContract::class)->create([
-            'user_id' => factory(User::class)->create()->getKey()
+            'user_id' => factory(User::class)->create()->getKey(),
         ]);
         factory(Contract::class)->create([
-            'user_id' => factory(User::class)->create()->getKey()
+            'user_id' => factory(User::class)->create()->getKey(),
         ]);
 
         /** @var User $user */
@@ -217,10 +218,10 @@ class UnifiedContractTest extends TestCase
         $this->actingAs($user, 'api');
 
         $ownHpeContract = factory(HpeContract::class)->create([
-            'user_id' => $user->getKey()
+            'user_id' => $user->getKey(),
         ]);
         $ownRescueContract = factory(Contract::class)->create([
-            'user_id' => $user->getKey()
+            'user_id' => $user->getKey(),
         ]);
 
         $response = $this->getJson('api/contracts/drafted')
@@ -233,16 +234,16 @@ class UnifiedContractTest extends TestCase
                         'quote_id',
                         'type',
                         'user' => [
-                            'id', 'first_name', 'last_name'
+                            'id', 'first_name', 'last_name',
                         ],
                         'company' => [
-                            'id', 'name'
+                            'id', 'name',
                         ],
                         'contract_customer' => [
-                            'rfq'
+                            'rfq',
                         ],
                         'permissions' => [
-                            'view', 'update', 'delete'
+                            'view', 'update', 'delete',
                         ],
                         'completeness',
                         'last_drafted_step',
@@ -252,12 +253,12 @@ class UnifiedContractTest extends TestCase
                             'rfq',
                             'valid_until',
                             'support_start',
-                            'support_end'
+                            'support_end',
                         ],
                         'created_at',
                         'updated_at',
-                        'activated_at'
-                    ]
+                        'activated_at',
+                    ],
                 ],
                 'current_page',
                 'first_page_url',
@@ -269,7 +270,7 @@ class UnifiedContractTest extends TestCase
                 'per_page',
                 'prev_page_url',
                 'to',
-                'total'
+                'total',
             ]);
 
         $this->assertCount(2, $response->json('data'));
@@ -290,25 +291,41 @@ class UnifiedContractTest extends TestCase
 
         $contracts = factory(Contract::class, 10)->create();
 
-        foreach ($contracts as $contract) {
-            $this->app[Elasticsearch::class]->index([
-                'id' => $contract->getKey(),
-                'index' => $contract->getSearchIndex(),
-                'body' => $contract->toSearchArray()
-            ]);
-        }
+        $stream = fopen('php://memory','r+');
+        fwrite($stream, json_encode([
+            'hits' => [
+                'hits' => array_map(fn (Contract $contract) => ['_id' => $contract->getKey()], $contracts->all())
+            ]
+        ]));
+        rewind($stream);
 
-        $customerNames = $contracts->map(fn (Contract $contract) => $contract->customer->name)->all();
+        $handler = new MockHandler([
+            'status' => 200,
+            'transfer_stats' => [
+                'total_time' => 100,
+            ],
+            'body' => $stream,
+            'effective_url' => 'localhost'
+        ]);
+
+        $esClient = ClientBuilder::create()
+            ->setHosts(['testing'])
+            ->setHandler($handler)
+            ->build();
+
+        $this->app->instance(Elasticsearch::class, $esClient);
+
+        $customerNames = $contracts->map(fn(Contract $contract) => $contract->customer->name)->all();
 
         $this->getJson('api/contracts/drafted?'.Arr::query([
                 'filter' => [
                     'eq' => [
-                        'customer_name' => $customerNames
+                        'customer_name' => $customerNames,
                     ],
                     'gte' => [
-                        'created_at' => '2021-01-01'
-                    ]
-                ]
+                        'created_at' => '2021-01-01',
+                    ],
+                ],
             ]))
 //            ->dump()
             ->assertOk()
@@ -319,16 +336,16 @@ class UnifiedContractTest extends TestCase
                         'quote_id',
                         'type',
                         'user' => [
-                            'id', 'first_name', 'last_name'
+                            'id', 'first_name', 'last_name',
                         ],
                         'company' => [
-                            'id', 'name'
+                            'id', 'name',
                         ],
                         'contract_customer' => [
-                            'rfq'
+                            'rfq',
                         ],
                         'permissions' => [
-                            'view', 'update', 'delete'
+                            'view', 'update', 'delete',
                         ],
                         'completeness',
                         'last_drafted_step',
@@ -338,12 +355,12 @@ class UnifiedContractTest extends TestCase
                             'rfq',
                             'valid_until',
                             'support_start',
-                            'support_end'
+                            'support_end',
                         ],
                         'created_at',
                         'updated_at',
-                        'activated_at'
-                    ]
+                        'activated_at',
+                    ],
                 ],
                 'current_page',
                 'first_page_url',
@@ -355,7 +372,7 @@ class UnifiedContractTest extends TestCase
                 'per_page',
                 'prev_page_url',
                 'to',
-                'total'
+                'total',
             ]);
     }
 
@@ -372,22 +389,38 @@ class UnifiedContractTest extends TestCase
             'submitted_at' => now(),
         ]);
 
-        foreach ($contracts as $contract) {
-            $this->app[Elasticsearch::class]->index([
-                'id' => $contract->getKey(),
-                'index' => $contract->getSearchIndex(),
-                'body' => $contract->toSearchArray()
-            ]);
-        }
+        $stream = fopen('php://memory','r+');
+        fwrite($stream, json_encode([
+            'hits' => [
+                'hits' => array_map(fn (Contract $contract) => ['_id' => $contract->getKey()], $contracts->all())
+            ]
+        ]));
+        rewind($stream);
 
-        $customerNames = $contracts->map(fn (Contract $contract) => $contract->customer->name)->all();
+        $handler = new MockHandler([
+            'status' => 200,
+            'transfer_stats' => [
+                'total_time' => 100,
+            ],
+            'body' => $stream,
+            'effective_url' => 'localhost'
+        ]);
+
+        $esClient = ClientBuilder::create()
+            ->setHosts(['testing'])
+            ->setHandler($handler)
+            ->build();
+
+        $this->app->instance(Elasticsearch::class, $esClient);
+
+        $customerNames = $contracts->map(fn(Contract $contract) => $contract->customer->name)->all();
 
         $this->getJson('api/contracts/submitted?'.Arr::query([
                 'filter' => [
                     'eq' => [
-                        'customer_name' => $customerNames
+                        'customer_name' => $customerNames,
                     ],
-                ]
+                ],
             ]))
 //            ->dump()
             ->assertOk()
@@ -398,16 +431,16 @@ class UnifiedContractTest extends TestCase
                         'quote_id',
                         'type',
                         'user' => [
-                            'id', 'first_name', 'last_name'
+                            'id', 'first_name', 'last_name',
                         ],
                         'company' => [
-                            'id', 'name'
+                            'id', 'name',
                         ],
                         'contract_customer' => [
-                            'rfq'
+                            'rfq',
                         ],
                         'permissions' => [
-                            'view', 'update', 'delete'
+                            'view', 'update', 'delete',
                         ],
                         'quote_customer' => [
                             'id',
@@ -415,11 +448,11 @@ class UnifiedContractTest extends TestCase
                             'rfq',
                             'valid_until',
                             'support_start',
-                            'support_end'
+                            'support_end',
                         ],
                         'created_at',
-                        'activated_at'
-                    ]
+                        'activated_at',
+                    ],
                 ],
                 'current_page',
                 'first_page_url',
@@ -431,7 +464,7 @@ class UnifiedContractTest extends TestCase
                 'per_page',
                 'prev_page_url',
                 'to',
-                'total'
+                'total',
             ]);
     }
 
@@ -448,7 +481,7 @@ class UnifiedContractTest extends TestCase
         $this->app['db.connection']->table('hpe_contracts')->delete();
 
         factory(HpeContract::class)->create([
-            'submitted_at' => now()
+            'submitted_at' => now(),
         ]);
         factory(Contract::class)->create([
             'submitted_at' => now(),
@@ -464,16 +497,16 @@ class UnifiedContractTest extends TestCase
                         'quote_id',
                         'type',
                         'user' => [
-                            'id', 'first_name', 'last_name'
+                            'id', 'first_name', 'last_name',
                         ],
                         'company' => [
-                            'id', 'name'
+                            'id', 'name',
                         ],
                         'contract_customer' => [
-                            'rfq'
+                            'rfq',
                         ],
                         'permissions' => [
-                            'view', 'update', 'delete'
+                            'view', 'update', 'delete',
                         ],
                         'quote_customer' => [
                             'id',
@@ -481,11 +514,11 @@ class UnifiedContractTest extends TestCase
                             'rfq',
                             'valid_until',
                             'support_start',
-                            'support_end'
+                            'support_end',
                         ],
                         'created_at',
-                        'activated_at'
-                    ]
+                        'activated_at',
+                    ],
                 ],
                 'current_page',
                 'first_page_url',
@@ -497,7 +530,7 @@ class UnifiedContractTest extends TestCase
                 'per_page',
                 'prev_page_url',
                 'to',
-                'total'
+                'total',
             ]);
     }
 
@@ -553,16 +586,16 @@ class UnifiedContractTest extends TestCase
                         'quote_id',
                         'type',
                         'user' => [
-                            'id', 'first_name', 'last_name'
+                            'id', 'first_name', 'last_name',
                         ],
                         'company' => [
-                            'id', 'name'
+                            'id', 'name',
                         ],
                         'contract_customer' => [
-                            'rfq'
+                            'rfq',
                         ],
                         'permissions' => [
-                            'view', 'update', 'delete'
+                            'view', 'update', 'delete',
                         ],
                         'quote_customer' => [
                             'id',
@@ -570,11 +603,11 @@ class UnifiedContractTest extends TestCase
                             'rfq',
                             'valid_until',
                             'support_start',
-                            'support_end'
+                            'support_end',
                         ],
                         'created_at',
-                        'activated_at'
-                    ]
+                        'activated_at',
+                    ],
                 ],
                 'current_page',
                 'first_page_url',
@@ -586,7 +619,7 @@ class UnifiedContractTest extends TestCase
                 'per_page',
                 'prev_page_url',
                 'to',
-                'total'
+                'total',
             ]);
 
         $this->assertCount(2, $response->json('data'));

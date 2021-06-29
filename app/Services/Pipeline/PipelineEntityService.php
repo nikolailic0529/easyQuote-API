@@ -30,6 +30,11 @@ class PipelineEntityService
         $this->validator = $validator;
     }
 
+    public static function qualifyPipelineStageName(PipelineStage $pipelineStage): string
+    {
+        return sprintf("%s. %s", $pipelineStage->stage_order, $pipelineStage->stage_name);
+    }
+
     public function batchPutPipelines(PutPipelineDataCollection $collection): Collection
     {
         foreach ($collection as $data) {

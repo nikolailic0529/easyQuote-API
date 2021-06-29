@@ -32,3 +32,4 @@ xpdf-tools
 .idea/php-test-framework.xml
 .idea/.gitignore
 patch.sh
+/docker

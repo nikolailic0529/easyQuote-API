@@ -123,7 +123,9 @@ class WorldwideQuoteQueries
                 return $this->elasticsearch->search(
                     (new ElasticsearchQuery)
                         ->modelIndex(new WorldwideQuote)
-                        ->queryString(Str::of($searchQuery)->start('*')->finish('*'))
+                        ->queryString($searchQuery)
+                        ->escapeQueryString()
+                        ->wrapQueryString()
                         ->toArray()
                 );
             });
