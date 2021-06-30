@@ -2,9 +2,9 @@
 
 namespace App\DTO\S4;
 
-use Spatie\DataTransferObject\DataTransferObject;
+use Spatie\DataTransferObject\FlexibleDataTransferObject;
 
-class S4Address extends DataTransferObject
+class S4Address extends FlexibleDataTransferObject
 {
     public string $address_type;
 
@@ -25,6 +25,8 @@ class S4Address extends DataTransferObject
     public ?string $contact_name = null;
 
     public ?string $contact_number = null;
+
+    public ?string $contact_phone = null;
 
     public ?string $contact_email = null;
 }

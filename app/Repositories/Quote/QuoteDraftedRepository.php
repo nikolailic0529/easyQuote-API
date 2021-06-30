@@ -46,19 +46,20 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
 
     public function userQuery(): Builder
     {
-        /** @var \App\Models\User */
+        /** @var \App\Models\User $user */
         $user = auth()->user();
 
         return Quote::query()
             ->when(
             /** If user is not super-admin we are retrieving the user's own quotes */
-                $user->cant('view_quotes'),
+                false === $user->hasRole(R_SUPER),
                 function (Builder $builder) use ($user) {
                     $builder->where(function (Builder $builder) use ($user) {
                         $builder->where('quotes.user_id', auth()->id())
                             /** Adding quotes that have been granted access to */
-                            ->orWhereIn('quotes.id', $user->getPermissionTargets('quotes.read'))
-                            ->orWhereIn('quotes.user_id', $user->getModulePermissionProviders('quotes.read'));
+                            ->orWhereIn($builder->qualifyColumn('id'), $user->getPermissionTargets('quotes.read'))
+                            ->orWhereIn($builder->qualifyColumn('user_id'), $user->getModulePermissionProviders('quotes.read'))
+                            ->orWhereIn($builder->qualifyColumn('user_id'), $user->ledTeamUsers()->getQuery()->select($user->ledTeamUsers()->getRelated()->getQualifiedKeyName()));
                     });
                 }
             )

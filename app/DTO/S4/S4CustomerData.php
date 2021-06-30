@@ -10,8 +10,7 @@ class S4CustomerData extends DataTransferObject
     public string $customer_name;
 
     public string $rfq_number;
-
-    /** @var string[]|null */
+    
     public ?array $service_levels;
 
     public Carbon $quotation_valid_until;

@@ -25,13 +25,47 @@ class S4ContractPostRequestTest extends TestCase
      */
     public function testRequestWithValidAttributes(): void
     {
-        $contract = factory(Customer::class)->states(['request', 'addresses'])->raw();
 
-        $this->postContract($contract)
-            ->assertSuccessful()
-            ->assertJsonStructure(array_keys($contract));
+        $this->postJson('api/s4/quotes', [
+            'quotation_valid_until' => now()->addYear()->format('m/d/Y'),
+            'customer_name' => Str::random(),
+            'country' => 'FR',
+            'support_start_date' => now()->format('Y-m-d'),
+            'support_end_date' => now()->addYear()->format('Y-m-d'),
+            'service_levels' => [
+                ['service_level' => 'Proactive Care 24x7']
+            ],
+            'addresses' => [
+                [
+                    "state" => null,
+                    "post_code" => "92523",
+                    "country_code" => "FR",
+                    "address_type" => "Equipment",
+                    "address_1" => "41-43 Rue De Villiers",
+                    "address_2" => null,
+                    "city" => "Neuilly Sur Seine",
+                    "contact_name" => "Jean-Michel Perret",
+                    "state_code" => null,
+                    "contact_number" => "0080033140887464"
+                ]
+            ],
+            'invoicing_terms' => 'UP_FRONT',
+            'rfq_number' => Str::random(20),
 
-        $this->assertCustomerExistsInDataBase($contract);
+        ], headers: $this->clientAuthHeader)
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'quotation_valid_until',
+                'customer_name',
+                'country',
+                'support_start_date',
+                'support_end_date',
+                'service_levels',
+                'addresses',
+                'invoicing_terms',
+                'rfq_number',
+            ]);
     }
 
     /**
