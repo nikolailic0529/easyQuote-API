@@ -340,10 +340,10 @@ class ExcelPriceListReader
                     $hasTime = $value->hour !== 0 || $value->minute !== 0 || $value->second !== 0 || $value->microsecond !== 0;
 
                     if (false === $hasTime) {
-                        return $value->format('d-m-Y');
+                        return $value->toDateString();
                     }
 
-                    return $value->format('d-m-Y H:i:s');
+                    return $value->toDateTimeString();
                 });
             }
 
