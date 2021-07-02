@@ -2,6 +2,7 @@
 
 namespace App\Services\Stats;
 
+use App\Services\RescueQuote\RescueQuoteCalc;
 use App\Contracts\{Services\ManagesExchangeRates, Services\Stats};
 use App\DTO\AssetAggregate;
 use App\Enum\QuoteStatus;
@@ -29,28 +30,14 @@ class StatsCalculationService implements Stats
 {
     protected OutputInterface $output;
 
-    protected ConnectionInterface $connection;
-
-    protected LoggerInterface $logger;
-
-    protected AssetQueries $assetQueries;
-
-    protected WorldwideQuoteCalc $worldwideQuoteCalc;
-
-    protected ManagesExchangeRates $exchangeRateService;
-
-    public function __construct(ConnectionInterface $connection,
-                                LoggerInterface $logger,
-                                AssetQueries $assetQueries,
-                                WorldwideQuoteCalc $worldwideQuoteCalc,
-                                ManagesExchangeRates $exchangeRateService,
+    public function __construct(protected ConnectionInterface $connection,
+                                protected LoggerInterface $logger,
+                                protected AssetQueries $assetQueries,
+                                protected RescueQuoteCalc $rescueQuoteCalc,
+                                protected WorldwideQuoteCalc $worldwideQuoteCalc,
+                                protected ManagesExchangeRates $exchangeRateService,
                                 OutputInterface $output = null)
     {
-        $this->connection = $connection;
-        $this->logger = $logger;
-        $this->assetQueries = $assetQueries;
-        $this->worldwideQuoteCalc = $worldwideQuoteCalc;
-        $this->exchangeRateService = $exchangeRateService;
         $this->output = $output ?? new NullOutput();
     }
 
@@ -173,9 +160,11 @@ class StatsCalculationService implements Stats
             return;
         }
 
-        $version = $quote->activeVersionOrCurrent;
+        $priceSummary = $this->rescueQuoteCalc->calculatePriceSummaryOfRescueQuote($quote);
 
-        $totalPrice = $version->totalPrice / $version->margin_divider * $version->base_exchange_rate;
+        $baseRateValue = $this->exchangeRateService->getBaseRate($quote->activeVersionOrCurrent->targetCurrency);
+
+        $totalPrice = $priceSummary->final_total_price * $baseRateValue;
 
         $quoteTotal = QuoteTotal::query()
             ->where('quote_id', $quote->getKey())

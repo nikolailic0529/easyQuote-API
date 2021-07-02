@@ -30,7 +30,13 @@ class CustomerPolicy
      */
     public function view(User $user, Customer $customer)
     {
-        return $user->can('create_quotes');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if ($user->can('create_quotes')) {
+            return true;
+        }
     }
 
     /**
@@ -60,6 +66,12 @@ class CustomerPolicy
      */
     public function delete(User $user, Customer $customer)
     {
-        return $user->can('delete_customers');
+        if ($user->hasRole(R_SUPER)) {
+            return true;
+        }
+
+        if ($user->can('delete_rfq')) {
+            return true;
+        }
     }
 }

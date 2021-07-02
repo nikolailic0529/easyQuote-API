@@ -4,7 +4,8 @@ namespace App\Models\Quote;
 
 use App\Casts\GroupDescription;
 use App\Contracts\{ActivatableInterface, HasOrderedScope, SearchableEntity};
-use App\Models\{Quote\Margin\CountryMargin,
+use App\Models\{Data\Currency,
+    Quote\Margin\CountryMargin,
     QuoteFile\ImportedRow,
     QuoteFile\QuoteFile,
     QuoteFile\ScheduleData,
@@ -46,6 +47,9 @@ use App\Queries\QuoteQueries;
  * @property float|null $custom_discount
  * @property Collection<TemplateField>|TemplateField[] $templateFields
  * @property CountryMargin|null $countryMargin
+ * @property Currency $sourceCurrency
+ * @property Currency $targetCurrency
+ * @property float|null $exchange_rate_margin
  */
 abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableInterface, SearchableEntity
 {

@@ -205,7 +205,7 @@ class QuoteDraftedRepository extends SearchableRepository implements QuoteDrafte
             \App\Http\Query\Quote\OrderBySupportStart::class,
             \App\Http\Query\Quote\OrderBySupportEnd::class,
             \App\Http\Query\Quote\OrderByCompleteness::class,
-            new \App\Http\Query\DefaultOrderBy('quotes.updated_at'),
+            new \App\Http\Query\DefaultOrderBy(column: 'quotes.updated_at', ignoreColumn: 'quotes.is_active'),
         ];
     }
 

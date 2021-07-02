@@ -72,6 +72,14 @@ return [
             'permission' => 0777
         ],
 
+        'stats-calculation' => [
+            'driver' => 'daily',
+            'path' => env('STORAGE_PATH', storage_path()) . '/logs/stats-calculation.log',
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

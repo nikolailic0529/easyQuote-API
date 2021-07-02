@@ -140,19 +140,19 @@ return [
             ],
             'Sales Order Templates' => [
                 $R => [
-                    'view_sales_order_templates'
+                    'view_sales_order_templates',
                 ],
                 $CRU => [
                     'view_sales_order_templates',
                     'create_sales_order_templates',
-                    'update_own_sales_order_templates'
+                    'update_own_sales_order_templates',
                 ],
                 $CRUD => [
                     'view_sales_order_templates',
                     'create_sales_order_templates',
                     'update_own_sales_order_templates',
-                    'delete_own_sales_order_templates'
-                ]
+                    'delete_own_sales_order_templates',
+                ],
             ],
             'Quote Task Template' => [
                 $R => [
@@ -174,21 +174,37 @@ return [
                 $CRUD => [
                     'view_opportunity_forms',
                     'create_opportunity_forms', 'update_opportunity_forms',
-                    'delete_opportunity_forms'
+                    'delete_opportunity_forms',
+                ],
+            ],
+            'Importable Columns' => [
+                $R => [
+                    'view_importable_columns',
+                ],
+                $CRU => [
+                    'view_importable_columns',
+                    'create_importable_columns',
+                    'update_importable_columns',
+                ],
+                $CRUD => [
+                    'view_importable_columns',
+                    'create_importable_columns',
+                    'update_importable_columns',
+                    'delete_importable_columns',
                 ],
             ],
         ],
         'Users' => [
             'Teams' => [
                 $R => [
-                    'view_teams'
+                    'view_teams',
                 ],
                 $CRU => [
-                    'view_teams', 'create_teams', 'update_teams'
+                    'view_teams', 'create_teams', 'update_teams',
                 ],
                 $CRUD => [
-                    'view_teams', 'create_teams', 'update_teams', 'delete_teams'
-                ]
+                    'view_teams', 'create_teams', 'update_teams', 'delete_teams',
+                ],
             ],
             'Roles' => [
                 $R => [
@@ -390,13 +406,13 @@ return [
         ],
         'Sales Orders' => [
             $R => [
-                'view_own_sales_orders'
+                'view_own_sales_orders',
             ],
             $CRU => [
-                'view_own_sales_orders', 'create_sales_orders', 'update_own_sales_orders'
+                'view_own_sales_orders', 'create_sales_orders', 'update_own_sales_orders',
             ],
             $CRUD => [
-                'view_own_sales_orders', 'create_sales_orders', 'update_own_sales_orders', 'delete_own_sales_orders'
+                'view_own_sales_orders', 'create_sales_orders', 'update_own_sales_orders', 'delete_own_sales_orders',
             ],
         ],
         'Quotes' => [
@@ -415,6 +431,7 @@ return [
                 'view_quote_files',
                 'create_quote_files', 'update_quote_files', 'handle_quote_files',
                 'delete_quote_files',
+                'delete_rfq',
             ],
         ],
         'Countries' => [

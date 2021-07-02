@@ -95,7 +95,7 @@ class HpeContractExporter implements HpeExporter
                 $images = ThumbHelper::getLogoDimensionsFromImage(
                     $model->image,
                     $model->thumbnailProperties(),
-                    get_class($model),
+                    Str::snake(class_basename($model::class)),
                     $flags
                 );
 

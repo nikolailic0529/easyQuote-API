@@ -17,8 +17,16 @@ class PermissionSeeder extends Seeder
     {
         $seeds = json_decode(file_get_contents(database_path('seeders/models/permissions.json')), true);
 
-        DB::transaction(
-            fn () => collect($seeds)->each(fn ($permission) => Permission::query()->updateOrCreate(['name' => $permission], ['guard_name' => config('auth.defaults.guard')]))
-        );
+        DB::transaction(function () use ($seeds) {
+
+            foreach ($seeds as $seed) {
+
+                Permission::query()->updateOrCreate(
+                    ['name' => $seed],
+                    ['guard_name' => config('auth.defaults.guard')]
+                );
+
+            }
+        });
     }
 }

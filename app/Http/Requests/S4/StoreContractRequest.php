@@ -4,7 +4,6 @@ namespace App\Http\Requests\S4;
 
 use App\DTO\S4\S4Address;
 use App\DTO\S4\S4AddressCollection;
-use App\DTO\S4\S4CustomerData as S4S4CustomerData;
 use App\DTO\S4\S4CustomerData;
 use App\Events\RfqReceived;
 use App\Models\Customer\Customer;
@@ -88,7 +87,7 @@ class StoreContractRequest extends FormRequest
         return $this->s4CustomerData ??= transform(true, function () {
             $addresses = new S4AddressCollection(S4Address::arrayOf($this->input('addresses') ?? []));
 
-            return new S4S4CustomerData([
+            return new S4CustomerData([
                 'customer_name' => $this->input('customer_name'),
                 'rfq_number' => $this->input('rfq_number'),
                 'service_levels' => $this->input('service_levels'),

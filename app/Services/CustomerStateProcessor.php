@@ -110,6 +110,7 @@ class CustomerStateProcessor implements CustomerState
                 $customer->name = $data->customer_name;
                 $customer->rfq = $data->rfq_number;
                 $customer->service_levels = $data->service_levels;
+                $customer->invoicing_terms = $data->invoicing_terms;
                 $customer->valid_until = $data->quotation_valid_until->toDateString();
                 $customer->support_start = $data->support_start_date->toDateString();
                 $customer->support_end = $data->support_end_date->toDateString();
@@ -122,44 +123,60 @@ class CustomerStateProcessor implements CustomerState
             $addressKeys = [];
             $contactKeys = [];
 
-            foreach ($data->addresses as $address) {
-                $addressKey = Address::where([
-                    'address_type' => $address->address_type,
-                    'address_1' => $address->address_1,
-                    'address_2' => $address->address_2,
-                    'city' => $address->city,
-                    'state' => $address->state,
-                    'post_code' => $address->post_code,
-                    'contact_name' => $address->contact_name,
-                    'contact_number' => $address->contact_number,
-                    'contact_email' => $address->contact_email,
-                ])->whereHas('country', function (Builder $builder) use ($address) {
-                    $builder->where('iso_3166_2', $address->country_code);
+            foreach ($data->addresses as $addressData) {
+                $addressKey = Address::query()->where([
+                    'address_type' => $addressData->address_type,
+                    'address_1' => $addressData->address_1,
+                    'address_2' => $addressData->address_2,
+                    'city' => $addressData->city,
+                    'state' => $addressData->state,
+                    'post_code' => $addressData->post_code,
+                    'contact_name' => $addressData->contact_name,
+                    'contact_number' => $addressData->contact_number,
+                    'contact_email' => $addressData->contact_email,
+                ])->whereHas('country', function (Builder $builder) use ($addressData) {
+                    $builder->where('iso_3166_2', $addressData->country_code);
                 })->value('id');
 
                 if (is_null($addressKey)) {
-                    $address = tap(new Address($address->toArray()))->save();
+                    $address = tap(new Address(), function (Address $address) use ($addressData) {
+
+                        $address->address_type = $addressData->address_type;
+                        $address->address_1 = $addressData->address_1;
+                        $address->address_2 = $addressData->address_2;
+                        $address->city = $addressData->city;
+                        $address->state = $addressData->state;
+                        $address->state_code = $addressData->state_code;
+                        $address->post_code = $addressData->post_code;
+                        $address->country()->associate(Country::query()->where('iso_3166_2', $addressData->country_code)->value('id'));
+                        $address->contact_name = $addressData->contact_name;
+                        $address->contact_number = $addressData->contact_number;
+                        $address->contact_email = $addressData->contact_email;
+
+                        $address->save();
+
+                    });
 
                     $addressKey = $address->getKey();
                 }
 
                 array_push($addressKeys, $addressKey);
 
-                $contactKey = Contact::where([
-                    'phone' => $address->contact_phone,
-                    'contact_name' => $address->contact_name,
-                    'contact_type' => $address->address_type,
-                    'email' => $address->contact_email,
+                $contactKey = Contact::query()->where([
+                    'phone' => $addressData->contact_phone,
+                    'contact_name' => $addressData->contact_name,
+                    'contact_type' => $addressData->address_type,
+                    'email' => $addressData->contact_email,
                 ])->value('id');
 
                 if (is_null($contactKey)) {
                     $contact = tap(new Contact([
-                        'phone' => $address->contact_phone,
-                        'contact_name' => $address->contact_name,
-                        'contact_type' => $address->address_type,
-                        'first_name' => trim(Str::before($address->contact_name, ' ')),
-                        'last_name' => trim(Str::after($address->contact_name, ' ')),
-                        'email' => $address->contact_email,
+                        'phone' => $addressData->contact_phone,
+                        'contact_name' => $addressData->contact_name,
+                        'contact_type' => $addressData->address_type,
+                        'first_name' => trim(Str::before($addressData->contact_name, ' ')),
+                        'last_name' => trim(Str::after($addressData->contact_name, ' ')),
+                        'email' => $addressData->contact_email,
                         'is_verified' => true
                     ]))->save();
 
