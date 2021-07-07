@@ -3,34 +3,41 @@
 namespace App\Models\Collaboration;
 
 use App\Contracts\SearchableEntity;
-use App\Traits\{Activity\LogsActivity,
-    Auth\Multitenantable,
-    BelongsToRole,
-    BelongsToUser,
-    CanGenerateToken,
-    Expirable,
-    Search\Searchable,
-    Uuid};
+use App\Models\Role;
+use App\Models\Team;
+use App\Models\User;
+use App\Traits\{Activity\LogsActivity, Auth\Multitenantable, CanGenerateToken, Search\Searchable, Uuid};
 use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
-use Illuminate\Database\Eloquent\{Model, SoftDeletes,};
+use Illuminate\Database\Eloquent\{Builder, Model, Relations\BelongsTo, SoftDeletes};
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
+/**
+ * Class Invitation
+ *
+ * @property string|null $email
+ * @property string|null $user_id
+ * @property string|null $role_id
+ * @property string|null $team_id
+ * @property string|null $host
+ * @property Carbon|null $expires_at
+ *
+ * @property-read User|null $user
+ * @property-read Role|null $role
+ */
 class Invitation extends Model implements SearchableEntity
 {
     use Uuid,
         Multitenantable,
-        BelongsToUser,
-        BelongsToRole,
         SoftDeletes,
         Searchable,
         CanGenerateToken,
-        Expirable,
         LogsActivity,
         SoftDeletes,
         EloquentJoin;
 
     protected $fillable = [
-        'email', 'user_id', 'role_id', 'host',
+        'email', 'user_id', 'role_id', 'host', 'expires_at',
     ];
 
     protected $hidden = [
@@ -38,7 +45,7 @@ class Invitation extends Model implements SearchableEntity
     ];
 
     protected $appends = [
-        'user_email', 'role_name', 'url',
+        'user_email', 'role_name', 'url', 'is_expired',
     ];
 
     protected $observables = [
@@ -66,6 +73,21 @@ class Invitation extends Model implements SearchableEntity
                 $model->attributes['invitation_token'] = $model->generateToken();
             }
         });
+    }
+
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(Team::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     /**
@@ -120,5 +142,24 @@ class Invitation extends Model implements SearchableEntity
     public function getItemNameAttribute()
     {
         return "Invitation ({$this->email})";
+    }
+
+    public function scopeExpired(Builder $query): Builder
+    {
+        return $query->whereNull('expires_at')
+            ->orWhere('expires_at', '<', now())
+            ->limit(999999999);
+    }
+
+    public function scopeNonExpired(Builder $query): Builder
+    {
+        return $query->whereNotNull('expires_at')
+            ->where('expires_at', '>', now())
+            ->limit(999999999);
+    }
+
+    public function getIsExpiredAttribute(): bool
+    {
+        return is_null($this->expires_at) || $this->expires_at->lt(now());
     }
 }

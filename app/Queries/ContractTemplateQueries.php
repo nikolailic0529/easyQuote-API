@@ -33,6 +33,7 @@ class ContractTemplateQueries
             ->select([
                 'contract_templates.id',
                 'contract_templates.name',
+                'contract_templates.user_id',
                 'contract_templates.company_id',
                 'contract_templates.vendor_id',
                 'contract_templates.is_system',

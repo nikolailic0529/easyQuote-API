@@ -35,6 +35,7 @@ class QuoteTemplateQueries
             ->select([
                 'quote_templates.id',
                 'quote_templates.name',
+                'quote_templates.user_id',
                 'quote_templates.company_id',
 //                'quote_templates.vendor_id',
                 'quote_templates.is_system',

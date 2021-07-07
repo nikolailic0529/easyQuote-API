@@ -53,20 +53,6 @@ class AuthController extends Controller
     }
 
     /**
-     * Register a new Collaboration User with Invitation specified Role and Collaboration
-     *
-     * @param CompleteInvitationRequest $request
-     * @param Invitation $invitation
-     * @return \Illuminate\Http\Response
-     */
-    public function signupCollaborator(CompleteInvitationRequest $request, Invitation $invitation)
-    {
-        return response()->json(
-            $this->user->createCollaborator($request->validated(), $invitation)
-        );
-    }
-
-    /**
      * Authenticate specified User
      *
      * @param UserSignInRequest $request

@@ -21,7 +21,7 @@ class S4QuoteController extends Controller
     {
         $this->quote = $quote;
 
-        $this->middleware('client:s4,proteus,triton,epd');
+        $this->middleware('client');
     }
 
     /**

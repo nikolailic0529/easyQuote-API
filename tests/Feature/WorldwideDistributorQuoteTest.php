@@ -184,7 +184,7 @@ class WorldwideDistributorQuoteTest extends TestCase
 
         Event::fake([DistributionProcessed::class]);
 
-        $this->app[SettingRepository::class]->set('use_legacy_doc_parsing_method', true);
+//        $this->app[SettingRepository::class]->set('use_legacy_doc_parsing_method', true);
 
         $this->postJson('api/ww-distributions/handle', ['worldwide_distributions' => $data])
 //            ->dump()

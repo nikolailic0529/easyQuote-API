@@ -2,8 +2,9 @@
 
 namespace Tests\Unit\Parser;
 
+use App\Services\DocumentReaders\Models\Row;
 use App\Contracts\Services\{PdfParserInterface, WordParserInterface};
-use App\Models\{QuoteFile\QuoteFileFormat};
+use App\Models\{QuoteFile\ImportedRow, QuoteFile\QuoteFileFormat};
 use App\Models\QuoteFile\QuoteFile;
 use App\Services\DocumentProcessor\EasyQuote\EqExcelPriceListProcessor;
 use App\Services\DocumentReaders\ExcelPriceListReader;
@@ -62,6 +63,10 @@ class DistributorPriceListParsingTest extends TestCase
         $excelProcessor = $this->app[EqExcelPriceListProcessor::class];
 
         $excelProcessor->process($quoteFile);
+
+//        $quoteFile->rowsData->map(function (ImportedRow $importedRow) {
+//          return $importedRow->columns_data->pluck('value', 'header');
+//        })->dd();
 
         $this->assertCount(27, $quoteFile->rowsData);
     }
@@ -4710,5 +4715,32 @@ CONTENT
         $this->assertCount(50, $fileData['pages'][11]['rows']);
         $this->assertCount(14, $fileData['pages'][12]['rows']);
         $this->assertEmpty($fileData['pages'][13]['rows']);
+    }
+
+    /**
+     * @group parsing-price-list-xlsx
+     */
+    public function test_parses_support_warehouse_ltd_the_sea_ranch_association_07012021_xlsx()
+    {
+        $filePath = base_path('tests/Unit/Data/distributor-files-test/Support Warehouse Ltd-The Sea Ranch Association-07012021.xlsx');
+
+        $rows = $this->app[ExcelPriceListReader::class]->readFile($filePath);
+
+        /** @var Row[] $rows */
+        $rows = iterator_to_array($rows);
+
+        $this->assertCount(20, $rows);
+
+        $headingRowMapping = $rows[0]->getHeadingRow()->getMapping();
+
+        $this->assertContains('Product No.', $headingRowMapping);
+        $this->assertContains('Description', $headingRowMapping);
+        $this->assertContains('Serial No.', $headingRowMapping);
+        $this->assertContains('Coverage Period from:', $headingRowMapping);
+        $this->assertContains('to:', $headingRowMapping);
+        $this->assertContains('Qty', $headingRowMapping);
+        $this->assertContains('Monthly List Price', $headingRowMapping);
+        $this->assertContains('Line Item Price', $headingRowMapping);
+        $this->assertContains('Reseller cost', $headingRowMapping);
     }
 }

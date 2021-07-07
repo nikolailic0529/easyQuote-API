@@ -1,29 +1,30 @@
 <?php
 
-namespace Tests\Unit\S4;
+namespace Tests\Feature;
 
-use Tests\TestCase;
-use Tests\Unit\Traits\{
-    WithFakeUser,
-    WithClientCredentials,
-};
 use App\Models\Customer\Customer;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\{Str, Facades\DB};
+use Illuminate\Support\{Carbon, Str};
+use Tests\TestCase;
+use Tests\Unit\Traits\{WithClientCredentials,};
+use function factory;
+use function now;
 
 /**
  * @group build
+ * @group client-credentials
+ * @group s4
  */
-class S4ContractPostRequestTest extends TestCase
+class S4RfqPostTest extends TestCase
 {
-    use WithFakeUser, WithClientCredentials, DatabaseTransactions;
+    use WithClientCredentials, DatabaseTransactions;
 
     /**
-     * Test Storing S4 Contract with valid attributes.
+     * Test an ability to post a new RFQ with valid data.
      *
      * @return void
      */
-    public function testCanStoreRfqWithValidAttributes(): void
+    public function testCanPostNewRfqWithValidData(): void
     {
         $response = $this->postJson('api/s4/quotes', $rfqData = [
             'quotation_valid_until' => now()->addYear()->format('m/d/Y'),
@@ -32,7 +33,7 @@ class S4ContractPostRequestTest extends TestCase
             'support_start_date' => now()->format('Y-m-d'),
             'support_end_date' => now()->addYear()->format('Y-m-d'),
             'service_levels' => [
-                ['service_level' => 'Proactive Care 24x7']
+                ['service_level' => 'Proactive Care 24x7'],
             ],
             'addresses' => [
                 [
@@ -45,8 +46,8 @@ class S4ContractPostRequestTest extends TestCase
                     "city" => "Neuilly Sur Seine",
                     "contact_name" => "Jean-Michel Perret",
                     "state_code" => null,
-                    "contact_number" => "0080033140887464"
-                ]
+                    "contact_number" => "0080033140887464",
+                ],
             ],
             'invoicing_terms' => 'UP_FRONT',
             'rfq_number' => Str::random(20),
@@ -69,8 +70,8 @@ class S4ContractPostRequestTest extends TestCase
         $this->assertSame($rfqData['customer_name'], $response->json('customer_name'));
         $this->assertSame($rfqData['quotation_valid_until'], $response->json('quotation_valid_until'));
         $this->assertSame($rfqData['country'], $response->json('country'));
-        $this->assertSame($rfqData['support_start_date'], $response->json('support_start_date'));
-        $this->assertSame($rfqData['support_end_date'], $response->json('support_end_date'));
+        $this->assertSame(Carbon::parse($rfqData['support_start_date'])->format('m/d/Y'), $response->json('support_start_date'));
+        $this->assertSame(Carbon::parse($rfqData['support_end_date'])->format('m/d/Y'), $response->json('support_end_date'));
         $this->assertSame($rfqData['service_levels'], $response->json('service_levels'));
 
         $this->assertSame($rfqData['addresses'][0]['state'], $response->json('addresses.0.state'));
@@ -89,53 +90,55 @@ class S4ContractPostRequestTest extends TestCase
     }
 
     /**
-     * Test Storing S4 Contract without Addresses.
+     * Test an ability to post RFQ data without address data.
      *
      * @return void
      */
-    public function testRequestWithoutAddresses(): void
+    public function testCanPostRfqWithoutAddressData(): void
     {
-        $contract = factory(Customer::class)->state('request')->raw();
+        $attributes = factory(Customer::class)->state('request')->raw();
 
-        $this->postContract($contract)
+        $this->postJson('/api/s4/quotes', $attributes, $this->clientAuthHeader)
             ->assertSuccessful()
-            ->assertJsonStructure(array_keys($contract));
-
-        $this->assertCustomerExistsInDataBase($contract);
+            ->assertJsonStructure(array_keys($attributes));
     }
 
     /**
-     * Test Storing S4 Contract with invalid RFQ Number.
+     * Test an ability to post RFQ data with invalid number.
      *
      * @return void
      */
-    public function testRequestWithInvalidRfqNumber(): void
+    public function testCanNotPostRfqWithInvalidNumber(): void
     {
-        $contract = factory(Customer::class)->state('request')->raw(['rfq_number' => Str::random(40)]);
+        $attributes = factory(Customer::class)->state('request')->raw(['rfq_number' => Str::random(40)]);
 
-        $this->postContract($contract)->assertStatus(422);
+        $this->postJson('/api/s4/quotes', $attributes, $this->clientAuthHeader)
+            ->assertStatus(422);
     }
 
     /**
-     * Test Storing S4 Contract with already existing RFQ Number.
+     * Test an ability to post RFQ data with duplicated number.
      *
      * @return void
      */
-    public function testRequestWithAlreadyExistingRfqNumber(): void
+    public function testCanNotPostRfqWithDuplicatedNumber(): void
     {
-        $rfq_number = DB::table('customers')->whereNull('deleted_at')->value('rfq');
+        $customer = factory(Customer::class)->create();
 
-        $contract = factory(Customer::class)->state('request')->raw(compact('rfq_number'));
+        $attributes = factory(Customer::class)->state('request')->raw([
+            'rfq_number' => $customer->rfq,
+        ]);
 
-        $this->postContract($contract)->assertStatus(422);
+        $this->postJson('/api/s4/quotes', $attributes, $this->clientAuthHeader)
+            ->assertStatus(422);
     }
 
     /**
-     * Test Storing S4 Contract with the same RFQ number of a Contract which was deleted.
+     * Test an ability to post RFQ data with deleted number.
      *
      * @return void
      */
-    public function testRequestWithSoftDeletedCustomer(): void
+    public function testCanPostRfqForDeletedNumber(): void
     {
         $customer = factory(Customer::class)->create();
 
@@ -145,25 +148,8 @@ class S4ContractPostRequestTest extends TestCase
 
         $attributes = factory(Customer::class)->state('request')->raw(['rfq_number' => $customer->rfq]);
 
-        $this->postContract($attributes)
+        $this->postJson('/api/s4/quotes', $attributes, $this->clientAuthHeader)
             ->assertOk()
             ->assertJsonStructure(array_keys($attributes));
-
-        $this->assertCustomerExistsInDataBase($attributes);
-    }
-
-    protected function postContract(array $data)
-    {
-        return $this->postJson(url('/api/s4/quotes'), $data, $this->clientAuthHeader);
-    }
-
-    protected function assertCustomerExistsInDataBase(array $contract): void
-    {
-        $customerExistsInDatabase = DB::table('customers')
-            ->whereNull('deleted_at')
-            ->whereRfq($contract['rfq_number'])
-            ->exists();
-
-        $this->assertTrue($customerExistsInDatabase);
     }
 }

@@ -33,6 +33,7 @@ class HpeContractTemplateQueries
             ->select([
                 'hpe_contract_templates.id',
                 'hpe_contract_templates.name',
+                'hpe_contract_templates.user_id',
                 'hpe_contract_templates.company_id',
                 'hpe_contract_templates.vendor_id',
                 'hpe_contract_templates.is_system',

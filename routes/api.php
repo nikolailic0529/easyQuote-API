@@ -77,7 +77,7 @@ Route::group(['prefix' => 'auth', 'middleware' => THROTTLE_RATE_01], function ()
     Route::post('logout-user', [AuthController::class, 'authenticateAndLogout']);
 
     Route::get('signup/{invitation}', [AuthController::class, 'showInvitation']);
-    Route::post('signup/{invitation}', [AuthController::class, 'signupCollaborator']);
+    Route::post('signup/{invitation}', [UserController::class, 'registerUser']);
 
     Route::get('reset-password/{reset}', [AuthController::class, 'verifyPasswordReset']);
     Route::post('reset-password/{reset}', [AuthController::class, 'resetPassword']);

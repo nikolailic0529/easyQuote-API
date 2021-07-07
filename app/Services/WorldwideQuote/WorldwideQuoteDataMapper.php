@@ -1179,14 +1179,16 @@ class WorldwideQuoteDataMapper
 
         $opportunity = $quote->opportunity;
 
-        $duration = 'Unknown';
+        $duration = value(function () use ($opportunity): string {
 
-        if (!is_null($opportunity->opportunity_start_date) && !is_null($opportunity->opportunity_end_date)) {
-            $opportunityStartDate = Carbon::createFromFormat('Y-m-d', $opportunity->opportunity_start_date);
-            $opportunityEndDate = Carbon::createFromFormat('Y-m-d', $opportunity->opportunity_end_date);
+            if (is_null($opportunity->opportunity_start_date) || is_null($opportunity->opportunity_end_date)) {
+                return 'Unknown';
+            }
 
-            $duration = $opportunityStartDate->longAbsoluteDiffForHumans($opportunityEndDate->copy()->addDay());
-        }
+            return Carbon::createFromFormat('Y-m-d', $opportunity->opportunity_start_date)
+                ->longAbsoluteDiffForHumans(Carbon::createFromFormat('Y-m-d', $opportunity->opportunity_end_date)->addDay(), 2);
+
+        });
 
         foreach ($quote->activeVersion->worldwideDistributions as $worldwideDistribution) {
             /** @var WorldwideDistribution $worldwideDistribution */

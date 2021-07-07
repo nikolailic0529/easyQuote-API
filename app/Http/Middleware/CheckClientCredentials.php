@@ -2,24 +2,25 @@
 
 namespace App\Http\Middleware;
 
-use App\Contracts\Repositories\System\ClientCredentialsInterface;
 use Closure;
 use Illuminate\Auth\AuthenticationException;
-use Laravel\Passport\{Http\Middleware\CheckClientCredentials as PassportClientCredentials, TokenRepository};
+use JetBrains\PhpStorm\Pure;
+use Laravel\Passport\{Client,
+    ClientRepository,
+    Http\Middleware\CheckClientCredentials as PassportClientCredentials,
+    TokenRepository};
 use League\OAuth2\{Server\Exception\OAuthServerException, Server\ResourceServer};
 use Nyholm\Psr7\Factory\Psr17Factory;
-use Psr\Http\Message\ServerRequestInterface;
 use Symfony\Bridge\PsrHttpMessage\Factory\PsrHttpFactory;
 
 class CheckClientCredentials extends PassportClientCredentials
 {
-    protected ClientCredentialsInterface $credentials;
-
-    public function __construct(ResourceServer $server, TokenRepository $repository, ClientCredentialsInterface $credentials)
+    #[Pure]
+    public function __construct(ResourceServer $server,
+                                TokenRepository $repository,
+                                protected ClientRepository $clientRepository)
     {
         parent::__construct($server, $repository);
-
-        $this->credentials = $credentials;
     }
 
     /**
@@ -43,10 +44,16 @@ class CheckClientCredentials extends PassportClientCredentials
         try {
             $psr = $this->server->validateAuthenticatedRequest($psr);
 
-            $client_name = $this->checkClientName($psr, $scopes);
+            $clientId = $psr->getAttribute('oauth_client_id');
 
-            $request->request->set('client_id', $psr->getAttribute('oauth_client_id'));
-            $request->request->set('client_name', $client_name);
+            /** @var Client|null $client */
+            $client = $this->clientRepository->find($clientId);
+
+            $request->request->add([
+                'client_id' => $client?->getKey(),
+                'client_name' => $client?->name,
+            ]);
+
         } catch (OAuthServerException $e) {
             throw new AuthenticationException;
         }
@@ -54,20 +61,5 @@ class CheckClientCredentials extends PassportClientCredentials
         $this->validate($psr, $scopes);
 
         return $next($request);
-    }
-
-    protected function checkClientName(ServerRequestInterface $psr, $scopes): ?string
-    {
-        if (blank($scopes)) {
-            return null;
-        }
-
-        $credentials = $this->credentials->find($psr->getAttribute('oauth_client_id'));
-        $client_key = data_get($credentials, 'client_key');
-        $client_name = data_get($credentials, 'client_name');
-
-        throw_unless(isset(array_flip($scopes)[$client_key]), AuthenticationException::class);
-
-        return $client_name;
     }
 }

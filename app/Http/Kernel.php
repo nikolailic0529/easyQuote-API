@@ -19,7 +19,8 @@ class Kernel extends HttpKernel
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
         \App\Http\Middleware\TrimStrings::class,
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
-        \Fruitcake\Cors\HandleCors::class
+        \Fruitcake\Cors\HandleCors::class,
+        \Spatie\HttpLogger\Middlewares\HttpLogger::class,
     ];
 
     /**
@@ -43,7 +44,6 @@ class Kernel extends HttpKernel
             'bindings',
             \App\Http\Middleware\PerformUserActivity::class,
             \App\Http\Middleware\EnforceChangePassword::class,
-            \Spatie\HttpLogger\Middlewares\HttpLogger::class,
         ],
     ];
 

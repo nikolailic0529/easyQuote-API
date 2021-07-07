@@ -13,17 +13,19 @@ use function now;
 
 /**
  * @group build
+ * @group client-credentials
+ * @group s4
  */
-class S4QuoteGetRequestTest extends TestCase
+class S4RfqRequestTest extends TestCase
 {
-    use WithFakeUser, WithFakeQuote, WithFakeQuoteFile, WithClientCredentials, DatabaseTransactions;
+    use WithClientCredentials, DatabaseTransactions;
 
     /**
-     * Submit the Quote and check availability using request.
+     * Test an ability to request an existing active submitted quote by RFQ number.
      *
      * @return void
      */
-    public function testRequestWithSubmittedActiveQuote(): void
+    public function testCanRequestExistingActiveSubmittedQuote(): void
     {
         $quoteFile = factory(QuoteFile::class)->create();
 
@@ -48,7 +50,10 @@ class S4QuoteGetRequestTest extends TestCase
             ]);
     }
 
-    public function testRequestWithSubmittedActiveDeletedQuote(): void
+    /**
+     * Test an ability to request a deleted active submitted quote by RFQ number.
+     */
+    public function testCanNotRequestDeletedActiveSubmittedQuote(): void
     {
         /** @var Quote $quote */
         $quote = factory(Quote::class)->create([
@@ -63,11 +68,11 @@ class S4QuoteGetRequestTest extends TestCase
     }
 
     /**
-     * Test Request by RFQ Response when Quote is drafted & active.
+     * Test an ability to request an existing active drafted quote by RFQ number.
      *
      * @return void
      */
-    public function testRequestWithDraftedActiveQuote(): void
+    public function testCanNotRequestExistingActiveDraftedQuote(): void
     {
         /** @var Quote $quote */
         $quote = factory(Quote::class)->create([
@@ -82,11 +87,11 @@ class S4QuoteGetRequestTest extends TestCase
     }
 
     /**
-     * Test Request by RFQ Response when Quote is drafted & inactive.
+     * Test an ability to request an existing inactive drafted quote by RFQ number.
      *
      * @return void
      */
-    public function testRequestWithDraftedInactiveQuote(): void
+    public function testCanNotRequestExistingInactiveDraftedQuote(): void
     {
         /** @var Quote $quote */
         $quote = factory(Quote::class)->create([
@@ -99,11 +104,11 @@ class S4QuoteGetRequestTest extends TestCase
     }
 
     /**
-     * Test Request by RFQ Response when Quote is submitted & inactive.
+     * Test an ability to request an existing inactive submitted quote by RFQ number.
      *
      * @return void
      */
-    public function testRequestWithSubmittedInactiveQuote(): void
+    public function testCanNotRequestExistingInactiveSubmittedQuote(): void
     {
         /** @var Quote $quote */
         $quote = factory(Quote::class)->create([
@@ -119,11 +124,11 @@ class S4QuoteGetRequestTest extends TestCase
     }
 
     /**
-     * Test Request by RFQ Distributor PDF File.
+     * Test an ability to request price list file of an existing active submitted quote by RFQ number.
      *
      * @return void
      */
-    public function testRequestQuoteDistributorPDFFileByRFQ()
+    public function testCanRequestPriceListFileOfExistingActiveSubmittedQuote()
     {
         $quoteFile = factory(QuoteFile::class)->create();
 

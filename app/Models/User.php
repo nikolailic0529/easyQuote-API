@@ -50,9 +50,12 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 /**
  * @property string|null $team_id
  * @property string|null $first_name
+ * @property string|null $middle_name
  * @property string|null $last_name
  * @property string|null $email
  * @property string|null $timezone_id
+ * @property string|null $password
+ * @property string|null $phone
  *
  * @property-read string|null $user_fullname
  */

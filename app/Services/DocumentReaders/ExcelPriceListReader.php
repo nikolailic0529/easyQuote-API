@@ -13,6 +13,7 @@ use App\Services\DocumentReaders\Validation\RowIsNotSameAsHeader;
 use App\Services\DocumentReaders\Validation\RowValidationPayload;
 use App\Services\DocumentReaders\Validation\RowValidationPipeline;
 use App\Services\DocumentReaders\Validation\RowValuesMatchAnyCombination;
+use Box\Spout\Common\Entity\Cell;
 use Box\Spout\Common\Entity\Row;
 use Box\Spout\Reader\Common\Creator\ReaderFactory;
 use Box\Spout\Reader\XLSX\RowIterator;
@@ -95,8 +96,6 @@ class ExcelPriceListReader
             return null;
         }
 
-        $rows->next();
-
         $headingRow = new HeadingRow(
             array_flip($headerMapping),
             $missingHeaderMapping,
@@ -130,15 +129,76 @@ class ExcelPriceListReader
 
             [$headerRowMapping, $missingHeaderMapping] = $this->mapHeaderRow($row);
 
-            if ($this->validateHeaderRow($headerRowMapping)) {
-                return [$headerRowMapping, $missingHeaderMapping];
-            }
-
             $rowIterator->next();
+
+            if ($this->validateHeaderRow($headerRowMapping)) {
+
+                $nextRow = $rowIterator->current();
+
+                $mergedRow = $this->mergeHeaderRowWithNextRow($row, $nextRow);
+
+                if ($mergedRow === $row) {
+                    return [$headerRowMapping, $missingHeaderMapping];
+                }
+
+                return $this->mapHeaderRow($mergedRow);
+
+            }
 
         }
 
         return [[], []];
+    }
+
+    protected function mergeHeaderRowWithNextRow(Row $headerRow, Row $nextRow): Row
+    {
+//        dd($headerRow->toArray(), $nextRow->toArray());
+
+        $mergedColumnIndexes = value(function () use ($headerRow, $nextRow): array {
+
+            $headerRowValues = $headerRow->toArray();
+
+            foreach ($headerRowValues as $key => $cellValue) {
+                $coveragePeriodColumnIsMerged = Str::is(['*coverage*period*', '*dæknings*periode*'], mb_strtolower($cellValue));
+
+                $nextColumnIsBlank = isset($headerRowValues[$key+1]) && trim($headerRowValues[$key+1]) === "";
+
+                if ($coveragePeriodColumnIsMerged && $nextColumnIsBlank) {
+
+                    return [$key, $key+1];
+
+                }
+            }
+
+            return [];
+
+        });
+
+        if (empty($mergedColumnIndexes)) {
+            return $headerRow;
+        }
+
+        $mergedCells = array_map(fn (Cell $cell) => clone $cell, $headerRow->getCells());
+
+        foreach ($mergedCells as $index => $cell) {
+
+            if (is_null($cellFromNextRow = $nextRow->getCellAtIndex($index))) {
+                continue;
+            }
+
+            $cellValue = $cell->getValue();
+            $cellValueFromNextRow = $cellFromNextRow->getValue();
+
+            if ((!is_string($cellValue) && !is_null($cellValue)) || (!is_string($cellValueFromNextRow) && !is_null($cellValueFromNextRow))) {
+                continue;
+            }
+
+            $mergedCellValue = implode(' ',[trim((string)$cellValue), trim((string)$cellValueFromNextRow)]);
+
+            $cell->setValue(trim($mergedCellValue));
+        }
+
+        return new Row($mergedCells, clone $headerRow->getStyle());
     }
 
     protected function mapHeaderRow(Row $row): array

@@ -421,7 +421,7 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
     {
         return with(parent::driver($driver), function (ProcessesQuoteFile $processor) {
 
-            if ($processor instanceof HasFallbackProcessor && $this->settings['use_legacy_doc_parsing_method']) {
+            if ($processor instanceof HasFallbackProcessor && (!$this->config['docprocessor.document_engine_enabled'] || $this->settings['use_legacy_doc_parsing_method'])) {
 
                 return $processor->getFallbackProcessor();
 

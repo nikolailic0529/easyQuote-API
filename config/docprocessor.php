@@ -2,6 +2,8 @@
 
 return [
 
+    'document_engine_enabled' => env('DOCUMENT_ENGINE_ENABLED', true),
+
     'default_drivers' => [
 
         'distributor_price_list_pdf' => App\Services\DocumentProcessor\EasyQuote\EqPdfRescuePriceListProcessor::class,

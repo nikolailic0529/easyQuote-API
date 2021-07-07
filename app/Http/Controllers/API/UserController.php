@@ -3,23 +3,28 @@
 namespace App\Http\Controllers\API;
 
 use App\Casts\UserGrantedPermission;
-use App\Http\Resources\UserRepositoryCollection;
-use App\Queries\UserQueries;
 use App\Contracts\Repositories\{UserRepositoryInterface as UserRepository,};
 use App\Http\Controllers\Controller;
-use App\Http\Requests\{Collaboration\InviteUserRequest,
+use App\Http\Requests\{Collaboration\CompleteInvitationRequest,
+    Collaboration\InviteUserRequest,
     Collaboration\UpdateUserRequest,
     StoreResetPasswordRequest,
     User\ListByRoles,
-    User\ShowForm,};
+    User\ShowForm};
 use App\Http\Resources\User\UserByRoleCollection;
 use App\Http\Resources\User\UserWithIncludes;
+use App\Http\Resources\UserRepositoryCollection;
+use App\Models\Collaboration\Invitation;
 use App\Models\User;
+use App\Queries\UserQueries;
+use App\Services\Invitation\InvitationEntityService;
 use App\Services\ProfileHelper;
+use App\Services\User\UserEntityService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class UserController extends Controller
 {
@@ -122,18 +127,22 @@ class UserController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Create a new invitation entity and send the invitation email.
      *
      * @param InviteUserRequest $request
+     * @param InvitationEntityService $invitationEntityService
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function inviteUser(InviteUserRequest $request): JsonResponse
+    public function inviteUser(InviteUserRequest $request, InvitationEntityService $invitationEntityService): JsonResponse
     {
         $this->authorize('create', User::class);
 
+        $invitation = $invitationEntityService->createInvitation($request->getCreateInvitationData());
+
         return response()->json(
-            $this->userRepository->invite($request)
+            $invitation,
+            Response::HTTP_CREATED,
         );
     }
 
@@ -239,6 +248,24 @@ class UserController extends Controller
 
         return response()->json(
             $this->userRepository->resetAccount($user->getKey())
+        );
+    }
+
+    /**
+     * Register a new user entity.
+     *
+     * @param CompleteInvitationRequest $request
+     * @param UserEntityService $userEntityService
+     * @param Invitation $invitation
+     * @return JsonResponse
+     */
+    public function registerUser(CompleteInvitationRequest $request,
+                                 UserEntityService $userEntityService,
+                                 Invitation $invitation): JsonResponse
+    {
+        return response()->json(
+            $userEntityService->registerUser(invitation: $invitation, userData: $request->getRegisterUserData()),
+            Response::HTTP_CREATED,
         );
     }
 }
