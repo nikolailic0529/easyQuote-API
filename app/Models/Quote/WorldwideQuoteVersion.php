@@ -78,7 +78,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  *
  * @property User $user
  * @property ContractType|null $contractType
- * @property Collection|WorldwideDistribution[] $worldwideDistributions
+ * @property Collection<WorldwideDistribution>|WorldwideDistribution[] $worldwideDistributions
  * @property QuoteTemplate|null $quoteTemplate
  * @property Currency $quoteCurrency
  * @property Currency|null $buyCurrency

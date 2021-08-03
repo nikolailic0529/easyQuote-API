@@ -50,9 +50,11 @@ class TeamQueries
 
             $hits = rescue(function () use ($model, $searchQuery) {
                 return $this->elasticsearch->search(
-                    (new ElasticsearchQuery)
+                    ElasticsearchQuery::new()
                         ->modelIndex($model)
-                        ->queryString('*'.trim($searchQuery, '*').'*')
+                        ->queryString($searchQuery)
+                        ->escapeQueryString()
+                        ->wrapQueryString()
                         ->toArray()
                 );
             });

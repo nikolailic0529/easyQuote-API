@@ -29,7 +29,16 @@ class CreateAsset extends FormRequest
             'active_warranty_end_date' => ['required', 'date_format:Y-m-d'],
             'item_number' => ['nullable', 'string', 'max:191'],
             'product_number' => ['required', 'string', 'max:191'],
-            'serial_number' => ['required', 'string', 'max:191', Rule::unique(Asset::class)->where('vendor_id', $this->vendor_id)->where('user_id', auth()->id())->whereNull('deleted_at')],
+            'serial_number' => [
+                'required',
+                'string',
+                'max:191',
+                Rule::unique(Asset::class)
+                    ->where('vendor_id', $this->input('vendor_id'))
+                    ->where('product_number', $this->input('product_number'))
+                    ->where('user_id', $this->user()?->getKey())
+                    ->whereNull('deleted_at'),
+            ],
             'product_description' => ['nullable', 'string', 'max:191'],
             'product_image' => ['nullable', 'string', 'max:191']
         ];
@@ -38,7 +47,7 @@ class CreateAsset extends FormRequest
     public function messages()
     {
         return [
-            'serial_number.unique' => 'The asset with the same serial number already exists.'
+            'serial_number.unique' => 'The asset with the same serial number & product number already exists.'
         ];
     }
 

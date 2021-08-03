@@ -31,7 +31,7 @@ class DePdfWorldwidePriceListProcessor implements ProcessesQuoteFile, DocumentEn
      * @throws \Throwable
      * @throws \App\Services\DocumentProcessor\Exceptions\NoDataFoundException
      */
-    public function process(QuoteFile $quoteFile)
+    public function process(QuoteFile $quoteFile): void
     {
         $data = (new ParseDistributorWorldwidePDF($this->logger))
             ->filePath(Storage::path($quoteFile->original_file_path))

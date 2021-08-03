@@ -37,9 +37,11 @@ class WorldwideCustomerQueries
         if (filled($searchQuery = $request->query('search'))) {
             $hits = rescue(function () use ($searchQuery) {
                 return $this->elasticsearch->search(
-                    (new ElasticsearchQuery)
+                    ElasticsearchQuery::new()
                         ->modelIndex(new WorldwideCustomer)
-                        ->queryString(Str::of($searchQuery)->start('*')->finish('*'))
+                        ->queryString($searchQuery)
+                        ->escapeQueryString()
+                        ->wrapQueryString()
                         ->toArray()
                 );
             });

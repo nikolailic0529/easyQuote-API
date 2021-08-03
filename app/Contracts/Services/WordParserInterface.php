@@ -10,10 +10,9 @@ interface WordParserInterface
      * Load file and return PhpWord instance reader
      *
      * @param string $path
-     * @param bool $storage
      * @return $this
      */
-    public function load(string $path);
+    public function load(string $path): static;
 
     /**
      * Parse Docx Distributor File.
@@ -27,9 +26,9 @@ interface WordParserInterface
      * Extract all first level tables from DOCX format file
      *
      * @param PhpWord|null $phpWord
-     * @return $this
+     * @return array
      */
-    public function getTables(?PhpWord $phpWord = null);
+    public function getTables(?PhpWord $phpWord = null): array;
 
     /**
      * Recursive search header by $needle and rows on the same nesting level
@@ -38,5 +37,5 @@ interface WordParserInterface
      * @param array $tables
      * @return array [[header][rows]]
      */
-    public function findRows(string $needle, array $tables = []);
+    public function findRows(string $needle, array $tables = []): array;
 }

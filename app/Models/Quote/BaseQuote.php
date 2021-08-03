@@ -9,7 +9,8 @@ use App\Models\{Data\Currency,
     QuoteFile\ImportedRow,
     QuoteFile\QuoteFile,
     QuoteFile\ScheduleData,
-    Template\TemplateField};
+    Template\TemplateField,
+    Vendor};
 use App\Traits\{Activity\LogsActivity,
     Auth\Multitenantable,
     BelongsToCompany,
@@ -39,6 +40,7 @@ use Illuminate\Support\Traits\Tappable;
 use App\Queries\QuoteQueries;
 
 /**
+ * @property string|null $user_id
  * @property \Illuminate\Support\Collection $group_description
  * @property string|null $country_margin_id
  * @property string|null $vendor_id
@@ -50,6 +52,9 @@ use App\Queries\QuoteQueries;
  * @property Currency $sourceCurrency
  * @property Currency $targetCurrency
  * @property float|null $exchange_rate_margin
+ *
+ * @property-read float|null $target_exchange_rate
+ * @property-read Vendor|null $vendor
  */
 abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableInterface, SearchableEntity
 {

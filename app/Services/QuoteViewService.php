@@ -13,10 +13,11 @@ use App\Models\{Company,
     Quote\Quote,
     Quote\QuoteVersion,
     Template\QuoteTemplate,
-    Vendor
-};
+    Vendor};
 use App\Queries\QuoteQueries;
 use App\Repositories\Concerns\FetchesGroupDescription;
+use App\Services\RescueQuote\RescueQuoteCalc;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\Response;
 use Illuminate\Support\{Collection, Str};
 
@@ -26,14 +27,10 @@ class QuoteViewService implements QuoteView
 
     use FetchesGroupDescription;
 
-    protected QuoteSubmittedRepositoryInterface $submittedRepository;
-
-    protected QuoteQueries $quoteQueries;
-
-    public function __construct(QuoteSubmittedRepositoryInterface $submittedRepository, QuoteQueries $quoteQueries)
+    public function __construct(protected QuoteSubmittedRepositoryInterface $submittedRepository,
+                                protected QuoteQueries $quoteQueries,
+                                protected RescueQuoteCalc $rescueQuoteCalc)
     {
-        $this->submittedRepository = $submittedRepository;
-        $this->quoteQueries = $quoteQueries;
     }
 
     public function requestForQuote(string $RFQnumber, string $clientName = null): BaseQuote
@@ -201,44 +198,6 @@ class QuoteViewService implements QuoteView
         $discount->margin_percentage = number_format($marginPercentageAfterDiscount, 2, '.', '');
     }
 
-    public function calculateSchedulePrices(BaseQuote $quote)
-    {
-        if (is_null($quote->scheduleData) || is_null($quote->scheduleData->value)) {
-            return;
-        }
-
-        $payments = Collection::wrap($quote->scheduleData->value);
-
-        $totalPayments = $payments->reduce(function (float $totalPayments, array $payment) {
-            $price = $payment['price'] ?? 0.0;
-            $price = is_float($price) ? $price : static::parsePriceValue($price);
-
-            return $totalPayments + $price;
-        }, 0.0);
-
-        if ($quote->finalTotalPrice === 0.0) {
-            $quote->scheduleData->value = $payments->map(function (array $payment) {
-                $payment['price'] = 0.0;
-
-                return $payment;
-            });
-
-
-            return;
-        }
-
-        $paymentsPriceCoeff = $quote->finalTotalPrice / $totalPayments;
-
-        $quote->scheduleData->value = $payments->map(function (array $payment) use ($paymentsPriceCoeff) {
-            $price = $payment['price'] ?? 0.0;
-            $price = is_float($price) ? $price : static::parsePriceValue($price);
-
-            $payment['price'] = $price * $paymentsPriceCoeff;
-
-            return $payment;
-        });
-    }
-
     private static function parsePriceValue(string $value): float
     {
         $cleanString = preg_replace('/([^0-9.,])/i', '', $value);
@@ -263,9 +222,12 @@ class QuoteViewService implements QuoteView
 
     public function prepareQuoteReview(BaseQuote $quote)
     {
-        $quote->totalPrice = (float)$this->quoteQueries
+        $totalRowsPrice = (float)$this->quoteQueries
             ->mappedSelectedRowsQuery($quote)
             ->sum('price');
+
+        $quote->totalPrice = $totalRowsPrice * (float)$quote->target_exchange_rate;
+        $quote->buy_price = (float)$quote->buy_price * ($quote->target_exchange_rate);
 
         $this->setComputableRows($quote);
 
@@ -273,13 +235,10 @@ class QuoteViewService implements QuoteView
 
         $this->applyPredefinedDiscounts($quote);
 
-        $this->calculateSchedulePrices($quote);
-
-        if ($quote->finalTotalPrice > 0.0) {
-            $quote->priceCoef = (float)$quote->target_exchange_rate * ($quote->finalTotalPrice / $quote->totalPrice);
-        }
-
-        $quote->buy_price = (float)$quote->target_exchange_rate * (float)$quote->buy_price;
+        $quote->priceCoef = match (true) {
+            $quote->totalPrice > 0.0 => $quote->totalPriceAfterMargin / $totalRowsPrice,
+            default => 0.0,
+        };
 
         $this->prepareRows($quote);
 
@@ -306,6 +265,15 @@ class QuoteViewService implements QuoteView
             ->download($filename);
     }
 
+    public function buildView(BaseQuote $quote, int $type = QT_TYPE_QUOTE): View
+    {
+        $quote->switchModeTo($type);
+
+        $export = $this->prepareQuoteExport($quote);
+
+        return view(self::QUOTE_EXPORT_VIEW, $export, ['html' => true]);
+    }
+
     public function prepareRows(BaseQuote $quote)
     {
         $quote->computableRows->multiplePriceValue($quote->priceCoef);
@@ -329,14 +297,30 @@ class QuoteViewService implements QuoteView
             return;
         }
 
-        $quote->scheduleData->value = Collection::wrap($quote->scheduleData->value)->map(function (array $payment) use ($quote) {
+        $paymentSchedule = $quote->scheduleData->value = Collection::wrap($quote->scheduleData->value)->map(function (array $payment) {
             $price = $payment['price'] ?? 0.0;
 
-            $price = is_float($price) ? $price : static::parsePriceValue($price);
-
-            $payment['price'] = sprintf("%s %s", $quote->currencySymbol, number_format($price, 2));
+            $payment['price'] = is_float($price) ? $price : static::parsePriceValue($price);
 
             return $payment;
+        });
+
+        $totalPaymentsValue = (float)$paymentSchedule->sum('price');
+
+        if ($totalPaymentsValue > 0.0) {
+            $paymentCoef = ($quote->totalPriceAfterMargin / $totalPaymentsValue);
+        } else {
+            $paymentCoef = 0.0;
+        }
+
+        $quote->scheduleData->value = Collection::wrap($quote->scheduleData->value)->map(function (array $payment) use ($quote, $paymentCoef) {
+
+            $newPaymentPrice = $payment['price'] * $paymentCoef;
+
+            $payment['price'] = sprintf("%s %s", $quote->currencySymbol, number_format($newPaymentPrice, 2));
+
+            return $payment;
+
         });
     }
 
@@ -435,9 +419,13 @@ class QuoteViewService implements QuoteView
             ->exceptHeaders([...$quote->hiddenFields, ...['group_name']])
             ->setCurrency($quote->currencySymbol);
 
-        $renderHiddenHeaders = $quote->isMode(QT_TYPE_CONTRACT) ? ['total_price'] : [];
+        $quote->renderableRows = (clone $quote->computableRows)->exceptHeaders($quote->systemHiddenFields);
 
-        $quote->renderableRows = $quote->computableRows->exceptHeaders([...$quote->systemHiddenFields, ...$renderHiddenHeaders]);
+        if ($quote->isMode(QT_TYPE_CONTRACT)) {
+            $quote->renderableRows = $quote->renderableRows->map->except('total_price');
+            $quote->renderableRows->setHeadersCount();
+
+        }
 
         return $this;
     }

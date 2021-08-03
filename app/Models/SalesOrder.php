@@ -67,7 +67,8 @@ class SalesOrder extends Model implements SearchableEntity
     public function toSearchArray(): array
     {
         return [
-            'customer_name' => $this->worldwideQuote->activeVersion->company->name,
+            'company_name' => $this->worldwideQuote->activeVersion->company?->name,
+            'customer_name' => $this->worldwideQuote->opportunity?->primaryAccount?->name,
             'order_number' => $this->order_number,
             'order_type' => $this->worldwideQuote->contractType->type_short_name,
             'rfq_number' => $this->worldwideQuote->quote_number,

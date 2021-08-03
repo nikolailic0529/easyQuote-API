@@ -16,6 +16,7 @@ use App\Models\Customer\Customer;
 /**
  * @property Customer|null $customer
  * @property string|null $submitted_at
+ * @property string|null $assets_migrated_at
  */
 class Quote extends BaseQuote implements Multitenantable
 {

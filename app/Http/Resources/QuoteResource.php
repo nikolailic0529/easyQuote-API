@@ -42,7 +42,7 @@ class QuoteResource extends JsonResource
                     'applicable_discounts'  => $this->currencySymbol.' '.$this->asDecimal($this->applicableDiscounts),
                     'final_price'           => $this->currencySymbol.' '.$this->asDecimal($this->finalTotalPrice),
                     'invoicing_terms'       => $this->customer->invoicing_terms,
-                    'full_name'             => $this->user->full_name,
+                    'full_name'             => $this->user?->full_name,
                     'date'                  => $this->updated_at,
                     'service_agreement_id'  => $this->service_agreement_id,
                     'system_handle'         => $this->system_handle,
@@ -85,8 +85,12 @@ class QuoteResource extends JsonResource
         ];
     }
 
-    private function asDecimal(float $value): string
+    private function asDecimal(?float $value): string
     {
+        if (is_null($value)) {
+            return '';
+        }
+
         return number_format($value, 2);
     }
 }

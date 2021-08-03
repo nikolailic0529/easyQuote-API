@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Contracts\{ActivatableInterface, HasImagesDirectory, HasOrderedScope, SearchableEntity, WithLogo};
-use App\Models\{Data\Country, Template\QuoteTemplate,};
+use App\Models\{Data\Country, Quote\WorldwideQuote, Template\QuoteTemplate};
 use App\Models\Customer\CustomerTotal;
 use App\Services\ThumbHelper;
 use App\Traits\{Activatable,
@@ -19,7 +19,7 @@ use App\Traits\{Activatable,
     Systemable,
     Uuid};
 use Illuminate\Database\Eloquent\{Builder, Model, SoftDeletes,};
-use Illuminate\Database\Eloquent\{Collection, Relations\BelongsTo, Relations\BelongsToMany};
+use Illuminate\Database\Eloquent\{Collection, Relations\BelongsTo, Relations\BelongsToMany, Relations\HasManyThrough};
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\Str;
@@ -28,6 +28,7 @@ use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
 /**
  * Class Company
  *
+ * @property string|null $user_id
  * @property string|null $name
  * @property string|null $short_code
  * @property string|null $vs_company_code
@@ -44,6 +45,9 @@ use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
  * @property Image|null $image
  * @property Collection<Address>|Address[] $addresses
  * @property Collection<Contact>|Contact[] $contacts
+ * @property-read Collection<Opportunity>|Opportunity[] $opportunities
+ * @property-read Collection<WorldwideQuote>|WorldwideQuote[] $worldwideQuotes
+ * @property-read Collection<CompanyNote>|CompanyNote[] $companyNotes
  */
 class Company extends Model implements HasImagesDirectory, WithLogo, ActivatableInterface, HasOrderedScope, SearchableEntity
 {
@@ -265,5 +269,33 @@ class Company extends Model implements HasImagesDirectory, WithLogo, Activatable
     public function image()
     {
         return $this->morphOne(Image::class, 'imageable')->cacheForever();
+    }
+
+    public function opportunities(): HasMany
+    {
+        return $this->hasMany(Opportunity::class, 'primary_account_id');
+    }
+
+    public function worldwideQuotes(): HasManyThrough
+    {
+        return $this->hasManyThrough(WorldwideQuote::class, Opportunity::class, firstKey: 'primary_account_id');
+    }
+
+    public function worldwideQuoteVersions(): HasManyDeep
+    {
+        return $this->hasManyDeepFromRelations(
+            $this->worldwideQuotes(),
+            (new WorldwideQuote())->versions()
+        );
+    }
+
+    public function companyNotes(): HasMany
+    {
+        return $this->hasMany(CompanyNote::class);
+    }
+
+    public function assets(): BelongsToMany
+    {
+        return $this->belongsToMany(Asset::class);
     }
 }

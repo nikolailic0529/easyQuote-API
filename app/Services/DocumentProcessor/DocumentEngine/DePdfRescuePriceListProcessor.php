@@ -33,7 +33,7 @@ class DePdfRescuePriceListProcessor implements ProcessesQuoteFile, DocumentEngin
      * @throws \App\Services\Exceptions\FileException
      * @throws \App\Services\DocumentProcessor\Exceptions\NoDataFoundException
      */
-    public function process(QuoteFile $quoteFile)
+    public function process(QuoteFile $quoteFile): void
     {
         $data = (new ParseDistributorPDF($this->logger))
             ->filePath(Storage::path($quoteFile->original_file_path))

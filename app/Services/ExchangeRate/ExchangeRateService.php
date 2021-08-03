@@ -87,16 +87,30 @@ abstract class ExchangeRateService implements ManagesExchangeRates
         return true;
     }
 
-    public function getBaseRate(Currency $source): float
+    public function getBaseRate(Currency $source, ?DateTimeInterface $dateTime = null): float
     {
         if ($source->code === $this->baseCurrency()) {
             return 1;
         }
 
-        return 1 / $source->exchangeRate->exchange_rate;
+        $exchangeRate = match (true) {
+            false === is_null($dateTime) => value(function () use ($dateTime, $source): float {
+                $exchangeRate = $source->exchangeRate()
+                    ->where(function (Builder $builder) use ($dateTime) {
+                        $builder->where('date', '>=', Carbon::instance($dateTime)->startOfMonth())
+                            ->where('date', '<=', Carbon::instance($dateTime)->endOfMonth());
+                    })
+                    ->value('exchange_rate');
+
+                return (float)($exchangeRate ?? 1.0);
+            }),
+            default => $source->exchangeRate->exchange_rate,
+        };
+
+        return 1 / $exchangeRate;
     }
 
-    public function getBaseRateByCurrencyCode(string $currencyCode, DateTimeInterface $dateTime = null): float
+    public function getBaseRateByCurrencyCode(string $currencyCode, ?DateTimeInterface $dateTime = null): float
     {
         if ($currencyCode === $this->baseCurrency()) {
             return 1;

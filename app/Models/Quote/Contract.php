@@ -39,6 +39,9 @@ use Illuminate\Support\Collection as BaseCollection;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property Quote|null $quote
+ */
 class Contract extends Model implements SearchableEntity
 {
     use Uuid,

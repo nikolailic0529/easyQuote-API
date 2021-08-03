@@ -11,6 +11,7 @@ use App\Http\Query\Company\OrderByWebsite;
 use App\Http\Query\DefaultOrderBy;
 use App\Http\Query\OrderByCreatedAt;
 use App\Http\Query\OrderByName;
+use App\Models\Asset;
 use App\Models\Company;
 use App\Services\ElasticsearchQuery;
 use Elasticsearch\Client as Elasticsearch;
@@ -29,6 +30,27 @@ class CompanyQueries
     {
         $this->pipeline = $pipeline;
         $this->elasticsearch = $elasticsearch;
+    }
+
+    public function listOfAssetCompaniesQuery(Asset $asset): Builder
+    {
+        $companyModel = $asset->companies()->getRelated();
+
+        $query = $asset->companies()->getQuery()
+            ->select([
+                $companyModel->getQualifiedKeyName(),
+                $companyModel->qualifyColumn('user_id'),
+                $companyModel->qualifyColumn('name'),
+                $companyModel->qualifyColumn('source'),
+                $companyModel->qualifyColumn('type'),
+                $companyModel->qualifyColumn('email'),
+                $companyModel->qualifyColumn('phone'),
+                $companyModel->getQualifiedCreatedAtColumn(),
+            ]);
+
+        return tap($query, function (Builder $builder) use ($companyModel) {
+            $builder->orderByDesc($companyModel->getQualifiedCreatedAtColumn());
+        });
     }
 
     public function paginateCompaniesQuery(Request $request = null): Builder
@@ -54,7 +76,7 @@ class CompanyQueries
                         ->whereColumn('quote_totals.company_id', 'companies.id');
                 },
                 'created_at',
-                'activated_at'
+                'activated_at',
             ])
             ->withCasts([
                 'total_quoted_value' => 'decimal:2',
@@ -63,9 +85,11 @@ class CompanyQueries
         if (filled($searchQuery = $request->query('search'))) {
             $hits = rescue(function () use ($model, $searchQuery) {
                 return $this->elasticsearch->search(
-                    (new ElasticsearchQuery)
+                    ElasticsearchQuery::new()
                         ->modelIndex($model)
-                        ->queryString('*'.ElasticsearchQuery::escapeReservedChars($searchQuery).'*')
+                        ->queryString($searchQuery)
+                        ->escapeQueryString()
+                        ->wrapQueryString()
                         ->toArray()
                 );
             });
@@ -101,9 +125,11 @@ class CompanyQueries
         if (filled($searchQuery = $request->query('search'))) {
             $hits = rescue(function () use ($model, $searchQuery) {
                 return $this->elasticsearch->search(
-                    (new ElasticsearchQuery)
+                    ElasticsearchQuery::new()
                         ->modelIndex($model)
-                        ->queryString('*'.ElasticsearchQuery::escapeReservedChars($searchQuery).'*')
+                        ->queryString($searchQuery)
+                        ->escapeQueryString()
+                        ->wrapQueryString()
                         ->toArray()
                 );
             });

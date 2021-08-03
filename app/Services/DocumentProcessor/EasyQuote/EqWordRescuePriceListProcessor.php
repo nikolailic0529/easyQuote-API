@@ -27,7 +27,7 @@ class EqWordRescuePriceListProcessor implements ProcessesQuoteFile
         $this->parser = $parser;
     }
 
-    public function process(QuoteFile $quoteFile)
+    public function process(QuoteFile $quoteFile): void
     {
         $lock = Cache::lock(Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()), 10);
         $lock->block(30);
@@ -37,7 +37,9 @@ class EqWordRescuePriceListProcessor implements ProcessesQuoteFile
         try {
             $separator = DataSelectSeparator::where('name', Setting::get('parser.default_separator'))->first();
 
-            $quoteFile->dataSelectSeparator()->associate($separator)->save();
+            $quoteFile->dataSelectSeparator()->associate($separator);
+            $quoteFile->imported_page = 1;
+            $quoteFile->save();
 
             $parsedData = $this->parser->parseAsDistributorFile(Storage::path($quoteFile->original_file_path));
 

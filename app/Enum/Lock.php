@@ -28,6 +28,9 @@ use App\Enum\Exceptions\InvalidEnumKeyException;
  * @method static UPDATE_WWQUOTE_NOTE(string $id)
  * @method static DELETE_WWQUOTE_NOTE(string $id)
  *
+ * @method static UPDATE_COMPANY_NOTE(string $id)
+ * @method static DELETE_COMPANY_NOTE(string $id)
+ *
  * @method static UPDATE_OPPORTUNITY(string $id)
  * @method static DELETE_OPPORTUNITY(string $id)
  *
@@ -60,6 +63,9 @@ final class Lock extends Enum
 
         UPDATE_WWQUOTE_NOTE = 'update-ww-quote-note',
         DELETE_WWQUOTE_NOTE = 'delete-ww-quote-note',
+
+        UPDATE_COMPANY_NOTE = 'update-company-note',
+        DELETE_COMPANY_NOTE = 'delete-company-note',
 
         UPDATE_OPPORTUNITY = 'update-opportunity',
         DELETE_OPPORTUNITY = 'delete-opportunity',

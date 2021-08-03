@@ -54,6 +54,7 @@ class RescueQuoteCalc
         $finalTotalPrice = $totalPriceAfterMargin;
 
         return PriceSummaryData::immutable([
+            'source_to_output_exchange_rate' => $targetRate,
             'total_price' => $totalPrice * $targetRate,
             'total_price_after_margin' => $totalPriceAfterCustomDiscount * $targetRate,
             'buy_price' => $buyPrice * $targetRate,

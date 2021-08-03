@@ -4,30 +4,41 @@ namespace App\Models;
 
 use App\Contracts\SearchableEntity;
 use App\Models\Quote\Quote;
+use App\Models\Quote\WorldwideQuote;
 use App\Traits\{BelongsToUser, Uuid,};
 use App\Traits\{Auth\Multitenantable, Search\Searchable,};
+use DateTimeInterface;
 use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Staudenmeir\EloquentHasManyDeep\HasOneDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 /**
+ * @property string|null $user_id
+ * @property string|null $quote_id
+ * @property string|null $quote_type
+ * @property string|null $vendor_id
  * @property string|null $vendor_short_code
  * @property string|null $unit_price
- * @property string|null $base_warranty_start_date
- * @property string|null $base_warranty_end_date
- * @property string|null $active_warranty_start_date
- * @property string|null $active_warranty_end_date
+ * @property DateTimeInterface|null $base_warranty_start_date
+ * @property DateTimeInterface|null $base_warranty_end_date
+ * @property DateTimeInterface|null $active_warranty_start_date
+ * @property DateTimeInterface|null $active_warranty_end_date
  * @property string|null $item_number
  * @property string|null $product_number
  * @property string|null $serial_number
  * @property string|null $product_description
+ * @property string|null $service_description
  * @property string|null $product_image
+ * @property bool|null $is_migrated
  *
  * @property AssetCategory $assetCategory
  * @property Location $location
+ * @property Quote|WorldwideQuote|null $quote
  */
 class Asset extends Model implements SearchableEntity
 {
@@ -71,9 +82,9 @@ class Asset extends Model implements SearchableEntity
         'active_warranty_start_date', 'active_warranty_end_date',
     ];
 
-    public function quote(): BelongsTo
+    public function quote(): MorphTo
     {
-        return $this->belongsTo(Quote::class)->withDefault();
+        return $this->morphTo('quote');
     }
 
     public function vendor(): BelongsTo
@@ -106,6 +117,11 @@ class Asset extends Model implements SearchableEntity
         return $this->hasOneDeepFromRelations($this->quote(), (new Quote)->customer())->withDefault();
     }
 
+    public function companies(): BelongsToMany
+    {
+        return $this->belongsToMany(Company::class);
+    }
+
     public function toSearchArray(): array
     {
         return [
@@ -125,7 +141,18 @@ class Asset extends Model implements SearchableEntity
             'active_warranty_end_date' => optional($this->active_warranty_end_date)->format(config('date.format')),
             'unit_price' => $this->unit_price,
             'buy_price' => $this->buy_price,
-            'rfq_number' => $this->customer->rfq,
+
+            'rfq_number' => value(function () {
+
+                if (is_null($this->quote)) {
+                    return null;
+                }
+
+                return match ($this->quote::class) {
+                  Quote::class => $this->quote->customer->rfq,
+                  WorldwideQuote::class => $this->quote->quote_number,
+                };
+            }),
         ];
     }
 }

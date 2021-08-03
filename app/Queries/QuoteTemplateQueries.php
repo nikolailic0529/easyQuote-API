@@ -64,9 +64,11 @@ class QuoteTemplateQueries
         if (filled($searchQuery = $request->query('search'))) {
             $hits = rescue(function () use ($searchQuery) {
                 return $this->elasticsearch->search(
-                    (new ElasticsearchQuery)
+                    ElasticsearchQuery::new()
                         ->modelIndex(new QuoteTemplate)
-                        ->queryString(Str::of($searchQuery)->start('*')->finish('*'))
+                        ->queryString($searchQuery)
+                        ->escapeQueryString()
+                        ->wrapQueryString()
                         ->toArray()
                 );
             });

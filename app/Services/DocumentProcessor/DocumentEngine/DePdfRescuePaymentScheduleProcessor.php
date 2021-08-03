@@ -34,7 +34,7 @@ class DePdfRescuePaymentScheduleProcessor implements ProcessesQuoteFile, Documen
      * @throws \Throwable
      * @throws \App\Services\DocumentProcessor\Exceptions\NoDataFoundException
      */
-    public function process(QuoteFile $quoteFile)
+    public function process(QuoteFile $quoteFile): void
     {
         $response = (new ParsePaymentPDF($this->logger))
             ->filePath(Storage::path($quoteFile->original_file_path))

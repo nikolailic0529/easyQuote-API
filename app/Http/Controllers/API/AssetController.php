@@ -3,27 +3,23 @@
 namespace App\Http\Controllers\API;
 
 use App\Contracts\Repositories\AssetCategoryRepository;
-use App\Contracts\Repositories\AssetRepository as Assets;
 use App\Contracts\Repositories\VendorRepositoryInterface as Vendors;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Asset\AssetList;
-use App\Queries\AssetQueries;
+use App\Http\Resources\Company\CompanyOfAsset;
+use App\Queries\CompanyQueries;
 use App\Http\Requests\{Asset\CreateAsset, Asset\PaginateAssets, Asset\UpdateAsset};
 use App\Http\Requests\Asset\Uniqueness;
-use App\Http\Resources\Asset\AssetCollection;
+use App\Http\Resources\Asset\AssetList;
 use App\Http\Resources\Asset\AssetWithIncludes;
 use App\Models\Asset;
+use App\Queries\AssetQueries;
 use App\Services\Asset\AssetEntityService;
-use Illuminate\Http\{JsonResponse, Request, Resources\Json\AnonymousResourceCollection, Response};
+use Illuminate\Http\{JsonResponse, Resources\Json\AnonymousResourceCollection, Response};
 
 class AssetController extends Controller
 {
-    protected Assets $assets;
-
-    public function __construct(Assets $assets)
+    public function __construct()
     {
-        $this->assets = $assets;
-
         $this->authorizeResource(Asset::class);
     }
 
@@ -32,13 +28,13 @@ class AssetController extends Controller
      *
      * @param AssetCategoryRepository $assetCategories
      * @param Vendors $vendors
-     * @return JsonResponse
+     * @return JsonResponseN
      */
     public function create(AssetCategoryRepository $assetCategories, Vendors $vendors): JsonResponse
     {
         return response()->json([
             'asset_categories' => $assetCategories->allCached(),
-            'vendors' => $vendors->allCached()
+            'vendors' => $vendors->allCached(),
         ]);
     }
 
@@ -51,7 +47,7 @@ class AssetController extends Controller
      */
     public function index(PaginateAssets $request, AssetQueries $queries): AnonymousResourceCollection
     {
-        $pagination = $request->transformAssetsQuery($queries->paginateAssetsQuery($request))->apiPaginate();
+        $pagination = $queries->paginateAssetsQuery($request)->apiPaginate();
 
         return AssetList::collection($pagination);
     }
@@ -84,6 +80,18 @@ class AssetController extends Controller
         return response()->json(
             AssetWithIncludes::make($asset)
         );
+    }
+
+    /**
+     * @throws \Illuminate\Auth\Access\AuthorizationException
+     */
+    public function showCompaniesOfAsset(Asset $asset, CompanyQueries $companyQueries)
+    {
+        $this->authorize('view', $asset);
+
+        $resource = $companyQueries->listOfAssetCompaniesQuery($asset)->get();
+
+        return CompanyOfAsset::collection($resource);
     }
 
     /**
@@ -123,10 +131,16 @@ class AssetController extends Controller
      * @param Uniqueness $request
      * @return JsonResponse
      */
-    public function checkUniqueness(Uniqueness $request): JsonResponse
+    public function checkUniqueness(Uniqueness $request, AssetQueries $assetQueries): JsonResponse
     {
         return response()->json(
-            $this->assets->checkUniqueness($request->validated())
+            $assetQueries->assetUniquenessQuery(
+                serialNumber: $request->getSerialNumber(),
+                productNumber: $request->getProductNumber(),
+                ignoreModelKey: $request->getIgnoreModelKey(),
+                ownerKey: $request->getOwnerKey(),
+                vendorKey: $request->getVendorKey(),
+            )->doesntExist()
         );
     }
 }

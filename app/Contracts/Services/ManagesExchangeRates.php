@@ -65,16 +65,17 @@ interface ManagesExchangeRates
      * Calculate base exchange rate based on source currency and base_currency setting.
      *
      * @param Currency $source
+     * @param DateTimeInterface|null $dateTime
      * @return float
      */
-    public function getBaseRate(Currency $source): float;
+    public function getBaseRate(Currency $source, ?DateTimeInterface $dateTime = null): float;
 
     /**
      * @param string $currencyCode
      * @param DateTimeInterface|null $dateTime
      * @return float
      */
-    public function getBaseRateByCurrencyCode(string $currencyCode, DateTimeInterface $dateTime = null): float;
+    public function getBaseRateByCurrencyCode(string $currencyCode, ?DateTimeInterface $dateTime = null): float;
 
     /**
      * Format the request url with the given period.

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\API\Quotes\QuoteController;
+use App\Http\Controllers\API\Quotes\QuoteSubmittedController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\HpeContractController;
 use App\Http\Controllers\API\WorldwideQuotes\WorldwideQuoteController;
@@ -26,6 +28,7 @@ Route::get('/dashboard', function () {
 require __DIR__.'/auth.php';
 
 if (config('app.debug')) {
+    Route::get('quotes/{submitted}/contract/preview', [QuoteSubmittedController::class, 'showContractOfQuotePreview']);
     Route::view('recaptcha/v2', 'recaptcha.v2');
     Route::view('recaptcha/v3', 'recaptcha.v3');
     Route::get('hpe-contracts/{hpe_contract}/preview', [HpeContractController::class, 'viewHpeContract']);

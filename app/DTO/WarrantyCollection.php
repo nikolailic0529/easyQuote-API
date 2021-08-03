@@ -12,4 +12,9 @@ class WarrantyCollection extends DataTransferObjectCollection
             array_map(fn ($parameters) => WarrantyData::create($parameters), $data)
         );
     }
+
+    public function current(): WarrantyData
+    {
+        return parent::current();
+    }
 }

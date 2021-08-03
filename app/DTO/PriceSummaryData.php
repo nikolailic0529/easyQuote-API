@@ -13,6 +13,8 @@ final class PriceSummaryData extends DataTransferObject
 
     public float $buy_price;
 
+    public float $source_to_output_exchange_rate = 1.0;
+
     public float $final_total_price = 0.0;
 
     public float $final_total_price_excluding_tax = 0.0;

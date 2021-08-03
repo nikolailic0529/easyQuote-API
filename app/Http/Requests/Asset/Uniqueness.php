@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Asset;
 
 use App\Models\Asset;
+use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Foundation\Http\FormRequest;
 
 class Uniqueness extends FormRequest
@@ -18,22 +19,36 @@ class Uniqueness extends FormRequest
             'id' => 'nullable|uuid',
             'vendor_id' => 'uuid',
             'serial_number' => 'filled|string',
+            'product_number' => 'nullable|filled|string',
         ];
     }
 
-    public function validated()
+    public function getIgnoreModelKey(): ?string
     {
-        /**
-         * If the asset id is present we'll assume use asset user.
-         * Otherwise we will use authenticated user.
-         */
-        $userId = $this->filled('id') ? Asset::whereKey($this->id)->value('user_id') : auth()->id();
+        return $this->input('id');
+    }
 
-        return [
-            ['id', '!=', $this->id],
-            ['user_id', '=', $userId],
-            ['vendor_id', '=', $this->vendor_id],
-            ['serial_number', '=', $this->serial_number],
-        ];
+    public function getOwnerKey(): ?string
+    {
+        if (filled($this->getIgnoreModelKey())) {
+            return Asset::query()->whereKey($this->getIgnoreModelKey())->value('user_id');
+        }
+
+        return $this->container[Guard::class]->id();
+    }
+
+    public function getVendorKey(): ?string
+    {
+        return $this->input('vendor_id');
+    }
+
+    public function getSerialNumber(): ?string
+    {
+        return $this->input('serial_number');
+    }
+
+    public function getProductNumber(): ?string
+    {
+        return $this->input('product_number');
     }
 }

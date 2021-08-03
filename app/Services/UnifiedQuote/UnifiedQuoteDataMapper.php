@@ -7,6 +7,7 @@ use App\Models\Quote\WorldwideQuote;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator as LengthAwarePaginatorContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection as BaseCollection;
 
 class UnifiedQuoteDataMapper
 {
@@ -21,6 +22,17 @@ class UnifiedQuoteDataMapper
         }
 
         return new LengthAwarePaginator($hydrated, $paginator->total(), $paginator->perPage(), $paginator->currentPage());
+    }
+
+    public function mapUnifiedQuoteCollection(BaseCollection $collection): BaseCollection
+    {
+        $hydrated = [];
+
+        foreach ($collection as $item) {
+            $hydrated[] = $this->hydrateUnifiedQuoteEntityFromArray((array)$item);
+        }
+
+        return new BaseCollection($hydrated);
     }
 
     protected function hydrateUnifiedQuoteEntityFromArray(array $data): Model

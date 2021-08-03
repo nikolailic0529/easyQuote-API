@@ -76,7 +76,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read Currency|null $buyCurrency
  * @property-read QuoteFile|null $distributorFile
  * @property-read QuoteFile|null $scheduleFile
- * @property-read Collection<Vendor> $vendors
+ * @property-read Collection<Vendor>|Vendor[] $vendors
  * @property-read Collection<MappedRow> $mappedRows
  * @property-read Collection<DistributionRowsGroup> $rowsGroups
  * @property-read Collection<DistributionFieldColumn> $mapping

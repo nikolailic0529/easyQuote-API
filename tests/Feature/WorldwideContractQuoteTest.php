@@ -1146,7 +1146,128 @@ class WorldwideContractQuoteTest extends TestCase
     {
         $this->authenticateApi();
 
-        $template = factory(QuoteTemplate::class)->create();
+        $template = factory(QuoteTemplate::class)->create([
+            'form_data' => [
+                'first_page' => [
+                    [
+                        "id" => "bb9ea3cc-95eb-4be1-b78d-7565b68c78cf",
+                        "name" => "Two Column",
+                        "child" => [
+                            [
+                                "id" => "2521a5c6-6eda-4420-876d-b821841f892e",
+                                "class" => "col-lg-4",
+                                "controls" => [
+                                    [
+                                        "id" => "c0093711-ea9d-478d-b288-8433ef02af26",
+                                        "src" => null,
+                                        "name" => "l-1",
+                                        "show" => true,
+                                        "type" => "label",
+                                        "class" => "bold",
+                                        "label" => "Label",
+                                        "value" => "List Price:",
+                                        "is_field" => true,
+                                        "is_image" => false,
+                                        "droppable" => false,
+                                        "is_system" => false,
+                                        "is_required" => false,
+                                        "attached_child_id" => "2521a5c6-6eda-4420-876d-b821841f892e",
+                                        "attached_element_id" => "bb9ea3cc-95eb-4be1-b78d-7565b68c78cf",
+                                    ],
+                                ],
+                                "position" => 1,
+                            ],
+                            [
+                                "id" => "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
+                                "class" => "col-lg-8",
+                                "controls" => [
+                                    [
+                                        "id" => "list_price",
+                                        "name" => "list_price",
+                                        "type" => "tag",
+                                        "class" => "s4-form-control text-nowrap",
+                                        "label" => "Total List Price",
+                                        "value" => null,
+                                        "is_field" => true,
+                                        "is_image" => false,
+                                        "droppable" => false,
+                                        "is_system" => true,
+                                        "is_required" => false,
+                                        "attached_child_id" => "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
+                                        "attached_element_id" => "bb9ea3cc-95eb-4be1-b78d-7565b68c78cf",
+                                    ],
+                                ],
+                                "position" => 2,
+                            ],
+                        ],
+                        "class" => "two-column field-dragger",
+                        "order" => 3,
+                        "controls" => [],
+                        "is_field" => false,
+                        "droppable" => false,
+                        "decoration" => "1+3",
+                    ],
+                    [
+                        "id" => "a7623070-c87b-428f-a894-87ccfcb909c2",
+                        "name" => "Two Column",
+                        "child" => [
+                            [
+                                "id" => "2521a5c6-6eda-4420-876d-b821841f892e",
+                                "class" => "col-lg-4",
+                                "controls" => [
+                                    [
+                                        "id" => "c0093711-ea9d-478d-b288-8433ef02af26",
+                                        "src" => null,
+                                        "name" => "l-1",
+                                        "show" => true,
+                                        "type" => "label",
+                                        "class" => "bold",
+                                        "label" => "Label",
+                                        "value" => "Applicable Discounts:",
+                                        "is_field" => true,
+                                        "is_image" => false,
+                                        "droppable" => false,
+                                        "is_system" => false,
+                                        "is_required" => false,
+                                        "attached_child_id" => "2521a5c6-6eda-4420-876d-b821841f892e",
+                                        "attached_element_id" => "a7623070-c87b-428f-a894-87ccfcb909c2",
+                                    ],
+                                ],
+                                "position" => 1,
+                            ],
+                            [
+                                "id" => "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
+                                "class" => "col-lg-8",
+                                "controls" => [
+                                    [
+                                        "id" => "applicable_discounts",
+                                        "name" => "applicable_discounts",
+                                        "type" => "tag",
+                                        "class" => "s4-form-control text-nowrap",
+                                        "label" => "Total Discounts",
+                                        "value" => null,
+                                        "is_field" => true,
+                                        "is_image" => false,
+                                        "droppable" => false,
+                                        "is_system" => true,
+                                        "is_required" => false,
+                                        "attached_child_id" => "49e0ebf9-8c4d-422b-8641-7d5622e6f087",
+                                        "attached_element_id" => "a7623070-c87b-428f-a894-87ccfcb909c2",
+                                    ],
+                                ],
+                                "position" => 2,
+                            ],
+                        ],
+                        "class" => "two-column field-dragger",
+                        "order" => 3,
+                        "controls" => [],
+                        "is_field" => false,
+                        "droppable" => false,
+                        "decoration" => "1+3",
+                    ]
+                ]
+            ]
+        ]);
 
         $template->vendors()->sync(Vendor::limit(2)->get());
 

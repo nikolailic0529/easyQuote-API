@@ -3,11 +3,14 @@
 namespace App\Services\DocumentProcessor\DocumentEngine;
 
 use App\Contracts\Services\ProcessesQuoteFile;
+use App\Enum\Lock;
 use App\Models\QuoteFile\QuoteFile;
 use App\Services\DocumentEngine\ParseDistributorWord;
 use App\Services\DocumentProcessor\Concerns\HasFallbackProcessor;
 use App\Services\DocumentProcessor\DocumentEngine\Concerns\DocumentEngineProcessor;
 use App\Services\DocumentProcessor\Exceptions\NoDataFoundException;
+use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Facades\Storage;
 use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
@@ -15,17 +18,13 @@ use Ramsey\Uuid\UuidInterface;
 
 class DeWordRescuePriceListProcessor implements ProcessesQuoteFile, DocumentEngineProcessor, HasFallbackProcessor
 {
-    protected LoggerInterface $logger;
-    protected PriceListResponseDataMapper $dataMapper;
-    private ProcessesQuoteFile $fallbackProcessor;
 
-    public function __construct(LoggerInterface $logger,
-                                PriceListResponseDataMapper $dataMapper,
-                                ProcessesQuoteFile $fallbackProcessor)
+    public function __construct(protected LoggerInterface $logger,
+                                protected ConnectionInterface $connection,
+                                protected LockProvider $lockProvider,
+                                protected PriceListResponseDataMapper $dataMapper,
+                                private ProcessesQuoteFile $fallbackProcessor)
     {
-        $this->logger = $logger;
-        $this->dataMapper = $dataMapper;
-        $this->fallbackProcessor = $fallbackProcessor;
     }
 
     /**
@@ -33,8 +32,19 @@ class DeWordRescuePriceListProcessor implements ProcessesQuoteFile, DocumentEngi
      * @throws \Throwable
      * @throws \App\Services\DocumentProcessor\Exceptions\NoDataFoundException
      */
-    public function process(QuoteFile $quoteFile)
+    public function process(QuoteFile $quoteFile): void
     {
+        $lock = $this->lockProvider->lock(Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()), 10);
+
+        $quoteFile->imported_page = 1;
+        $quoteFile->save();
+
+        $lock->block(30, function () use ($quoteFile) {
+
+            $this->connection->transaction(fn () => $quoteFile->save());
+
+        });
+
         $data = (new ParseDistributorWord($this->logger))
             ->filePath(Storage::path($quoteFile->original_file_path))
             ->firstPage($quoteFile->imported_page)

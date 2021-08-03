@@ -2,7 +2,11 @@
 
 namespace App\Http\Resources\Asset;
 
+use App\Models\Asset;
+use App\Models\Quote\Quote;
+use App\Models\Quote\WorldwideQuote;
 use Illuminate\Http\Resources\Json\JsonResource;
+use function PHPUnit\Framework\matches;
 
 class AssetWithIncludes extends JsonResource
 {
@@ -14,6 +18,8 @@ class AssetWithIncludes extends JsonResource
      */
     public function toArray($request)
     {
+        /** @var Asset|AssetWithIncludes $this */
+
         return [
             'id' => $this->id,
 
@@ -22,8 +28,20 @@ class AssetWithIncludes extends JsonResource
             'address_id' => $this->address_id,
             'vendor_id' => $this->vendor_id,
             'quote_id' => $this->quote_id,
+            'quote_type' => $this->quote_type,
 
-            'rfq_number' => $this->customer->rfq,
+            'rfq_number' => value(function () {
+                /** @var Asset|AssetWithIncludes $this */
+
+                if (is_null($this->quote)) {
+                    return null;
+                }
+
+                return match($this->quote::class) {
+                    Quote::class => $this->quote->customer->rfq,
+                    WorldwideQuote::class => $this->quote->quote_number,
+                };
+            }),
 
             'vendor_short_code' => $this->vendor_short_code,
             'asset_category_name' => $this->assetCategory->name,

@@ -2,27 +2,31 @@
 
 namespace Tests\Unit\Quote;
 
-use Tests\TestCase;
-use Tests\Unit\Traits\{
-    AssertsListing,
-    WithFakeUser
-};
 use App\DTO\RowsGroup;
 use App\Models\Quote\Contract;
 use App\Models\Quote\Quote;
 use App\Models\QuoteFile\DataSelectSeparator;
+use App\Models\QuoteFile\ImportableColumn;
+use App\Models\QuoteFile\ImportedRow;
+use App\Models\QuoteFile\QuoteFile;
 use App\Models\QuoteFile\QuoteFileFormat;
+use App\Models\QuoteFile\ScheduleData;
 use App\Models\Template\ContractTemplate;
 use App\Models\Template\QuoteTemplate;
+use App\Models\Template\TemplateField;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
+use Tests\TestCase;
+use Tests\Unit\Traits\{AssertsListing, WithFakeUser};
 
 /**
  * @group build
  */
 class ContractTest extends TestCase
 {
-    use WithFakeUser, AssertsListing, DatabaseTransactions;
+    use WithFakeUser, AssertsListing;
+
+    use DatabaseTransactions;
 
     protected static $assertableAttributes = [
         'id',
@@ -77,7 +81,7 @@ class ContractTest extends TestCase
         'template_fields',
         'fields_columns',
         'versions_selection',
-        'created_at'
+        'created_at',
     ];
 
     /**
@@ -102,7 +106,7 @@ class ContractTest extends TestCase
 
         $contractTemplate = factory(ContractTemplate::class)->create();
 
-        $this->postJson(url('api/quotes/submitted/contract/' . $quote->getKey()), ['contract_template_id' => $contractTemplate->getKey()])
+        $this->postJson(url('api/quotes/submitted/contract/'.$quote->getKey()), ['contract_template_id' => $contractTemplate->getKey()])
             ->assertOk()
             ->assertJsonStructure(static::$assertableAttributes);
     }
@@ -124,7 +128,7 @@ class ContractTest extends TestCase
             'pages' => 2,
             'quote_file_format_id' => QuoteFileFormat::value('id'),
             'data_select_separator_id' => DataSelectSeparator::value('id'),
-            'imported_page' => 1
+            'imported_page' => 1,
         ]);
 
         $quote->priceList()->associate($priceList)->save();
@@ -132,12 +136,12 @@ class ContractTest extends TestCase
         $priceList->rowsData()->createMany([
             [
                 'page' => 1,
-                'columns_data' => []
+                'columns_data' => [],
             ],
             [
                 'page' => 1,
-                'columns_data' => []
-            ]
+                'columns_data' => [],
+            ],
         ]);
 
         /** @var \Illuminate\Database\Eloquent\Collection */
@@ -146,12 +150,12 @@ class ContractTest extends TestCase
         tap($quote, function (Quote $quote) use ($rows) {
             $groups = collect([
                 new RowsGroup([
-                    'id' => (string) Str::uuid(),
+                    'id' => (string)Str::uuid(),
                     'name' => 'Group',
                     'search_text' => '1234',
                     'is_selected' => true,
-                    'rows_ids' => $rows->modelKeys()
-                ])
+                    'rows_ids' => $rows->modelKeys(),
+                ]),
             ]);
 
             $quote->use_groups = true;
@@ -163,7 +167,7 @@ class ContractTest extends TestCase
 
         $contractTemplate = factory(ContractTemplate::class)->create();
 
-        $response = $this->postJson(url('api/quotes/submitted/contract/' . $quote->getKey()), ['contract_template_id' => $contractTemplate->getKey()])
+        $response = $this->postJson(url('api/quotes/submitted/contract/'.$quote->getKey()), ['contract_template_id' => $contractTemplate->getKey()])
             ->assertOk()
             ->assertJsonStructure(static::$assertableAttributes);
 
@@ -197,23 +201,112 @@ class ContractTest extends TestCase
     {
         $contract = $this->createFakeContract();
 
-        $this->getJson(url('api/contracts/state/' . $contract->id))
+        $this->getJson(url('api/contracts/state/'.$contract->id))
             ->assertOk()
             ->assertJsonStructure(static::$assertableAttributes);
     }
 
     /**
-     * Test reviewing a newly created Contract.
+     * Test an ability to review an existing contract.
      *
      * @return void
      */
-    public function testContractReview()
+    public function testCanReviewContract()
     {
-        $contract = $this->createFakeContract();
+        /** @var QuoteFile $priceList */
+        $priceList = factory(QuoteFile::class)->state('rescue-price-list')->create();
 
-        $this->getJson(url('api/contracts/state/review/' . $contract->id))
+        $importedRows = factory(ImportedRow::class, 2)->create([
+            'quote_file_id' => $priceList->getKey(),
+        ]);
+
+        /** @var QuoteFile $paymentSchedule */
+        $paymentSchedule = factory(QuoteFile::class)->state('rescue-payment-schedule')->create();
+
+        /** @var ScheduleData $scheduleData */
+        $scheduleData = factory(ScheduleData::class)->create([
+            'quote_file_id' => $paymentSchedule->getKey(),
+        ]);
+
+        /** @var Contract $contract */
+        $contract = factory(Contract::class)->create([
+            'distributor_file_id' => $priceList->getKey(),
+            'schedule_file_id' => $paymentSchedule->getKey(),
+            'group_description' => collect([
+                new RowsGroup([
+                    'id' => (string)Str::uuid(),
+                    'name' => Str::random(),
+                    'search_text' => Str::random(),
+                    'rows_ids' => $importedRows->modelKeys(),
+                ]),
+            ]),
+            'use_groups' => true,
+        ]);
+
+        $this->getJson('api/contracts/state/review/'.$contract->getKey())
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure(['first_page', 'data_pages', 'last_page', 'payment_schedule']);
+    }
+
+    /**
+     * Test an ability to export an existing contract to pdf.
+     *
+     * @return void
+     */
+    public function testCanExportContract()
+    {
+        /** @var QuoteFile $priceList */
+        $priceList = factory(QuoteFile::class)->state('rescue-price-list')->create();
+
+        $importedRows = factory(ImportedRow::class, 2)->create([
+            'quote_file_id' => $priceList->getKey(),
+            'is_selected' => true,
+        ]);
+
+        /** @var QuoteFile $paymentSchedule */
+        $paymentSchedule = factory(QuoteFile::class)->state('rescue-payment-schedule')->create();
+
+        /** @var ScheduleData $scheduleData */
+        $scheduleData = factory(ScheduleData::class)->create([
+            'quote_file_id' => $paymentSchedule->getKey(),
+        ]);
+
+        $contractTemplate = factory(ContractTemplate::class)->create();
+
+        /** @var Contract $contract */
+        $contract = factory(Contract::class)->create([
+            'distributor_file_id' => $priceList->getKey(),
+            'schedule_file_id' => $paymentSchedule->getKey(),
+            'group_description' => collect([
+                new RowsGroup([
+                    'id' => (string)Str::uuid(),
+                    'name' => Str::random(),
+                    'search_text' => Str::random(),
+                    'rows_ids' => $importedRows->modelKeys(),
+                ]),
+            ]),
+            'use_groups' => true,
+            'contract_template_id' => $contractTemplate->getKey(),
+        ]);
+
+        $contract->quote->activeVersionOrCurrent->contractTemplate()->associate($contractTemplate);
+        $contract->quote->activeVersionOrCurrent->group_description = $contract->group_description;
+        $contract->quote->activeVersionOrCurrent->priceList()->associate($priceList);
+        $contract->quote->activeVersionOrCurrent->paymentSchedule()->associate($paymentSchedule);
+        $contract->quote->activeVersionOrCurrent->use_groups = true;
+        $contract->quote->activeVersionOrCurrent->save();
+
+        $templateFields = TemplateField::where('is_system', true)->pluck('id', 'name');
+        $importableColumns = ImportableColumn::where('is_system', true)->pluck('id', 'name');
+
+        $map = $templateFields->flip()->map(fn($name, $id) => ['importable_column_id' => $importableColumns->get($name)]);
+
+        $contract->quote->activeVersionOrCurrent->templateFields()->sync($map->all());
+
+        $this->getJson('api/quotes/submitted/pdf/'.$contract->quote->getKey().'/contract')
+//            ->dump()
+            ->assertOk();
     }
 
     /**
@@ -227,7 +320,7 @@ class ContractTest extends TestCase
 
         $attributes = ['additional_notes' => $this->faker->text];
 
-        $this->patchJson(url('api/contracts/state/' . $contract->id), $attributes)
+        $this->patchJson(url('api/contracts/state/'.$contract->id), $attributes)
             ->assertOk()
             ->assertJsonStructure(static::$assertableAttributes);
     }
@@ -241,7 +334,7 @@ class ContractTest extends TestCase
     {
         $contract = $this->createFakeContract();
 
-        $this->postJson(url('api/contracts/drafted/submit/' . $contract->id))
+        $this->postJson(url('api/contracts/drafted/submit/'.$contract->id))
             ->assertOk()->assertExactJson([true]);
 
         $this->assertNotNull($contract->refresh()->submitted_at);
@@ -256,7 +349,7 @@ class ContractTest extends TestCase
     {
         $contract = tap($this->createFakeContract())->submit();
 
-        $this->postJson(url('api/contracts/submitted/unsubmit/' . $contract->id))
+        $this->postJson(url('api/contracts/submitted/unsubmit/'.$contract->id))
             ->assertOk()->assertExactJson([true]);
 
         $this->assertNull($contract->refresh()->submitted_at);
@@ -271,7 +364,7 @@ class ContractTest extends TestCase
     {
         $contract = tap($this->createFakeContract())->submit();
 
-        $this->deleteJson(url('api/contracts/submitted/' . $contract->id))
+        $this->deleteJson(url('api/contracts/submitted/'.$contract->id))
             ->assertOk()->assertExactJson([true]);
 
         $this->assertSoftDeleted($contract);
@@ -286,7 +379,7 @@ class ContractTest extends TestCase
     {
         $contract = tap($this->createFakeContract())->unsubmit();
 
-        $this->deleteJson(url('api/contracts/drafted/' . $contract->id))
+        $this->deleteJson(url('api/contracts/drafted/'.$contract->id))
             ->assertOk()->assertExactJson([true]);
 
         $this->assertSoftDeleted($contract);
@@ -303,7 +396,7 @@ class ContractTest extends TestCase
 
         $this->assertTrue($this->user->can('download_contract_pdf'));
 
-        $this->get(url('api/quotes/submitted/pdf/' . $contract->quote_id . '/contract'))
+        $this->get(url('api/quotes/submitted/pdf/'.$contract->quote_id.'/contract'))
             ->assertOk()
             ->assertHeader('content-type', 'application/pdf');
     }
@@ -321,7 +414,7 @@ class ContractTest extends TestCase
 
         $this->assertFalse($this->user->can('download_contract_pdf'));
 
-        $this->get(url('api/quotes/submitted/pdf/' . $contract->quote_id . '/contract'))
+        $this->get(url('api/quotes/submitted/pdf/'.$contract->quote_id.'/contract'))
             ->assertForbidden();
 
         $this->user->role->givePermissionTo('download_contract_pdf');

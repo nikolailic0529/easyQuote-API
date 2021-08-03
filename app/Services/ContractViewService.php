@@ -114,12 +114,17 @@ class ContractViewService implements ContractView
 
     protected function formatGroupDescription(Contract $contract)
     {
-        $contract->computableRows = static::mapGroupDescriptionWithRows($contract, $contract->computableRows)
+        /** @var MappedRows $computableRows */
+        $computableRows = $contract->computableRows = static::mapGroupDescriptionWithRows($contract, $contract->computableRows);
+
+        $computableRows
+            ->exceptHeaders(self::$contractHiddenFields)
             ->setHeadersCount()
-            ->exceptHeaders([...$contract->hiddenFields, ...['group_name']])
             ->setCurrency($contract->currencySymbol);
 
-        $contract->renderableRows = $contract->computableRows->exceptHeaders($contract->systemHiddenFields);
+        $renderRows = (clone $computableRows)->exceptHeaders(self::$systemHiddenFields);
+
+        $contract->renderableRows = $renderRows->map->except('total_price');
 
         return $this;
     }

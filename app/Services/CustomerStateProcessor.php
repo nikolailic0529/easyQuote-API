@@ -114,6 +114,7 @@ class CustomerStateProcessor implements CustomerState
                 $customer->valid_until = $data->quotation_valid_until->toDateString();
                 $customer->support_start = $data->support_start_date->toDateString();
                 $customer->support_end = $data->support_end_date->toDateString();
+                $customer->source = Customer::S4_SOURCE;
 
                 $customer->country()->associate(Country::where('iso_3166_2', $data->country_code)->firstOrFail());
 

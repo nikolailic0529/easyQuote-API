@@ -58,6 +58,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string|null $phone
  *
  * @property-read string|null $user_fullname
+ * @property-read Team|null $team
  */
 class User extends Model implements
     ActivatableInterface,

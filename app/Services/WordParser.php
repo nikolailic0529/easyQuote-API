@@ -30,8 +30,6 @@ class WordParser implements WordParserInterface
 
     protected PhpWord $phpWord;
 
-    protected array $tables = [];
-
     protected static string $defaultSeparator = "\t";
 
     public function __construct(ImportableColumns $importableColumns)
@@ -39,7 +37,7 @@ class WordParser implements WordParserInterface
         $this->importableColumns = $importableColumns;
     }
 
-    public function load(string $path)
+    public function load(string $path): static
     {
         $this->phpWord = IOFactory::load($path);
 
@@ -50,7 +48,15 @@ class WordParser implements WordParserInterface
     {
         $columns = $this->importableColumns->allSystem();
 
-        $rows = $this->load($filePath)->getTables()->getRows($columns);
+        $this->load($filePath);
+
+        $tables = $this->getTables();
+
+        if (empty($tables)) {
+            return [];
+        }
+
+        $rows = $this->getRows($columns, $tables);
 
         $page = 1;
         $content = null;
@@ -69,20 +75,20 @@ class WordParser implements WordParserInterface
         return $rawPages;
     }
 
-    public function getTables(?PhpWord $phpWord = null)
+    public function getTables(?PhpWord $phpWord = null): array
     {
         $phpWord ??= $this->phpWord;
 
+        $tables = [];
+
         foreach ($phpWord->getSections() as $section) {
-            $this->extractTables($section);
+            $tables = array_merge($tables, $this->extractTablesFromElement($section));
         }
 
-        $this->tables = $this->fetchTables($this->tables);
-
-        return $this;
+        return $this->parseTableElements($tables);
     }
 
-    public function getRows(Collection $columns, WordParser $wordParser = null)
+    public function getRows(Collection $columns, array $tableElements, WordParser $wordParser = null): array
     {
         $wordParser ??= $this;
 
@@ -94,7 +100,7 @@ class WordParser implements WordParserInterface
             $foundRowsByColumn = [];
 
             foreach ($aliases as $alias) {
-                $foundRowsByAlias = $wordParser->findRows($alias->alias);
+                $foundRowsByAlias = $wordParser->findRows($alias->alias, $tableElements);
 
                 if (!empty($foundRowsByAlias)) {
                     $foundRowsByColumn = $foundRowsByAlias;
@@ -111,12 +117,8 @@ class WordParser implements WordParserInterface
         return $rows;
     }
 
-    public function findRows(string $needle, array $tables = [])
+    public function findRows(string $needle, array $tables = []): array
     {
-        if (empty($tables)) {
-            $tables = $this->tables;
-        }
-
         $cellPath = $this->findCell($tables, $needle);
 
         if (!$cellPath) {
@@ -287,28 +289,32 @@ class WordParser implements WordParserInterface
         return compact('rows');
     }
 
-    private function extractTables($element)
+    private function extractTablesFromElement($element): array
     {
+        $tables = [];
+
         if ($this->isTableInstance($element)) {
-            array_push($this->tables, $element);
+            array_push($tables, $element);
         }
 
         if (!method_exists($element, 'getElements')) {
-            return;
+            return $tables;
         }
 
         foreach ($element->getElements() as $element) {
             if ($this->isTableInstance($element)) {
-                array_push($this->tables, $element);
+                array_push($tables, $element);
 
                 continue;
             }
 
-            $this->extractTables($element);
+            $tables = array_merge($tables, $this->extractTablesFromElement($element));
         }
+
+        return $tables;
     }
 
-    private function fetchTables(array $array)
+    private function parseTableElements(array $array): array
     {
         $tables = [];
         foreach ($array as $tableElement) {

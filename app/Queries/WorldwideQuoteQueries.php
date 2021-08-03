@@ -121,7 +121,7 @@ class WorldwideQuoteQueries
         if (filled($searchQuery = $request->query('search'))) {
             $hits = rescue(function () use ($searchQuery) {
                 return $this->elasticsearch->search(
-                    (new ElasticsearchQuery)
+                    ElasticsearchQuery::new()
                         ->modelIndex(new WorldwideQuote)
                         ->queryString($searchQuery)
                         ->escapeQueryString()

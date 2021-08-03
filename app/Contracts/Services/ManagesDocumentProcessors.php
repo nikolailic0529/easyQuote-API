@@ -12,12 +12,14 @@ use Psr\Log\LoggerInterface;
 
 interface ManagesDocumentProcessors
 {
+    public function driver($driver = null): ProcessesQuoteFile;
+
     /**
      * Register a custom driver creator Closure.
      *
      * @param  string  $driver
      * @param  \Closure  $callback
-     * @return $this
+     * @return static
      */
     public function extend($driver, Closure $callback);
 

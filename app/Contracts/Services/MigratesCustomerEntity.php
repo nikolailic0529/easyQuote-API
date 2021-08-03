@@ -2,13 +2,18 @@
 
 namespace App\Contracts\Services;
 
+use App\Enum\CompanyCategory;
+use App\Enum\CompanyType;
 use App\Models\{
     Company,
     Customer\Customer,
 };
 
-interface CustomerFlow
+interface MigratesCustomerEntity
 {
+    const COMPANY_TYPE = CompanyType::EXTERNAL;
+    const COMPANY_CATEGORY = CompanyCategory::END_USER;
+
     /**
      * Migrate existing not migrated customers to external companies.
      *

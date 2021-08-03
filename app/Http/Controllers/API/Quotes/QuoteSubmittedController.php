@@ -11,6 +11,7 @@ use App\Http\Requests\Quote\CreateQuoteContractRequest;
 use App\Http\Resources\ContractVersionResource;
 use App\Models\{Quote\Quote, Template\ContractTemplate};
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 
@@ -177,11 +178,23 @@ class QuoteSubmittedController extends Controller
      * @return Response
      * @throws AuthorizationException
      */
-    public function exporContractOfQuoteToPdf(Quote $submitted, QuoteView $quoteViewService)
+    public function exportContractOfQuoteToPdf(Quote $submitted, QuoteView $quoteViewService)
     {
         $this->authorize('downloadContractPdf', $submitted);
 
         return $quoteViewService->export($submitted->activeVersionOrCurrent, QT_TYPE_CONTRACT);
+    }
+
+    /**
+     * Show contract of quote web preview. Dev only.
+     *
+     * @param Quote $submitted
+     * @param QuoteView $quoteViewService
+     * @return View
+     */
+    public function showContractOfQuotePreview(Quote $submitted, QuoteView $quoteViewService): View
+    {
+        return $quoteViewService->buildView($submitted->activeVersionOrCurrent, QT_TYPE_CONTRACT);
     }
 
     /**

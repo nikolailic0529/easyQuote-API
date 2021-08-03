@@ -8,6 +8,7 @@ use App\Contracts\Services\{CsvParserInterface,
     ProcessesQuoteFile,
     WordParserInterface};
 use App\Services\{CsvParser,
+    DocumentProcessor\DocumentEngine\DeExcelPriceListProcessor,
     DocumentProcessor\DocumentEngine\DePdfRescuePaymentScheduleProcessor,
     DocumentProcessor\DocumentEngine\DePdfRescuePriceListProcessor,
     DocumentProcessor\DocumentEngine\DePdfWorldwidePriceListProcessor,
@@ -23,6 +24,7 @@ use App\Services\{CsvParser,
     WordParser};
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Support\DeferrableProvider;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\ServiceProvider;
 
 class ParserServiceProvider extends ServiceProvider implements DeferrableProvider
@@ -52,6 +54,7 @@ class ParserServiceProvider extends ServiceProvider implements DeferrableProvide
             DePdfRescuePriceListProcessor::class,
             DePdfWorldwidePriceListProcessor::class,
             DeWordRescuePriceListProcessor::class,
+            DeExcelPriceListProcessor::class,
         ], ProcessesQuoteFile::class);
 
         $this->app->singleton(ManagesDocumentProcessors::class, function (Container $container) {
@@ -71,6 +74,12 @@ class ParserServiceProvider extends ServiceProvider implements DeferrableProvide
         $this->app->when(DeWordRescuePriceListProcessor::class)->needs(ProcessesQuoteFile::class)->give(EqWordRescuePriceListProcessor::class);
 
         $this->app->when(DePdfWorldwidePriceListProcessor::class)->needs(ProcessesQuoteFile::class)->give(EqPdfRescuePriceListProcessor::class);
+
+        $this->app->when(DeExcelPriceListProcessor::class)->needs(ProcessesQuoteFile::class)->give(EqExcelPriceListProcessor::class);
+
+        $this->app->when(DeExcelPriceListProcessor::class)->needs(FilesystemAdapter::class)->give(function (Container $container) {
+            return $container['filesystem']->disk();
+        });
     }
 
     protected function registerDrivers(ManagesDocumentProcessors $documentProcessor)

@@ -21,7 +21,7 @@ class EqPdfRescuePriceListProcessor implements ProcessesQuoteFile
         $this->parser = $parser;
     }
 
-    public function process(QuoteFile $quoteFile)
+    public function process(QuoteFile $quoteFile): void
     {
         $rawData = $this->parser->getText(Storage::path($quoteFile->original_file_path));
 

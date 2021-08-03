@@ -3,7 +3,7 @@
 namespace Tests\Unit\Parser;
 
 use App\Services\DocumentReaders\Models\Row;
-use App\Contracts\Services\{PdfParserInterface, WordParserInterface};
+use App\Contracts\Services\{ManagesDocumentProcessors, PdfParserInterface, WordParserInterface};
 use App\Models\{QuoteFile\ImportedRow, QuoteFile\QuoteFileFormat};
 use App\Models\QuoteFile\QuoteFile;
 use App\Services\DocumentProcessor\EasyQuote\EqExcelPriceListProcessor;
@@ -4742,5 +4742,46 @@ CONTENT
         $this->assertContains('Monthly List Price', $headingRowMapping);
         $this->assertContains('Line Item Price', $headingRowMapping);
         $this->assertContains('Reseller cost', $headingRowMapping);
+    }
+
+    /**
+     * @group parsing-price-list-docx
+     */
+    public function test_parses_renewal_support_warehouse_acromet_doc_docx()
+    {
+        $filePath = base_path('tests/Unit/Data/distributor-files-test/Renewal Support Warehouse Arcomet.doc.docx');
+
+        /** @var WordParserInterface $wordParser */
+        $wordParser = $this->app[WordParserInterface::class];
+
+        $data = $wordParser->parseAsDistributorFile($filePath);
+
+        $this->assertNotEmpty($data);
+
+        $this->assertIsArray($data[0]);
+        $this->assertArrayHasKey('content', $data[0]);
+
+        $expectedContent = <<<DATA
+Product Nu\tDescription\tSerial Number\tCoverage period from\tCoverage period to\tQty\tPrice/EUR\t_one_pay
+P02467-B21\tHPE DL380 Gen10 4208 1P 32G 24SFF Svr\tCZ292004XR\t\t13.06.2022\t1\t15,00\t
+P02467-B21\tHPE DL380 Gen10 4208 1P 32G 24SFF Svr\tCZ292004XR\t14.06.2022\t\t1\t96,00\t
+704558-421\tHP DL380p Gen8 E5-2650v2 25SFF EU Svr\tCZ25030779\t\t\t1\t80,00\t
+704558-421\tHP DL380p Gen8 E5-2650v2 25SFF EU Svr\tCZ25030778\t\t\t1\t80,00\t
+P02467-B21\tHPE DL380 Gen10 4208 1P 32G 24SFF Svr\tCZ292004XR\t\t\t1\t11,00\t
+704558-421\tHP DL380p Gen8 E5-2650v2 25SFF EU Svr\tCZ25030779\t\t\t1\t7,00\t
+704558-421\tHP DL380p Gen8 E5-2650v2 25SFF EU Svr\tCZ25030778\t\t\t1\t7,00\t
+P02467-B21\tHPE DL380 Gen10 4208 1P 32G 24SFF Svr\tCZ292004XR\t15.05.2019\t13.06.2022\t1\t\t
+DATA;
+
+        $this->assertSame($expectedContent, $data[0]['content']);
+
+        // Ensure a state of the class is immutable.
+        $data = $wordParser->parseAsDistributorFile($filePath);
+
+        $this->assertNotEmpty($data);
+
+        $this->assertIsArray($data[0]);
+        $this->assertArrayHasKey('content', $data[0]);
+        $this->assertSame($expectedContent, $data[0]['content']);
     }
 }

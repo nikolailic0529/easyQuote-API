@@ -43,7 +43,7 @@ class ActivityQueries
                 "users.user_fullname as causer_name",
                 "{$model->qualifyColumn('causer_service')} as causer_service_name",
                 "{$model->qualifyColumn('properties')} as properties",
-                "{$model->getQualifiedCreatedAtColumn()} as created_at"
+                "{$model->getQualifiedCreatedAtColumn()} as created_at",
             ])
             ->leftJoin('users', function (JoinClause $join) use ($model) {
                 $join->on('users.id', $model->causer()->getQualifiedForeignKeyName());
@@ -52,9 +52,11 @@ class ActivityQueries
         if (filled($searchQuery = $request->input('search'))) {
             $hits = rescue(function () use ($model, $searchQuery) {
                 return $this->elasticsearch->search(
-                    (new ElasticsearchQuery)
+                    ElasticsearchQuery::new()
                         ->modelIndex($model)
-                        ->queryString('*'.ElasticsearchQuery::escapeReservedChars($searchQuery).'*')
+                        ->queryString($searchQuery)
+                        ->escapeQueryString()
+                        ->wrapQueryString()
                         ->toArray()
                 );
             });
@@ -91,7 +93,7 @@ class ActivityQueries
                 "users.user_fullname as causer_name",
                 "{$model->qualifyColumn('causer_service')} as causer_service_name",
                 "{$model->qualifyColumn('properties')} as properties",
-                "{$model->getQualifiedCreatedAtColumn()} as created_at"
+                "{$model->getQualifiedCreatedAtColumn()} as created_at",
             ])
             ->leftJoin('users', function (JoinClause $join) use ($model) {
                 $join->on('users.id', $model->causer()->getQualifiedForeignKeyName());
@@ -101,9 +103,11 @@ class ActivityQueries
         if (filled($searchQuery = $request->input('search'))) {
             $hits = rescue(function () use ($model, $searchQuery) {
                 return $this->elasticsearch->search(
-                    (new ElasticsearchQuery)
+                    ElasticsearchQuery::new()
                         ->modelIndex($model)
-                        ->queryString('*'.ElasticsearchQuery::escapeReservedChars($searchQuery).'*')
+                        ->queryString($searchQuery)
+                        ->escapeQueryString()
+                        ->wrapQueryString()
                         ->toArray()
                 );
             });

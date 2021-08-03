@@ -9,10 +9,10 @@ interface ProcessesQuoteFile
 {
     /**
      * @param \App\Models\QuoteFile\QuoteFile $quoteFile
-     * @return mixed
+     * @return void
      * @throws \App\Services\DocumentProcessor\Exceptions\NoDataFoundException
      */
-    public function process(QuoteFile $quoteFile);
+    public function process(QuoteFile $quoteFile): void;
 
     public static function getProcessorUuid(): UuidInterface;
 }

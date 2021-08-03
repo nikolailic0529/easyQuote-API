@@ -4,9 +4,11 @@ namespace Tests\Unit\Quote;
 
 use App\DTO\RowsGroup;
 use App\Models\{Company,
+    Data\Currency,
     QuoteFile\ImportableColumn,
     QuoteFile\ImportedRow,
     QuoteFile\QuoteFile,
+    QuoteFile\ScheduleData,
     Template\QuoteTemplate,
     Template\TemplateField};
 use App\Models\Quote\Quote;
@@ -65,7 +67,7 @@ class RescueQuoteTest extends TestCase
         $this->postJson(url('api/quotes/state'), $state)
             ->assertForbidden()
             ->assertJsonFragment([
-                'message' => QSU_01
+                'message' => QSU_01,
             ]);
     }
 
@@ -136,7 +138,7 @@ class RescueQuoteTest extends TestCase
         $this->postJson(url("api/quotes/groups/{$quote->id}"), $attributes)
             ->assertOk()
             ->assertJsonStructure([
-                'id', 'name', 'search_text'
+                'id', 'name', 'search_text',
             ]);
 
         $gd = $quote->refresh()->group_description;
@@ -159,7 +161,7 @@ class RescueQuoteTest extends TestCase
             'name' => 'Group',
             'search_text' => '1234',
             'is_selected' => true,
-            'rows_ids' => collect()->times(600, fn() => (string)Str::uuid())->toArray()
+            'rows_ids' => collect()->times(600, fn() => (string)Str::uuid())->toArray(),
         ]));
 
         $quote->group_description = $groups;
@@ -174,7 +176,7 @@ class RescueQuoteTest extends TestCase
             'name' => 'Group',
             'search_text' => '1234',
             'is_selected' => true,
-            'rows_ids' => collect()->times(600, fn() => (string)Str::uuid())->toArray()
+            'rows_ids' => collect()->times(600, fn() => (string)Str::uuid())->toArray(),
         ]));
 
         $groups = collect()->times(50, fn() => Str::random());
@@ -194,7 +196,7 @@ class RescueQuoteTest extends TestCase
             'name' => 'Group',
             'search_text' => '1234',
             'is_selected' => true,
-            'rows_ids' => collect()->times(600, fn() => (string)Str::uuid())->toArray()
+            'rows_ids' => collect()->times(600, fn() => (string)Str::uuid())->toArray(),
         ]))->toJson();
 
         $quote->group_description = $groups;
@@ -262,7 +264,7 @@ class RescueQuoteTest extends TestCase
         $attributes = [
             'from_group_id' => $fromGroup->id,
             'to_group_id' => $toGroup->id,
-            'rows' => $fromGroup->rows_ids
+            'rows' => $fromGroup->rows_ids,
         ];
 
         $response = $this->putJson(url("api/quotes/groups/{$quote->id}"), $attributes)->assertOk();
@@ -290,7 +292,7 @@ class RescueQuoteTest extends TestCase
         $this->getJson(url("api/quotes/groups/{$quote->id}/{$group->id}"))
             ->assertOk()
             ->assertJsonStructure([
-                'id', 'name', 'search_text', 'total_count', 'total_price', 'rows'
+                'id', 'name', 'search_text', 'total_count', 'total_price', 'rows',
             ]);
     }
 
@@ -372,7 +374,7 @@ class RescueQuoteTest extends TestCase
             'user_id' => $this->app['auth.driver']->id(),
             'quote_template_id' => $quoteTemplate->getKey(),
             'company_id' => Company::query()->where('short_code', 'EPD')->value('id'),
-            'submitted_at' => now()
+            'submitted_at' => now(),
         ]);
 
         $response = $this->getJson(url("api/quotes/submitted/pdf/{$quote->id}"));
@@ -501,11 +503,178 @@ class RescueQuoteTest extends TestCase
                 'data_pages' => [
                     'rows_header' => ['product_no', 'description', 'serial_no', 'date_from', 'date_to', 'qty', 'price', 'searchable'],
                     'rows' => [
-                        '*' => ['id', 'is_selected', 'product_no', 'serial_no', 'description', 'date_from', 'date_to', 'qty', 'price', 'searchable']
-                    ]
+                        '*' => ['id', 'is_selected', 'product_no', 'serial_no', 'description', 'date_from', 'date_to', 'qty', 'price', 'searchable'],
+                    ],
                 ],
-                'payment_schedule'
+                'payment_schedule',
             ]);
+    }
+
+    /**
+     * Test an ability to view preview data of the quote entity.
+     *
+     * @return void
+     */
+    public function testCanViewPreviewDataOfQuote()
+    {
+
+        $priceList = factory(QuoteFile::class)->create([
+            'file_type' => 'Distributor Price List',
+            'imported_page' => 1,
+        ]);
+
+        $templateFields = TemplateField::where('is_system', true)->pluck('id', 'name');
+        $importableColumns = ImportableColumn::where('is_system', true)->pluck('id', 'name');
+
+        factory(ImportedRow::class)->create([
+            'quote_file_id' => $priceList->getKey(),
+            'columns_data' => [
+                $templateFields->get('product_no') => ['value' => $this->faker->regexify('/\d{6}-[A-Z]\d{2}/'), 'header' => 'Product Number', 'importable_column_id' => $importableColumns->get('product_no')],
+                $templateFields->get('serial_no') => ['value' => $this->faker->regexify('/[A-Z]{2}\d{4}[A-Z]{2}[A-Z]/'), 'header' => 'Serial Number', 'importable_column_id' => $importableColumns->get('serial_no')],
+                $templateFields->get('description') => ['value' => $this->faker->text, 'header' => 'Description', 'importable_column_id' => $importableColumns->get('description')],
+                $templateFields->get('date_from') => ['value' => now()->format('d/m/Y'), 'header' => 'Coverage from', 'importable_column_id' => $importableColumns->get('date_from')],
+                $templateFields->get('date_to') => ['value' => now()->addYears(2)->format('d/m/Y'), 'header' => 'Coverage to', 'importable_column_id' => $importableColumns->get('date_to')],
+                $templateFields->get('qty') => ['value' => 1, 'header' => 'Quantity', 'importable_column_id' => $importableColumns->get('qty')],
+                $templateFields->get('price') => ['value' => "1,192.00", 'header' => 'Price', 'importable_column_id' => $importableColumns->get('price')],
+            ],
+            'page' => 1,
+            'is_selected' => true,
+        ]);
+
+        $paymentSchedule = factory(QuoteFile::class)->create([
+            'file_type' => 'Payment Schedule',
+            'imported_page' => 2,
+        ]);
+
+        $scheduleData = factory(ScheduleData::class)->create([
+            'quote_file_id' => $paymentSchedule->getKey(),
+            'value' => [
+                [
+                    'from' => '01.01.2020',
+                    'to' => '30.01.2020',
+                    'price' => '10.000,00'
+                ],
+                [
+                    'from' => '31.01.2020',
+                    'to' => '30.01.2021',
+                    'price' => '12.000,00'
+                ]
+            ]
+        ]);
+
+        /** @var Quote $quote */
+        $quote = factory(Quote::class)->create([
+            'distributor_file_id' => $priceList->getKey(),
+            'schedule_file_id' => $paymentSchedule->getKey(),
+            'source_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
+            'target_currency_id' => null,
+            'calculate_list_price' => false,
+            'custom_discount' => 2,
+            'buy_price' => 1_100.0
+        ]);
+
+        $quote->templateFields()->sync([
+            $templateFields->get('product_no') => ['importable_column_id' => $importableColumns->get('product_no')],
+            $templateFields->get('serial_no') => ['importable_column_id' => $importableColumns->get('serial_no')],
+            $templateFields->get('description') => ['importable_column_id' => $importableColumns->get('description')],
+            $templateFields->get('date_from') => ['importable_column_id' => $importableColumns->get('date_from')],
+            $templateFields->get('date_to') => ['importable_column_id' => $importableColumns->get('date_to')],
+            $templateFields->get('qty') => ['importable_column_id' => $importableColumns->get('qty')],
+            $templateFields->get('price') => ['importable_column_id' => $importableColumns->get('price')],
+        ]);
+
+        $response = $this->getJson('api/quotes/review/'.$quote->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'first_page' => [
+                    'template_name',
+                    'customer_name',
+                    'company_name',
+                    'company_logo',
+                    'vendor_name',
+                    'vendor_logo',
+                    'support_start',
+                    'support_end',
+                    'valid_until',
+                    'quotation_number',
+                    'service_levels',
+                    'list_price',
+                    'applicable_discounts',
+                    'final_price',
+                    'invoicing_terms',
+                    'full_name',
+                    'date',
+                    'service_agreement_id',
+                    'system_handle',
+                ],
+                'data_pages' => [
+                    'pricing_document',
+                    'service_agreement_id',
+                    'service_levels',
+                    'equipment_address',
+                    'hardware_contact',
+                    'hardware_phone',
+                    'software_address',
+                    'software_contact',
+                    'software_phone',
+                    'additional_details',
+                    'coverage_period',
+                    'coverage_period_from',
+                    'coverage_period_to',
+                    'rows_header' => [
+                        'product_no',
+                        'description',
+                        'serial_no',
+                        'date_from',
+                        'date_to',
+                        'qty',
+                    ],
+                    'rows' => [
+                        '*' => [
+                            'id',
+                            'is_selected',
+                            'product_no',
+                            'description',
+                            'date_from',
+                            'date_to',
+                            'qty',
+                            'price',
+                        ],
+                    ],
+                ],
+                'last_page' => [
+                    'additional_details',
+                ],
+                'payment_schedule' => [
+                    'company_name',
+                    'vendor_name',
+                    'customer_name',
+                    'support_start',
+                    'support_end',
+                    'period',
+                    'rows_header' => [
+                        'from',
+                        'to',
+                        'price',
+                    ],
+                    'total_payments',
+                    'data' => [
+                        '*' => [
+                            'from',
+                            'to',
+                            'price',
+                        ],
+                    ],
+                ],
+            ]);
+
+        $this->assertSame('£ 1,192.00', $response->json('first_page.list_price'));
+        $this->assertSame('£ 25.29', $response->json('first_page.applicable_discounts'));
+        $this->assertSame('£ 1,166.71', $response->json('first_page.final_price'));
+        $this->assertSame('£ 541.82', $response->json('payment_schedule.data.0.price'));
+        $this->assertSame('£ 650.18', $response->json('payment_schedule.data.1.price'));
+
     }
 
     protected function createFakeGroupDescription(Quote $quote, QuoteFile $quoteFile): RowsGroup
@@ -526,7 +695,7 @@ class RescueQuoteTest extends TestCase
         return [
             'name' => $group_name,
             'search_text' => $this->faker->sentence(3),
-            'rows' => $rows->pluck('id')->toArray()
+            'rows' => $rows->pluck('id')->toArray(),
         ];
     }
 }

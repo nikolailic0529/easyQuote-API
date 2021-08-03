@@ -38,5 +38,9 @@
     {
         "id": "f476e7f3-0345-4d3a-8c09-fea421dd8edc",
         "driver_name": "DeWordRescuePriceListProcessor"
+    },
+    {
+        "id": "e7c335f2-5e43-4c38-ac3c-b8f286d8547f",
+        "driver_name": "DeExcelPriceListProcessor"
     }
 ]

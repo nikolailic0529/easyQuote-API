@@ -1,22 +1,38 @@
 <?php
 
-namespace App\Http\Controllers\API;
+namespace App\Http\Controllers\API\Company;
 
 use App\Contracts\Repositories\{CompanyRepositoryInterface as CompanyRepository,
     VendorRepositoryInterface as VendorRepository};
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Company\{PaginateCompanies, StoreCompanyRequest, UpdateCompanyContact, UpdateCompanyRequest};
-use App\Http\Resources\{Company\CompanyCollection, Company\ExternalCompanyList, Company\UpdatedCompany};
+use App\Http\Requests\Opportunity\PaginateOpportunities;
+use App\Http\Resources\{Asset\AssetOfCompany,
+    Company\CompanyCollection,
+    Company\ExternalCompanyList,
+    Company\UpdatedCompany,
+    Note\UnifiedNoteOfCompany,
+    Opportunity\OpportunityList,
+    SalesOrder\SalesOrderOfCompany,
+    UnifiedQuote\UnifiedQuote};
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Customer\Customer;
+use App\Queries\AssetQueries;
 use App\Queries\CompanyQueries;
+use App\Queries\OpportunityQueries;
+use App\Queries\SalesOrderQueries;
+use App\Queries\UnifiedNoteQueries;
+use App\Queries\UnifiedQuoteQueries;
 use App\Services\CompanyEntityService;
+use App\Services\UnifiedNote\UnifiedNoteDataMapper;
+use App\Services\UnifiedQuote\UnifiedQuoteDataMapper;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use function response;
 
 class CompanyController extends Controller
 {
@@ -151,6 +167,116 @@ class CompanyController extends Controller
         return response()->json(
             UpdatedCompany::make($company)
         );
+    }
+
+    /**
+     * Show a list of opportunity entities of the specified company entity.
+     *
+     * @param PaginateOpportunities $request
+     * @param OpportunityQueries $opportunityQueries
+     * @param Company $company
+     * @return AnonymousResourceCollection
+     * @throws AuthorizationException
+     */
+    public function showOpportunitiesOfCompany(PaginateOpportunities $request,
+                                               OpportunityQueries $opportunityQueries,
+                                               Company $company): AnonymousResourceCollection
+    {
+
+        $this->authorize('view', $company);
+
+        $query = $opportunityQueries->listOkOpportunitiesOfCompanyQuery(company: $company, request: $request);
+
+        $resource = $request->transformOpportunitiesQuery($query)->get();
+
+        return OpportunityList::collection($resource);
+    }
+
+    /**
+     * Show a list of unified quote entities of the specified company entity.
+     *
+     * @param Request $request
+     * @param Company $company
+     * @param UnifiedQuoteQueries $unifiedQuoteQueries
+     * @param UnifiedQuoteDataMapper $quoteDataMapper
+     * @return AnonymousResourceCollection
+     * @throws AuthorizationException
+     */
+    public function showQuotesOfCompany(Request $request,
+                                        UnifiedQuoteQueries $unifiedQuoteQueries,
+                                        UnifiedQuoteDataMapper $quoteDataMapper,
+                                        Company $company): AnonymousResourceCollection
+    {
+        $this->authorize('view', $company);
+
+        $entities = $unifiedQuoteQueries->listOfCompanyQuotesQuery(company: $company, request: $request)->get();
+
+        $entities = $quoteDataMapper->mapUnifiedQuoteCollection($entities);
+
+        return UnifiedQuote::collection($entities);
+    }
+
+    /**
+     * Show a list of sales order entities of the specified company entity.
+     *
+     * @param Request $request
+     * @param SalesOrderQueries $salesOrderQueries
+     * @param Company $company
+     * @throws AuthorizationException
+     */
+    public function showSalesOrdersOfCompany(Request $request,
+                                             SalesOrderQueries $salesOrderQueries,
+                                             Company $company): AnonymousResourceCollection
+    {
+        $this->authorize('view', $company);
+
+        $resource = $salesOrderQueries->listOfCompanySalesOrdersQuery(company: $company, request: $request)->get();
+
+        return SalesOrderOfCompany::collection($resource);
+    }
+
+    /**
+     * Show a list of unified note entities of the specified company entity.
+     *
+     * @param Request $request
+     * @param UnifiedNoteQueries $unifiedNoteQueries
+     * @param UnifiedNoteDataMapper $unifiedNoteDataMapper
+     * @param Company $company
+     * @return AnonymousResourceCollection
+     * @throws AuthorizationException
+     */
+    public function showUnifiedNotesOfCompany(Request $request,
+                                              UnifiedNoteQueries $unifiedNoteQueries,
+                                              UnifiedNoteDataMapper $unifiedNoteDataMapper,
+                                              Company $company): AnonymousResourceCollection
+    {
+        $this->authorize('view', $company);
+
+        $collection = $unifiedNoteQueries->listOfCompanyNotesQuery($company)->get();
+
+        $resource = $unifiedNoteDataMapper->mapUnifiedNoteCollection($collection);
+
+        return UnifiedNoteOfCompany::collection($resource);
+    }
+
+    /**
+     * Show a list of asset entities of the specified company entity.
+     *
+     * @param Request $request
+     * @param AssetQueries $assetQueries
+     * @param Company $company
+     * @return AnonymousResourceCollection
+     * @throws AuthorizationException
+     */
+    public function showAssetsOfCompany(Request $request,
+                                        AssetQueries $assetQueries,
+                                        Company $company): AnonymousResourceCollection
+    {
+        $this->authorize('view', $company);
+
+        $resource = $assetQueries->listOfCompanyAssetsQuery($company)->get();
+
+        return AssetOfCompany::collection($resource);
     }
 
     /**

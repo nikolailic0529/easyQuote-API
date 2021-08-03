@@ -7,6 +7,8 @@ use App\Models\QuoteFile\ImportableColumn;
 use App\Models\QuoteFile\ImportableColumnAlias;
 use App\Models\QuoteFile\ImportedRow;
 use App\Models\QuoteFile\QuoteFile;
+use Illuminate\Contracts\Cache\LockProvider;
+use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -19,26 +21,26 @@ class PriceListResponseDataMapper
 {
     protected static string $reOnePay = '/\b(return to|RTS)\b/i';
 
+    public function __construct(protected ConnectionInterface $connection,
+                                protected LockProvider $lockProvider)
+    {
+    }
+
     public function updateDistributorQuoteFileData(QuoteFile $quoteFile, array $data): void
     {
-        $lock = Cache::lock(Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()), 10);
-        $lock->block(30);
+        $lock = $this->lockProvider->lock(Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()), 10);
 
-        DB::beginTransaction();
+        $lock->block(30, function () use ($data, $quoteFile) {
 
-        try {
-            $quoteFile->rowsData()->forceDelete();
+            $this->connection->transaction(function () use ($data, $quoteFile) {
 
-            ImportedRow::insert($data);
+                $quoteFile->rowsData()->forceDelete();
 
-            DB::commit();
-        } catch (Throwable $e) {
-            DB::rollBack();
+                ImportedRow::query()->insert($data);
 
-            throw $e;
-        } finally {
-            optional($lock)->release();
-        }
+            });
+
+        });
     }
 
     private function normalizeDistributorResponse(array $response): array
@@ -94,7 +96,7 @@ class PriceListResponseDataMapper
         }, $response);
     }
 
-    public function mapDistributorResponse(QuoteFile $quoteFile, ?array $response)
+    public function mapDistributorResponse(QuoteFile $quoteFile, ?array $response): array
     {
         if (is_null($response)) {
             return [];
@@ -154,17 +156,20 @@ class PriceListResponseDataMapper
         return $rows;
     }
 
-    protected function isOnePayLine(array $line)
+    protected function isOnePayLine(array $line): bool
     {
         return (bool)preg_grep(static::$reOnePay, Arr::flatten($line));
     }
 
-    protected function collateColumn(string $header, array $allocatedColumns = null)
+    protected function collateColumn(string $header, array $allocatedColumns = null): array
     {
+        $allocatedColumns ??= [];
+
         $alias = Str::of($header)->trim()->lower();
 
         // Looking for an importable column with exact alias matching.
-        $column = ImportableColumn::whereHas('aliases', fn(Builder $query) => $query->where('alias', $alias))
+        $column = ImportableColumn::query()
+            ->whereHas('aliases', fn(Builder $query) => $query->where('alias', $alias))
             ->when($allocatedColumns, fn(Builder $query) => $query->whereKeyNot($allocatedColumns))
             ->orderByDesc('is_system')
             ->orderBy('is_temp')
@@ -173,7 +178,7 @@ class PriceListResponseDataMapper
         // If an importable column hasn't being found,
         // we will create a new one importable column with the respective alias.
         if (is_null($column)) {
-            $column = ImportableColumn::make([
+            $column = ImportableColumn::query()->make([
                 'header' => $header,
                 'name' => Str::slug($header, '_'),
                 'is_temp' => true,

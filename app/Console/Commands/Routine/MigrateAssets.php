@@ -2,9 +2,11 @@
 
 namespace App\Console\Commands\Routine;
 
-use App\Services\AssetService;
+use App\Contracts\Services\MigratesAssetEntity;
+use App\Contracts\WithLogger;
+use App\Contracts\WithOutput;
 use Illuminate\Console\Command;
-use Throwable;
+use Illuminate\Log\LogManager;
 
 class MigrateAssets extends Command
 {
@@ -37,23 +39,27 @@ class MigrateAssets extends Command
      *
      * @return mixed
      */
-    public function handle(AssetService $service)
+    public function handle(MigratesAssetEntity $service, LogManager $logManager)
     {
-        $this->warn(ASSET_MGS_01);
-        customlog(['message' => ASSET_MGS_01]);
-
-        try {
-            $service->migrateAssets((bool) $this->option('fresh'), $this->output->createProgressBar());
-        } catch (Throwable $e) {
-            $this->error(ASSET_MGERR_02);
-            customlog(['ErrorCode' => 'ASSET_MGERR_02'], customlog()->formatError(ASSET_MGERR_02, $e));
-
-            return false;
+        if ($service instanceof WithLogger) {
+            $service->setLogger(
+                $logManager->stack(['daily', 'stdout'])
+            );
         }
 
-        $this->info("\n".ASSET_MGF_01);
-        customlog(['message' => ASSET_MGF_01]);
+        $service->migrateAssets($this->parseCommandFlags());
 
-        return true;
+        return Command::SUCCESS;
+    }
+
+    protected function parseCommandFlags(): int
+    {
+        $flags = 0;
+
+        if ($this->option('fresh')) {
+            $flags |= MigratesAssetEntity::FRESH_MIGRATE;
+        }
+
+        return $flags;
     }
 }

@@ -53,9 +53,11 @@ class OpportunityFormQueries
         if (filled($searchQuery = $request->query('search'))) {
             $hits = rescue(function () use ($opportunityFormModel, $searchQuery) {
                 return $this->elasticsearch->search(
-                    (new ElasticsearchQuery)
+                    ElasticsearchQuery::new()
                         ->modelIndex($opportunityFormModel)
-                        ->queryString('*'.ElasticsearchHelper::escapeReservedChars($searchQuery).'*')
+                        ->queryString($searchQuery)
+                        ->escapeQueryString()
+                        ->wrapQueryString()
                         ->toArray()
                 );
             });

@@ -2,20 +2,23 @@
 
 namespace Tests\Unit\Parser;
 
-use App\Services\DocumentProcessor\DocumentEngine\PriceListResponseDataMapper;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Tests\TestCase;
-use Webpatser\Uuid\Uuid;
-use Illuminate\Support\Arr;
 use App\Models\QuoteFile\QuoteFile;
+use App\Models\QuoteFile\QuoteFileFormat;
+use App\Services\DocumentEngine\ParseDistributorExcel;
 use App\Services\DocumentEngine\ParseDistributorPDF;
 use App\Services\DocumentEngine\ParsePaymentPDF;
+use App\Services\DocumentProcessor\DocumentEngine\DeExcelPriceListProcessor;
 use App\Services\DocumentProcessor\DocumentEngine\DePdfRescuePaymentScheduleProcessor;
 use App\Services\DocumentProcessor\DocumentEngine\DePdfRescuePriceListProcessor;
+use App\Services\DocumentProcessor\DocumentEngine\PriceListResponseDataMapper;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
+use Tests\TestCase;
+use Webpatser\Uuid\Uuid;
 
 /**
  * @group build
@@ -25,17 +28,13 @@ class DocumentEngineTest extends TestCase
     use DatabaseTransactions;
 
     /**
-     * Test Distributor File Processor.
+     * Test performs parsing of pdf price list file using document engine api.
      *
      * @return void
+     * @throws \App\Services\Exceptions\FileException
      */
-    public function testDistributorFileProcessor()
+    public function testItPerformsParsingOfPdfPriceListUsingDocumentEngine()
     {
-        $this->markTestSkipped();
-
-        config(['documentparse.default' => 'document_api']);
-        config(['services.document_api.url' => 'http://18.134.146.232:1337']);
-
         $response = (new ParseDistributorPDF)
             ->filePath(base_path('tests/Unit/Data/distributor-files-test/SUPP-INBA_1 year.pdf'))
             ->firstPage(3)
@@ -56,17 +55,76 @@ class DocumentEngineTest extends TestCase
     }
 
     /**
+     * Test performs parsing of excel price list using document engine api.
+     *
+     * @return void
+     * @throws \App\Services\Exceptions\FileException
+     */
+    public function testItPerformsParsingOfExcelPriceListUsingDocumentEngine()
+    {
+        $response = (new ParseDistributorExcel())
+            ->filePath(base_path('tests/Unit/Data/distributor-files-test/SupportWarehouse - Kromann Reumert.xlsx'))
+            ->process();
+
+        $this->assertIsArray($response);
+        $this->assertNotEmpty($response);
+
+        $this->assertArrayHasKey('header', $response[0]);
+        $this->assertIsArray($response[0]['header']);
+        $this->assertNotEmpty($response[0]['header']);
+
+        $this->assertArrayHasKey('rows', $response[0]);
+        $this->assertNotEmpty($response[0]['rows']);
+        $this->assertIsArray($response[0]['rows']);
+    }
+
+    /**
+     * Test processes excel price list quote file using document engine.
+     *
+     * @return void
+     * @throws \App\Services\DocumentProcessor\Exceptions\NoDataFoundException
+     * @throws \App\Services\Exceptions\FileException
+     * @throws \Illuminate\Contracts\Container\BindingResolutionException
+     */
+    public function testItProcessesExcelPriceListQuoteFileUsingDocumentEngine()
+    {
+        $storage = Storage::fake();
+
+        $filePath = base_path('tests/Unit/Data/distributor-files-test/SupportWarehouse - Kromann Reumert.xlsx');
+
+        $storage->put($storageFilePath = Str::random(40).'.xlsx', file_get_contents($filePath));
+
+        /** @var QuoteFile $quoteFile */
+        $quoteFile = tap(new QuoteFile(), function (QuoteFile $quoteFile) use ($storageFilePath, $filePath) {
+            $quoteFile->{$quoteFile->getKeyName()} = (string)Uuid::generate(4);
+            $quoteFile->original_file_name = basename($filePath);
+            $quoteFile->original_file_path = $storageFilePath;
+            $quoteFile->imported_page = 1;
+            $quoteFile->file_type = 'Distributor Price List';
+            $quoteFile->format()->associate(
+                QuoteFileFormat::query()->where('extension', 'xlsx')->first()
+            );
+
+            $quoteFile->save();
+        });
+
+        /** @var DeExcelPriceListProcessor $processor */
+        $processor = $this->app->make(DeExcelPriceListProcessor::class);
+
+        $processor->process($quoteFile);
+
+        $this->assertNotEmpty($quoteFile->rowsData->all());
+    }
+
+    /**
      *
      * Test processes distributor file and updates quote file rows.
      *
      * @return void
      */
-    public function testDoesNotFailOnUnexpectedDocumentEngineResponse()
+    public function testItDoesNotFailOnUnexpectedDocumentEngineResponse()
     {
-        $this->markTestSkipped();
-
-        config(['documentparse.default' => 'document_api']);
-        config(['services.document_api.url' => 'http://18.134.146.232:1337']);
+//        $this->markTestSkipped();
 
         $storage = Storage::persistentFake();
 
@@ -77,26 +135,27 @@ class DocumentEngineTest extends TestCase
 //            $storage->put($fileName, file_get_contents(base_path('tests/Unit/Data/distributor-files-test/SUPP-INBA_1 year.pdf')));
 
         $quoteFile = factory(QuoteFile::class)->create([
-            'original_file_path' => $fileName
+            'original_file_path' => $fileName,
         ]);
 
-        (new DePdfRescuePriceListProcessor($this->app->make(LoggerInterface::class)))
-            ->process($quoteFile);
+        /** @var DePdfRescuePriceListProcessor $processor */
+        $processor = $this->app->make(DePdfRescuePriceListProcessor::class);
+
+        $processor->process($quoteFile);
 
         $this->assertTrue(true);
     }
 
     /**
-     * Test Payment Schedule File Processor.
+     * Test performs parsing of pdf payment schedule using document engine api.
      *
      * @return void
+     * @throws \App\Services\Exceptions\FileException
+     * @throws \Illuminate\Contracts\Container\BindingResolutionException
      */
-    public function testScheduleFileProcessor()
+    public function testItPerformsParsingOfPdfPaymentScheduleUsingDocumentEngine()
     {
-        $this->markTestSkipped();
-
-        config(['documentparse.default' => 'document_api']);
-        config(['services.document_api.url' => 'http://18.134.146.232:1337']);
+//        $this->markTestSkipped();
 
         $response = (new ParsePaymentPDF($this->app->make(LoggerInterface::class)))
             ->filePath(base_path('tests/Unit/Data/schedule-files-test/France/Billing summary (with partner discount) 81-T31870 Nb offre 21.01.2020 - 31.03.2022  [Purchase].pdf'))
@@ -116,6 +175,8 @@ class DocumentEngineTest extends TestCase
      * Test Distributor Response mapping.
      *
      * @return void
+     * @throws \Illuminate\Contracts\Container\BindingResolutionException
+     * @throws \ReflectionException
      */
     public function testMapsDistributorFileResponse()
     {
@@ -129,7 +190,7 @@ class DocumentEngineTest extends TestCase
         $currentPage = 1;
 
         $quoteFile = (new QuoteFile)->forceFill([
-            'id' => (string) Uuid::generate(4),
+            'id' => (string)Uuid::generate(4),
             'imported_page' => $currentPage,
         ]);
 
@@ -155,11 +216,11 @@ class DocumentEngineTest extends TestCase
                 return collect($columns)->map->value->values()->all();
             });
 
-            $rows = array_map(fn ($row) => $row + [
-                'system_handle' => Arr::get($attributes, 'system_handle'),
-                'pricing_document' => Arr::get($attributes, 'pricing_document'),
-                'searchable' => Arr::get($attributes, 'service_agreement_id'),
-            ], $rows);
+            $rows = array_map(fn($row) => $row + [
+                    'system_handle' => Arr::get($attributes, 'system_handle'),
+                    'pricing_document' => Arr::get($attributes, 'pricing_document'),
+                    'searchable' => Arr::get($attributes, 'service_agreement_id'),
+                ], $rows);
 
             foreach ($rows as $key => $row) {
                 $this->assertContainsEquals(array_values($row), $rowsColumns);
@@ -183,6 +244,8 @@ class DocumentEngineTest extends TestCase
      * Test Payment Schedule Response mapping.
      *
      * @return void
+     * @throws \Illuminate\Contracts\Container\BindingResolutionException
+     * @throws \ReflectionException
      */
     public function testPaymentResponseMapping()
     {
@@ -196,7 +259,7 @@ class DocumentEngineTest extends TestCase
         $currentPage = 1;
 
         $quoteFile = (new QuoteFile)->forceFill([
-            'id' => (string) Uuid::generate(4),
+            'id' => (string)Uuid::generate(4),
             'imported_page' => $currentPage,
         ]);
 
@@ -224,7 +287,7 @@ class DocumentEngineTest extends TestCase
                 "from" => "10.10.23",
                 "to" => "31.10.23",
                 "price" => "1'341.92",
-            ]
+            ],
 
         ], $mappedResponse);
     }
@@ -241,7 +304,7 @@ class DocumentEngineTest extends TestCase
         $currentPage = 1;
 
         $quoteFile = (new QuoteFile)->forceFill([
-            'id' => (string) Uuid::generate(4),
+            'id' => (string)Uuid::generate(4),
             'imported_page' => $currentPage,
         ]);
 
@@ -269,7 +332,7 @@ class DocumentEngineTest extends TestCase
                 "f" => "10.10.23",
                 "t" => "31.10.23",
                 "v" => "1'341.92",
-            ]
+            ],
         ]]);
 
         $this->assertEquals([], $mappedResponse);
@@ -296,7 +359,7 @@ class DocumentEngineTest extends TestCase
                 "from_date" => "10.10.23",
                 "to_date" => "31.10.23",
                 "value" => "1'341.92",
-            ]
+            ],
         ],
         [
             [
@@ -313,8 +376,8 @@ class DocumentEngineTest extends TestCase
                 "from_date" => "21.01.22",
                 "to_date" => "31.03.22",
                 "value" => "308.70",
-            ]
-        ]
+            ],
+        ],
     ];
 
     protected static $distrResponse = [
@@ -325,7 +388,7 @@ class DocumentEngineTest extends TestCase
                 "service_agreement_id" => "1086 5193 2250",
             ],
             "header" => null,
-            "rows" => null
+            "rows" => null,
         ],
         [
             "attributes" => [
@@ -340,7 +403,7 @@ class DocumentEngineTest extends TestCase
                 "from" => "from:",
                 "coverage_period_to" => "Coverage Period to:",
                 "qty" => "Qty",
-                "price_gbp" => "Price/GBP"
+                "price_gbp" => "Price/GBP",
             ],
             "rows" => [
                 [
@@ -350,7 +413,7 @@ class DocumentEngineTest extends TestCase
                     "from" => "",
                     "coverage_period_to" => "",
                     "qty" => "",
-                    "price_gbp" => ""
+                    "price_gbp" => "",
                 ],
                 [
                     "product_no" => "661189-B21",
@@ -359,7 +422,7 @@ class DocumentEngineTest extends TestCase
                     "from" => "",
                     "coverage_period_to" => "",
                     "qty" => "",
-                    "price_gbp" => "25.89"
+                    "price_gbp" => "25.89",
                 ],
                 [
                     "product_no" => "661189-B21",
@@ -368,7 +431,7 @@ class DocumentEngineTest extends TestCase
                     "from" => "",
                     "coverage_period_to" => "",
                     "qty" => "",
-                    "price_gbp" => "4.89"
+                    "price_gbp" => "4.89",
                 ],
                 [
                     "product_no" => "UJ558AC",
@@ -378,8 +441,8 @@ class DocumentEngineTest extends TestCase
                     "coverage_period_to" => "19.06.2019",
                     "qty" => "",
                     "price_gbp" => "1,290.00",
-                ]
-            ]
+                ],
+            ],
         ],
         [
             "attributes" => [
@@ -388,7 +451,7 @@ class DocumentEngineTest extends TestCase
                 "service_agreement_id" => "1086 5193 2250",
             ],
             "header" => null,
-            "rows" => null
+            "rows" => null,
         ],
         [
             "attributes" => [
@@ -403,7 +466,7 @@ class DocumentEngineTest extends TestCase
                 "from" => "from:",
                 "coverage_period_to" => "Coverage Period to:",
                 "qty" => "Qty",
-                "price_gbp" => "Price/GBP"
+                "price_gbp" => "Price/GBP",
             ],
             "rows" => [
                 [
@@ -413,7 +476,7 @@ class DocumentEngineTest extends TestCase
                     "from" => "",
                     "coverage_period_to" => "",
                     "qty" => "",
-                    "price_gbp" => ""
+                    "price_gbp" => "",
                 ],
                 [
                     "product_no" => "661189-B21",
@@ -422,7 +485,7 @@ class DocumentEngineTest extends TestCase
                     "from" => "",
                     "coverage_period_to" => "",
                     "qty" => "",
-                    "price_gbp" => "33.17"
+                    "price_gbp" => "33.17",
                 ],
                 [
                     "product_no" => "661189-B21",
@@ -431,9 +494,9 @@ class DocumentEngineTest extends TestCase
                     "from" => "",
                     "coverage_period_to" => "",
                     "qty" => "",
-                    "price_gbp" => "5.87"
-                ]
-            ]
+                    "price_gbp" => "5.87",
+                ],
+            ],
         ],
         [
             "attributes" => [
@@ -442,7 +505,7 @@ class DocumentEngineTest extends TestCase
                 "service_agreement_id" => "1086 5193 2250",
             ],
             "header" => null,
-            "rows" => null
+            "rows" => null,
         ],
         [
             "attributes" => [
@@ -457,7 +520,7 @@ class DocumentEngineTest extends TestCase
                 "from" => "from:",
                 "coverage_period_to" => "Coverage Period to:",
                 "qty" => "Qty",
-                "price_gbp" => "Price/GBP"
+                "price_gbp" => "Price/GBP",
             ],
             "rows" => [
                 [
@@ -467,7 +530,7 @@ class DocumentEngineTest extends TestCase
                     "from" => "",
                     "coverage_period_to" => "",
                     "qty" => "",
-                    "price_gbp" => ""
+                    "price_gbp" => "",
                 ],
                 [
                     "product_no" => "661189-B21",
@@ -476,7 +539,7 @@ class DocumentEngineTest extends TestCase
                     "from" => "",
                     "coverage_period_to" => "",
                     "qty" => "",
-                    "price_gbp" => "42.14"
+                    "price_gbp" => "42.14",
                 ],
                 [
                     "product_no" => "661189-B21",
@@ -485,10 +548,10 @@ class DocumentEngineTest extends TestCase
                     "from" => "",
                     "coverage_period_to" => "",
                     "qty" => "",
-                    "price_gbp" => "6.02"
-                ]
-            ]
-        ]
+                    "price_gbp" => "6.02",
+                ],
+            ],
+        ],
     ];
 
     protected static $distrResponse2 = [
@@ -499,7 +562,7 @@ class DocumentEngineTest extends TestCase
                 "service_agreement_id" => "1086 5193 2250",
             ],
             "header" => null,
-            "rows" => null
+            "rows" => null,
         ],
         [
             "attributes" => [
@@ -514,7 +577,7 @@ class DocumentEngineTest extends TestCase
                 "from" => "from:",
                 "coverage_period_to" => "Coverage Period to:",
                 "qty" => "Qty",
-                "price_gbp" => "Price/GBP"
+                "price_gbp" => "Price/GBP",
             ],
             "rows" => [
                 [
@@ -524,7 +587,7 @@ class DocumentEngineTest extends TestCase
                     "from" => "",
                     "coverage_period_to" => "",
                     "qty" => "",
-                    "price_gbp" => ""
+                    "price_gbp" => "",
                 ],
                 [
                     "product_no" => "661189-B21",
@@ -533,7 +596,7 @@ class DocumentEngineTest extends TestCase
                     "from" => "",
                     "coverage_period_to" => "",
                     "qty" => "",
-                    "price_gbp" => "25.89"
+                    "price_gbp" => "25.89",
                 ],
                 [
                     "product_no" => "661189-B21",
@@ -542,7 +605,7 @@ class DocumentEngineTest extends TestCase
                     "from" => "",
                     "coverage_period_to" => "",
                     "qty" => "",
-                    "price_gbp" => "4.89"
+                    "price_gbp" => "4.89",
                 ],
                 [
                     "product_no" => "UJ558AC",
@@ -552,8 +615,8 @@ class DocumentEngineTest extends TestCase
                     "coverage_period_to" => "19.06.2019",
                     "qty" => "",
                     "price_gbp" => "1,290.00",
-                ]
-            ]
+                ],
+            ],
         ],
         [
             "attributes" => [
@@ -562,7 +625,7 @@ class DocumentEngineTest extends TestCase
                 "service_agreement_id" => "1086 5193 2250",
             ],
             "header" => null,
-            "rows" => null
+            "rows" => null,
         ],
         [
             "attributes" => [
@@ -577,7 +640,7 @@ class DocumentEngineTest extends TestCase
                 "from" => "from:",
                 "coverage_period_to" => "Coverage Period to:",
                 "qty" => "Qty",
-                "price_gbp" => "Price/GBP"
+                "price_gbp" => "Price/GBP",
             ],
             "rows" => [
                 [
@@ -587,7 +650,7 @@ class DocumentEngineTest extends TestCase
                     "from" => "",
                     "coverage_period_to" => "",
                     "qty" => "",
-                    "price_gbp" => ""
+                    "price_gbp" => "",
                 ],
                 [
                     "product_no" => "661189-B21",
@@ -596,7 +659,7 @@ class DocumentEngineTest extends TestCase
                     "from" => "",
                     "coverage_period_to" => "",
                     "qty" => "",
-                    "price_gbp" => "33.17"
+                    "price_gbp" => "33.17",
                 ],
                 [
                     "product_no" => "661189-B21",
@@ -605,9 +668,9 @@ class DocumentEngineTest extends TestCase
                     "from" => "",
                     "coverage_period_to" => "",
                     "qty" => "",
-                    "price_gbp" => "5.87"
-                ]
-            ]
+                    "price_gbp" => "5.87",
+                ],
+            ],
         ],
         [
             "attributes" => [
@@ -616,7 +679,7 @@ class DocumentEngineTest extends TestCase
                 "service_agreement_id" => "1086 5193 2250",
             ],
             "header" => null,
-            "rows" => null
+            "rows" => null,
         ],
         [
             "attributes" => [
@@ -631,7 +694,7 @@ class DocumentEngineTest extends TestCase
                 "from" => "from:",
                 "coverage_period_to" => "Coverage Period to:",
                 "qty" => "Qty",
-                "price_gbp" => "Price/GBP"
+                "price_gbp" => "Price/GBP",
             ],
             "rows" => [
                 [
@@ -641,7 +704,7 @@ class DocumentEngineTest extends TestCase
                     "from" => "",
                     "coverage_period_to" => "",
                     "qty" => "",
-                    "price_gbp" => ""
+                    "price_gbp" => "",
                 ],
                 [
                     "product_no" => "661189-B21",
@@ -650,7 +713,7 @@ class DocumentEngineTest extends TestCase
                     "from" => "",
                     "coverage_period_to" => "",
                     "qty" => "",
-                    "price_gbp" => "42.14"
+                    "price_gbp" => "42.14",
                 ],
                 [
                     "product_no" => "661189-B21",
@@ -659,9 +722,9 @@ class DocumentEngineTest extends TestCase
                     "from" => "",
                     "coverage_period_to" => "",
                     "qty" => "",
-                    "price_gbp" => "6.02"
-                ]
-            ]
-        ]
+                    "price_gbp" => "6.02",
+                ],
+            ],
+        ],
     ];
 }

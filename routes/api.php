@@ -5,7 +5,8 @@ use App\Http\Controllers\API\AssetController;
 use App\Http\Controllers\API\AttachmentController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\BusinessDivisionController;
-use App\Http\Controllers\API\CompanyController;
+use App\Http\Controllers\API\Company\CompanyController;
+use App\Http\Controllers\API\Company\CompanyNoteController;
 use App\Http\Controllers\API\ContactController;
 use App\Http\Controllers\API\Contracts\ContractDraftedController;
 use App\Http\Controllers\API\Contracts\ContractStateController;
@@ -135,6 +136,7 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::resource('assets', AssetController::class)->only(ROUTE_CRUD);
         Route::post('assets/unique', [AssetController::class, 'checkUniqueness']);
         Route::post('lookup/service', ServiceController::class);
+        Route::get('assets/{asset}/companies', [AssetController::class, 'showCompaniesOfAsset']);
     });
 
     Route::group(['middleware' => THROTTLE_RATE_01], function () {
@@ -281,6 +283,18 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::get('companies', [CompanyController::class, 'paginateCompanies']);
         Route::get('companies/create', [CompanyController::class, 'showCompanyFormData']);
         Route::get('companies/{company}', [CompanyController::class, 'showCompany']);
+        Route::get('companies/{company}/opportunities', [CompanyController::class, 'showOpportunitiesOfCompany']);
+        Route::get('companies/{company}/quotes', [CompanyController::class, 'showQuotesOfCompany']);
+        Route::get('companies/{company}/sales-orders', [CompanyController::class, 'showSalesOrdersOfCompany']);
+        Route::get('companies/{company}/assets', [CompanyController::class, 'showAssetsOfCompany']);
+
+        Route::get('companies/{company}/notes', [CompanyController::class, 'showUnifiedNotesOfCompany']);
+
+        Route::post('companies/{company}/company-notes', [CompanyNoteController::class, 'storeCompanyNote']);
+        Route::get('companies/company-notes/{company_note}', [CompanyNoteController::class, 'showCompanyNote']);
+        Route::patch('companies/company-notes/{company_note}', [CompanyNoteController::class, 'updateCompanyNote']);
+        Route::delete('companies/company-notes/{company_note}', [CompanyNoteController::class, 'deleteCompanyNote']);
+
         Route::post('companies', [CompanyController::class, 'storeCompany']);
         Route::patch('companies/{company}', [CompanyController::class, 'updateCompany']);
         Route::delete('companies/{company}', [CompanyController::class, 'destroyCompany']);
@@ -427,7 +441,7 @@ Route::group(['middleware' => 'auth:api'], function () {
              * Submitted Quotes
              */
             Route::get('submitted/pdf/{submitted}', [QuoteSubmittedController::class, 'exportQuoteToPdf']);
-            Route::get('submitted/pdf/{submitted}/contract', [QuoteSubmittedController::class, 'exporContractOfQuoteToPdf']);
+            Route::get('submitted/pdf/{submitted}/contract', [QuoteSubmittedController::class, 'exportContractOfQuoteToPdf']);
             Route::apiResource('submitted', QuoteSubmittedController::class, ['only' => ROUTE_RD]);
             Route::patch('submitted/{submitted}', [QuoteSubmittedController::class, 'activate']);
             Route::put('submitted/{submitted}', [QuoteSubmittedController::class, 'deactivate']);

@@ -2,12 +2,12 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Contracts\Support\DeferrableProvider;
 use App\Contracts\Repositories\AssetCategoryRepository;
-use App\Contracts\Repositories\AssetRepository;
+use App\Contracts\Services\MigratesAssetEntity;
 use App\Repositories\AssetCategoryRepository as RepositoriesAssetCategoryRepository;
-use App\Repositories\AssetRepository as RepositoriesAssetRepository;
+use App\Services\AssetFlowService;
+use Illuminate\Contracts\Support\DeferrableProvider;
+use Illuminate\Support\ServiceProvider;
 
 class AssetServiceProvider extends ServiceProvider implements DeferrableProvider
 {
@@ -18,16 +18,16 @@ class AssetServiceProvider extends ServiceProvider implements DeferrableProvider
      */
     public function register()
     {
-        $this->app->singleton(AssetRepository::class, RepositoriesAssetRepository::class);
-
         $this->app->singleton(AssetCategoryRepository::class, RepositoriesAssetCategoryRepository::class);
+
+        $this->app->singleton(MigratesAssetEntity::class, AssetFlowService::class);
     }
 
     public function provides()
     {
         return [
-            AssetRepository::class,
             AssetCategoryRepository::class,
+            MigratesAssetEntity::class,
         ];
     }
 }

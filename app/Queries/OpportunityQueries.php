@@ -40,6 +40,16 @@ class OpportunityQueries
             ->where('opportunities.status', OpportunityStatus::NOT_LOST);
     }
 
+    public function listOkOpportunitiesOfCompanyQuery(Company $company, ?Request $request = null): Builder
+    {
+        return tap($this->paginateOkOpportunitiesQuery($request), function (Builder $builder) use ($company) {
+
+            $builder
+                ->where($builder->qualifyColumn('primary_account_id'), $company->getKey());
+
+        });
+    }
+
     public function paginateOpportunitiesQuery(?Request $request = null): Builder
     {
         $request ??= new Request();
@@ -81,9 +91,11 @@ class OpportunityQueries
         if (filled($searchQuery = $request->query('search'))) {
             $hits = rescue(function () use ($model, $searchQuery) {
                 return $this->elasticsearch->search(
-                    (new ElasticsearchQuery)
+                    ElasticsearchQuery::new()
                         ->modelIndex($model)
-                        ->queryString('*'.ElasticsearchQuery::escapeReservedChars($searchQuery).'*')
+                        ->queryString($searchQuery)
+                        ->escapeQueryString()
+                        ->wrapQueryString()
                         ->toArray()
                 );
             });

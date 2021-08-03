@@ -15,6 +15,7 @@
     "ext-zip": "*",
     "barryvdh/laravel-snappy": "^0.4.6",
     "box/spout": "^3.1",
+    "bramus/monolog-colored-line-formatter": "^3.0",
     "daltcore/lara-pdf-merger": "^2.0",
     "devengine/dateparser": "^2.0",
     "devengine/phpword": "*",

@@ -27,10 +27,11 @@ use Illuminate\Database\Eloquent\{Builder,
  * @property int|null $pages
  * @property int|null $imported_page
  *
+ * @property array|null $meta_attributes
  * @property ScheduleData|null scheduleData
  * @property Collection<MappedRow>|MappedRow[] $mappedRows
  * @property Collection<ImportedRow>|ImportedRow[] $rowsData
- * @property array|null $meta_attributes
+ * @property-read QuoteFileFormat|null $format
  */
 class QuoteFile extends Model
 {

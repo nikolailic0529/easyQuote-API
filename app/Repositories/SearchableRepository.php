@@ -101,11 +101,11 @@ abstract class SearchableRepository
 
     protected function searchOnElasticsearch(Model $model, array $fields = [], string $query = '')
     {
-        $esQuery = (new ElasticsearchQuery)
+        $esQuery = ElasticsearchQuery::new()
             ->modelIndex($model)
-            ->queryString(
-                Str::of(ElasticsearchQuery::escapeReservedChars($query))->start('*')->finish('*')
-            );
+            ->queryString($query)
+            ->escapeQueryString()
+            ->wrapQueryString();
         
         try {
             return $this->elasticsearch()->search($esQuery->toArray());

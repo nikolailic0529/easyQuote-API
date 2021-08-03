@@ -6,6 +6,7 @@ use App\Models\Quote\{
     BaseQuote,
     Margin\CountryMargin,
 };
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\Response;
 
 interface QuoteView
@@ -62,14 +63,6 @@ interface QuoteView
     public function setComputableRows(BaseQuote $quote);
 
     /**
-     * Calculate Schedule Prices based on Margin Percentage
-     *
-     * @param BaseQuote $quote
-     * @return $this
-     */
-    public function calculateSchedulePrices(BaseQuote $quote);
-
-    /**
      * Interact BaseQuote model with Discount
      *
      * @param BaseQuote $quote
@@ -111,4 +104,13 @@ interface QuoteView
      * @return Response
      */
     public function export(BaseQuote $quote, int $type): Response;
+
+    /**
+     * Build view data of quote in html format.
+     *
+     * @param BaseQuote $quote
+     * @param int $type
+     * @return View
+     */
+    public function buildView(BaseQuote $quote, int $type): View;
 }

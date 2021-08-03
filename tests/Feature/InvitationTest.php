@@ -107,7 +107,9 @@ class InvitationTest extends TestCase
         $this->postJson('api/auth/signin', [
             'email' => $invitation->email,
             'password' => 'password',
+            'g_recaptcha' => Str::random(),
         ])
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 'access_token',

@@ -4,7 +4,8 @@ namespace App\Services;
 
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
+use JetBrains\PhpStorm\ArrayShape;
+use JetBrains\PhpStorm\Pure;
 
 class ElasticsearchQuery implements Arrayable
 {
@@ -18,6 +19,8 @@ class ElasticsearchQuery implements Arrayable
 
     const QST_PHRASE_PREFIX = 'phrase_prefix';
 
+    const QS_WILDCARD = '*';
+
     protected ?string $index = null;
 
     protected ?string $queryString = null;
@@ -25,6 +28,12 @@ class ElasticsearchQuery implements Arrayable
     protected string $queryStringType = self::QST_CROSS_FIELDS;
 
     protected array $body = [];
+
+    #[Pure]
+    public static function new(): static
+    {
+        return new static();
+    }
 
     public function index(string $index): ElasticsearchQuery
     {
@@ -57,13 +66,14 @@ class ElasticsearchQuery implements Arrayable
         return $this;
     }
 
-    public function wrapQueryString(string $char = '*'): ElasticsearchQuery
+    public function wrapQueryString(string $char = self::QS_WILDCARD): ElasticsearchQuery
     {
-        $this->queryString = Str::finish(Str::start($this->queryString, $char), $char);
+        $this->queryString = $char.$this->queryString.$char;
 
         return $this;
     }
 
+    #[ArrayShape(['index' => "null|string", 'body' => "array|\array[][]"])]
     public function toArray(): array
     {
         return [
@@ -82,9 +92,9 @@ class ElasticsearchQuery implements Arrayable
             'query' => [
                 'query_string' => [
                     'query' => $this->queryString,
-                    'type' => $this->queryStringType
+                    'type' => $this->queryStringType,
                 ],
-            ]
+            ],
         ];
 
     }

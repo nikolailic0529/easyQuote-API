@@ -3,9 +3,9 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use App\Contracts\Services\CustomerFlow;
+use App\Contracts\Services\MigratesCustomerEntity;
 use Illuminate\Contracts\Support\DeferrableProvider;
-use App\Services\CustomerFlow as ServicesCustomerFlow;
+use App\Services\CustomerFlowService as ServicesCustomerFlow;
 use App\Contracts\Services\CustomerState;
 use App\Services\CustomerQueries;
 use App\Services\CustomerStateProcessor;
@@ -22,7 +22,7 @@ class CustomerServiceProvider extends ServiceProvider implements DeferrableProvi
     {
         $this->app->singleton(CustomerQueries::class);
 
-        $this->app->singleton(CustomerFlow::class, ServicesCustomerFlow::class);
+        $this->app->singleton(MigratesCustomerEntity::class, ServicesCustomerFlow::class);
 
         $this->app->singleton(CustomerState::class, CustomerStateProcessor::class);
 
@@ -32,7 +32,7 @@ class CustomerServiceProvider extends ServiceProvider implements DeferrableProvi
     public function provides()
     {
         return [
-            CustomerFlow::class,
+            MigratesCustomerEntity::class,
             WorldwideCustomerQueries::class,
             CustomerQueries::class,
             CustomerState::class,

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Company;
+use App\Models\CompanyNote;
 use App\Models\Customer\Customer;
 use App\Models\Opportunity;
 use App\Models\OpportunityForm\OpportunityForm;
@@ -10,7 +11,9 @@ use App\Models\OpportunityForm\OpportunityFormSchema;
 use App\Models\OpportunitySupplier;
 use App\Models\Pipeline\Pipeline;
 use App\Models\Quote\Quote;
+use App\Models\Quote\QuoteNote;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\Quote\WorldwideQuoteNote;
 use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\Task;
 use App\Models\Template\SalesOrderTemplate;
@@ -50,6 +53,10 @@ class EntityServiceProvider extends ServiceProvider
             '8cc6c6ce-1a57-4d51-9557-3e87c285efa1' => Pipeline::class,
             'f904f1d8-3209-4f09-8e28-13d116555e1f' => OpportunityForm::class,
             'eda5b270-8bd8-4809-8ce0-cb6379fe1b01' => OpportunityFormSchema::class,
+            'e3dd73f0-0a09-49f8-9c5a-ed68e447ae45' => QuoteNote::class,
+            '37ab1118-a078-4f2d-b86a-826002f478b2' => WorldwideQuoteNote::class,
+            'bdfc1329-b064-476f-8d5d-fbccdc02b278' => CompanyNote::class,
+
 
             // TODO: replace class strings with uuid
             // TODO: update morph types in addressables, contactables, images, model_has_permissions, notifications, tasks

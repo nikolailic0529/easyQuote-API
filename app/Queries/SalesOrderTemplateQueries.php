@@ -63,9 +63,11 @@ class SalesOrderTemplateQueries
         if (filled($searchQuery = $request->query('search'))) {
             $hits = rescue(function () use ($model, $searchQuery) {
                 return $this->elasticsearch->search(
-                    (new ElasticsearchQuery)
+                    ElasticsearchQuery::new()
                         ->modelIndex($model)
-                        ->queryString('*'.trim($searchQuery, " \t\n\r\0\x0B*").'*')
+                        ->queryString($searchQuery)
+                        ->escapeQueryString()
+                        ->wrapQueryString()
                         ->toArray()
                 );
             });

@@ -74,6 +74,9 @@ class UnifiedQuote extends JsonResource
                 'delete' => $user->can('delete', $this->resource),
             ],
 
+            'submitted_at' => $this->submitted_at,
+            'is_submitted' => !is_null($this->submitted_at),
+
             'updated_at' => $this->updated_at,
             'activated_at' => $this->activated_at,
             'is_active' => filter_var($this->is_active, FILTER_VALIDATE_BOOL),

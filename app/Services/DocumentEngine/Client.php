@@ -5,6 +5,7 @@ namespace App\Services\DocumentEngine;
 use App\Services\Dummy\Logger;
 use App\Services\Exceptions\FileException;
 use Illuminate\Support\Facades\Http;
+use JetBrains\PhpStorm\Pure;
 use Psr\Log\LoggerInterface;
 
 abstract class Client
@@ -19,17 +20,16 @@ abstract class Client
 
     protected LoggerInterface $logger;
 
+    #[Pure]
     public function __construct(LoggerInterface $logger = null)
     {
-        $logger ??= (new Logger);
-
-        $this->logger = $logger;
+        $this->logger = $logger ?? (new Logger);
     }
 
     abstract protected function endpoint(): string;
 
     /**
-     * @return array|mixed|null
+     * @return array|null
      * @throws FileException
      */
     final public function process(): ?array

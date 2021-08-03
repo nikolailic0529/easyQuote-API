@@ -15,7 +15,7 @@ use Throwable;
 
 class EqExcelRescuePaymentScheduleProcessor implements ProcessesQuoteFile
 {
-    public function process(QuoteFile $quoteFile)
+    public function process(QuoteFile $quoteFile): void
     {
         $lock = Cache::lock(Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()), 10);
         $lock->block(30);

@@ -4,7 +4,9 @@ namespace App\Services\WorldwideQuote;
 
 use App\Contracts\{Services\ManagesExchangeRates,
     Services\ProcessesWorldwideDistributionState,
-    Services\ProcessesWorldwideQuoteState};
+    Services\ProcessesWorldwideQuoteState
+};
+use App\DTO\Asset\GenericAssetData;
 use App\DTO\AssetsGroupData;
 use App\DTO\ProcessableDistributionCollection;
 use App\DTO\QuoteStages\{AddressesContactsStage,
@@ -21,7 +23,8 @@ use App\DTO\QuoteStages\{AddressesContactsStage,
     PackDiscountStage,
     PackMarginTaxStage,
     ReviewStage,
-    SubmitStage};
+    SubmitStage
+};
 use App\DTO\WorldwideQuote\DistributionImportData;
 use App\DTO\WorldwideQuote\MarkWorldwideQuoteAsDeadData;
 use App\Enum\{ContractQuoteStage, Lock, QuoteStatus};
@@ -47,11 +50,13 @@ use App\Events\{WorldwideQuote\ProcessedImportOfDistributorQuotes,
     WorldwideQuote\WorldwideQuoteMarkedAsDead,
     WorldwideQuote\WorldwideQuoteSubmitted,
     WorldwideQuote\WorldwideQuoteUnraveled,
-    WorldwideQuote\WorldwideQuoteVersionDeleted};
+    WorldwideQuote\WorldwideQuoteVersionDeleted
+};
 use App\Helpers\PipelineShortCodeResolver;
 use App\Helpers\SpaceShortCodeResolver;
 use App\Jobs\IndexSearchableEntity;
 use App\Models\{Address,
+    Company,
     Contact,
     Data\Currency,
     Opportunity,
@@ -59,12 +64,15 @@ use App\Models\{Address,
     Quote\WorldwideQuote,
     Quote\WorldwideQuoteNote,
     Quote\WorldwideQuoteVersion,
+    QuoteFile\MappedRow,
     User,
+    Vendor,
     WorldwideQuoteAsset,
-    WorldwideQuoteAssetsGroup};
+    WorldwideQuoteAssetsGroup
+};
 use App\Services\Exceptions\ValidationException;
 use Illuminate\Contracts\{Bus\Dispatcher as BusDispatcher, Cache\LockProvider, Events\Dispatcher as EventDispatcher};
-use Illuminate\Database\{ConnectionInterface, Eloquent\Builder, Eloquent\Collection};
+use Illuminate\Database\{ConnectionInterface, Eloquent\Builder, Eloquent\Collection, Query\JoinClause};
 use Illuminate\Support\{Carbon, Facades\DB};
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -203,55 +211,11 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                 });
             });
 
-            $quoteLock = $this->lockProvider->lock(Lock::UPDATE_WWQUOTE($quote->active_version_id), 10);
-
             $activeQuoteVersion = $quote->activeVersion;
-            $opportunity = $quote->opportunity;
-            $primaryAccount = $opportunity->primaryAccount;
-            $distributorQuotes = $activeQuoteVersion->worldwideDistributions;
 
-            $quoteLock->block(30, function () use ($stage, $quote, $distributorQuotes, $activeQuoteVersion, $opportunity, $primaryAccount) {
+            $this->syncQuoteWithPrimaryAccountAddressesAndContacts($activeQuoteVersion);
+            $this->initializePackQuoteAssetsFromPrimaryAccountAssets($activeQuoteVersion);
 
-                if (is_null($primaryAccount)) {
-                    return;
-                }
-
-                // When a primary account is present on the opportunity,
-                // we will copy its' all default addresses & contacts and attach to the opportunity.
-                $addressPivots = $primaryAccount->addresses
-                    ->filter(function (Address $address) {
-                        return $address->pivot->is_default;
-                    })
-                    ->modelKeys();
-
-                $contactPivots = $primaryAccount->contacts
-                    ->filter(function (Contact $contact) {
-                        return $contact->pivot->is_default;
-                    })
-                    ->modelKeys();
-
-                $this->connection->transaction(function () use ($activeQuoteVersion, $distributorQuotes, $contactPivots, $addressPivots, $opportunity, $primaryAccount) {
-                    if (!empty($addressPivots)) {
-                        $activeQuoteVersion->addresses()->syncWithoutDetaching($addressPivots);
-                    }
-
-                    if (!empty($contactPivots)) {
-                        $activeQuoteVersion->contacts()->syncWithoutDetaching($contactPivots);
-                    }
-
-                    foreach ($distributorQuotes as $distributorQuote) {
-
-                        if (!empty($addressPivots)) {
-                            $distributorQuote->addresses()->syncWithoutDetaching($addressPivots);
-                        }
-
-                        if (!empty($contactPivots)) {
-                            $distributorQuote->contacts()->syncWithoutDetaching($contactPivots);
-                        }
-
-                    }
-                });
-            });
 
             $this->busDispatcher->dispatch(
                 new IndexSearchableEntity($quote)
@@ -261,6 +225,221 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                 new WorldwideQuoteInitialized($quote, $this->actingUser)
             );
         });
+    }
+
+    protected function initializePackQuoteAssetsFromPrimaryAccountAssets(WorldwideQuoteVersion $quoteVersion): void
+    {
+        /** @var Company|null $primaryAccount */
+        $primaryAccount = $quoteVersion->worldwideQuote->opportunity?->primaryAccount;
+
+        if (is_null($primaryAccount)) {
+            return;
+        }
+
+        $quotesRelationship = $primaryAccount->worldwideQuotes();
+        $quoteModel = new WorldwideQuote();
+
+        /** @var WorldwideQuote[] $quotesOfPrimaryAccount */
+        $quotesOfPrimaryAccount = $quotesRelationship
+            ->select([
+                $quoteModel->getQualifiedKeyName(),
+                $quoteModel->activeVersion()->getQualifiedForeignKeyName(),
+                $quoteModel->qualifyColumn('contract_type_id'),
+            ])
+            ->whereKeyNot($quoteVersion->worldwideQuote()->getParentKey())
+            ->get();
+
+        /** @var GenericAssetData[] $genericAssets */
+        $genericAssets = [];
+
+        foreach ($quotesOfPrimaryAccount as $quote) {
+
+            foreach ($quote->versions as $version) {
+
+                $genericAssets = array_merge($genericAssets, $this->collectGenericAssetDataFromQuoteVersion($version));
+
+            }
+
+        }
+
+        $genericAssetDictionary = [];
+
+        $genericAssetKeyHasher = function (GenericAssetData $genericAsset): string {
+            return md5(implode('::', [$genericAsset->vendor_reference, $genericAsset->sku, $genericAsset->serial_no]));
+        };
+
+        foreach ($genericAssets as $genericAsset) {
+
+            $assetHash = $genericAssetKeyHasher($genericAsset);
+
+            if (false === isset($genericAssetDictionary[$assetHash])) {
+                $genericAssetDictionary[$assetHash] = $genericAsset;
+            }
+
+        }
+
+        $newPackAssetBatch = [];
+
+        $packAssetEntityMapper = function (GenericAssetData $assetData, WorldwideQuoteVersion $quoteVersion): WorldwideQuoteAsset {
+            static $vendorsCache = [];
+
+            $vendorKey = $vendorsCache[$assetData->vendor_reference] ??= Vendor::query()->where('short_code', $assetData->vendor_reference)->value('id');
+
+            return tap(new WorldwideQuoteAsset(), function (WorldwideQuoteAsset $quoteAsset) use ($vendorKey, $assetData, $quoteVersion) {
+                $quoteAsset->{$quoteAsset->getKeyName()} = (string)Uuid::generate(4);
+                $quoteAsset->worldwideQuote()->associate($quoteVersion);
+
+                $quoteAsset->vendor()->associate($vendorKey);
+                $quoteAsset->serial_no = $assetData->serial_no;
+                $quoteAsset->sku = $assetData->sku;
+                $quoteAsset->product_name = $assetData->product_description;
+            });
+        };
+
+        foreach ($genericAssetDictionary as $genericAsset) {
+
+            $newPackAssetBatch[] = $packAssetEntityMapper($genericAsset, $quoteVersion)->getAttributes();
+
+        }
+
+        if (empty($newPackAssetBatch)) {
+            return;
+        }
+
+        $this->connection->transaction(function () use ($newPackAssetBatch) {
+
+            WorldwideQuoteAsset::query()->insert($newPackAssetBatch);
+
+        });
+    }
+
+    /**
+     * @param WorldwideQuoteVersion $quoteVersion
+     * @return GenericAssetData[]
+     */
+    protected function collectGenericAssetDataFromQuoteVersion(WorldwideQuoteVersion $quoteVersion): array
+    {
+        $genericAssets = [];
+
+        $vendorModel = new Vendor();
+        $packAssetModel = $quoteVersion->assets()->getRelated();
+
+        $packAssetsOfVersion = $quoteVersion->assets()->getQuery()
+            ->join($vendorModel->getTable(), function (JoinClause $join) use ($packAssetModel, $quoteVersion, $vendorModel) {
+                $join->on($vendorModel->getQualifiedKeyName(), $packAssetModel->qualifyColumn('vendor_id'))
+                    ->whereNull($vendorModel->getQualifiedDeletedAtColumn());
+            })
+            ->whereNotNull('serial_no')
+            ->whereNotNull('sku')
+            ->select([
+                $packAssetModel->getQualifiedKeyName(),
+                $packAssetModel->qualifyColumn('serial_no'),
+                $packAssetModel->qualifyColumn('sku'),
+                $packAssetModel->qualifyColumn('product_name'),
+                "{$vendorModel->qualifyColumn('short_code')} as vendor_short_code",
+            ])
+            ->get();
+
+        foreach ($packAssetsOfVersion as $asset) {
+
+            $genericAssets[] = new GenericAssetData([
+                'vendor_reference' => $asset->vendor_short_code,
+                'serial_no' => $asset->serial_no,
+                'sku' => $asset->sku,
+                'product_description' => $asset->product_name,
+            ]);
+
+        }
+
+        /** @var WorldwideDistribution[] $distributorQuotes */
+        $distributorQuotes = $quoteVersion->worldwideDistributions()
+            ->whereHas('vendors')
+            ->get();
+
+        foreach ($distributorQuotes as $distributorQuote) {
+
+            $contractAssetModel = $distributorQuote->mappedRows()->getRelated();
+
+            $contractAssets = $distributorQuote->mappedRows()->getQuery()
+                ->whereNotNull('serial_no')
+                ->whereNotNull('product_no')
+                ->select([
+                    $contractAssetModel->getQualifiedKeyName(),
+                    $contractAssetModel->qualifyColumn('serial_no'),
+                    $contractAssetModel->qualifyColumn('product_no'),
+                    $contractAssetModel->qualifyColumn('description'),
+                ])
+                ->get();
+
+            foreach ($contractAssets as $mappedRow) {
+
+                /** @var MappedRow $mappedRow */
+
+                $genericAssets[] = new GenericAssetData([
+                    'vendor_reference' => $distributorQuote->vendors[0]->short_code,
+                    'serial_no' => $mappedRow->serial_no,
+                    'sku' => $mappedRow->product_no,
+                    'product_description' => $mappedRow->description,
+                ]);
+
+            }
+
+        }
+
+        return $genericAssets;
+    }
+
+    protected function syncQuoteWithPrimaryAccountAddressesAndContacts(WorldwideQuoteVersion $quoteVersion): void
+    {
+        $primaryAccount = $quoteVersion->worldwideQuote->opportunity?->primaryAccount;
+
+        if (is_null($primaryAccount)) {
+            return;
+        }
+
+        $addressPivots = $primaryAccount->addresses
+            ->filter(function (Address $address) {
+                return $address->pivot->is_default;
+            })
+            ->modelKeys();
+
+        $contactPivots = $primaryAccount->contacts
+            ->filter(function (Contact $contact) {
+                return $contact->pivot->is_default;
+            })
+            ->modelKeys();
+
+        $quoteLock = $this->lockProvider->lock(Lock::UPDATE_WWQUOTE($quoteVersion->getKey()), 10);
+
+        $distributorQuotes = $quoteVersion->worldwideDistributions;
+
+        $quoteLock->block(30, function () use ($quoteVersion, $distributorQuotes, $contactPivots, $addressPivots, $primaryAccount) {
+
+            $this->connection->transaction(function () use ($quoteVersion, $distributorQuotes, $contactPivots, $addressPivots, $primaryAccount) {
+                if (!empty($addressPivots)) {
+                    $quoteVersion->addresses()->syncWithoutDetaching($addressPivots);
+                }
+
+                if (!empty($contactPivots)) {
+                    $quoteVersion->contacts()->syncWithoutDetaching($contactPivots);
+                }
+
+                foreach ($distributorQuotes as $distributorQuote) {
+
+                    if (!empty($addressPivots)) {
+                        $distributorQuote->addresses()->syncWithoutDetaching($addressPivots);
+                    }
+
+                    if (!empty($contactPivots)) {
+                        $distributorQuote->contacts()->syncWithoutDetaching($contactPivots);
+                    }
+
+                }
+            });
+
+        });
+
+
     }
 
     protected function assignNewQuoteNumber(WorldwideQuote $quote): void

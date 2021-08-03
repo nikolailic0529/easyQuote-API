@@ -3,12 +3,21 @@
 namespace Tests\Feature;
 
 use App\Models\Address;
+use App\Models\Asset;
 use App\Models\Company;
+use App\Models\CompanyNote;
 use App\Models\Contact;
+use App\Models\Customer\Customer;
+use App\Models\Opportunity;
+use App\Models\Quote\Quote;
+use App\Models\Quote\QuoteNote;
+use App\Models\Quote\WorldwideQuote;
+use App\Models\Quote\WorldwideQuoteNote;
+use App\Models\SalesOrder;
 use App\Models\Vendor;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\{Arr, Str};
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\{Arr, Str};
 use Tests\TestCase;
 use Tests\Unit\Traits\{AssertsListing, WithFakeUser};
 
@@ -26,11 +35,60 @@ class CompanyTest extends TestCase
      */
     public function testCanViewPaginatedCompaniesListing()
     {
-        $response = $this->getJson(url('api/companies'));
+        $this->getJson('api/companies')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id',
+                        'default_vendor_id',
+                        'default_country_id',
+                        'default_template_id',
+                        'is_system',
+                        'name',
+                        'short_code',
+                        'type',
+                        'category',
+                        'source',
+                        'source_long',
+                        'vat',
+                        'email',
+                        'phone',
+                        'website',
+                        'logo',
+                        'total_quoted_value',
+                        'created_at',
+                        'activated_at',
+                    ],
+                ],
+                'current_page',
+                'first_page_url',
+                'from',
+                'last_page',
+                'last_page_url',
+                'links',
+                'next_page_url',
+                'path',
+                'per_page',
+                'prev_page_url',
+                'to',
+                'total',
+                'meta' => [
+                    'current_page',
+                    'from',
+                    'last_page',
+                    'links',
+                    'path',
+                    'per_page',
+                    'to',
+                    'total',
+                ],
+            ]);
 
-        $this->assertListing($response);
 
-        $query = http_build_query([
+        $query = Arr::query([
             'search' => Str::random(10),
             'order_by_created_at' => 'asc',
             'order_by_name' => 'asc',
@@ -41,7 +99,8 @@ class CompanyTest extends TestCase
             'order_by_category' => 'asc',
         ]);
 
-        $this->getJson(url('api/companies?'.$query))->assertOk();
+        $this->getJson('api/companies?'.$query)
+            ->assertOk();
     }
 
     /**
@@ -73,7 +132,7 @@ class CompanyTest extends TestCase
         $this->postJson(url('api/companies'), $attributes)
             ->assertStatus(422)
             ->assertJsonStructure([
-                'Error' => ['original' => ['vat']]
+                'Error' => ['original' => ['vat']],
             ]);
     }
 
@@ -101,7 +160,7 @@ class CompanyTest extends TestCase
 
         $newAttributes['contacts'] = [
             ['id' => $contact1->getKey(), 'is_default' => "1"],
-            ['id' => $contact2->getKey(), 'is_default' => "0"]
+            ['id' => $contact2->getKey(), 'is_default' => "0"],
         ];
 
         $newAttributes['logo'] = UploadedFile::fake()->createWithContent('company-logo.jpg', file_get_contents(base_path('tests/Feature/Data/images/epd.png')));
@@ -122,15 +181,15 @@ class CompanyTest extends TestCase
                 'addresses' => [
                     '*' => [
                         'id',
-                        'is_default'
-                    ]
+                        'is_default',
+                    ],
                 ],
                 'contacts' => [
                     '*' => [
                         'id',
-                        'is_default'
-                    ]
-                ]
+                        'is_default',
+                    ],
+                ],
             ]);
 
         $response = $this->getJson('api/companies/'.$company->getKey())
@@ -140,15 +199,15 @@ class CompanyTest extends TestCase
                 'addresses' => [
                     '*' => [
                         'id',
-                        'is_default'
-                    ]
+                        'is_default',
+                    ],
                 ],
                 'contacts' => [
                     '*' => [
                         'id',
-                        'is_default'
-                    ]
-                ]
+                        'is_default',
+                    ],
+                ],
             ]);
 
         $machineAddressFromResponse = Arr::first($response->json('addresses'), fn(array $address) => $address['id'] === $machineAddress->getKey());
@@ -193,7 +252,7 @@ class CompanyTest extends TestCase
                 'mobile',
                 'email',
                 'job_title',
-                'is_verified'
+                'is_verified',
             ]);
 
         $response = $this->getJson('api/companies/'.$company->getKey())
@@ -210,9 +269,9 @@ class CompanyTest extends TestCase
                         'mobile',
                         'email',
                         'job_title',
-                        'is_verified'
-                    ]
-                ]
+                        'is_verified',
+                    ],
+                ],
             ])
             ->assertOk();
 
@@ -247,7 +306,7 @@ class CompanyTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'activated_at'
+                'activated_at',
             ]);
 
         $this->assertEmpty($response->json('activated_at'));
@@ -260,7 +319,7 @@ class CompanyTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'activated_at'
+                'activated_at',
             ]);
 
         $this->assertNotEmpty($response->json('activated_at'));
@@ -289,7 +348,7 @@ class CompanyTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'activated_at'
+                'activated_at',
             ]);
 
         $this->assertNotEmpty($response->json('activated_at'));
@@ -302,7 +361,7 @@ class CompanyTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'activated_at'
+                'activated_at',
             ]);
 
         $this->assertEmpty($response->json('activated_at'));
@@ -338,7 +397,7 @@ class CompanyTest extends TestCase
         $this->deleteJson("api/companies/".$systemCompany->getKey(), [])
             ->assertForbidden()
             ->assertJsonFragment([
-                'message' => CPSD_01
+                'message' => CPSD_01,
             ]);
     }
 
@@ -353,7 +412,7 @@ class CompanyTest extends TestCase
         $company->vendors()->sync($vendor = factory(Vendor::class)->create());
 
         $attributes = factory(Company::class)->raw([
-            'default_vendor_id' => $vendor->getKey()
+            'default_vendor_id' => $vendor->getKey(),
         ]);
 
         $response = $this->patchJson("api/companies/{$company->getKey()}", $attributes)
@@ -391,7 +450,7 @@ class CompanyTest extends TestCase
     {
         /** @var Company $company */
         $company = factory(Company::class)->create([
-            'short_code' => Str::random(3)
+            'short_code' => Str::random(3),
         ]);
 
         $company->vendors()->sync($vendor = factory(Vendor::class)->create());
@@ -401,9 +460,9 @@ class CompanyTest extends TestCase
             ->assertJsonStructure([
                 'companies' => [
                     '*' => [
-                        'id', 'short_code'
-                    ]
-                ]
+                        'id', 'short_code',
+                    ],
+                ],
             ]);
 
         $this->assertEquals($company->getKey(), $response->json('companies.0.id'));
@@ -425,7 +484,7 @@ class CompanyTest extends TestCase
         $attributes = factory(Company::class)->raw([
             'vendors' => [$vendor->getKey()],
             'default_vendor_id' => $vendor->getKey(),
-            'default_country_id' => $country->getKey()
+            'default_country_id' => $country->getKey(),
         ]);
 
         $this->patchJson('api/companies/'.$company->getKey(), $attributes)
@@ -455,7 +514,7 @@ class CompanyTest extends TestCase
         $attributes = factory(Company::class)->raw([
             'vendors' => [$vendor->getKey()],
             'default_vendor_id' => $vendor->getKey(),
-            'default_country_id' => $country->getKey()
+            'default_country_id' => $country->getKey(),
         ]);
 
         $this->patchJson('api/companies/'.$company->getKey(), $attributes)
@@ -479,5 +538,299 @@ class CompanyTest extends TestCase
         $this->assertIsArray($vendorFromResponse, "Company ID: {$company->getKey()}, Default Vendor ID: {$vendor->getKey()}");
 
         $this->assertEquals($country->getKey(), $vendorFromResponse['countries'][0]['id']);
+    }
+
+    /**
+     * Test an ability to view a list of existing opportunities of the specified company.
+     *
+     * @return void
+     */
+    public function testCanViewListOfOpportunitiesOfCompany()
+    {
+        $company = factory(Company::class)->create();
+
+        factory(Opportunity::class, 10)->create([
+            'primary_account_id' => $company->getKey(),
+        ]);
+
+        $response = $this->getJson('api/companies/'.$company->getKey().'/opportunities')
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'company_id',
+                        'opportunity_type',
+                        'account_name',
+                        'account_manager_name',
+                        'project_name',
+                        'opportunity_amount',
+                        'opportunity_start_date',
+                        'opportunity_end_date',
+                        'opportunity_closing_date',
+                        'sale_action_name',
+                        'status',
+                        'status_reason',
+                        'created_at',
+                    ],
+                ],
+            ]);
+
+        $this->assertNotEmpty($response->json('data'));
+    }
+
+    /**
+     * Test an ability to view a list of existing quotes of the specified company.
+     *
+     * @return void
+     */
+    public function testCanViewListOfQuotesOfCompany()
+    {
+        /** @var Company $company */
+        $company = factory(Company::class)->create();
+
+        /** @var Customer $rescueCustomer */
+        $rescueCustomer = factory(Customer::class)->create([
+            'company_reference_id' => $company->getKey(),
+            'name' => $company->name,
+        ]);
+
+        $rescueQuote = factory(Quote::class)->create([
+            'customer_id' => $rescueCustomer->getKey(),
+        ]);
+
+        // Rescue Quote entity of another Customer.
+        factory(Quote::class)->create();
+
+        $worldwideOpportunity = factory(Opportunity::class)->create([
+            'primary_account_id' => $company->getKey(),
+        ]);
+
+        $worldwideQuote = factory(WorldwideQuote::class)->create([
+            'opportunity_id' => $worldwideOpportunity->getKey(),
+        ]);
+
+        // Worldwide Quote entity of another Customer.
+        factory(WorldwideQuote::class)->create();
+
+        $response = $this->getJson('api/companies/'.$company->getKey().'/quotes')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id',
+                        'business_division',
+                        'contract_type',
+                        'opportunity_id',
+                        'customer_id',
+                        'customer_name',
+                        'company_name',
+                        'rfq_number',
+                        'updated_at',
+                        'activated_at',
+                        'is_active',
+
+                        'active_version_id',
+
+                        'has_distributor_files',
+                        'has_schedule_files',
+
+                        'sales_order_id',
+                        'has_sales_order',
+                        'sales_order_submitted',
+                        'contract_id',
+                        'has_contract',
+                        'contract_submitted_at',
+
+                        'permissions' => [
+                            'view',
+                            'update',
+                            'delete',
+                        ],
+                    ],
+                ],
+            ]);
+
+        $this->assertNotEmpty($response->json('data'));
+        $this->assertContains($rescueQuote->getKey(), $response->json('data.*.id'));
+        $this->assertContains($worldwideQuote->getKey(), $response->json('data.*.id'));
+    }
+
+    /**
+     * Test an ability to view a list of existing sales orders of the specified company.
+     *
+     * @return void
+     */
+    public function testCanViewListOfSalesOrdersOfCompany()
+    {
+        $company = factory(Company::class)->create();
+
+        /** @var SalesOrder $salesOrderOfCustomer */
+        $salesOrderOfCustomer = factory(SalesOrder::class)->create();
+
+        $salesOrderOfCustomer->worldwideQuote->opportunity->update([
+            'primary_account_id' => $company->getKey(),
+        ]);
+
+        /** @var SalesOrder $salesOrderOfAnotherCustomer */
+        $salesOrderOfAnotherCustomer = factory(SalesOrder::class)->create();
+
+        $response = $this->getJson('api/companies/'.$company->getKey().'/sales-orders')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id',
+                        'contract_type_id',
+                        'worldwide_quote_id',
+                        'opportunity_id',
+                        'order_number',
+                        'order_date',
+                        'status',
+                        'failure_reason',
+                        'status_reason',
+                        'customer_name',
+                        'rfq_number',
+                        'order_type',
+                        'permissions' => [
+                            'view',
+                            'update',
+                            'delete',
+                        ],
+                        'created_at',
+                        'updated_at',
+                        'submitted_at',
+                        'activated_at',
+                    ],
+                ],
+            ]);
+
+        $this->assertNotEmpty($response->json('data'));
+        $this->assertContains($salesOrderOfCustomer->getKey(), $response->json('data.*.id'));
+    }
+
+    /**
+     * Test an ability to view a list of existing unified notes of the specified company.
+     *
+     * @return void
+     */
+    public function testCanViewListOfUnifiedNotesOfCompany()
+    {
+        /** @var Company $company */
+        $company = factory(Company::class)->create();
+
+        /** @var Customer $rescueCustomer */
+        $rescueCustomer = factory(Customer::class)->create([
+            'company_reference_id' => $company->getKey(),
+            'name' => $company->name,
+        ]);
+
+        /** @var Quote $rescueQuote */
+        $rescueQuote = factory(Quote::class)->create([
+            'customer_id' => $rescueCustomer->getKey(),
+        ]);
+
+        $rescueQuoteNote = factory(QuoteNote::class)->create([
+            'quote_id' => $rescueQuote->getKey(),
+        ]);
+
+        $worldwideOpportunity = factory(Opportunity::class)->create([
+            'primary_account_id' => $company->getKey(),
+        ]);
+
+        /** @var WorldwideQuote $worldwideQuote */
+        $worldwideQuote = factory(WorldwideQuote::class)->create([
+            'opportunity_id' => $worldwideOpportunity->getKey(),
+        ]);
+
+        $worldwideQuoteNote = factory(WorldwideQuoteNote::class)->create([
+            'worldwide_quote_id' => $worldwideQuote->getKey(),
+        ]);
+
+        $companyNote = factory(CompanyNote::class)->create([
+            'company_id' => $company->getKey(),
+        ]);
+
+        $response = $this->getJson('api/companies/'.$company->getKey().'/notes')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'note_entity_type',
+                        'note_entity_class',
+                        'quote_id',
+                        'customer_id',
+                        'quote_number',
+                        'text',
+                        'owner_user_id',
+                        'owner_fullname',
+                        'permissions' => [
+                            'update',
+                            'delete',
+                        ],
+                        'created_at',
+                    ],
+                ],
+            ]);
+
+        $this->assertNotEmpty($response->json('data'));
+        $this->assertContains($rescueQuoteNote->getKey(), $response->json('data.*.id'));
+        $this->assertContains($worldwideQuoteNote->getKey(), $response->json('data.*.id'));
+        $this->assertContains($companyNote->getKey(), $response->json('data.*.id'));
+        $this->assertContains($rescueQuote->customer->rfq, $response->json('data.*.quote_number'));
+        $this->assertContains($worldwideQuote->quote_number, $response->json('data.*.quote_number'));
+    }
+
+    /**
+     * Test an ability to view a list of existing assets of the specified company.
+     *
+     * @return void
+     */
+    public function testCanViewListOfAssetsOfCompany()
+    {
+        /** @var Company $company */
+        $company = factory(Company::class)->create();
+
+        /** @var Asset $companyAsset */
+        $companyAsset = factory(Asset::class)->create();
+
+        $company->assets()->attach($companyAsset);
+
+        $anotherAsset = factory(Asset::class)->create();
+
+        $response = $this->getJson('api/companies/'.$company->getKey().'/assets')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'product_number',
+                        'serial_number',
+                        'product_image',
+                        'asset_category_name',
+                        'base_warranty_start_date',
+                        'base_warranty_end_date',
+                        'active_warranty_start_date',
+                        'active_warranty_end_date',
+                        'created_at',
+                        'permissions' => [
+                            'view',
+                            'update',
+                            'delete',
+                        ],
+                    ],
+                ],
+            ]);
+
+        $this->assertNotEmpty($response->json('data'));
+        $this->assertCount(1, $response->json('data'));
+        $this->assertContains($companyAsset->getKey(), $response->json('data.*.id'));
     }
 }

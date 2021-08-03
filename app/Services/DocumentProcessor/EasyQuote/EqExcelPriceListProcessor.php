@@ -32,7 +32,7 @@ class EqExcelPriceListProcessor implements ProcessesQuoteFile
      * @throws \Box\Spout\Reader\Exception\ReaderNotOpenedException
      * @throws \Throwable
      */
-    public function process(QuoteFile $quoteFile)
+    public function process(QuoteFile $quoteFile): void
     {
         $rows = (new ExcelPriceListReader())->readFile(Storage::path($quoteFile->original_file_path));
 

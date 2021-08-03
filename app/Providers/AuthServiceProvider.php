@@ -6,6 +6,7 @@ use App\Models\Address;
 use App\Models\Asset;
 use App\Models\Collaboration\Invitation;
 use App\Models\Company;
+use App\Models\CompanyNote;
 use App\Models\Contact;
 use App\Models\Customer\Customer;
 use App\Models\Data\Country;
@@ -39,6 +40,7 @@ use App\Models\Vendor;
 use App\Policies\ActivityPolicy;
 use App\Policies\AddressPolicy;
 use App\Policies\AssetPolicy;
+use App\Policies\CompanyNotePolicy;
 use App\Policies\CompanyPolicy;
 use App\Policies\ContactPolicy;
 use App\Policies\ContractPolicy;
@@ -98,6 +100,7 @@ class AuthServiceProvider extends ServiceProvider
         SalesOrderTemplate::class       => SalesOrderTemplatePolicy::class,
 
         Company::class                  => CompanyPolicy::class,
+        CompanyNote::class              => CompanyNotePolicy::class,
         Vendor::class                   => VendorPolicy::class,
 
         SND::class                      => SNDPolicy::class,

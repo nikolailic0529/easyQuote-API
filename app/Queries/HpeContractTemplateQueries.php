@@ -10,7 +10,6 @@ use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use Illuminate\Pipeline\Pipeline;
-use Illuminate\Support\Str;
 
 class HpeContractTemplateQueries
 {
@@ -51,9 +50,11 @@ class HpeContractTemplateQueries
         if (filled($searchQuery = $request->query('search'))) {
             $hits = rescue(function () use ($searchQuery) {
                 return $this->elasticsearch->search(
-                    (new ElasticsearchQuery)
+                    ElasticsearchQuery::new()
                         ->modelIndex(new HpeContractTemplate())
-                        ->queryString(Str::of($searchQuery)->start('*')->finish('*'))
+                        ->queryString($searchQuery)
+                        ->escapeQueryString()
+                        ->wrapQueryString()
                         ->toArray()
                 );
             });

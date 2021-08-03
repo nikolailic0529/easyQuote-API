@@ -295,13 +295,35 @@ class WorldwideQuoteDataMapper
     {
         $templateSchema = $quote->activeVersion->quoteTemplate->form_data;
 
-        return new TemplateData([
+        return tap(new TemplateData([
             'first_page_schema' => $this->templatePageSchemaToArrayOfTemplateElement($templateSchema['first_page'] ?? []),
             'assets_page_schema' => $this->templatePageSchemaToArrayOfTemplateElement($templateSchema['data_pages'] ?? []),
             'payment_schedule_page_schema' => $this->templatePageSchemaToArrayOfTemplateElement($templateSchema['payment_schedule'] ?? []),
             'last_page_schema' => $this->templatePageSchemaToArrayOfTemplateElement($templateSchema['last_page'] ?? []),
             'template_assets' => $this->getTemplateAssets($quote, $useLocalAssets),
-        ]);
+        ]), function (TemplateData $templateData) {
+
+            foreach ($templateData->first_page_schema as $templateElement) {
+
+                foreach ($templateElement->children as $templateElementChild) {
+
+                    foreach ($templateElementChild->controls as $templateElementChildControl) {
+
+                        if ($templateElementChildControl->id === 'list_price') {
+
+                            $templateElement->children = [];
+
+                            continue 3;
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        });
     }
 
     /**
@@ -1214,6 +1236,10 @@ class WorldwideQuoteDataMapper
     private function getQuoteDataAggregationFields(QuoteTemplate $quoteTemplate): array
     {
         $fields = static::getClassPublicProperties(DistributionSummary::class);
+
+        $fields = array_values(
+            array_filter($fields, fn (string $fieldName) => !in_array($fieldName, ['duration'], true))
+        );
 
         return array_map(function (string $fieldName) use ($quoteTemplate) {
 

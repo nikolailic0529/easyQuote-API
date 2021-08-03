@@ -81,7 +81,7 @@ class MappedRows extends Collection
 
     protected function countHeaders($items): int
     {
-        return count(Arr::except($this->getArrayableItems($items), ['id', 'is_selected', 'group_name']));
+        return count(Arr::except($this->getArrayableItems($items), ['id', 'replicated_row_id', 'is_selected', 'group_name']));
     }
 
     protected function isGrouped(): bool
