@@ -3,8 +3,10 @@
 namespace App\Queries;
 
 use App\Models\Quote\BaseQuote;
+use App\Models\Quote\Quote;
 use App\Models\Template\TemplateField;
 use App\Repositories\Concerns\ManagesSchemalessAttributes;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Support\Facades\DB;
@@ -169,5 +171,15 @@ class QuoteQueries
         );
 
         return $query;
+    }
+
+    public function quoteByRfqNumberQuery(string $rfqNumber): Builder
+    {
+        return Quote::query()
+            ->whereNotNull('submitted_at')
+            ->whereNotNull('activated_at')
+            ->whereHas('customer', function (Builder $builder) use ($rfqNumber) {
+                $builder->where('rfq', $rfqNumber);
+            });
     }
 }

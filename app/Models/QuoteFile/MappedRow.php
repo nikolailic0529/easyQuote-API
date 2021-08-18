@@ -28,8 +28,6 @@ class MappedRow extends Model
 {
     use Uuid;
 
-    public $timestamps = false;
-
     protected $guarded = [];
 
     protected $casts = [

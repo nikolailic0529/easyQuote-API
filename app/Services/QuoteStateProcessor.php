@@ -3,12 +3,13 @@
 namespace App\Services;
 
 use App\Collections\MappedRows;
-use App\Events\RescueQuote\RescueQuoteSubmitted;
-use App\Contracts\{Services\QuoteState, Services\QuoteView as QuoteService,};
+use JetBrains\PhpStorm\ArrayShape;
+use App\Contracts\{Services\ManagesDocumentProcessors, Services\QuoteState, Services\QuoteView as QuoteService};
 use App\Contracts\Repositories\{QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository};
 use App\DTO\RowsGroup;
 use App\Enum\Lock;
 use App\Events\RescueQuote\RescueQuoteCreated;
+use App\Events\RescueQuote\RescueQuoteSubmitted;
 use App\Events\RescueQuote\RescueQuoteUnravelled;
 use App\Events\RescueQuote\RescueQuoteUpdated;
 use App\Http\Requests\{Quote\StoreQuoteStateRequest,};
@@ -18,8 +19,12 @@ use App\Jobs\MigrateQuoteAssets;
 use App\Jobs\RetrievePriceAttributes;
 use App\Models\{Quote\BaseQuote,
     Quote\Discount as MorphDiscount,
+    Quote\DistributionFieldColumn,
+    Quote\FieldColumn,
     Quote\Margin\CountryMargin,
     Quote\Quote,
+    Quote\QuoteVersionFieldColumn,
+    QuoteFile\ImportedRow,
     QuoteFile\QuoteFile,
     User};
 use App\Models\Quote\QuoteVersion;
@@ -34,6 +39,7 @@ use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\{Arr, Facades\DB, Str};
 use Illuminate\Support\Collection;
 use Throwable;
@@ -42,37 +48,17 @@ class QuoteStateProcessor implements QuoteState
 {
     use ResolvesImplicitModel, ResolvesTargetModel, ManagesGroupDescription, ManagesSchemalessAttributes;
 
-    protected ConnectionInterface $connection;
-
-    protected LockProvider $lockProvider;
-
-    protected EventDispatcher $eventDispatcher;
-
-    protected BusDispatcher $busDispatcher;
-
-    protected QuoteService $quoteService;
-
-    protected QuoteFileRepository $quoteFileRepository;
-
-    protected QuoteQueries $quoteQueries;
-
     public function __construct(
-        ConnectionInterface $connection,
-        LockProvider $lockProvider,
-        EventDispatcher $eventDispatcher,
-        BusDispatcher $busDispatcher,
-        QuoteService $quoteService,
-        QuoteFileRepository $quoteFileRepository,
-        QuoteQueries $quoteQueries
+        protected ConnectionInterface       $connection,
+        protected LockProvider              $lockProvider,
+        protected EventDispatcher           $eventDispatcher,
+        protected BusDispatcher             $busDispatcher,
+        protected QuoteService              $quoteService,
+        protected QuoteFileRepository       $quoteFileRepository,
+        protected QuoteQueries              $quoteQueries,
+        protected ManagesDocumentProcessors $documentProcessor,
     )
     {
-        $this->connection = $connection;
-        $this->lockProvider = $lockProvider;
-        $this->eventDispatcher = $eventDispatcher;
-        $this->busDispatcher = $busDispatcher;
-        $this->quoteFileRepository = $quoteFileRepository;
-        $this->quoteService = $quoteService;
-        $this->quoteQueries = $quoteQueries;
     }
 
     /**
@@ -80,10 +66,9 @@ class QuoteStateProcessor implements QuoteState
      * @return array
      * @throws Throwable
      */
+    #[ArrayShape(['id' => "string"])]
     public function storeState(StoreQuoteStateRequest $request): array
     {
-        $lock = null;
-
         $quote = $request->getQuote();
 
         $newQuote = false === $quote->exists;
@@ -170,6 +155,165 @@ class QuoteStateProcessor implements QuoteState
         } finally {
             $lock->release();
         }
+    }
+
+    #[ArrayShape(['status' => "string"])]
+    public function processQuoteFileImport(Quote     $quote,
+                                           QuoteFile $quoteFile,
+                                           ?int      $importablePageNumber = null,
+                                           ?string   $dataSeparatorReference = null): mixed
+    {
+        $this->ensureQuoteFileProcessed(
+            quote: $quote,
+            quoteFile: $quoteFile,
+            importablePageNumber: $importablePageNumber
+        );
+
+        $quoteFile->throwExceptionIfExists();
+
+        if ($quoteFile->isPrice() && false === $quoteFile->mappingWasGuessed()) {
+            $this->guessQuoteMapping($quote);
+
+            $this->busDispatcher->dispatch(
+                new RetrievePriceAttributes($quote->activeVersionOrCurrent)
+            );
+        }
+
+        return [
+            'status' => 'completed',
+        ];
+    }
+
+    protected function ensureQuoteFileProcessed(Quote     $quote,
+                                                QuoteFile $quoteFile,
+                                                ?int      $importablePageNumber = null,
+                                                ?string   $dataSeparatorReference = null): bool
+    {
+        $shouldProcess = value(function () use ($quoteFile): bool {
+
+            if ($quoteFile->hasException()) {
+                return false;
+            }
+
+            return true;
+
+        });
+
+        if (false === $shouldProcess) {
+            return false;
+        }
+
+        $version = $quote->activeVersionOrCurrent;
+
+        $this->lockProvider
+            ->lock(Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()), 10)
+            ->block(30, function () use ($version, $quoteFile, $importablePageNumber) {
+                if (false === is_null($importablePageNumber)) {
+                    $quoteFile->setImportedPage($importablePageNumber);
+                }
+
+                $quoteFile->clearException();
+
+                if ($quoteFile->isPrice()) {
+                    $version->priceList()->associate($quoteFile)->save();
+                    $version->forgetCachedMappingReview();
+                    $version->resetGroupDescription();
+                }
+
+                if ($quoteFile->isSchedule()) {
+                    $version->paymentSchedule()->associate($quoteFile)->save();
+                }
+            });
+
+        $this->documentProcessor->forwardProcessor($quoteFile);
+
+        if ($quoteFile->isPrice() && $quoteFile->rowsData()->where('page', '>=', $quoteFile->imported_page)->doesntExist()) {
+            $quoteFile->setException(QFNRF_02, 'QFNRF_02');
+        }
+
+        if ($quoteFile->isSchedule() && (is_null($quoteFile->scheduleData) || blank($quoteFile->scheduleData->value))) {
+            $quoteFile->setException(QFNS_01, 'QFNS_01');
+        }
+
+        if ($quoteFile->isPrice()) {
+            $this->guessQuoteMapping($quote);
+
+            $this->lockProvider
+                ->lock(Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()), 10)
+                ->block(30, function () use ($quoteFile) {
+                    $quoteFile->automapped_at = now();
+
+                    $this->connection->transaction(fn() => $quoteFile->save());
+                });
+        }
+
+        return true;
+    }
+
+    public function guessQuoteMapping(Quote $quote): void
+    {
+        $activeVersion = $quote->activeVersionOrCurrent;
+
+        /** @var ImportedRow|null $mappingRow */
+        $mappingRow = $activeVersion->firstRow()->first();
+
+        if (is_null($mappingRow) || is_null($mappingRow->columns_data)) {
+            return;
+        }
+
+        $importableColumnKeys = $mappingRow->columns_data->pluck('importable_column_id')->all();
+
+        $possibleMappingsFromBaseQuotes = FieldColumn::query()
+            ->whereIn('importable_column_id', $importableColumnKeys)
+            ->whereNotNull('template_field_id')
+            ->groupBy('template_field_id', 'importable_column_id')
+            ->orderByRaw('count(*) desc')
+            ->select(['template_field_id', 'importable_column_id'])
+            ->get()
+            ->toBase();
+
+        $possibleMappingsFromQuoteVersions = QuoteVersionFieldColumn::query()
+            ->whereIn('importable_column_id', $importableColumnKeys)
+            ->whereNotNull('template_field_id')
+            ->groupBy('template_field_id', 'importable_column_id')
+            ->orderByRaw('count(*) desc')
+            ->select(['template_field_id', 'importable_column_id'])
+            ->get()
+            ->toBase();
+
+        $possibleMappings = $possibleMappingsFromBaseQuotes->merge($possibleMappingsFromQuoteVersions);
+
+        $guessedMapping = [];
+
+        foreach ($importableColumnKeys as $columnKey) {
+
+            /** @var DistributionFieldColumn|null $possibleMapping */
+            $possibleMapping = $possibleMappings->first(function (Model $columnMapping) use ($columnKey) {
+                return $columnMapping->importable_column_id === $columnKey;
+            });
+
+            if (false === is_null($possibleMapping)) {
+                $guessedMapping[$possibleMapping->template_field_id] = [
+                    'importable_column_id' => $columnKey,
+                    'is_default_enabled' => false,
+                    'is_preview_visible' => true,
+                    'default_value' => null,
+                    'sort' => null,
+                ];
+            }
+
+        }
+
+        if (empty($guessedMapping)) {
+            return;
+        }
+
+        $this->lockProvider->lock(Lock::UPDATE_QUOTE($quote->getKey()), 10)
+            ->block(30, function () use ($guessedMapping, $activeVersion) {
+
+                $this->connection->transaction(fn() => $activeVersion->templateFields()->sync($guessedMapping));
+
+            });
     }
 
     public function userQuery(): Builder

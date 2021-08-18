@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Address;
 use App\Models\Asset;
+use App\Models\Attachment;
 use App\Models\Company;
 use App\Models\CompanyNote;
 use App\Models\Contact;
@@ -101,6 +102,55 @@ class CompanyTest extends TestCase
 
         $this->getJson('api/companies?'.$query)
             ->assertOk();
+
+//        $this->getJson('api/companies?'.Arr::query([
+//            'search' => 'Premier Tech Eau et Environnement'
+//            ]))
+//            ->dump();
+    }
+
+    /**
+     * Test an ability to view company form data.
+     *
+     * @return void
+     */
+    public function testCanViewCompanyFormData()
+    {
+        $response = $this->getJson('api/companies/create')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'types',
+                'categories',
+                'sources',
+                'vendors' => [
+                    '*' => [
+                        'id', 'name', 'logo',
+                    ]
+                ]
+            ]);
+
+        foreach ([
+            'Internal', 'External'
+                 ] as $type) {
+            $this->assertContains($type, $response->json('types'));
+        }
+
+        foreach ([
+            'End User',
+            'Reseller',
+            'Business Partner'
+                 ] as $category) {
+            $this->assertContains($category, $response->json('categories'));
+        }
+
+        foreach ([
+            'S4',
+            'EQ',
+            'Pipeliner'
+                 ] as $source) {
+            $this->assertContains($source, $response->json('sources'));
+        }
     }
 
     /**
@@ -112,7 +162,7 @@ class CompanyTest extends TestCase
     {
         $attributes = factory(Company::class)->raw();
 
-        $this->postJson(url('api/companies'), $attributes)
+        $this->postJson('api/companies', $attributes)
 //            ->dump()
             ->assertCreated()
             ->assertJsonStructure(array_keys($attributes));
@@ -129,7 +179,7 @@ class CompanyTest extends TestCase
 
         $attributes = factory(Company::class)->raw(['vat' => $company->vat]);
 
-        $this->postJson(url('api/companies'), $attributes)
+        $this->postJson('api/companies', $attributes)
             ->assertStatus(422)
             ->assertJsonStructure([
                 'Error' => ['original' => ['vat']],
@@ -554,6 +604,7 @@ class CompanyTest extends TestCase
         ]);
 
         $response = $this->getJson('api/companies/'.$company->getKey().'/opportunities')
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 'data' => [
@@ -561,6 +612,7 @@ class CompanyTest extends TestCase
                         'id',
                         'company_id',
                         'opportunity_type',
+                        'status_type',
                         'account_name',
                         'account_manager_name',
                         'project_name',
@@ -643,6 +695,9 @@ class CompanyTest extends TestCase
                         'contract_id',
                         'has_contract',
                         'contract_submitted_at',
+
+                        'status_type',
+                        'submission_status',
 
                         'permissions' => [
                             'view',
@@ -764,6 +819,7 @@ class CompanyTest extends TestCase
                         'id',
                         'note_entity_type',
                         'note_entity_class',
+                        'parent_entity_type',
                         'quote_id',
                         'customer_id',
                         'quote_number',
@@ -832,5 +888,204 @@ class CompanyTest extends TestCase
         $this->assertNotEmpty($response->json('data'));
         $this->assertCount(1, $response->json('data'));
         $this->assertContains($companyAsset->getKey(), $response->json('data.*.id'));
+    }
+
+    /**
+     * Test an ability to view a list of existing attachments of company.
+     *
+     * @return void
+     */
+    public function testCanViewListOfAttachmentsOfCompany()
+    {
+        /** @var Company $company */
+        $company = factory(Company::class)->create();
+
+        $companyAttachments = factory(Attachment::class, 2)->create();
+
+        $company->attachments()->sync($companyAttachments);
+
+        /** @var Customer $rescueCustomer */
+        $rescueCustomer = factory(Customer::class)->create([
+            'company_reference_id' => $company->getKey(),
+            'name' => $company->name,
+        ]);
+
+        /** @var Quote $rescueQuote */
+        $rescueQuote = factory(Quote::class)->create([
+            'customer_id' => $rescueCustomer->getKey(),
+        ]);
+        $rescueQuoteAttachments = factory(Attachment::class, 2)->create();
+        $rescueQuote->attachments()->sync($rescueQuoteAttachments);
+
+
+        /** @var Quote $anotherRescueQuote */
+        $anotherRescueQuote = factory(Quote::class)->create();
+        $anotherRescueQuoteAttachments = factory(Attachment::class, 2)->create();
+        $anotherRescueQuote->attachments()->sync($anotherRescueQuoteAttachments);
+
+
+        $worldwideOpportunity = factory(Opportunity::class)->create([
+            'primary_account_id' => $company->getKey(),
+        ]);
+
+        /** @var WorldwideQuote $worldwideQuote */
+        $worldwideQuote = factory(WorldwideQuote::class)->create([
+            'opportunity_id' => $worldwideOpportunity->getKey(),
+        ]);
+        $worldwideQuoteAttachments = factory(Attachment::class, 2)->create();
+        $worldwideQuote->attachments()->sync($worldwideQuoteAttachments);
+
+
+        /** @var WorldwideQuote $anotherWorldwideQuote */
+        $anotherWorldwideQuote = factory(WorldwideQuote::class)->create();
+        $anotherWorldwideQuoteAttachments = factory(Attachment::class, 2)->create();
+        $anotherWorldwideQuote->attachments()->sync($anotherWorldwideQuoteAttachments);
+
+
+        $response = $this->getJson('api/companies/'.$company->getKey().'/attachments')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'type',
+                        'parent_entity_class',
+                        'parent_entity_type',
+                        'filepath',
+                        'filename',
+                        'extension',
+                        'size',
+                        'created_at',
+                    ],
+                ],
+            ]);
+
+        $response->assertJsonCount(6, 'data');
+        $this->assertCount(2, array_filter($response->json('data'), fn (array $attachment) => $attachment['parent_entity_type'] === 'Company'));
+        $this->assertCount(4, array_filter($response->json('data'), fn (array $attachment) => $attachment['parent_entity_type'] === 'Quote'));
+
+        foreach ($companyAttachments as $attachment) {
+
+            $this->assertContains($attachment->getKey(), $response->json('data.*.id'));
+
+        }
+
+        foreach ($rescueQuoteAttachments as $attachment) {
+
+            $this->assertContains($attachment->getKey(), $response->json('data.*.id'));
+
+        }
+
+        foreach ($worldwideQuoteAttachments as $attachment) {
+
+            $this->assertContains($attachment->getKey(), $response->json('data.*.id'));
+
+        }
+    }
+
+    /**
+     * Test an ability to create a new attachment for company.
+     *
+     * @return void
+     */
+    public function testCanCreateNewAttachmentForCompany()
+    {
+        /** @var Company $company */
+        $company = factory(Company::class)->create();
+
+        $file = UploadedFile::fake()->create(Str::random(40).'.txt', 1_000);
+
+        $response = $this->postJson('api/companies/'.$company->getKey().'/attachments', [
+            'type' => 'Maintenance Contract',
+            'file' => $file,
+        ])
+//            ->dump()
+            ->assertCreated()
+            ->assertJsonStructure([
+                'id',
+                'type',
+                'filepath',
+                'filename',
+                'size',
+                'created_at',
+            ]);
+
+        $attachmentID = $response->json('id');
+
+        $response = $this->getJson('api/companies/'.$company->getKey().'/attachments')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'type',
+                        'filepath',
+                        'filename',
+                        'extension',
+                        'size',
+                        'created_at',
+                    ],
+                ],
+            ]);
+
+        $this->assertContains($attachmentID, $response->json('data.*.id'));
+    }
+
+    /**
+     * Test an ability to delete an existing attachment of company.
+     *
+     * @return void
+     */
+    public function testCanDeleteAttachmentOfCompany()
+    {
+        /** @var Company $company */
+        $company = factory(Company::class)->create();
+
+        $attachment = factory(Attachment::class)->create();
+
+        $company->attachments()->attach($attachment);
+
+        $response = $this->getJson('api/companies/'.$company->getKey().'/attachments')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'type',
+                        'filepath',
+                        'filename',
+                        'extension',
+                        'size',
+                        'created_at',
+                    ],
+                ],
+            ]);
+
+        $this->assertContains($attachment->getKey(), $response->json('data.*.id'));
+
+        $this->deleteJson('api/companies/'.$company->getKey().'/attachments/'.$attachment->getKey())
+            ->assertNoContent();
+
+        $response = $this->getJson('api/companies/'.$company->getKey().'/attachments')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'type',
+                        'filepath',
+                        'filename',
+                        'extension',
+                        'size',
+                        'created_at',
+                    ],
+                ],
+            ]);
+
+        $this->assertEmpty($response->json('data'));
     }
 }

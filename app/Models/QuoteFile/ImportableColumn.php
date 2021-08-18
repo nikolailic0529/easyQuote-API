@@ -2,70 +2,40 @@
 
 namespace App\Models\QuoteFile;
 
-use App\Contracts\{HasOrderedScope, ReindexQuery, SearchableEntity};
+use App\Models\Data\Country;
 use App\Models\Quote\FieldColumn;
-use App\Traits\{Activatable,
-    Activity\LogsActivity,
-    Auth\Multitenantable,
-    BelongsToCountry,
-    BelongsToUser,
-    Search\Searchable,
-    Systemable,
-    Uuid
-};
-use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
-use Illuminate\Database\Eloquent\{Builder, Model, Relations\BelongsTo, Relations\HasMany, SoftDeletes,};
-use Illuminate\Support\Str;
+use App\Models\User;
+use App\Traits\{Auth\Multitenantable, Uuid};
+use Illuminate\Database\Eloquent\{Collection, Model, Relations\BelongsTo, Relations\HasMany, SoftDeletes};
+use DateTimeInterface;
 
 /**
  * Class ImportableColumn
  *
+ * @property string|null $de_header_reference
+ * @property string|null $country_id
  * @property string|null $header
  * @property string|null $name
+ * @property string|null $type
+ * @property int|null $order
  * @property bool|null $is_temp
  * @property bool|null $is_system
+ * @property DateTimeInterface|null $created_at
+ * @property DateTimeInterface|null $updated_at
+ * @property string|null $activated_at
+ *
+ * @property-read Collection<ImportableColumnAlias>|ImportableColumnAlias[] $aliases
+ * @property-read Country|null $country
  */
-class ImportableColumn extends Model implements HasOrderedScope, ReindexQuery, SearchableEntity
+class ImportableColumn extends Model
 {
     use Uuid,
-        BelongsToUser,
-        BelongsToCountry,
         Multitenantable,
-        Systemable,
-        LogsActivity,
-        SoftDeletes,
-        Searchable,
-        Activatable,
-        EloquentJoin;
+        SoftDeletes;
 
     const TYPES = ['text', 'number', 'decimal', 'date'];
 
-    protected $fillable = [
-        'header', 'name', 'order', 'is_temp', 'type', 'country_id', 'is_system'
-    ];
-
-    protected static $logAttributes = [
-        'header', 'type', 'country.name', 'aliases:parsed_aliases'
-    ];
-
-    protected static $logOnlyDirty = true;
-
-    protected static $submitEmptyLogs = false;
-
-    public function scopeOrdered($query)
-    {
-        return $query->orderBy('order');
-    }
-
-    public function scopeRegular(Builder $query): Builder
-    {
-        return $query->where('is_temp', false);
-    }
-
-    public static function reindexQuery(): Builder
-    {
-        return static::regular();
-    }
+    protected $guarded = [];
 
     public function aliases(): HasMany
     {
@@ -77,32 +47,13 @@ class ImportableColumn extends Model implements HasOrderedScope, ReindexQuery, S
         return $this->belongsTo(FieldColumn::class, 'quote_field_column');
     }
 
-    public function setHeaderAttribute($value): void
+    public function country(): BelongsTo
     {
-        $this->attributes['header'] = $value;
-
-        if (!isset($this->attributes['name'])) {
-            $this->attributes['name'] = Str::slug($value, '_');
-        }
+        return $this->belongsTo(Country::class)->withDefault();
     }
 
-    public function getParsedAliasesAttribute(): string
+    public function user(): BelongsTo
     {
-        return $this->aliases->pluck('alias')->implode(', ');
-    }
-
-    public function toSearchArray(): array
-    {
-        return [
-            'header' => $this->header,
-            'type' => $this->type,
-            'country_name' => $this->country->name,
-            'aliases' => $this->aliases->pluck('alias')->toArray()
-        ];
-    }
-
-    public function getItemNameAttribute()
-    {
-        return "Importable Column ({$this->header})";
+        return $this->belongsTo(User::class);
     }
 }

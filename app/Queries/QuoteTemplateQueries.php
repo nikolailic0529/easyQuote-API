@@ -5,33 +5,28 @@ namespace App\Queries;
 use App\Models\Data\Country;
 use App\Models\Template\QuoteTemplate;
 use App\Models\Vendor;
-use App\Services\ElasticsearchQuery;
+use App\Queries\Pipeline\PerformElasticsearchSearch;
+use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
-use Illuminate\Pipeline\Pipeline;
-use Illuminate\Support\Str;
 
 class QuoteTemplateQueries
 {
-    protected Elasticsearch $elasticsearch;
-
-    protected Pipeline $pipeline;
-
-    public function __construct(Elasticsearch $elasticsearch, Pipeline $pipeline)
+    public function __construct(protected Elasticsearch $elasticsearch)
     {
-        $this->elasticsearch = $elasticsearch;
-        $this->pipeline = $pipeline;
     }
 
     public function paginateQuoteTemplatesQuery(?Request $request = null): Builder
     {
         $request ??= new Request();
 
-        $query = QuoteTemplate::query()
+        $model = new QuoteTemplate();
+
+        $query = $model->newQuery()
             ->select([
                 'quote_templates.id',
                 'quote_templates.name',
@@ -59,33 +54,28 @@ class QuoteTemplateQueries
             ])
             ->join('companies', function (JoinClause $join) {
                 $join->on('companies.id', 'quote_templates.company_id');
-            });
+            })
+            ->orderByDesc($model->qualifyColumn('is_active'));
 
-        if (filled($searchQuery = $request->query('search'))) {
-            $hits = rescue(function () use ($searchQuery) {
-                return $this->elasticsearch->search(
-                    ElasticsearchQuery::new()
-                        ->modelIndex(new QuoteTemplate)
-                        ->queryString($searchQuery)
-                        ->escapeQueryString()
-                        ->wrapQueryString()
-                        ->toArray()
-                );
-            });
-
-            $query->whereKey(data_get($hits, 'hits.hits.*._id') ?? []);
-        }
-
-        return $this->pipeline
-            ->send($query)
-            ->through([
-                new \App\Http\Query\ActiveFirst('quote_templates.is_active'),
-                \App\Http\Query\OrderByCreatedAt::class,
-                \App\Http\Query\OrderByName::class,
-                \App\Http\Query\QuoteTemplate\OrderByCompanyName::class,
-                new \App\Http\Query\DefaultOrderBy('quote_templates.created_at'),
+        return RequestQueryBuilder::for(
+            builder: $query,
+            request: $request
+        )
+            ->addCustomBuildQueryPipe(
+                new PerformElasticsearchSearch($this->elasticsearch)
+            )
+            ->allowOrderFields(...[
+                'created_at',
+                'name',
+                'company_name',
             ])
-            ->thenReturn();
+            ->qualifyOrderFields(
+                created_at: $model->getQualifiedCreatedAtColumn(),
+                name: $model->qualifyColumn('name'),
+                company_name: 'companies.name',
+            )
+            ->enforceOrderBy($model->getQualifiedCreatedAtColumn(), 'desc')
+            ->process();
 
     }
 

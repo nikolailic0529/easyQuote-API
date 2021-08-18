@@ -2,31 +2,20 @@
 
 namespace App\Queries;
 
-use App\Http\Query\{ActiveFirst,
-    DefaultOrderBy,
-    OrderByCompanyName,
-    OrderByCreatedAt,
-    OrderByCustomerName,
-    OrderByOrderNumber,
-    OrderByOrderType,
-    OrderByRfqNumber,
-    OrderByStatus,
-    OrderByUpdatedAt};
 use App\Models\Company;
 use App\Models\SalesOrder;
 use App\Models\User;
-use App\Services\ElasticsearchQuery;
+use App\Queries\Pipeline\PerformElasticsearchSearch;
+use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
-use Illuminate\Pipeline\Pipeline;
 
 class SalesOrderQueries
 {
-    public function __construct(protected Pipeline $pipeline,
-                                protected Elasticsearch $elasticsearch,
+    public function __construct(protected Elasticsearch $elasticsearch,
                                 protected Gate $gate)
     {
     }
@@ -97,7 +86,9 @@ class SalesOrderQueries
     {
         $request ??= new Request();
 
-        $query = SalesOrder::query()
+        $model = new SalesOrder();
+
+        $query = $model->newQuery()
             ->select(
                 'sales_orders.id',
                 'sales_orders.user_id',
@@ -132,45 +123,40 @@ class SalesOrderQueries
             ->join('contract_types', function (JoinClause $join) {
                 $join->on('contract_types.id', 'worldwide_quotes.contract_type_id');
             })
-            ->whereNull('sales_orders.submitted_at');
+            ->whereNull('sales_orders.submitted_at')
+            ->orderByDesc($model->qualifyColumn('is_active'));
 
-        if (filled($searchQuery = $request->query('search'))) {
-            $hits = rescue(function () use ($searchQuery) {
-                return $this->elasticsearch->search(
-                    ElasticsearchQuery::new()
-                        ->modelIndex(new SalesOrder())
-                        ->queryString($searchQuery)
-                        ->escapeQueryString()
-                        ->wrapQueryString()
-                        ->toArray()
-                );
-            });
-
-            $query->whereKey(data_get($hits, 'hits.hits.*._id') ?? []);
-        }
-
-        return $this->pipeline
-            ->send($query)
-            ->through([
-                new ActiveFirst('sales_orders.is_active'),
-                (new OrderByCreatedAt)->qualifyColumnName(),
-                (new OrderByUpdatedAt)->qualifyColumnName(),
-                OrderByOrderType::class,
-                OrderByRfqNumber::class,
-                OrderByOrderNumber::class,
-                OrderByStatus::class,
-                OrderByCustomerName::class,
-                OrderByCompanyName::class,
-                DefaultOrderBy::class,
+        return RequestQueryBuilder::for(
+            builder: $query,
+            request: $request,
+        )
+            ->addCustomBuildQueryPipe(
+                new PerformElasticsearchSearch($this->elasticsearch)
+            )
+            ->allowOrderFields(...[
+                'created_at',
+                'updated_at',
+                'order_type',
+                'rfq_number',
+                'status',
+                'customer_name',
+                'company_name',
             ])
-            ->thenReturn();
+            ->qualifyOrderFields(
+                created_at: $model->getQualifiedCreatedAtColumn(),
+                updated_at: $model->getQualifiedUpdatedAtColumn(),
+            )
+            ->enforceOrderBy($model->getQualifiedCreatedAtColumn(), 'desc')
+            ->process();
     }
 
     public function paginateSubmittedOrdersQuery(?Request $request = null): Builder
     {
         $request ??= new Request();
 
-        $query = SalesOrder::query()
+        $model = new SalesOrder();
+
+        $query = $model->newQuery()
             ->select(
                 'sales_orders.id',
                 'sales_orders.user_id',
@@ -207,36 +193,30 @@ class SalesOrderQueries
             ->join('contract_types', function (JoinClause $join) {
                 $join->on('contract_types.id', 'worldwide_quotes.contract_type_id');
             })
-            ->whereNotNull('sales_orders.submitted_at');
+            ->whereNotNull('sales_orders.submitted_at')
+            ->orderByDesc($model->qualifyColumn('is_active'));
 
-        if (filled($searchQuery = $request->query('search'))) {
-            $hits = rescue(function () use ($searchQuery) {
-                return $this->elasticsearch->search(
-                    ElasticsearchQuery::new()
-                        ->modelIndex(new SalesOrder())
-                        ->queryString($searchQuery)
-                        ->escapeQueryString()
-                        ->wrapQueryString()
-                        ->toArray()
-                );
-            });
-
-            $query->whereKey(data_get($hits, 'hits.hits.*._id') ?? []);
-        }
-
-        return $this->pipeline
-            ->send($query)
-            ->through([
-                new ActiveFirst('sales_orders.is_active'),
-                OrderByCreatedAt::class,
-                OrderByOrderType::class,
-                OrderByRfqNumber::class,
-                OrderByOrderNumber::class,
-                OrderByStatus::class,
-                OrderByCustomerName::class,
-                OrderByCompanyName::class,
-                DefaultOrderBy::class,
+        return RequestQueryBuilder::for(
+            builder: $query,
+            request: $request,
+        )
+            ->addCustomBuildQueryPipe(
+                new PerformElasticsearchSearch($this->elasticsearch)
+            )
+            ->allowOrderFields(...[
+                'created_at',
+                'updated_at',
+                'order_type',
+                'rfq_number',
+                'status',
+                'customer_name',
+                'company_name',
             ])
-            ->thenReturn();
+            ->qualifyOrderFields(
+                created_at: $model->getQualifiedCreatedAtColumn(),
+                updated_at: $model->getQualifiedUpdatedAtColumn(),
+            )
+            ->enforceOrderBy($model->getQualifiedCreatedAtColumn(), 'desc')
+            ->process();
     }
 }

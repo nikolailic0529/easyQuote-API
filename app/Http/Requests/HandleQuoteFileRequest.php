@@ -50,4 +50,14 @@ class HandleQuoteFileRequest extends FormRequest
 
         return QuoteFile::findOrFail($this->input('quote_file_id'));
     }
+
+    public function getImportablePageNumber(): ?int
+    {
+        return $this->input('page');
+    }
+
+    public function getDataSelectSeparatorReference(): ?string
+    {
+        return $this->input('data_select_separator_id');
+    }
 }

@@ -2,9 +2,10 @@
 
 namespace App\Imports\Concerns;
 
-use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface;
+use App\Models\QuoteFile\ImportableColumn;
 use Illuminate\Support\Collection;
-use Str;
+use Illuminate\Support\Str;
+use Webpatser\Uuid\Uuid;
 
 trait MapsHeaders
 {
@@ -46,15 +47,21 @@ trait MapsHeaders
         $this->headersCount = $actualMapping->count();
     }
 
-    protected function importRepository(): ImportableColumnRepositoryInterface
-    {
-        return app(ImportableColumnRepositoryInterface::class);
-    }
-
     private function getAliasesMapping(): Collection
     {
-        $systemColumnsAliases = $this->importRepository()->allSystem()->pluck('aliases.*.alias', 'id');
-        $userColumnsAliases = $this->importRepository()->userColumns(array_filter($this->header))->pluck('aliases.*.alias', 'id');
+        $systemColumnsAliases = ImportableColumn::query()
+            ->orderBy('order')
+            ->where('is_system', true)
+            ->with('aliases')
+            ->get()
+            ->pluck('aliases.*.alias', 'id');
+
+        $userColumnsAliases = ImportableColumn::query()
+            ->where('is_system', false)
+            ->whereHas('aliases', fn ($query) => $query->whereIn('alias', array_filter($this->header)))
+            ->with(['aliases' => fn ($query) => $query->groupBy('alias')])
+            ->get()
+            ->pluck('aliases.*.alias', 'id');
 
         return $systemColumnsAliases->merge($userColumnsAliases);
     }
@@ -86,21 +93,47 @@ trait MapsHeaders
 
     private function createUnknownImportableColumn(string $header, Collection $actualMapping): string
     {
-        $alias = $header;
-        $name = Str::slug($header, '_');
-        $user_id = $this->quoteFile->user_id;
+        /** @var ImportableColumn $importableColumn */
+        $importableColumn = value(function () use ($header, $actualMapping) {
 
-        $importableColumn = $this->importRepository()->firstOrCreate(
-            compact('name'),
-            compact('header', 'name', 'user_id'),
-            function ($query) use ($actualMapping) {
-                $query->whereNotIn('id', $actualMapping->toArray());
+            $alias = $header;
+            $name = Str::slug($header, '_');
+            $user_id = $this->quoteFile->user_id;
+
+            /** @var ImportableColumn $foundColumn */
+            $foundColumn = ImportableColumn::query()
+                ->where('user_id', $user_id)
+                ->where('name', $name)
+                ->where('is_temp', true)
+                ->whereKeyNot($actualMapping->all())
+                ->first();
+
+            if (false === is_null($foundColumn)) {
+                return tap($foundColumn, function (ImportableColumn $column) use ($alias) {
+
+                    $column->aliases()->firstOrCreate(['alias' => $alias]);
+
+                });
             }
-        );
 
-        $importableColumn->aliases()->firstOrCreate(compact('alias'));
+            return tap(new ImportableColumn(), function (ImportableColumn $column) use ($alias, $user_id, $name, $header) {
 
-        return $importableColumn->id;
+                $column->{$column->getKeyName()} = (string)Uuid::generate(4);
+                $column->user()->associate($user_id);
+                $column->header = $header;
+                $column->name = $name;
+                $column->is_temp = true;
+                $column->is_system = false;
+
+                $column->saveQuietly();
+
+                $column->aliases()->create(['alias' => $alias]);
+
+            });
+
+        });
+
+        return $importableColumn->getKey();
     }
 
     private function formatImportableHeader(?string $header, int $key): string

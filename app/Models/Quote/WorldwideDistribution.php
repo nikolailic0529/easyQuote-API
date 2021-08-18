@@ -247,7 +247,8 @@ class WorldwideDistribution extends Model
 
     public function mappedRows(): HasManyThrough
     {
-        return $this->hasManyDeepFromRelations($this->distributorFile(), $rowsRelation = (new QuoteFile)->mappedRows());
+        return $this->hasManyDeepFromRelations($this->distributorFile(), $rowsRelation = (new QuoteFile)->mappedRows())
+            ->oldest($rowsRelation->getRelated()->getQualifiedCreatedAtColumn());
     }
 
     public function rowsGroups(): HasMany
@@ -267,8 +268,8 @@ class WorldwideDistribution extends Model
                         })
                         ->whereColumn($groupModel->getQualifiedKeyName(), $rowsRelation->getQualifiedForeignPivotKeyName()),
                 ])
-                ->withCasts(['rows_sum' => 'float']);
-//                ->withCasts(['rows_sum' => 'decimal:2']);
+                ->withCasts(['rows_sum' => 'float'])
+                ->oldest($relation->getRelated()->getQualifiedCreatedAtColumn());
         });
     }
 }

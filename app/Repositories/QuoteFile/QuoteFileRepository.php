@@ -2,22 +2,13 @@
 
 namespace App\Repositories\QuoteFile;
 
-use App\Contracts\Repositories\QuoteFile\{
-    QuoteFileRepositoryInterface,
-    ImportableColumnRepositoryInterface as ImportableColumnRepository,
-    FileFormatRepositoryInterface as FileFormatRepository
-};
+use App\Contracts\Repositories\QuoteFile\{QuoteFileRepositoryInterface};
 use App\Enum\Lock;
-use App\Models\{
-    QuoteFile\QuoteFile,
-    QuoteFile\DataSelectSeparator,
-    QuoteFile\ImportedRow
-};
+use App\Models\{QuoteFile\DataSelectSeparator, QuoteFile\ImportableColumn, QuoteFile\ImportedRow, QuoteFile\QuoteFile};
 use App\Services\PdfParser\PdfOptions;
-use Illuminate\Contracts\Cache\LockTimeoutException;
-use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Eloquent\Collection as DbCollection;
-use Illuminate\Support\{Arr, Str, Collection, Facades\Storage, Facades\File, Facades\DB, Facades\Cache};
+use Illuminate\Database\Query\Builder as BaseBuilder;
+use Illuminate\Support\{Arr, Collection, Facades\Cache, Facades\DB, Facades\File, Facades\Storage, Str};
 use Throwable;
 use Webpatser\Uuid\Uuid;
 
@@ -25,24 +16,17 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 {
     protected QuoteFile $quoteFile;
 
-    protected FileFormatRepository $fileFormat;
-
     protected DataSelectSeparator $dataSelectSeparator;
-
-    protected ImportableColumnRepository $importableColumn;
 
     protected static ?DbCollection $importableColumnsCache = null;
 
     public function __construct(
-        QuoteFile $quoteFile,
-        FileFormatRepository $fileFormat,
-        DataSelectSeparator $dataSelectSeparator,
-        ImportableColumnRepository $importableColumn
-    ) {
+        QuoteFile           $quoteFile,
+        DataSelectSeparator $dataSelectSeparator
+    )
+    {
         $this->quoteFile = $quoteFile;
-        $this->fileFormat = $fileFormat;
         $this->dataSelectSeparator = $dataSelectSeparator;
-        $this->importableColumn = $importableColumn;
     }
 
     public function all()
@@ -96,7 +80,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
             $importedRawData = $quoteFile->importedRawData()->make([
                 'page' => $data['page'],
-                'file_path' => $filePath
+                'file_path' => $filePath,
             ]);
 
             $importedRawData->user()->associate($user);
@@ -170,10 +154,9 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
     public function findByQuote(string $quoteID, string $fileType)
     {
         return $this->quoteFile->query()
-            ->whereExists(fn (BaseBuilder $builder) =>
-            $builder->selectRaw('1')->from('quotes')
+            ->whereExists(fn(BaseBuilder $builder) => $builder->selectRaw('1')->from('quotes')
                 ->where('id', $quoteID)
-                ->where(fn (BaseBuilder $builder) => $builder->whereColumn('quote_files.id', 'quotes.distributor_file_id')->orWhereColumn('quote_files.id', 'quotes.schedule_file_id')))
+                ->where(fn(BaseBuilder $builder) => $builder->whereColumn('quote_files.id', 'quotes.distributor_file_id')->orWhereColumn('quote_files.id', 'quotes.schedule_file_id')))
             ->where('file_type', $fileType)
             ->first();
     }
@@ -194,7 +177,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
         $new_quote_file_id = $quoteFileCopy->getKey();
 
-        $tempRowsTable = 'temp_imported_rows_table_' . uniqid();
+        $tempRowsTable = 'temp_imported_rows_table_'.uniqid();
         $importedRowColumn = 'replicated_row_id';
 
         /** Generating new Ids for Imported Columns and Rows in the temporary table. */
@@ -221,14 +204,10 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     public function resolveFileType(string $needle): ?string
     {
-        switch ($needle) {
-            case 'price':
-                return QFT_PL;
-                break;
-            case 'schedule':
-                return QFT_PS;
-                break;
-        }
+        return match ($needle) {
+            'price' =>  QFT_PL,
+            'schedule' => QFT_PS,
+        };
     }
 
     public function resolveFilepath(?QuoteFile $quoteFile): string
@@ -242,7 +221,7 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
 
     protected function createImportedPages(array $array, QuoteFile $quoteFile)
     {
-        $pages = collect($array)->filter(fn ($item) => (isset($item['page']) && isset($item['rows'])));
+        $pages = collect($array)->filter(fn($item) => (isset($item['page']) && isset($item['rows'])));
 
         $importedRows = [];
 
@@ -256,11 +235,11 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
             return;
         }
 
-        $rows = array_map(fn (ImportedRow $row) => $row->getAttributes() + [
-            'id' => (string) Uuid::generate(4),
-            'created_at' => now()->toDateTimeString(),
-            'updated_at' => now()->toDateTimeString(),
-        ], $importedRows);
+        $rows = array_map(fn(ImportedRow $row) => $row->getAttributes() + [
+                'id' => (string)Uuid::generate(4),
+                'created_at' => now()->toDateTimeString(),
+                'updated_at' => now()->toDateTimeString(),
+            ], $importedRows);
 
         ImportedRow::insert($rows);
     }
@@ -272,10 +251,10 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         $attributes = compact('quote_file_id', 'user_id', 'page');
 
         return collect($rows)
-            ->map(fn ($row) => ImportedRow::make(
+            ->map(fn($row) => ImportedRow::make(
                 $attributes + [
                     'columns_data' => $this->mapColumnsData($row),
-                    'is_one_pay' => (bool) Arr::get($row, PdfOptions::SYSTEM_HEADER_ONE_PAY)
+                    'is_one_pay' => (bool)Arr::get($row, PdfOptions::SYSTEM_HEADER_ONE_PAY),
                 ]
             ));
     }
@@ -287,10 +266,10 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
         Arr::forget($row, PdfOptions::SYSTEM_HEADER_ONE_PAY);
 
         return Collection::wrap($row)->map(
-            fn ($value, $name) => [
+            fn($value, $name) => [
                 'header' => Str::header($name),
                 'value' => $value,
-                'importable_column_id' => optional($importableColumns->get($name))->id
+                'importable_column_id' => optional($importableColumns->get($name))->id,
             ]
         )->values();
     }
@@ -301,7 +280,12 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
             return static::$importableColumnsCache;
         }
 
-        return static::$importableColumnsCache = $this->importableColumn->allSystem()->keyBy('name');
+        return static::$importableColumnsCache = ImportableColumn::query()
+            ->orderBy('order')
+            ->where('is_system', true)
+            ->with('aliases')
+            ->get()
+            ->keyBy('name');
     }
 
     private function updateTempSelectedImportedRows(string $table, string $column): void
@@ -310,8 +294,8 @@ class QuoteFileRepository implements QuoteFileRepositoryInterface
             return;
         }
 
-        $selectedRowsIds = (array) request()->input('quote_data.selected_rows', []);
-        $reject = (bool) request()->input('quote_data.selected_rows_is_rejected', false);
+        $selectedRowsIds = (array)request()->input('quote_data.selected_rows', []);
+        $reject = (bool)request()->input('quote_data.selected_rows_is_rejected', false);
 
         $updatableScope = $reject ? 'whereNotIn' : 'whereIn';
 

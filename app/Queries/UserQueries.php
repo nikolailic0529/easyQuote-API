@@ -2,33 +2,26 @@
 
 namespace App\Queries;
 
-use App\Http\Query\OrderByTeamName;
 use App\Models\User;
-use App\Services\ElasticsearchQuery;
+use App\Queries\Pipeline\PerformElasticsearchSearch;
+use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
-use Illuminate\Pipeline\Pipeline;
 
 class UserQueries
 {
-    protected Pipeline $pipeline;
-
-    protected Elasticsearch $elasticsearch;
-
-    public function __construct(Pipeline $pipeline, Elasticsearch $elasticsearch)
+    public function __construct(protected Elasticsearch $elasticsearch)
     {
-        $this->pipeline = $pipeline;
-        $this->elasticsearch = $elasticsearch;
     }
 
     public function userListQuery(): Builder
     {
         return User::query()
             ->select([
-                'id', 'first_name', 'middle_name', 'last_name', 'email'
+                'id', 'first_name', 'middle_name', 'last_name', 'email',
             ]);
     }
 
@@ -53,38 +46,34 @@ class UserQueries
                 });
             })
             ->select(['users.*', 'teams.team_name as team_name', 'roles.name as role_name'])
-        ;
+            ->orderByDesc($model->qualifyColumn('is_active'));
 
-        if (filled($searchQuery = $request->query('search'))) {
-
-            $hits = rescue(function () use ($model, $searchQuery) {
-                return $this->elasticsearch->search(
-                    ElasticsearchQuery::new()
-                        ->modelIndex($model)
-                        ->queryString($searchQuery)
-                        ->escapeQueryString()
-                        ->wrapQueryString()
-                        ->toArray()
-                );
-            });
-
-            $query->whereKey(data_get($hits, 'hits.hits.*._id') ?? []);
-
-        }
-
-        return $this->pipeline
-            ->send($query)
-            ->through([
-                new \App\Http\Query\ActiveFirst('users.is_active'),
-                \App\Http\Query\OrderByCreatedAt::class,
-                \App\Http\Query\OrderByTeamName::class,
-                \App\Http\Query\User\OrderByEmail::class,
-                \App\Http\Query\User\OrderByName::class,
-                \App\Http\Query\User\OrderByFirstname::class,
-                \App\Http\Query\User\OrderByLastname::class,
-                \App\Http\Query\User\OrderByRole::class,
-                \App\Http\Query\DefaultOrderBy::class,
+        return RequestQueryBuilder::for(
+            builder: $query,
+            request: $request,
+        )
+            ->addCustomBuildQueryPipe(
+                new PerformElasticsearchSearch($this->elasticsearch)
+            )
+            ->allowOrderFields(...[
+                'created_at',
+                'email',
+                'name',
+                'first_name',
+                'last_name',
+                'role',
+                'team_name',
             ])
-            ->thenReturn();
+            ->qualifyOrderFields(
+                created_at: $model->getQualifiedCreatedAtColumn(),
+                name: $model->qualifyColumn('user_fullname'),
+                email: $model->qualifyColumn('email'),
+                first_name: $model->qualifyColumn('first_name'),
+                last_name: $model->qualifyColumn('last_name'),
+                role: 'roles.name',
+                team_name: 'teams.team_name',
+            )
+            ->enforceOrderBy($model->getQualifiedCreatedAtColumn(), 'desc')
+            ->process();
     }
 }

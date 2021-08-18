@@ -5,47 +5,53 @@ namespace App\Http\Controllers\API\Quotes;
 use App\Collections\MappedRows;
 use App\Contracts\{Repositories\Quote\Margin\MarginRepositoryInterface as MarginRepository,
     Repositories\UserRepositoryInterface as Users,
-    Services\QuoteState,
-};
+    Services\QuoteState,};
 use App\Http\Controllers\Controller;
-use App\Http\Requests\{GetQuoteTemplatesRequest,
+use App\Http\Requests\{Attachment\CreateAttachment,
+    GetQuoteTemplatesRequest,
     MappingReviewRequest,
     Quote\MoveGroupDescriptionRowsRequest,
     Quote\StoreGroupDescriptionRequest,
     Quote\StoreQuoteStateRequest,
-    Quote\UpdateGroupDescriptionRequest
-};
+    Quote\UpdateGroupDescriptionRequest};
 use App\Http\Requests\Quote\{FirstStep,
     GivePermissionRequest,
     SelectGroupDescriptionRequest,
     SetVersionRequest,
     ShowQuoteState,
-    TryDiscountsRequest,
-};
-use App\Http\Resources\{ImportedRow\MappedRow, QuoteVersionResource, TemplateRepository\TemplateResourceListing,};
+    TryDiscountsRequest,};
+use App\Http\Resources\{Attachment\AttachmentOfCompany,
+    Attachment\AttachmentOfQuote,
+    ImportedRow\MappedRow,
+    QuoteVersionResource,
+    TemplateRepository\TemplateResourceListing};
+use App\Models\Attachment;
 use App\Models\Quote\Quote;
 use App\Queries\QuoteQueries;
+use App\Services\Attachment\AttachmentEntityService;
 use App\Services\QuoteFileService;
 use App\Services\QuotePermissionRegistar;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 
 class QuoteController extends Controller
 {
-    protected QuoteState $processor;
-
-    protected MarginRepository $margins;
-
-    public function __construct(
-        QuoteState $processor,
-        MarginRepository $margins
-    )
+    public function __construct(protected QuoteState       $processor,
+                                protected MarginRepository $margins)
     {
-        $this->processor = $processor;
-        $this->margins = $margins;
     }
 
-    public function quote(ShowQuoteState $request, Quote $quote)
+    /**
+     * Show state of the quote entity.
+     *
+     * @param ShowQuoteState $request
+     * @param Quote $quote
+     * @return JsonResponse
+     * @throws AuthorizationException
+     */
+    public function quote(ShowQuoteState $request, Quote $quote): JsonResponse
     {
         $this->authorize('view', $quote);
 
@@ -56,7 +62,14 @@ class QuoteController extends Controller
         );
     }
 
-    public function storeState(StoreQuoteStateRequest $request)
+    /**
+     * Update state of the quote entity.
+     *
+     * @param StoreQuoteStateRequest $request
+     * @return JsonResponse
+     * @throws AuthorizationException
+     */
+    public function storeState(StoreQuoteStateRequest $request): JsonResponse
     {
         if ($request->has('quote_id')) {
             $this->authorize('state', $request->getQuote());
@@ -69,7 +82,15 @@ class QuoteController extends Controller
         );
     }
 
-    public function setVersion(SetVersionRequest $request, Quote $quote)
+    /**
+     * Set the specified version as active for the quote entity.
+     *
+     * @param SetVersionRequest $request
+     * @param Quote $quote
+     * @return JsonResponse
+     * @throws AuthorizationException
+     */
+    public function setVersion(SetVersionRequest $request, Quote $quote): JsonResponse
     {
         $this->authorize('update', $quote);
 
@@ -78,12 +99,26 @@ class QuoteController extends Controller
         );
     }
 
-    public function step1(FirstStep $request)
+    /**
+     * Show form data for the 1st step.
+     *
+     * @param FirstStep $request
+     * @return JsonResponse
+     */
+    public function step1(FirstStep $request): JsonResponse
     {
         return response()->json($request->data());
     }
 
-    public function step2(MappingReviewRequest $request, QuoteQueries $quoteQueries)
+    /**
+     * Show form data for the 2nd step.
+     *
+     * @param MappingReviewRequest $request
+     * @param QuoteQueries $quoteQueries
+     * @return JsonResponse
+     * @throws AuthorizationException
+     */
+    public function step2(MappingReviewRequest $request, QuoteQueries $quoteQueries): JsonResponse
     {
         $this->authorize('view', $quote = $request->getQuote());
 
@@ -120,6 +155,12 @@ class QuoteController extends Controller
         );
     }
 
+    /**
+     * Show a listing of the filtered templates.
+     *
+     * @param GetQuoteTemplatesRequest $request
+     * @return JsonResponse
+     */
     public function templates(GetQuoteTemplatesRequest $request): JsonResponse
     {
         return response()->json(
@@ -129,7 +170,12 @@ class QuoteController extends Controller
         );
     }
 
-    public function step3()
+    /**
+     * Show form data for the 3rd step.
+     *
+     * @return JsonResponse
+     */
+    public function step3(): JsonResponse
     {
         return response()->json(
             $this->margins->data()
@@ -140,9 +186,10 @@ class QuoteController extends Controller
      * Get acceptable Discounts for the specified Quote
      *
      * @param Quote $quote
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function discounts(Quote $quote)
+    public function discounts(Quote $quote): JsonResponse
     {
         $this->authorize('view', $quote);
 
@@ -152,14 +199,15 @@ class QuoteController extends Controller
     }
 
     /**
-     * Try Apply Discounts to the Quote List Price.
+     * Try to apply the given discounts to the Quote List Price.
      * Return passed discounts with calculated Total Margin after each passed Discount.
      *
      * @param TryDiscountsRequest $request
      * @param Quote $quote
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function tryDiscounts(TryDiscountsRequest $request, Quote $quote)
+    public function tryDiscounts(TryDiscountsRequest $request, Quote $quote): JsonResponse
     {
         $this->authorize('view', $quote);
 
@@ -172,9 +220,10 @@ class QuoteController extends Controller
      * Get Imported Rows Data after Applying Margins
      *
      * @param Quote $quote
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function review(Quote $quote)
+    public function review(Quote $quote): JsonResponse
     {
         $this->authorize('view', $quote);
 
@@ -188,9 +237,10 @@ class QuoteController extends Controller
      *
      * @param Quote $quote
      * @param string $group
-     * @return \Illuminate\Http\Request
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function showGroupDescription(Quote $quote, string $group)
+    public function showGroupDescription(Quote $quote, string $group): JsonResponse
     {
         $this->authorize('view', $quote);
 
@@ -204,9 +254,10 @@ class QuoteController extends Controller
      *
      * @param StoreGroupDescriptionRequest $request
      * @param Quote $quote
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function storeGroupDescription(StoreGroupDescriptionRequest $request, Quote $quote)
+    public function storeGroupDescription(StoreGroupDescriptionRequest $request, Quote $quote): JsonResponse
     {
         $this->authorize('update', $quote);
 
@@ -221,9 +272,10 @@ class QuoteController extends Controller
      *
      * @param SelectGroupDescriptionRequest $request
      * @param Quote $quote
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function selectGroupDescription(SelectGroupDescriptionRequest $request, Quote $quote)
+    public function selectGroupDescription(SelectGroupDescriptionRequest $request, Quote $quote): JsonResponse
     {
         $this->authorize('update', $quote);
 
@@ -238,9 +290,12 @@ class QuoteController extends Controller
      * @param UpdateGroupDescriptionRequest $request
      * @param Quote $quote
      * @param string $group
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function updateGroupDescription(UpdateGroupDescriptionRequest $request, Quote $quote, string $group)
+    public function updateGroupDescription(UpdateGroupDescriptionRequest $request,
+                                           Quote                         $quote,
+                                           string                        $group): JsonResponse
     {
         $this->authorize('update', $quote);
 
@@ -254,9 +309,10 @@ class QuoteController extends Controller
      *
      * @param MoveGroupDescriptionRowsRequest $request
      * @param Quote $quote
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function moveGroupDescriptionRows(MoveGroupDescriptionRowsRequest $request, Quote $quote)
+    public function moveGroupDescriptionRows(MoveGroupDescriptionRowsRequest $request, Quote $quote): JsonResponse
     {
         $this->authorize('update', $quote);
 
@@ -270,9 +326,10 @@ class QuoteController extends Controller
      *
      * @param Quote $quote
      * @param string $group
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function destroyGroupDescription(Quote $quote, string $group)
+    public function destroyGroupDescription(Quote $quote, string $group): JsonResponse
     {
         $this->authorize('update', $quote);
 
@@ -286,9 +343,12 @@ class QuoteController extends Controller
      *
      * @param Quote $quote
      * @param string $fileType
-     * @return \Illuminate\Http\Response
+     * @return \App\Http\Resources\DownloadableQuoteFile
+     * @throws AuthorizationException
      */
-    public function downloadQuoteFile(Quote $quote, string $fileType, QuoteFileService $service)
+    public function downloadQuoteFile(Quote            $quote,
+                                      QuoteFileService $service,
+                                      string           $fileType): \App\Http\Resources\DownloadableQuoteFile
     {
         $this->authorize('downloadFile', [$quote, $fileType]);
 
@@ -300,9 +360,10 @@ class QuoteController extends Controller
      *
      * @param Quote $quote
      * @param Users $users User repository
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function showAuthorizedQuoteUsers(Quote $quote, Users $users)
+    public function showAuthorizedQuoteUsers(Quote $quote, Users $users): JsonResponse
     {
         $this->authorize('grantPermission', $quote);
 
@@ -317,11 +378,16 @@ class QuoteController extends Controller
      * Give read/update permission to specific quote resource.
      *
      * @param GivePermissionRequest $request
+     * @param QuotePermissionRegistar $permissionRegistar
      * @param Quote $quote
      * @param Users $users User repository
-     * @return \Illuminate\Http\Response
+     * @return JsonResponse
+     * @throws AuthorizationException
      */
-    public function givePermissionToQuote(GivePermissionRequest $request, QuotePermissionRegistar $permissionRegistar, Quote $quote, Users $users)
+    public function givePermissionToQuote(GivePermissionRequest   $request,
+                                          QuotePermissionRegistar $permissionRegistar,
+                                          Quote                   $quote,
+                                          Users                   $users): JsonResponse
     {
         $this->authorize('grantPermission', $quote);
 

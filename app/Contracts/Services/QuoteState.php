@@ -2,19 +2,11 @@
 
 namespace App\Contracts\Services;
 
-use App\Models\Quote\{
-    Quote, QuoteVersion, BaseQuote
-};
-use App\Http\Requests\Quote\{
-    StoreQuoteStateRequest,
-    MoveGroupDescriptionRowsRequest,
-    StoreGroupDescriptionRequest,
-    UpdateGroupDescriptionRequest,
-    TryDiscountsRequest
-};
+use App\Http\Requests\Quote\{StoreQuoteStateRequest, TryDiscountsRequest};
+use App\Models\Quote\{BaseQuote, Quote, QuoteVersion};
+use App\Models\QuoteFile\QuoteFile;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 interface QuoteState
 {
@@ -22,9 +14,31 @@ interface QuoteState
      * Store current state of the Quote
      *
      * @param StoreQuoteStateRequest $request
-     * @return \App\Models\Quote\Quote
+     * @return array
      */
     public function storeState(StoreQuoteStateRequest $request): array;
+
+    /**
+     * Process quote file import.
+     *
+     * @param Quote $quote
+     * @param QuoteFile $quoteFile
+     * @param int|null $importablePageNumber
+     * @param string|null $dataSeparatorReference
+     * @return mixed
+     */
+    public function processQuoteFileImport(Quote     $quote,
+                                           QuoteFile $quoteFile,
+                                           ?int      $importablePageNumber = null,
+                                           ?string   $dataSeparatorReference = null): mixed;
+
+
+    /**
+     * Guess quote mapping basis on the previous saved mapping.
+     *
+     * @param Quote $quote
+     */
+    public function guessQuoteMapping(Quote $quote): void;
 
     /**
      * Create a new Quote.
@@ -62,7 +76,7 @@ interface QuoteState
      * Set a specified Version for a specified Quote.
      *
      * @param string $version_id
-     * @param \App\Models\Quote|string $quote
+     * @param \App\Models\Quote\Quote|string $quote
      * @return boolean
      */
     public function setVersion(string $version_id, $quote): bool;
@@ -96,7 +110,7 @@ interface QuoteState
     /**
      * Retrieve Groups of Imported Rows.
      *
-     * @param  BaseQuote $quote
+     * @param BaseQuote $quote
      * @return Collection
      */
     public function retrieveRowsGroups(BaseQuote $quote): Collection;
@@ -141,8 +155,8 @@ interface QuoteState
     /**
      * Mark as selected specific Rows Group Descriptions.
      *
-     * @param  array $ids
-     * @param  Quote $quote
+     * @param array $ids
+     * @param Quote $quote
      * @return boolean
      */
     public function selectGroupDescription(array $ids, Quote $quote): bool;
@@ -150,8 +164,8 @@ interface QuoteState
     /**
      * Delete specified Rows Group Description from specified Quote.
      *
-     * @param  string $id
-     * @param  Quote $quote
+     * @param string $id
+     * @param Quote $quote
      * @return bool
      */
     public function deleteGroupDescription(string $id, Quote $quote): bool;

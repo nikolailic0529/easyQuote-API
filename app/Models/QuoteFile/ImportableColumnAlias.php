@@ -17,5 +17,5 @@ class ImportableColumnAlias extends Model
 
     public $timestamps = false;
 
-    protected $fillable = ['alias'];
+    protected $guarded = [];
 }

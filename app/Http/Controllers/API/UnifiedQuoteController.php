@@ -8,7 +8,6 @@ use App\Http\Resources\UnifiedQuote\ExpiringUnifiedQuote;
 use App\Http\Resources\UnifiedQuote\UnifiedQuote;
 use App\Queries\UnifiedQuoteQueries;
 use App\Services\UnifiedQuote\UnifiedQuoteDataMapper;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -39,7 +38,7 @@ class UnifiedQuoteController extends Controller
             return ExpiringUnifiedQuote::collection([]);
         }
 
-        $pagination = $queries->paginateExpiringQuotesQuery($request->getUnifiedQuotesRequestData())->apiPaginate();
+        $pagination = $queries->paginateExpiringQuotesQuery(requestData: $request->getUnifiedQuotesRequestData(), request: $request)->apiPaginate();
 
         $pagination = $dataMapper->mapUnifiedQuotePaginator($pagination);
 
@@ -63,7 +62,7 @@ class UnifiedQuoteController extends Controller
         }
 
         /** @var LengthAwarePaginator $pagination */
-        $pagination = $queries->paginateDraftedQuotesQuery($request->getUnifiedQuotesRequestData())->apiPaginate();
+        $pagination = $queries->paginateDraftedQuotesQuery(requestData: $request->getUnifiedQuotesRequestData(), request: $request)->apiPaginate();
 
         $pagination = $dataMapper->mapUnifiedQuotePaginator($pagination);
 
@@ -86,7 +85,7 @@ class UnifiedQuoteController extends Controller
             return UnifiedQuote::collection([]);
         }
 
-        $pagination = $queries->paginateSubmittedQuotesQuery($request->getUnifiedQuotesRequestData())->apiPaginate();
+        $pagination = $queries->paginateSubmittedQuotesQuery(requestData: $request->getUnifiedQuotesRequestData(), request: $request)->apiPaginate();
 
         $pagination = $dataMapper->mapUnifiedQuotePaginator($pagination);
 

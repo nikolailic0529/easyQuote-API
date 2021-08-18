@@ -8,7 +8,9 @@ use App\Events\{Company\CompanyUpdated,
     Permission\GrantedModulePermission,
     RfqReceived,
     WorldwideQuote\WorldwideQuoteNoteCreated};
-use App\Listeners\{ExchangeRatesListener,
+use App\Listeners\{DocumentMappingSyncSubscriber,
+    ExchangeRatesListener,
+    ImportableColumnEventAuditor,
     LogSentMessage,
     ModulePermissionListener,
     NotifyNoteCreatedOnWorldwideQuote,
@@ -95,6 +97,10 @@ class EventServiceProvider extends ServiceProvider
         PipelineEventAuditor::class,
 
         OpportunityFormEventAuditor::class,
+
+        ImportableColumnEventAuditor::class,
+
+        DocumentMappingSyncSubscriber::class,
 
     ];
 

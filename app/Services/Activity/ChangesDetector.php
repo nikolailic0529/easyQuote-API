@@ -5,6 +5,7 @@ namespace App\Services\Activity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use JetBrains\PhpStorm\ArrayShape;
 
 class ChangesDetector
 {
@@ -57,6 +58,7 @@ class ChangesDetector
         return $properties;
     }
 
+    #[ArrayShape([self::NEW_ATTRS_KEY => "array", self::OLD_ATTRS_KEY => "array"])]
     public function diffAttributeValues(array $oldAttributeValues, array $newAttributeValues, array $logAttributes = null): array
     {
         $logAttributes ??= array_keys($newAttributeValues);

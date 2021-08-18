@@ -8,6 +8,7 @@ use App\Contracts\Services\{CsvParserInterface,
     ProcessesQuoteFile,
     WordParserInterface};
 use App\Services\{CsvParser,
+    DocumentEngine\ParserClientFactory,
     DocumentProcessor\DocumentEngine\DeExcelPriceListProcessor,
     DocumentProcessor\DocumentEngine\DePdfRescuePaymentScheduleProcessor,
     DocumentProcessor\DocumentEngine\DePdfRescuePriceListProcessor,
@@ -65,6 +66,13 @@ class ParserServiceProvider extends ServiceProvider implements DeferrableProvide
 
             return $processor;
 
+        });
+
+        $this->app->singleton(ParserClientFactory::class, function (Container $container) {
+            return new ParserClientFactory(
+                config: $container['config'],
+                logger: $container['log']->channel('document-processor')
+            );
         });
 
         $this->app->when(DePdfRescuePaymentScheduleProcessor::class)->needs(ProcessesQuoteFile::class)->give(EqPdfRescuePaymentScheduleProcessor::class);

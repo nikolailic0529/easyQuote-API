@@ -3,7 +3,7 @@
 namespace App\Console\Commands\Routine;
 
 use App\Contracts\Services\MigratesAssetEntity;
-use App\Contracts\WithLogger;
+use App\Contracts\LoggerAware;
 use App\Contracts\WithOutput;
 use Illuminate\Console\Command;
 use Illuminate\Log\LogManager;
@@ -41,7 +41,7 @@ class MigrateAssets extends Command
      */
     public function handle(MigratesAssetEntity $service, LogManager $logManager)
     {
-        if ($service instanceof WithLogger) {
+        if ($service instanceof LoggerAware) {
             $service->setLogger(
                 $logManager->stack(['daily', 'stdout'])
             );

@@ -3,17 +3,15 @@
 namespace App\Services;
 
 use App\Contracts\Services\WordParserInterface;
-use App\Contracts\Repositories\QuoteFile\{
-    ImportableColumnRepositoryInterface as ImportableColumns,
-};
-use PhpOffice\PhpWord\Element\Table;
-use PhpOffice\PhpWord\Element\TextRun;
-use PhpOffice\PhpWord\Element\Text;
-use PhpOffice\PhpWord\Element\Cell;
-use PhpOffice\PhpWord\PhpWord;
-use PhpOffice\PhpWord\IOFactory;
+use App\Models\QuoteFile\ImportableColumn;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\{Collection as SupportCollection};
+use PhpOffice\PhpWord\Element\Cell;
+use PhpOffice\PhpWord\Element\Table;
+use PhpOffice\PhpWord\Element\Text;
+use PhpOffice\PhpWord\Element\TextRun;
+use PhpOffice\PhpWord\IOFactory;
+use PhpOffice\PhpWord\PhpWord;
 use voku\helper\ASCII;
 
 class WordParser implements WordParserInterface
@@ -26,16 +24,9 @@ class WordParser implements WordParserInterface
 
     public const REGEXP_ONE_PAY = '/return to/i';
 
-    protected ImportableColumns $importableColumns;
-
     protected PhpWord $phpWord;
 
     protected static string $defaultSeparator = "\t";
-
-    public function __construct(ImportableColumns $importableColumns)
-    {
-        $this->importableColumns = $importableColumns;
-    }
 
     public function load(string $path): static
     {
@@ -46,7 +37,11 @@ class WordParser implements WordParserInterface
 
     public function parseAsDistributorFile(string $filePath): array
     {
-        $columns = $this->importableColumns->allSystem();
+        $columns = ImportableColumn::query()
+            ->orderBy('order')
+            ->where('is_system', true)
+            ->with('aliases')
+            ->get();
 
         $this->load($filePath);
 
@@ -393,15 +388,15 @@ class WordParser implements WordParserInterface
 
                         return $value;
                     })
-                    ->filter(fn ($value) => filled($value));
+                    ->filter(fn($value) => filled($value));
 
                 $row['cells'] = $cells;
 
                 return Collection::wrap($row);
             })
-            ->reject(fn (SupportCollection $row) => $row->get('cells')->count() < $columnsCount - 1)
+            ->reject(fn(SupportCollection $row) => $row->get('cells')->count() < $columnsCount - 1)
             ->transform(function (SupportCollection $row) use ($keys) {
-                $cells = $keys->map(fn ($key) => data_get($row, 'cells.' . $key));
+                $cells = $keys->map(fn($key) => data_get($row, 'cells.'.$key));
 
                 /** One off pay header is last, so we are using last header key. */
                 $cells->put($keys->count() - 1, static::seekColumnsForOnePay($cells));
@@ -415,7 +410,7 @@ class WordParser implements WordParserInterface
 
     private static function seekColumnsForOnePay(iterable $cells)
     {
-        return SupportCollection::wrap($cells)->contains(fn ($cell) => preg_match(static::REGEXP_ONE_PAY, $cell));
+        return SupportCollection::wrap($cells)->contains(fn($cell) => preg_match(static::REGEXP_ONE_PAY, $cell));
     }
 
     private function isTableInstance($element)

@@ -3,6 +3,9 @@
 namespace App\Http\Requests\Company;
 
 use App\DTO\Company\UpdateCompanyData;
+use App\Enum\CompanyCategory;
+use App\Enum\CompanySource;
+use App\Enum\CompanyType;
 use App\Enum\VAT;
 use App\Models\Address;
 use App\Models\Company;
@@ -49,16 +52,16 @@ class UpdateCompanyRequest extends FormRequest
             ],
             'type' => [
                 'string',
-                Rule::in(Company::TYPES)
+                Rule::in(CompanyType::getValues())
             ],
             'source' => [
                 'nullable',
-                Rule::requiredIf(fn() => $this->type === Company::EXT_TYPE),
+                Rule::requiredIf(fn() => $this->type === CompanyType::EXTERNAL),
                 'string',
-                Rule::in(Company::SOURCES)
+                Rule::in(CompanySource::getValues())
             ],
             'short_code' => [
-                Rule::requiredIf(fn() => $this->type === Company::INT_TYPE),
+                Rule::requiredIf(fn() => $this->type === CompanyType::INTERNAL),
                 'string',
                 'size:3',
                 Rule::unique(Company::class)
@@ -74,9 +77,9 @@ class UpdateCompanyRequest extends FormRequest
             'delete_logo' => 'boolean',
             'category' => [
                 'nullable',
-                Rule::requiredIf(fn() => $this->type === Company::EXT_TYPE),
+                Rule::requiredIf(fn() => $this->type === CompanyType::EXTERNAL),
                 'string',
-                Rule::in(Company::CATEGORIES)
+                Rule::in(CompanyCategory::getValues())
             ],
             'email' => 'email',
             'phone' => 'nullable|string|min:4|phone',

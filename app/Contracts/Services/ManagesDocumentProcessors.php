@@ -45,24 +45,27 @@ interface ManagesDocumentProcessors
      */
     public function forwardProcessor(QuoteFile $quoteFile): void;
 
-    /**
-     * Perform the Quote File processing.
-     *
-     * @param \App\Models\Quote\Quote $quote
-     * @param \App\Models\QuoteFile\QuoteFile $quoteFile
-     * @param integer|null $importablePageNumber
-     * @return mixed
-     */
-    public function performProcess(Quote $quote, QuoteFile $quoteFile, ?int $importablePageNumber = null);
+//    /**
+//     * Perform the Quote File processing.
+//     *
+//     * @param \App\Models\Quote\Quote $quote
+//     * @param \App\Models\QuoteFile\QuoteFile $quoteFile
+//     * @param integer|null $importablePageNumber
+//     * @return mixed
+//     */
+//    public function performProcess(Quote     $quote,
+//                                   QuoteFile $quoteFile,
+//                                   ?int      $importablePageNumber = null,
+//                                   ?string   $dataSeparatorReference = null);
 
-    /**
-     * Map known columns to fields in the Quote.
-     *
-     * @param \App\Models\Quote\Quote $quote
-     * @param \App\Models\QuoteFile\QuoteFile $quoteFile
-     * @return void
-     */
-    public function mapColumnsToFields(Quote $quote, QuoteFile $quoteFile);
+//    /**
+//     * Map known columns to fields in the Quote.
+//     *
+//     * @param \App\Models\Quote\Quote $quote
+//     * @param \App\Models\QuoteFile\QuoteFile $quoteFile
+//     * @return void
+//     */
+//    public function mapColumnsToFields(Quote $quote, QuoteFile $quoteFile);
 
     /**
      * Transit imported rows to mapped rows.

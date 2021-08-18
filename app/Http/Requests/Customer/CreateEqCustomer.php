@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Customer;
 
 use App\DTO\EQCustomer\EQCustomerData;
+use App\Enum\CompanyType;
 use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
@@ -18,14 +19,7 @@ class CreateEqCustomer extends FormRequest
 {
     protected ?EQCustomerData $eqCustomerData = null;
 
-    protected EqCustomerService $eqCustomerService;
-
     protected ?InternalCompany $internalCompany = null;
-
-    public function __construct(EqCustomerService $eqCustomerService)
-    {
-        $this->eqCustomerService = $eqCustomerService;
-    }
 
     /**
      * Get the validation rules that apply to the request.
@@ -35,7 +29,7 @@ class CreateEqCustomer extends FormRequest
     public function rules()
     {
         return [
-            'int_company_id'                    => ['required', 'uuid', Rule::exists(Company::class, 'id')->where('type', Company::INT_TYPE)->whereNull('deleted_at')],
+            'int_company_id'                    => ['required', 'uuid', Rule::exists(Company::class, 'id')->where('type', CompanyType::INTERNAL)->whereNull('deleted_at')],
 
             'customer_name'                     => 'required|string|min:2',
 
@@ -71,9 +65,12 @@ class CreateEqCustomer extends FormRequest
     {
         return $this->eqCustomerData ??= with(true, function () {
             $company = $this->getCompany();
+
+            /** @var EqCustomerService $customerService */
+            $customerService = $this->container[EqCustomerService::class];
             
-            $rfqNumber = $this->eqCustomerService->giveNumber($company);
-            $highestNumber = $this->eqCustomerService->getHighestNumber();
+            $rfqNumber = $customerService->giveNumber($company);
+            $highestNumber = $customerService->getHighestNumber() + 1;
 
             return new EQCustomerData([
                 'int_company_id' => $this->input('int_company_id'),
@@ -96,7 +93,6 @@ class CreateEqCustomer extends FormRequest
                 'address_keys' => $this->input('addresses'),
                 'contact_keys' => $this->input('contacts'),
                 'vendor_keys' => $this->input('vendors') ?? [],
-                'email' => $this->input('email'),
                 'vat' => $this->input('vat'),
                 'email' => $this->input('email')
             ]);

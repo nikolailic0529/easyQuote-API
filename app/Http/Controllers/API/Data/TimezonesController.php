@@ -3,20 +3,17 @@
 namespace App\Http\Controllers\API\Data;
 
 use App\Http\Controllers\Controller;
-use App\Contracts\Repositories\TimezoneRepositoryInterface;
+use App\Queries\TimezoneQueries;
+use Illuminate\Http\JsonResponse;
 
 class TimezonesController extends Controller
 {
-    protected $timezone;
-
-    public function __construct(TimezoneRepositoryInterface $timezone)
+    public function __invoke(TimezoneQueries $queries): JsonResponse
     {
-        $this->timezone = $timezone;
-    }
+        $resource = $queries->listOfTimezonesQuery()->get();
 
-    public function __invoke()
-    {
-        $timezones = $this->timezone->all();
-        return response()->json($timezones);
+        return response()->json(
+            data: $resource,
+        );
     }
 }

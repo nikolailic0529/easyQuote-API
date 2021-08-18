@@ -6,16 +6,11 @@ use App\Contracts\HasOrderedScope;
 use App\Traits\Uuid;
 use Illuminate\Database\Eloquent\Model;
 
-class Language extends Model implements HasOrderedScope
+class Language extends Model
 {
     use Uuid;
 
     protected $hidden = [
         'pivot', 'native_name', 'code'
     ];
-
-    public function scopeOrdered($query)
-    {
-        return $query->orderBy('name');
-    }
 }

@@ -228,7 +228,7 @@ class HpeContractImportTest extends TestCase
 
         $this->assertFalse($response->failed());
 
-        /** @var HpeContractState */
+        /** @var HpeContractState $stateProcessor */
         $stateProcessor = app(HpeContractState::class);
 
         /** @var HpeContract */
@@ -258,7 +258,7 @@ class HpeContractImportTest extends TestCase
 
         $assetIds = Collection::wrap($stateProcessor->retrieveContractData($hpeContract))->pluck('assets.*.id')->collapse();
 
-        $stateProcessor->selectAssets($hpeContract, $assetIds->all());
+        $stateProcessor->markAssetsAsSelected($hpeContract, $assetIds->all());
 
         $preview = $stateProcessor->retrieveSummarizedContractData($hpeContract);
 
@@ -440,6 +440,48 @@ class HpeContractImportTest extends TestCase
         $this->assertIsArray($data[0]);
         $this->assertArrayHasKey('assets', $data[0]);
         $this->assertCount(1, $data[0]['assets']);
+    }
+
+    /**
+     * Test an application imports "20210804110434_39516_GB_S4.txt" file as hpe contract file.
+     *
+     * @return void
+     */
+    public function test_imports_20210804110434_39516_gb_s4_txt()
+    {
+        /** @var HpeContractFileService $fileService */
+        $fileService = $this->app[HpeContractFileService::class];
+
+        /** @var HpeContractState $contractProcessor */
+        $contractProcessor = $this->app[HpeContractState::class];
+
+        $filePath = base_path('tests/Unit/Data/hpe-contract-test/20210804110434_39516_GB_S4.txt');
+
+        $uploadedFile = UploadedFile::fake()->createWithContent('20210804110434_39516_GB_S4.txt', file_get_contents($filePath));
+
+        /** @var HpeContractFile $hpeContractFile */
+        $hpeContractFile = $fileService->store($uploadedFile);
+
+        $this->assertInstanceOf(HpeContractFile::class, $hpeContractFile);
+
+        $response = $fileService->processImport($hpeContractFile, new HpeContractImportData([
+            'date_format' => 'm/d/Y'
+        ]));
+
+        $this->assertFalse($response->failed());
+
+        $hpeContract = factory(HpeContract::class)->create();
+
+        $response = $contractProcessor->processHpeContractData($hpeContract, $hpeContractFile);
+
+        $this->assertTrue($response);
+
+        $data = $contractProcessor->retrieveContractData($hpeContract);
+
+        $this->assertCount(1, $data);
+        $this->assertIsArray($data[0]);
+        $this->assertArrayHasKey('assets', $data[0]);
+        $this->assertCount(192, $data[0]['assets']);
     }
 
     protected static function createUploadedFile(string $filePath): TestingFile

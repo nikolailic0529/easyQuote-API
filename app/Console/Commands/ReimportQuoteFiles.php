@@ -40,7 +40,7 @@ class ReimportQuoteFiles extends Command
     {
         $id = $this->argument('quote_id');
 
-        $service->withOutput($this->output)->reimport($id);
+        $service->withOutput($this->output)->performReimportOfQuote($id);
 
         return 0;
     }

@@ -5,7 +5,8 @@ namespace App\Services\DocumentProcessor\DocumentEngine;
 use App\Contracts\Services\ProcessesQuoteFile;
 use App\Enum\Lock;
 use App\Models\QuoteFile\QuoteFile;
-use App\Services\DocumentEngine\ParsePaymentPDF;
+use App\Services\DocumentEngine\GenericPdfPaymentScheduleParser;
+use App\Services\DocumentEngine\ParserClientFactory;
 use App\Services\DocumentProcessor\Concerns\HasFallbackProcessor;
 use App\Services\DocumentProcessor\DocumentEngine\Concerns\DocumentEngineProcessor;
 use App\Services\DocumentProcessor\Exceptions\NoDataFoundException;
@@ -20,13 +21,11 @@ use Throwable;
 
 class DePdfRescuePaymentScheduleProcessor implements ProcessesQuoteFile, DocumentEngineProcessor, HasFallbackProcessor
 {
-    protected LoggerInterface $logger;
-    private ProcessesQuoteFile $fallBackProcessor;
 
-    public function __construct(LoggerInterface $logger, ProcessesQuoteFile $fallBackProcessor)
+    public function __construct(protected LoggerInterface $logger,
+                                protected ParserClientFactory $parserClientFactory,
+                                private ProcessesQuoteFile $fallBackProcessor)
     {
-        $this->logger = $logger;
-        $this->fallBackProcessor = $fallBackProcessor;
     }
 
     /**
@@ -36,7 +35,7 @@ class DePdfRescuePaymentScheduleProcessor implements ProcessesQuoteFile, Documen
      */
     public function process(QuoteFile $quoteFile): void
     {
-        $response = (new ParsePaymentPDF($this->logger))
+        $response = $this->parserClientFactory->buildGenericPdfPaymentScheduleParser()
             ->filePath(Storage::path($quoteFile->original_file_path))
             ->page($quoteFile->imported_page)
             ->process();

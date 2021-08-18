@@ -2,8 +2,8 @@
 
 /** @var \Illuminate\Database\Eloquent\Factory $factory */
 
+use App\Contracts\Repositories\{CurrencyRepositoryInterface as Currencies,};
 use App\Models\Company;
-use App\Contracts\Repositories\{CompanyRepositoryInterface as Companies, CurrencyRepositoryInterface as Currencies,};
 use App\Models\Customer\Customer;
 use App\Models\Quote\Margin\CountryMargin;
 use App\Models\Quote\Quote;
@@ -14,8 +14,8 @@ use Faker\Generator as Faker;
 use Illuminate\Support\Arr;
 
 $factory->define(Quote::class, function (Faker $faker) {
-    /** @var Company */
-    $company = app(Companies::class)->allInternalWithVendorsAndCountries()->random();
+    /** @var Company $company */
+    $company = factory(Company::class)->create();
 
     $vendor = $company->vendors->whenEmpty(
         function ($vendors) use ($company) {

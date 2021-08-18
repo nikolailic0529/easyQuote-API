@@ -55,6 +55,10 @@ final class WorldwideQuoteAssetData extends DataTransferObject
 
     public ?string $service_level_description;
 
+    public ?float $buy_price;
+
+    public ?float $buy_price_margin;
+
     public ?float $price;
 
     public ?float $original_price;

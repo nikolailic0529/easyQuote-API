@@ -3,15 +3,11 @@
 namespace App\Repositories;
 
 use App\Contracts\ActivatableInterface;
+use App\Queries\Elasticsearch\ElasticsearchQuery;
 use App\Repositories\Concerns\FiltersQuery;
-use App\Services\ElasticsearchQuery;
-use Illuminate\Database\Eloquent\{
-    Builder,
-    Model
-};
-use Elasticsearch\Client as Elasticsearch;
-use Illuminate\Support\Str;
 use Closure;
+use Elasticsearch\Client as Elasticsearch;
+use Illuminate\Database\Eloquent\{Builder, Model};
 use Throwable;
 
 abstract class SearchableRepository
@@ -104,8 +100,7 @@ abstract class SearchableRepository
         $esQuery = ElasticsearchQuery::new()
             ->modelIndex($model)
             ->queryString($query)
-            ->escapeQueryString()
-            ->wrapQueryString();
+            ->escapeQueryString();
         
         try {
             return $this->elasticsearch()->search($esQuery->toArray());

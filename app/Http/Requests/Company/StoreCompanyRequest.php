@@ -3,6 +3,9 @@
 namespace App\Http\Requests\Company;
 
 use App\DTO\Company\CreateCompanyData;
+use App\Enum\CompanyCategory;
+use App\Enum\CompanySource;
+use App\Enum\CompanyType;
 use App\Enum\VAT;
 use App\Models\Address;
 use App\Models\Company;
@@ -46,7 +49,7 @@ class StoreCompanyRequest extends FormRequest
                 Rule::in(VAT::getValues())
             ],
             'short_code' => [
-                Rule::requiredIf(fn() => $this->type === Company::INT_TYPE),
+                Rule::requiredIf(fn() => $this->type === CompanyType::INTERNAL),
                 'string',
                 'size:3',
                 Rule::unique(Company::class)
@@ -56,13 +59,13 @@ class StoreCompanyRequest extends FormRequest
             'type' => [
                 'required',
                 'string',
-                Rule::in(Company::TYPES)
+                Rule::in(CompanyType::getValues())
             ],
             'source' => [
                 'nullable',
-                Rule::requiredIf(fn() => $this->type === Company::EXT_TYPE),
+                Rule::requiredIf(fn() => $this->type === CompanyType::EXTERNAL),
                 'string',
-                Rule::in(Company::SOURCES)
+                Rule::in(CompanySource::getValues())
             ],
             'logo' => [
                 'image',
@@ -70,9 +73,9 @@ class StoreCompanyRequest extends FormRequest
             ],
             'category' => [
                 'nullable',
-                Rule::requiredIf(fn() => $this->type === Company::EXT_TYPE),
+                Rule::requiredIf(fn() => $this->type === CompanyType::EXTERNAL),
                 'string',
-                Rule::in(Company::CATEGORIES)
+                Rule::in(CompanyCategory::getValues())
             ],
             'email' => 'required|email',
             'phone' => 'nullable|string|min:4|phone',

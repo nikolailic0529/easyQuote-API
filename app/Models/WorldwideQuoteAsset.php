@@ -25,8 +25,10 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $product_name
  * @property string|null $expiry_date
  * @property string|null $service_level_description
- * @property float|null $price
- * @property float|null $original_price
+ * @property float|null $buy_price Buy Price
+ * @property float|null $buy_price_margin Buy Price Margin
+ * @property float|null $original_price List Price
+ * @property float|null $price Selling price
  * @property float|null $exchange_rate_value
  * @property float|null $exchange_rate_margin
  * @property string|null $vendor_short_code
@@ -43,8 +45,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class WorldwideQuoteAsset extends Model
 {
     use Uuid;
-
-    public $timestamps = false;
 
     protected $guarded = [];
 

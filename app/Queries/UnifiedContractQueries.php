@@ -6,48 +6,25 @@ use App\DTO\Contract\ContractLookupQueryData;
 use App\DTO\EntityFilter\FieldValue;
 use App\DTO\EntityFilter\TermValue;
 use App\Helpers\ElasticsearchHelper;
-use App\Http\Query\{DefaultOrderBy,
-    OrderByCompanyName,
-    OrderByCreatedAt,
-    OrderByCustomerName,
-    OrderByCustomerRfqNumber,
-    OrderBySupportEndDate,
-    OrderBySupportStartDate,
-    OrderByUserFullname,
-    OrderByValidUntilDate,
-    Quote\OrderByCompleteness};
 use App\Models\HpeContract;
 use App\Models\Quote\Contract;
 use App\Services\Contract\ElasticContractLookupService;
+use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
-use Illuminate\Pipeline\Pipeline;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class UnifiedContractQueries
 {
-    protected Pipeline $pipeline;
-
-    protected Elasticsearch $elasticsearch;
-
-    protected ElasticContractLookupService $lookupService;
-
-    protected ConnectionInterface $connection;
-
-    public function __construct(ConnectionInterface $connection,
-                                Pipeline $pipeline,
-                                Elasticsearch $elasticsearch,
-                                ElasticContractLookupService $lookupService)
+    public function __construct(protected ConnectionInterface $connection,
+                                protected Elasticsearch $elasticsearch,
+                                protected ElasticContractLookupService $lookupService)
     {
-        $this->connection = $connection;
-        $this->pipeline = $pipeline;
-        $this->elasticsearch = $elasticsearch;
-        $this->lookupService = $lookupService;
     }
 
     public function uniqueUserNamesOfDraftedContractsQuery(string $column = 'user_fullname'): BaseBuilder
@@ -299,7 +276,7 @@ class UnifiedContractQueries
             'customer_name',
             'contract_number',
             'user_fullname',
-            'created_at'
+            'created_at',
         ], true);
 
         $fieldValueFormatter = function (FieldValue $fieldValue) {
@@ -365,7 +342,7 @@ class UnifiedContractQueries
 
                 $terms[] = new TermValue([
                     'term_name' => (string)$field,
-                    'term_values' => $termValues
+                    'term_values' => $termValues,
                 ]);
 
             }
@@ -386,7 +363,7 @@ class UnifiedContractQueries
         if (!is_null($submittedFlag)) {
             $mustEqualFields[] = new FieldValue([
                 'field_name' => 'is_submitted',
-                'field_value' => $submittedFlag
+                'field_value' => $submittedFlag,
             ]);
         }
 
@@ -512,23 +489,25 @@ class UnifiedContractQueries
 
         $unifiedQuery->orderByRaw("activated_at IS NOT NULL DESC");
 
-        $query = $this->pipeline
-            ->send($unifiedQuery)
-            ->through([
-                (new OrderByCreatedAt)->qualifyColumnName(false),
-                OrderByCustomerName::class,
-                OrderByCompanyName::class,
-                OrderByCustomerRfqNumber::class,
-                OrderByValidUntilDate::class,
-                OrderBySupportStartDate::class,
-                OrderBySupportEndDate::class,
-                OrderByUserFullname::class,
-                new OrderByCompleteness('completeness'),
-                new DefaultOrderBy('updated_at')
+        return RequestQueryBuilder::for(
+            builder: $unifiedQuery,
+            request: $request,
+        )
+            ->allowOrderFields(...[
+                'created_at',
+                'updated_at',
+                'customer_name',
+                'company_name',
+                'customer_rfq_number',
+                'valid_until_date',
+                'support_start_date',
+                'support_end_date',
+                'user_fullname',
+                'completeness',
             ])
-            ->thenReturn();
-
-        return $query->toBase();
+            ->enforceOrderBy('updated_at', 'desc')
+            ->process()
+            ->toBase();
     }
 
     public function paginateUnifiedDraftedContractsQuery(Request $request = null): BaseBuilder
@@ -631,22 +610,24 @@ class UnifiedContractQueries
 
         $unifiedQuery->orderByRaw("activated_at IS NOT NULL DESC");
 
-        $query = $this->pipeline
-            ->send($unifiedQuery)
-            ->through([
-                (new OrderByCreatedAt)->qualifyColumnName(false),
-                OrderByCustomerName::class,
-                OrderByCompanyName::class,
-                OrderByCustomerRfqNumber::class,
-                OrderByValidUntilDate::class,
-                OrderBySupportStartDate::class,
-                OrderBySupportEndDate::class,
-                OrderByUserFullname::class,
-                new OrderByCompleteness('completeness'),
-                new DefaultOrderBy('updated_at')
+        return RequestQueryBuilder::for(
+            builder: $unifiedQuery,
+            request: $request,
+        )
+            ->allowOrderFields(...[
+                'created_at',
+                'updated_at',
+                'customer_name',
+                'company_name',
+                'customer_rfq_number',
+                'valid_until_date',
+                'support_start_date',
+                'support_end_date',
+                'user_fullname',
+                'completeness',
             ])
-            ->thenReturn();
-
-        return $query->toBase();
+            ->enforceOrderBy('updated_at', 'desc')
+            ->process()
+            ->toBase();
     }
 }

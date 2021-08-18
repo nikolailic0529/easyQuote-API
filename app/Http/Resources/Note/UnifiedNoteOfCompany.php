@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Note;
 
+use App\Models\CompanyNote;
 use App\Models\Quote\QuoteNote;
 use App\Models\Quote\WorldwideQuoteNote;
 use App\Models\User;
@@ -28,6 +29,10 @@ class UnifiedNoteOfCompany extends JsonResource
             'id' => $this->getKey(),
             'note_entity_type' => $this->getMorphClass(),
             'note_entity_class' => Str::snake(class_basename($this->resource)),
+            'parent_entity_type' => match($this->resource::class) {
+                QuoteNote::class, WorldwideQuoteNote::class => 'Quote',
+                CompanyNote::class => 'Company',
+            },
             'quote_id' => $this->quote_id,
             'customer_id' => $this->customer_id,
             'quote_number' => $this->quote_number,

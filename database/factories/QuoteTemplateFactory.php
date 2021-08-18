@@ -10,7 +10,7 @@ use App\Models\Vendor;
 use App\Services\ThumbHelper;
 
 $factory->define(QuoteTemplate::class, function (Faker $faker) {
-    $company = Company::whereType(Company::INT_TYPE)->first();
+    $company = Company::whereType(\App\Enum\CompanyType::INTERNAL)->first();
     $vendor = Vendor::where('is_system', true)->first();
 
     $design = file_get_contents(database_path('seeders/models/template_designs.json'));

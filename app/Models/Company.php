@@ -19,7 +19,11 @@ use App\Traits\{Activatable,
     Systemable,
     Uuid};
 use Illuminate\Database\Eloquent\{Builder, Model, SoftDeletes,};
-use Illuminate\Database\Eloquent\{Collection, Relations\BelongsTo, Relations\BelongsToMany, Relations\HasManyThrough};
+use Illuminate\Database\Eloquent\{Collection,
+    Relations\BelongsTo,
+    Relations\BelongsToMany,
+    Relations\HasManyThrough,
+    Relations\MorphToMany};
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Support\Str;
@@ -29,6 +33,8 @@ use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
  * Class Company
  *
  * @property string|null $user_id
+ * @property string|null $default_country_id
+ * @property string|null $default_vendor_id
  * @property string|null $name
  * @property string|null $short_code
  * @property string|null $vs_company_code
@@ -48,23 +54,10 @@ use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
  * @property-read Collection<Opportunity>|Opportunity[] $opportunities
  * @property-read Collection<WorldwideQuote>|WorldwideQuote[] $worldwideQuotes
  * @property-read Collection<CompanyNote>|CompanyNote[] $companyNotes
+ * @property-read Collection<Vendor>|Vendor[] $vendors
  */
 class Company extends Model implements HasImagesDirectory, WithLogo, ActivatableInterface, HasOrderedScope, SearchableEntity
 {
-    public const TYPES = ['Internal', 'External'];
-
-    public const CATEGORIES = ['End User', 'Reseller', 'Business Partner'];
-
-    public const SOURCES = ['EQ', 'S4'];
-
-    public const INT_TYPE = 'Internal';
-
-    public const EXT_TYPE = 'External';
-
-    public const REGULAR_RELATIONSHIPS = [
-        'defaultCountry', 'defaultVendor', 'defaultTemplate', 'vendors', 'addresses.country', 'contacts', 'vendors.countries', 'addresses.country', 'contacts',
-    ];
-
     use Uuid,
         Multitenantable,
         BelongsToUser,
@@ -94,14 +87,17 @@ class Company extends Model implements HasImagesDirectory, WithLogo, Activatable
 
     public function vendors(): BelongsToMany
     {
-        return $this->belongsToMany(Vendor::class)
-            ->addSelect([
-                'company_default_vendor' => Company::query()->selectRaw('default_vendor_id')
-                    ->whereColumn('company_vendor.company_id', 'companies.id')
-                    ->limit(1)
-                    ->toBase()
-            ])
-            ->orderByRaw("field(`vendors`.`id`, `company_default_vendor`, null) desc");
+        return tap($this->belongsToMany(Vendor::class), function (BelongsToMany $relation) {
+
+            $relation->leftJoin($this->getTable(), $relation->getQualifiedForeignPivotKeyName(), $this->getQualifiedKeyName())
+                ->select("{$relation->getRelated()->getTable()}.*")
+                ->addSelect([
+                    "{$this->qualifyColumn('default_vendor_id')} as company_default_vendor_id",
+                    "{$this->qualifyColumn('default_country_id')} as company_default_country_id",
+                ])
+                ->orderByRaw("field({$relation->getQualifiedRelatedKeyName()}, `company_default_vendor_id`, null) desc");
+
+        });
     }
 
     public function locations(): HasManyDeep
@@ -152,16 +148,23 @@ class Company extends Model implements HasImagesDirectory, WithLogo, Activatable
             ]);
     }
 
-    public function sortVendorsCountries(): self
+    public function prioritizeDefaultCountryOnVendors(): static
     {
-        $vendors = $this->vendors->map(
-            fn($vendor) => $vendor->setRelation(
-                'countries',
-                $vendor->countries->sortByDesc(fn($country) => ($this->default_country_id === $country->id))->values()
-            )
-        );
+        return tap($this, function () {
 
-        return $this->setRelation('vendors', $vendors);
+            $this->vendors->each(function (Vendor $vendor) {
+                $vendor->setRelation(
+                    relation: 'countries',
+                    value: $vendor->countries
+                        ->sortByDesc(function (Country $country) {
+                            return $this->default_country_id === $country->getKey();
+                        })
+                        ->values()
+                );
+            });
+
+        });
+
     }
 
     public function scopeVendor($query, string $id)
@@ -297,5 +300,10 @@ class Company extends Model implements HasImagesDirectory, WithLogo, Activatable
     public function assets(): BelongsToMany
     {
         return $this->belongsToMany(Asset::class);
+    }
+
+    public function attachments(): MorphToMany
+    {
+        return $this->morphToMany(Attachment::class, 'attachable', relatedPivotKey: 'attachment_id');
     }
 }

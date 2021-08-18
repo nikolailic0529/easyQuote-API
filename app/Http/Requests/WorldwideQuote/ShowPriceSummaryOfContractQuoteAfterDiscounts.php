@@ -12,7 +12,7 @@ use App\Models\Quote\Discount\PromotionalDiscount;
 use App\Models\Quote\Discount\SND;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
-use App\Services\WorldwideQuote\Calculation\WorldwideDistributionCalc;
+use App\Services\WorldwideQuote\Calculation\WorldwideDistributorQuoteCalc;
 use App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;

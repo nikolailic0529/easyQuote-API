@@ -5,7 +5,8 @@ namespace App\Services\DocumentProcessor\DocumentEngine;
 use App\Contracts\Services\ProcessesQuoteFile;
 use App\Enum\Lock;
 use App\Models\QuoteFile\QuoteFile;
-use App\Services\DocumentEngine\ParseDistributorWord;
+use App\Services\DocumentEngine\RescueWordPriceListParser;
+use App\Services\DocumentEngine\ParserClientFactory;
 use App\Services\DocumentProcessor\Concerns\HasFallbackProcessor;
 use App\Services\DocumentProcessor\DocumentEngine\Concerns\DocumentEngineProcessor;
 use App\Services\DocumentProcessor\Exceptions\NoDataFoundException;
@@ -23,6 +24,7 @@ class DeWordRescuePriceListProcessor implements ProcessesQuoteFile, DocumentEngi
                                 protected ConnectionInterface $connection,
                                 protected LockProvider $lockProvider,
                                 protected PriceListResponseDataMapper $dataMapper,
+                                protected ParserClientFactory $parserClientFactory,
                                 private ProcessesQuoteFile $fallbackProcessor)
     {
     }
@@ -45,7 +47,7 @@ class DeWordRescuePriceListProcessor implements ProcessesQuoteFile, DocumentEngi
 
         });
 
-        $data = (new ParseDistributorWord($this->logger))
+        $data = $this->parserClientFactory->buildRescueWordPriceListParser()
             ->filePath(Storage::path($quoteFile->original_file_path))
             ->firstPage($quoteFile->imported_page)
             ->process();

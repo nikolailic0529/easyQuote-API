@@ -2,14 +2,18 @@
 
 namespace App\Http\Requests\Quote;
 
-use App\Contracts\Repositories\CompanyRepositoryInterface;
 use App\Contracts\Repositories\CurrencyRepositoryInterface;
-use App\Contracts\Repositories\QuoteFile\DataSelectSeparatorRepositoryInterface;
 use App\Facades\Setting;
 use App\Models\Company;
+use App\Models\QuoteFile\DataSelectSeparator;
+use App\Models\User;
+use App\Queries\CompanyQueries;
 use App\Services\ProfileHelper;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Foundation\Http\FormRequest;
+use JetBrains\PhpStorm\ArrayShape;
 
 class FirstStep extends FormRequest
 {
@@ -25,22 +29,33 @@ class FirstStep extends FormRequest
         ];
     }
 
+    #[ArrayShape(['companies' => "\App\Models\Company[]|\Illuminate\Database\Eloquent\Collection", 'data_select_separators' => "\App\Models\QuoteFile\DataSelectSeparator[]|\Illuminate\Database\Eloquent\Collection", 'supported_file_types' => "mixed", 'currencies' => "mixed"])]
     public function data(): array
     {
-        /** @var CompanyRepositoryInterface $companies */
-        $companies = app(CompanyRepositoryInterface::class);
-
-        /** @var DataSelectSeparatorRepositoryInterface $dataSelects */
-        $dataSelects = app(DataSelectSeparatorRepositoryInterface::class);
+        /** @var CompanyQueries $companyQueries */
+        $companyQueries = $this->container[CompanyQueries::class];
 
         /** @var CurrencyRepositoryInterface $currencies */
         $currencies = app(CurrencyRepositoryInterface::class);
 
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = $this->user();
 
-        $filteredCompanies = $companies->allInternalWithVendorsAndCountries()
-            ->unless($user->hasRole(R_SUPER), fn(Collection $collection) => $collection->find(ProfileHelper::profileCompaniesIds()))
+        /** @var Collection|Company[] $filteredCompanies */
+        $filteredCompanies = $companyQueries->listOfInternalCompaniesQuery()
+            ->with([
+                'vendors' => function (Relation $relation) {
+                    $relation->whereNotNull($relation->qualifyColumn('activated_at'));
+                },
+                'vendors.countries.defaultCurrency',
+            ])
+            ->unless($user->hasRole(R_SUPER), function (Builder $builder) {
+                $builder->whereKey(ProfileHelper::profileCompaniesIds());
+            })
+            ->get()
+            ->each(function (Company $company) {
+                $company->prioritizeDefaultCountryOnVendors();
+            })
             ->when($this->has('prioritize.company'), function (Collection $collection) {
                 return $collection->prioritize(fn(Company $company) => $company->short_code === $this->input('prioritize.company'));
             }, function (Collection $collection) {
@@ -53,9 +68,9 @@ class FirstStep extends FormRequest
 
         return [
             'companies' => $filteredCompanies,
-            'data_select_separators' => $dataSelects->all(),
+            'data_select_separators' => DataSelectSeparator::all(),
             'supported_file_types' => Setting::get('supported_file_types_ui'),
-            'currencies' => $currencies->allHaveExrate()
+            'currencies' => $currencies->allHaveExrate(),
         ];
     }
 }

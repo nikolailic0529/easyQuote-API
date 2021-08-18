@@ -42,11 +42,20 @@ class SystemSettingSeeder extends Seeder
 
             $connection
                 ->table('system_settings')
-                ->insertOrIgnore([
+                ->upsert([
                     'id' => (string)Uuid::generate(4),
                     'key' => $seed['key'],
                     'section' => $seed['section'],
                     'value' => $seed['value'],
+                    'type' => $seed['type'] ?? 'string',
+                    'possible_values' => $seed['possible_values'],
+                    'validation' => transform($seed['validation'] ?? null, function (array $validation) {
+                        return json_encode($validation);
+                    }),
+                    'is_read_only' => $seed['is_read_only'] ?? false,
+                    'label_format' => $seed['label_format'] ?? null,
+                ], 'key', [
+                    'section' => $seed['section'],
                     'type' => $seed['type'] ?? 'string',
                     'possible_values' => $seed['possible_values'],
                     'validation' => transform($seed['validation'] ?? null, function (array $validation) {

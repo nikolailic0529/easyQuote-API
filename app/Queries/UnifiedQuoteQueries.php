@@ -4,22 +4,17 @@ namespace App\Queries;
 
 use App\DTO\UnifiedQuote\UnifiedQuotesRequestData;
 use App\Enum\QuoteStatus;
-use App\Http\Query\{ActiveFirst,
-    DefaultOrderBy,
-    OrderByCompleteness,
-    OrderByCustomerName,
-    OrderByRfqNumber,
-    OrderByUpdatedAt,
-    Quote\OrderByCompanyName};
 use App\Models\Company;
 use App\Models\Quote\Quote;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\User;
+use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as BaseBuilder;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
 use Illuminate\Pipeline\Pipeline;
@@ -87,6 +82,8 @@ class UnifiedQuoteQueries
                 'contracts.id as contract_id',
                 'contracts.submitted_at as contract_submitted_at',
 
+                new Expression(sprintf("%s as status", QuoteStatus::ALIVE)),
+
                 'quotes.submitted_at as submitted_at',
                 'quotes.updated_at as updated_at',
                 'quotes.activated_at as activated_at',
@@ -134,7 +131,6 @@ class UnifiedQuoteQueries
                 $joinClause->on('sales_orders.worldwide_quote_id', 'worldwide_quotes.id')
                     ->whereNull('sales_orders.deleted_at');
             })
-            ->where('worldwide_quotes.status', QuoteStatus::ALIVE)
             ->select([
                 'worldwide_quotes.id as id',
                 'worldwide_quotes.user_id',
@@ -165,6 +161,8 @@ class UnifiedQuoteQueries
 
                 DB::raw('NULL as contract_id'),
                 DB::raw('NULL as contract_submitted_at'),
+
+                'worldwide_quotes.status as status',
 
                 'worldwide_quotes.submitted_at as submitted_at',
                 'worldwide_quotes.updated_at as updated_at',
@@ -204,7 +202,7 @@ class UnifiedQuoteQueries
         }
 
         return tap($unifiedQuery->toBase(), function (BaseBuilder $builder) {
-           $builder->orderBy('updated_at', 'desc');
+            $builder->orderBy('updated_at', 'desc');
         });
     }
 
@@ -253,20 +251,22 @@ class UnifiedQuoteQueries
             $unifiedQuery->unionAll($query->toBase());
         }
 
-        $this->pipeline
-            ->send($unifiedQuery)
-            ->through([
-                ActiveFirst::class,
-                OrderByCompanyName::class,
-                OrderByCustomerName::class,
-                OrderByRfqNumber::class,
-                OrderByCompleteness::class,
-                (new OrderByUpdatedAt)->qualifyColumnName(false),
-                new DefaultOrderBy('updated_at'),
-            ])
-            ->thenReturn();
+        $unifiedQuery->orderByDesc('is_active');
 
-        return $unifiedQuery->toBase();
+        return RequestQueryBuilder::for(
+            builder: $unifiedQuery,
+            request: $request,
+        )
+            ->allowOrderFields(...[
+                'company_name',
+                'customer_name',
+                'rfq_number',
+                'completeness',
+                'updated_at',
+            ])
+            ->enforceOrderBy('updated_at', 'desc')
+            ->process()
+            ->toBase();
     }
 
     public function paginateSubmittedQuotesQuery(UnifiedQuotesRequestData $requestData = null, Request $request = null): BaseBuilder
@@ -314,20 +314,22 @@ class UnifiedQuoteQueries
             $unifiedQuery->unionAll($query->toBase());
         }
 
-        $this->pipeline
-            ->send($unifiedQuery)
-            ->through([
-                ActiveFirst::class,
-                OrderByCompanyName::class,
-                OrderByCustomerName::class,
-                OrderByRfqNumber::class,
-                OrderByCompleteness::class,
-                (new OrderByUpdatedAt)->qualifyColumnName(false),
-                new DefaultOrderBy('updated_at'),
-            ])
-            ->thenReturn();
+        $unifiedQuery->orderByDesc('is_active');
 
-        return $unifiedQuery->toBase();
+        return RequestQueryBuilder::for(
+            builder: $unifiedQuery,
+            request: $request,
+        )
+            ->allowOrderFields(...[
+                'company_name',
+                'customer_name',
+                'rfq_number',
+                'completeness',
+                'updated_at',
+            ])
+            ->enforceOrderBy('updated_at', 'desc')
+            ->process()
+            ->toBase();
     }
 
     public function paginateExpiringQuotesQuery(UnifiedQuotesRequestData $requestData = null, Request $request = null): BaseBuilder
@@ -375,20 +377,22 @@ class UnifiedQuoteQueries
             $unifiedQuery->unionAll($query->toBase());
         }
 
-        $this->pipeline
-            ->send($unifiedQuery)
-            ->through([
-                ActiveFirst::class,
-                OrderByCompanyName::class,
-                OrderByCustomerName::class,
-                OrderByRfqNumber::class,
-                OrderByCompleteness::class,
-                (new OrderByUpdatedAt)->qualifyColumnName(false),
-                new DefaultOrderBy('updated_at'),
-            ])
-            ->thenReturn();
+        $unifiedQuery->orderByDesc('is_active');
 
-        return $unifiedQuery->toBase();
+        return RequestQueryBuilder::for(
+            builder: $unifiedQuery,
+            request: $request,
+        )
+            ->allowOrderFields(...[
+                'company_name',
+                'customer_name',
+                'rfq_number',
+                'completeness',
+                'updated_at',
+            ])
+            ->enforceOrderBy('updated_at', 'desc')
+            ->process()
+            ->toBase();
     }
 
     public function expiringRescueQuotesListingQuery(): Builder

@@ -5,17 +5,15 @@ namespace App\Services\DocumentProcessor;
 use App\Contracts\Repositories\SettingRepository;
 use App\Contracts\Services\ManagesDocumentProcessors;
 use App\Contracts\Services\ProcessesQuoteFile;
-use App\DTO\MappedRow as MappedRowDTO;
+use App\DTO\MappedRowData;
 use App\DTO\MappedRowSettings;
 use App\DTO\RowMapping;
 use App\Enum\Lock;
-use App\Jobs\RetrievePriceAttributes;
-use App\Models\{DocumentProcessLog, Quote\Quote, QuoteFile\QuoteFile, System\SystemSetting};
-use App\Models\QuoteFile\ImportableColumn;
+use App\Models\{DocumentProcessLog, QuoteFile\QuoteFile};
 use App\Models\QuoteFile\ImportedRow;
 use App\Models\QuoteFile\MappedRow;
-use App\Models\Template\TemplateField;
 use App\Services\DocumentProcessor\Concerns\HasFallbackProcessor;
+use App\Services\DocumentProcessor\Exceptions\DocumentComparisonException;
 use App\Services\DocumentProcessor\Exceptions\NoDataFoundException;
 use App\Support\PriceParser;
 use Devengine\AnyDateParser\DateParser;
@@ -23,13 +21,10 @@ use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Pipeline\Pipeline;
 use Illuminate\Support\{Carbon, Manager, Str};
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
-use Throwable;
 use Webpatser\Uuid\Uuid;
 
 class DocumentProcessor extends Manager implements ManagesDocumentProcessors
@@ -53,81 +48,8 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
         return $this->logger;
     }
 
-    public function performProcess(Quote $quote, QuoteFile $quoteFile, ?int $importablePageNumber = null)
-    {
-        $this->handleOrRetrieve($quote, $quoteFile, $importablePageNumber);
-
-        $quoteFile->throwExceptionIfExists();
-
-        if ($quoteFile->isPrice() && $quoteFile->isNotAutomapped()) {
-            $this->mapColumnsToFields($quote, $quoteFile);
-            dispatch(new RetrievePriceAttributes($quote->activeVersionOrCurrent));
-        }
-
-        return $quoteFile->processing_state;
-    }
-
-    protected function handleOrRetrieve(Quote $quote, QuoteFile $quoteFile, ?int $importablePageNumber = null): bool
-    {
-        app(Pipeline::class)
-            ->send($quoteFile)
-            ->through(
-                \App\Services\HandledCases\HasException::class,
-                \App\Services\HandledCases\HasNotBeenProcessed::class,
-                \App\Services\HandledCases\RequestedNewPageForPrice::class,
-                \App\Services\HandledCases\RequestedNewPageForSchedule::class,
-                \App\Services\HandledCases\RequestedNewSeparatorForCsv::class
-            )
-            ->thenReturn();
-
-        if ($quoteFile->shouldNotBeHandled) {
-            return false;
-        }
-
-        $version = $quote->activeVersionOrCurrent;
-
-        $lock = $this->lockProvider->lock(Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()), 10);
-        $lock->block(30);
-
-        try {
-            if (!is_null($importablePageNumber)) {
-                $quoteFile->setImportedPage($importablePageNumber);
-            }
-
-            $quoteFile->clearException();
-
-            if ($quoteFile->isPrice()) {
-                $version->priceList()->associate($quoteFile)->save();
-                $version->forgetCachedMappingReview();
-                $version->resetGroupDescription();
-            }
-
-            if ($quoteFile->isSchedule()) {
-                $version->paymentSchedule()->associate($quoteFile)->save();
-            }
-        } finally {
-            $lock->release();
-        }
-
-        $this->forwardProcessor($quoteFile);
-
-        if ($quoteFile->isPrice() && $quoteFile->rowsData()->where('page', '>=', $quoteFile->imported_page)->doesntExist()) {
-            $quoteFile->setException(QFNRF_02, 'QFNRF_02');
-        }
-
-        if ($quoteFile->isSchedule() && (is_null($quoteFile->scheduleData) || blank($quoteFile->scheduleData->value))) {
-            $quoteFile->setException(QFNS_01, 'QFNS_01');
-        }
-
-        if ($quoteFile->isPrice()) {
-            $this->mapColumnsToFields($quote, $quoteFile);
-        }
-
-        return true;
-    }
-
     /**
-     * @throws \App\Services\DocumentProcessor\Exceptions\NoDataFoundException|\App\Services\DocumentProcessor\Exceptions\DocumentComparisonException
+     * @throws NoDataFoundException|DocumentComparisonException
      */
     public function forwardProcessor(QuoteFile $quoteFile): void
     {
@@ -193,7 +115,7 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
 
             $fallbackProcessLog = tap(new DocumentProcessLog(), function (DocumentProcessLog $log) use ($quoteFile, $fallbackProcessor) {
 
-                $log->{$log->getKeyName()} = (string) Uuid::generate(4);
+                $log->{$log->getKeyName()} = (string)Uuid::generate(4);
                 $log->driver_id = (string)$fallbackProcessor->getProcessorUuid();
 
                 $log->original_file_name = $quoteFile->original_file_name;
@@ -220,62 +142,6 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
         }
     }
 
-    public function mapColumnsToFields(Quote $quote, QuoteFile $quoteFile): void
-    {
-        $quoteLock = $this->lockProvider->lock(Lock::UPDATE_QUOTE($quote->getKey()), 10);
-
-        $quoteLock->block(30);
-
-        try {
-            $templateFields = TemplateField::query()->pluck('id', 'name');
-
-            $row = $quoteFile->rowsData()
-                ->where('page', '>=', $quoteFile->imported_page ?? 1)
-                ->first();
-
-            $columns = optional($row)->columns_data;
-
-            if (blank($columns)) {
-                $quote->activeVersionOrCurrent->templateFields()->detach();
-
-                $quoteFileLock = $this->lockProvider->lock(
-                    Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()),
-                    10
-                );
-
-                $quoteFileLock->block(30, $quoteFile->markAsAutomapped());
-                return;
-            }
-
-            $defaultAttributes = [
-                'is_default_enabled' => false,
-                'is_preview_visible' => true,
-                'default_value' => null,
-                'sort' => null,
-            ];
-
-            $importableColumns = ImportableColumn::whereKey($columns->pluck('importable_column_id'))->pluck('id', 'name');
-
-            $map = $templateFields
-                ->mergeRecursive($importableColumns)
-                ->filter(fn($map) => is_array($map) && count($map) === 2)
-                ->mapWithKeys(fn($map, $key) => [
-                    $map[0] => ['importable_column_id' => $map[1]] + $defaultAttributes,
-                ]);
-
-            $quote->activeVersionOrCurrent->templateFields()->sync($map->toArray());
-
-            $quoteFileLock = $this->lockProvider->lock(
-                Lock::UPDATE_QUOTE_FILE($quoteFile->getKey()),
-                10
-            );
-
-            $quoteFileLock->block(30, $quoteFile->markAsAutomapped());
-        } finally {
-            $quoteLock->release();
-        }
-    }
-
     public function transitImportedRowsToMappedRows(QuoteFile $quoteFile, RowMapping $rowMapping, ?MappedRowSettings $rowSettings = null)
     {
         $rowSettings ??= new MappedRowSettings;
@@ -297,10 +163,12 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
                 }
             });
 
-        $mappedRows = array_map(function (MappedRowDTO $mappedRow) use ($quoteFile) {
+        $mappedRows = array_map(function (MappedRowData $mappedRow) use ($quoteFile) {
             return [
                     'id' => (string)Str::uuid(),
                     'quote_file_id' => $quoteFile->getKey(),
+                    'created_at' => now()->toDateTimeString(),
+                    'updated_at' => now()->toDateTimeString(),
                 ] + $mappedRow->toArray();
         }, $mappedRows);
 
@@ -309,42 +177,48 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
             10
         );
 
-        $lock->block(30);
+        $lock->block(30, function () use ($quoteFile, $mappedRows) {
 
-        $this->connection->beginTransaction();
+            $this->connection->transaction(function () use ($quoteFile, $mappedRows) {
 
-        try {
-            $quoteFile->mappedRows()->delete();
+                $quoteFile->mappedRows()->delete();
 
-            MappedRow::query()->insert($mappedRows);
+                MappedRow::query()->insert($mappedRows);
 
-            $this->connection->commit();
-        } catch (Throwable $e) {
-            $this->connection->rollBack();
+            });
 
-            throw $e;
-        } finally {
-            $lock->release();
-        }
+        });
     }
 
-    protected function collateImportedRow(ImportedRow $row, RowMapping $mapping, MappedRowSettings $rowSettings): MappedRowDTO
+    protected function collateImportedRow(ImportedRow $row, RowMapping $mapping, MappedRowSettings $rowSettings): MappedRowData
     {
-        $productNo = transform(data_get($row->columns_data, $mapping->product_no.".value"), fn($value) => (string)$value);
-        $serviceSKU = transform(data_get($row->columns_data, $mapping->service_sku.".value"), fn($value) => (string)$value);
-        $description = transform(data_get($row->columns_data, $mapping->description.".value"), fn($value) => (string)$value);
-        $serialNo = transform(data_get($row->columns_data, $mapping->serial_no.".value"), fn($value) => (string)$value);
-        $dateFrom = data_get($row->columns_data, $mapping->date_from.".value");
-        $dateTo = data_get($row->columns_data, $mapping->date_to.".value");
-        $quantity = data_get($row->columns_data, $mapping->qty.".value");
-        $price = data_get($row->columns_data, $mapping->price.".value");
-        $pricingDocument = transform(data_get($row->columns_data, $mapping->pricing_document.".value"), fn($value) => (string)$value);
-        $systemHandle = transform(data_get($row->columns_data, $mapping->system_handle.".value"), fn($value) => (string)$value);
-        $searchable = transform(data_get($row->columns_data, $mapping->searchable.".value"), fn($value) => (string)$value);
-        $serviceLevelDescription = transform(data_get($row->columns_data, $mapping->service_level_description.".value"), fn($value) => (string)$value);
+        /** @var array $mappedRowData */
+        $mappedRowData = [
+            'product_no' => null,
+            'service_sku' => null,
+            'description' => null,
+            'serial_no' => null,
+            'date_from' => null,
+            'date_to' => null,
+            'qty' => null,
+            'price' => null,
+            'original_price' => null,
+            'pricing_document' => null,
+            'system_handle' => null,
+            'searchable' => null,
+            'service_level_description' => null,
+        ];
+
+        foreach (array_keys($mappedRowData) as $key) {
+            if (isset($mapping->{$key})) {
+                $mappedRowData[$key] = transform(data_get($row->columns_data, "{$mapping->{$key}}.value"), function ($value) {
+                    return (string)$value;
+                });
+            }
+        }
 
         $parseDate = function (?string $date) {
-            if (is_null($date)) {
+            if (blank($date)) {
                 return null;
             }
 
@@ -355,10 +229,10 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
             return (new DateParser($date))->parseSilent();
         };
 
-        $dateFrom = $parseDate($dateFrom) ?? $rowSettings->default_date_from;
-        $dateTo = $parseDate($dateTo) ?? $rowSettings->default_date_to;
+        $dateFrom = $mappedRowData['date_from'] = $parseDate($mappedRowData['date_from']) ?? $rowSettings->default_date_from;
+        $dateTo = $mappedRowData['date_to'] = $parseDate($mappedRowData['date_to']) ?? $rowSettings->default_date_to;
 
-        $quantity = with($quantity, function ($quantity) use ($rowSettings) {
+        $mappedRowData['qty'] = with($mappedRowData['qty'], function ($quantity) use ($rowSettings) {
             if (blank($quantity)) {
                 return $rowSettings->default_qty;
             }
@@ -366,7 +240,7 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
             return (int)$quantity;
         });
 
-        $originalPrice = (float)transform($price, function ($price) use ($dateTo, $dateFrom, $row, $rowSettings) {
+        $mappedRowData['original_price'] = (float)transform($mappedRowData['price'], function ($price) use ($dateFrom, $dateTo, $row, $rowSettings) {
             $value = PriceParser::parseAmount($price);
 
             if ($row->is_one_pay || false === $rowSettings->calculate_list_price) {
@@ -376,37 +250,24 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
             return $dateFrom->diffInMonths($dateTo) * $value;
         });
 
-        $price = $originalPrice * $rowSettings->exchange_rate_value;
+        $mappedRowData['price'] = $mappedRowData['original_price'] * $rowSettings->exchange_rate_value;
 
-        return new MappedRowDTO([
-            'product_no' => $productNo,
-            'service_sku' => $serviceSKU,
-            'description' => $description,
-            'serial_no' => $serialNo,
-            'date_from' => $dateFrom,
-            'date_to' => $dateTo,
-            'qty' => $quantity,
-            'price' => $price,
-            'original_price' => $originalPrice,
-            'pricing_document' => $pricingDocument,
-            'system_handle' => $systemHandle,
-            'searchable' => $searchable,
-            'service_level_description' => $serviceLevelDescription,
-        ]);
+        return new MappedRowData($mappedRowData);
     }
 
-    protected function ensureAnyRequiredFieldPresentOnMappedRow(MappedRowDTO $mappedRow): bool
+    protected function ensureAnyRequiredFieldPresentOnMappedRow(MappedRowData $mappedRow): bool
     {
-        if (!is_null($mappedRow->product_no) && trim($mappedRow->product_no) !== '') {
-            return true;
-        }
 
-        if (!is_null($mappedRow->description) && trim($mappedRow->description) !== '') {
-            return true;
-        }
+        foreach ([
+                     'product_no',
+                     'description',
+                     'serial_no',
+                 ] as $fieldName) {
 
-        if (!is_null($mappedRow->serial_no) && trim($mappedRow->serial_no) !== '') {
-            return true;
+            if (trim((string)$mappedRow->{$fieldName}) !== '') {
+                return true;
+            }
+
         }
 
         return false;
@@ -438,7 +299,7 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
      *
      * @param \App\Contracts\Services\ProcessesQuoteFile $processor
      * @param \App\Models\QuoteFile\QuoteFile $quoteFile
-     * @throws \App\Services\DocumentProcessor\Exceptions\DocumentComparisonException|\App\Services\DocumentProcessor\Exceptions\NoDataFoundException
+     * @throws DocumentComparisonException|NoDataFoundException
      */
     protected function gracefullyProcessDocument(ProcessesQuoteFile $processor, QuoteFile $quoteFile): void
     {
@@ -486,9 +347,12 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
 
             });
 
+        } else {
+
+            $this->logger->info("Decided to keep the original data of the quote file.");
+
         }
 
-        $this->logger->info("Decided to keep the original data of the quote file.");
 
         // Then we will delete the replicated quote file.
         $bQuoteFile->forceDelete();

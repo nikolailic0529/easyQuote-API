@@ -3,53 +3,52 @@
 namespace App\Services;
 
 use App\Contracts\Services\HpeContractState;
-use Illuminate\Database\Eloquent\Model;
-use App\DTO\{ImportResponse, HpeContractService, HpeContractAssetCollection, HpeContractServiceCollection, PreviewHpeContractData};
-use App\Models\{HpeContract, HpeContractData, HpeContractFile};
-use App\Models\Customer\Customer;
-use App\Models\Quote\Contract;
-use App\Scopes\ContractTypeScope;
+use App\DTO\{HpeContractAssetCollection,
+    HpeContractService,
+    HpeContractServiceCollection,
+    ImportResponse,
+    PreviewHpeContractData};
+use App\Models\{HpeContract, HpeContractFile};
+use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as BaseBuilder;
-use Illuminate\Support\{Arr, Carbon, Collection, Str, Facades\DB};
-use Spatie\DataTransferObject\DataTransferObject;
+use Illuminate\Database\Query\Expression;
+use Illuminate\Support\{Arr, Carbon, Collection as BaseCollection, Str};
+use JetBrains\PhpStorm\ArrayShape;
+use Throwable;
+use Webpatser\Uuid\Uuid;
 
 class HpeContractStateProcessor implements HpeContractState
 {
-    protected const CN_PATTERN = "EQ-HPE-%'.07d";
+    const CN_PATTERN = "EQ-HPE-%'.07d";
 
-    protected HpeContract $hpeContract;
-
-    public function __construct(HpeContract $hpeContract)
+    public function __construct(protected ConnectionInterface $connection)
     {
-        $this->hpeContract = $hpeContract;
     }
 
     /**
      * Process HPE Contract state.
      *
-     * @param  array $state
-     * @param  HpeContract|null $hpeContract
+     * @param array $state
+     * @param HpeContract|null $hpeContract
      * @return HpeContract
+     * @throws Throwable
      */
-    public function processState(array $state, ?HpeContract $hpeContract = null)
+    public function processState(array $state, ?HpeContract $hpeContract = null): HpeContract
     {
         if (!isset($state['last_drafted_step'])) {
-            $state['last_drafted_step'] = collect($this->hpeContract->getCompletenessDictionary())->sort()->keys()->first();
+            $state['last_drafted_step'] = collect((new HpeContract())->getCompletenessDictionary())->sort()->keys()->first();
         }
 
-        return DB::transaction(function () use ($state, $hpeContract) {
-            /** @var HpeContract */
-            $hpeContract ??= $this->initiateHpeContractInstance();
+        return tap($hpeContract ?? $this->initiateHpeContractInstance(), function (HpeContract $contract) use ($state) {
+            $contract->fill($state);
 
-            $hpeContract->fill($state)->save();
-
-            return $hpeContract;
-        }, DB_TA);
+            $this->connection->transaction(fn() => $contract->save());
+        });
     }
 
     /**
-     * Intiate a new HPE Contract Instance with new sequence number.
+     * Initiate a new HPE Contract Instance with new sequence number.
      *
      * @return HpeContract
      */
@@ -57,66 +56,111 @@ class HpeContractStateProcessor implements HpeContractState
     {
         $sequenceNumber = $this->getHighestNumber() + 1;
 
-        return $this->hpeContract->query()->make()->forceFill([
-            'contract_number' => static::giveContractNumber($sequenceNumber),
-            'sequence_number' => $sequenceNumber,
-        ]);
+        return tap(new HpeContract(), function (HpeContract $contract) use ($sequenceNumber) {
+            $contract->contract_number = self::buildContractNumber($sequenceNumber);
+            $contract->sequence_number = $sequenceNumber;
+        });
     }
 
-    public function copy(HpeContract $hpeContract)
+    public function copy(HpeContract $hpeContract): array
     {
-        return DB::transaction(function () use ($hpeContract) {
-            /** @var HpeContractFile */
-            $newContractFile = tap($hpeContract->hpeContractFile->replicate(['user_id']))->save();
-            /**
-             * Replicating HPE Contract File Imported Data.
-             */
-            $contractFileKey = $newContractFile->getKey();
-
-            $columns = (new HpeContractData)->getFillable();
-
-            $replicateColumns = Collection::wrap([...$columns, ...['hpe_contract_file_id']])
-                ->flip()
-                ->flip()
-                ->map(fn ($column) => $column === 'hpe_contract_file_id' ? DB::raw("'{$contractFileKey}' as hpe_contract_file_id") : $column)
-                ->toArray();
-
-            DB::table('hpe_contract_data')->insertUsing(
-                $columns,
-                $hpeContract->hpeContractFile->hpeContractData()->select($replicateColumns)->toBase()
-            );
-
-            /**
-             * Replicating the HPE Contract Instance and association with the new one HPE Contract File.
-             */
-            $newHpeContract = tap(
-                $hpeContract->replicate(['user_id', 'hpe_contract_file_id', 'hpeContractFile', 'is_active']),
-                function (HpeContract $newHpeContract) use ($newContractFile) {
-                    $sequenceNumber = $this->getHighestNumber() + 1;
-
-                    $newHpeContract->forceFill([
-                        'contract_number' => static::giveContractNumber($sequenceNumber),
-                        'sequence_number' => $sequenceNumber,
-                        'submitted_at' => null,
-                    ]);
-
-                    $newHpeContract->save();
-
-                    $this->associateHpeContractFile($newHpeContract, $newContractFile);
-                }
-            );
-
-            $hpeContract->forceFill(['activated_at' => null])->save();
-
-            return [$newHpeContract->getKeyName() => $newHpeContract->getKey()];
+        /** @var HpeContractFile $newContractFile */
+        $newContractFile = tap($hpeContract->hpeContractFile->replicate(['user_id']), function (HpeContractFile $contractFile) {
+            $contractFile->{$contractFile->getKeyName()} = (string)Uuid::generate(4);
         });
+
+        /**
+         * Replicating HPE Contract File Imported Data.
+         */
+        $replicateColumns = [
+            'hpe_contract_file_id' => new Expression("'{$newContractFile->getKey()}' as hpe_contract_file_id"),
+            'amp_id' => 'amp_id',
+            'support_account_reference' => 'support_account_reference',
+            'contract_number' => 'contract_number',
+            'order_authorization' => 'order_authorization',
+            'contract_start_date' => 'contract_start_date',
+            'contract_end_date' => 'contract_end_date',
+            'price' => 'price',
+            'product_number' => 'product_number',
+            'serial_number' => 'serial_number',
+            'product_description' => 'product_description',
+            'product_quantity' => 'product_quantity',
+            'asset_type' => 'asset_type',
+            'service_type' => 'service_type',
+            'service_code' => 'service_code',
+            'service_description' => 'service_description',
+            'service_code_2' => 'service_code_2',
+            'service_description_2' => 'service_description_2',
+            'service_levels' => 'service_levels',
+            'hw_delivery_contact_name' => 'hw_delivery_contact_name',
+            'hw_delivery_contact_phone' => 'hw_delivery_contact_phone',
+            'sw_delivery_contact_name' => 'sw_delivery_contact_name',
+            'sw_delivery_contact_phone' => 'sw_delivery_contact_phone',
+            'pr_support_contact_name' => 'pr_support_contact_name',
+            'pr_support_contact_phone' => 'pr_support_contact_phone',
+            'customer_name' => 'customer_name',
+            'customer_address' => 'customer_address',
+            'customer_city' => 'customer_city',
+            'customer_post_code' => 'customer_post_code',
+            'customer_state_code' => 'customer_state_code',
+            'reseller_name' => 'reseller_name',
+            'reseller_address' => 'reseller_address',
+            'reseller_city' => 'reseller_city',
+            'reseller_state' => 'reseller_state',
+            'reseller_post_code' => 'reseller_post_code',
+            'support_start_date' => 'support_start_date',
+            'support_end_date' => 'support_end_date',
+            'is_selected' => 'is_selected',
+        ];
+
+
+        $this->connection->transaction(function () use ($hpeContract, $newContractFile, $replicateColumns) {
+
+            $newContractFile->save();
+
+            $this->connection->table('hpe_contract_data')->insertUsing(
+                columns: array_keys($replicateColumns),
+                query: $hpeContract->hpeContractFile->hpeContractData()
+                    ->select(array_values($replicateColumns))
+                    ->toBase()
+            );
+
+        });
+
+        /**
+         * Replicating the HPE Contract Instance and association with the new one HPE Contract File.
+         */
+        $newHpeContract = tap(
+            $hpeContract->replicate(['user_id', 'hpe_contract_file_id', 'hpeContractFile', 'is_active']),
+            function (HpeContract $newHpeContract) use ($newContractFile) {
+                $sequenceNumber = $this->getHighestNumber() + 1;
+
+                $newHpeContract->contract_number = self::buildContractNumber($sequenceNumber);
+                $newHpeContract->sequence_number = $sequenceNumber;
+                $newHpeContract->submitted_at = null;
+
+                $newHpeContract->hpeContractFile()->associate($newContractFile);
+            }
+        );
+
+        $hpeContract->activated_at = null;
+
+        $this->connection->transaction(function () use ($hpeContract, $newHpeContract) {
+
+            $newHpeContract->save();
+            $hpeContract->save();
+
+        });
+
+        return [$newHpeContract->getKeyName() => $newHpeContract->getKey()];
     }
 
     /**
      * Submit the specified HPE Contract.
      *
-     * @param  HpeContract $hpeContract
+     * @param HpeContract $hpeContract
      * @return bool
+     * @throws Throwable
      */
     public function submit(HpeContract $hpeContract): bool
     {
@@ -124,24 +168,36 @@ class HpeContractStateProcessor implements HpeContractState
             return false;
         }
 
-        $hpeContract->forceFill(['last_drafted_step' => 'Complete']);
+        $hpeContract->last_drafted_step = 'Complete';
+        $hpeContract->submitted_at = now();
 
-        return DB::transaction(fn () => $hpeContract->submit(), DB_TA);
+        $this->connection->transaction(fn() => $hpeContract->save());
+
+        activity()->on($hpeContract)->queue('submitted');
+
+        return true;
     }
 
     /**
-     * Unsubmit the specified HPE Contract.
+     * Unravel the specified HPE Contract.
      *
-     * @param  HpeContract $hpeContract
+     * @param HpeContract $hpeContract
      * @return bool
+     * @throws Throwable
      */
-    public function unsubmit(HpeContract $hpeContract): bool
+    public function unravel(HpeContract $hpeContract): bool
     {
         if (is_null($hpeContract->submitted_at)) {
             return false;
         }
 
-        return DB::transaction(fn () => $hpeContract->unsubmit(), DB_TA);
+        $hpeContract->submitted_at = null;
+
+        $this->connection->transaction(fn() => $hpeContract->save());
+
+        activity()->on($hpeContract)->queue('unravel');
+
+        return true;
     }
 
     /**
@@ -149,6 +205,7 @@ class HpeContractStateProcessor implements HpeContractState
      *
      * @param HpeContract $hpeContract
      * @return boolean
+     * @throws Throwable
      */
     public function activate(HpeContract $hpeContract): bool
     {
@@ -156,7 +213,13 @@ class HpeContractStateProcessor implements HpeContractState
             return false;
         }
 
-        return DB::transaction(fn () => $hpeContract->activate(), DB_TA);
+        $hpeContract->activated_at = now();
+
+        $this->connection->transaction(fn() => $hpeContract->save());
+
+        activity()->on($hpeContract)->queue('activated');
+
+        return true;
     }
 
     /**
@@ -164,6 +227,7 @@ class HpeContractStateProcessor implements HpeContractState
      *
      * @param HpeContract $hpeContract
      * @return boolean
+     * @throws Throwable
      */
     public function deactivate(HpeContract $hpeContract): bool
     {
@@ -171,124 +235,158 @@ class HpeContractStateProcessor implements HpeContractState
             return false;
         }
 
-        return DB::transaction(fn () => $hpeContract->deactivate(), DB_TA);
+        $hpeContract->activated_at = null;
+
+        $this->connection->transaction(fn() => $hpeContract->save());
+
+        activity()->on($hpeContract)->queue('deactivated');
+
+        return true;
     }
 
     /**
-     * Delete the specified HPE Contract and it's respective reflection in the Quotes table.
+     * Delete the specified HPE Contract.
      *
      * @param HpeContract $hpeContract
      * @return boolean
+     * @throws Throwable
      */
     public function delete(HpeContract $hpeContract): bool
     {
-        return DB::transaction(function () use ($hpeContract) {
-            return $hpeContract->delete();
-        }, DB_TA);
-    }
+        return tap(true, function () use ($hpeContract) {
 
-    /**
-     * Associate HPE Contract with specified HPE Contract File.
-     *
-     * @param  HpeContract $hpeContract
-     * @param  HpeContractFile $hpeContractFile
-     * @return void
-     */
-    public function associateHpeContractFile(HpeContract $hpeContract, HpeContractFile $hpeContractFile): void
-    {
-        DB::transaction(fn () => $hpeContract->hpeContractFile()->associate($hpeContractFile)->save(), DB_TA);
+            $this->connection->transaction(fn() => $hpeContract->delete());
+
+        });
     }
 
     /**
      * Process Imported HPE Contract Data.
      *
-     * @param  HpeContract $hpeContract
-     * @param  HpeContractFile $hpeContractFile
-     * @param  ImportResponse|null $importResponse
-     * @return void
+     * @param HpeContract $hpeContract
+     * @param HpeContractFile $hpeContractFile
+     * @param ImportResponse|null $importResponse
+     * @return bool
+     * @throws Throwable
      */
     public function processHpeContractData(
-        HpeContract $hpeContract,
+        HpeContract     $hpeContract,
         HpeContractFile $hpeContractFile,
         ?ImportResponse $importResponse = null
-    ): bool {
+    ): bool
+    {
         if (isset($importResponse) && $importResponse->failed()) {
             return false;
         }
 
-        return DB::transaction(function () use ($hpeContract, $hpeContractFile) {
-            if ($hpeContract->hpeContractFile->isNot($hpeContractFile)) {
-                $hpeContract->hpeContractFile->delete();
-            }
+        if ($hpeContract->hpeContractFile->isNot($hpeContractFile)) {
 
-            $this->associateHpeContractFile($hpeContract, $hpeContractFile);
+            $this->connection->transaction(fn() => $hpeContract->hpeContractFile->delete());
 
-            $services = $hpeContractFile->hpeContractData()
-                ->getBaseQuery()
-                ->selectRaw('service_levels')
-                ->addSelect('contract_number', 'service_code', 'service_code_2', 'service_description', 'service_description_2')
-                ->whereIn('id', fn (BaseBuilder $query) => $query->selectRaw('MIN(id)')->from('hpe_contract_data')
-                    ->where('hpe_contract_file_id', $hpeContractFile->getKey())
-                    ->whereNotNull('service_description')
-                    ->whereNotNull('service_description_2')
-                    ->groupBy('contract_number', 'service_code_2'))
-                // ->whereColumn('service_description', '<>', 'service_description_2')
-                // ->groupBy('service_description', 'service_description_2', 'service_code', 'service_code_2', 'contract_number')
-                ->get();
+        }
 
-            $services = static::parseServices($services);
+        $hpeContract->hpeContractFile()->associate($hpeContractFile);
 
-            $contractNumbers = $hpeContractFile->hpeContractData()->toBase()
-                ->groupBy('contract_number')
-                ->select('contract_number', 'contract_start_date', 'contract_end_date', 'order_authorization')
-                ->get()
-                ->toArray();
+        $services = $this->pickServicesFromHpeContractFileData($hpeContractFile);
+        $contractNumbers = $this->pickContractNumbersFromHpeContractFileData($hpeContractFile);
+        $ordersAuth = $this->pickOrderAuthorizationFromHpeContractFileData($hpeContractFile);
+        $contractData = $this->pickContractDataFromHpeContractFileData($hpeContractFile);
 
-            $ordersAuth = $hpeContractFile->hpeContractData()->whereNotNull('order_authorization')->distinct('order_authorization')->pluck('order_authorization');
+        $contacts = $this->pickCustomerContactsFromContractData($hpeContract);
 
-            $contractData = (array) $hpeContractFile->hpeContractData()->toBase()
-                ->selectRaw('MAX(amp_id) amp_id')
-                ->selectRaw('MAX(support_account_reference) support_account_reference')
-                ->first();
+        $hpeContract->fill(
+            array_merge($contractData, $contacts, [
+                'contract_numbers' => $contractNumbers,
+                'orders_authorization' => $ordersAuth,
+                'services' => $services,
+            ])
+        );
 
-            $contacts = $this->retrieveCustomerContacts($hpeContract);
+        return tap(true, function () use ($hpeContract) {
 
-            $hpeContract->fill(array_merge($contractData, $contacts, [
-                'contract_numbers'      => $contractNumbers,
-                'orders_authorization'  => $ordersAuth,
-                'services'              => $services,
-            ]))->saveOrFail();
+            $this->connection->transaction(fn() => $hpeContract->save());
 
-            return true;
-        }, DB_TA);
+        });
+    }
+
+    protected function pickContractDataFromHpeContractFileData(HpeContractFile $hpeContractFile): array
+    {
+        return (array)$hpeContractFile->hpeContractData()->toBase()
+            ->selectRaw('MAX(amp_id) amp_id')
+            ->selectRaw('MAX(support_account_reference) support_account_reference')
+            ->first();
+    }
+
+    protected function pickOrderAuthorizationFromHpeContractFileData(HpeContractFile $hpeContractFile): array
+    {
+        return $hpeContractFile->hpeContractData()
+            ->whereNotNull('order_authorization')
+            ->distinct('order_authorization')
+            ->pluck('order_authorization')
+            ->all();
+    }
+
+    protected function pickContractNumbersFromHpeContractFileData(HpeContractFile $hpeContractFile): array
+    {
+        return $hpeContractFile->hpeContractData()
+            ->toBase()
+            ->groupBy('contract_number')
+            ->select('contract_number', 'contract_start_date', 'contract_end_date', 'order_authorization')
+            ->get()
+            ->toArray();
+    }
+
+    protected function pickServicesFromHpeContractFileData(HpeContractFile $hpeContractFile): array
+    {
+        $services = $hpeContractFile->hpeContractData()
+            ->getBaseQuery()
+            ->selectRaw('service_levels')
+            ->addSelect('contract_number', 'service_code', 'service_code_2', 'service_description', 'service_description_2')
+            ->whereIn('id', fn(BaseBuilder $query) => $query->selectRaw('MIN(id)')->from('hpe_contract_data')
+                ->where('hpe_contract_file_id', $hpeContractFile->getKey())
+                ->whereNotNull('service_description')
+                ->whereNotNull('service_description_2')
+                ->groupBy('contract_number', 'service_code_2'))
+            ->get();
+
+        return BaseCollection::wrap($services)->map(
+            fn($service) => [
+                'service_levels' => Str::of(data_get($service, 'service_levels'))->explode(';')->filter(fn($v) => filled($v))->values()->toArray(),
+                'service_description' => data_get($service, 'service_description'),
+                'service_description_2' => data_get($service, 'service_description_2'),
+                'contract_number' => data_get($service, 'contract_number'),
+                'service_code' => data_get($service, 'service_code'),
+                'service_code_2' => data_get($service, 'service_code_2'),
+            ]
+        )
+            ->all();
     }
 
     /**
      * Retrieve and aggregate HPE Contract Data.
      *
      * @param HpeContract $hpeContract
-     * @return mixed
+     * @return BaseCollection
      */
-    public function retrieveContractData(HpeContract $hpeContract)
+    public function retrieveContractData(HpeContract $hpeContract): BaseCollection
     {
         $contractData = $this->buildHpeContractAssetsQuery($hpeContract)->get();
 
-        $contracts = Collection::wrap($hpeContract->contract_numbers)->keyBy('contract_number');
+        $contracts = BaseCollection::wrap($hpeContract->contract_numbers)->keyBy('contract_number');
 
-        return $contractData->groupBy('contract_number')->map(fn ($assets, $key) =>
-        [
-            'contract_number'       => $key,
-            'contract_start_date'   => data_get($contracts, "{$key}.contract_start_date"),
-            'contract_end_date'     => data_get($contracts, "{$key}.contract_end_date"),
-            'order_authorization'   => data_get($contracts, "{$key}.order_authorization"),
-            'assets'                => HpeContractAssetCollection::fromCollection($assets)->toArray()
+        return $contractData->groupBy('contract_number')->map(fn($assets, $key) => [
+            'contract_number' => $key,
+            'contract_start_date' => data_get($contracts, "{$key}.contract_start_date"),
+            'contract_end_date' => data_get($contracts, "{$key}.contract_end_date"),
+            'order_authorization' => data_get($contracts, "{$key}.order_authorization"),
+            'assets' => HpeContractAssetCollection::fromCollection($assets)->toArray(),
         ])->values();
     }
 
     /**
      * Retrieve HPE Contract Assets grouped by Support Account Reference
      *
-     * @param  HpeContract $hpeContract
+     * @param HpeContract $hpeContract
      * @return PreviewHpeContractData
      */
     public function retrieveSummarizedContractData(HpeContract $hpeContract): PreviewHpeContractData
@@ -296,96 +394,95 @@ class HpeContractStateProcessor implements HpeContractState
         $assets = $this->buildHpeContractAssetsQuery($hpeContract)->whereIsSelected(true)->get();
 
         $contacts = [
-            'hw_delivery_contact'       => $hpeContract->hw_delivery_contact,
-            'sw_delivery_contact'       => $hpeContract->sw_delivery_contact,
-            'pr_support_contact'        => $hpeContract->pr_support_contact,
-            'entitled_party_contact'    => $hpeContract->entitled_party_contact,
-            'end_customer_contact'      => $hpeContract->end_customer_contact,
-            'sold_contact'              => $hpeContract->sold_contact,
-            'bill_contact'              => $hpeContract->bill_contact,
+            'hw_delivery_contact' => $hpeContract->hw_delivery_contact,
+            'sw_delivery_contact' => $hpeContract->sw_delivery_contact,
+            'pr_support_contact' => $hpeContract->pr_support_contact,
+            'entitled_party_contact' => $hpeContract->entitled_party_contact,
+            'end_customer_contact' => $hpeContract->end_customer_contact,
+            'sold_contact' => $hpeContract->sold_contact,
+            'bill_contact' => $hpeContract->bill_contact,
         ];
 
         $contracts = $assets->groupBy('contract_number')->sortKeys();
 
-        $contractsData = Collection::wrap($hpeContract->contract_numbers)->keyBy('contract_number')->map(function ($contract) {
+        $contractsData = BaseCollection::wrap($hpeContract->contract_numbers)->keyBy('contract_number')->map(function ($contract) {
             $contract = collect($contract);
             $dates = $contract->only('contract_start_date', 'contract_end_date')
-                ->map(fn ($date) => transform($date, fn ($date) => Carbon::parse($date)->format(config('date.format_eu'))));
+                ->map(fn($date) => transform($date, fn($date) => Carbon::parse($date)->format(config('date.format_eu'))));
 
             return $contract->merge($dates)->toArray();
         });
 
-        $services = Collection::wrap($hpeContract->services)->keyBy('service_code_2');
+        $services = BaseCollection::wrap($hpeContract->services)->keyBy('service_code_2');
 
         $contractServices = $services->values()->groupBy('contract_number');
 
         $allContractServices = $services->values()
             ->sortBy('contract_number')
-            ->filter(fn (HpeContractService $service) => $contractsData->has($service->contract_number))
+            ->filter(fn(HpeContractService $service) => $contractsData->has($service->contract_number))
             ->map(function (HpeContractService $service) use ($contractsData) {
                 /** @var array */
                 $contract = $contractsData->get($service->contract_number);
 
                 return [
-                    'contract_number'       => $service->contract_number,
-                    'contract_start_date'   => $contract['contract_start_date'] ?? null,
-                    'contract_end_date'     => $contract['contract_end_date'] ?? null,
+                    'contract_number' => $service->contract_number,
+                    'contract_start_date' => $contract['contract_start_date'] ?? null,
+                    'contract_end_date' => $contract['contract_end_date'] ?? null,
                     'service_description_2' => $service->service_description_2,
                 ];
             });
 
-        $sars = $assets->groupBy('support_account_reference')->map(fn ($assets, $key) => [
+        $sars = $assets->groupBy('support_account_reference')->map(fn($assets, $key) => [
             'support_account_reference' => $key,
-            'assets' => HpeContractAssetCollection::fromCollection($assets)->items()
+            'assets' => HpeContractAssetCollection::fromCollection($assets)->items(),
         ])->values();
 
         $contractAssets = $contracts
-            ->filter(fn ($assets, $contract) => $contractsData->has($contract))
+            ->filter(fn($assets, $contract) => $contractsData->has($contract))
             ->map(function ($assets, $contractNumber) use ($contractsData, $services, $contractServices) {
                 $assetsWithinServices = $assets->groupBy('service_code_2')
                     // ->filter(fn ($assets, $serviceCode) => $services->has($serviceCode))
-                    ->map(function (Collection $assets, $serviceCode) use ($services) {
+                    ->map(function (BaseCollection $assets, $serviceCode) use ($services) {
                         /** @var \App\DTO\HpeContractService */
                         $service = $services->get($serviceCode);
 
                         return [
-                            'service_code'          => $assets->first()['service_code_2'] ?? null,
-                            'service_description'   => $assets->first()['service_description'] ?? null,
+                            'service_code' => $assets->first()['service_code_2'] ?? null,
+                            'service_description' => $assets->first()['service_description'] ?? null,
                             'service_description_2' => $assets->first()['service_description_2'] ?? null,
-                            'assets'                => HpeContractAssetCollection::fromCollection($assets)->items()
+                            'assets' => HpeContractAssetCollection::fromCollection($assets)->items(),
                         ];
                     })->values();
 
                 /** @var array */
                 $contract = $contractsData->get($contractNumber);
 
-                $supportServiceLevels = Collection::wrap($contractServices->get($contractNumber))->filter();
+                $supportServiceLevels = BaseCollection::wrap($contractServices->get($contractNumber))->filter();
 
                 return [
-                    'contract_number'        => (string) $contractNumber,
-                    'contract_start_date'    => $contract['contract_start_date'] ?? null,
-                    'contract_end_date'      => $contract['contract_end_date'] ?? null,
-                    'order_authorization'    => $contract['order_authorization'] ?? null,
-                    'assets_services'        => $assetsWithinServices,
+                    'contract_number' => (string)$contractNumber,
+                    'contract_start_date' => $contract['contract_start_date'] ?? null,
+                    'contract_end_date' => $contract['contract_end_date'] ?? null,
+                    'order_authorization' => $contract['order_authorization'] ?? null,
+                    'assets_services' => $assetsWithinServices,
                     'support_service_levels' => HpeContractServiceCollection::fromCollection($supportServiceLevels)->items(),
                 ];
             })->values();
 
         $serialNumbers = $assets->groupBy('contract_number')
-            ->map(fn (Collection $assets, $contractNumber) =>
-            [
-                'contract_number'   => (string) $contractNumber,
-                'assets'            => HpeContractAssetCollection::fromCollection($assets->sortBy('serial_number')->values())->items()
+            ->map(fn(BaseCollection $assets, $contractNumber) => [
+                'contract_number' => (string)$contractNumber,
+                'assets' => HpeContractAssetCollection::fromCollection($assets->sortBy('serial_number')->values())->items(),
             ])
             ->sortKeys()
             ->values();
 
         $contractDetails = $contractsData
-            ->map(fn ($contract) => array_merge($contract, ['hpe_sales_order_no' => $hpeContract->hpe_sales_order_no]))
+            ->map(fn($contract) => array_merge($contract, ['hpe_sales_order_no' => $hpeContract->hpe_sales_order_no]))
             ->values();
 
         $supportServices = HpeContractServiceCollection::fromCollection($services->values())->toBaseCollection()
-            ->groupBy('contract_number')->map(fn (Collection $services, $contract) => [
+            ->groupBy('contract_number')->map(fn(BaseCollection $services, $contract) => [
                 'contract_number' => $contract,
                 'services' => $services,
             ])
@@ -393,25 +490,25 @@ class HpeContractStateProcessor implements HpeContractState
 
         return new PreviewHpeContractData(
             array_merge([
-                'amp_id'                        => $hpeContract->amp_id,
-                'contract_number'               => $hpeContract->contract_number,
+                'amp_id' => $hpeContract->amp_id,
+                'contract_number' => $hpeContract->contract_number,
 
-                'contract_details'              => $contractDetails,
+                'contract_details' => $contractDetails,
 
-                'contract_assets'               => $contractAssets,
+                'contract_assets' => $contractAssets,
 
-                'support_services'              => $supportServices,
+                'support_services' => $supportServices,
 
-                'purchase_order_date'           => optional($hpeContract->purchase_order_date)->format(config('date.format_eu')),
-                'purchase_order_no'             => $hpeContract->purchase_order_no,
-                'hpe_sales_order_no'            => $hpeContract->hpe_sales_order_no,
+                'purchase_order_date' => optional($hpeContract->purchase_order_date)->format(config('date.format_eu')),
+                'purchase_order_no' => $hpeContract->purchase_order_no,
+                'hpe_sales_order_no' => $hpeContract->hpe_sales_order_no,
 
-                'contract_date'                 => optional($hpeContract->contract_date)->format(config('date.format_eu')),
+                'contract_date' => optional($hpeContract->contract_date)->format(config('date.format_eu')),
 
-                'service_overview'              => $allContractServices->values(),
-                'support_account_reference'     => $sars,
-                'asset_locations'               => $assets,
-                'serial_numbers'                => $serialNumbers,
+                'service_overview' => $allContractServices->values(),
+                'support_account_reference' => $sars,
+                'asset_locations' => $assets,
+                'serial_numbers' => $serialNumbers,
             ], $contacts)
         );
     }
@@ -423,26 +520,28 @@ class HpeContractStateProcessor implements HpeContractState
      * @param array $ids
      * @param boolean $reject
      * @return bool
+     * @throws Throwable
      */
-    public function selectAssets(HpeContract $hpeContract, array $ids, bool $reject = false)
+    public function markAssetsAsSelected(HpeContract $hpeContract, array $ids, bool $reject = false): bool
     {
-        return DB::transaction(function () use ($hpeContract, $ids, $reject) {
+        return tap(true, function () use ($ids, $reject, $hpeContract) {
             $assetsQuery = $hpeContract->hpeContractData()->getQuery();
 
-            (clone $assetsQuery)
-                ->update(['is_selected' => false]);
+            $this->connection->transaction(function () use ($hpeContract, $ids, $reject, $assetsQuery) {
+                (clone $assetsQuery)
+                    ->update(['is_selected' => false]);
 
-            (clone $assetsQuery)->when(
-                $reject,
-                fn (Builder $query) => $query->whereKeyNot($ids),
-                fn (Builder $query) => $query->whereKey($ids),
-            )
-                ->update(['is_selected' => true]);
+                (clone $assetsQuery)->when(
+                    $reject,
+                    fn(Builder $query) => $query->whereKeyNot($ids),
+                    fn(Builder $query) => $query->whereKey($ids),
+                )
+                    ->update(['is_selected' => true]);
 
-            $hpeContract->touch();
+                $hpeContract->touch();
+            });
 
-            return true;
-        }, DB_TA);
+        });
     }
 
     protected function buildHpeContractAssetsQuery(HpeContract $hpeContract): Builder
@@ -450,8 +549,8 @@ class HpeContractStateProcessor implements HpeContractState
         return $hpeContract->hpeContractData()
             ->getQuery()
             ->whereIn('asset_type', ['Environmental Service', 'Hardware', 'Software', 'JW'])
-            // ->whereNotNull('serial_number')
-            ->addSelect(
+            ->whereNotNull('product_number')
+            ->addSelect([
                 'id',
                 'support_account_reference',
                 'contract_number',
@@ -468,90 +567,97 @@ class HpeContractStateProcessor implements HpeContractState
                 'service_levels',
                 'support_start_date',
                 'support_end_date',
-                'is_selected'
-            )
+                'is_selected',
+            ])
             ->withCasts(['is_selected' => 'boolean']);
     }
 
     protected function getHighestNumber(): int
     {
-        return (int) $this->hpeContract->query()->max('sequence_number');
+        return (int)HpeContract::query()->max('sequence_number');
     }
 
-    protected function retrieveCustomerContacts(HpeContract $hpeContract): array
+    #[ArrayShape(['sold_contact' => "array", 'bill_contact' => "array", 'hw_delivery_contact' => "array", 'sw_delivery_contact' => "array", 'pr_support_contact' => "array", 'entitled_party_contact' => "array", 'end_customer_contact' => "array"])]
+    protected function pickCustomerContactsFromContractData(HpeContract $hpeContract): array
     {
-        $contractData = (array) $hpeContract->hpeContractData()->toBase()
-            ->selectRaw('MAX(customer_name) customer_name')
-            ->selectRaw('MAX(customer_address) customer_address')
-            ->selectRaw('MAX(customer_city) customer_city')
-            ->selectRaw('MAX(customer_post_code) customer_post_code')
-            ->selectRaw('MAX(customer_state_code) customer_state_code')
+        $columns = [
+            'customer_name',
+            'customer_address',
+            'customer_city',
+            'customer_post_code',
+            'customer_state_code',
+            'reseller_name',
+            'reseller_address',
+            'reseller_city',
+            'reseller_post_code',
+            'reseller_state',
+            'hw_delivery_contact_name',
+            'hw_delivery_contact_phone',
+            'sw_delivery_contact_name',
+            'sw_delivery_contact_phone',
+            'pr_support_contact_name',
+            'pr_support_contact_phone',
+        ];
 
-            ->selectRaw('MAX(reseller_name) reseller_name')
-            ->selectRaw('MAX(reseller_address) reseller_address')
-            ->selectRaw('MAX(reseller_city) reseller_city')
-            ->selectRaw('MAX(reseller_post_code) reseller_post_code')
-            ->selectRaw('MAX(reseller_state) reseller_state')
+        $contractData = $hpeContract->hpeContractData()
+            ->select($columns)
+            ->distinct()
+            ->toBase()
+            ->get();
 
-            ->selectRaw('MAX(hw_delivery_contact_name) hw_delivery_contact_name')
-            ->selectRaw('MAX(hw_delivery_contact_phone) hw_delivery_contact_phone')
-            ->selectRaw('MAX(sw_delivery_contact_name) sw_delivery_contact_name')
-            ->selectRaw('MAX(sw_delivery_contact_phone) sw_delivery_contact_phone')
-            ->selectRaw('MAX(pr_support_contact_name) pr_support_contact_name')
-            ->selectRaw('MAX(pr_support_contact_phone) pr_support_contact_phone')
-            ->first();
+        $pickedData = $contractData->reduce(function (array $result, object $item) use ($columns) {
+
+            foreach ($columns as $column) {
+
+                if (isset($result[$column])) {
+                    continue;
+                }
+
+                $value = trim((string)data_get($item, $column));
+
+                if ($value !== '') {
+                    $result[$column] = $value;
+                }
+
+            }
+
+            return $result;
+
+        }, []);
 
         $country = data_get(auth()->user(), 'country.name');
 
         $resellerContact = [
-            'org_name'      => Arr::get($contractData, 'reseller_name'),
-            'address'       => Arr::get($contractData, 'reseller_address'),
-            'city'          => Arr::get($contractData, 'reseller_city'),
-            'post_code'     => Arr::get($contractData, 'reseller_post_code'),
-            'state'         => Arr::get($contractData, 'reseller_state'),
-            'country'       => $country,
+            'org_name' => Arr::get($pickedData, 'reseller_name'),
+            'address' => Arr::get($pickedData, 'reseller_address'),
+            'city' => Arr::get($pickedData, 'reseller_city'),
+            'post_code' => Arr::get($pickedData, 'reseller_post_code'),
+            'state' => Arr::get($pickedData, 'reseller_state'),
+            'country' => $country,
         ];
 
         $endUserContact = [
-            'org_name'      => Arr::get($contractData, 'customer_name'),
-            'address'       => Arr::get($contractData, 'customer_address'),
-            'city'          => Arr::get($contractData, 'customer_city'),
-            'post_code'     => Arr::get($contractData, 'customer_post_code'),
-            'state_code'    => Arr::get($contractData, 'customer_state_code'),
-            'country'       => $country,
+            'org_name' => Arr::get($pickedData, 'customer_name'),
+            'address' => Arr::get($pickedData, 'customer_address'),
+            'city' => Arr::get($pickedData, 'customer_city'),
+            'post_code' => Arr::get($pickedData, 'customer_post_code'),
+            'state_code' => Arr::get($pickedData, 'customer_state_code'),
+            'country' => $country,
         ];
 
-        $contacts = [
-            'sold_contact'              => $resellerContact,
-            'bill_contact'              => $resellerContact,
-            'hw_delivery_contact'       => ['attn' => Arr::get($contractData, 'hw_delivery_contact_name'), 'phone' => Arr::get($contractData, 'hw_delivery_contact_phone')],
-            'sw_delivery_contact'       => ['attn' => Arr::get($contractData, 'sw_delivery_contact_name'), 'phone' => Arr::get($contractData, 'sw_delivery_contact_phone')],
-            'pr_support_contact'        => ['attn' => Arr::get($contractData, 'pr_support_contact_name'), 'phone' => Arr::get($contractData, 'pr_support_contact_phone')],
-            'entitled_party_contact'    => $endUserContact,
-            'end_customer_contact'      => $endUserContact,
+        return [
+            'sold_contact' => $resellerContact,
+            'bill_contact' => $resellerContact,
+            'hw_delivery_contact' => ['attn' => Arr::get($pickedData, 'hw_delivery_contact_name'), 'phone' => Arr::get($pickedData, 'hw_delivery_contact_phone')],
+            'sw_delivery_contact' => ['attn' => Arr::get($pickedData, 'sw_delivery_contact_name'), 'phone' => Arr::get($pickedData, 'sw_delivery_contact_phone')],
+            'pr_support_contact' => ['attn' => Arr::get($pickedData, 'pr_support_contact_name'), 'phone' => Arr::get($pickedData, 'pr_support_contact_phone')],
+            'entitled_party_contact' => $endUserContact,
+            'end_customer_contact' => $endUserContact,
         ];
-
-        return $contacts;
     }
 
-    public static function giveContractNumber(int $sequenceNumber): string
+    public static function buildContractNumber(int $sequenceNumber): string
     {
         return sprintf(static::CN_PATTERN, $sequenceNumber);
-    }
-
-    private static function parseServices($services): array
-    {
-        return Collection::wrap($services)->map(
-            fn ($service) =>
-            [
-                'service_levels'            => Str::of(data_get($service, 'service_levels'))->explode(';')->filter(fn ($v) => filled($v))->values()->toArray(),
-                'service_description'       => data_get($service, 'service_description'),
-                'service_description_2'     => data_get($service, 'service_description_2'),
-                'contract_number'           => data_get($service, 'contract_number'),
-                'service_code'              => data_get($service, 'service_code'),
-                'service_code_2'            => data_get($service, 'service_code_2'),
-            ]
-        )
-            ->toArray();
     }
 }

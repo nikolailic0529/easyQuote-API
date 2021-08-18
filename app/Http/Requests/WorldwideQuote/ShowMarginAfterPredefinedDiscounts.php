@@ -7,7 +7,7 @@ use App\Models\Quote\Discount\MultiYearDiscount;
 use App\Models\Quote\Discount\PrePayDiscount;
 use App\Models\Quote\Discount\PromotionalDiscount;
 use App\Models\Quote\Discount\SND;
-use App\Services\WorldwideQuote\Calculation\WorldwideDistributionCalc;
+use App\Services\WorldwideQuote\Calculation\WorldwideDistributorQuoteCalc;
 use App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;

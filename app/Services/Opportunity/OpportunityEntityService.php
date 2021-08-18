@@ -2,7 +2,6 @@
 
 namespace App\Services\Opportunity;
 
-use App\Queries\PipelineQueries;
 use App\DTO\{Opportunity\BatchOpportunityUploadResult,
     Opportunity\BatchSaveOpportunitiesData,
     Opportunity\CreateOpportunityData,
@@ -13,6 +12,9 @@ use App\DTO\{Opportunity\BatchOpportunityUploadResult,
     Opportunity\UpdateOpportunityData,
     Opportunity\UpdateSupplierData};
 use App\Enum\AccountCategory;
+use App\Enum\AddressType;
+use App\Enum\CompanySource;
+use App\Enum\CompanyType;
 use App\Enum\Lock;
 use App\Enum\OpportunityStatus;
 use App\Enum\VAT;
@@ -30,6 +32,7 @@ use App\Models\Data\Timezone;
 use App\Models\Opportunity;
 use App\Models\OpportunitySupplier;
 use App\Models\User;
+use App\Queries\PipelineQueries;
 use App\Services\Exceptions\ValidationException;
 use App\Services\ExchangeRate\CurrencyConverter;
 use App\Services\Opportunity\Models\PipelinerOppMap;
@@ -54,32 +57,17 @@ class OpportunityEntityService
 
     const DEFAULT_PL_ID = PL_WWDP;
 
-    protected ConnectionInterface $connection;
-    protected LockProvider $lockProvider;
-    protected ValidatorInterface $validator;
-    protected EventDispatcher $eventDispatcher;
-    protected ValidatorFactory $validatorFactory;
-    protected CurrencyConverter $currencyConverter;
-    protected PipelineQueries $pipelineQueries;
-
     private array $accountOwnerCache = [];
     private array $countryNameOfSupplierCache = [];
 
-    public function __construct(ConnectionInterface $connection,
-                                LockProvider $lockProvider,
-                                ValidatorInterface $validator,
-                                EventDispatcher $eventDispatcher,
-                                ValidatorFactory $validatorFactory,
-                                CurrencyConverter $currencyConverter,
-    PipelineQueries $pipelineQueries)
+    public function __construct(protected ConnectionInterface $connection,
+                                protected LockProvider        $lockProvider,
+                                protected ValidatorInterface  $validator,
+                                protected EventDispatcher     $eventDispatcher,
+                                protected ValidatorFactory    $validatorFactory,
+                                protected CurrencyConverter   $currencyConverter,
+                                protected PipelineQueries     $pipelineQueries)
     {
-        $this->connection = $connection;
-        $this->lockProvider = $lockProvider;
-        $this->validator = $validator;
-        $this->eventDispatcher = $eventDispatcher;
-        $this->validatorFactory = $validatorFactory;
-        $this->currencyConverter = $currencyConverter;
-        $this->pipelineQueries = $pipelineQueries;
     }
 
     public function batchSaveOpportunities(BatchSaveOpportunitiesData $data): void
@@ -167,10 +155,10 @@ class OpportunityEntityService
         }
 
         foreach ($opportunitiesDataFileReader->getRows() as $i => $row) {
-            $rowFailures = $this->validateBatchOpportunityRow(
-                $row,
-                $accountsDataDictionary,
-                $accountContactsDictionary
+            $rowFailures = (new OpportunityDataValidator($this->validatorFactory))(
+                row: $row,
+                accountsDataDictionary: $accountsDataDictionary,
+                accountContactsDataDictionary: $accountContactsDictionary
             );
 
             if ($rowFailures->isNotEmpty()) {
@@ -182,10 +170,10 @@ class OpportunityEntityService
             }
 
             $importedOpportunity = $this->importOpportunity($this->mapBatchOpportunityRow(
-                $row,
-                $accountsDataDictionary,
-                $accountContactsDictionary,
-                $user
+                row: $row,
+                accountsDataDictionary: $accountsDataDictionary,
+                accountContactsDataDictionary: $accountContactsDictionary,
+                user: $user
             ));
 
             $imported[] = new ImportedOpportunityData([
@@ -209,201 +197,16 @@ class OpportunityEntityService
 
         $this->eventDispatcher->dispatch(
             new OpportunityBatchFilesImported(
-                $data->opportunities_file,
-                $data->account_contacts_file,
-                $data->account_contacts_file,
+                opportunitiesDataFile: $data->opportunities_file,
+                accountsDataFile: $data->account_contacts_file,
+                accountContactsFile: $data->account_contacts_file,
             )
         );
 
         return new BatchOpportunityUploadResult([
             'opportunities' => $imported,
-            'errors' => $errors->all("File: '$opportunitiesFileName', Row :key: :message")
+            'errors' => $errors->all("File: '$opportunitiesFileName', Row :key: :message"),
         ]);
-    }
-
-    private function validateBatchOpportunityRow(array $row, array $accountsDataDictionary, array $accountContactsDataDictionary): MessageBag
-    {
-        return tap(new MessageBag(), function (MessageBag $errors) use ($row, $accountsDataDictionary, $accountContactsDataDictionary) {
-            $validator = $this->validatorFactory->make($row, [
-                'primary_account_name' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'primary_contact_name' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'nature_of_service' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'ren_month' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'start_date' => [
-                    'bail', 'nullable', 'date'
-                ],
-                'ren_year' => [
-                    'bail', 'nullable', 'integer'
-                ],
-                'end_date' => [
-                    'bail', 'nullable', 'date'
-                ],
-                'customer_status' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'business_partner_name' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'enduser' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'hw_status' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'region' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'opportunity_value' => [
-                    'bail', 'nullable', 'numeric'
-                ],
-                'opportunity_value_foreign_value' => [
-                    'bail', 'nullable', 'numeric'
-                ],
-                'opportunity_value_base_value' => [
-                    'bail', 'nullable', 'numeric'
-                ],
-                'opportunity_value_currency_code' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'list_price' => [
-                    'bail', 'nullable', 'numeric'
-                ],
-                'list_price_foreign_value' => [
-                    'bail', 'nullable', 'numeric'
-                ],
-                'list_price_base_value' => [
-                    'bail', 'nullable', 'numeric'
-                ],
-                'list_price_currency_code' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'purchase_price' => [
-                    'bail', 'nullable', 'numeric'
-                ],
-                'purchase_price_foreign_value' => [
-                    'bail', 'nullable', 'numeric'
-                ],
-                'purchase_price_base_value' => [
-                    'bail', 'nullable', 'numeric'
-                ],
-                'purchase_price_currency_code' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'ranking' => [
-                    'bail', 'nullable', 'numeric', 'min:0', 'max:1'
-                ],
-                'personal_rating' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'margin' => [
-                    'bail', 'nullable', 'numeric'
-                ],
-                'account_manager' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'closing_date' => [
-                    'bail', 'required', 'date'
-                ],
-                'notes' => [
-                    'bail', 'nullable', 'string', 'max:10000'
-                ],
-                'sla' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'competition' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'lead_source' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'campaign' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'sales_unit' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'drop_in' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'delayed_closing' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'estimated_upsell_amount' => [
-                    'bail', 'nullable', 'numeric'
-                ],
-                'remark' => [
-                    'bail', 'nullable', 'string', 'max:10000'
-                ],
-                'higher_sla' => [
-                    'bail', 'nullable', 'string', 'in:Yes,No'
-                ],
-                'additional_hardware' => [
-                    'bail', 'nullable', 'string', 'in:Yes,No'
-                ],
-                'multi_year' => [
-                    'bail', 'nullable', 'string', 'in:Yes,No'
-                ],
-                'service_credits' => [
-                    'bail', 'nullable', 'string', 'in:Yes,No'
-                ],
-                'suppliers' => [
-                    'array'
-                ],
-                'suppliers.*.country' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'suppliers.*.supplier' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'suppliers.*.contact_name' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'suppliers.*.email_address' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'owner' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'sales_step' => [
-                    'bail', 'nullable', 'string', 'max:191'
-                ],
-                'pipeline' => [
-                    'bail', 'required', 'string', 'max:191'
-                ]
-            ]);
-
-            $errors->merge($validator->errors());
-
-            $accountName = $row['primary_account_name'] ?? null;
-
-            if (is_null($accountName)) {
-                return;
-            }
-
-            $accountNameHash = md5($accountName);
-
-            $accountExists = Company::query()->where('name', trim($accountName))->where('type', 'External')->exists();
-
-            $accountData = $accountsDataDictionary[$accountNameHash] ?? null;
-            $accountContactData = $accountContactsDataDictionary[$accountNameHash] ?? null;
-
-            if ($accountExists === true) {
-                return;
-            }
-
-            if (is_null($accountData)) {
-                $errors->add('primary_account_data', "No data provided for a new Primary Account, Name: '$accountName'.");
-            }
-        });
-
     }
 
     private function mapPrimaryAccountData(string $accountName, array $accountsDataDictionary, array $accountContactsDataDictionary): Company
@@ -420,11 +223,11 @@ class OpportunityEntityService
                 'distributor' => AccountCategory::RESELLER,
                 'business_partner' => AccountCategory::BUSINESS_PARTNER,
                 'reseller' => AccountCategory::RESELLER,
-                'end_user' => AccountCategory::END_USER
+                'end_user' => AccountCategory::END_USER,
             ];
 
             if (is_null($accountData)) {
-                return 'Reseller';
+                return AccountCategory::RESELLER;
             }
 
             $categoryDictionaryOfAccountData = Arr::only($accountData, ['distributor', 'business_partner', 'reseller', 'end_user']);
@@ -443,8 +246,8 @@ class OpportunityEntityService
             $company = tap(new Company(), function (Company $company) use ($accountData, $categoryOfCompanyResolver, $accountName) {
                 $company->{$company->getKeyName()} = (string)Uuid::generate(4);
                 $company->name = $accountName;
-                $company->type = 'External';
-                $company->source = 'EQ';
+                $company->type = CompanyType::EXTERNAL;
+                $company->source = CompanySource::PL;
                 $company->vat_type = VAT::NO_VAT;
                 $company->category = $categoryOfCompanyResolver($accountData);
             });
@@ -470,7 +273,7 @@ class OpportunityEntityService
         foreach ($accountContactData as $contactData) {
             $newAddressDataOfCompany[] = tap(new Address(), function (Address $address) use ($contactData) {
                 $address->{$address->getKeyName()} = (string)Uuid::generate(4);
-                $address->address_type = 'Invoice';
+                $address->address_type = AddressType::INVOICE;
 
                 [$addressOne, $addressTwo] = transform($contactData['street_address'] ?? null, function (string $streetAddress) {
                     if (str_contains($streetAddress, "\n")) {
@@ -587,9 +390,9 @@ class OpportunityEntityService
         /** @var Company|null $primaryAccount */
         $primaryAccount = transform($row['primary_account_name'] ?? null, function (string $accountName) use ($accountContactsDataDictionary, $accountsDataDictionary) {
             return $this->mapPrimaryAccountData(
-                $accountName,
-                $accountsDataDictionary,
-                $accountContactsDataDictionary
+                accountName: $accountName,
+                accountsDataDictionary: $accountsDataDictionary,
+                accountContactsDataDictionary: $accountContactsDataDictionary
             );
         });
 
@@ -661,16 +464,13 @@ class OpportunityEntityService
         });
 
         $contractTypeResolver = static function (?string $opportunityType): ?string {
-            if (is_null($opportunityType)) {
-                return self::DEFAULT_OPP_TYPE;
-            }
 
-            $opportunityType = trim(strtolower($opportunityType));
+            return match (trim(strtolower((string)$opportunityType))) {
+                'pack' => CT_PACK,
+                'contract' => CT_CONTRACT,
+                default => self::DEFAULT_OPP_TYPE,
+            };
 
-            return [
-                    'pack' => CT_PACK,
-                    'contract' => CT_CONTRACT
-                ][$opportunityType] ?? self::DEFAULT_OPP_TYPE;
         };
 
         return new CreateOpportunityData([
@@ -743,9 +543,10 @@ class OpportunityEntityService
 
         return $this->countryNameOfSupplierCache[$countryName] ??= with(trim($countryName), function (string $countryName) {
 
-            $normalizedCountryName = [
-                    'UK' => 'GB'
-                ][$countryName] ?? $countryName;
+            $normalizedCountryName = match ($countryName) {
+                'UK' => 'GB',
+                default => $countryName,
+            };
 
             return Country::query()
                 ->where('iso_3166_2', $normalizedCountryName)
@@ -939,9 +740,9 @@ class OpportunityEntityService
                 $baseCurrency = $this->currencyConverter->getBaseCurrency();
 
                 return $this->currencyConverter->convertCurrencies(
-                    $data->opportunity_amount_currency_code ?? $baseCurrency,
-                    $baseCurrency,
-                    $value
+                    fromCurrencyCode: $data->opportunity_amount_currency_code ?? $baseCurrency,
+                    toCurrencyCode: $baseCurrency,
+                    amount: $value
                 );
             });
             $opportunity->opportunity_amount_currency_code = $data->opportunity_amount_currency_code;
@@ -950,9 +751,9 @@ class OpportunityEntityService
                 $baseCurrency = $this->currencyConverter->getBaseCurrency();
 
                 return $this->currencyConverter->convertCurrencies(
-                    $data->purchase_price_currency_code ?? $baseCurrency,
-                    $baseCurrency,
-                    $value
+                    fromCurrencyCode: $data->purchase_price_currency_code ?? $baseCurrency,
+                    toCurrencyCode: $baseCurrency,
+                    amount: $value
                 );
             });
             $opportunity->purchase_price_currency_code = $data->purchase_price_currency_code;
@@ -963,9 +764,9 @@ class OpportunityEntityService
                 $baseCurrency = $this->currencyConverter->getBaseCurrency();
 
                 return $this->currencyConverter->convertCurrencies(
-                    $data->list_price_currency_code ?? $baseCurrency,
-                    $baseCurrency,
-                    $value
+                    fromCurrencyCode: $data->list_price_currency_code ?? $baseCurrency,
+                    toCurrencyCode: $baseCurrency,
+                    amount: $value
                 );
             });
             $opportunity->list_price_currency_code = $data->list_price_currency_code;
@@ -1079,9 +880,9 @@ class OpportunityEntityService
                     $baseCurrency = $this->currencyConverter->getBaseCurrency();
 
                     return $this->currencyConverter->convertCurrencies(
-                        $data->opportunity_amount_currency_code ?? $baseCurrency,
-                        $baseCurrency,
-                        $value
+                        fromCurrencyCode: $data->opportunity_amount_currency_code ?? $baseCurrency,
+                        toCurrencyCode: $baseCurrency,
+                        amount: $value
                     );
                 });
                 $opportunity->opportunity_amount_currency_code = $data->opportunity_amount_currency_code;
@@ -1090,9 +891,9 @@ class OpportunityEntityService
                     $baseCurrency = $this->currencyConverter->getBaseCurrency();
 
                     return $this->currencyConverter->convertCurrencies(
-                        $data->purchase_price_currency_code ?? $baseCurrency,
-                        $baseCurrency,
-                        $value
+                        fromCurrencyCode: $data->purchase_price_currency_code ?? $baseCurrency,
+                        toCurrencyCode: $baseCurrency,
+                        amount: $value
                     );
                 });
                 $opportunity->purchase_price_currency_code = $data->purchase_price_currency_code;
@@ -1103,9 +904,9 @@ class OpportunityEntityService
                     $baseCurrency = $this->currencyConverter->getBaseCurrency();
 
                     return $this->currencyConverter->convertCurrencies(
-                        $data->list_price_currency_code ?? $baseCurrency,
-                        $baseCurrency,
-                        $value
+                        fromCurrencyCode: $data->list_price_currency_code ?? $baseCurrency,
+                        toCurrencyCode: $baseCurrency,
+                        amount: $value
                     );
                 });
                 $opportunity->list_price_currency_code = $data->list_price_currency_code;
@@ -1254,7 +1055,6 @@ class OpportunityEntityService
                     ->whereColumn($primaryAccount->contacts()->getQualifiedRelatedPivotKeyName(), $opportunityModel->primaryAccountContact()->getQualifiedForeignKeyName())
                     ->where($primaryAccount->contacts()->getQualifiedForeignPivotKeyName(), $primaryAccount->getKey());
             })
-//            ->get()
             ->update([$opportunityModel->primaryAccountContact()->getForeignKeyName() => null]);
     }
 }

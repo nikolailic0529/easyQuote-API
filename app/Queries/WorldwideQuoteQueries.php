@@ -11,32 +11,21 @@ use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\User;
 use App\Models\WorldwideQuoteAsset;
 use App\Models\WorldwideQuoteAssetsGroup;
-use App\Services\ElasticsearchQuery;
-use DB;
+use App\Queries\Pipeline\PerformElasticsearchSearch;
+use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
-use Illuminate\Pipeline\Pipeline;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class WorldwideQuoteQueries
 {
-    protected ConnectionInterface $connection;
-
-    protected Elasticsearch $elasticsearch;
-
-    protected Pipeline $pipeline;
-
-    public function __construct(ConnectionInterface $connection,
-                                Elasticsearch $elasticsearch,
-                                Pipeline $pipeline)
+    public function __construct(protected ConnectionInterface $connection,
+                                protected Elasticsearch $elasticsearch)
     {
-        $this->elasticsearch = $elasticsearch;
-        $this->pipeline = $pipeline;
-        $this->connection = $connection;
     }
 
     public function aliveDraftedListingQuery(Request $request = null): Builder
@@ -49,7 +38,7 @@ class WorldwideQuoteQueries
                     'worldwide_quote_versions.user_id',
                     'users.user_fullname',
                     'worldwide_quote_versions.user_version_sequence_number',
-                    'worldwide_quote_versions.updated_at'
+                    'worldwide_quote_versions.updated_at',
                 ])
                     ->join('users', function (JoinClause $join) {
                         $join->on('users.id', 'worldwide_quote_versions.user_id');
@@ -69,7 +58,9 @@ class WorldwideQuoteQueries
     {
         $request ??= new Request;
 
-        $query = WorldwideQuote::query()
+        $model = new WorldwideQuote();
+
+        $query = $model->newQuery()
             ->join('worldwide_quote_versions as active_version', function (JoinClause $joinClause) {
                 $joinClause->on('active_version.id', 'worldwide_quotes.active_version_id');
             })
@@ -116,43 +107,35 @@ class WorldwideQuoteQueries
                 'opportunities.opportunity_closing_date as valid_until_date',
                 'opportunities.opportunity_start_date as customer_support_start_date',
                 'opportunities.opportunity_end_date as customer_support_end_date',
-            ]);
-
-        if (filled($searchQuery = $request->query('search'))) {
-            $hits = rescue(function () use ($searchQuery) {
-                return $this->elasticsearch->search(
-                    ElasticsearchQuery::new()
-                        ->modelIndex(new WorldwideQuote)
-                        ->queryString($searchQuery)
-                        ->escapeQueryString()
-                        ->wrapQueryString()
-                        ->toArray()
-                );
-            });
-
-            $query->whereKey(data_get($hits, 'hits.hits.*._id') ?? []);
-        }
-
-        $this->pipeline->send($query)
-            ->through([
-                new \App\Http\Query\ActiveFirst('worldwide_quotes.is_active'),
-                \App\Http\Query\OrderByTypeName::class,
-                \App\Http\Query\OrderByCustomerName::class,
-                new \App\Http\Query\Quote\OrderByCompleteness('active_version.completeness'),
-                \App\Http\Query\OrderByUserFullname::class,
-                \App\Http\Query\OrderByRfqNumber::class,
-                \App\Http\Query\OrderByValidUntilDate::class,
-                \App\Http\Query\OrderByCustomerSupportStartDate::class,
-                \App\Http\Query\OrderByCustomerSupportEndDate::class,
-                \App\Http\Query\OrderByStatus::class,
-                \App\Http\Query\OrderByStatusReason::class,
-                \App\Http\Query\OrderByCreatedAt::class,
-                (new \App\Http\Query\OrderByUpdatedAt)->qualifyColumnName(),
-                new \App\Http\Query\DefaultOrderBy('worldwide_quotes.updated_at'),
             ])
-            ->thenReturn();
+            ->orderByDesc($model->qualifyColumn('is_active'));
 
-        return $query;
+        return RequestQueryBuilder::for(
+            builder: $query,
+            request: $request,
+        )
+            ->addCustomBuildQueryPipe(
+                new PerformElasticsearchSearch($this->elasticsearch)
+            )
+            ->allowOrderFields(...[
+                'type_name',
+                'customer_name',
+                'completeness',
+                'user_fullname',
+                'rfq_number',
+                'valid_until_date',
+                'customer_support_start_date',
+                'customer_support_end_date',
+                'status',
+                'status_reason',
+                'created_at',
+                'updated_at',
+            ])
+            ->qualifyOrderFields(
+                completeness: 'active_version.completeness',
+            )
+            ->enforceOrderBy($model->getQualifiedUpdatedAtColumn(), 'desc')
+            ->process();
     }
 
     public function deadDraftedListingQuery(Request $request = null): Builder

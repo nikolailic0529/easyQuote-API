@@ -23,6 +23,8 @@ use App\Http\Controllers\API\Discounts\MultiYearDiscountController;
 use App\Http\Controllers\API\Discounts\PrePayDiscountController;
 use App\Http\Controllers\API\Discounts\PromotionalDiscountController;
 use App\Http\Controllers\API\Discounts\SNDcontroller;
+use App\Http\Controllers\API\DocumentEngine\DocumentEngineDataController;
+use App\Http\Controllers\API\DocumentEngine\DocumentEngineEventController;
 use App\Http\Controllers\API\HpeContractController;
 use App\Http\Controllers\API\HpeContractFileController;
 use App\Http\Controllers\API\InvitationController;
@@ -31,9 +33,10 @@ use App\Http\Controllers\API\OpportunityController;
 use App\Http\Controllers\API\PermissionController;
 use App\Http\Controllers\API\Pipeline\PipelineController;
 use App\Http\Controllers\API\Quotes\CustomerController;
+use App\Http\Controllers\API\Quotes\RescueQuoteAttachmentController;
 use App\Http\Controllers\API\Quotes\QuoteController;
 use App\Http\Controllers\API\Quotes\QuoteDraftedController;
-use App\Http\Controllers\API\Quotes\QuoteFilesController;
+use App\Http\Controllers\API\Quotes\QuoteFileController;
 use App\Http\Controllers\API\Quotes\QuoteNoteController;
 use App\Http\Controllers\API\Quotes\QuoteSubmittedController;
 use App\Http\Controllers\API\Quotes\QuoteTaskController;
@@ -63,6 +66,7 @@ use App\Http\Controllers\API\VendorController;
 use App\Http\Controllers\API\WorldwideQuotes\WorldwideCustomerController;
 use App\Http\Controllers\API\WorldwideQuotes\WorldwideDistributionController;
 use App\Http\Controllers\API\WorldwideQuotes\WorldwideQuoteAssetController;
+use App\Http\Controllers\API\WorldwideQuotes\WorldwideQuoteAttachmentController;
 use App\Http\Controllers\API\WorldwideQuotes\WorldwideQuoteController;
 use App\Http\Controllers\API\WorldwideQuotes\WorldwideQuoteDraftedController;
 use App\Http\Controllers\API\WorldwideQuotes\WorldwideQuoteNoteController;
@@ -112,11 +116,18 @@ Route::group(['prefix' => 'data'], function () {
 Route::post('exchange-rates/convert', [ExchangeRateController::class, 'convertCurrencies']);
 
 Route::group(['prefix' => 's4', 'as' => 's4.', 'middleware' => [THROTTLE_RATE_01]], function () {
-    Route::get('quotes/{rfq}', [S4QuoteController::class, 'show'])->name('quote');
-    Route::post('quotes', [S4QuoteController::class, 'store'])->name('store');
-    Route::get('quotes/{rfq}/price', [S4QuoteController::class, 'price'])->name('price');
-    Route::get('quotes/{rfq}/schedule', [S4QuoteController::class, 'schedule'])->name('schedule');
-    Route::get('quotes/{rfq}/pdf', [S4QuoteController::class, 'pdf'])->name('pdf');
+    Route::get('quotes/{rfq}', [S4QuoteController::class, 'showQuoteByRfqNumber'])->name('quote');
+    Route::post('quotes', [S4QuoteController::class, 'storeS4Customer'])->name('store');
+    Route::get('quotes/{rfq}/price', [S4QuoteController::class, 'downloadPriceListFile'])->name('price');
+    Route::get('quotes/{rfq}/schedule', [S4QuoteController::class, 'downloadPaymentScheduleFile'])->name('schedule');
+    Route::get('quotes/{rfq}/pdf', [S4QuoteController::class, 'exportToPdf'])->name('pdf');
+});
+
+Route::group(['prefix' => 'document-engine'], function () {
+
+    Route::post('events', [DocumentEngineEventController::class, 'handleDocumentEngineEvent']);
+    Route::get('document-headers/linked', [DocumentEngineDataController::class, 'showLinkedDocumentHeaders']);
+
 });
 
 Route::group(['middleware' => 'auth:api'], function () {
@@ -132,6 +143,7 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::get('stats/locations/{location}/quotes', [StatsController::class, 'showQuotesOfLocation']);
 
         Route::post('attachments', AttachmentController::class);
+        Route::get('attachments/{attachment}/download', [AttachmentController::class, 'downloadAttachment']);
 
         Route::resource('assets', AssetController::class)->only(ROUTE_CRUD);
         Route::post('assets/unique', [AssetController::class, 'checkUniqueness']);
@@ -276,8 +288,8 @@ Route::group(['middleware' => 'auth:api'], function () {
 
     Route::group(['middleware' => THROTTLE_RATE_01], function () {
         Route::get('companies/external', [CompanyController::class, 'getExternal']);
-        Route::get('companies/internal', [CompanyController::class, 'getInternal']);
-        Route::get('companies/countries', [CompanyController::class, 'showCompaniesWithCountries']);
+        Route::get('companies/internal', [CompanyController::class, 'showListOfInternalCompanies']);
+        Route::get('companies/countries', [CompanyController::class, 'showInternalCompaniesWithCountries']);
         Route::get('external-companies', [CompanyController::class, 'paginateExternalCompanies']);
 
         Route::get('companies', [CompanyController::class, 'paginateCompanies']);
@@ -303,6 +315,10 @@ Route::group(['middleware' => 'auth:api'], function () {
         Route::put('companies/deactivate/{company}', [CompanyController::class, 'markAsInactiveCompany']);
 
         Route::patch('companies/{company}/contacts/{contact:id}', [CompanyController::class, 'updateCompanyContact']);
+
+        Route::get('companies/{company}/attachments', [CompanyController::class, 'showAttachmentsOfCompany']);
+        Route::post('companies/{company}/attachments', [CompanyController::class, 'storeAttachmentForCompany']);
+        Route::delete('companies/{company}/attachments/{attachment:id}', [CompanyController::class, 'deleteAttachmentOfCompany']);
     });
 
     Route::group(['middleware' => THROTTLE_RATE_01], function () {
@@ -393,7 +409,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     });
 
     Route::group(['prefix' => 'quotes', 'as' => 'quotes.'], function () {
-        Route::post('handle', [QuoteFilesController::class, 'handle']);
+        Route::post('handle', [QuoteFileController::class, 'processQuoteFile']);
         Route::put('/get/{quote}', [QuoteController::class, 'quote']);
         Route::get('/get/{quote}/quote-files/{file_type}', [QuoteController::class, 'downloadQuoteFile'])->where('file_type', 'price|schedule');
         Route::get('/groups/{quote}', [QuoteController::class, 'rowsGroups']);
@@ -450,7 +466,8 @@ Route::group(['middleware' => 'auth:api'], function () {
             Route::post('submitted/contract/{submitted}', [QuoteSubmittedController::class, 'createContract']);
             Route::put('submitted/contract-template/{submitted}/{template}', [QuoteSubmittedController::class, 'setContractTemplate']);
 
-            Route::apiResource('file', QuoteFilesController::class, ['only' => ROUTE_CR]);
+            Route::get('file/{file}', [QuoteFileController::class, 'showQuoteFile']);
+            Route::post('file', [QuoteFileController::class, 'storeQuoteFile']);
 
             /**
              * Customers
@@ -468,6 +485,13 @@ Route::group(['middleware' => 'auth:api'], function () {
             });
         });
     });
+
+    /**
+     * Rescue Quote attachments.
+     */
+    Route::get('quotes/{quote}/attachments', [RescueQuoteAttachmentController::class, 'showAttachmentsOfQuote']);
+    Route::post('quotes/{quote}/attachments', [RescueQuoteAttachmentController::class, 'storeAttachmentForQuote']);
+    Route::delete('quotes/{quote}/attachments/{attachment:id}', [RescueQuoteAttachmentController::class, 'deleteAttachmentOfQuote']);
 
     Route::apiResource('ww-customers', WorldwideCustomerController::class, ['only' => ROUTE_R]);
 
@@ -549,6 +573,13 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::delete('ww-quotes/{worldwide_quote}/tasks/{task:id}', [QuoteTaskController::class, 'destroyWorldwideQuoteTask']);
 
     Route::get('ww-quotes/{worldwide_quote}/sales-order-data', [WorldwideQuoteController::class, 'showSalesOrderDataOfWorldwideQuote']);
+
+    /**
+     * Worldwide Quote attachments.
+     */
+    Route::get('ww-quotes/{worldwide_quote}/attachments', [WorldwideQuoteAttachmentController::class, 'showAttachmentsOfWorldwideQuote']);
+    Route::post('ww-quotes/{worldwide_quote}/attachments', [WorldwideQuoteAttachmentController::class, 'storeAttachmentForWorldwideQuote']);
+    Route::delete('ww-quotes/{worldwide_quote}/attachments/{attachment:id}', [WorldwideQuoteAttachmentController::class, 'deleteAttachmentOfQuote']);
 
     /**
      * Worldwide Pack Quote.

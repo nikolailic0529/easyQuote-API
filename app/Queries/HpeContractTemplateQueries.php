@@ -3,31 +3,28 @@
 namespace App\Queries;
 
 use App\Models\Template\HpeContractTemplate;
-use App\Services\ElasticsearchQuery;
+use App\Queries\Pipeline\PerformElasticsearchSearch;
+use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
-use Illuminate\Pipeline\Pipeline;
 
 class HpeContractTemplateQueries
 {
-    protected Pipeline $pipeline;
 
-    protected Elasticsearch $elasticsearch;
-
-    public function __construct(Pipeline $pipeline, Elasticsearch $elasticsearch)
+    public function __construct(protected Elasticsearch $elasticsearch)
     {
-        $this->pipeline = $pipeline;
-        $this->elasticsearch = $elasticsearch;
     }
 
     public function paginateHpeContractTemplatesQuery(?Request $request = null): Builder
     {
         $request ??= new Request();
 
-        $query = HpeContractTemplate::query()
+        $model = new HpeContractTemplate();
+
+        $query = $model->newQuery()
             ->with('countries:id,name')
             ->select([
                 'hpe_contract_templates.id',
@@ -45,39 +42,34 @@ class HpeContractTemplateQueries
             })
             ->join('companies', function (JoinClause $join) {
                 $join->on('companies.id', 'hpe_contract_templates.company_id');
-            });
+            })
+            ->orderByDesc($model->qualifyColumn('is_active'));
 
-        if (filled($searchQuery = $request->query('search'))) {
-            $hits = rescue(function () use ($searchQuery) {
-                return $this->elasticsearch->search(
-                    ElasticsearchQuery::new()
-                        ->modelIndex(new HpeContractTemplate())
-                        ->queryString($searchQuery)
-                        ->escapeQueryString()
-                        ->wrapQueryString()
-                        ->toArray()
-                );
-            });
-
-            $query->whereKey(data_get($hits, 'hits.hits.*._id') ?? []);
-        }
-
-        return $this->pipeline
-            ->send($query)
-            ->through([
-                new \App\Http\Query\ActiveFirst('hpe_contract_templates.is_active'),
-                \App\Http\Query\OrderByCreatedAt::class,
-                \App\Http\Query\OrderByName::class,
-                \App\Http\Query\QuoteTemplate\OrderByCompanyName::class,
-                \App\Http\Query\QuoteTemplate\OrderByVendorName::class,
-                new \App\Http\Query\DefaultOrderBy('hpe_contract_templates.created_at'),
+        return RequestQueryBuilder::for(
+            builder: $query,
+            request: $request
+        )
+            ->addCustomBuildQueryPipe(
+                new PerformElasticsearchSearch($this->elasticsearch)
+            )
+            ->allowOrderFields(...[
+                'created_at',
+                'name',
+                'company_name',
+                'vendor_name',
             ])
-            ->thenReturn();
+            ->qualifyOrderFields(
+                created_at: $model->getQualifiedCreatedAtColumn(),
+                name: $model->qualifyColumn('name'),
+            )
+            ->enforceOrderBy($model->getQualifiedCreatedAtColumn(), 'desc')
+            ->process();
     }
 
     public function referencedQuery(string $id)
     {
-        return HpeContractTemplate::whereKey($id)
+        return HpeContractTemplate::query()
+            ->whereKey($id)
             ->where(function (Builder $builder) {
                 $builder->whereExists(
                     fn(BaseBuilder $builder) => $builder->from('hpe_contracts')->whereColumn('hpe_contracts.quote_template_id', 'hpe_contract_templates.id')->whereNull('deleted_at'),

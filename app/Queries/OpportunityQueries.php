@@ -7,46 +7,39 @@ use App\Models\Company;
 use App\Models\Opportunity;
 use App\Models\Pipeline\PipelineStage;
 use App\Models\Quote\WorldwideQuote;
-use App\Services\ElasticsearchQuery;
+use App\Queries\Pipeline\PerformElasticsearchSearch;
 use App\Services\Pipeline\PipelineEntityService;
-use DB;
+use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
-use Illuminate\Pipeline\Pipeline;
 
 class OpportunityQueries
 {
-    protected Pipeline $pipeline;
-
-    protected Elasticsearch $elasticsearch;
-
-    public function __construct(Pipeline $pipeline, Elasticsearch $elasticsearch)
+    public function __construct(protected Elasticsearch $elasticsearch)
     {
-        $this->pipeline = $pipeline;
-        $this->elasticsearch = $elasticsearch;
     }
 
     public function paginateLostOpportunitiesQuery(?Request $request = null): Builder
     {
-        return $this->paginateOpportunitiesQuery($request)
+        return $this->paginateQuotedOpportunitiesQuery($request)
             ->where('opportunities.status', OpportunityStatus::LOST);
     }
 
     public function paginateOkOpportunitiesQuery(?Request $request = null): Builder
     {
-        return $this->paginateOpportunitiesQuery($request)
+        return $this->paginateQuotedOpportunitiesQuery($request)
             ->where('opportunities.status', OpportunityStatus::NOT_LOST);
     }
 
-    public function listOkOpportunitiesOfCompanyQuery(Company $company, ?Request $request = null): Builder
+    public function listOfCompanyOpportunitiesQuery(Company $company, ?Request $request = null): Builder
     {
-        return tap($this->paginateOkOpportunitiesQuery($request), function (Builder $builder) use ($company) {
-
+        return tap($this->paginateOpportunitiesQuery($request), function (Builder $builder) use ($company) {
             $builder
+                ->withExists('worldwideQuotes')
                 ->where($builder->qualifyColumn('primary_account_id'), $company->getKey());
-
         });
     }
 
@@ -75,9 +68,7 @@ class OpportunityQueries
                 'opportunities.status',
                 'opportunities.status_reason',
                 'opportunities.created_at',
-                DB::raw('0 as quotes_exist')
             ])
-            ->doesntHave('worldwideQuotes')
             ->leftJoin('contract_types', function (JoinClause $join) {
                 $join->on('contract_types.id', 'opportunities.contract_type_id');
             })
@@ -88,40 +79,54 @@ class OpportunityQueries
                 $join->on('companies.id', 'opportunities.primary_account_id');
             });
 
-        if (filled($searchQuery = $request->query('search'))) {
-            $hits = rescue(function () use ($model, $searchQuery) {
-                return $this->elasticsearch->search(
-                    ElasticsearchQuery::new()
-                        ->modelIndex($model)
-                        ->queryString($searchQuery)
-                        ->escapeQueryString()
-                        ->wrapQueryString()
-                        ->toArray()
-                );
-            });
-
-            $query->whereKey(data_get($hits, 'hits.hits.*._id') ?? []);
-        }
-
-        return $this->pipeline
-            ->send($query)
-            ->through([
-                \App\Http\Query\OrderByAccountName::class,
-                \App\Http\Query\OrderByProjectName::class,
-                \App\Http\Query\OrderByOpportunityType::class,
-                \App\Http\Query\OrderByOpportunityAmount::class,
-                \App\Http\Query\OrderByOpportunityStartDate::class,
-                \App\Http\Query\OrderByOpportunityEndDate::class,
-                \App\Http\Query\OrderByOpportunityClosingDate::class,
-                \App\Http\Query\OrderBySaleActionName::class,
-                \App\Http\Query\OrderByAccountManagerName::class,
-                \App\Http\Query\OrderByStatus::class,
-                \App\Http\Query\OrderByStatusReason::class,
-                \App\Http\Query\OrderByCreatedAt::class,
-                (new \App\Http\Query\OrderByUpdatedAt)->qualifyColumnName(),
-                \App\Http\Query\DefaultOrderBy::class,
+        return RequestQueryBuilder::for(
+            builder: $query,
+            request: $request,
+        )
+            ->addCustomBuildQueryPipe(
+                new PerformElasticsearchSearch($this->elasticsearch)
+            )
+            ->allowOrderFields(...[
+                'account_name',
+                'project_name',
+                'opportunity_type',
+                'opportunity_amount',
+                'opportunity_start_date',
+                'opportunity_end_date',
+                'opportunity_closing_date',
+                'sale_action_name',
+                'account_manager_name',
+                'status',
+                'status_reason',
+                'created_at',
+                'updated_at',
             ])
-            ->thenReturn();
+            ->qualifyOrderFields(
+                account_name: 'companies.name',
+                project_name: $model->qualifyColumn('project_name'),
+                opportunity_type: 'contract_types.type_short_name',
+                opportunity_amount: $model->qualifyColumn('opportunities.base_opportunity_amount'),
+                opportunity_start_date: $model->qualifyColumn('opportunity_start_date'),
+                opportunity_end_date: $model->qualifyColumn('opportunity_end_date'),
+                opportunity_closing_date: $model->qualifyColumn('opportunity_closing_date'),
+                sale_action_name: $model->qualifyColumn('sale_action_name'),
+                account_manager_name: 'users.user_fullname',
+                status: $model->qualifyColumn('status'),
+                status_reason: $model->qualifyColumn('status_reason'),
+                created_at: $model->getQualifiedCreatedAtColumn(),
+                updated_at: $model->getQualifiedUpdatedAtColumn(),
+            )
+            ->enforceOrderBy($model->getQualifiedCreatedAtColumn(), 'desc')
+            ->process();
+    }
+
+    public function paginateQuotedOpportunitiesQuery(?Request $request = null): Builder
+    {
+        return $this->paginateOpportunitiesQuery($request)
+            ->addSelect([
+                new Expression('0 as quotes_exist'),
+            ])
+            ->doesntHave('worldwideQuotes');
     }
 
     public function opportunitiesOfPipelineStageQuery(PipelineStage $pipelineStage): Builder
@@ -145,7 +150,6 @@ class OpportunityQueries
                 $opportunityModel->qualifyColumn('base_opportunity_amount'),
                 $opportunityModel->qualifyColumn('opportunity_amount'),
                 $opportunityModel->qualifyColumn('opportunity_amount_currency_code'),
-//                "{$opportunityModel->qualifyColumn('base_opportunity_amount')} as opportunity_amount",
                 'primary_account_contact.first_name as primary_account_contact.first_name',
                 'primary_account_contact.last_name as primary_account_contact.last_name',
                 'primary_account_contact.phone as primary_account_contact.phone',

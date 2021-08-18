@@ -7,7 +7,6 @@ use App\Traits\{Auth\Multitenantable,
     Handleable,
     HasFileFormat,
     HasMetaAttributes,
-    Import\Automappable,
     Misc\GeneratesException,
     Uuid};
 use Illuminate\Database\Eloquent\{Builder,
@@ -26,6 +25,7 @@ use Illuminate\Database\Eloquent\{Builder,
  * @property string|null $replicated_quote_file_id
  * @property int|null $pages
  * @property int|null $imported_page
+ * @property string|null $handled_at
  *
  * @property array|null $meta_attributes
  * @property ScheduleData|null scheduleData
@@ -37,7 +37,6 @@ class QuoteFile extends Model
 {
     use Uuid,
         Multitenantable,
-        Automappable,
         BelongsToUser,
         HasFileFormat,
         HasMetaAttributes,
@@ -151,5 +150,10 @@ class QuoteFile extends Model
     public function getItemNameAttribute()
     {
         return "Quote File ({$this->original_file_name})";
+    }
+
+    public function mappingWasGuessed(): bool
+    {
+        return !is_null($this->automapped_at);
     }
 }

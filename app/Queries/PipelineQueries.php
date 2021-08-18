@@ -2,23 +2,18 @@
 
 namespace App\Queries;
 
-use App\Http\Query\DefaultOrderBy;
-use App\Http\Query\OrderByColumnName;
 use App\Models\Pipeline\Pipeline as PipelineModel;
 use App\Models\Space;
+use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
-use Illuminate\Pipeline\Pipeline;
 use Illuminate\Support\Arr;
 
 class PipelineQueries
 {
-    protected Pipeline $pipeline;
-
-    public function __construct(Pipeline $pipeline)
+    public function __construct()
     {
-        $this->pipeline = $pipeline;
     }
 
     public function paginatePipelinesQuery(Request $request = null): Builder
@@ -42,18 +37,28 @@ class PipelineQueries
                 $join->on($spaceModel->getQualifiedKeyName(), $pipelineModel->space()->getQualifiedForeignKeyName());
             });
 
-        return $this->pipeline
-            ->send($query)
-            ->through([
-                new OrderByColumnName($request, $pipelineModel->qualifyColumn('is_system'), 'is_system'),
-                new OrderByColumnName($request, $pipelineModel->qualifyColumn('is_default'), 'is_default'),
-                new OrderByColumnName($request, $spaceModel->qualifyColumn('space_name'), 'space_name'),
-                new OrderByColumnName($request, $pipelineModel->qualifyColumn('created_at'), 'created_at'),
-                new OrderByColumnName($request, $pipelineModel->qualifyColumn('updated_at'), 'updated_at'),
-                new OrderByColumnName($request, $pipelineModel->qualifyColumn('pipeline_name'), 'pipeline_name'),
-                DefaultOrderBy::class,
+        return RequestQueryBuilder::for(
+            builder: $query,
+            request: $request
+        )
+            ->allowOrderFields(...[
+                'is_system',
+                'is_default',
+                'space_name',
+                'created_at',
+                'updated_at',
+                'pipeline_name',
             ])
-            ->thenReturn();
+            ->qualifyOrderFields(
+                is_system: $pipelineModel->qualifyColumn('is_system'),
+                is_default: $pipelineModel->qualifyColumn('is_default'),
+                space_name: $spaceModel->qualifyColumn('space_name'),
+                created_at: $pipelineModel->qualifyColumn('created_at'),
+                updated_at: $pipelineModel->qualifyColumn('updated_at'),
+                pipeline_name: $pipelineModel->qualifyColumn('pipeline_name'),
+            )
+            ->enforceOrderBy($pipelineModel->getQualifiedCreatedAtColumn(), 'desc')
+            ->process();
     }
 
     public function defaultPipelinesQuery(): Builder
@@ -75,7 +80,7 @@ class PipelineQueries
                 'id',
                 'space_id',
                 'is_default',
-                'pipeline_name'
+                'pipeline_name',
             ])
             ->orderBy('is_default', 'desc')
             ->orderBy('pipeline_order');
@@ -94,7 +99,7 @@ class PipelineQueries
         return PipelineModel::query()
             ->select([
                 'id',
-                'pipeline_name'
+                'pipeline_name',
             ])
             ->whereDoesntHave('opportunityForm')
             ->orderBy('is_default', 'desc')

@@ -216,6 +216,7 @@ return [
         App\Providers\UIServiceProvider::class,
         App\Providers\UserServiceProvider::class,
         App\Providers\VendorServiceProvider::class,
+        App\Providers\DocumentEngineServiceProvider::class,
 
         App\Providers\QueryBuilderServiceProvider::class,
         App\Providers\MacroServiceProvider::class,
@@ -232,6 +233,7 @@ return [
         Barryvdh\Snappy\ServiceProvider::class,
         App\Providers\SnappyServiceProvider::class,
         Spatie\Geocoder\GeocoderServiceProvider::class,
+        App\Providers\AttachmentServiceProvider::class,
 
         LynX39\LaraPdfMerger\PdfMergerServiceProvider::class,
     ],

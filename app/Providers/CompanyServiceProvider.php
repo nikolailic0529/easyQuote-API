@@ -2,10 +2,8 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Contracts\Support\DeferrableProvider;
-use App\Contracts\Repositories\CompanyRepositoryInterface;
-use App\Repositories\CompanyRepository;
+use Illuminate\Support\ServiceProvider;
 
 class CompanyServiceProvider extends ServiceProvider implements DeferrableProvider
 {
@@ -16,16 +14,12 @@ class CompanyServiceProvider extends ServiceProvider implements DeferrableProvid
      */
     public function register()
     {
-        $this->app->singleton(CompanyRepositoryInterface::class, CompanyRepository::class);
-
-        $this->app->alias(CompanyRepositoryInterface::class, 'company.repository');
+        //
     }
 
     public function provides()
     {
         return [
-            CompanyRepositoryInterface::class,
-            'company.repository',
         ];
     }
 }

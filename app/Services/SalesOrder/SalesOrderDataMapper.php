@@ -37,7 +37,7 @@ use App\Models\WorldwideQuoteAsset;
 use App\Models\WorldwideQuoteAssetsGroup;
 use App\Services\ThumbHelper;
 use App\Services\WorldwideQuote\AssetServiceLookupService;
-use App\Services\WorldwideQuote\Calculation\WorldwideDistributionCalc;
+use App\Services\WorldwideQuote\Calculation\WorldwideDistributorQuoteCalc;
 use App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -53,12 +53,12 @@ class SalesOrderDataMapper
     protected ManagesExchangeRates $exchangeRateService;
     protected AssetServiceLookupService $lookupService;
     protected WorldwideQuoteCalc $quoteCalc;
-    protected WorldwideDistributionCalc $distributorQuoteCalc;
+    protected WorldwideDistributorQuoteCalc $distributorQuoteCalc;
 
     public function __construct(ManagesExchangeRates $exchangeRateService,
                                 AssetServiceLookupService $lookupService,
                                 WorldwideQuoteCalc $quoteCalc,
-                                WorldwideDistributionCalc $distributorQuoteCalc)
+                                WorldwideDistributorQuoteCalc $distributorQuoteCalc)
     {
         $this->exchangeRateService = $exchangeRateService;
         $this->lookupService = $lookupService;

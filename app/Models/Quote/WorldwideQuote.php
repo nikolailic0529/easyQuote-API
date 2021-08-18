@@ -4,6 +4,7 @@ namespace App\Models\Quote;
 
 use App\Contracts\SearchableEntity;
 use App\Models\Addressable;
+use App\Models\Attachment;
 use App\Models\Company;
 use App\Models\Contactable;
 use App\Models\ContractType;
@@ -12,7 +13,7 @@ use App\Models\SalesOrder;
 use App\Models\Task;
 use App\Models\User;
 use App\Models\WorldwideQuoteAsset;
-use App\Models\WorldwideQuoteAssetsGroup;
+use App\Models\WorldwideQuoteAssetsGroup as WorldwideQuoteAssetsGroupAlias;
 use App\Traits\Uuid;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -20,11 +21,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
-use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 /**
@@ -42,16 +42,18 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property int|null $sequence_number
  * @property int|null $status
  * @property string|null $status_reason
- * @property-read bool|null $sales_order_exists
  *
  * @property User $user
- * @property Collection<WorldwideQuoteVersion>|\App\Models\Quote\WorldwideQuoteVersion[] $versions
+ * @property Collection<WorldwideQuoteVersion>|WorldwideQuoteVersion[] $versions
  * @property WorldwideQuoteVersion|null $activeVersion
  * @property SalesOrder|null $salesOrder
  * @property ContractType|null $contractType
  * @property Opportunity|null $opportunity
  * @property Collection<Addressable> $referencedAddressPivotsOfPrimaryAccount
  * @property Collection<Contactable> $referencedContactPivotsOfPrimaryAccount
+ *
+ * @property-read Collection<Attachment>|Attachment[] $attachments
+ * @property-read bool|null $sales_order_exists
  */
 class WorldwideQuote extends Model implements SearchableEntity
 {
@@ -61,12 +63,30 @@ class WorldwideQuote extends Model implements SearchableEntity
 
     public function assets(): HasManyThrough
     {
-        return $this->hasManyThrough(WorldwideQuoteAsset::class, WorldwideQuoteVersion::class, 'id', 'worldwide_quote_id', 'active_version_id');
+        return tap($this->hasManyThrough(
+            related: WorldwideQuoteAsset::class,
+            through: WorldwideQuoteVersion::class,
+            firstKey: 'id',
+            secondKey: 'worldwide_quote_id',
+            localKey: 'active_version_id'
+        ), function (HasManyThrough $relation) {
+            $relation
+                ->oldest($relation->getRelated()->getQualifiedCreatedAtColumn());
+        });
     }
 
     public function assetsGroups(): HasManyThrough
     {
-        return $this->hasManyThrough(WorldwideQuoteAssetsGroup::class, WorldwideQuoteVersion::class, 'id', 'worldwide_quote_version_id', 'active_version_id');
+        return tap($this->hasManyThrough(
+            related: WorldwideQuoteAssetsGroupAlias::class,
+            through: WorldwideQuoteVersion::class,
+            firstKey: 'id',
+            secondKey: 'worldwide_quote_version_id',
+            localKey: 'active_version_id'
+        ), function (HasManyThrough $relation) {
+            $relation
+                ->oldest($relation->getRelated()->getQualifiedCreatedAtColumn());
+        });
     }
 
     public function activeVersion(): BelongsTo
@@ -89,17 +109,17 @@ class WorldwideQuote extends Model implements SearchableEntity
         return $this->hasManyDeep(
             Addressable::class,
             [
-                Opportunity::class, Company::class
+                Opportunity::class, Company::class,
             ],
             [
                 'id',
                 'id',
-                'addressable_id'
+                'addressable_id',
             ],
             [
                 'opportunity_id',
                 'primary_account_id',
-                null
+                null,
             ]
         );
     }
@@ -110,17 +130,17 @@ class WorldwideQuote extends Model implements SearchableEntity
         return $this->hasManyDeep(
             Contactable::class,
             [
-                Opportunity::class, Company::class
+                Opportunity::class, Company::class,
             ],
             [
                 'id',
                 'id',
-                'contactable_id'
+                'contactable_id',
             ],
             [
                 'opportunity_id',
                 'primary_account_id',
-                null
+                null,
             ]
         );
     }
@@ -153,6 +173,15 @@ class WorldwideQuote extends Model implements SearchableEntity
     public function getSearchIndex(): string
     {
         return $this->getTable();
+    }
+
+    public function attachments(): MorphToMany
+    {
+        return $this->morphToMany(
+            related: Attachment::class,
+            name: 'attachable',
+            relatedPivotKey: 'attachment_id'
+        );
     }
 
     public function toSearchArray(): array

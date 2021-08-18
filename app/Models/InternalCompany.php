@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enum\CompanyType;
 use Illuminate\Database\Eloquent\Builder;
 
 class InternalCompany extends Company
@@ -15,6 +16,6 @@ class InternalCompany extends Company
      */
     protected static function booted()
     {
-        static::addGlobalScope('internalType', fn (Builder $builder) => $builder->where('type', Company::INT_TYPE));
+        static::addGlobalScope('internalType', fn (Builder $builder) => $builder->where('type', CompanyType::INTERNAL));
     }
 }

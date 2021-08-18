@@ -23,23 +23,23 @@ use App\DTO\{Discounts\ApplicablePredefinedDiscounts,
     WorldwideQuote\PackQuoteDiscountData,
     WorldwideQuote\PackQuotePriceSummaryData,
     WorldwideQuote\QuoteFinalTotalPrice,
-    WorldwideQuote\QuotePriceInputData
-};
+    WorldwideQuote\QuotePriceInputData};
 use App\Models\{Quote\Discount\MultiYearDiscount,
     Quote\Discount\PrePayDiscount,
     Quote\Discount\PromotionalDiscount,
     Quote\Discount\SND,
     Quote\WorldwideDistribution,
     Quote\WorldwideQuote,
-    WorldwideQuoteAssetsGroup
-};
+    WorldwideQuoteAsset,
+    WorldwideQuoteAssetsGroup};
 use App\Queries\{WorldwideDistributionQueries, WorldwideQuoteQueries};
 use App\Services\ExchangeRate\CurrencyConverter;
 use App\Services\WorldwideQuote\Calculation\Pipes\ApplyMultiYearDiscountPipe;
 use App\Services\WorldwideQuote\Calculation\Pipes\ApplyPrePayDiscountPipe;
 use App\Services\WorldwideQuote\Calculation\Pipes\ApplyPromotionalDiscountPipe;
 use App\Services\WorldwideQuote\Calculation\Pipes\ApplySpecialNegotiationDiscountPipe;
-use Carbon\Carbon;
+use App\Services\WorldwideQuote\Exceptions\ContractTypeException;
+use App\Services\WorldwideQuote\Exceptions\DiscountException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pipeline\Pipeline;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
@@ -50,36 +50,15 @@ use function with;
 use const CT_CONTRACT;
 use const CT_PACK;
 
-// TODO: implement pipeline to calculate final total_price
-// TODO: which accepts the following DTO class:
-// total_price
-// final_total_price
-// buy_price
-// margin_value
-// tax_value
-// custom_discount_value
-// sn_discount
-// margin_after_sn_discount
-// pre_pay_discount
-// margin_after_pre_pay_discount
-// promo_discount
-// margin_after_promotional_discount
-// multi_year_discount
-// margin_after_multi_year_discount
-
-// TODO: pipes:
-// apply margin (apply margin without custom_discount)
-// apply tax
-// apply predefined discounts
 class WorldwideQuoteCalc
 {
 
-    public function __construct(protected ValidatorInterface $validator,
-                                protected CurrencyConverter $currencyConverter,
-                                protected WorldwideQuoteQueries $quoteQueries,
-                                protected WorldwideDistributionQueries $distributionQueries,
-                                protected WorldwideDistributionCalc $distributionCalc,
-                                protected Pipeline $pipeline)
+    public function __construct(protected ValidatorInterface            $validator,
+                                protected CurrencyConverter             $currencyConverter,
+                                protected WorldwideQuoteQueries         $quoteQueries,
+                                protected WorldwideDistributionQueries  $distributionQueries,
+                                protected WorldwideDistributorQuoteCalc $distributionCalc,
+                                protected Pipeline                      $pipeline)
     {
     }
 
@@ -113,15 +92,11 @@ class WorldwideQuoteCalc
 
     public function calculatePriceSummaryOfQuote(WorldwideQuote $quote): ImmutablePriceSummaryData
     {
-        if ($quote->contract_type_id === CT_PACK) {
-            return $this->calculatePriceSummaryOfPackQuote($quote);
-        }
-
-        if ($quote->contract_type_id === CT_CONTRACT) {
-            return $this->calculatePriceSummaryOfContractQuote($quote);
-        }
-
-        throw new \RuntimeException('Contract Type of the Quote either is not set or unsupported to compute price summary.');
+        return match ($quote->contract_type_id) {
+            CT_PACK => $this->calculatePriceSummaryOfPackQuote($quote),
+            CT_CONTRACT => $this->calculatePriceSummaryOfContractQuote($quote),
+            default => throw ContractTypeException::unsupportedContractType(),
+        };
     }
 
     protected function calculatePriceSummaryOfPackQuote(WorldwideQuote $quote): ImmutablePriceSummaryData
@@ -203,16 +178,14 @@ class WorldwideQuoteCalc
 
     protected function calculatePackQuoteBuyPrice(WorldwideQuote $quote): float
     {
-        if ($quote->activeVersion->quoteCurrency->exists === false || $quote->activeVersion->buyCurrency->exists === false) {
-            return (float)$quote->activeVersion->buy_price;
-        }
+        return (float)$quote->activeVersion
+            ->assets()
+            ->get()
+            ->sum(function (WorldwideQuoteAsset $asset) use ($quote): float {
 
-        return $this->currencyConverter->convertCurrencies(
-            $quote->activeVersion->buyCurrency->code,
-            $quote->activeVersion->quoteCurrency->code,
-            (float)$quote->activeVersion->buy_price,
-            Carbon::instance($quote->{$quote->getCreatedAtColumn()})
-        );
+                return (float)($asset->buy_price * ($asset->exchange_rate_value ?? 1));
+
+            });
     }
 
     final public static function calculateMarginPercentage(float $totalPrice, float $buyPrice): float
@@ -276,8 +249,6 @@ class WorldwideQuoteCalc
         $quoteFinalTotalPrice = 0.0;
         $quoteFinalTotalPriceExcludingTax = 0.0;
         $quoteApplicableDiscountsValue = 0.0;
-        $quoteRawMargin = null;
-        $quoteFinalMargin = null;
 
         foreach ($quote->activeVersion->worldwideDistributions as $distributorQuote) {
 
@@ -309,15 +280,11 @@ class WorldwideQuoteCalc
 
     public function calculateQuoteTotalPrice(WorldwideQuote $quote): float
     {
-        if ($quote->contract_type_id === CT_PACK) {
-            return $this->calculatePackQuoteTotalPrice($quote);
-        }
-
-        if ($quote->contract_type_id === CT_CONTRACT) {
-            return $this->calculateContractQuoteTotalPrice($quote);
-        }
-
-        throw new \RuntimeException('Contract Type of the Quote either is not set or unsupported to calculate a total price.');
+        return match ($quote->contract_type_id) {
+            CT_PACK => $this->calculatePackQuoteTotalPrice($quote),
+            CT_CONTRACT => $this->calculateContractQuoteTotalPrice($quote),
+            default => ContractTypeException::unsupportedContractType(),
+        };
     }
 
     public function calculateContractQuoteTotalPrice(WorldwideQuote $quote): float
@@ -326,11 +293,9 @@ class WorldwideQuoteCalc
 
         $distributions = $quote->activeVersion->worldwideDistributions()->get(['id', 'worldwide_quote_id', 'distributor_file_id', 'use_groups']);
 
-        return (float)$distributions->reduce(function (float $totalPrice, WorldwideDistribution $distribution) {
-            $distributionTotalPrice = (float)$this->distributionQueries->distributionTotalPriceQuery($distribution)->value('total_price');
-
-            return $totalPrice + $distributionTotalPrice;
-        }, 0.0);
+        return (float)$distributions->sum(function (WorldwideDistribution $distribution) {
+            return (float)$this->distributionQueries->distributionTotalPriceQuery($distribution)->value('total_price');
+        });
     }
 
     public function calculateContractQuotePriceSummaryAfterCountryMarginTax(WorldwideQuote $quote, DistributorQuoteCountryMarginTaxCollection $collection): ContractQuotePriceSummaryData
@@ -556,10 +521,14 @@ class WorldwideQuoteCalc
 
             $pipes = [];
 
-            self::addDiscountToPipe($predefinedDiscounts->multi_year_discount, $pipes);
-            self::addDiscountToPipe($predefinedDiscounts->pre_pay_discount, $pipes);
-            self::addDiscountToPipe($predefinedDiscounts->promotional_discount, $pipes);
-            self::addDiscountToPipe($predefinedDiscounts->special_negotiation_discount, $pipes);
+            foreach ([
+                         $predefinedDiscounts->multi_year_discount,
+                         $predefinedDiscounts->pre_pay_discount,
+                         $predefinedDiscounts->promotional_discount,
+                         $predefinedDiscounts->special_negotiation_discount,
+                     ] as $discount) {
+                self::addDiscountToPipe($discount, $pipes);
+            }
 
             $this->pipeline
                 ->send($priceSummary)
@@ -584,7 +553,7 @@ class WorldwideQuoteCalc
     }
 
     public static function addDiscountToPipe(ImmutableMultiYearDiscountData|ImmutablePrePayDiscountData|ImmutablePromotionalDiscountData|ImmutableSpecialNegotiationDiscountData|null $discount,
-                                           array &$pipes): void
+                                             array                                                                                                                                    &$pipes): void
     {
         if (is_null($discount)) {
             return;
@@ -595,7 +564,7 @@ class WorldwideQuoteCalc
             ImmutablePrePayDiscountData::class => new ApplyPrePayDiscountPipe($discount),
             ImmutablePromotionalDiscountData::class => new ApplyPromotionalDiscountPipe($discount),
             ImmutableSpecialNegotiationDiscountData::class => new ApplySpecialNegotiationDiscountPipe($discount),
-            default => throw new \RuntimeException(sprintf("Unsupported %s discount instance provided.", $discount::class))
+            default => throw DiscountException::unsupportedEntityType(),
         };
 
         array_push($pipes, $pipe);

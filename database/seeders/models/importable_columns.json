@@ -27,7 +27,8 @@
             "part number",
             "machine type",
             "type-model",
-            "machine"
+            "machine",
+            "item extension"
         ]
     },
     {
@@ -161,7 +162,8 @@
             "total price ex. vat",
             "bp charges",
             "totale netto",
-            "ext list cost"
+            "ext list cost",
+            "unit price (ex vat)"
         ]
     },
     {

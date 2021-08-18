@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Opportunity;
 
+use App\Enum\OpportunityStatus;
 use App\Models\Opportunity;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Symfony\Component\Intl\Currencies;
@@ -32,6 +33,21 @@ class OpportunityList extends JsonResource
             'user_id' => $this->user_id,
             'company_id' => $this->company_id,
             'opportunity_type' => $this->opportunity_type,
+            'status_type' => value(function (): string {
+
+                /** @var Opportunity|OpportunityList $this */
+
+                if ($this->status === OpportunityStatus::LOST) {
+                    return 'Lost';
+                }
+
+                if ($this->worldwide_quotes_exists) {
+                    return 'Quoted';
+                }
+
+                return 'Open';
+
+            }),
             'account_name' => $this->account_name,
             'account_manager_name' => $this->account_manager_name,
             'opportunity_amount' => sprintf('%s %s', $baseCurrencySymbol, number_format((float)$this->opportunity_amount, 2)),

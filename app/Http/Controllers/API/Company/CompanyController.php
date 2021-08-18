@@ -2,28 +2,37 @@
 
 namespace App\Http\Controllers\API\Company;
 
-use App\Contracts\Repositories\{CompanyRepositoryInterface as CompanyRepository,
-    VendorRepositoryInterface as VendorRepository};
+use App\Enum\CompanySource;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Company\{PaginateCompanies, StoreCompanyRequest, UpdateCompanyContact, UpdateCompanyRequest};
+use App\Http\Requests\Attachment\CreateAttachment;
+use App\Queries\AttachmentQueries;
+use App\Services\UnifiedAttachment\UnifiedAttachmentDataMapper;
+use App\Http\Requests\Company\{PaginateCompanies,
+    ShowCompanyFormData,
+    StoreCompanyRequest,
+    UpdateCompanyContact,
+    UpdateCompanyRequest};
 use App\Http\Requests\Opportunity\PaginateOpportunities;
 use App\Http\Resources\{Asset\AssetOfCompany,
+    Attachment\AttachmentOfCompany,
+    Attachment\UnifiedAttachment,
     Company\CompanyCollection,
     Company\ExternalCompanyList,
     Company\UpdatedCompany,
     Note\UnifiedNoteOfCompany,
     Opportunity\OpportunityList,
     SalesOrder\SalesOrderOfCompany,
-    UnifiedQuote\UnifiedQuote};
+    UnifiedQuote\UnifiedQuoteOfCompany};
+use App\Models\Attachment;
 use App\Models\Company;
 use App\Models\Contact;
-use App\Models\Customer\Customer;
 use App\Queries\AssetQueries;
 use App\Queries\CompanyQueries;
 use App\Queries\OpportunityQueries;
 use App\Queries\SalesOrderQueries;
 use App\Queries\UnifiedNoteQueries;
 use App\Queries\UnifiedQuoteQueries;
+use App\Services\Attachment\AttachmentEntityService;
 use App\Services\CompanyEntityService;
 use App\Services\UnifiedNote\UnifiedNoteDataMapper;
 use App\Services\UnifiedQuote\UnifiedQuoteDataMapper;
@@ -36,16 +45,6 @@ use function response;
 
 class CompanyController extends Controller
 {
-    protected CompanyRepository $company;
-
-    protected VendorRepository $vendor;
-
-    public function __construct(CompanyRepository $company, VendorRepository $vendor)
-    {
-        $this->company = $company;
-        $this->vendor = $vendor;
-    }
-
     /**
      * Display a listing of the Companies.
      *
@@ -66,29 +65,29 @@ class CompanyController extends Controller
     /**
      * Data for creating a new Company.
      *
+     * @param ShowCompanyFormData $request
      * @return JsonResponse
-     * @throws \Illuminate\Auth\Access\AuthorizationException
+     * @throws AuthorizationException
      */
-    public function showCompanyFormData(): JsonResponse
+    public function showCompanyFormData(ShowCompanyFormData $request): JsonResponse
     {
-        $this->authorize('create', Company::class);
-
-        $vendors = $this->vendor->allFlatten();
+        $this->authorize('viewAny', Company::class);
 
         return response()->json(
-            $this->company->data(compact('vendors'))
+            data: $request->getFormData(),
         );
     }
 
     /**
      * Display a listing of the existing external companies.
      *
+     * @param CompanyQueries $queries
      * @return JsonResponse
      */
-    public function getExternal(): JsonResponse
+    public function getExternal(CompanyQueries $queries): JsonResponse
     {
         return response()->json(
-            $this->company->allExternal(['source' => Customer::EQ_SOURCE])
+            data: $queries->listOfExternalCompaniesBySource(CompanySource::EQ)->get(['id', 'name'])
         );
     }
 
@@ -111,24 +110,27 @@ class CompanyController extends Controller
     /**
      * Display a listing of all internal companies.
      *
+     * @param CompanyQueries $queries
      * @return JsonResponse
      */
-    public function getInternal(): JsonResponse
+    public function showListOfInternalCompanies(CompanyQueries $queries): JsonResponse
     {
         return response()->json(
-            $this->company->allInternal(['id', 'name'])
+            data: $queries->listOfInternalCompaniesQuery()->get(['id', 'name'])
         );
     }
 
     /**
      * Display a listing of companies with related countries.
      *
+     * @param Request $request
+     * @param CompanyQueries $queries
      * @return JsonResponse
      */
-    public function showCompaniesWithCountries(): JsonResponse
+    public function showInternalCompaniesWithCountries(Request $request, CompanyQueries $queries): JsonResponse
     {
         return response()->json(
-            $this->company->allInternalWithCountries(['id', 'name', 'short_code'])
+            data: $queries->listOfInternalCompaniesWithCountries($request)->get()
         );
     }
 
@@ -140,7 +142,7 @@ class CompanyController extends Controller
      * @return JsonResponse
      * @throws \Illuminate\Auth\Access\AuthorizationException
      */
-    public function storeCompany(StoreCompanyRequest $request,
+    public function storeCompany(StoreCompanyRequest  $request,
                                  CompanyEntityService $service): JsonResponse
     {
         $this->authorize('create', Company::class);
@@ -148,8 +150,8 @@ class CompanyController extends Controller
         $resource = $service->createCompany($request->getCreateCompanyData());
 
         return response()->json(
-            UpdatedCompany::make($resource),
-            Response::HTTP_CREATED
+            data: UpdatedCompany::make($resource),
+            status: Response::HTTP_CREATED
         );
     }
 
@@ -165,7 +167,7 @@ class CompanyController extends Controller
         $this->authorize('view', $company);
 
         return response()->json(
-            UpdatedCompany::make($company)
+            data: UpdatedCompany::make($company)
         );
     }
 
@@ -179,13 +181,13 @@ class CompanyController extends Controller
      * @throws AuthorizationException
      */
     public function showOpportunitiesOfCompany(PaginateOpportunities $request,
-                                               OpportunityQueries $opportunityQueries,
-                                               Company $company): AnonymousResourceCollection
+                                               OpportunityQueries    $opportunityQueries,
+                                               Company               $company): AnonymousResourceCollection
     {
 
         $this->authorize('view', $company);
 
-        $query = $opportunityQueries->listOkOpportunitiesOfCompanyQuery(company: $company, request: $request);
+        $query = $opportunityQueries->listOfCompanyOpportunitiesQuery(company: $company, request: $request);
 
         $resource = $request->transformOpportunitiesQuery($query)->get();
 
@@ -202,10 +204,10 @@ class CompanyController extends Controller
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function showQuotesOfCompany(Request $request,
-                                        UnifiedQuoteQueries $unifiedQuoteQueries,
+    public function showQuotesOfCompany(Request                $request,
+                                        UnifiedQuoteQueries    $unifiedQuoteQueries,
                                         UnifiedQuoteDataMapper $quoteDataMapper,
-                                        Company $company): AnonymousResourceCollection
+                                        Company                $company): AnonymousResourceCollection
     {
         $this->authorize('view', $company);
 
@@ -213,7 +215,7 @@ class CompanyController extends Controller
 
         $entities = $quoteDataMapper->mapUnifiedQuoteCollection($entities);
 
-        return UnifiedQuote::collection($entities);
+        return UnifiedQuoteOfCompany::collection($entities);
     }
 
     /**
@@ -222,11 +224,12 @@ class CompanyController extends Controller
      * @param Request $request
      * @param SalesOrderQueries $salesOrderQueries
      * @param Company $company
+     * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function showSalesOrdersOfCompany(Request $request,
+    public function showSalesOrdersOfCompany(Request           $request,
                                              SalesOrderQueries $salesOrderQueries,
-                                             Company $company): AnonymousResourceCollection
+                                             Company           $company): AnonymousResourceCollection
     {
         $this->authorize('view', $company);
 
@@ -245,10 +248,10 @@ class CompanyController extends Controller
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function showUnifiedNotesOfCompany(Request $request,
-                                              UnifiedNoteQueries $unifiedNoteQueries,
+    public function showUnifiedNotesOfCompany(Request               $request,
+                                              UnifiedNoteQueries    $unifiedNoteQueries,
                                               UnifiedNoteDataMapper $unifiedNoteDataMapper,
-                                              Company $company): AnonymousResourceCollection
+                                              Company               $company): AnonymousResourceCollection
     {
         $this->authorize('view', $company);
 
@@ -268,9 +271,9 @@ class CompanyController extends Controller
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function showAssetsOfCompany(Request $request,
+    public function showAssetsOfCompany(Request      $request,
                                         AssetQueries $assetQueries,
-                                        Company $company): AnonymousResourceCollection
+                                        Company      $company): AnonymousResourceCollection
     {
         $this->authorize('view', $company);
 
@@ -290,7 +293,7 @@ class CompanyController extends Controller
      */
     public function updateCompany(UpdateCompanyRequest $request,
                                   CompanyEntityService $service,
-                                  Company $company): JsonResponse
+                                  Company              $company): JsonResponse
     {
         $this->authorize('update', $company);
 
@@ -314,17 +317,86 @@ class CompanyController extends Controller
      */
     public function updateCompanyContact(UpdateCompanyContact $request,
                                          CompanyEntityService $service,
-                                         Company $company,
-                                         Contact $contact): JsonResponse
+                                         Company              $company,
+                                         Contact              $contact): JsonResponse
     {
         $this->authorize('update', $company);
 
         $result = $service->updateCompanyContact($company, $contact, $request->getUpdateContactData());
 
         return response()->json(
-            $result,
-            Response::HTTP_OK
+            data: $result,
+            status: Response::HTTP_OK
         );
+    }
+
+    /**
+     * Show a list of existing attachments of the company entity.
+     *
+     * @param AttachmentQueries $attachmentQueries
+     * @param UnifiedAttachmentDataMapper $dataMapper
+     * @param Company $company
+     * @return AnonymousResourceCollection
+     * @throws AuthorizationException
+     */
+    public function showAttachmentsOfCompany(AttachmentQueries $attachmentQueries,
+                                             UnifiedAttachmentDataMapper $dataMapper,
+                                             Company           $company): AnonymousResourceCollection
+    {
+        $this->authorize('view', $company);
+
+        $collection = $attachmentQueries->listOfCompanyUnifiedAttachmentsQuery($company)->get();
+
+        $collection = $dataMapper->mapUnifiedAttachmentCollection($collection);
+
+        return UnifiedAttachment::collection($collection);
+    }
+
+    /**
+     * Store a new attachment for the company entity.
+     *
+     * @param CreateAttachment $request
+     * @param AttachmentEntityService $entityService
+     * @param Company $company
+     * @return JsonResponse
+     * @throws AuthorizationException
+     */
+    public function storeAttachmentForCompany(CreateAttachment        $request,
+                                              AttachmentEntityService $entityService,
+                                              Company                 $company): JsonResponse
+    {
+        $this->authorize('view', $company);
+
+        $resource = $entityService->createAttachmentForEntity(
+            file: $request->getUploadedFile(),
+            attachmentType: $request->getAttachmentType(),
+            entity: $company
+        );
+
+        return response()->json(
+            data: AttachmentOfCompany::make($resource),
+            status: Response::HTTP_CREATED,
+        );
+    }
+
+    /**
+     * Delete the specified attachment of the company entity.
+     *
+     * @param AttachmentEntityService $entityService
+     * @param Company $company
+     * @param Attachment $attachment
+     * @return JsonResponse
+     * @throws AuthorizationException
+     */
+    public function deleteAttachmentOfCompany(AttachmentEntityService $entityService,
+                                              Company                 $company,
+                                              Attachment              $attachment): JsonResponse
+    {
+        $this->authorize('view', $company);
+
+        $entityService->deleteAttachment($attachment);
+
+        return response()->json(status: Response::HTTP_NO_CONTENT);
     }
 
     /**
@@ -342,8 +414,8 @@ class CompanyController extends Controller
         $service->deleteCompany($company);
 
         return response()->json(
-            true,
-            Response::HTTP_OK
+            data: true,
+            status: Response::HTTP_OK
         );
     }
 
@@ -362,8 +434,8 @@ class CompanyController extends Controller
         $service->markCompanyAsActive($company);
 
         return response()->json(
-            true,
-            Response::HTTP_OK
+            data: true,
+            status: Response::HTTP_OK
         );
     }
 
@@ -382,8 +454,8 @@ class CompanyController extends Controller
         $service->markCompanyAsInactive($company);
 
         return response()->json(
-            true,
-            Response::HTTP_OK
+            data: true,
+            status: Response::HTTP_OK
         );
     }
 }

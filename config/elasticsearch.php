@@ -55,7 +55,6 @@ return [
         Contact::class,
         Country::class,
         Asset::class,
-        ImportableColumn::class,
         Opportunity::class,
         SalesOrder::class,
         Team::class,

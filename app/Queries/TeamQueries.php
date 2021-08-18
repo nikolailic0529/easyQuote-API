@@ -3,22 +3,16 @@
 namespace App\Queries;
 
 use App\Models\Team;
-use App\Services\ElasticsearchQuery;
+use App\Queries\Pipeline\PerformElasticsearchSearch;
+use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
-use Illuminate\Pipeline\Pipeline;
 
 class TeamQueries
 {
-    protected Pipeline $pipeline;
-
-    protected Elasticsearch $elasticsearch;
-
-    public function __construct(Pipeline $pipeline, Elasticsearch $elasticsearch)
+    public function __construct(protected Elasticsearch $elasticsearch)
     {
-        $this->pipeline = $pipeline;
-        $this->elasticsearch = $elasticsearch;
     }
 
     public function listingQuery(): Builder
@@ -26,7 +20,7 @@ class TeamQueries
         return Team::query()
             ->select([
                 'id',
-                'team_name'
+                'team_name',
             ])
             ->orderBy('team_name');
     }
@@ -43,34 +37,22 @@ class TeamQueries
                 'team_name',
                 'monthly_goal_amount',
                 'is_system',
-                'created_at'
+                'created_at',
             ]);
 
-        if (filled($searchQuery = $request->query('search'))) {
-
-            $hits = rescue(function () use ($model, $searchQuery) {
-                return $this->elasticsearch->search(
-                    ElasticsearchQuery::new()
-                        ->modelIndex($model)
-                        ->queryString($searchQuery)
-                        ->escapeQueryString()
-                        ->wrapQueryString()
-                        ->toArray()
-                );
-            });
-
-            $query->whereKey(data_get($hits, 'hits.hits.*._id') ?? []);
-
-        }
-
-        return $this->pipeline->send($query)
-            ->through([
-                \App\Http\Query\OrderByCreatedAt::class,
-                \App\Http\Query\OrderByTeamName::class,
-                \App\Http\Query\OrderByMonthlyGoalAmount::class,
-                \App\Http\Query\DefaultOrderBy::class,
+        return RequestQueryBuilder::for(
+            builder: $query,
+            request: $request,
+        )
+            ->addCustomBuildQueryPipe(
+                new PerformElasticsearchSearch($this->elasticsearch)
+            )
+            ->allowOrderFields(...[
+                'created_at',
+                'team_name',
+                'monthly_goal_amount',
             ])
-            ->thenReturn();
-
+            ->enforceOrderBy($model->getQualifiedCreatedAtColumn(), 'desc')
+            ->process();
     }
 }

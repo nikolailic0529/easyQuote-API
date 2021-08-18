@@ -12,7 +12,7 @@ use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\Vendor;
 use App\Queries\DiscountQueries;
-use App\Services\WorldwideQuote\Calculation\WorldwideDistributionCalc;
+use App\Services\WorldwideQuote\Calculation\WorldwideDistributorQuoteCalc;
 use App\Services\WorldwideQuote\WorldwideQuoteDataMapper;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Http\FormRequest;
@@ -348,7 +348,7 @@ class ShowQuoteState extends FormRequest
         ]);
     }
 
-    public function includeWorldwideDistributionsSummaryAttribute(WorldwideQuote $model, WorldwideDistributionCalc $service)
+    public function includeWorldwideDistributionsSummaryAttribute(WorldwideQuote $model, WorldwideDistributorQuoteCalc $service)
     {
         $model->activeVersion->worldwideDistributions->load([
             'multiYearDiscount:id,name,durations',
@@ -381,7 +381,7 @@ class ShowQuoteState extends FormRequest
         });
     }
 
-    public function includeWorldwideDistributionsPredefinedDiscounts(WorldwideQuote $model, WorldwideDistributionCalc $service)
+    public function includeWorldwideDistributionsPredefinedDiscounts(WorldwideQuote $model, WorldwideDistributorQuoteCalc $service)
     {
         $model->activeVersion->worldwideDistributions->load([
             'multiYearDiscount:id,name,durations',

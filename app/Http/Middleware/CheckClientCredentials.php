@@ -54,6 +54,10 @@ class CheckClientCredentials extends PassportClientCredentials
                 'client_name' => $client?->name,
             ]);
 
+            $request->setUserResolver(function () use ($client) {
+                return $client;
+            });
+
         } catch (OAuthServerException $e) {
             throw new AuthenticationException;
         }

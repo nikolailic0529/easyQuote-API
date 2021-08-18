@@ -4784,4 +4784,19 @@ DATA;
         $this->assertArrayHasKey('content', $data[0]);
         $this->assertSame($expectedContent, $data[0]['content']);
     }
+
+    /**
+     * @group parsing-price-list-xlsx
+     */
+    public function test_parses_said_108692709740_lafarge_south_africa_q_57357090()
+    {
+        $filePath = base_path('tests/Unit/Data/distributor-files-test/SAID - 108692709740 - LAFARGE SOUTH AFRICA - Q 57357090.xlsx');
+
+        $rows = $this->app[ExcelPriceListReader::class]->readFile($filePath);
+
+        /** @var Row[] $rows */
+        $rows = iterator_to_array($rows);
+
+        $this->assertNotEmpty($rows);
+    }
 }

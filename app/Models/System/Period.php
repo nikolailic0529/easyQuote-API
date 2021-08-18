@@ -37,7 +37,7 @@ class Period
         $this->label = $this->periodToString($from, $till, $period);
     }
 
-    public static function create(string $period)
+    public static function create(string $period): static
     {
         return new static($period);
     }

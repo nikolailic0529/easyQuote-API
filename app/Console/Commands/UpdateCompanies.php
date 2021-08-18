@@ -2,14 +2,11 @@
 
 namespace App\Console\Commands;
 
-use App\Contracts\Repositories\{
-    CountryRepositoryInterface as Countries,
-    VendorRepositoryInterface as Vendors,
-    CompanyRepositoryInterface as Companies
-};
+use App\Models\Company;
+use App\Models\Data\Country;
+use App\Models\Vendor;
 use App\Services\ThumbHelper;
 use Illuminate\Console\Command;
-use Illuminate\Support\Arr;
 
 class UpdateCompanies extends Command
 {
@@ -25,63 +22,59 @@ class UpdateCompanies extends Command
      *
      * @var string
      */
-    protected $description = 'Update Companies Vendors';
-
-    /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        parent::__construct();
-    }
+    protected $description = 'Update system defined Company entities';
 
     /**
      * Execute the console command.
      *
      * @return mixed
      */
-    public function handle(Companies $companyRepository, Vendors $vendorRepository, Countries $countryRepository)
+    public function handle()
     {
-        $this->info("Updating System Defined Companies...");
+        $this->output->title("Updating the system defined Companies...");
 
         activity()->disableLogging();
 
-        \DB::transaction(function () use ($companyRepository, $vendorRepository, $countryRepository) {
-            $companies = json_decode(file_get_contents(database_path('seeders/models/companies.json')), true);
+        $companies = json_decode(file_get_contents(database_path('seeders/models/companies.json')), true);
 
-            collect($companies)->each(function ($companyData) use ($companyRepository, $vendorRepository, $countryRepository) {
-                /** @var \App\Models\Company */
-                $company = $companyRepository->findByVat($companyData['vat']);
-
-                if (is_null($company)) {
-                    $this->line('E');
-                    return true;
-                }
-
-                $default_vendor_id = optional($vendorRepository->findByCode($companyData['default_vendor']))->id;
-                $default_country_id = $countryRepository->findIdByCode($companyData['default_country']);
-
-                $company->update(
-                    array_merge(Arr::only($companyData, ['type', 'email', 'phone', 'website']), compact('default_vendor_id', 'default_country_id'))
-                );
-
-                $vendors = $vendorRepository->findByCode($companyData['vendors']);
-                $company->vendors()->sync($vendors);
-
-                $company->createLogo($companyData['logo'], true);
-
-                if (isset($companyData['svg_logo'])) {
-                    ThumbHelper::updateModelSvgThumbnails($company, base_path($companyData['svg_logo']));
-                }
-
-                $this->output->write('.');
-            });
+        $this->withProgressBar($companies, function (array $data) {
+            $this->performCompanyUpdate($data);
         });
+
+        $this->newLine();
 
         activity()->enableLogging();
 
-        $this->info("\nSystem Defined Companies were updated!");
+        return self::SUCCESS;
+    }
+
+    protected function performCompanyUpdate(array $data): void
+    {
+        /** @var Company $company */
+        $company = Company::query()->where('vat', $data['vat'])->sole();
+
+        tap($company, function (Company $company) use ($data) {
+            $defaultVendorID = Vendor::query()->where('short_code', $data['default_vendor'])->value((new Vendor())->getQualifiedKeyName());
+            $defaultCountryID = Country::query()->where('iso_3166_2', $data['default_country'])->value((new Country())->getQualifiedKeyName());
+
+            $company->type = $data['type'];
+            $company->email = $data['email'];
+            $company->phone = $data['phone'];
+            $company->website = $data['website'];
+            $company->defaultVendor()->associate($defaultVendorID);
+            $company->defaultCountry()->associate($defaultCountryID);
+
+            $company->save();
+
+            $vendors = Vendor::query()->where('short_code', $data['vendors'])->pluck((new Vendor())->getQualifiedKeyName())->all();
+
+            $company->vendors()->sync($vendors);
+
+            $company->createLogo($data['logo'], true);
+
+            if (isset($data['svg_logo'])) {
+                ThumbHelper::updateModelSvgThumbnails($company, base_path($data['svg_logo']));
+            }
+        });
     }
 }

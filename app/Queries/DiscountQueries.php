@@ -17,11 +17,8 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class DiscountQueries
 {
-    protected ValidatorInterface $validator;
-
-    public function __construct(ValidatorInterface $validator)
+    public function __construct(protected ValidatorInterface $validator)
     {
-        $this->validator = $validator;
     }
 
     public function activeMultiYearDiscountsQuery(): Builder
@@ -88,7 +85,7 @@ class DiscountQueries
     {
         $vendorsRelation = $distribution->vendors();
 
-        return MultiYearDiscount::whereHas('country', function (Builder $builder) use ($distribution) {
+        return MultiYearDiscount::query()->whereHas('country', function (Builder $builder) use ($distribution) {
             $builder->whereKey($distribution->country_id);
         })->join($vendorsRelation->getTable(), function (JoinClause $join) use ($distribution, $vendorsRelation) {
             $join->on($vendorsRelation->getQualifiedRelatedPivotKeyName(), (new MultiYearDiscount())->vendor()->getQualifiedForeignKeyName())
@@ -100,7 +97,7 @@ class DiscountQueries
     {
         $vendorsRelation = $distribution->vendors();
 
-        return PrePayDiscount::whereHas('country', function (Builder $builder) use ($distribution) {
+        return PrePayDiscount::query()->whereHas('country', function (Builder $builder) use ($distribution) {
             $builder->whereKey($distribution->country_id);
         })->join($vendorsRelation->getTable(), function (JoinClause $join) use ($distribution, $vendorsRelation) {
             $join->on($vendorsRelation->getQualifiedRelatedPivotKeyName(), (new PrePayDiscount())->vendor()->getQualifiedForeignKeyName())
@@ -112,7 +109,7 @@ class DiscountQueries
     {
         $vendorsRelation = $distribution->vendors();
 
-        return PromotionalDiscount::whereHas('country', function (Builder $builder) use ($distribution) {
+        return PromotionalDiscount::query()->whereHas('country', function (Builder $builder) use ($distribution) {
             $builder->whereKey($distribution->country_id);
         })->join($vendorsRelation->getTable(), function (JoinClause $join) use ($distribution, $vendorsRelation) {
             $join->on($vendorsRelation->getQualifiedRelatedPivotKeyName(), (new PromotionalDiscount())->vendor()->getQualifiedForeignKeyName())
@@ -124,7 +121,7 @@ class DiscountQueries
     {
         $vendorsRelation = $distribution->vendors();
 
-        return SND::whereHas('country', function (Builder $builder) use ($distribution) {
+        return SND::query()->whereHas('country', function (Builder $builder) use ($distribution) {
             $builder->whereKey($distribution->country_id);
         })->join($vendorsRelation->getTable(), function (JoinClause $join) use ($distribution, $vendorsRelation) {
             $join->on($vendorsRelation->getQualifiedRelatedPivotKeyName(), (new SND())->vendor()->getQualifiedForeignKeyName())

@@ -184,8 +184,6 @@ class PriceListResponseDataMapper
                 'is_temp' => true,
             ]);
 
-            $column->disableLogging();
-            $column->disableReindex();
             $column->save();
 
             tap(new ImportableColumnAlias(), function (ImportableColumnAlias $columnAlias) use ($column, $alias) {

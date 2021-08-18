@@ -5,9 +5,6 @@ namespace App\Providers;
 use App\Contracts\Repositories\Quote\Margin\MarginRepositoryInterface;
 use App\Contracts\Repositories\Quote\QuoteDraftedRepositoryInterface;
 use App\Contracts\Repositories\Quote\QuoteSubmittedRepositoryInterface;
-use App\Contracts\Repositories\QuoteFile\DataSelectSeparatorRepositoryInterface;
-use App\Contracts\Repositories\QuoteFile\FileFormatRepositoryInterface;
-use App\Contracts\Repositories\QuoteFile\ImportableColumnRepositoryInterface;
 use App\Contracts\Repositories\QuoteFile\QuoteFileRepositoryInterface;
 use App\Contracts\Services\ProcessesSalesOrderState;
 use App\Contracts\Services\ProcessesWorldwideDistributionState;
@@ -20,9 +17,6 @@ use App\Queries\WorldwideQuoteQueries;
 use App\Repositories\Quote\Margin\MarginRepository;
 use App\Repositories\Quote\QuoteDraftedRepository;
 use App\Repositories\Quote\QuoteSubmittedRepository;
-use App\Repositories\QuoteFile\DataSelectSeparatorRepository;
-use App\Repositories\QuoteFile\FileFormatRepository;
-use App\Repositories\QuoteFile\ImportableColumnRepository;
 use App\Repositories\QuoteFile\QuoteFileRepository;
 use App\Services\QuoteStateProcessor;
 use App\Services\QuoteViewService;
@@ -45,13 +39,7 @@ class QuoteServiceProvider extends ServiceProvider implements DeferrableProvider
     {
         $this->app->singleton(QuoteFileRepositoryInterface::class, QuoteFileRepository::class);
 
-        $this->app->singleton(FileFormatRepositoryInterface::class, FileFormatRepository::class);
-
-        $this->app->singleton(ImportableColumnRepositoryInterface::class, ImportableColumnRepository::class);
-
         $this->app->singleton(QuoteState::class, QuoteStateProcessor::class);
-
-        $this->app->singleton(DataSelectSeparatorRepositoryInterface::class, DataSelectSeparatorRepository::class);
 
         $this->app->singleton(MarginRepositoryInterface::class, MarginRepository::class);
 
@@ -89,8 +77,6 @@ class QuoteServiceProvider extends ServiceProvider implements DeferrableProvider
 
         $this->app->alias(MarginRepositoryInterface::class, 'margin.repository');
 
-        $this->app->alias(ImportableColumnRepositoryInterface::class, 'importablecolumn.repository');
-
         $this->app->singleton(ProcessesWorldwideQuoteAssetState::class, function (Container $container) {
 
             $storage = $container['filesystem']->disk('ww_asset_files');
@@ -105,14 +91,10 @@ class QuoteServiceProvider extends ServiceProvider implements DeferrableProvider
         return [
             QuoteFileRepositoryInterface::class,
             'quotefile.repository',
-            FileFormatRepositoryInterface::class,
-            ImportableColumnRepositoryInterface::class,
-            'importablecolumn.repository',
             QuoteState::class,
             'quote.state',
             QuoteView::class,
             'quote.service',
-            DataSelectSeparatorRepositoryInterface::class,
             MarginRepositoryInterface::class,
             'margin.repository',
             QuoteDraftedRepositoryInterface::class,
@@ -125,7 +107,7 @@ class QuoteServiceProvider extends ServiceProvider implements DeferrableProvider
             WorldwideQuoteQueries::class,
             ProcessesWorldwideQuoteAssetState::class,
 
-            ProcessesSalesOrderState::class
+            ProcessesSalesOrderState::class,
         ];
     }
 }

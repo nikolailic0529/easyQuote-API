@@ -2,6 +2,7 @@
 
 namespace App\Contracts\Services;
 
+use App\Contracts\CauserAware;
 use App\Models\Quote\{
     BaseQuote,
     Margin\CountryMargin,
@@ -9,16 +10,15 @@ use App\Models\Quote\{
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Response;
 
-interface QuoteView
+interface QuoteView extends CauserAware
 {
     /**
      * Prepare a quote for an external request.
      *
-     * @param string $RFQNumber
-     * @param string $clientName
+     * @param string $rfqNumber
      * @return BaseQuote
      */
-    public function requestForQuote(string $RFQNumber, string $clientName = null): BaseQuote;
+    public function requestForQuote(string $rfqNumber): BaseQuote;
 
     /**
      * Route interaction BaseQuote model with other Model

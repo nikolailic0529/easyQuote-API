@@ -34,9 +34,9 @@ return [
         'secret' => env('SPARKPOST_SECRET'),
     ],
 
-    'search' => [
-        'enabled' => env('ELASTICSEARCH_ENABLED', false),
-        'hosts' => explode(',', env('ELASTICSEARCH_HOSTS')),
+    'elasticsearch' => [
+        'enabled' => env('ELASTICSEARCH_ENABLED', true),
+        'hosts' => explode(',', env('ELASTICSEARCH_HOSTS', 'localhost:9200')),
     ],
 
     'slack' => [
@@ -87,8 +87,14 @@ return [
 
     'document_api' => [
         'url' => env('DOCUMENT_API_URL'),
+
+        // Basic auth credentials
         'client_username' => env('DOCUMENT_API_CLIENT_USERNAME'),
         'client_password' => env('DOCUMENT_API_CLIENT_PASSWORD'),
+
+        // Client credentials
+        'client_id' => env('DOCUMENT_API_CLIENT_ID'),
+        'client_secret' => env('DOCUMENT_API_CLIENT_SECRET'),
     ],
 
 ];

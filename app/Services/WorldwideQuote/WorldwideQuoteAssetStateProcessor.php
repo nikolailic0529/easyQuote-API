@@ -84,6 +84,8 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
             $asset->product_name = $data->product_name;
             $asset->expiry_date = transform($data->expiry_date, fn (\DateTimeInterface $dateTime) => $dateTime->format('Y-m-d'));
             $asset->service_level_description = $data->service_level_description;
+            $asset->buy_price = $data->buy_price;
+            $asset->buy_price_margin = $data->buy_price_margin;
             $asset->price = $data->price;
             $asset->original_price = $data->original_price;
             $asset->exchange_rate_value = $data->exchange_rate_value;
@@ -141,6 +143,8 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
                 $asset->product_name = $assetData->product_name;
                 $asset->expiry_date = transform($assetData->expiry_date, fn(Carbon $date) => $date->toDateString());
                 $asset->service_level_description = $assetData->service_level_description;
+                $asset->buy_price = $assetData->buy_price;
+                $asset->buy_price_margin = $assetData->buy_price_margin;
                 $asset->price = $assetData->price;
                 $asset->original_price = $assetData->original_price;
                 $asset->exchange_rate_margin = $assetData->exchange_rate_margin;

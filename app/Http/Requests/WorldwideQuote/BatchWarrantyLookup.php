@@ -39,6 +39,9 @@ class BatchWarrantyLookup extends FormRequest
             ],
             'assets.*.country' => [
                 'bail', 'required', 'string', 'size:2'
+            ],
+            'assets.*.buy_currency_code' => [
+                'bail', 'required', 'string', 'size:3'
             ]
         ];
     }
@@ -53,7 +56,7 @@ class BatchWarrantyLookup extends FormRequest
                 'serial_no' => $asset['serial_no'],
                 'sku' => $asset['sku'],
                 'country_code' => $asset['country'],
-                'currency_code' => $quote->activeVersion->quoteCurrency->code,
+                'currency_code' => $asset['buy_currency_code'],
             ]), $assets);
 
             return new AssetServiceLookupDataCollection($collection);

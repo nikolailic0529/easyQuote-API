@@ -2,7 +2,6 @@
 
 namespace App\Queries;
 
-use App\Helpers\ElasticsearchHelper;
 use App\Models\Asset;
 use App\Models\AssetCategory;
 use App\Models\Company;
@@ -10,22 +9,20 @@ use App\Models\Quote\Quote;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\User;
 use App\Models\Vendor;
-use App\Services\ElasticsearchQuery;
+use App\Queries\Pipeline\PerformElasticsearchSearch;
+use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
-use Illuminate\Pipeline\Pipeline;
 
 class AssetQueries
 {
 
-    public function __construct(protected Pipeline $pipeline,
-                                protected Elasticsearch $elasticsearch,
+    public function __construct(protected Elasticsearch $elasticsearch,
                                 protected Gate $gate)
     {
 
@@ -114,21 +111,6 @@ class AssetQueries
             ->leftJoin('customers', 'customers.id', 'quotes.customer_id')
             ->leftJoin('worldwide_quotes', 'worldwide_quotes.id', $model->qualifyColumn('quote_id'));
 
-        if (filled($searchQuery = $request->input('search')) && is_string($searchQuery)) {
-            $hits = rescue(function () use ($model, $searchQuery) {
-                return $this->elasticsearch->search(
-                    ElasticsearchQuery::new()
-                        ->modelIndex($model)
-                        ->queryString($searchQuery)
-                        ->escapeQueryString()
-                        ->wrapQueryString()
-                        ->toArray()
-                );
-            });
-
-            $query->whereKey(ElasticsearchHelper::pluckDocumentKeys($hits));
-        }
-
         if (false === is_null($user) && $this->gate->denies('viewAnyOwnerEntities', Asset::class)) {
 
             $query->where(function (Builder $builder) use ($user) {
@@ -156,24 +138,41 @@ class AssetQueries
 
         }
 
-        return $this->pipeline
-            ->send($query)
-            ->through([
-                \App\Http\Query\OrderByCreatedAt::class,
-                \App\Http\Query\OrderByProductNumber::class,
-                \App\Http\Query\OrderBySerialNumber::class,
-                \App\Http\Query\OrderBySku::class,
-                \App\Http\Query\OrderByBaseWarrantyStartDate::class,
-                \App\Http\Query\OrderByBaseWarrantyEndDate::class,
-                \App\Http\Query\OrderByActiveWarrantyStartDate::class,
-                \App\Http\Query\OrderByActiveWarrantyEndDate::class,
-                \App\Http\Query\OrderByVendorShortCode::class,
-                \App\Http\Query\OrderByAssetCategory::class,
-                \App\Http\Query\OrderByQuoteId::class,
-                \App\Http\Query\FilterByLocation::class,
-                \App\Http\Query\DefaultOrderBy::class,
+        return RequestQueryBuilder::for(
+            builder: $query,
+            request: $request,
+        )
+            ->addCustomBuildQueryPipe(
+                new PerformElasticsearchSearch($this->elasticsearch)
+            )
+            ->allowOrderFields(...[
+                'created_at',
+                'product_number',
+                'serial_number',
+                'sku',
+                'base_warranty_start_date',
+                'base_warranty_end_date',
+                'active_warranty_start_date',
+                'active_warranty_end_date',
+                'vendor_short_code',
+                'asset_category',
+                'quote_id',
             ])
-            ->thenReturn();
+            ->qualifyOrderFields(
+                created_at: $model->getQualifiedCreatedAtColumn(),
+                product_number: $model->qualifyColumn('product_number'),
+                serial_number: $model->qualifyColumn('serial_number'),
+                sku: $model->qualifyColumn('sku'),
+                base_warranty_start_date: $model->qualifyColumn('base_warranty_start_date'),
+                base_warranty_end_date: $model->qualifyColumn('base_warranty_end_date'),
+                active_warranty_start_date: $model->qualifyColumn('active_warranty_start_date'),
+                active_warranty_end_date: $model->qualifyColumn('active_warranty_end_date'),
+                vendor_short_code: $model->qualifyColumn('vendor_short_code'),
+                asset_category: 'asset_category_name',
+                quote_id: 'customer_rfq_number',
+            )
+            ->enforceOrderBy($model->getQualifiedCreatedAtColumn(), 'desc')
+            ->process();
     }
 
     public function locationsQuery(): Builder

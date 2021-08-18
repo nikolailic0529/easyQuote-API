@@ -2,19 +2,13 @@
 
 namespace App\Http\Requests\HpeContract;
 
-use App\Contracts\Repositories\CompanyRepositoryInterface as Companies;
+use App\Queries\CompanyQueries;
 use App\Services\ProfileHelper;
 use Illuminate\Foundation\Http\FormRequest;
+use JetBrains\PhpStorm\ArrayShape;
 
 class ImportStep extends FormRequest
-{   
-    protected Companies $companies;
-
-    public function __construct(Companies $companies)
-    {
-        $this->companies = $companies;
-    }
-
+{
     /**
      * Get the validation rules that apply to the request.
      *
@@ -27,17 +21,22 @@ class ImportStep extends FormRequest
         ];
     }
 
+    #[ArrayShape(['companies' => "\Illuminate\Database\Eloquent\Collection"])]
     public function getData(): array
     {
-        $companies = $this->companies->allInternalWithCountries(['id', 'name'])
-            ->find(ProfileHelper::profileCompaniesIds())
-            ->load('image')
+        /** @var CompanyQueries $companyQueries */
+        $companyQueries = $this->container[CompanyQueries::class];
+
+        $companies = $companyQueries->listOfInternalCompaniesWithCountries()
+            ->whereKey(ProfileHelper::profileCompaniesIds())
+            ->with('image')
+            ->get()
             ->makeHidden('image')
             ->append('logo')
             ->values();
 
         return [
-            'companies' => $companies
+            'companies' => $companies,
         ];
     }
 }

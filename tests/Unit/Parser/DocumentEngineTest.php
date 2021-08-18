@@ -4,9 +4,7 @@ namespace Tests\Unit\Parser;
 
 use App\Models\QuoteFile\QuoteFile;
 use App\Models\QuoteFile\QuoteFileFormat;
-use App\Services\DocumentEngine\ParseDistributorExcel;
-use App\Services\DocumentEngine\ParseDistributorPDF;
-use App\Services\DocumentEngine\ParsePaymentPDF;
+use App\Services\DocumentEngine\ParserClientFactory;
 use App\Services\DocumentProcessor\DocumentEngine\DeExcelPriceListProcessor;
 use App\Services\DocumentProcessor\DocumentEngine\DePdfRescuePaymentScheduleProcessor;
 use App\Services\DocumentProcessor\DocumentEngine\DePdfRescuePriceListProcessor;
@@ -15,13 +13,13 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use Tests\TestCase;
 use Webpatser\Uuid\Uuid;
 
 /**
  * @group build
+ * @group document-engine-impl
  */
 class DocumentEngineTest extends TestCase
 {
@@ -35,7 +33,10 @@ class DocumentEngineTest extends TestCase
      */
     public function testItPerformsParsingOfPdfPriceListUsingDocumentEngine()
     {
-        $response = (new ParseDistributorPDF)
+        /** @var ParserClientFactory $parserFactory */
+        $parserFactory = $this->app[ParserClientFactory::class];
+
+        $response = $parserFactory->buildRescuePdfPriceListParser()
             ->filePath(base_path('tests/Unit/Data/distributor-files-test/SUPP-INBA_1 year.pdf'))
             ->firstPage(3)
             ->lastPage(3)
@@ -62,7 +63,10 @@ class DocumentEngineTest extends TestCase
      */
     public function testItPerformsParsingOfExcelPriceListUsingDocumentEngine()
     {
-        $response = (new ParseDistributorExcel())
+        /** @var ParserClientFactory $parserFactory */
+        $parserFactory = $this->app[ParserClientFactory::class];
+
+        $response = $parserFactory->buildGenericExcelPriceListParser()
             ->filePath(base_path('tests/Unit/Data/distributor-files-test/SupportWarehouse - Kromann Reumert.xlsx'))
             ->process();
 
@@ -157,7 +161,10 @@ class DocumentEngineTest extends TestCase
     {
 //        $this->markTestSkipped();
 
-        $response = (new ParsePaymentPDF($this->app->make(LoggerInterface::class)))
+        /** @var ParserClientFactory $parserFactory */
+        $parserFactory = $this->app[ParserClientFactory::class];
+
+        $response = $parserFactory->buildGenericPdfPaymentScheduleParser()
             ->filePath(base_path('tests/Unit/Data/schedule-files-test/France/Billing summary (with partner discount) 81-T31870 Nb offre 21.01.2020 - 31.03.2022  [Purchase].pdf'))
             ->page(1)
             ->process();

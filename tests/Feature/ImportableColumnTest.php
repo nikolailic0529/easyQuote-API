@@ -2,11 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Data\Country;
 use App\Models\QuoteFile\ImportableColumn;
-use App\Models\QuoteFile\ImportableColumnAlias;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Tests\TestCase;
-use Tests\Unit\Traits\AssertsListing;
 use Tests\Unit\Traits\WithFakeUser;
 
 /**
@@ -14,9 +15,7 @@ use Tests\Unit\Traits\WithFakeUser;
  */
 class ImportableColumnTest extends TestCase
 {
-    use WithFakeUser, AssertsListing, DatabaseTransactions;
-
-    protected static array $assertableAttributes = ['id', 'header', 'name', 'type', 'is_system', 'country_id', 'country', 'aliases', 'created_at', 'activated_at'];
+    use WithFakeUser, DatabaseTransactions;
 
     /**
      * Test importable columns listing.
@@ -25,20 +24,62 @@ class ImportableColumnTest extends TestCase
      */
     public function testCanViewListingOfImportableColumns()
     {
-        $query = http_build_query([
-            'order_by_created_at' => 'asc',
-            'order_by_country_name' => 'asc',
-            'order_by_header' => 'asc',
-            'order_by_type' => 'asc',
-        ]);
+        $this->getJson('api/importable-columns')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'header',
+                        'name',
+                        'type',
+                        'is_system',
+                        'country_id',
+                        'country' => [
+                            'name',
+                        ],
+                        'created_at',
+                        'activated_at',
+                    ],
+                ],
+                'current_page',
+                'first_page_url',
+                'from',
+                'last_page',
+                'last_page_url',
+                'links' => [
+                    '*' => [
+                        'url', 'label', 'active',
+                    ],
+                ],
+                'next_page_url',
+                'path',
+                'per_page',
+                'prev_page_url',
+                'to',
+                'total',
+            ]);
 
-        $response = $this->getJson('api/importable-columns?' . $query)->assertOk();
+        foreach ([
+                     'created_at',
+                     'country_name',
+                     'header',
+                     'type',
+                 ] as $column) {
+            $this->getJson('api/importable-columns?order_by_'.$column.'=asc')->assertOk();
+            $this->getJson('api/importable-columns?order_by_'.$column.'=desc')->assertOk();
+        }
 
-        $this->assertListing($response);
+        $this->getJson('api/importable-columns?'.Arr::query([
+                'search' => 'product no',
+            ]))
+//            ->dump()
+            ->assertOk();
     }
 
     /**
-     * Test creating a new importable column.
+     * Test an ability to create a new importable column.
      *
      * @return void
      */
@@ -48,14 +89,47 @@ class ImportableColumnTest extends TestCase
 
         $attributes = factory(ImportableColumn::class)->state('aliases')->raw();
 
-        $this->postJson('api/importable-columns', $attributes)
+        $response = $this->postJson('api/importable-columns', [
+            'header' => Str::random(40),
+            'country_id' => Country::query()->where('iso_3166_2', 'GB')->value('id'),
+            'type' => 'text',
+            'aliases' => $aliases = [
+                Str::random(40),
+                Str::random(40),
+                Str::random(40),
+                Str::random(40),
+                Str::random(40),
+            ],
+        ])
 //            ->dump()
             ->assertCreated()
-            ->assertJsonStructure(static::$assertableAttributes);
+            ->assertJsonStructure([
+                'id',
+                'header',
+                'name',
+                'type',
+                'is_system',
+                'country_id',
+                'country',
+                'aliases' => [
+                    '*' => [
+                        'id', 'alias',
+                    ],
+                ],
+                'created_at',
+                'activated_at',
+            ]);
+
+        $this->assertNotEmpty($response->json('aliases'));
+        $this->assertCount(count($aliases), $response->json('aliases'));
+
+        foreach ($aliases as $alias) {
+            $this->assertContains($alias, $response->json('aliases.*.alias'));
+        }
     }
 
     /**
-     * Test updating a newly created importable column.
+     * Test an ability to update a particular importable column.
      *
      * @return void
      */
@@ -63,25 +137,54 @@ class ImportableColumnTest extends TestCase
     {
         $this->app['db.connection']->table('importable_columns')->where('is_system', false)->delete();
 
-        $importableColumn = factory(ImportableColumn::class)->create();
+        /** @var ImportableColumn $importableColumn */
+        $importableColumn = factory(ImportableColumn::class)->create([
+            'country_id' => Country::query()->where('iso_3166_2', 'GB')->value('id'),
+            'type' => 'decimal',
+        ]);
 
-        $attributes = factory(ImportableColumn::class)->state('aliases')->raw();
+        $this->patchJson('api/importable-columns/'.$importableColumn->getKey().'?include[]=aliases', [
+            'header' => $newHeader = Str::random(40),
+            'country_id' => $newCountry = Country::query()->where('iso_3166_2', 'US')->value('id'),
+            'type' => $newType = 'text',
+            'aliases' => $newAliases = [
+                Str::random(40),
+                Str::random(40),
+                Str::random(40),
+            ],
+        ])
+//            ->dump()
+            ->assertOk();
 
-        $this->patchJson('/api/importable-columns/' . $importableColumn->getKey(), $attributes)->assertOk();
+        $response = $this->getJson('api/importable-columns/'.$importableColumn->getKey().'?include[]=aliases')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'header',
+                'country_id',
+                'type',
+                'aliases' => [
+                    '*' => [
+                        'id', 'alias',
+                    ],
+                ],
+            ]);
 
-        $importableColumn->refresh();
+        $this->assertSame($newHeader, $response->json('header'));
+        $this->assertSame($newCountry, $response->json('country_id'));
+        $this->assertSame($newType, $response->json('type'));
+        $this->assertCount(count($newAliases), $response->json('aliases'));
 
-        $this->assertEquals($attributes['header'], $importableColumn['header']);
-        $this->assertEquals($attributes['country_id'], $importableColumn['country_id']);
-        $this->assertEquals($attributes['type'], $importableColumn['type']);
+        foreach ($newAliases as $alias) {
 
-        $importableColumn->aliases->each(
-            fn (ImportableColumnAlias $alias) => $this->assertContains($alias->alias, $attributes['aliases'])
-        );
+            $this->assertContains($alias, $response->json('aliases.*.alias'));
+
+        }
     }
 
     /**
-     * Test deleting a newly created importable column.
+     * Test an ability to delete a particular importable column.
      *
      * @return void
      */
@@ -91,8 +194,68 @@ class ImportableColumnTest extends TestCase
 
         $importableColumn = factory(ImportableColumn::class)->create();
 
-        $this->deleteJson('/api/importable-columns/'.$importableColumn->getKey())->assertOk();
+        $this->deleteJson('api/importable-columns/'.$importableColumn->getKey())
+            ->assertNoContent();
 
-        $this->assertSoftDeleted($importableColumn);
+        $this->getJson('api/importable-columns/'.$importableColumn->getKey())
+            ->assertNotFound();
+    }
+
+    /**
+     * Test an ability to mark a particular importable column as active.
+     *
+     * @return void
+     */
+    public function testCanMarkImportableColumnAsActive()
+    {
+        $this->app['db.connection']->table('importable_columns')->where('is_system', false)->delete();
+
+        $importableColumn = factory(ImportableColumn::class)->create([
+            'activated_at' => null,
+        ]);
+
+        $this->putJson('api/importable-columns/activate/'.$importableColumn->getKey())
+            ->assertNoContent();
+
+        $response = $this->getJson('api/importable-columns/'.$importableColumn->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'header',
+                'country_id',
+                'type',
+                'activated_at',
+            ]);
+
+        $this->assertNotEmpty($response->json('activated_at'));
+    }
+
+    /**
+     * Test an ability to mark a particular importable column as inactive.
+     *
+     * @return void
+     */
+    public function testCanMarkImportableColumnAsInactive()
+    {
+        $this->app['db.connection']->table('importable_columns')->where('is_system', false)->delete();
+
+        $importableColumn = factory(ImportableColumn::class)->create([
+            'activated_at' => null,
+        ]);
+
+        $this->putJson('api/importable-columns/deactivate/'.$importableColumn->getKey())
+            ->assertNoContent();
+
+        $response = $this->getJson('api/importable-columns/'.$importableColumn->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'header',
+                'country_id',
+                'type',
+                'activated_at',
+            ]);
+
+        $this->assertEmpty($response->json('activated_at'));
     }
 }

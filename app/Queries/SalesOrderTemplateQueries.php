@@ -2,33 +2,19 @@
 
 namespace App\Queries;
 
-use App\Http\Query\ActiveFirst;
-use App\Http\Query\DefaultOrderBy;
-use App\Http\Query\OrderByCreatedAt;
-use App\Http\Query\OrderByName;
-use App\Http\Query\QuoteTemplate\OrderByCompanyName;
-use App\Http\Query\QuoteTemplate\OrderByVendorName;
 use App\Models\Data\Country;
 use App\Models\Template\SalesOrderTemplate;
-use App\Services\ElasticsearchQuery;
+use App\Queries\Pipeline\PerformElasticsearchSearch;
+use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
-use Illuminate\Pipeline\Pipeline;
-use Illuminate\Support\Str;
 
 class SalesOrderTemplateQueries
 {
-    protected Pipeline $pipeline;
-
-    protected Elasticsearch $elasticsearch;
-
-    public function __construct(Pipeline $pipeline, Elasticsearch $elasticsearch)
+    public function __construct(protected Elasticsearch $elasticsearch)
     {
-        $this->pipeline = $pipeline;
-        $this->elasticsearch = $elasticsearch;
     }
 
     public function paginateSalesOrderTemplatesQuery(Request $request = null): Builder
@@ -58,34 +44,28 @@ class SalesOrderTemplateQueries
             })
             ->join('vendors', function (JoinClause $join) use ($model) {
                 $join->on('vendors.id', $model->qualifyColumn('vendor_id'));
-            });
+            })
+            ->orderByDesc($model->qualifyColumn('is_active'));
 
-        if (filled($searchQuery = $request->query('search'))) {
-            $hits = rescue(function () use ($model, $searchQuery) {
-                return $this->elasticsearch->search(
-                    ElasticsearchQuery::new()
-                        ->modelIndex($model)
-                        ->queryString($searchQuery)
-                        ->escapeQueryString()
-                        ->wrapQueryString()
-                        ->toArray()
-                );
-            });
-
-            $query->whereKey(data_get($hits, 'hits.hits.*._id') ?? []);
-        }
-
-        return $this->pipeline
-            ->send($query)
-            ->through([
-                new ActiveFirst($model->qualifyColumn('is_active')),
-                OrderByCreatedAt::class,
-                OrderByName::class,
-                OrderByCompanyName::class,
-                OrderByVendorName::class,
-                new DefaultOrderBy($model->qualifyColumn('created_at')),
+        return RequestQueryBuilder::for(
+            builder: $query,
+            request: $request,
+        )
+            ->addCustomBuildQueryPipe(
+                new PerformElasticsearchSearch($this->elasticsearch)
+            )
+            ->allowOrderFields(...[
+                'created_at',
+                'name',
+                'company_name',
+                'vendor_name',
             ])
-            ->thenReturn();
+            ->qualifyOrderFields(
+                created_at: $model->getQualifiedCreatedAtColumn(),
+                name: $model->qualifyColumn('name'),
+            )
+            ->enforceOrderBy($model->getQualifiedCreatedAtColumn(), 'desc')
+            ->process();
     }
 
     public function filterWorldwidePackSalesOrderTemplatesQuery(string $companyId, string $vendorId, string $countryId): Builder

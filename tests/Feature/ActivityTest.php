@@ -79,6 +79,7 @@ class ActivityTest extends TestCase
             'order_by_created' => 'asc',
             'search' => Str::random(10)
         ])
+//            ->dump()
             ->assertOk();
     }
 
@@ -314,6 +315,7 @@ class ActivityTest extends TestCase
             ->log('updated');
 
         $this->post('api/activities/export/pdf')
+//            ->dump()
             ->assertOk()
             ->assertHeader('content-type', 'application/pdf');
     }

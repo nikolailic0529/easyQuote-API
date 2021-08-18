@@ -171,6 +171,22 @@ class AssetTest extends TestCase
     {
         $attributes = factory(Asset::class)->raw();
 
+        $this->getJson('api/assets/create')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'asset_categories' => [
+                    '*' => [
+                        'id', 'name'
+                    ]
+                ],
+                'vendors' => [
+                    '*' => [
+                        'id', 'name',
+                    ]
+                ]
+            ]);
+
         $response = $this->postJson('api/assets', $attributes)
 //            ->dump()
             ->assertCreated()

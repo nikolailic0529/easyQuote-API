@@ -48,7 +48,7 @@ class UpdatedCompany extends JsonResource
             'vendors' => value(function () {
                 /** @var UpdatedCompany|\App\Models\Company $this */
 
-                $this->sortVendorsCountries();
+                $this->prioritizeDefaultCountryOnVendors();
 
                 return $this->vendors;
             }),

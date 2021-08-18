@@ -7,19 +7,20 @@ use App\DTO\PreviewHpeContractData;
 use App\Models\HpeContract;
 use App\Models\HpeContractData;
 use App\Models\HpeContractFile;
+use Illuminate\Support\Collection as BaseCollection;
 
 interface HpeContractState
 {
     /**
      * Process HPE Contract state.
-     * If the HPE Contract is present as argument, we will asume process state for the given instance.
-     * Otherwise new HPE contract will be created.
+     * If the HPE Contract is present as argument, we will assume process state for the given instance.
+     * Otherwise, new HPE contract will be created.
      *
      * @param  array $state
      * @param  HpeContract|null $hpeContract
      * @return HpeContract
      */
-    public function processState(array $state, ?HpeContract $hpeContract = null);
+    public function processState(array $state, ?HpeContract $hpeContract = null): HpeContract;
 
     /**
      * Initiate a new HPE Contract Instance with new sequence number.
@@ -32,9 +33,9 @@ interface HpeContractState
      * Make a new copy of the specified HPE Contract.
      *
      * @param HpeContract $hpeContract
-     * @return mixed
+     * @return array
      */
-    public function copy(HpeContract $hpeContract);
+    public function copy(HpeContract $hpeContract): array;
 
     /**
      * Submit the specified HPE Contract.
@@ -50,7 +51,7 @@ interface HpeContractState
      * @param HpeContract $hpeContract
      * @return boolean
      */
-    public function unsubmit(HpeContract $hpeContract): bool;
+    public function unravel(HpeContract $hpeContract): bool;
 
     /**
      * Mark as activated the specified HPE Contract.
@@ -77,15 +78,6 @@ interface HpeContractState
     public function delete(HpeContract $hpeContract): bool;
 
     /**
-     * Associate the HPE Contract with specified HPE Contract File.
-     *
-     * @param HpeContract $hpeContract
-     * @param HpeContractFile $hpeContractFile
-     * @return void
-     */
-    public function associateHpeContractFile(HpeContract $hpeContract, HpeContractFile $hpeContractFile): void;
-
-    /**
      * Retrieve Imported HPE Contract Data.
      *
      * @param HpeContract $hpeContract
@@ -99,9 +91,9 @@ interface HpeContractState
      * Retrieve aggregated HPE Contract Data.
      *
      * @param HpeContract $hpeContract
-     * @return \Illuminate\Support\Collection
+     * @return BaseCollection
      */
-    public function retrieveContractData(HpeContract $hpeContract);
+    public function retrieveContractData(HpeContract $hpeContract): BaseCollection;
 
     /**
      * Retrieve HPE Contract Assets grouped by specific clauses.
@@ -119,5 +111,5 @@ interface HpeContractState
      * @param boolean $reject
      * @return boolean
      */
-    public function selectAssets(HpeContract $hpeContract, array $ids, bool $reject = false);
+    public function markAssetsAsSelected(HpeContract $hpeContract, array $ids, bool $reject = false): bool;
 }

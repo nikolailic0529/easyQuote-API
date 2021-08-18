@@ -70,6 +70,12 @@ class UpdateQuoteAssets extends FormRequest
             'assets.*.service_level_description' => [
                 'bail', 'nullable', 'string', 'max:500'
             ],
+            'assets.*.buy_price' => [
+                'bail', 'nullable', 'numeric', 'min:-999999', 'max:999999'
+            ],
+            'assets.*.buy_price_margin' => [
+                'bail', 'nullable', 'numeric', 'min:0', 'max:100'
+            ],
             'assets.*.price' => [
                 'bail', 'nullable', 'numeric', 'min:-999999', 'max:999999'
             ],
@@ -121,6 +127,8 @@ class UpdateQuoteAssets extends FormRequest
                     'product_name' => $asset['product_name'] ?? null,
                     'expiry_date' => transform($asset['expiry_date'] ?? null, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
                     'service_level_description' => $asset['service_level_description'] ?? null,
+                    'buy_price' => transform($asset['buy_price'] ?? null, fn (string $price) => (float)$price),
+                    'buy_price_margin' => transform($asset['buy_price_margin'] ?? null, fn (string $price) => (float)$price),
                     'price' => transform($asset['price'] ?? null, fn(string $price) => (float)$price),
                     'original_price' => transform($asset['original_price'] ?? null, fn(string $price) => (float)$price),
                     'exchange_rate_value' => transform($asset['exchange_rate_value'] ?? null, fn(string $value) => (float)$value),

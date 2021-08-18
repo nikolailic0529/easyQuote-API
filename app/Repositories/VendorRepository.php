@@ -23,11 +23,6 @@ class VendorRepository extends SearchableRepository implements VendorRepositoryI
         $this->vendor = $vendor;
     }
 
-    public function allFlatten(): Collection
-    {
-        return $this->userQuery()->activated()->get(['id', 'name']);
-    }
-
     public function allCached()
     {
         return cache()->sear(

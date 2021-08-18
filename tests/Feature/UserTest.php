@@ -249,4 +249,42 @@ class UserTest extends TestCase
         $this->getJson('api/users/'.$user->getKey())
             ->assertNotFound();
     }
+
+    /**
+     * Test an ability to view the data for user profile form.
+     *
+     * @return void
+     */
+    public function testCanViewDataForUserProfileForm()
+    {
+        $this->authenticateApi();
+
+        $this->getJson('api/users/create')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'roles' => [
+                    '*' => [
+                        'id', 'name',
+                    ]
+                ],
+                'countries' => [
+                    '*' => [
+                        'id', 'iso_3166_2',
+                        'name', 'default_currency_id',
+                        'user_id', 'is_system',
+                        'currency_name', 'currency_symbol',
+                        'currency_code', 'flag',
+                        'created_at',
+                        'updated_at',
+                        'activated_at'
+                    ]
+                ],
+                'timezones' => [
+                    '*' => [
+                        'id', 'text', 'value',
+                    ]
+                ]
+            ]);
+    }
 }

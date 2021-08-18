@@ -18,6 +18,9 @@ use App\Queries\QuoteQueries;
 use App\Repositories\Concerns\FetchesGroupDescription;
 use App\Services\RescueQuote\RescueQuoteCalc;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Response;
 use Illuminate\Support\{Collection, Str};
 
@@ -25,28 +28,35 @@ class QuoteViewService implements QuoteView
 {
     const QUOTE_EXPORT_VIEW = 'quotes.pdf';
 
+    protected ?Model $causer = null;
+
     use FetchesGroupDescription;
 
-    public function __construct(protected QuoteSubmittedRepositoryInterface $submittedRepository,
-                                protected QuoteQueries $quoteQueries,
+    public function __construct(protected QuoteQueries $quoteQueries,
                                 protected RescueQuoteCalc $rescueQuoteCalc)
     {
     }
 
-    public function requestForQuote(string $RFQnumber, string $clientName = null): BaseQuote
+    public function requestForQuote(string $rfqNumber): BaseQuote
     {
-        /** @var Quote */
-        $quote = $this->submittedRepository->findByRfq($RFQnumber);
-
-        if ($clientName) {
-            activity()->on($quote)->causedByService($clientName)->queue('retrieved');
+        try {
+            /** @var Quote $quote */
+            $quote = $this->quoteQueries
+                ->quoteByRfqNumberQuery($rfqNumber)
+                ->sole();
+        } catch (ModelNotFoundException) {
+            error_abort( EQ_NF_01, 'EQ_NF_01', 422);
         }
 
-        $version = $quote->activeVersionOrCurrent;
+        return tap($quote->activeVersionOrCurrent, function (BaseQuote $version) use ($quote) {
+            $this->prepareQuoteReview($version);
 
-        $this->prepareQuoteReview($version);
+            activity()
+                ->on($quote)
+                ->by($this->causer)
+                ->queue('retrieved');
 
-        return $version;
+        });
     }
 
     public function interact(BaseQuote $quote, $interactable): void
@@ -455,5 +465,12 @@ class QuoteViewService implements QuoteView
         $hash = md5($quote->customer->rfq.time());
 
         return "{$quote->customer->rfq}_{$hash}.pdf";
+    }
+
+    public function setCauser(?Model $causer): static
+    {
+        return tap($this, function () use ($causer) {
+           $this->causer = $causer;
+        });
     }
 }

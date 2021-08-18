@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enum\CompanyType;
 use App\Models\Company;
 use App\Models\Customer\Customer;
 use App\Services\Exceptions\EqCustomer;
@@ -23,7 +24,7 @@ class EqCustomerService
      */
     public function giveNumber(Company $company, ?Customer $customer = null): string
     {
-        if ($company->type !== Company::INT_TYPE) {
+        if ($company->type !== CompanyType::INTERNAL) {
             throw InvalidCompany::nonInternal();
         }
 

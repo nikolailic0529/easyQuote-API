@@ -2,29 +2,20 @@
 
 namespace App\Queries;
 
-use App\Helpers\ElasticsearchHelper;
-use App\Http\Query\DefaultOrderBy;
-use App\Http\Query\OrderByColumnName;
 use App\Models\OpportunityForm\OpportunityForm;
 use App\Models\Pipeline\Pipeline as PipelineModel;
 use App\Models\Space;
-use App\Services\ElasticsearchQuery;
+use App\Queries\Pipeline\PerformElasticsearchSearch;
+use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\JoinClause;
 use Illuminate\Http\Request;
-use Illuminate\Pipeline\Pipeline;
 
 class OpportunityFormQueries
 {
-    protected Pipeline $pipeline;
-
-    protected Elasticsearch $elasticsearch;
-
-    public function __construct(Pipeline $pipeline, Elasticsearch $elasticsearch)
+    public function __construct(protected Elasticsearch $elasticsearch)
     {
-        $this->pipeline = $pipeline;
-        $this->elasticsearch = $elasticsearch;
     }
 
     public function paginateOpportunityFormsQuery(Request $request = null): Builder
@@ -41,7 +32,7 @@ class OpportunityFormQueries
                 "{$spaceModel->qualifyColumn('space_name')} as space_name",
                 "{$pipelineModel->qualifyColumn('pipeline_name')} as pipeline_name",
                 $opportunityFormModel->getQualifiedCreatedAtColumn(),
-                $opportunityFormModel->getQualifiedUpdatedAtColumn()
+                $opportunityFormModel->getQualifiedUpdatedAtColumn(),
             ])
             ->join($pipelineModel->getTable(), function (JoinClause $join) use ($opportunityFormModel, $pipelineModel) {
                 $join->on($pipelineModel->getQualifiedKeyName(), $opportunityFormModel->pipeline()->getQualifiedForeignKeyName());
@@ -50,30 +41,26 @@ class OpportunityFormQueries
                 $join->on($spaceModel->getQualifiedKeyName(), $pipelineModel->space()->getQualifiedForeignKeyName());
             });
 
-        if (filled($searchQuery = $request->query('search'))) {
-            $hits = rescue(function () use ($opportunityFormModel, $searchQuery) {
-                return $this->elasticsearch->search(
-                    ElasticsearchQuery::new()
-                        ->modelIndex($opportunityFormModel)
-                        ->queryString($searchQuery)
-                        ->escapeQueryString()
-                        ->wrapQueryString()
-                        ->toArray()
-                );
-            });
-
-            $query->whereKey(ElasticsearchHelper::pluckDocumentKeys($hits));
-        }
-
-        return $this->pipeline
-            ->send($query)
-            ->through([
-                new OrderByColumnName($request, $spaceModel->qualifyColumn('space_name'), 'space_name'),
-                new OrderByColumnName($request, $pipelineModel->qualifyColumn('pipeline_name'), 'pipeline_name'),
-                new OrderByColumnName($request, $opportunityFormModel->qualifyColumn('created_at'), 'created_at'),
-                new OrderByColumnName($request, $opportunityFormModel->qualifyColumn('updated_at'), 'updated_at'),
-                new DefaultOrderBy($opportunityFormModel->qualifyColumn('created_at'))
+        return RequestQueryBuilder::for(
+            builder: $query,
+            request: $request
+        )
+            ->addCustomBuildQueryPipe(
+                new PerformElasticsearchSearch($this->elasticsearch)
+            )
+            ->allowOrderFields(...[
+                'space_name',
+                'pipeline_name',
+                'created_at',
+                'updated_at',
             ])
-            ->thenReturn();
+            ->qualifyOrderFields(
+                space_name: $spaceModel->qualifyColumn('space_name'),
+                pipeline_name: $pipelineModel->qualifyColumn('pipeline_name'),
+                created_at: $opportunityFormModel->getQualifiedCreatedAtColumn(),
+                updated_at: $opportunityFormModel->getQualifiedUpdatedAtColumn(),
+            )
+            ->enforceOrderBy($opportunityFormModel->getQualifiedCreatedAtColumn(), 'desc')
+            ->process();
     }
 }

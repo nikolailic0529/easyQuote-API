@@ -41,7 +41,7 @@ use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
 use App\Models\WorldwideQuoteAssetsGroup;
 use App\Services\ThumbHelper;
-use App\Services\WorldwideQuote\Calculation\WorldwideDistributionCalc;
+use App\Services\WorldwideQuote\Calculation\WorldwideDistributorQuoteCalc;
 use App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc;
 use App\Support\PriceParser;
 use Illuminate\Contracts\Config\Repository as Config;
@@ -65,7 +65,7 @@ class WorldwideQuoteDataMapper
 {
     protected WorldwideQuoteCalc $worldwideQuoteCalc;
 
-    protected WorldwideDistributionCalc $worldwideDistributionCalc;
+    protected WorldwideDistributorQuoteCalc $worldwideDistributionCalc;
 
     protected ManagesExchangeRates $exchangeRateService;
 
@@ -75,7 +75,7 @@ class WorldwideQuoteDataMapper
     protected ?array $requiredFieldsDictionary = null;
 
     public function __construct(WorldwideQuoteCalc $worldwideQuoteCalc,
-                                WorldwideDistributionCalc $worldwideDistributionCalc,
+                                WorldwideDistributorQuoteCalc $worldwideDistributionCalc,
                                 ManagesExchangeRates $exchangeRateService,
                                 Config $config)
     {

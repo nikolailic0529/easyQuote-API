@@ -4,7 +4,7 @@ namespace App\Http\Requests\User;
 
 use App\Contracts\Repositories\CountryRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
-use App\Contracts\Repositories\TimezoneRepositoryInterface;
+use App\Queries\TimezoneQueries;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ShowForm extends FormRequest
@@ -26,8 +26,8 @@ class ShowForm extends FormRequest
         /** @var RoleRepositoryInterface */
         $roles = app(RoleRepositoryInterface::class);
 
-        /** @var TimezoneRepositoryInterface */
-        $timezones = app(TimezoneRepositoryInterface::class);
+        /** @var TimezoneQueries $timezoneQueries */
+        $timezoneQueries = $this->container[TimezoneQueries::class];
 
         /** @var CountryRepositoryInterface */
         $countries = app(CountryRepositoryInterface::class);
@@ -39,7 +39,7 @@ class ShowForm extends FormRequest
         return [
             'roles' => $filteredRoles,
             'countries' => $countries->all(),
-            'timezones' => $timezones->all()
+            'timezones' => $timezoneQueries->listOfTimezonesQuery()->get(),
         ];
     }
 }

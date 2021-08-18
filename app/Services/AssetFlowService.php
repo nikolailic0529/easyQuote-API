@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Contracts\{Services\ManagesExchangeRates,
     Services\MigratesAssetEntity,
     Services\MigratesCustomerEntity,
-    WithLogger};
+    LoggerAware};
 use App\DTO\QuoteAsset;
 use App\Enum\AddressType;
 use App\Models\{Address,
@@ -27,7 +27,7 @@ use Spatie\Activitylog\ActivityLogStatus;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-class AssetFlowService implements MigratesAssetEntity, WithLogger
+class AssetFlowService implements MigratesAssetEntity, LoggerAware
 {
     use WithProgress;
 

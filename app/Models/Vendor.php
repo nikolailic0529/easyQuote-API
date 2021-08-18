@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Contracts\{ActivatableInterface, HasImagesDirectory, SearchableEntity, WithLogo};
+use App\Models\Data\Country;
 use App\Services\ThumbHelper;
 use App\Traits\{Activatable,
     Activity\LogsActivity,
@@ -15,14 +16,16 @@ use App\Traits\{Activatable,
     Systemable,
     Uuid
 };
-use Illuminate\Database\Eloquent\{Model, SoftDeletes,};
+use Illuminate\Database\Eloquent\{Collection, Model, SoftDeletes};
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
 
 /**
  * @property string|null $name
  * @property string|null $short_code
+ *
  * @property-read array|null $logo
+ * @property-read Collection<Country>|Country[] $countries
  */
 class Vendor extends Model implements HasImagesDirectory, WithLogo, ActivatableInterface, SearchableEntity
 {
@@ -42,9 +45,9 @@ class Vendor extends Model implements HasImagesDirectory, WithLogo, ActivatableI
         'name', 'short_code',
     ];
 
-    protected $hidden = [
-        'pivot', 'deleted_at', 'image', 'image_id', 'is_system',
-    ];
+//    protected $hidden = [
+//        'pivot', 'deleted_at', 'image', 'image_id', 'is_system',
+//    ];
 
     protected $appends = [
         'logo', // TODO: remove appends
@@ -150,5 +153,12 @@ class Vendor extends Model implements HasImagesDirectory, WithLogo, ActivatableI
     public function image()
     {
         return $this->morphOne(Image::class, 'imageable')->cacheForever();
+    }
+
+    public function countries(): BelongsToMany
+    {
+        return tap($this->belongsToMany(Country::class), function (BelongsToMany $relation) {
+          $relation->orderBy('name');
+        });
     }
 }

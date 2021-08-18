@@ -39,6 +39,9 @@ use App\Enum\Exceptions\InvalidEnumKeyException;
  *
  * @method static UPDATE_SORDER(string $id)
  * @method static DELETE_SORDER(string $id)
+ *
+ * @method static UPDATE_IMPORTABLE_COLUMN(string $id)
+ * @method static DELETE_IMPORTABLE_COLUMN(string $id)
  */
 final class Lock extends Enum
 {
@@ -74,7 +77,11 @@ final class Lock extends Enum
         DELETE_WWASSET = 'delete-ww-asset',
 
         UPDATE_SORDER = 'update-sales-order',
-        DELETE_SORDER = 'delete-sales-order'
+        DELETE_SORDER = 'delete-sales-order',
+
+        CREATE_IMPORTABLE_COLUMN = 'create-importable-column',
+        UPDATE_IMPORTABLE_COLUMN = 'update-importable-column',
+        DELETE_IMPORTABLE_COLUMN = 'delete-importable-column'
     ;
 
     public static function __callStatic($name, $arguments)

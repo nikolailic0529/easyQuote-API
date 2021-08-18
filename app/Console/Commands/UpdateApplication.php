@@ -176,7 +176,7 @@ class UpdateApplication extends Command
         $this->call(UpdateRoles::class);
         $this->call(UpdateExchangeRates::class);
 
-        $this->call(UpdateMappingData::class);
+        $this->call(UpdateDocumentMapping::class);
         $this->call(UpdateTemplateFields::class);
 
         $this->call(UpdateRescueQuoteTemplates::class);
@@ -186,7 +186,7 @@ class UpdateApplication extends Command
 
         $this->call(CreatePersonalAccessClient::class);
         $this->call(CreateClientCredentials::class);
-        $this->call(ReindexCommand::class);
+        $this->call(RebuildSearchMapping::class);
 
         $this->call(OptimizeClearCommand::class);
         $this->call(OptimizeCommand::class);

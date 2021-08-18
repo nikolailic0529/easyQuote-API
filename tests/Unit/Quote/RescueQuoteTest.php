@@ -3,7 +3,8 @@
 namespace Tests\Unit\Quote;
 
 use App\DTO\RowsGroup;
-use App\Models\{Company,
+use App\Models\{Attachment,
+    Company,
     Data\Currency,
     QuoteFile\ImportableColumn,
     QuoteFile\ImportedRow,
@@ -14,7 +15,8 @@ use App\Models\{Company,
 use App\Models\Quote\Quote;
 use Illuminate\Database\Eloquent\JsonEncodingException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\{Arr, Str};
+use Illuminate\Support\{Arr, Facades\File, Str};
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -511,7 +513,7 @@ class RescueQuoteTest extends TestCase
     }
 
     /**
-     * Test an ability to view preview data of the quote entity.
+     * Test an ability to view preview data of quote.
      *
      * @return void
      */
@@ -675,6 +677,50 @@ class RescueQuoteTest extends TestCase
         $this->assertSame('£ 541.82', $response->json('payment_schedule.data.0.price'));
         $this->assertSame('£ 650.18', $response->json('payment_schedule.data.1.price'));
 
+    }
+
+    /**
+     * Test an ability to perform quote file import.
+     *
+     * @return void
+     */
+    public function testCanPerformQuoteFileImport()
+    {
+        $rescueQuote = factory(Quote::class)->create();
+
+        $file = UploadedFile::fake()->createWithContent(base_path('tests/Unit/Data/distributor-files-test/SupportWarehouse_TATA_Tryg_DL380G9-2.pdf'), file_get_contents(base_path('tests/Unit/Data/distributor-files-test/SupportWarehouse_TATA_Tryg_DL380G9-2.pdf')));
+
+        $quoteFileID = $this->postJson('/api/quotes/file', [
+            'file_type' => 'Distributor Price List',
+            'quote_file' => $file,
+        ])
+//            ->dump()
+            ->assertCreated()
+            ->assertJsonStructure([
+                'id',
+                'pages',
+                'original_file_path',
+                'original_file_name',
+                'file_type',
+                'quote_file_format_id',
+                'user_id',
+                'created_at',
+                'updated_at',
+                'format' => [
+                    'id', 'name', 'extension'
+                ]
+            ])
+            ->json('id');
+
+        $this->postJson('api/quotes/handle', [
+            'quote_id' => $rescueQuote->getKey(),
+            'quote_file_id' => $quoteFileID,
+            'page' => 1,
+        ])
+            ->assertOk()
+            ->assertJsonStructure([
+                'status',
+            ]);
     }
 
     protected function createFakeGroupDescription(Quote $quote, QuoteFile $quoteFile): RowsGroup

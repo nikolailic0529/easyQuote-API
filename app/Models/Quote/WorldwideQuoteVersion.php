@@ -97,8 +97,8 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  *
  * @property-read Collection<Address>|Address[] $addresses
  * @property-read Collection<Contact>|Contact[] $contacts
- * @property-read \App\Models\Quote\WorldwideQuoteNote|null $note
- * @property-read WorldwideQuoteAssetsGroup[]|Collection<\App\Http\Resources\WorldwideQuote\AssetsGroup> $assetsGroups
+ * @property-read WorldwideQuoteNote|null $note
+ * @property-read Collection<WorldwideQuoteAssetsGroup>|WorldwideQuoteAssetsGroup[] $assetsGroups
  */
 class WorldwideQuoteVersion extends Model
 {
@@ -113,12 +113,14 @@ class WorldwideQuoteVersion extends Model
 
     public function assets(): MorphMany
     {
-        return $this->morphMany(WorldwideQuoteAsset::class, 'worldwide_quote')
-            ->addSelect([
+        return tap($this->morphMany(WorldwideQuoteAsset::class, 'worldwide_quote'), function (MorphMany $relation) {
+            $relation->addSelect([
                 'vendor_short_code' => Vendor::query()->select('short_code')
                     ->from('vendors')
                     ->whereColumn('vendors.id', 'worldwide_quote_assets.vendor_id')->limit(1)->toBase()
-            ]);
+            ])
+                ->oldest($relation->getRelated()->getQualifiedCreatedAtColumn());
+        });
     }
 
     public function assetsGroups(): HasMany
@@ -127,7 +129,8 @@ class WorldwideQuoteVersion extends Model
             $relation
                 ->withCount('assets')
                 ->withSum('assets', 'price')
-                ->withCasts(['rows_sum' => 'float']);
+                ->withCasts(['rows_sum' => 'float'])
+                ->oldest($relation->getRelated()->getQualifiedCreatedAtColumn());
         });
     }
 

@@ -1,0 +1,192 @@
+---
+- header: Product No.
+  id: 06622e30-c843-444c-aa0f-aa671e58aa1e
+  de_header_reference: 568b342a-3a02-4438-8fc8-52cd9794d330
+  name: product_no
+  type: text
+  country: GB
+  order: 0
+  aliases:
+    - product number
+    - product_no
+    - product_number
+    - product
+    - part_id
+    - product_nu
+    - product nu
+    - item
+    - line
+    - line no
+    - proof of purchase
+    - numéro de produit
+    - produktnummer
+    - varenummer
+    - part number
+    - référence constructeur
+    - type
+    - machine type
+    - type-model
+    - machine
+    - item extension
+- header: Description
+  id: 0bbf9064-71bd-4132-851a-6f1242a37969
+  de_header_reference: 8e1cfd31-52a6-4e50-844e-67c75829e4db
+  name: description
+  type: text
+  country: GB
+  order: 1
+  aliases:
+    - description
+    - product description
+    - desc
+    - description du produit
+    - beskrivelse
+    - descrizione
+    - line item description
+- header: Serial No.
+  id: e42aa78c-baf6-4b0e-b1d6-553b668f757b
+  de_header_reference: 0fb6c989-2f8b-4c38-916f-0c5efe2b1920
+  name: serial_no
+  type: text
+  country: GB
+  order: 2
+  aliases:
+    - serial
+    - serial_no
+    - serial_number
+    - serial number
+    - sn
+    - serienummer
+    - serial no
+    - numéro de série
+- header: Coverage from
+  id: 5aa6836d-e88a-4e9d-bf74-2667f70c643a
+  de_header_reference: f0520abb-c251-4568-8a7b-207599f7ee5b
+  name: date_from
+  type: date
+  order: 3
+  country: GB
+  aliases:
+    - start
+    - start date
+    - date_from
+    - coverage_from
+    - coverage_period_from
+    - coverage period from
+    - coverage start
+    - start_date
+    - startdate
+    - dæknings periode fra
+    - dekning fra
+    - fra
+    - couverture du
+    - charges start
+    - charge start date
+    - service start date
+- header: Coverage to
+  id: 4eccef67-a047-40e9-9a2a-c0d0a8de06d8
+  de_header_reference: 1ea417fd-b87b-4a79-a354-f52b05036675
+  name: date_to
+  type: date
+  order: 4
+  country: GB
+  aliases:
+    - end
+    - end date
+    - date_to
+    - coverage_to
+    - coverage_period_to
+    - coverage period to
+    - end_date
+    - enddate
+    - coverage end
+    - dæknings periode til
+    - dekning til
+    - til
+    - couverture au
+    - charges stop
+    - charge end date
+    - service end date
+- header: Quantity
+  id: 99e4ff35-76f0-45aa-a01c-dbff0e274cd6
+  de_header_reference: 8165f86b-736f-4a73-b460-7a14c10b959e
+  name: qty
+  type: number
+  order: 5
+  country: GB
+  aliases:
+    - quantity
+    - qty
+    - antal
+    - quantité
+    - q.ta
+- header: Price
+  id: bc236c8c-d650-42f4-8555-57598969f69c
+  de_header_reference: 94d87af5-e8c1-42fb-8aa7-b6db3a539fe5
+  name: price
+  type: decimal
+  order: 6
+  country: GB
+  aliases:
+    - price
+    - priceeur
+    - price/eur
+    - line_amount
+    - lineamount
+    - monthly list price
+    - unit net price
+    - line amount
+    - line item
+    - total
+    - subtotal
+    - subtotal/€
+    - prix
+    - pris
+    - prix liste par élément
+    - upfront betaling
+    - line item price
+    - line item total list price
+    - line item monthly list price
+    - line item total net price
+    - line item monthly net price
+    - totalt nok
+    - monthly cost/cad
+    - total price ex. vat
+    - bp charges
+    - totale netto
+    - ext list cost
+    - unit price (ex vat)
+- header: Pricing Document
+  id: ebd569f9-c86b-4d37-a0a9-141b3e3293d9
+  de_header_reference: 650bc9c3-994a-4cf9-9990-31e3b852f1ee
+  name: pricing_document
+  type: text
+  order: 7
+  country: GB
+  aliases:
+    - pricing document
+    - pricing document id
+- header: System Handle
+  id: cff05344-659c-4597-99c6-7719e7fb2a0c
+  de_header_reference: 18161865-8a29-4dad-98fd-271a47f34cc8
+  name: system_handle
+  type: text
+  order: 8
+  country: GB
+  aliases:
+    - system handle
+    - system handle id
+    - support account reference
+- header: Searchable
+  id: c97b4994-d141-4e8b-bd37-cf1a70f756c5
+  de_header_reference: 037ccfaa-1f4c-4cf5-8ce0-881d9ecd8c99
+  name: searchable
+  type: text
+  order: 9
+  country: GB
+  aliases:
+    - searchable
+    - service agreement
+    - service agreement id
+    - n° accord service
+    - service coverage

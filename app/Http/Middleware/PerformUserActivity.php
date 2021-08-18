@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Repositories\UserRepository;
+use App\Models\User;
 use Closure;
 
 class PerformUserActivity
@@ -10,24 +10,23 @@ class PerformUserActivity
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
+     * @param \Illuminate\Http\Request $request
+     * @param \Closure $next
      * @return mixed
      */
     public function handle($request, Closure $next)
     {
-        if (!auth()->check()) {
+        $user = $request->user();
+
+        if (false === $user instanceof User) {
             return $next($request);
         }
-
-        /** @var \App\Models\User */
-        $user = auth()->user();
 
         /**
          * If the User hasn't recent activity his token will be revoked and User will be logged out.
          */
         if ($user->doesntHaveRecentActivity()) {
-            error_abort(LO_00, 'LO_00',  401);
+            error_abort(LO_00, 'LO_00', 401);
         }
 
         return $next($request);
@@ -35,8 +34,9 @@ class PerformUserActivity
 
     public function terminate($request, $response)
     {
-        /** @var \App\Models\User|null */
-        if (is_null($user = $request->user())) {
+        $user = $request->user();
+
+        if (false === $user instanceof User) {
             return;
         }
 

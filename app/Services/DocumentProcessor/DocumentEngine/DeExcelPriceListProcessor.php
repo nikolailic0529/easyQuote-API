@@ -4,7 +4,7 @@ namespace App\Services\DocumentProcessor\DocumentEngine;
 
 use App\Contracts\Services\ProcessesQuoteFile;
 use App\Models\QuoteFile\QuoteFile;
-use App\Services\DocumentEngine\ParseDistributorExcel;
+use App\Services\DocumentEngine\ParserClientFactory;
 use App\Services\DocumentProcessor\Concerns\HasFallbackProcessor;
 use App\Services\DocumentProcessor\DocumentEngine\Concerns\DocumentEngineProcessor;
 use App\Services\DocumentProcessor\Exceptions\NoDataFoundException;
@@ -20,6 +20,7 @@ class DeExcelPriceListProcessor implements ProcessesQuoteFile, DocumentEnginePro
                                 protected FilesystemAdapter $filesystemAdapter,
                                 protected ConnectionInterface $connection,
                                 protected PriceListResponseDataMapper $responseDataMapper,
+                                protected ParserClientFactory $parserClientFactory,
                                 private ProcessesQuoteFile $fallbackProcessor)
     {
     }
@@ -30,7 +31,7 @@ class DeExcelPriceListProcessor implements ProcessesQuoteFile, DocumentEnginePro
      */
     public function process(QuoteFile $quoteFile): void
     {
-        $response = (new ParseDistributorExcel($this->logger))
+        $response = $this->parserClientFactory->buildGenericExcelPriceListParser()
             ->filePath($this->filesystemAdapter->path($quoteFile->original_file_path))
             ->firstPage($quoteFile->imported_page)
             ->process();

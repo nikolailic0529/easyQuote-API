@@ -6,7 +6,6 @@ use App\Casts\{HpeContactCast, HpeServicesCast};
 use App\Contracts\SearchableEntity;
 use App\DTO\HpeContractContact;
 use App\Models\Template\HpeContractTemplate;
-use App\Scopes\ContractTypeScope;
 use App\Traits\{Activatable,
     Auth\Multitenantable,
     BelongsToCompany,
@@ -22,6 +21,8 @@ use Illuminate\Support\Collection;
 use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 /**
+ * @property string|null $contract_number
+ * @property int|null $sequence_number
  * @property HpeContractContact $hw_delivery_contact
  * @property HpeContractContact $sw_delivery_contact
  * @property HpeContractContact $pr_support_contact
@@ -31,6 +32,11 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property HpeContractContact $bill_contact
  * @property Collection $services
  * @property HpeContractTemplate|null $hpeContractTemplate
+ * @property string|null $last_drafted_step
+ * @property string|null $submitted_at
+ * @property string|null $activated_at
+ *
+ * @property-read HpeContractFile $hpeContractFile
  */
 class HpeContract extends Model implements SearchableEntity
 {

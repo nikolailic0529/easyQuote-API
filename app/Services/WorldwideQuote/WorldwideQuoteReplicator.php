@@ -164,14 +164,13 @@ class WorldwideQuoteReplicator
 
     protected function replicatePackQuoteAssets(WorldwideQuoteVersion $activeVersion, WorldwideQuoteVersion $replicatedVersion): array
     {
-        return array_map(function (WorldwideQuoteAsset $asset) use ($replicatedVersion) {
-            $newAsset = $asset->replicate(['vendor_short_code']);
+        return array_map(fn(WorldwideQuoteAsset $asset) => tap($asset->replicate(['vendor_short_code']), function (WorldwideQuoteAsset $newAsset) use ($asset, $replicatedVersion) {
             $newAsset->{$newAsset->getKeyName()} = (string)Uuid::generate(4);
             $newAsset->worldwideQuote()->associate($replicatedVersion);
             $newAsset->replicatedAsset()->associate($asset);
-
-            return $newAsset;
-        }, $activeVersion->assets->all());
+            $newAsset->setCreatedAt($asset->{$asset->getCreatedAtColumn()});
+            $newAsset->setUpdatedAt($asset->{$asset->getUpdatedAtColumn()});
+        }), $activeVersion->assets->all());
     }
 
     protected function replicateDistributorQuotesOfVersion(WorldwideQuoteVersion $activeVersion, WorldwideQuoteVersion $replicatedQuoteVersion): array
@@ -217,14 +216,13 @@ class WorldwideQuoteReplicator
 
         /** @var MappedRow[] $replicatedMappedRows */
         $replicatedMappedRows = transform($replicatedDistributorFile, function (QuoteFile $replicatedDistributorFile) use ($distributorQuote) {
-            return array_map(function (MappedRow $row) use ($replicatedDistributorFile) {
-                $newRow = $row->replicate();
+            return array_map(fn(MappedRow $row) => tap($row->replicate(), function (MappedRow $newRow) use ($replicatedDistributorFile, $row) {
                 $newRow->replicated_mapped_row_id = $row->getKey();
                 $newRow->{$newRow->getKeyName()} = (string)Uuid::generate(4);
                 $newRow->{$newRow->quoteFile()->getForeignKeyName()} = $replicatedDistributorFile->getKey();
-
-                return $newRow;
-            }, $distributorQuote->distributorFile->mappedRows->all());
+                $newRow->setCreatedAt($row->{$row->getCreatedAtColumn()});
+                $newRow->setUpdatedAt($row->{$row->getUpdatedAtColumn()});
+            }), $distributorQuote->distributorFile->mappedRows->all());
         }, []);
 
         $replicatedMappedRowsDictionary = (new Collection($replicatedMappedRows))->pluck('id', 'replicated_mapped_row_id')->all();

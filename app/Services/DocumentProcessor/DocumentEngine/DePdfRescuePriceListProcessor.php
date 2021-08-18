@@ -3,8 +3,9 @@
 namespace App\Services\DocumentProcessor\DocumentEngine;
 
 use App\Contracts\Services\ProcessesQuoteFile;
-use App\Services\DocumentEngine\ParseDistributorPDF;
+use App\Services\DocumentEngine\RescuePdfPriceListParser;
 use App\Models\QuoteFile\QuoteFile;
+use App\Services\DocumentEngine\ParserClientFactory;
 use App\Services\DocumentProcessor\Concerns\HasFallbackProcessor;
 use App\Services\DocumentProcessor\DocumentEngine\Concerns\DocumentEngineProcessor;
 use App\Services\DocumentProcessor\Exceptions\NoDataFoundException;
@@ -15,17 +16,12 @@ use Ramsey\Uuid\UuidInterface;
 
 class DePdfRescuePriceListProcessor implements ProcessesQuoteFile, DocumentEngineProcessor, HasFallbackProcessor
 {
-    protected LoggerInterface $logger;
-    protected PriceListResponseDataMapper $dataMapper;
-    private ProcessesQuoteFile $fallbackProcessor;
 
-    public function __construct(LoggerInterface $logger,
-                                PriceListResponseDataMapper $dataMapper,
-                                ProcessesQuoteFile $fallbackProcessor)
+    public function __construct(protected LoggerInterface $logger,
+                                protected PriceListResponseDataMapper $dataMapper,
+                                protected ParserClientFactory $parserClientFactory,
+                                private ProcessesQuoteFile $fallbackProcessor)
     {
-        $this->logger = $logger;
-        $this->dataMapper = $dataMapper;
-        $this->fallbackProcessor = $fallbackProcessor;
     }
 
     /**
@@ -35,7 +31,7 @@ class DePdfRescuePriceListProcessor implements ProcessesQuoteFile, DocumentEngin
      */
     public function process(QuoteFile $quoteFile): void
     {
-        $data = (new ParseDistributorPDF($this->logger))
+        $data = $this->parserClientFactory->buildRescuePdfPriceListParser()
             ->filePath(Storage::path($quoteFile->original_file_path))
             ->firstPage($quoteFile->imported_page)
             ->process();

@@ -3,26 +3,38 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Attachment\CreateAttachmentRequest;
-use App\Http\Resources\AttachmentResource;
-use App\Services\AttachmentService as Service;
+use App\Http\Requests\Attachment\CreateAttachment;
+use App\Http\Resources\Attachment\CreatedAttachment;
 use App\Models\Attachment;
-use Illuminate\Http\Request;
+use App\Services\Attachment\AttachmentEntityService;
+use Illuminate\Http\JsonResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttachmentController extends Controller
 {
     /**
      * Store a newly created resource in storage.
      *
-     * @param CreateAttachmentRequest $request
-     * @return \Illuminate\Http\Response
+     * @param CreateAttachment $request
+     * @param \App\Services\Attachment\AttachmentEntityService $service
+     * @return JsonResponse
      */
-    public function __invoke(CreateAttachmentRequest $request, Service $service)
+    public function __invoke(CreateAttachment        $request,
+                             AttachmentEntityService $service): JsonResponse
     {
-        return response()->json(
-            AttachmentResource::make(
-                $service->store($request->validated())
-            )
+        $resource = $service->createAttachmentFromUploadedFile(
+            file: $request->getUploadedFile(),
+            attachmentType: $request->getAttachmentType(),
         );
+
+        return response()->json(
+            CreatedAttachment::make($resource)
+        );
+    }
+
+    public function downloadAttachment(Attachment              $attachment,
+                                       AttachmentEntityService $service): StreamedResponse
+    {
+        return $service->downloadAttachment($attachment);
     }
 }

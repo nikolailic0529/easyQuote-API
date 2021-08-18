@@ -55,6 +55,7 @@ use App\Queries\QuoteQueries;
  *
  * @property-read float|null $target_exchange_rate
  * @property-read Vendor|null $vendor
+ * @property-read QuoteFile $priceList
  */
 abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableInterface, SearchableEntity
 {

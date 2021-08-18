@@ -72,6 +72,14 @@ return [
             'permission' => 0777
         ],
 
+        'document-engine-api' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/document-engine-api.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777
+        ],
+
         'stats-calculation' => [
             'driver' => 'daily',
             'path' => env('STORAGE_PATH', storage_path()) . '/logs/stats-calculation.log',

@@ -55,7 +55,7 @@ class DatabaseSeeder extends Seeder
         $this->call(QuoteFileFormatsSeeder::class);
         $this->command->info('Seeded the file formats!');
 
-        $this->call(ImportableColumnsSeeder::class);
+        $this->call(ImportableColumnSeeder::class);
         $this->command->info('Seeded the file importable columns!');
 
         $this->call(MySQLSeeder::class);

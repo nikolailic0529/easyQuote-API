@@ -2,21 +2,17 @@
 
 namespace App\Http\Controllers\API\Data;
 
-use App\Http\Controllers\Controller;
-use App\Contracts\Repositories\LanguageRepositoryInterface;
+use App\Queries\LanguageQueries;
+use Illuminate\Http\JsonResponse;
 
-class LanguagesController extends Controller
+class LanguagesController
 {
-    protected $language;
-
-    public function __construct(LanguageRepositoryInterface $language)
+    public function __invoke(LanguageQueries $queries): JsonResponse
     {
-        $this->language = $language;
-    }
+        $resource = $queries->listOfLanguagesQuery()->get();
 
-    public function __invoke()
-    {
-        $languages = $this->language->all();
-        return response()->json($languages);
+        return response()->json(
+            data: $resource,
+        );
     }
 }

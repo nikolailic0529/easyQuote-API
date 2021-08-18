@@ -37,17 +37,26 @@ class DistributionRowsGroup extends Model
 
     public function replicatedGroupRows(): BelongsToMany
     {
-        return $this->belongsToMany(
-            MappedRow::class,
-            'distribution_rows_group_mapped_row',
-            'rows_group_id',
-            null,
-            $this->replicatedRowsGroup()->getForeignKeyName()
-        );
+        return tap($this->belongsToMany(
+            related: MappedRow::class,
+            table: 'distribution_rows_group_mapped_row',
+            foreignPivotKey: 'rows_group_id',
+            parentKey: $this->replicatedRowsGroup()->getForeignKeyName()
+        ), function (BelongsToMany $relation) {
+           $relation
+               ->oldest($relation->getRelated()->getQualifiedCreatedAtColumn());
+        });
     }
 
     public function rows(): BelongsToMany
     {
-        return $this->belongsToMany(MappedRow::class, 'distribution_rows_group_mapped_row', 'rows_group_id');
+        return tap($this->belongsToMany(
+            related: MappedRow::class,
+            table: 'distribution_rows_group_mapped_row',
+            foreignPivotKey: 'rows_group_id'
+        ), function (BelongsToMany $relation) {
+          $relation
+              ->oldest($relation->getRelated()->getQualifiedCreatedAtColumn());
+        });
     }
 }

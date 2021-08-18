@@ -449,11 +449,26 @@ class WorldwidePackQuoteTest extends TestCase
             'expiry_date' => '2021-02-28T00:00:00.000Z',
             'service_level_description' => 'Post Warranty, ADP, Next Business Day Onsite, excl. ext. Mon., HW Supp, 1 year',
             'price' => $this->faker->randomFloat(2, 100, 1000),
+            'buy_price' => $this->faker->randomFloat(2, 100, 1000),
+            'buy_price_margin' => $this->faker->randomFloat(2, 0, 100),
         ])
 //            ->dump()
             ->assertCreated()
             ->assertJsonStructure([
                 'id',
+                'buy_currency_id',
+                'vendor_id',
+                'machine_address_id',
+                'country',
+                'serial_no',
+                'sku',
+                'service_sku',
+                'product_name',
+                'expiry_date',
+                'service_level_description',
+                'price',
+                'buy_price',
+                'buy_price_margin',
             ]);
     }
 
@@ -556,6 +571,7 @@ class WorldwidePackQuoteTest extends TestCase
                     'serial_no' => '06HNBAB',
                     'sku' => '5462K5G',
                     'country' => 'GB',
+                    'buy_currency_code' => 'USD',
                 ],
                 [
                     'id' => $assets[1]->getKey(),
@@ -564,6 +580,7 @@ class WorldwidePackQuoteTest extends TestCase
                     'serial_no' => 'CN51G8M1X6',
                     'sku' => 'J9846A',
                     'country' => 'GB',
+                    'buy_currency_code' => 'GBP',
                 ],
             ],
         ])
@@ -1037,6 +1054,7 @@ class WorldwidePackQuoteTest extends TestCase
             'worldwide_quote_id' => $quote->activeVersion->getKey(), 'worldwide_quote_type' => $quote->activeVersion->getMorphClass(), 'price' => 150,
             'buy_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
             'is_selected' => true,
+            'buy_price' => 100,
         ]);
 
         $assetsGroup = factory(WorldwideQuoteAssetsGroup::class)->create([
@@ -1326,6 +1344,7 @@ class WorldwidePackQuoteTest extends TestCase
             'worldwide_quote_id' => $quote->activeVersion->getKey(),
             'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
             'is_selected' => true,
+            'buy_price' => 5000 / 5,
             'price' => 1000,
         ]);
 
@@ -1744,6 +1763,7 @@ class WorldwidePackQuoteTest extends TestCase
         factory(WorldwideQuoteAsset::class)->create([
             'worldwide_quote_id' => $quote->activeVersion->getKey(),
             'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
+            'buy_price' => 2000,
             'price' => 3000.00,
             'buy_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
             'is_selected' => true,
@@ -1799,6 +1819,7 @@ class WorldwidePackQuoteTest extends TestCase
         factory(WorldwideQuoteAsset::class)->create([
             'worldwide_quote_id' => $quote->activeVersion->getKey(),
             'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
+            'buy_price' => 2000,
             'price' => 3000.00,
             'buy_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
             'is_selected' => true,
@@ -1856,6 +1877,7 @@ class WorldwidePackQuoteTest extends TestCase
         factory(WorldwideQuoteAsset::class)->create([
             'worldwide_quote_id' => $quote->activeVersion->getKey(),
             'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
+            'buy_price' => 2000.00,
             'price' => 3000.00,
             'buy_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
             'is_selected' => true,

@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Contracts\Repositories\AssetCategoryRepository;
 use App\Contracts\Repositories\VendorRepositoryInterface as Vendors;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\Company\CompanyOfAsset;
-use App\Queries\CompanyQueries;
 use App\Http\Requests\{Asset\CreateAsset, Asset\PaginateAssets, Asset\UpdateAsset};
 use App\Http\Requests\Asset\Uniqueness;
 use App\Http\Resources\Asset\AssetList;
 use App\Http\Resources\Asset\AssetWithIncludes;
+use App\Http\Resources\Company\CompanyOfAsset;
 use App\Models\Asset;
+use App\Queries\AssetCategoryQueries;
 use App\Queries\AssetQueries;
+use App\Queries\CompanyQueries;
 use App\Services\Asset\AssetEntityService;
 use Illuminate\Http\{JsonResponse, Resources\Json\AnonymousResourceCollection, Response};
 
@@ -26,14 +26,14 @@ class AssetController extends Controller
     /**
      * Display a data for asset create/update.
      *
-     * @param AssetCategoryRepository $assetCategories
+     * @param AssetCategoryQueries $assetCategoryQueries
      * @param Vendors $vendors
-     * @return JsonResponseN
+     * @return JsonResponse
      */
-    public function create(AssetCategoryRepository $assetCategories, Vendors $vendors): JsonResponse
+    public function create(AssetCategoryQueries $assetCategoryQueries, Vendors $vendors): JsonResponse
     {
         return response()->json([
-            'asset_categories' => $assetCategories->allCached(),
+            'asset_categories' => $assetCategoryQueries->listOfAssetCategoriesQuery()->get(),
             'vendors' => $vendors->allCached(),
         ]);
     }
@@ -129,11 +129,12 @@ class AssetController extends Controller
 
     /**
      * @param Uniqueness $request
-     * @return JsonResponse
+     * @param AssetQueries $assetQueries
+     * @return Response
      */
-    public function checkUniqueness(Uniqueness $request, AssetQueries $assetQueries): JsonResponse
+    public function checkUniqueness(Uniqueness $request, AssetQueries $assetQueries): Response
     {
-        return response()->json(
+        return response(
             $assetQueries->assetUniquenessQuery(
                 serialNumber: $request->getSerialNumber(),
                 productNumber: $request->getProductNumber(),

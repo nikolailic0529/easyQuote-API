@@ -135,7 +135,7 @@ class HpeContractController extends Controller
         $this->authorize('update', $hpeContract);
 
         return response()->json(
-            $this->processor->unsubmit($hpeContract)
+            $this->processor->unravel($hpeContract)
         );
     }
 
@@ -226,7 +226,7 @@ class HpeContractController extends Controller
     public function selectAssets(SelectAssets $request, HpeContract $hpeContract): JsonResponse
     {
         return response()->json(
-            $this->processor->selectAssets(
+            $this->processor->markAssetsAsSelected(
                 $hpeContract,
                 $request->getIds(),
                 $request->boolean('reject')

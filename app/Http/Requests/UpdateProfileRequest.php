@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enum\CompanyType;
 use App\Models\Company;
 use App\Models\Data\Country;
 use App\Models\Data\Timezone;
@@ -29,7 +30,7 @@ class UpdateProfileRequest extends FormRequest
             'timezone_id'                   => ['uuid', Rule::exists(Timezone::class, 'id')],
             'country_id'                    => ['uuid', Rule::exists(Country::class, 'id')->whereNull('deleted_at')],
 
-            'company_id'                    => ['nullable', 'uuid', Rule::exists(Company::class, 'id')->where('type', Company::INT_TYPE)->whereNull('deleted_at')],
+            'company_id'                    => ['nullable', 'uuid', Rule::exists(Company::class, 'id')->where('type', CompanyType::INTERNAL)->whereNull('deleted_at')],
             'hpe_contract_template_id'      => ['nullable', 'uuid', Rule::exists(HpeContractTemplate::class, 'id')->whereNull('deleted_at')],
 
             'picture'                       => 'image|max:2048',

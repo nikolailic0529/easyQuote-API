@@ -32,7 +32,7 @@ use App\Models\Quote\WorldwideDistribution;
 use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Models\QuoteFile\MappedRow;
 use App\Queries\WorldwideDistributionQueries;
-use App\Services\WorldwideQuote\Calculation\WorldwideDistributionCalc;
+use App\Services\WorldwideQuote\Calculation\WorldwideDistributorQuoteCalc;
 use App\Services\WorldwideQuote\WorldwideQuoteVersionGuard;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
@@ -333,13 +333,13 @@ class WorldwideDistributionController extends Controller
      *
      * @param ShowMarginAfterPredefinedDiscounts $request
      * @param WorldwideDistribution $worldwideDistribution
-     * @param WorldwideDistributionCalc $calcService
+     * @param WorldwideDistributorQuoteCalc $calcService
      * @return JsonResponse
      * @throws AuthorizationException
      */
     public function showMarginAfterPredefinedDiscounts(ShowMarginAfterPredefinedDiscounts $request,
                                                        WorldwideDistribution $worldwideDistribution,
-                                                       WorldwideDistributionCalc $calcService): JsonResponse
+                                                       WorldwideDistributorQuoteCalc $calcService): JsonResponse
     {
         $this->authorize('view', $worldwideDistribution->worldwideQuote->worldwideQuote);
 
@@ -357,13 +357,13 @@ class WorldwideDistributionController extends Controller
      *
      * @param ShowMarginAfterCustomDiscount $request
      * @param WorldwideDistribution $worldwideDistribution
-     * @param \App\Services\WorldwideQuote\Calculation\WorldwideDistributionCalc $calcService
+     * @param \App\Services\WorldwideQuote\Calculation\WorldwideDistributorQuoteCalc $calcService
      * @return JsonResponse
      * @throws AuthorizationException
      */
     public function showMarginAfterCustomDiscount(ShowMarginAfterCustomDiscount $request,
                                                   WorldwideDistribution $worldwideDistribution,
-                                                  WorldwideDistributionCalc $calcService): JsonResponse
+                                                  WorldwideDistributorQuoteCalc $calcService): JsonResponse
     {
         $this->authorize('view', $worldwideDistribution->worldwideQuote->worldwideQuote);
 
@@ -380,13 +380,13 @@ class WorldwideDistributionController extends Controller
      *
      * @param ShowPriceDataAfterMarginTax $request
      * @param WorldwideDistribution $worldwideDistribution
-     * @param \App\Services\WorldwideQuote\Calculation\WorldwideDistributionCalc $calcService
+     * @param \App\Services\WorldwideQuote\Calculation\WorldwideDistributorQuoteCalc $calcService
      * @return JsonResponse
      * @throws AuthorizationException
      */
     public function showPriceSummaryAfterMarginTax(ShowPriceDataAfterMarginTax $request,
                                                    WorldwideDistribution $worldwideDistribution,
-                                                   WorldwideDistributionCalc $calcService): JsonResponse
+                                                   WorldwideDistributorQuoteCalc $calcService): JsonResponse
     {
         $this->authorize('view', $worldwideDistribution->worldwideQuote->worldwideQuote);
 

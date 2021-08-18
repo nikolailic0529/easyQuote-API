@@ -3,43 +3,43 @@
 namespace App\Queries;
 
 use App\Models\Task;
+use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
-use Illuminate\Pipeline\Pipeline;
 
 class TaskQueries
 {
-    protected Pipeline $pipeline;
-
-    public function __construct(Pipeline $pipeline)
-    {
-        $this->pipeline = $pipeline;
-    }
-
     public function paginateTaskableTasksQuery(string $taskableId, ?Request $request = null): Builder
     {
         $request ??= new Request();
 
-        $query = Task::where('taskable_id', $taskableId)
-            ->with('user', 'users', 'attachments')
-            ->when(filled($request->query('search')), function (Builder $builder) use ($request) {
-                $input = $request->query('search');
+        $model = new Task();
 
-                $builder->where('name', 'like', "%$input%");
-            });
+        $query = $model->newQuery()
+            ->where('taskable_id', $taskableId)
+            ->with('user', 'users', 'attachments');
 
-        return $this->pipeline
-            ->send($query)
-            ->through([
-                \App\Http\Query\OrderByCreatedAt::class,
-                \App\Http\Query\DefaultOrderBy::class,
+        return RequestQueryBuilder::for(
+            builder: $query,
+            request: $request,
+        )
+            ->allowOrderFields(...[
+                'created_at',
             ])
-            ->thenReturn();
+            ->qualifyOrderFields(
+                created_at: $model->getQualifiedCreatedAtColumn(),
+            )
+            ->allowQuickSearchFields(...[
+                'name',
+            ])
+            ->enforceOrderBy($model->getQualifiedCreatedAtColumn(), 'desc')
+            ->process();
     }
 
     public function expiredTasksQuery(): Builder
     {
-        return Task::where('expiry_date', '<', now())
+        return Task::query()
+            ->where('expiry_date', '<', now())
             ->with('user', 'users');
     }
 }

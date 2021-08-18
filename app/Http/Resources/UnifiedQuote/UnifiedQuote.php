@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\UnifiedQuote;
 
+use App\Enum\QuoteStatus;
 use App\Models\Quote\Quote;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\User;
