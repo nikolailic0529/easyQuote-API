@@ -4799,4 +4799,19 @@ DATA;
 
         $this->assertNotEmpty($rows);
     }
+
+    /**
+     * @group parsing-price-list-xlsx
+     */
+    public function test_parses_support_warehouse_ltd_windes_mcclaughry_71306096_08182021()
+    {
+        $filePath = base_path('tests/Unit/Data/distributor-files-test/Support Warehouse Ltd-WINDES & MCCLAUGHRY-71306096-08182021.xlsx');
+
+        $rows = $this->app[ExcelPriceListReader::class]->readFile($filePath);
+
+        /** @var Row[] $rows */
+        $rows = iterator_to_array($rows);
+
+        $this->assertNotEmpty($rows);
+    }
 }

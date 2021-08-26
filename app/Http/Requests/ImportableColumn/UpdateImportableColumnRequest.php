@@ -63,8 +63,10 @@ class UpdateImportableColumnRequest extends FormRequest
             if ($column->is_system) {
                 $replaceData = [
                     'header' => $column->header,
+                    'name' => $column->name,
                     'country_id' => $column->country_id,
                     'type' => $column->type,
+                    'order' => $column->order,
                     'is_system' => (bool)$column->is_system,
                     'is_temp' => (bool)$column->is_temp,
                 ];

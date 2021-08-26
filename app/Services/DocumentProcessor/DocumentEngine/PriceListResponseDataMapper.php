@@ -120,7 +120,7 @@ class PriceListResponseDataMapper
             $allocatedColumns = [];
 
             $columns = array_map(function ($name) use (&$allocatedColumns) {
-                [$column, $allocated] = $this->collateColumn($name);
+                [$column, $allocated] = $this->collateColumn($name, $allocatedColumns);
 
                 $allocatedColumns = $allocated;
 

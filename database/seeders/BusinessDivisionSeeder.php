@@ -20,5 +20,8 @@ class BusinessDivisionSeeder extends Seeder
 
         $connection->table('business_divisions')
             ->insertOrIgnore(['id' => 'f911cb0b-a1b0-4943-91e7-0a1c796984a1', 'division_name' => 'Worldwide']);
+
+        $connection->table('business_divisions')
+            ->insertOrIgnore(['id' => 'ffbf22a6-36f6-4e82-97e9-b3877a2aac33', 'division_name' => 'Contracts']);
     }
 }
