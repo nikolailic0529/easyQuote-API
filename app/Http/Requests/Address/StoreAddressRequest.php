@@ -20,7 +20,7 @@ class StoreAddressRequest extends FormRequest
     {
         return [
             'address_type' => ['required', 'string', Rule::in(Address::TYPES)],
-            'address_1' => 'required|string|min:2|max:191',
+            'address_1' => 'nullable|string|min:2|max:191',
             'address_2' => 'nullable|string|max:191',
             'city' => 'nullable|string|max:191',
             'state' => 'nullable|string|max:191',
