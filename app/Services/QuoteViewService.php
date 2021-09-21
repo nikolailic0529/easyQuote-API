@@ -319,6 +319,11 @@ class QuoteViewService implements QuoteView
 
         if ($totalPaymentsValue > 0.0) {
             $paymentCoef = ($quote->totalPriceAfterMargin / $totalPaymentsValue);
+            // if custom discount is applied, then calculate paymentCoef with final value
+            $customDiscountValue = (float)$quote->custom_discount;
+            if ($customDiscountValue > 0.0) {
+                $paymentCoef = ($quote->finalTotalPrice / $totalPaymentsValue);   
+            }
         } else {
             $paymentCoef = 0.0;
         }

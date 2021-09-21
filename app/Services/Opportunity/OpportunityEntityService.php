@@ -525,6 +525,7 @@ class OpportunityEntityService
             'has_higher_sla' => strtolower($valueRetriever($row, PipelinerOppMap::HAS_HIGHER_SLA, '')) === 'yes',
             'is_multi_year' => strtolower($valueRetriever($row, PipelinerOppMap::IS_MULTI_YEAR, '')) === 'yes',
             'has_additional_hardware' => strtolower($valueRetriever($row, PipelinerOppMap::HAS_ADDITIONAL_HARDWARE, '')) === 'yes',
+            'has_service_credits' => strtolower($valueRetriever($row, PipelinerOppMap::HAS_SERVICE_CREDITS, '')) === 'yes',
             'remarks' => $valueRetriever($row, PipelinerOppMap::REMARKS),
             'notes' => $valueRetriever($row, PipelinerOppMap::NOTES),
             'sale_action_name' => $valueRetriever($row, PipelinerOppMap::SALE_ACTION_NAME),
@@ -779,9 +780,12 @@ class OpportunityEntityService
             $opportunity->has_higher_sla = $data->has_higher_sla;
             $opportunity->is_multi_year = $data->is_multi_year;
             $opportunity->has_additional_hardware = $data->has_additional_hardware;
+            $opportunity->has_service_credits = $data->has_service_credits;
             $opportunity->remarks = $data->remarks;
             $opportunity->sale_action_name = $data->sale_action_name;
             $opportunity->ranking = $data->ranking;
+            $opportunity->competition_name = $data->competition_name;
+            $opportunity->notes = $data->notes;
 
             $this->connection->transaction(function () use ($data, $opportunity) {
                 $opportunity->save();
@@ -919,10 +923,13 @@ class OpportunityEntityService
                 $opportunity->has_higher_sla = $data->has_higher_sla;
                 $opportunity->is_multi_year = $data->is_multi_year;
                 $opportunity->has_additional_hardware = $data->has_additional_hardware;
+                $opportunity->has_service_credits = $data->has_service_credits;
                 $opportunity->remarks = $data->remarks;
                 $opportunity->sale_action_name = $data->sale_action_name;
                 $opportunity->ranking = $data->ranking;
                 $opportunity->campaign_name = $data->campaign_name;
+                $opportunity->competition_name = $data->competition_name;
+                $opportunity->notes = $data->notes;
 
                 $newOpportunitySuppliers = array_map(function (CreateSupplierData $supplierData) use ($opportunity) {
                     return tap(new OpportunitySupplier(), function (OpportunitySupplier $supplier) use ($opportunity, $supplierData) {

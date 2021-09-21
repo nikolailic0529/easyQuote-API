@@ -213,6 +213,8 @@ final class CreateOpportunityData extends DataTransferObject
     public bool $is_multi_year;
 
     public bool $has_additional_hardware;
+    
+    public bool $has_service_credits;
 
     /**
      * @Constraints\Length(

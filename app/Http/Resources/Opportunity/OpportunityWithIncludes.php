@@ -92,6 +92,7 @@ class OpportunityWithIncludes extends JsonResource
             'has_higher_sla' => $this->has_higher_sla,
             'is_multi_year' => $this->is_multi_year,
             'has_additional_hardware' => $this->has_additional_hardware,
+            'has_service_credits' => $this->has_service_credits,
             'remarks' => $this->remarks,
             'notes' => $this->notes,
             'campaign_name' => $this->campaign_name,

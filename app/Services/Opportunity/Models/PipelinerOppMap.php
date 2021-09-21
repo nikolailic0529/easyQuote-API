@@ -42,6 +42,7 @@ final class PipelinerOppMap
         HAS_HIGHER_SLA = ['higher_sla'],
         IS_MULTI_YEAR = ['multi_year'],
         HAS_ADDITIONAL_HARDWARE = ['additional_hardware'],
+        HAS_SERVICE_CREDITS = ['service_credits'],
         REMARKS = ['remark'],
         NOTES = ['notes'],
         SALE_ACTION_NAME = ['sales_step'],

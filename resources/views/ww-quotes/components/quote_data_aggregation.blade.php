@@ -21,15 +21,15 @@
 
     @endforeach
     <tr>
-        <td class="text-right" colspan="4">Sub Total:</td>
+        <td class="text-right" colspan="3">Sub Total:</td>
         <td>{{ $sub_total_value }}</td>
     </tr>
     <tr>
-        <td class="text-right" colspan="4">Total (inc. tax):</td>
+        <td class="text-right" colspan="3">Total (inc. tax):</td>
         <td>{{ $total_value_including_tax }}</td>
     </tr>
     <tr>
-        <td class="text-right" colspan="4">Grand Total:</td>
+        <td class="text-right" colspan="3">Grand Total:</td>
         <td>{{ $grand_total_value }}</td>
     </tr>
     </tbody>

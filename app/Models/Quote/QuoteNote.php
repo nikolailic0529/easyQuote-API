@@ -2,6 +2,7 @@
 
 namespace App\Models\Quote;
 
+use App\Models\Quote\QuoteVersion;
 use App\Traits\{
     Activity\LogsActivity,
     Auth\Multitenantable,
@@ -11,6 +12,12 @@ use App\Traits\{
 };
 use Illuminate\Database\Eloquent\{Model, Relations\BelongsTo, SoftDeletes};
 
+/**
+ * @property string|null $quote_id
+ * @property string|null $quote_version_id
+ * @property string|null $text
+ * @property bool|null $is_from_quote
+ */
 class QuoteNote extends Model
 {
     use Uuid, Multitenantable, BelongsToUser, LogsActivity, SoftDeletes;
@@ -30,5 +37,10 @@ class QuoteNote extends Model
     public function quote(): BelongsTo
     {
         return $this->belongsTo(Quote::class)->withDefault();
+    }
+
+    public function quoteVersion(): BelongsTo
+    {
+        return $this->belongsTo(QuoteVersion::class);
     }
 }

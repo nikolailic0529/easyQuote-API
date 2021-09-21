@@ -186,6 +186,7 @@ class PdfParser implements PdfParserInterface
 
     private function parseDistributorFilePage(string $content, $page = null): array
     {
+        /** @var Collection $matches */
         $matches = collect([
             PdfOptions::REGEXP_PRICE_LINES_01,
             PdfOptions::REGEXP_PRICE_LINES_02,
@@ -216,6 +217,48 @@ class PdfParser implements PdfParserInterface
 
             return $column;
         });
+
+        // Sometimes, PdfOptions::REGEXP_PRICE_LINES_05 matches duplicated lines
+        // with serial number included in the description
+        // e.g. description: "HPE ML30 Gen9 E3-1230v6 HP      RPS  EU  Svr" serial_no: "CZ281502C3"
+        //      description: "HPE ML30 Gen9 E3-1230v6 HP      RPS  EU  Svr   CZ281502C3" serial_no: null
+        // We have to filter the duplicates.
+
+        if ($page > 1) {
+
+            if (false === empty($matches['serial_no'])) {
+
+
+                $duplicates = [];
+
+                foreach ($matches['serial_no'] as $i => $serial) {
+                    if (is_null($serial) or trim((string)$serial) === '') {
+                        continue;
+                    }
+
+                    $desc = $matches['description'][$i] ?? '';
+
+                    foreach ($matches['description'] as $di => $otherDesc) {
+                        if ($di == $i) {
+                            continue;
+                        }
+
+                        if (str_starts_with($otherDesc, $desc) && str_ends_with($otherDesc, $serial)) {
+                            $duplicates[$di] = true;
+                        }
+                    }
+
+                }
+
+                if (false === empty($duplicates)) {
+
+                    $matches->transform(function (array $group) use ($duplicates) {
+                        return array_values(array_diff_key($group, $duplicates));
+                    });
+                }
+
+            }
+        }
 
         // There can be a case when a serial number is moved to the page from the previous page.
         // We need to match the table header, and ensure if the first line does not have a product number.

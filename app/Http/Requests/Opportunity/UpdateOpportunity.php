@@ -268,6 +268,7 @@ class UpdateOpportunity extends FormRequest
                 'has_higher_sla' => $this->boolean('has_higher_sla'),
                 'is_multi_year' => $this->boolean('is_multi_year'),
                 'has_additional_hardware' => $this->boolean('has_additional_hardware'),
+                'has_service_credits' => $this->boolean('has_service_credits'),
                 'remarks' => $this->input('remarks'),
                 'notes' => $this->input('notes'),
                 'campaign_name' => $this->input('campaign_name'),

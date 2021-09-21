@@ -47,7 +47,7 @@ class QuoteVersionResource extends JsonResource
             'pricing_document' => $this->activeVersionOrCurrent->pricing_document,
             'service_agreement_id' => $this->activeVersionOrCurrent->service_agreement_id,
             'system_handle' => $this->activeVersionOrCurrent->system_handle,
-            'additional_details' => $this->activeVersionOrCurrent->additional_details,
+            'additional_details' => $this->activeVersionOrCurrent->note?->text,
             'checkbox_status' => $this->activeVersionOrCurrent->checkbox_status,
             'closing_date' => optional($this->activeVersionOrCurrent->closing_date)->format(config('date.format_ui')),
             'additional_notes' => $this->activeVersionOrCurrent->additional_notes,

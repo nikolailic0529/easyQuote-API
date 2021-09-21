@@ -4814,4 +4814,21 @@ DATA;
 
         $this->assertNotEmpty($rows);
     }
+
+    /**
+     * @group parsing-price-list-pdf
+     */
+    public function test_parses_quote_renewal_71_l005512_06_09_2021_1020_tepr_tech_care_essential_pdf()
+    {
+        $filePath = base_path('tests/Unit/Data/distributor-files-test/quote (renewal) 71-L005512 06.09.2021 1020 [TePr] - Tech Care Essential.pdf');
+
+        $text = $this->app[PdfParserInterface::class]->getText($filePath);
+
+        $data = $this->app[PdfParserInterface::class]->parse($text);
+
+        $this->assertCount(2, $data['pages']);
+        $this->assertEmpty($data['pages'][0]['rows']);
+
+        $this->assertCount(4, $data['pages'][1]['rows']);
+    }
 }

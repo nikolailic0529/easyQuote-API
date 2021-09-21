@@ -11,6 +11,7 @@ use App\Models\{Data\Currency,
     QuoteFile\ScheduleData,
     Template\TemplateField,
     Vendor};
+use App\Queries\QuoteQueries;
 use App\Traits\{Activity\LogsActivity,
     Auth\Multitenantable,
     BelongsToCompany,
@@ -37,7 +38,6 @@ use App\Traits\{Activity\LogsActivity,
 use Illuminate\Database\Eloquent\{Builder, Collection, Model, SoftDeletes};
 use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Tappable;
-use App\Queries\QuoteQueries;
 
 /**
  * @property string|null $user_id
@@ -56,6 +56,7 @@ use App\Queries\QuoteQueries;
  * @property-read float|null $target_exchange_rate
  * @property-read Vendor|null $vendor
  * @property-read QuoteFile $priceList
+ * @property-read QuoteNote|null $note
  */
 abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableInterface, SearchableEntity
 {
@@ -144,7 +145,7 @@ abstract class BaseQuote extends Model implements HasOrderedScope, ActivatableIn
         'checkbox_status',
         'closing_date',
         'calculate_list_price',
-        'buy_price'
+        'buy_price',
     ];
 
     protected $attributes = [

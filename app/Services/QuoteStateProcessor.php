@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Collections\MappedRows;
-use JetBrains\PhpStorm\ArrayShape;
 use App\Contracts\{Services\ManagesDocumentProcessors, Services\QuoteState, Services\QuoteView as QuoteService};
 use App\Contracts\Repositories\{QuoteFile\QuoteFileRepositoryInterface as QuoteFileRepository};
 use App\DTO\RowsGroup;
@@ -27,6 +26,7 @@ use App\Models\{Quote\BaseQuote,
     QuoteFile\ImportedRow,
     QuoteFile\QuoteFile,
     User};
+use App\Models\Quote\QuoteNote;
 use App\Models\Quote\QuoteVersion;
 use App\Queries\QuoteQueries;
 use App\Repositories\Concerns\{ManagesGroupDescription,
@@ -42,7 +42,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\{Arr, Facades\DB, Str};
 use Illuminate\Support\Collection;
+use JetBrains\PhpStorm\ArrayShape;
 use Throwable;
+use Webpatser\Uuid\Uuid;
+use function now;
+use function tap;
+use function value;
 
 class QuoteStateProcessor implements QuoteState
 {
@@ -107,7 +112,7 @@ class QuoteStateProcessor implements QuoteState
 
             $version->fill($quoteData)->save();
 
-            $quoteWasRecentlySubmitted = $this->draftOrSubmit($state, $quote);
+            $quoteWasRecentlySubmitted = $this->draftOrSubmit($state, $quote, $version);
 
             /**
              * We are attaching passed Files to Quote only when a new version has not been created.
@@ -710,6 +715,18 @@ class QuoteStateProcessor implements QuoteState
             // Unravel the replicated quote.
             $replicatedQuote->forceFill(['submitted_at' => null])->save();
 
+            if (false === is_null($version->note)) {
+
+                tap($version->note->replicate(), function (QuoteNote $note) use ($replicatedQuote) {
+                    $note->{$note->getKeyName()} = (string)Uuid::generate(4);
+                    $note->quote()->associate($replicatedQuote);
+                    $note->user()->associate($replicatedQuote->user_id);
+
+                    $note->save();
+                });
+
+            }
+
             $this->replicateDiscounts($version, $replicatedQuote);
             $this->replicateMapping($version, $replicatedQuote);
 
@@ -750,7 +767,7 @@ class QuoteStateProcessor implements QuoteState
         $this->connection->beginTransaction();
 
         try {
-            /** @var QuoteVersion */
+            /** @var QuoteVersion $replicatedVersion */
             $replicatedVersion = $version instanceof QuoteVersion
                 ? $version->replicate()
                 : $this->transitQuoteToVersion($version, $user);
@@ -762,6 +779,30 @@ class QuoteStateProcessor implements QuoteState
             $replicatedVersion->version_number = $this->countVersionNumber($parent, $replicatedVersion);
 
             $pass = $replicatedVersion->save();
+
+            if (false === is_null($version->note)) {
+
+                tap($version->note->replicate(), function (QuoteNote $note) use ($user, $replicatedVersion) {
+                    $note->{$note->getKeyName()} = (string)Uuid::generate(4);
+                    $note->quoteVersion()->associate($replicatedVersion);
+                    $note->user()->associate($user);
+
+                    $note->save();
+                });
+
+            } elseif (trim(strip_tags((string)$replicatedVersion->additional_details)) !== '') {
+
+                tap(new QuoteNote(), function (QuoteNote $note) use ($parent, $user, $replicatedVersion) {
+                    $note->{$note->getKeyName()} = (string)Uuid::generate(4);
+                    $note->quote()->associate($parent);
+                    $note->quoteVersion()->associate($replicatedVersion);
+                    $note->user()->associate($user);
+                    $note->text = $replicatedVersion->additional_details;
+
+                    $note->save();
+                });
+
+            }
 
             /** Discounts Replication. */
             $this->replicateDiscounts($version, $replicatedVersion);
@@ -913,24 +954,58 @@ class QuoteStateProcessor implements QuoteState
             ->queueWhen('updated', $diff);
     }
 
+    protected function updateQuoteNote(Collection $state, Quote $quote, BaseQuote $version): void
+    {
+        if (false === array_key_exists('additional_details', $state->get('quote_data', []))) {
+            return;
+        }
+
+        /** @var QuoteNote $quoteNote */
+
+        $quoteNote = tap($version->note()->firstOrNew(), function (QuoteNote $note) use ($quote, $version) {
+            if (false === $note->exists) {
+                $note->{$note->getKeyName()} = (string)Uuid::generate(4);
+            }
+            $note->user()->associate($version->user_id);
+            $note->quote()->associate($quote);
+
+            if ($version instanceof QuoteVersion) {
+                $note->quoteVersion()->associate($version);
+            }
+
+            $note->text = $version->additional_details;
+            $note->is_from_quote = true;
+        });
+
+        $quoteNoteIsEmpty = trim(strip_tags((string)$quoteNote->text)) === '';
+
+        if ($quoteNoteIsEmpty) {
+            $quoteNote->delete();
+        } else {
+            $quoteNote->save();
+        }
+
+    }
+
     /**
      * Returns true if quote was submitted.
      *
      * @param Collection $state
      * @param Quote $quote
+     * @param Quote $version
      * @return bool
      */
-    protected function draftOrSubmit(Collection $state, Quote $quote): bool
+    protected function draftOrSubmit(Collection $state, Quote $quote, BaseQuote $version): bool
     {
         if ((bool)$state->get('save') === false) {
             $quote->save();
-
+            $this->updateQuoteNote($state, $quote, $version);
             return false;
         }
 
-        tap($quote, function (Quote $quote) {
+        tap($quote, function (Quote $quote) use ($state, $version) {
             $quote->submitted_at = $quote->freshTimestampString();
-
+            $this->updateQuoteNote($state, $quote, $version);
             $quote->save();
         });
 

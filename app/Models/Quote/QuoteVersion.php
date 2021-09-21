@@ -4,9 +4,11 @@ namespace App\Models\Quote;
 
 use App\Models\QuoteFile\ImportableColumn;
 use App\Models\Template\TemplateField;
+use App\Models\Quote\QuoteNote;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class QuoteVersion extends BaseQuote
 {
@@ -48,5 +50,10 @@ class QuoteVersion extends BaseQuote
             ->with('discountable')
             ->whereHasMorph('discountable', $this->discountsOrder())
             ->orderByRaw("field(`discounts`.`discountable_type`, {$this->discountsOrderToString()}) desc");
+    }
+
+    public function note(): HasOne
+    {
+        return $this->hasOne(QuoteNote::class, 'quote_version_id');
     }
 }

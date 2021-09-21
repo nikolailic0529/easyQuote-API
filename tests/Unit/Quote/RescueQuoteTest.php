@@ -674,8 +674,8 @@ class RescueQuoteTest extends TestCase
         $this->assertSame('£ 1,192.00', $response->json('first_page.list_price'));
         $this->assertSame('£ 25.29', $response->json('first_page.applicable_discounts'));
         $this->assertSame('£ 1,166.71', $response->json('first_page.final_price'));
-        $this->assertSame('£ 541.82', $response->json('payment_schedule.data.0.price'));
-        $this->assertSame('£ 650.18', $response->json('payment_schedule.data.1.price'));
+        $this->assertSame('£ 530.32', $response->json('payment_schedule.data.0.price'));
+        $this->assertSame('£ 636.39', $response->json('payment_schedule.data.1.price'));
 
     }
 

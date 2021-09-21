@@ -203,6 +203,8 @@ final class UpdateOpportunityData extends DataTransferObject
 
     public bool $has_additional_hardware;
 
+    public bool $has_service_credits;
+
     /**
      * @Constraints\Length(
      *     max=10000

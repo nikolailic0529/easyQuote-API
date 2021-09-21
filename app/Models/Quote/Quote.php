@@ -5,8 +5,10 @@ namespace App\Models\Quote;
 use App\Contracts\Multitenantable;
 use App\Models\Attachment;
 use App\Models\Customer\Customer;
+use App\Models\Quote\QuoteNote;
 use App\Traits\{Activatable, Migratable, NotifiableModel, Quote\HasContract, Quote\HasQuoteVersions, Submittable};
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 /**
@@ -27,5 +29,12 @@ class Quote extends BaseQuote implements Multitenantable
             name: 'attachable',
             relatedPivotKey: 'attachment_id'
         );
+    }
+
+    public function note(): HasOne
+    {
+        return $this->hasOne(QuoteNote::class)
+            ->whereNull('quote_version_id')
+            ->where('is_from_quote', true);
     }
 }
