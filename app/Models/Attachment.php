@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Traits\Uuid;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property string|null $filepath
@@ -23,4 +24,9 @@ class Attachment extends Model
     protected $fillable = [
         'type', 'filepath', 'filename', 'extension', 'size'
     ];
+
+    public function attachables(): HasMany
+    {
+        return $this->hasMany(Attachable::class);
+    }
 }

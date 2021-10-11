@@ -9,6 +9,7 @@ use App\Models\Company;
 use App\Models\CompanyNote;
 use App\Models\Contact;
 use App\Models\Customer\Customer;
+use App\Models\Data\Country;
 use App\Models\Opportunity;
 use App\Models\Quote\Quote;
 use App\Models\Quote\QuoteNote;
@@ -162,6 +163,10 @@ class CompanyTest extends TestCase
     {
         $attributes = factory(Company::class)->raw();
 
+        $attributes['vendors'] = factory(Vendor::class, 2)->create()->modelKeys();
+        $attributes['addresses'] = array_map(fn (string $id) => ['id' => $id], factory(Address::class, 2)->create()->modelKeys());
+        $attributes['contacts'] = array_map(fn (string $id) => ['id' => $id], factory(Contact::class, 2)->create()->modelKeys());
+
         $this->postJson('api/companies', $attributes)
 //            ->dump()
             ->assertCreated()
@@ -202,6 +207,8 @@ class CompanyTest extends TestCase
 
         $contact1 = factory(Contact::class)->create();
         $contact2 = factory(Contact::class)->create();
+
+        $newAttributes['vendors'] = factory(Vendor::class, 2)->create()->modelKeys();
 
         $newAttributes['addresses'] = [
             ['id' => $machineAddress->getKey(), 'is_default' => "1"],

@@ -314,7 +314,7 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
 
         $processor->process($bQuoteFile);
 
-        $quoteFileWithMoreCompleteData = (new DocumentDataComparator())($bQuoteFile, $quoteFile);
+        $quoteFileWithMoreCompleteData = (new DocumentDataComparator())(aFile: $quoteFile, bFile: $bQuoteFile);
 
         // When the file with more complete data is the file, processed by the fallback processor,
         // we will process the original file using the fallback processor.

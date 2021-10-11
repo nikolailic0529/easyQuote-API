@@ -6,6 +6,7 @@ return [
         'updated' => 'Updated',
         'deleted' => 'Deleted',
         'submitted' => 'Submitted',
+        'exported' => 'Exported',
         'unravel' => 'Unravel',
         'activated' => 'Activated',
         'deactivated' => 'Deactivated',
@@ -22,6 +23,7 @@ return [
         'updated' => 'Updated',
         'deleted' => 'Deleted',
         'submitted' => 'Submitted',
+        'exported' => 'Exported',
         'unravel' => 'Unravel',
         'activated' => 'Activated',
         'deactivated' => 'Deactivated',
@@ -30,6 +32,6 @@ return [
         'authenticated' => 'Authenticated',
         'unauthenticated' => 'Unauthenticated',
         'created_version' => 'Created Version',
-        'deleted_version' => 'Deleted Version',
+        'deleted_version' => 'Deleted Version', 
     ]
 ];

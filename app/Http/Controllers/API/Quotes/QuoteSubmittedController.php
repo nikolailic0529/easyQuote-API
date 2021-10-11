@@ -181,7 +181,6 @@ class QuoteSubmittedController extends Controller
     public function exportContractOfQuoteToPdf(Quote $submitted, QuoteView $quoteViewService)
     {
         $this->authorize('downloadContractPdf', $submitted);
-
         return $quoteViewService->export($submitted->activeVersionOrCurrent, QT_TYPE_CONTRACT);
     }
 

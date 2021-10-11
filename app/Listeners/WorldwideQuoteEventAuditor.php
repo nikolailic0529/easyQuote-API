@@ -19,9 +19,11 @@ use App\Events\{WorldwideQuote\NewVersionOfWorldwideQuoteCreated,
     WorldwideQuote\WorldwideQuoteDeleted,
     WorldwideQuote\WorldwideQuoteDrafted,
     WorldwideQuote\WorldwideQuoteInitialized,
+    WorldwideQuote\WorldwideQuoteNoteCreated,
     WorldwideQuote\WorldwideQuoteSubmitted,
     WorldwideQuote\WorldwideQuoteUnraveled,
     WorldwideQuote\WorldwideQuoteVersionDeleted};
+use App\Events\WorldwideQuote\WorldwideQuoteFilesExported;
 use App\Models\{Address,
     Company,
     Contact,
@@ -34,11 +36,13 @@ use App\Models\{Address,
     Quote\WorldwideDistribution,
     Quote\WorldwideQuote,
     Quote\WorldwideQuoteVersion,
+    QuoteFile\QuoteFile,
     Template\QuoteTemplate};
 use App\Services\Activity\ActivityLogger;
 use App\Services\Activity\ChangesDetector;
 use Illuminate\Contracts\Bus\Dispatcher as BusDispatcher;
 use Illuminate\Contracts\Config\Repository as Config;
+use Illuminate\Support\Str;
 
 class WorldwideQuoteEventAuditor
 {
@@ -50,9 +54,9 @@ class WorldwideQuoteEventAuditor
 
     protected ChangesDetector $changesDetector;
 
-    public function __construct(Config $config,
-                                BusDispatcher $busDispatcher,
-                                ActivityLogger $activityLogger,
+    public function __construct(Config          $config,
+                                BusDispatcher   $busDispatcher,
+                                ActivityLogger  $activityLogger,
                                 ChangesDetector $changesDetector)
     {
         $this->config = $config;
@@ -87,6 +91,8 @@ class WorldwideQuoteEventAuditor
         $events->listen(WorldwidePackQuoteDetailsStepProcessed::class, [self::class, 'handlePackQuoteDetailsStepProcessedEvent']);
         $events->listen(WorldwidePackQuoteDiscountStepProcessed::class, [self::class, 'handlePackQuoteDiscountStepProcessedEvent']);
         $events->listen(WorldwidePackQuoteMarginStepProcessed::class, [self::class, 'handlePackQuoteMarginStepProcessedEvent']);
+        $events->listen(WorldwideQuoteFilesExported::class, [self::class, 'handleFileExportedEvent']);
+        $events->listen(WorldwideQuoteNoteCreated::class, [self::class, 'handleQuoteNoteCreatedEvent']);
     }
 
     private function getActiveQuoteVersionStage(WorldwideQuote $quote): ?string
@@ -113,8 +119,8 @@ class WorldwideQuoteEventAuditor
             ->withProperties([
                 ChangesDetector::OLD_ATTRS_KEY => [],
                 ChangesDetector::NEW_ATTRS_KEY => [
-                    'deleted_version' => sprintf('%s %s', $version->user->user_fullname, $version->user_version_sequence_number)
-                ]
+                    'deleted_version' => sprintf('%s %s', $version->user->user_fullname, $version->user_version_sequence_number),
+                ],
             ])
             ->log('deleted_version');
     }
@@ -130,11 +136,11 @@ class WorldwideQuoteEventAuditor
             ->by($event->getActingUser())
             ->withProperties([
                 ChangesDetector::OLD_ATTRS_KEY => [
-                    'active_version' => sprintf('%s %s', $previousVersion->user->user_fullname, $previousVersion->user_version_sequence_number)
+                    'active_version' => sprintf('%s %s', $previousVersion->user->user_fullname, $previousVersion->user_version_sequence_number),
                 ],
                 ChangesDetector::NEW_ATTRS_KEY => [
-                    'active_version' => sprintf('%s %s', $newVersion->user->user_fullname, $newVersion->user_version_sequence_number)
-                ]
+                    'active_version' => sprintf('%s %s', $newVersion->user->user_fullname, $newVersion->user_version_sequence_number),
+                ],
             ])
             ->log('created_version');
     }
@@ -152,8 +158,8 @@ class WorldwideQuoteEventAuditor
                     'contract_type' => $quote->contractType->type_short_name,
                     'project_name' => $quote->opportunity->project_name,
                     'stage' => $this->getActiveQuoteVersionStage($quote),
-                    'quote_number' => $quote->quote_number
-                ]
+                    'quote_number' => $quote->quote_number,
+                ],
             ])
             ->log('created');
     }
@@ -169,10 +175,10 @@ class WorldwideQuoteEventAuditor
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
-                        'submitted_at' => $oldQuote->submitted_at
+                        'submitted_at' => $oldQuote->submitted_at,
                     ],
                     [
-                        'submitted_at' => $quote->submitted_at
+                        'submitted_at' => $quote->submitted_at,
                     ]
                 )
             )
@@ -189,10 +195,10 @@ class WorldwideQuoteEventAuditor
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
-                        'submitted_at' => null
+                        'submitted_at' => null,
                     ],
                     [
-                        'submitted_at' => $quote->submitted_at
+                        'submitted_at' => $quote->submitted_at,
                     ]
                 )
             )
@@ -242,10 +248,10 @@ class WorldwideQuoteEventAuditor
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
-                        'stage' => $this->getActiveQuoteVersionStage($event->getOldQuote())
+                        'stage' => $this->getActiveQuoteVersionStage($event->getOldQuote()),
                     ],
                     [
-                        'stage' => $this->getActiveQuoteVersionStage($event->getQuote())
+                        'stage' => $this->getActiveQuoteVersionStage($event->getQuote()),
                     ]
                 )
             )
@@ -300,10 +306,10 @@ class WorldwideQuoteEventAuditor
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
-                        'stage' => $this->getActiveQuoteVersionStage($event->getOldQuote())
+                        'stage' => $this->getActiveQuoteVersionStage($event->getOldQuote()),
                     ] + $distributorQuoteDiscountsMapper($event->getOldQuote()->activeVersion),
                     [
-                        'stage' => $this->getActiveQuoteVersionStage($event->getQuote())
+                        'stage' => $this->getActiveQuoteVersionStage($event->getQuote()),
                     ] + $distributorQuoteDiscountsMapper($event->getQuote()->activeVersion)
                 )
             )
@@ -387,10 +393,10 @@ class WorldwideQuoteEventAuditor
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
-                        'stage' => $this->getActiveQuoteVersionStage($event->getOldQuote())
+                        'stage' => $this->getActiveQuoteVersionStage($event->getOldQuote()),
                     ] + $distributorQuoteSetupDataMapper($event->getOldQuote()->activeVersion),
                     [
-                        'stage' => $this->getActiveQuoteVersionStage($event->getQuote())
+                        'stage' => $this->getActiveQuoteVersionStage($event->getQuote()),
                     ] + $distributorQuoteSetupDataMapper($event->getQuote()->activeVersion)
                 )
             )
@@ -468,10 +474,10 @@ class WorldwideQuoteEventAuditor
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
-                        'stage' => $this->getActiveQuoteVersionStage($event->getOldQuote())
+                        'stage' => $this->getActiveQuoteVersionStage($event->getOldQuote()),
                     ],
                     [
-                        'stage' => $this->getActiveQuoteVersionStage($event->getQuote())
+                        'stage' => $this->getActiveQuoteVersionStage($event->getQuote()),
                     ]
                 )
             )
@@ -486,10 +492,10 @@ class WorldwideQuoteEventAuditor
             ->withProperties(
                 $this->changesDetector->diffAttributeValues(
                     [
-                        'stage' => $this->getActiveQuoteVersionStage($event->getOldQuote())
+                        'stage' => $this->getActiveQuoteVersionStage($event->getOldQuote()),
                     ],
                     [
-                        'stage' => $this->getActiveQuoteVersionStage($event->getQuote())
+                        'stage' => $this->getActiveQuoteVersionStage($event->getQuote()),
                     ]
                 )
             )
@@ -537,7 +543,7 @@ class WorldwideQuoteEventAuditor
                         'stage' => $this->getActiveQuoteVersionStage($oldQuote),
                         'company' => transform($oldQuote->activeVersion->company, fn(Company $company) => $company->name),
                         'quote_currency' => transform($oldQuote->activeVersion->quoteCurrency, fn(Currency $currency) => $currency->code),
-                        'buy_currency' => transform($oldQuote->activeVersion->buyCurrency, fn (Currency $currency) => $currency->code),
+                        'buy_currency' => transform($oldQuote->activeVersion->buyCurrency, fn(Currency $currency) => $currency->code),
                         'quote_template' => transform($oldQuote->activeVersion->quoteTemplate, fn(QuoteTemplate $template) => $template->name),
                         'buy_price' => $oldQuote->activeVersion->buy_price,
                         'quote_expiry_date' => $oldQuote->activeVersion->quote_expiry_date,
@@ -547,7 +553,7 @@ class WorldwideQuoteEventAuditor
                         'stage' => $this->getActiveQuoteVersionStage($quote),
                         'company' => transform($quote->activeVersion->company, fn(Company $company) => $company->name),
                         'quote_currency' => transform($quote->activeVersion->quoteCurrency, fn(Currency $currency) => $currency->code),
-                        'buy_currency' => transform($quote->activeVersion->buyCurrency, fn (Currency $currency) => $currency->code),
+                        'buy_currency' => transform($quote->activeVersion->buyCurrency, fn(Currency $currency) => $currency->code),
                         'quote_template' => transform($quote->activeVersion->quoteTemplate, fn(QuoteTemplate $template) => $template->name),
                         'buy_price' => $quote->activeVersion->buy_price,
                         'quote_expiry_date' => $quote->activeVersion->quote_expiry_date,
@@ -603,7 +609,7 @@ class WorldwideQuoteEventAuditor
                         'pre_pay_discount' => transform($oldQuote->activeVersion->prePayDiscount, fn(PrePayDiscount $discount) => $discount->name),
                         'promotional_discount' => transform($oldQuote->activeVersion->promotionalDiscount, fn(PromotionalDiscount $discount) => $discount->name),
                         'sn_discount' => transform($oldQuote->activeVersion->snDiscount, fn(SND $discount) => $discount->name),
-                        'custom_discount' => number_format((float)$oldQuote->activeVersion->custom_discount)
+                        'custom_discount' => number_format((float)$oldQuote->activeVersion->custom_discount),
                     ],
                     [
                         'stage' => $this->getActiveQuoteVersionStage($quote),
@@ -611,7 +617,7 @@ class WorldwideQuoteEventAuditor
                         'pre_pay_discount' => transform($quote->activeVersion->prePayDiscount, fn(PrePayDiscount $discount) => $discount->name),
                         'promotional_discount' => transform($quote->activeVersion->promotionalDiscount, fn(PromotionalDiscount $discount) => $discount->name),
                         'sn_discount' => transform($quote->activeVersion->snDiscount, fn(SND $discount) => $discount->name),
-                        'custom_discount' => number_format((float)$quote->activeVersion->custom_discount)
+                        'custom_discount' => number_format((float)$quote->activeVersion->custom_discount),
                     ]
                 )
             )
@@ -645,5 +651,50 @@ class WorldwideQuoteEventAuditor
                 )
             )
             ->log('updated');
+    }
+
+    public function handleFileExportedEvent(WorldwideQuoteFilesExported $event)
+    {
+        $quote = $event->getQuote();
+        $quoteFiles = $event->getExportedFiles();
+
+        if ($quoteFiles->isEmpty()) {
+            return;
+        }
+
+        $typeOfFiles = $quoteFiles->first()->file_type;
+
+        $this->activityLogger
+            ->on($quote)
+            ->withProperties([
+                ChangesDetector::OLD_ATTRS_KEY => [],
+                ChangesDetector::NEW_ATTRS_KEY => [
+                    'exported_files' => sprintf("%s: %s",
+                        Str::plural($typeOfFiles),
+                        $quoteFiles->map(fn(QuoteFile $file) => "`$file->original_file_name`")->implode(', ')),
+                ],
+            ])
+            ->log('exported');
+
+    }
+
+    public function handleQuoteNoteCreatedEvent(WorldwideQuoteNoteCreated $event): mixed
+    {
+        $note = $event->getWorldwideQuoteNote();
+        $quote = $note->worldwideQuote;
+
+        $this->activityLogger
+            ->performedOn($quote)
+            ->by($event->getActingUser())
+            ->withProperties([
+                ChangesDetector::OLD_ATTRS_KEY => [
+                ],
+                ChangesDetector::NEW_ATTRS_KEY => [
+                    'notes' => $note->text,
+                ],
+            ])
+            ->log('updated');
+
+        return true;
     }
 }

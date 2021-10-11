@@ -10,6 +10,7 @@ use App\Traits\{
     BelongsToUser,
     Uuid,
 };
+use App\Models\User;
 use Illuminate\Database\Eloquent\{Model, Relations\BelongsTo, SoftDeletes};
 
 /**
@@ -17,6 +18,9 @@ use Illuminate\Database\Eloquent\{Model, Relations\BelongsTo, SoftDeletes};
  * @property string|null $quote_version_id
  * @property string|null $text
  * @property bool|null $is_from_quote
+ *
+ * @property-read Quote $quote
+ * @property-read User|null $user
  */
 class QuoteNote extends Model
 {

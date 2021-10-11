@@ -74,7 +74,7 @@ class WorldwideQuoteAttachmentController extends Controller
     {
         $this->authorize('view', $worldwideQuote);
 
-        $entityService->deleteAttachment($attachment);
+        $entityService->deleteAttachment($attachment, $worldwideQuote);
 
         return response()->json(status: Response::HTTP_NO_CONTENT);
     }

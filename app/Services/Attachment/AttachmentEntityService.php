@@ -2,7 +2,12 @@
 
 namespace App\Services\Attachment;
 
+use App\Events\Attachment\AttachmentCreated;
+use App\Events\Attachment\AttachmentDeleted;
+use App\Events\Attachment\AttachmentExported;
+use App\Models\Attachable;
 use App\Models\Attachment;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Filesystem\FilesystemAdapter;
@@ -15,7 +20,8 @@ use function tap;
 class AttachmentEntityService
 {
     public function __construct(protected FilesystemAdapter   $filesystem,
-                                protected ConnectionInterface $connection)
+                                protected ConnectionInterface $connection,
+                                protected Dispatcher          $eventDispatcher)
     {
     }
 
@@ -57,10 +63,12 @@ class AttachmentEntityService
                     ->attach($attachment);
             });
 
+            $this->eventDispatcher->dispatch(new AttachmentCreated($attachment, $entity));
+
         });
     }
 
-    public function deleteAttachment(Attachment $attachment): void
+    public function deleteAttachment(Attachment $attachment, Model $entity): void
     {
         $this->connection->transaction(function () use ($attachment) {
             $attachment->delete();
@@ -69,11 +77,22 @@ class AttachmentEntityService
         if ($this->filesystem->exists($attachment->filepath)) {
             $this->filesystem->delete($attachment->filepath);
         }
+
+        $this->eventDispatcher->dispatch(new AttachmentDeleted($attachment, $entity));
     }
 
     public function downloadAttachment(Attachment $attachment): StreamedResponse
     {
-        return $this->filesystem->download(path: $attachment->filepath, name: $attachment->filename);
+        return tap($this->filesystem->download(path: $attachment->filepath, name: $attachment->filename), function () use ($attachment) {
+            /** @var Attachable|null $attachable */
+            $attachable = Attachable::query()->find($attachment->getKey());
+
+            if (is_null($attachable) || is_null($attachable->related)) {
+                return;
+            }
+
+            $this->eventDispatcher->dispatch(new AttachmentExported($attachment, $attachable->related));
+        });
     }
 
     private static function processFileName(string $filename): string

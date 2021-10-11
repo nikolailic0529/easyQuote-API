@@ -103,7 +103,7 @@ interface QuoteView extends CauserAware
      * @param int $type
      * @return Response
      */
-    public function export(BaseQuote $quote, int $type): Response;
+    public function export(BaseQuote $quote, int $type = QT_TYPE_QUOTE): Response;
 
     /**
      * Build view data of quote in html format.

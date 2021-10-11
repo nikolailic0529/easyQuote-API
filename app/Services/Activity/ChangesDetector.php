@@ -129,13 +129,25 @@ class ChangesDetector
             if ($model->hasCast($attribute)) {
                 $cast = $model->getCasts()[$attribute];
 
-                if ($model->isCustomDateTimeCast($cast)) {
+                if ($this->isCustomDateTimeCast($cast)) {
                     $changes[$attribute] = $model->asDateTime($changes[$attribute])->format(explode(':', $cast, 2)[1]);
                 }
             }
         }
 
         return $changes;
+    }
+
+    /**
+     * Determine if the cast type is a custom date time cast.
+     *
+     * @param  string  $cast
+     * @return bool
+     */
+    protected function isCustomDateTimeCast(string $cast): bool
+    {
+        return strncmp($cast, 'date:', 5) === 0 ||
+            strncmp($cast, 'datetime:', 9) === 0;
     }
 
     protected static function getRelatedModelAttributeValue(Model $model, string $attribute): array

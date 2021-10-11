@@ -479,7 +479,7 @@ class WorldwideQuoteController extends Controller
 
         $exportData = $quoteViewService->mapWorldwideQuotePreviewDataForExport($worldwideQuote);
 
-        return $exporter->export($exportData);
+        return $exporter->export($exportData, $worldwideQuote);
     }
 
     /**

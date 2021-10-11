@@ -7,8 +7,7 @@ use App\Contracts\{Repositories\Quote\Margin\MarginRepositoryInterface as Margin
     Repositories\UserRepositoryInterface as Users,
     Services\QuoteState,};
 use App\Http\Controllers\Controller;
-use App\Http\Requests\{Attachment\CreateAttachment,
-    GetQuoteTemplatesRequest,
+use App\Http\Requests\{GetQuoteTemplatesRequest,
     MappingReviewRequest,
     Quote\MoveGroupDescriptionRowsRequest,
     Quote\StoreGroupDescriptionRequest,
@@ -20,15 +19,13 @@ use App\Http\Requests\Quote\{FirstStep,
     SetVersionRequest,
     ShowQuoteState,
     TryDiscountsRequest,};
-use App\Http\Resources\{Attachment\AttachmentOfCompany,
-    Attachment\AttachmentOfQuote,
+use App\Http\Resources\{
     ImportedRow\MappedRow,
     QuoteVersionResource,
     TemplateRepository\TemplateResourceListing};
-use App\Models\Attachment;
+
 use App\Models\Quote\Quote;
 use App\Queries\QuoteQueries;
-use App\Services\Attachment\AttachmentEntityService;
 use App\Services\QuoteFileService;
 use App\Services\QuotePermissionRegistar;
 use Illuminate\Auth\Access\AuthorizationException;

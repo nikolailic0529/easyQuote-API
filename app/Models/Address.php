@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\{Builder, Model, Relations\BelongsTo, SoftDelet
  *
  * @property Country|null $country
  * @property Location $location
+ * @property-read string $address_representation
  */
 class Address extends Model implements SearchableEntity
 {
@@ -81,4 +82,21 @@ class Address extends Model implements SearchableEntity
             'created_at' => $this->created_at,
         ];
     }
+
+    public function getAddressRepresentationAttribute(): string
+    {
+        return sprintf("AddressType=`%s` Address1=`%s` Address2=`%s` City=`%s` State=`%s` PostalCode=`%s` Country=`%s` ContactName=`%s` Phone=`%s` Email=`%s`",
+            $this->address_type,
+            $this->address_1 ?? '',
+            $this->address_2 ?? '',
+            $this->city ?? '',
+            $this->state ?? '',
+            $this->post_code,
+            $this->country->iso_3166_2 ?? '',
+            $this->contact_phone ?? '',
+            $this->contact_name ?? '',
+            $this->contact_email ?? '',
+        );
+    }
+
 }

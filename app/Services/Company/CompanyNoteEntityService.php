@@ -3,6 +3,9 @@
 namespace App\Services\Company;
 
 use App\Enum\Lock;
+use App\Events\CompanyNote\CompanyNoteCreated;
+use App\Events\CompanyNote\CompanyNoteDeleted;
+use App\Events\CompanyNote\CompanyNoteUpdated;
 use App\Models\Company;
 use App\Models\CompanyNote;
 use App\Models\User;
@@ -37,6 +40,7 @@ class CompanyNoteEntityService
             $this->connection->transaction(fn() => $companyNote->save());
 
             $companyNote->unsetRelation('company');
+            $this->eventDispatcher->dispatch(new CompanyNoteCreated($companyNote, $company));
 
         });
 
@@ -62,7 +66,8 @@ class CompanyNoteEntityService
                 $this->connection->transaction(fn() => $companyNote->save());
 
             });
-
+            
+            $this->eventDispatcher->dispatch(new CompanyNoteUpdated($companyNote, $companyNote->company));
         });
     }
 
@@ -76,7 +81,7 @@ class CompanyNoteEntityService
         $lock->block(30, function () use ($companyNote) {
 
             $this->connection->transaction(fn() => $companyNote->delete());
-
+            $this->eventDispatcher->dispatch(new CompanyNoteDeleted($companyNote, $companyNote->company));
         });
     }
 }

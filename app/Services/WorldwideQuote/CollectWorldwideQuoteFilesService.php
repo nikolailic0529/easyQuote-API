@@ -2,21 +2,22 @@
 
 namespace App\Services\WorldwideQuote;
 
+use App\Events\WorldwideQuote\WorldwideQuoteFilesExported;
 use App\Foundation\TemporaryDirectory;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\QuoteFile\QuoteFile;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Events\Dispatcher as EventDispatcher;
 use Webpatser\Uuid\Uuid;
 use ZipArchive;
 
 class CollectWorldwideQuoteFilesService
 {
-    protected Filesystem $storage;
 
-    public function __construct(Filesystem $storage)
+    public function __construct(protected Filesystem      $storage,
+                                protected EventDispatcher $eventDispatcher)
     {
-        $this->storage = $storage;
     }
 
     private function zipFiles(string $zipFileName, Collection $quoteFiles): \SplFileInfo
@@ -85,7 +86,9 @@ class CollectWorldwideQuoteFilesService
             ->whereKey($distributorFileModelKeys)
             ->get();
 
-        return $this->zipFiles($zipFileName, $quoteFiles);
+        return tap($this->zipFiles($zipFileName, $quoteFiles), function () use ($worldwideQuote, $quoteFiles) {
+            $this->eventDispatcher->dispatch(new WorldwideQuoteFilesExported($worldwideQuote, $quoteFiles));
+        });
     }
 
     /**
@@ -106,7 +109,9 @@ class CollectWorldwideQuoteFilesService
             ->whereKey($distributorFileModelKeys)
             ->get();
 
-        return $this->zipFiles($zipFileName, $quoteFiles);
+        return tap($this->zipFiles($zipFileName, $quoteFiles), function () use ($worldwideQuote, $quoteFiles) {
+            $this->eventDispatcher->dispatch(new WorldwideQuoteFilesExported($worldwideQuote, $quoteFiles));
+        });
     }
 
 }

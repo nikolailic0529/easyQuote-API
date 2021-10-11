@@ -2,49 +2,32 @@
 
 namespace App\Services;
 
+use App\Contracts\CauserAware;
 use App\DTO\Company\CreateCompanyData;
 use App\DTO\Company\UpdateCompanyContactData;
 use App\DTO\Company\UpdateCompanyData;
+use App\Events\Company\CompanyCreated;
+use App\Events\Company\CompanyDeleted;
 use App\Events\Company\CompanyUpdated;
 use App\Models\Company;
 use App\Models\Contact;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\Eloquent\Model;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-class CompanyEntityService
+class CompanyEntityService implements CauserAware
 {
-    protected LoggerInterface $logger;
+    protected ?Model $causer = null;
 
-    protected ValidatorInterface $validator;
-
-    protected ConnectionInterface $connection;
-
-    protected LockProvider $lockProvider;
-
-    protected EventDispatcher $eventDispatcher;
-
-    /**
-     * CompanyService constructor.
-     * @param LoggerInterface $logger
-     * @param ValidatorInterface $validator
-     * @param ConnectionInterface $connection
-     * @param LockProvider $lockProvider
-     * @param \Illuminate\Contracts\Events\Dispatcher $eventDispatcher
-     */
-    public function __construct(LoggerInterface $logger,
-                                ValidatorInterface $validator,
-                                ConnectionInterface $connection,
-                                LockProvider $lockProvider,
-                                EventDispatcher $eventDispatcher)
+    public function __construct(protected LoggerInterface     $logger,
+                                protected ValidatorInterface  $validator,
+                                protected ConnectionInterface $connection,
+                                protected LockProvider        $lockProvider,
+                                protected EventDispatcher     $eventDispatcher)
     {
-        $this->logger = $logger;
-        $this->validator = $validator;
-        $this->connection = $connection;
-        $this->lockProvider = $lockProvider;
-        $this->eventDispatcher = $eventDispatcher;
     }
 
     /**
@@ -58,7 +41,12 @@ class CompanyEntityService
      */
     public function updateCompanyContact(Company $company, Contact $contact, UpdateCompanyContactData $contactData): Contact
     {
-        return tap($contact, function (Contact $contact) use ($contactData) {
+        return tap($contact, function (Contact $contact) use ($contactData, $company) {
+            $oldCompany = tap(new Company(), function (Company $oldCompany) use ($company) {
+                $oldCompany->setRawAttributes($company->getRawOriginal());
+                $oldCompany->load(['addresses', 'contacts', 'vendors']);
+            });
+
             $contact->first_name = $contactData->first_name;
             $contact->last_name = $contactData->last_name;
             $contact->phone = $contactData->phone;
@@ -68,8 +56,7 @@ class CompanyEntityService
             $contact->is_verified = $contactData->is_verified;
 
             $this->connection->transaction(fn() => $contact->save());
-
-            // TODO: dispatch "company updated" event.
+            $this->eventDispatcher->dispatch(new CompanyUpdated(company: $company, oldCompany: $oldCompany));
         });
     }
 
@@ -113,12 +100,21 @@ class CompanyEntityService
                 // TODO: refactor image processing.
                 ThumbHelper::createLogoThumbnails($company, $companyData->logo);
             });
+
+            $this->eventDispatcher->dispatch(
+                new CompanyCreated(company: $company, causer: $this->causer)
+            );
         });
     }
 
     public function updateCompany(Company $company, UpdateCompanyData $companyData): Company
     {
         return tap($company, function (Company $company) use ($companyData) {
+            $oldCompany = tap(new Company(), function (Company $oldCompany) use ($company) {
+                $oldCompany->setRawAttributes($company->getRawOriginal());
+                $oldCompany->load(['addresses', 'contacts', 'vendors']);
+            });
+
             $company->name = $companyData->name;
             $company->vat = $companyData->vat;
             $company->vat_type = $companyData->vat_type;
@@ -163,7 +159,7 @@ class CompanyEntityService
             });
 
             $this->eventDispatcher->dispatch(
-                new CompanyUpdated($company)
+                new CompanyUpdated(company: $company, oldCompany: $oldCompany, causer: $this->causer)
             );
         });
     }
@@ -182,7 +178,7 @@ class CompanyEntityService
         $company->activated_at = null;
 
         $this->connection->transaction(function () use ($company) {
-           $company->save();
+            $company->save();
         });
     }
 
@@ -190,6 +186,17 @@ class CompanyEntityService
     {
         $this->connection->transaction(function () use ($company) {
             $company->delete();
+        });
+
+        $this->eventDispatcher->dispatch(
+            new CompanyDeleted(company: $company, causer: $this->causer)
+        );
+    }
+
+    public function setCauser(?Model $causer): static
+    {
+        return tap($this, function () use ($causer) {
+            $this->causer = $causer;
         });
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\RescueQuote\RescueQuoteFileExported;
 use App\Http\Resources\DownloadableQuoteFile;
 use App\Imports\CountPages as ExcelPagesCounter;
 use App\Models\Quote\Quote;
@@ -9,6 +10,7 @@ use App\Models\QuoteFile\DataSelectSeparator;
 use App\Models\QuoteFile\QuoteFile;
 use App\Models\QuoteFile\QuoteFileFormat;
 use App\Models\User;
+use Illuminate\Contracts\Events\Dispatcher as EventDispatcher;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
@@ -20,6 +22,10 @@ use ValueError;
 
 class QuoteFileService
 {
+    public function __construct(protected EventDispatcher $eventDispatcher)
+    {
+    }
+
     public function storeQuoteFile(UploadedFile $file, User $user, string $fileType): QuoteFile
     {
         $filePath = $file->store($user->quoteFilesDirectory);
@@ -56,7 +62,7 @@ class QuoteFileService
         if ($extension === 'pdf') {
             $details = (new PDFParser)->parseFile($filePath)->getDetails();
 
-            return (int) $details['Pages'];
+            return (int)$details['Pages'];
         }
 
         if (in_array($extension, ['xls', 'xlsx'])) {
@@ -64,7 +70,7 @@ class QuoteFileService
 
             Excel::import($import, $filePath);
 
-            return (int) $import->getSheetCount();
+            return (int)$import->getSheetCount();
         }
 
         if (in_array($extension, ['csv', 'txt', 'docx'])) {
@@ -80,7 +86,7 @@ class QuoteFileService
      * @param string $filePath
      * @return QuoteFileFormat|null
      */
-    public function determineFileFormat(string $filePath)
+    public function determineFileFormat(string $filePath): ?QuoteFileFormat
     {
         $extension = File::extension($filePath);
         $extensions = Arr::wrap($extension);
@@ -89,30 +95,30 @@ class QuoteFileService
             $extensions[] = 'csv';
         }
 
-        return QuoteFileFormat::whereIn('extension', $extensions)->first();
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
+        return QuoteFileFormat::query()->whereIn('extension', $extensions)->first();
     }
 
     public function downloadQuoteFile(Quote $quote, string $fileType): DownloadableQuoteFile
     {
-        $relation = [
+        $relation = match ($fileType) {
             'price' => 'priceList',
             'schedule' => 'paymentSchedule',
-        ][$fileType] ?? null;
+            default => throw new ValueError("Unsupported file type: $fileType"),
+        };
 
-        if (is_null($relation)) {
-            throw new ValueError("Unsupported file type: $fileType");
-        }
-
-        /** @var \App\Models\QuoteFile\QuoteFile|null */
+        /** @var QuoteFile|null */
         $quoteFile = $quote->activeVersionOrCurrent->getRelationValue($relation);
 
         if (is_null($quoteFile) || !$quoteFile->exists) {
             throw (new ModelNotFoundException)->setModel(QuoteFile::class);
         }
 
+        $this->eventDispatcher->dispatch(new RescueQuoteFileExported($quoteFile, $quote));
+
         return new DownloadableQuoteFile(
-            Storage::path($quoteFile->original_file_path),
-            $quoteFile->original_file_name
+            filePath: Storage::path($quoteFile->original_file_path),
+            fileName: $quoteFile->original_file_name
         );
     }
 }

@@ -74,7 +74,7 @@ class RescueQuoteAttachmentController extends Controller
     {
         $this->authorize('view', $quote);
 
-        $entityService->deleteAttachment($attachment);
+        $entityService->deleteAttachment($attachment, $quote);
 
         return response()->json(status: Response::HTTP_NO_CONTENT);
     }

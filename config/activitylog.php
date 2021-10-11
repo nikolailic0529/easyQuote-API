@@ -93,6 +93,7 @@ return [
         'copied',
         'retrieved',
         'submitted',
+        'exported',
         'unravel',
         'activated',
         'deactivated',

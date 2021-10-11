@@ -2,29 +2,28 @@
 
 namespace App\Events\Opportunity;
 
+use App\Contracts\WithCauserEntity;
 use App\Contracts\WithOpportunityEntity;
 use App\Models\Opportunity;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class OpportunityMarkedAsNotLost implements WithOpportunityEntity
+final class OpportunityMarkedAsNotLost implements WithOpportunityEntity, WithCauserEntity
 {
     use Dispatchable, SerializesModels;
 
-    private Opportunity $opportunity;
-
-    /**
-     * Create a new event instance.
-     *
-     * @param Opportunity $opportunity
-     */
-    public function __construct(Opportunity $opportunity)
+    public function __construct(private Opportunity $opportunity, private ?Model $causer)
     {
-        $this->opportunity = $opportunity;
     }
 
     public function getOpportunity(): Opportunity
     {
         return $this->opportunity;
+    }
+
+    public function getCauser(): ?Model
+    {
+        return $this->causer;
     }
 }

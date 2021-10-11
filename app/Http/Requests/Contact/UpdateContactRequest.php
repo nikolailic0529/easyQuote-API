@@ -2,8 +2,9 @@
 
 namespace App\Http\Requests\Contact;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\DTO\Contact\UpdateContactData;
 use App\Traits\Request\PreparesNullValues;
+use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateContactRequest extends FormRequest
 {
@@ -14,7 +15,7 @@ class UpdateContactRequest extends FormRequest
      *
      * @return array
      */
-    public function rules()
+    public function rules(): array
     {
         return [
             'contact_type' => 'required|string|in:Hardware,Software,Invoice',
@@ -25,7 +26,7 @@ class UpdateContactRequest extends FormRequest
             'email' => 'nullable|string|email',
             'job_title' => 'nullable|string',
             'picture' => 'nullable|file|image|max:2048',
-            'is_verified' => 'nullable|boolean'
+            'is_verified' => 'nullable|boolean',
         ];
     }
 
@@ -41,5 +42,20 @@ class UpdateContactRequest extends FormRequest
     protected function nullValues(): array
     {
         return ['phone', 'mobile', 'job_title', 'email', 'picture'];
+    }
+
+    public function getUpdateContactData(): UpdateContactData
+    {
+        return new UpdateContactData([
+            'contact_type' => $this->input('contact_type'),
+            'first_name' => $this->input('first_name'),
+            'last_name' => $this->input('last_name'),
+            'phone' => $this->input('phone'),
+            'mobile' => $this->input('mobile'),
+            'email' => $this->input('email'),
+            'job_title' => $this->input('job_title'),
+            'picture' => $this->file('picture'),
+            'is_verified' => $this->boolean('is_verified'),
+        ]);
     }
 }

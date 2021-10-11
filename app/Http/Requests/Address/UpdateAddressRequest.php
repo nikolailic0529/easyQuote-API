@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Address;
 
+use App\DTO\Address\UpdateAddressData;
 use App\Models\Address;
 use App\Traits\Request\PreparesNullValues;
 use Illuminate\Foundation\Http\FormRequest;
@@ -26,12 +27,26 @@ class UpdateAddressRequest extends FormRequest
             'state' => 'nullable|string|max:191',
             'state_code' => 'nullable|string|max:191',
             'post_code' => 'nullable|string|max:191',
-            'country_id' => 'required_without:country_code|string|uuid|exists:countries,id'
+            'country_id' => 'required_without:country_code|string|uuid|exists:countries,id',
         ];
     }
 
     protected function nullValues()
     {
         return ['address_2', 'city', 'state', 'post_code'];
+    }
+
+    public function getUpdateAddressData(): UpdateAddressData
+    {
+        return new UpdateAddressData([
+            'address_type' => $this->input('address_type'),
+            'address_1' => $this->input('address_1'),
+            'address_2' => $this->input('address_2'),
+            'city' => $this->input('city'),
+            'state' => $this->input('state'),
+            'state_code' => $this->input('state_code'),
+            'post_code' => $this->input('post_code'),
+            'country_id' => $this->input('country_id'),
+        ]);
     }
 }

@@ -14,24 +14,24 @@ class DocumentDataComparator
      *
      * @throws \App\Services\DocumentProcessor\Exceptions\DocumentComparisonException
      */
-    public function __invoke(QuoteFile $aQuoteFile, QuoteFile $bQuoteFile): QuoteFile
+    public function __invoke(QuoteFile $aFile, QuoteFile $bFile): QuoteFile
     {
-        if (false === $this->hasSameFileType($aQuoteFile, $bQuoteFile)) {
-            throw DocumentComparisonException::differentFileTypes($aQuoteFile, $bQuoteFile);
+        if (false === $this->hasSameFileType($aFile, $bFile)) {
+            throw DocumentComparisonException::differentFileTypes($aFile, $bFile);
         }
 
-        $result = $this->performDocumentsComparison($aQuoteFile, $bQuoteFile);
+        $result = $this->performDocumentsComparison($aFile, $bFile);
 
         if ($result < 1) {
-            return $aQuoteFile;
+            return $aFile;
         }
 
-        return $bQuoteFile;
+        return $bFile;
     }
 
-    protected function hasSameFileType(QuoteFile $aQuoteFile, QuoteFile $bQuoteFile): bool
+    protected function hasSameFileType(QuoteFile $aFile, QuoteFile $bFile): bool
     {
-        return $aQuoteFile->file_type === $bQuoteFile->file_type;
+        return $aFile->file_type === $bFile->file_type;
     }
 
     /**
@@ -41,25 +41,25 @@ class DocumentDataComparator
      *      0 means the data from the left & right documents are the same,
      *      1 means the data from the right document is more complete and truthful.
      *
-     * @param \App\Models\QuoteFile\QuoteFile $aQuoteFile
-     * @param \App\Models\QuoteFile\QuoteFile $bQuoteFile
+     * @param \App\Models\QuoteFile\QuoteFile $aFile
+     * @param \App\Models\QuoteFile\QuoteFile $bFile
      * @return int
      * @throws \App\Services\DocumentProcessor\Exceptions\DocumentComparisonException
      */
-    protected function performDocumentsComparison(QuoteFile $aQuoteFile, QuoteFile $bQuoteFile): int
+    protected function performDocumentsComparison(QuoteFile $aFile, QuoteFile $bFile): int
     {
-        $aDocumentData = $this->getComparableData($aQuoteFile);
-        $bDocumentData = $this->getComparableData($bQuoteFile);
+        $aDocumentData = $this->getComparableData($aFile);
+        $bDocumentData = $this->getComparableData($bFile);
 
-        if ($this->isPriceListDocument($aQuoteFile)) {
+        if ($this->isPriceListDocument($aFile)) {
             return $this->comparePriceListData($aDocumentData, $bDocumentData);
         }
 
-        if ($this->isPaymentScheduleDocument($aQuoteFile)) {
+        if ($this->isPaymentScheduleDocument($aFile)) {
             return $this->comparePaymentScheduleData($aDocumentData, $bDocumentData);
         }
 
-        throw DocumentComparisonException::unsupportedFileType($aQuoteFile);
+        throw DocumentComparisonException::unsupportedFileType($aFile);
     }
 
     /**

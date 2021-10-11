@@ -6,10 +6,18 @@ namespace App\Listeners;
 
 use App\Events\WorldwideQuote\WorldwideQuoteNoteCreated;
 use App\Notifications\WorldwideQuote\NoteCreated;
+use App\Services\Activity\ActivityLogger;
+use App\Services\Activity\ChangesDetector;
 use Illuminate\Support\Str;
 
 class NotifyNoteCreatedOnWorldwideQuote
 {
+
+    public function __construct(protected ActivityLogger $activityLogger)
+    {
+
+    }
+
     /**
      * Handle the event.
      *

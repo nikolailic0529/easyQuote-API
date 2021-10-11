@@ -15,6 +15,7 @@ use Illuminate\Support\Str;
 /**
  * Class Image
  * @property array|null $thumbnails
+ * @property string|null $original
  */
 class Image extends Model
 {

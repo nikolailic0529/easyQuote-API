@@ -12,19 +12,12 @@ use App\Jobs\IndexSearchableEntity;
 use App\Services\Activity\ActivityLogger;
 use App\Services\Activity\ChangesDetector;
 use Illuminate\Bus\Dispatcher;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
-class OpportunityEventAuditor implements ShouldQueue
+class OpportunityEventAuditor
 {
-    protected Dispatcher $dispatcher;
-
-    protected ActivityLogger $activityLogger;
-
-    protected ChangesDetector $changesDetector;
-
     protected static array $logModelAttributes = [
         'primaryAccount.name',
-        'primaryAccountContact.contact_name',
+        'primaryAccountContact.contact_representation',
         'accountManager.fullname',
         'project_name',
         'nature_of_service',
@@ -70,11 +63,10 @@ class OpportunityEventAuditor implements ShouldQueue
         'sale_action_name',
     ];
 
-    public function __construct(Dispatcher $dispatcher, ActivityLogger $activityLogger, ChangesDetector $changesDetector)
+    public function __construct(protected Dispatcher      $dispatcher,
+                                protected ActivityLogger  $activityLogger,
+                                protected ChangesDetector $changesDetector)
     {
-        $this->dispatcher = $dispatcher;
-        $this->activityLogger = $activityLogger;
-        $this->changesDetector = $changesDetector;
     }
 
     /**
@@ -110,7 +102,7 @@ class OpportunityEventAuditor implements ShouldQueue
                 ChangesDetector::NEW_ATTRS_KEY => [
                     'status' => 'Lost',
                     'status_reason' => $opportunity->status_reason,
-                ]
+                ],
             ])
             ->log('updated');
     }
@@ -127,7 +119,7 @@ class OpportunityEventAuditor implements ShouldQueue
                 ],
                 ChangesDetector::NEW_ATTRS_KEY => [
                     'status' => 'Not Lost',
-                ]
+                ],
             ])
             ->log('updated');
     }
@@ -138,6 +130,7 @@ class OpportunityEventAuditor implements ShouldQueue
 
         $this->activityLogger
             ->performedOn($opportunity)
+            ->by($event->getCauser())
             ->withProperties(
                 $this->changesDetector->getAttributeValuesToBeLogged(
                     $opportunity, static::$logModelAttributes)
@@ -154,9 +147,9 @@ class OpportunityEventAuditor implements ShouldQueue
         with($event, function (OpportunityUpdated $event) {
             $opportunity = $event->getOpportunity();
             $oldOpportunity = $event->getOldOpportunity();
-
             $this->activityLogger
                 ->performedOn($opportunity)
+                ->by($event->getCauser())
                 ->withProperties(
                     $this->changesDetector->getAttributeValuesToBeLogged(
                         $opportunity, static::$logModelAttributes,
@@ -177,6 +170,7 @@ class OpportunityEventAuditor implements ShouldQueue
 
         $this->activityLogger
             ->performedOn($opportunity)
+            ->by($event->getCauser())
             ->log('deleted');
     }
 }

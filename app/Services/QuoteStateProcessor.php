@@ -790,14 +790,14 @@ class QuoteStateProcessor implements QuoteState
                     $note->save();
                 });
 
-            } elseif (trim(strip_tags((string)$replicatedVersion->additional_details)) !== '') {
+            } elseif (trim(strip_tags((string)$replicatedVersion->additional_notes)) !== '') {
 
                 tap(new QuoteNote(), function (QuoteNote $note) use ($parent, $user, $replicatedVersion) {
                     $note->{$note->getKeyName()} = (string)Uuid::generate(4);
                     $note->quote()->associate($parent);
                     $note->quoteVersion()->associate($replicatedVersion);
                     $note->user()->associate($user);
-                    $note->text = $replicatedVersion->additional_details;
+                    $note->text = $replicatedVersion->additional_notes;
 
                     $note->save();
                 });
@@ -956,7 +956,7 @@ class QuoteStateProcessor implements QuoteState
 
     protected function updateQuoteNote(Collection $state, Quote $quote, BaseQuote $version): void
     {
-        if (false === array_key_exists('additional_details', $state->get('quote_data', []))) {
+        if (false === array_key_exists('additional_notes', $state->get('quote_data', []))) {
             return;
         }
 
@@ -973,7 +973,7 @@ class QuoteStateProcessor implements QuoteState
                 $note->quoteVersion()->associate($version);
             }
 
-            $note->text = $version->additional_details;
+            $note->text = $version->additional_notes;
             $note->is_from_quote = true;
         });
 

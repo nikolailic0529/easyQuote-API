@@ -230,6 +230,6 @@ class SalesOrderController extends Controller
         $quoteExportData = $quoteDataMapper->mapWorldwideQuotePreviewDataForExport($salesOrder->worldwideQuote);
         $orderExportData = $salesOrderDataMapper->mapWorldwideQuotePreviewDataAsSalesOrderPreviewData($salesOrder, $quoteExportData);
 
-        return $exporter->export($orderExportData);
+        return $exporter->export($orderExportData, $salesOrder);
     }
 }

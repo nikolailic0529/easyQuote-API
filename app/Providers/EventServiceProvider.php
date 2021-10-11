@@ -8,7 +8,12 @@ use App\Events\{Company\CompanyUpdated,
     Permission\GrantedModulePermission,
     RfqReceived,
     WorldwideQuote\WorldwideQuoteNoteCreated};
-use App\Listeners\{DocumentMappingSyncSubscriber,
+use App\Listeners\{AddressEventAuditor,
+    AttachmentEventAuditor,
+    CompanyEventAuditor,
+    CompanyNoteAuditor,
+    ContactEventAuditor,
+    DocumentMappingSyncSubscriber,
     ExchangeRatesListener,
     ImportableColumnEventAuditor,
     LogSentMessage,
@@ -19,7 +24,7 @@ use App\Listeners\{DocumentMappingSyncSubscriber,
     PipelineEventAuditor,
     RescueQuoteEventAuditor,
     RfqReceivedListener,
-    SalesOrderEventSubscriber,
+    SalesOrderEventAuditor,
     StatsDependentEntityEventSubscriber,
     SyncOpportunityPrimaryAccountContacts,
     SyncWorldwideContractQuoteWithOpportunityData,
@@ -70,7 +75,7 @@ class EventServiceProvider extends ServiceProvider
 
         CompanyUpdated::class => [
             SyncOpportunityPrimaryAccountContacts::class,
-        ]
+        ],
     ];
 
     /**
@@ -84,7 +89,7 @@ class EventServiceProvider extends ServiceProvider
 
         OpportunityEventAuditor::class,
 
-        SalesOrderEventSubscriber::class,
+        SalesOrderEventAuditor::class,
 
         TeamEventSubscriber::class,
 
@@ -101,6 +106,16 @@ class EventServiceProvider extends ServiceProvider
         ImportableColumnEventAuditor::class,
 
         DocumentMappingSyncSubscriber::class,
+
+        AttachmentEventAuditor::class,
+
+        CompanyNoteAuditor::class,
+
+        AddressEventAuditor::class,
+
+        ContactEventAuditor::class,
+
+        CompanyEventAuditor::class,
 
     ];
 

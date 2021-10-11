@@ -44,7 +44,6 @@ use Illuminate\Database\{ConnectionInterface,
     Eloquent\Collection,
     Eloquent\ModelNotFoundException,
     Eloquent\Relations\MorphToMany};
-use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\{Arr, Carbon, Collection as BaseCollection, Facades\App, Facades\Storage, MessageBag, Str};
 use Psr\Log\LoggerInterface;
@@ -66,50 +65,20 @@ use function with;
 
 class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistributionState
 {
-    protected LoggerInterface $logger;
-
-    protected ConnectionInterface $connection;
-
-    protected LockProvider $lockProvider;
-
-    /** @var Filesystem|FilesystemAdapter */
-    protected Filesystem $storage;
-
-    protected Config $config;
-
-    protected Dispatcher $dispatcher;
-
-    protected ValidatorInterface $validator;
-
-    protected ManagesDocumentProcessors $documentProcessor;
-
-    protected ManagesExchangeRates $exchangeRateService;
-
-    protected WorldwideDistributionQueries $distributionQueries;
-
     public function __construct(
-        LoggerInterface $logger,
-        ConnectionInterface $connection,
-        LockProvider $lockProvider,
-        Filesystem $storage,
-        Config $config,
-        Dispatcher $dispatcher,
-        ValidatorInterface $validator,
-        ManagesDocumentProcessors $documentProcessor,
-        ManagesExchangeRates $exchangeRateService,
-        WorldwideDistributionQueries $distributionQueries
+        protected LoggerInterface              $logger,
+        protected ConnectionInterface          $connection,
+        protected LockProvider                 $lockProvider,
+        protected Filesystem                   $storage,
+        protected Config                       $config,
+        protected Dispatcher                   $dispatcher,
+        protected ValidatorInterface           $validator,
+        protected QuoteFileService             $quoteFileService,
+        protected ManagesDocumentProcessors    $documentProcessor,
+        protected ManagesExchangeRates         $exchangeRateService,
+        protected WorldwideDistributionQueries $distributionQueries
     )
     {
-        $this->logger = $logger;
-        $this->connection = $connection;
-        $this->lockProvider = $lockProvider;
-        $this->storage = $storage;
-        $this->config = $config;
-        $this->dispatcher = $dispatcher;
-        $this->validator = $validator;
-        $this->documentProcessor = $documentProcessor;
-        $this->exchangeRateService = $exchangeRateService;
-        $this->distributionQueries = $distributionQueries;
     }
 
     public function initializeDistribution(WorldwideQuoteVersion $quote, ?string $opportunitySupplierId = null): WorldwideDistribution
@@ -118,12 +87,12 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
 
         $constraints = new Constraints\Collection([
             'worldwideQuoteId' => new Constraints\Uuid(),
-            'opportunitySupplierId' => new Constraints\Uuid()
+            'opportunitySupplierId' => new Constraints\Uuid(),
         ]);
 
         $violations = $this->validator->validate($payload = [
             'worldwideQuoteId' => $quote->getKey(),
-            'opportunitySupplierId' => $opportunitySupplierId
+            'opportunitySupplierId' => $opportunitySupplierId,
         ], $constraints);
 
         if (count($violations)) {
@@ -408,7 +377,7 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
             ->reduce(function (array $quoteFileCollection, WorldwideDistribution $distributorQuote) use ($newVersionResolved) {
                 $distributorQuoteFiles = collect([
                     $distributorQuote->distributorFile,
-                    $distributorQuote->scheduleFile
+                    $distributorQuote->scheduleFile,
                 ])->filter()->values();
 
                 if ($newVersionResolved) {
@@ -645,7 +614,7 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
 
             if (!is_null($possibleMapping)) {
                 $guessedMapping[$possibleMapping->template_field_id] = [
-                    'importable_column_id' => $columnKey
+                    'importable_column_id' => $columnKey,
                 ];
             }
         }
@@ -861,7 +830,7 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
             'is_default_enabled',
             'is_preview_visible',
             'is_editable',
-            'sort'
+            'sort',
         ];
 
         foreach ($pairIterator($originalMappingDictionary, $newMappingDictionary) as $key => $pair) {
@@ -875,7 +844,7 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
                 if ($originalColumnMapping->{$attribute} <> $newColumnMapping->{$attribute}) {
                     $changes[$key][$attribute] = [
                         'original' => $originalColumnMapping->{$attribute},
-                        'new' => $newColumnMapping->{$attribute}
+                        'new' => $newColumnMapping->{$attribute},
                     ];
                 }
 
@@ -1073,9 +1042,9 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
             if ($newVersionResolved) {
 
                 return $distribution->mappedRows()
-                        ->whereIn('replicated_mapped_row_id', $data->rows)
-                        ->pluck($distribution->mappedRows()->getRelated()->getQualifiedKeyName())
-                        ->all();
+                    ->whereIn('replicated_mapped_row_id', $data->rows)
+                    ->pluck($distribution->mappedRows()->getRelated()->getQualifiedKeyName())
+                    ->all();
 
             }
 
@@ -1382,11 +1351,9 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
 
         $fileName = $this->storage->put($worldwideDistribution->getKey(), $file);
 
-        $fileService = (new QuoteFileService);
+        $pagesCount = $this->quoteFileService->countPages($this->storage->path($fileName));
 
-        $pagesCount = $fileService->countPages($this->storage->path($fileName));
-
-        $quoteFileFormat = $fileService->determineFileFormat($file->getClientOriginalName());
+        $quoteFileFormat = $this->quoteFileService->determineFileFormat($file->getClientOriginalName());
 
         $filePath = Str::after($this->storage->path($fileName), Storage::path(''));
 
@@ -1450,11 +1417,9 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
 
         $fileName = $this->storage->put($worldwideDistribution->getKey(), $file);
 
-        $fileService = (new QuoteFileService);
+        $pagesCount = $this->quoteFileService->countPages($this->storage->path($fileName));
 
-        $pagesCount = $fileService->countPages($this->storage->path($fileName));
-
-        $quoteFileFormat = $fileService->determineFileFormat($file->getClientOriginalName());
+        $quoteFileFormat = $this->quoteFileService->determineFileFormat($file->getClientOriginalName());
 
         $filePath = Str::after($this->storage->path($fileName), Storage::path(''));
 

@@ -4,17 +4,17 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Opportunities\BatchUpload;
-use App\Services\Opportunity\OpportunityAggregateService;
 use App\Http\Requests\Opportunity\{BatchSave,
     CreateOpportunity,
     MarkOpportunityAsLost,
     PaginateOpportunities,
     UpdateOpportunity};
-use App\Http\Resources\Opportunity\OpportunityWithIncludes;
 use App\Http\Resources\Opportunity\OpportunityList;
+use App\Http\Resources\Opportunity\OpportunityWithIncludes;
 use App\Models\Opportunity;
 use App\Queries\OpportunityQueries;
 use App\Services\Exceptions\ValidationException;
+use App\Services\Opportunity\OpportunityAggregateService;
 use App\Services\Opportunity\OpportunityEntityService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\{JsonResponse, Request, Resources\Json\AnonymousResourceCollection, Response};
@@ -103,9 +103,11 @@ class OpportunityController extends Controller
     {
         $this->authorize('create', Opportunity::class);
 
-        $resource = $service->createOpportunity(
-            $request->getOpportunityData()
-        );
+        $resource = $service
+            ->setCauser($request->user())
+            ->createOpportunity(
+                $request->getOpportunityData()
+            );
 
         return response()->json(
             OpportunityWithIncludes::make($resource),
@@ -163,14 +165,18 @@ class OpportunityController extends Controller
      * @throws AuthorizationException
      * @throws \Throwable
      */
-    public function updateOpportunity(UpdateOpportunity $request, Opportunity $opportunity, OpportunityEntityService $service): JsonResponse
+    public function updateOpportunity(UpdateOpportunity        $request,
+                                      OpportunityEntityService $service,
+                                      Opportunity              $opportunity): JsonResponse
     {
         $this->authorize('update', $opportunity);
 
-        $resource = $service->updateOpportunity(
-            $opportunity,
-            $request->getOpportunityData()
-        );
+        $resource = $service
+            ->setCauser($request->user())
+            ->updateOpportunity(
+                $opportunity,
+                $request->getOpportunityData()
+            );
 
         return response()->json(
             OpportunityWithIncludes::make($resource),
@@ -181,16 +187,21 @@ class OpportunityController extends Controller
     /**
      * Delete the specified opportunity.
      *
+     * @param Request $request
      * @param Opportunity $opportunity
      * @param OpportunityEntityService $service
      * @return Response
      * @throws AuthorizationException
      */
-    public function destroyOpportunity(Opportunity $opportunity, OpportunityEntityService $service): Response
+    public function destroyOpportunity(Request                  $request,
+                                       OpportunityEntityService $service,
+                                       Opportunity              $opportunity): Response
     {
         $this->authorize('delete', $opportunity);
 
-        $service->deleteOpportunity($opportunity);
+        $service
+            ->setCauser($request->user())
+            ->deleteOpportunity($opportunity);
 
         return response()->noContent();
     }
@@ -204,11 +215,15 @@ class OpportunityController extends Controller
      * @return Response
      * @throws AuthorizationException
      */
-    public function markOpportunityAsLost(MarkOpportunityAsLost $request, Opportunity $opportunity, OpportunityEntityService $service): Response
+    public function markOpportunityAsLost(MarkOpportunityAsLost    $request,
+                                          OpportunityEntityService $service,
+                                          Opportunity              $opportunity): Response
     {
         $this->authorize('update', $opportunity);
 
-        $service->markOpportunityAsLost($opportunity, $request->getMarkOpportunityAsLostData());
+        $service
+            ->setCauser($request->user())
+            ->markOpportunityAsLost($opportunity, $request->getMarkOpportunityAsLostData());
 
         return response()->noContent();
     }
@@ -216,16 +231,21 @@ class OpportunityController extends Controller
     /**
      * Mark the specified opportunity as not lost.
      *
+     * @param Request $request
      * @param Opportunity $opportunity
      * @param OpportunityEntityService $service
      * @return Response
      * @throws AuthorizationException
      */
-    public function markOpportunityAsNotLost(Opportunity $opportunity, OpportunityEntityService $service): Response
+    public function markOpportunityAsNotLost(Request                  $request,
+                                             OpportunityEntityService $service,
+                                             Opportunity              $opportunity): Response
     {
         $this->authorize('update', $opportunity);
 
-        $service->markOpportunityAsNotLost($opportunity);
+        $service
+            ->setCauser($request->user())
+            ->markOpportunityAsNotLost($opportunity);
 
         return response()->noContent();
     }

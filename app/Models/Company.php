@@ -7,7 +7,6 @@ use App\Models\{Data\Country, Quote\WorldwideQuote, Template\QuoteTemplate};
 use App\Models\Customer\CustomerTotal;
 use App\Services\ThumbHelper;
 use App\Traits\{Activatable,
-    Activity\LogsActivity,
     Auth\Multitenantable,
     BelongsToAddresses,
     BelongsToContacts,
@@ -55,6 +54,7 @@ use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
  * @property-read Collection<WorldwideQuote>|WorldwideQuote[] $worldwideQuotes
  * @property-read Collection<CompanyNote>|CompanyNote[] $companyNotes
  * @property-read Collection<Vendor>|Vendor[] $vendors
+ * @property-read Collection<Country>|Country[] $countries
  */
 class Company extends Model implements HasImagesDirectory, WithLogo, ActivatableInterface, HasOrderedScope, SearchableEntity
 {
@@ -69,21 +69,12 @@ class Company extends Model implements HasImagesDirectory, WithLogo, Activatable
         Systemable,
         HasQuoteTemplates,
         HasQuotes,
-        LogsActivity,
         SoftDeletes,
         HasRelationships;
 
     protected $fillable = [
         'name', 'short_code', 'type', 'category', 'source', 'vat', 'email', 'website', 'phone', 'default_vendor_id', 'default_country_id', 'default_template_id',
     ];
-
-    protected static array $logAttributes = [
-        'name', 'category', 'vat', 'type', 'email', 'category', 'website', 'phone', 'defaultVendor.name', 'defaultCountry.name', 'defaultTemplate.name',
-    ];
-
-    protected static bool $logOnlyDirty = true;
-
-    protected static bool $submitEmptyLogs = false;
 
     public function vendors(): BelongsToMany
     {

@@ -7,10 +7,15 @@ use App\DTO\Template\TemplateElementChildControl;
 use App\DTO\WorldwideQuote\Export\TemplateData;
 use App\DTO\WorldwideQuote\Export\WorldwideDistributionData;
 use App\DTO\WorldwideQuote\Export\WorldwideQuotePreviewData;
+use App\Events\SalesOrder\SalesOrderExported;
+use App\Events\WorldwideQuote\WorldwideQuoteExported;
+use App\Models\Quote\WorldwideQuote;
+use App\Models\SalesOrder;
 use App\Services\Exceptions\ValidationException;
 use Barryvdh\Snappy\PdfWrapper;
 use Illuminate\Contracts\View\Factory as ViewFactory;
 use Illuminate\Contracts\View\View;
+use Illuminate\Events\Dispatcher;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -18,24 +23,26 @@ use function with;
 
 class WorldwideQuoteExporter
 {
-    protected PdfWrapper $pdfWrapper;
 
-    protected ViewFactory $viewFactory;
-
-    protected ValidatorInterface $validator;
-
-    public function __construct(PdfWrapper $pdfWrapper, ViewFactory $viewFactory, ValidatorInterface $validator)
+    public function __construct(protected PdfWrapper         $pdfWrapper,
+                                protected ViewFactory        $viewFactory,
+                                protected ValidatorInterface $validator,
+                                protected Dispatcher         $eventDispatcher)
     {
-        $this->pdfWrapper = $pdfWrapper;
-        $this->viewFactory = $viewFactory;
-        $this->validator = $validator;
     }
 
-    public function export(WorldwideQuotePreviewData $previewData): Response
+    public function export(WorldwideQuotePreviewData $previewData, WorldwideQuote|SalesOrder $exportedEntity): Response
     {
         $this->mapTemplateDataControls($previewData);
 
         $rfqNumber = $previewData->quote_summary->export_file_name;
+
+        $event = match ($exportedEntity::class) {
+            WorldwideQuote::class => new WorldwideQuoteExported($exportedEntity),
+            SalesOrder::class => new SalesOrderExported($exportedEntity),
+        };
+
+        $this->eventDispatcher->dispatch($event);
 
         return $this->pdfWrapper
             ->loadView(
@@ -76,7 +83,7 @@ class WorldwideQuoteExporter
     {
         $templateData = $previewData->template_data;
 
-        $controlMapper = function (TemplateElementChildControl $control) use ($templateData, $previewData) : void {
+        $controlMapper = function (TemplateElementChildControl $control) use ($templateData, $previewData): void {
             switch ($control->type) {
 
                 case 'img':
@@ -94,7 +101,7 @@ class WorldwideQuoteExporter
                     if (Str::startsWith($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
                         $control->value = $this->viewFactory->make('ww-quotes.components.images_row', [
                             'class' => $control->class,
-                            'images' => $templateData->template_assets->{$control->id}
+                            'images' => $templateData->template_assets->{$control->id},
                         ])->render();
                     } elseif ($control->id === 'quote_data_aggregation') {
                         $control->value = $this->viewFactory->make('ww-quotes.components.quote_data_aggregation', [
@@ -112,7 +119,7 @@ class WorldwideQuoteExporter
             }
         };
 
-        $distributorQuoteControlMapper = function (TemplateElementChildControl $control, WorldwideDistributionData $distributorQuoteData) use ($templateData, $previewData) : void {
+        $distributorQuoteControlMapper = function (TemplateElementChildControl $control, WorldwideDistributionData $distributorQuoteData) use ($templateData, $previewData): void {
             switch ($control->type) {
 
                 case 'img':
@@ -130,7 +137,7 @@ class WorldwideQuoteExporter
                     if (Str::startsWith($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
                         $control->value = $this->viewFactory->make('ww-quotes.components.images_row', [
                             'class' => $control->class,
-                            'images' => $templateData->template_assets->{$control->id}
+                            'images' => $templateData->template_assets->{$control->id},
                         ])->render();
                     } elseif ($control->id === 'quote_data_aggregation') {
                         $control->value = $this->viewFactory->make('ww-quotes.components.quote_data_aggregation', [
@@ -220,7 +227,7 @@ class WorldwideQuoteExporter
             $distributionAssetsSchema[] = new TemplateElement([
                 'children' => [],
                 'class' => 'page-break',
-                'css' => ''
+                'css' => '',
             ]);
 
             $assetsPageSchema = array_merge($assetsPageSchema, $distributionAssetsSchema);
@@ -302,7 +309,7 @@ class WorldwideQuoteExporter
     {
         $templateData = $previewData->template_data;
 
-        $controlMapper = function (TemplateElementChildControl $control) use ($templateData, $previewData) : void {
+        $controlMapper = function (TemplateElementChildControl $control) use ($templateData, $previewData): void {
             switch ($control->type) {
 
                 case 'img':
@@ -320,7 +327,7 @@ class WorldwideQuoteExporter
                     if (Str::startsWith($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
                         $control->value = $this->viewFactory->make('ww-quotes.components.images_row', [
                             'class' => $control->class,
-                            'images' => $templateData->template_assets->{$control->id}
+                            'images' => $templateData->template_assets->{$control->id},
                         ])->render();
                     } elseif ($control->id === 'quote_data_aggregation') {
                         $control->value = $this->viewFactory->make('ww-quotes.components.quote_data_aggregation', [
@@ -354,8 +361,8 @@ class WorldwideQuoteExporter
             $assetsElement = with(true, function () use ($previewData) {
 
                 $assetsViewName = $previewData->pack_assets_are_grouped
-                        ? 'ww-quotes.components.grouped_pack_assets'
-                        : 'ww-quotes.components.pack_assets';
+                    ? 'ww-quotes.components.grouped_pack_assets'
+                    : 'ww-quotes.components.pack_assets';
 
                 $assetsView = $this->viewFactory->make(
                     $assetsViewName,

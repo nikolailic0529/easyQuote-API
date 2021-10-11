@@ -51,7 +51,7 @@ class CompanyController extends Controller
      * @param \App\Http\Requests\Company\PaginateCompanies $request
      * @param \App\Queries\CompanyQueries $queries
      * @return CompanyCollection
-     * @throws \Illuminate\Auth\Access\AuthorizationException
+     * @throws AuthorizationException
      */
     public function paginateCompanies(PaginateCompanies $request, CompanyQueries $queries): CompanyCollection
     {
@@ -140,14 +140,16 @@ class CompanyController extends Controller
      * @param StoreCompanyRequest $request
      * @param CompanyEntityService $service
      * @return JsonResponse
-     * @throws \Illuminate\Auth\Access\AuthorizationException
+     * @throws AuthorizationException
      */
     public function storeCompany(StoreCompanyRequest  $request,
                                  CompanyEntityService $service): JsonResponse
     {
         $this->authorize('create', Company::class);
 
-        $resource = $service->createCompany($request->getCreateCompanyData());
+        $resource = $service
+            ->setCauser($request->user())
+            ->createCompany($request->getCreateCompanyData());
 
         return response()->json(
             data: UpdatedCompany::make($resource),
@@ -160,7 +162,7 @@ class CompanyController extends Controller
      *
      * @param Company $company
      * @return JsonResponse
-     * @throws \Illuminate\Auth\Access\AuthorizationException
+     * @throws AuthorizationException
      */
     public function showCompany(Company $company): JsonResponse
     {
@@ -289,7 +291,7 @@ class CompanyController extends Controller
      * @param Company $company
      * @param CompanyEntityService $service
      * @return JsonResponse
-     * @throws \Illuminate\Auth\Access\AuthorizationException
+     * @throws AuthorizationException
      */
     public function updateCompany(UpdateCompanyRequest $request,
                                   CompanyEntityService $service,
@@ -297,7 +299,9 @@ class CompanyController extends Controller
     {
         $this->authorize('update', $company);
 
-        $resource = $service->updateCompany($company, $request->getUpdateCompanyData());
+        $resource = $service
+            ->setCauser($request->user())
+            ->updateCompany($company, $request->getUpdateCompanyData());
 
         return response()->json(
             UpdatedCompany::make($resource),
@@ -322,7 +326,9 @@ class CompanyController extends Controller
     {
         $this->authorize('update', $company);
 
-        $result = $service->updateCompanyContact($company, $contact, $request->getUpdateContactData());
+        $result = $service
+            ->setCauser($request->user())
+            ->updateCompanyContact($company, $contact, $request->getUpdateContactData());
 
         return response()->json(
             data: $result,
@@ -394,7 +400,7 @@ class CompanyController extends Controller
     {
         $this->authorize('view', $company);
 
-        $entityService->deleteAttachment($attachment);
+        $entityService->deleteAttachment($attachment, $company);
 
         return response()->json(status: Response::HTTP_NO_CONTENT);
     }
@@ -402,16 +408,21 @@ class CompanyController extends Controller
     /**
      * Remove the specified Company from storage.
      *
-     * @param Company $company
+     * @param Request $request
      * @param CompanyEntityService $service
+     * @param Company $company
      * @return JsonResponse
-     * @throws \Illuminate\Auth\Access\AuthorizationException
+     * @throws AuthorizationException
      */
-    public function destroyCompany(CompanyEntityService $service, Company $company): JsonResponse
+    public function destroyCompany(Request              $request,
+                                   CompanyEntityService $service,
+                                   Company              $company): JsonResponse
     {
         $this->authorize('delete', $company);
 
-        $service->deleteCompany($company);
+        $service
+            ->setCauser($request->user())
+            ->deleteCompany($company);
 
         return response()->json(
             data: true,
@@ -427,11 +438,15 @@ class CompanyController extends Controller
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function markAsActiveCompany(CompanyEntityService $service, Company $company): JsonResponse
+    public function markAsActiveCompany(Request              $request,
+                                        CompanyEntityService $service,
+                                        Company              $company): JsonResponse
     {
         $this->authorize('update', $company);
 
-        $service->markCompanyAsActive($company);
+        $service
+            ->setCauser($request->user())
+            ->markCompanyAsActive($company);
 
         return response()->json(
             data: true,
@@ -442,16 +457,21 @@ class CompanyController extends Controller
     /**
      * Deactivate the specified Company from storage.
      *
-     * @param Company $company
+     * @param Request $request
      * @param CompanyEntityService $service
+     * @param Company $company
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function markAsInactiveCompany(CompanyEntityService $service, Company $company): JsonResponse
+    public function markAsInactiveCompany(Request              $request,
+                                          CompanyEntityService $service,
+                                          Company              $company): JsonResponse
     {
         $this->authorize('update', $company);
 
-        $service->markCompanyAsInactive($company);
+        $service
+            ->setCauser($request->user())
+            ->markCompanyAsInactive($company);
 
         return response()->json(
             data: true,

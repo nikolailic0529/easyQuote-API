@@ -48,7 +48,7 @@ abstract class ParsingTest extends TestCase
                 'original_file_path'   => $file->getFilename(),
                 'quote_file_format_id' => $this->determineFileFormat($file),
                 'file_type'            => $this->filesType(),
-                'pages'                => (new QuoteFileService)->countPages($file->getRealPath()),
+                'pages'                => $this->app[QuoteFileService::class]->countPages($file->getRealPath()),
                 'imported_page'        => $this->getMappingAttribute('page', $file->getFilename()),
                 'original_file_name'   => $file->getFilename(),
             ]))->save();

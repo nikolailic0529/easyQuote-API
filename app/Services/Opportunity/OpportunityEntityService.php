@@ -2,6 +2,7 @@
 
 namespace App\Services\Opportunity;
 
+use App\Contracts\CauserAware;
 use App\DTO\{Opportunity\BatchOpportunityUploadResult,
     Opportunity\BatchSaveOpportunitiesData,
     Opportunity\CreateOpportunityData,
@@ -51,11 +52,13 @@ use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Webpatser\Uuid\Uuid;
 
-class OpportunityEntityService
+class OpportunityEntityService implements CauserAware
 {
     const DEFAULT_OPP_TYPE = CT_PACK;
 
     const DEFAULT_PL_ID = PL_WWDP;
+
+    protected ?Model $causer = null;
 
     private array $accountOwnerCache = [];
     private array $countryNameOfSupplierCache = [];
@@ -83,7 +86,7 @@ class OpportunityEntityService
             $this->connection->transaction(fn() => $opportunity->restore());
 
             $this->eventDispatcher->dispatch(
-                new OpportunityCreated($opportunity)
+                new OpportunityCreated($opportunity, $this->causer)
             );
 
         }
@@ -809,7 +812,7 @@ class OpportunityEntityService
             });
 
             $this->eventDispatcher->dispatch(
-                new OpportunityCreated($opportunity)
+                new OpportunityCreated($opportunity, $this->causer)
             );
 
         });
@@ -969,7 +972,7 @@ class OpportunityEntityService
             });
 
             $this->eventDispatcher->dispatch(
-                new OpportunityUpdated($opportunity, $oldOpportunity),
+                new OpportunityUpdated($opportunity, $oldOpportunity, $this->causer),
             );
         });
     }
@@ -991,7 +994,7 @@ class OpportunityEntityService
         });
 
         $this->eventDispatcher->dispatch(
-            new OpportunityDeleted($opportunity)
+            new OpportunityDeleted($opportunity, $this->causer)
         );
     }
 
@@ -1022,7 +1025,7 @@ class OpportunityEntityService
         });
 
         $this->eventDispatcher->dispatch(
-            new OpportunityMarkedAsLost($opportunity)
+            new OpportunityMarkedAsLost($opportunity, $this->causer)
         );
     }
 
@@ -1043,7 +1046,7 @@ class OpportunityEntityService
         });
 
         $this->eventDispatcher->dispatch(
-            new OpportunityMarkedAsNotLost($opportunity)
+            new OpportunityMarkedAsNotLost($opportunity, $this->causer)
         );
     }
 
@@ -1063,5 +1066,12 @@ class OpportunityEntityService
                     ->where($primaryAccount->contacts()->getQualifiedForeignPivotKeyName(), $primaryAccount->getKey());
             })
             ->update([$opportunityModel->primaryAccountContact()->getForeignKeyName() => null]);
+    }
+
+    public function setCauser(?Model $causer): static
+    {
+        return tap($this, function () use ($causer) {
+            $this->causer = $causer;
+        });
     }
 }

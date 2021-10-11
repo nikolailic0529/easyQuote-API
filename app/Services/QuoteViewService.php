@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Collections\MappedRows;
-use App\Contracts\Repositories\Quote\QuoteSubmittedRepositoryInterface;
 use App\Contracts\Services\QuoteView;
+use App\Events\RescueQuote\RescueQuoteExported;
 use App\Http\Resources\QuoteResource;
 use App\Models\{Company,
     Quote\BaseQuote,
@@ -17,8 +17,8 @@ use App\Models\{Company,
 use App\Queries\QuoteQueries;
 use App\Repositories\Concerns\FetchesGroupDescription;
 use App\Services\RescueQuote\RescueQuoteCalc;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Contracts\View\View;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Response;
@@ -32,8 +32,9 @@ class QuoteViewService implements QuoteView
 
     use FetchesGroupDescription;
 
-    public function __construct(protected QuoteQueries $quoteQueries,
-                                protected RescueQuoteCalc $rescueQuoteCalc)
+    public function __construct(protected QuoteQueries    $quoteQueries,
+                                protected RescueQuoteCalc $rescueQuoteCalc,
+                                protected Dispatcher      $eventDispatcher)
     {
     }
 
@@ -45,7 +46,7 @@ class QuoteViewService implements QuoteView
                 ->quoteByRfqNumberQuery($rfqNumber)
                 ->sole();
         } catch (ModelNotFoundException) {
-            error_abort( EQ_NF_01, 'EQ_NF_01', 422);
+            error_abort(EQ_NF_01, 'EQ_NF_01', 422);
         }
 
         return tap($quote->activeVersionOrCurrent, function (BaseQuote $version) use ($quote) {
@@ -270,9 +271,11 @@ class QuoteViewService implements QuoteView
 
         $filename = $this->makePdfFilename($quote);
 
-        return app('snappy.pdf.wrapper')
+        return tap(app('snappy.pdf.wrapper')
             ->loadView(self::QUOTE_EXPORT_VIEW, $export)
-            ->download($filename);
+            ->download($filename), function () use ($type, $quote) {
+            $this->eventDispatcher->dispatch(new RescueQuoteExported($quote, $type));
+        });
     }
 
     public function buildView(BaseQuote $quote, int $type = QT_TYPE_QUOTE): View
@@ -322,7 +325,7 @@ class QuoteViewService implements QuoteView
             // if custom discount is applied, then calculate paymentCoef with final value
             $customDiscountValue = (float)$quote->custom_discount;
             if ($customDiscountValue > 0.0) {
-                $paymentCoef = ($quote->finalTotalPrice / $totalPaymentsValue);   
+                $paymentCoef = ($quote->finalTotalPrice / $totalPaymentsValue);
             }
         } else {
             $paymentCoef = 0.0;
@@ -475,7 +478,7 @@ class QuoteViewService implements QuoteView
     public function setCauser(?Model $causer): static
     {
         return tap($this, function () use ($causer) {
-           $this->causer = $causer;
+            $this->causer = $causer;
         });
     }
 }

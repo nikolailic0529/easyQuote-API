@@ -23,6 +23,8 @@ use Intervention\Image\ImageManagerStatic;
  * @property string|null $job_title
  * @property bool|null $is_verified
  * @property bool|null $is_default
+ *
+ * @property-read string $contact_representation
  */
 class Contact extends Model implements HasImagesDirectory, SearchableEntity
 {
@@ -121,5 +123,19 @@ class Contact extends Model implements HasImagesDirectory, SearchableEntity
         }
 
         return asset('storage/'.$this->image->original_image);
+    }
+
+    public function getContactRepresentationAttribute(): string
+    {
+        return sprintf("ContactType=`%s` JobTitle=`%s` FirstName=`%s` LastName=`%s` Mobile=`%s` Phone=`%s` Email=`%s` IsVerified=%s",
+            $this->contact_type,
+            $this->job_title ?? '',
+            $this->first_name,
+            $this->last_name,
+            $this->mobile,
+            $this->phone,
+            $this->email,
+            $this->is_verified ? 'true' : 'false',
+        );
     }
 }
