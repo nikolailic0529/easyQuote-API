@@ -84,6 +84,7 @@ final class TemplateForm
                 ['id' => 'logo_set_x3', 'label' => 'Logo Set X3'],
 
                 ['id' => 'purchase_order_number', 'label' => 'Purchase Order Number'],
+                ['id' => 'contract_number', 'label' => 'Contract Number'],
                 ['id' => 'vat_number', 'label' => 'VAT Number'],
                 ['id' => 'payment_terms', 'label' => 'Payment Terms'],
                 ['id' => 'support_start_assumed_char', 'label' => 'Support Start Assumed (*)'],

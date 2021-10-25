@@ -48,4 +48,11 @@ final class DraftSalesOrderData extends DataTransferObject
      * @var string
      */
     public string $customer_po;
+
+    /**
+     * @Constraints\NotBlank(allowNull=true)
+     *
+     * @var string|null
+     */
+    public ?string $contract_number;
 }

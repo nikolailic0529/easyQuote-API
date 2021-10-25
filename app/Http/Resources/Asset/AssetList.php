@@ -25,6 +25,7 @@ class AssetList extends JsonResource
             'vendor_id' => $this->vendor_id,
             'quote_id' => $this->quote_id,
 
+            'customer_name' => $this->customer_name,
             'rfq_number' => $this->customer_rfq_number,
 
             'vendor_short_code' => $this->vendor_short_code,

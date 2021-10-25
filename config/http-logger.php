@@ -6,13 +6,13 @@ return [
      * The log profile which determines whether a request should be logged.
      * It should implement `LogProfile`.
      */
-    'log_profile' => \Spatie\HttpLogger\LogNonGetRequests::class,
+    'log_profile' => \App\Log\Http\LogNonGetRequests::class,
 
     /*
      * The log writer used to write the request to a log.
      * It should implement `LogWriter`.
      */
-    'log_writer' => \App\Log\HttpLogWriter::class,
+    'log_writer' => \App\Log\Http\HttpLogWriter::class,
 
     /*
      * Filter out body fields which will never be logged.
@@ -20,6 +20,10 @@ return [
     'except' => [
         'password',
         'password_confirmation',
+    ],
+
+    'enforce_request_log' => [
+        'api/s4/*'
     ],
 
 ];

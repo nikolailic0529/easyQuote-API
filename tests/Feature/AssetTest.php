@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Asset;
 use App\Models\Company;
 use App\Models\Quote\Quote;
+use App\Models\Quote\WorldwideQuote;
 use App\Models\Role;
 use App\Models\Team;
 use App\Models\User;
@@ -30,7 +31,14 @@ class AssetTest extends TestCase
     {
         factory(Asset::class, 20)->create();
 
-        $this->getJson('api/assets')
+        $worldwideQuote = factory(WorldwideQuote::class)->create();
+
+        factory(Asset::class)->create([
+            'quote_id' => $worldwideQuote->getKey(),
+            'quote_type' => $worldwideQuote->getMorphClass(),
+        ]);
+
+        $this->getJson('api/assets?order_by_created_at=desc')
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
@@ -42,6 +50,7 @@ class AssetTest extends TestCase
                         'address_id',
                         'vendor_id',
                         'quote_id',
+                        'customer_name',
                         'rfq_number',
                         'vendor_short_code',
                         'asset_category_name',
@@ -74,6 +83,8 @@ class AssetTest extends TestCase
                     'total',
                 ],
             ]);
+
+        $this->getJson('api/assets?order_by_customer_name=asc')->assertOk();
     }
 
     /**

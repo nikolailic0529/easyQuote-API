@@ -19,6 +19,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $contract_template_id
  *
  * @property string|null $order_number
+ * @property string|null $contract_number
  * @property string|null $vat_number
  * @property string|null $vat_type
  * @property string|null $customer_po
@@ -70,6 +71,7 @@ class SalesOrder extends Model implements SearchableEntity
             'company_name' => $this->worldwideQuote->activeVersion->company?->name,
             'customer_name' => $this->worldwideQuote->opportunity?->primaryAccount?->name,
             'order_number' => $this->order_number,
+            'contract_number' => $this->contract_number,
             'order_type' => $this->worldwideQuote->contractType->type_short_name,
             'rfq_number' => $this->worldwideQuote->quote_number,
             'created_at' => transform($this->created_at, fn(Carbon $carbon) => $carbon->toDateString())

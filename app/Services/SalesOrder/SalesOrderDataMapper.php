@@ -249,7 +249,7 @@ class SalesOrderDataMapper
             'currency_code' => $quoteCurrency->code,
             'from_date' => $opportunity->opportunity_start_date,
             'to_date' => $opportunity->opportunity_end_date,
-            'service_agreement_id' => $quote->quote_number,
+            'service_agreement_id' => $salesOrder->contract_number,
             'order_no' => $salesOrder->order_number,
             'order_date' => now()->toDateString(),
             'bc_company_name' => transform($company, fn(Company $company) => $company->vs_company_code),
@@ -499,6 +499,7 @@ class SalesOrderDataMapper
 
             $quotePreviewData->quote_summary->vat_number = (string)$salesOrder->vat_number;
             $quotePreviewData->quote_summary->purchase_order_number = (string)$salesOrder->customer_po;
+            $quotePreviewData->quote_summary->contract_number = (string)$salesOrder->contract_number;
             $quotePreviewData->quote_summary->export_file_name = (string)$salesOrder->order_number;
         });
     }

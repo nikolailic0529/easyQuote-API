@@ -33,6 +33,7 @@ class ContactEntityService implements CauserAware
         return tap(new Contact(), function (Contact $contact) use ($data) {
             $contact->{$contact->getKeyName()} = (string)Uuid::generate(4);
             $contact->contact_type = $data->contact_type;
+            $contact->email = $data->email;
             $contact->first_name = $data->first_name;
             $contact->last_name = $data->last_name;
             $contact->phone = $data->phone;
@@ -97,6 +98,7 @@ class ContactEntityService implements CauserAware
             $oldContact = (new Contact)->setRawAttributes($contact->getRawOriginal());
 
             $contact->contact_type = $data->contact_type;
+            $contact->email = $data->email;
             $contact->first_name = $data->first_name;
             $contact->last_name = $data->last_name;
             $contact->phone = $data->phone;

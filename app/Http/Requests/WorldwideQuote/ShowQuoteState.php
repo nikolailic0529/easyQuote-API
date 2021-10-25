@@ -62,15 +62,19 @@ class ShowQuoteState extends FormRequest
                 }
             }
 
-            $this->container->call([$this, 'sortWorldwideDistributionRowsWhenLoaded'], ['model' => $worldwideQuote]);
-            $this->container->call([$this, 'sortWorldwideDistributionRowsGroupsWhenLoaded'], ['model' => $worldwideQuote]);
-            $this->container->call([$this, 'sortWorldwideQuoteAssetsWhenLoaded'], ['model' => $worldwideQuote]);
-            $this->container->call([$this, 'sortWorldwideQuoteAssetsGroupsWhenLoaded'], ['model' => $worldwideQuote]);
-            $this->container->call([$this, 'normalizeWorldwideQuoteAssetAttributesWhenLoaded'], ['model' => $worldwideQuote]);
-            $this->container->call([$this, 'prepareWorldwideDistributionMappingWhenLoaded'], ['model' => $worldwideQuote]);
-            $this->container->call([$this, 'loadCountryOfAddressesWhenLoaded'], ['model' => $worldwideQuote]);
-            $this->container->call([$this, 'loadReferencedAddressDataOfAddressesWhenLoaded'], ['model' => $worldwideQuote]);
-            $this->container->call([$this, 'loadReferencedContactDataOfContactsWhenLoaded'], ['model' => $worldwideQuote]);
+            $parameters = ['model' => $worldwideQuote];
+
+            $this->container->call([$this, 'sortWorldwideDistributionRowsWhenLoaded'], $parameters);
+            $this->container->call([$this, 'sortWorldwideDistributionRowsGroupsWhenLoaded'], $parameters);
+            $this->container->call([$this, 'includeExclusivityOfWorldwideDistributionRowsForCustomerWhenLoaded'], $parameters);
+            $this->container->call([$this, 'sortWorldwideQuoteAssetsWhenLoaded'], $parameters);
+            $this->container->call([$this, 'sortWorldwideQuoteAssetsGroupsWhenLoaded'], $parameters);
+            $this->container->call([$this, 'includeExclusivityOfWorldwidePackQuoteAssetsForCustomerWhenLoaded'], $parameters);
+            $this->container->call([$this, 'normalizeWorldwideQuoteAssetAttributesWhenLoaded'], $parameters);
+            $this->container->call([$this, 'prepareWorldwideDistributionMappingWhenLoaded'], $parameters);
+            $this->container->call([$this, 'loadCountryOfAddressesWhenLoaded'], $parameters);
+            $this->container->call([$this, 'loadReferencedAddressDataOfAddressesWhenLoaded'], $parameters);
+            $this->container->call([$this, 'loadReferencedContactDataOfContactsWhenLoaded'], $parameters);
         });
     }
 
@@ -289,6 +293,19 @@ class ShowQuoteState extends FormRequest
         }
     }
 
+    public function includeExclusivityOfWorldwidePackQuoteAssetsForCustomerWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper)
+    {
+        if ($model->activeVersion->relationLoaded('assets')) {
+            $dataMapper->markExclusivityOfWorldwidePackQuoteAssetsForCustomer($model, $model->activeVersion->assets);
+        }
+
+        if ($model->activeVersion->relationLoaded('assetsGroups')) {
+            $groupedAssets = $model->activeVersion->assetsGroups->pluck('assets')->collapse()->all();
+
+            $dataMapper->markExclusivityOfWorldwidePackQuoteAssetsForCustomer($model, new Collection($groupedAssets));
+        }
+    }
+
     public function sortWorldwideDistributionRowsWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper)
     {
         foreach ($model->activeVersion->worldwideDistributions as $distribution) {
@@ -297,6 +314,23 @@ class ShowQuoteState extends FormRequest
 
                 $dataMapper->sortWorldwideDistributionRows($distribution);
 
+            }
+
+        }
+    }
+
+    public function includeExclusivityOfWorldwideDistributionRowsForCustomerWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper)
+    {
+        foreach ($model->activeVersion->worldwideDistributions as $distribution) {
+
+            if ($distribution->relationLoaded('mappedRows')) {
+                $dataMapper->markExclusivityOfWorldwideDistributionRowsForCustomer($distribution, $distribution->mappedRows);
+            }
+
+            if ($distribution->relationLoaded('rowsGroups')) {
+                $groupedRows = $distribution->rowsGroups->pluck('rows')->collapse()->all();
+
+                $dataMapper->markExclusivityOfWorldwideDistributionRowsForCustomer($distribution, new Collection($groupedRows));
             }
 
         }

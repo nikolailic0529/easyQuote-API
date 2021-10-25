@@ -6,6 +6,7 @@ use App\DTO\RowsGroupData;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Models\QuoteFile\MappedRow;
+use App\Services\WorldwideQuote\WorldwideQuoteDataMapper;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -60,6 +61,11 @@ class CreateRowsGroup extends FormRequest
             $group->loadMissing('rows')->loadCount('rows');
 
             $group->setAttribute('rows_sum', $group->rows()->sum('price'));
+
+            /** @var WorldwideQuoteDataMapper $dataMapper */
+            $dataMapper = $this->container[WorldwideQuoteDataMapper::class];
+
+            $dataMapper->markExclusivityOfWorldwideDistributionRowsForCustomer($group->worldwideDistribution, $group->rows);
         });
     }
 }

@@ -2,45 +2,33 @@
 
 namespace App\Services\Auth;
 
-use App\Contracts\{Repositories\UserRepositoryInterface as Users, Services\AuthServiceInterface,};
+use App\Contracts\{Repositories\UserRepositoryInterface as UserRepositoryInterfaceAlias,
+    Services\AuthServiceInterface,};
+use App\Enum\Lock;
 use App\Models\{AccessAttempt, User,};
 use App\Notifications\AttemptsExceeded;
-use App\Repositories\UserRepository;
-use Illuminate\Pipeline\Pipeline;
+use App\Services\User\UserActivityService;
+use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Support\{Arr, Facades\Auth};
 use Laravel\Passport\PersonalAccessTokenResult;
 
 class AuthService implements AuthServiceInterface
 {
-    public int $maxAttempts = 15;
-
-    public bool $checkIp = true;
+    protected int $maxAttempts = 15;
 
     protected ?AccessAttempt $currentAttempt = null;
 
-    protected Users $users;
-
-    public function __construct(Users $users)
+    public function __construct(protected UserRepositoryInterfaceAlias $users,
+                                protected UserActivityService          $activityService,
+                                protected LockProvider                 $lockProvider)
     {
-        $this->users = $users;
-    }
-
-    public function disableCheckIp(): AuthServiceInterface
-    {
-        $this->checkIp = false;
-
-        return $this;
     }
 
     public function authenticate(array $request)
     {
-        // $this->currentAttempt = $this->attempts->retrieveOrCreate($request);
-
         $this->checkCredentials(Arr::only($request, ['email', 'password']));
 
         $token = $this->generateToken($request);
-
-        // $this->currentAttempt->markAsSuccessful($token);
 
         return $this->response($token);
     }
@@ -60,7 +48,9 @@ class AuthService implements AuthServiceInterface
         $user = $this->retrieveUserFromCredentials($credentials);
 
         if (!is_null($user)) {
-            UserRepository::lock($user->getKey(), 10)->block(30, function () use ($user) {
+            $lock = $this->lockProvider->lock(Lock::UPDATE_USER($user->getKey()), 10);
+
+            $lock->block(30, function () use ($user) {
                 $this->incrementUserFailedAttempts($user);
                 $this->deactivateUserWhenAttemptsExceeded($user);
             });
@@ -96,16 +86,18 @@ class AuthService implements AuthServiceInterface
             return;
         }
 
-        $this->users->deactivate($user->id);
+        $this->users->deactivate($user->getKey());
         $user->notify(new AttemptsExceeded);
     }
 
-    protected function handleSuccessfulAttempt()
+    protected function handleSuccessfulAttempt(): void
     {
-        /** @var \App\Models\User */
+        /** @var User $user */
         $user = request()->user();
 
-        UserRepository::lock($user->getKey(), 10)->block(30, function () use ($user) {
+        $lock = $this->lockProvider->lock(Lock::UPDATE_USER($user->getKey()), 10);
+
+        $lock->block(30, function () use ($user) {
             /**
              * If the User has expired tokens the System will mark the User as Logged Out.
              */
@@ -114,16 +106,11 @@ class AuthService implements AuthServiceInterface
             }
 
             /**
-             * Throw an exception if the User Already Logged In.
+             * Once user is logged in,
+             * we update the last activity timestamp.
              */
-            // $this->checkAlreadyAuthenticatedCase($user);
-
-            /**
-             * Once user logged in we are freshing the last activity timestamp and writing the related activity.
-             */
-            // $user->markAsLoggedIn($this->currentAttempt->ip);
             $user->markAsLoggedIn();
-            $user->freshActivity();
+            $this->activityService->updateActivityTimeOfUser($user);
 
             /**
              * Finally we are resetting user's failed attempts.
@@ -140,7 +127,7 @@ class AuthService implements AuthServiceInterface
             return;
         }
 
-        $this->users->update($user->id, ['failed_attempts' => 0], ['events' => false, 'timestamps' => false]);
+        $this->users->update($user->getKey(), ['failed_attempts' => 0], ['events' => false, 'timestamps' => false]);
     }
 
     public function generateToken(array $attributes): PersonalAccessTokenResult
@@ -161,12 +148,14 @@ class AuthService implements AuthServiceInterface
         return compact('access_token', 'token_type', 'expires_at');
     }
 
-    public function logout(?User $user = null)
+    public function logout(?User $user = null): bool
     {
-        /** @var \App\Models\User */
+        /** @var User $user */
         $user ??= auth()->user();
 
-        UserRepository::lock($user->getKey(), 10)->block(30, function () use ($user) {
+        $lock = $this->lockProvider->lock(Lock::UPDATE_USER($user->getKey()), 10);
+
+        $lock->block(30, function () use ($user) {
             $user->revokeTokens();
             $user->markAsLoggedOut();
         });
@@ -174,16 +163,5 @@ class AuthService implements AuthServiceInterface
         activity()->on($user)->by($user)->queue('unauthenticated');
 
         return true;
-    }
-
-    protected function checkAlreadyAuthenticatedCase(User $user): void
-    {
-        app(Pipeline::class)
-            ->send(app('auth.case')->initiate($user, $this->currentAttempt))
-            ->through([
-                \App\Services\Auth\AuthenticatedCases\LoggedInDifferentAccount::class,
-                \App\Services\Auth\AuthenticatedCases\AlreadyLoggedIn::class,
-            ])
-            ->thenReturn();
     }
 }

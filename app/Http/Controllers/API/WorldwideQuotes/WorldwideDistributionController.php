@@ -33,6 +33,7 @@ use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Models\QuoteFile\MappedRow;
 use App\Queries\WorldwideDistributionQueries;
 use App\Services\WorldwideQuote\Calculation\WorldwideDistributorQuoteCalc;
+use App\Services\WorldwideQuote\WorldwideQuoteDataMapper;
 use App\Services\WorldwideQuote\WorldwideQuoteVersionGuard;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
@@ -85,8 +86,8 @@ class WorldwideDistributionController extends Controller
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Throwable
      */
-    public function processDistributions(ProcessDistributions $request,
-                                         WorldwideQuoteVersionGuard $versionGuard,
+    public function processDistributions(ProcessDistributions         $request,
+                                         WorldwideQuoteVersionGuard   $versionGuard,
                                          ProcessesWorldwideQuoteState $quoteProcessor): JsonResponse
     {
         $this->authorize('update', $request->getQuote());
@@ -114,8 +115,8 @@ class WorldwideDistributionController extends Controller
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Throwable
      */
-    public function updateDistributionsMapping(UpdateDistributionsMapping $request,
-                                               WorldwideQuoteVersionGuard $versionGuard,
+    public function updateDistributionsMapping(UpdateDistributionsMapping   $request,
+                                               WorldwideQuoteVersionGuard   $versionGuard,
                                                ProcessesWorldwideQuoteState $quoteProcessor): Response
     {
         $this->authorize('update', $request->getQuote());
@@ -137,8 +138,8 @@ class WorldwideDistributionController extends Controller
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Throwable
      */
-    public function updateRowsSelection(SelectDistributionsRows $request,
-                                        WorldwideQuoteVersionGuard $versionGuard,
+    public function updateRowsSelection(SelectDistributionsRows      $request,
+                                        WorldwideQuoteVersionGuard   $versionGuard,
                                         ProcessesWorldwideQuoteState $quoteProcessor): Response
     {
         $this->authorize('update', $request->getQuote());
@@ -160,8 +161,8 @@ class WorldwideDistributionController extends Controller
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Throwable
      */
-    public function setDistributionsMargin(SetDistributionsMargin $request,
-                                           WorldwideQuoteVersionGuard $versionGuard,
+    public function setDistributionsMargin(SetDistributionsMargin       $request,
+                                           WorldwideQuoteVersionGuard   $versionGuard,
                                            ProcessesWorldwideQuoteState $quoteProcessor): Response
     {
         $this->authorize('update', $request->getQuote());
@@ -183,9 +184,9 @@ class WorldwideDistributionController extends Controller
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Throwable
      */
-    public function createRowsGroup(CreateRowsGroup $request,
+    public function createRowsGroup(CreateRowsGroup            $request,
                                     WorldwideQuoteVersionGuard $versionGuard,
-                                    WorldwideDistribution $worldwideDistribution): JsonResponse
+                                    WorldwideDistribution      $worldwideDistribution): JsonResponse
     {
         $this->authorize('update', $worldwideDistribution->worldwideQuote->worldwideQuote);
 
@@ -211,10 +212,10 @@ class WorldwideDistributionController extends Controller
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Throwable
      */
-    public function updateRowsGroup(UpdateRowsGroup $request,
+    public function updateRowsGroup(UpdateRowsGroup            $request,
                                     WorldwideQuoteVersionGuard $versionGuard,
-                                    WorldwideDistribution $worldwideDistribution,
-                                    DistributionRowsGroup $rowsGroup): JsonResponse
+                                    WorldwideDistribution      $worldwideDistribution,
+                                    DistributionRowsGroup      $rowsGroup): JsonResponse
     {
         $this->authorize('update', $worldwideDistribution->worldwideQuote->worldwideQuote);
 
@@ -245,10 +246,10 @@ class WorldwideDistributionController extends Controller
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Throwable
      */
-    public function deleteRowsGroup(DeleteRowsGroup $request,
+    public function deleteRowsGroup(DeleteRowsGroup            $request,
                                     WorldwideQuoteVersionGuard $versionGuard,
-                                    WorldwideDistribution $worldwideDistribution,
-                                    DistributionRowsGroup $rowsGroup): Response
+                                    WorldwideDistribution      $worldwideDistribution,
+                                    DistributionRowsGroup      $rowsGroup): Response
     {
         $this->authorize('update', $worldwideDistribution->worldwideQuote->worldwideQuote);
 
@@ -270,9 +271,9 @@ class WorldwideDistributionController extends Controller
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Throwable
      */
-    public function moveRowsBetweenGroups(MoveRowsBetweenGroups $request,
+    public function moveRowsBetweenGroups(MoveRowsBetweenGroups      $request,
                                           WorldwideQuoteVersionGuard $versionGuard,
-                                          WorldwideDistribution $worldwideDistribution): JsonResponse
+                                          WorldwideDistribution      $worldwideDistribution): JsonResponse
     {
         $this->authorize('update', $worldwideDistribution->worldwideQuote->worldwideQuote);
 
@@ -296,18 +297,28 @@ class WorldwideDistributionController extends Controller
      * @param RowsLookup $rowsLookup
      * @param WorldwideDistributionQueries $queries
      * @param WorldwideDistribution $worldwideDistribution
+     * @param WorldwideQuoteDataMapper $dataMapper
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function performRowsLookup(RowsLookup $rowsLookup, WorldwideDistributionQueries $queries, WorldwideDistribution $worldwideDistribution): JsonResponse
+    public function performRowsLookup(RowsLookup                   $rowsLookup,
+                                      WorldwideDistributionQueries $queries,
+                                      WorldwideDistribution        $worldwideDistribution,
+                                      WorldwideQuoteDataMapper     $dataMapper): JsonResponse
     {
         $this->authorize('view', $worldwideDistribution->worldwideQuote->worldwideQuote);
 
+
+        $resource = $queries->rowsLookupQuery(
+            distribution: $worldwideDistribution,
+            data: $rowsLookup->getRowsLookupData()
+        )->get();
+
+        $dataMapper->markExclusivityOfWorldwideDistributionRowsForCustomer(distributorQuote: $worldwideDistribution, rows: $resource);
+
+
         return response()->json(
-            $queries->rowsLookupQuery(
-                $worldwideDistribution,
-                $rowsLookup->getRowsLookupData()
-            )->get()
+            data: $resource
         );
     }
 
@@ -338,8 +349,8 @@ class WorldwideDistributionController extends Controller
      * @throws AuthorizationException
      */
     public function showMarginAfterPredefinedDiscounts(ShowMarginAfterPredefinedDiscounts $request,
-                                                       WorldwideDistribution $worldwideDistribution,
-                                                       WorldwideDistributorQuoteCalc $calcService): JsonResponse
+                                                       WorldwideDistribution              $worldwideDistribution,
+                                                       WorldwideDistributorQuoteCalc      $calcService): JsonResponse
     {
         $this->authorize('view', $worldwideDistribution->worldwideQuote->worldwideQuote);
 
@@ -362,7 +373,7 @@ class WorldwideDistributionController extends Controller
      * @throws AuthorizationException
      */
     public function showMarginAfterCustomDiscount(ShowMarginAfterCustomDiscount $request,
-                                                  WorldwideDistribution $worldwideDistribution,
+                                                  WorldwideDistribution         $worldwideDistribution,
                                                   WorldwideDistributorQuoteCalc $calcService): JsonResponse
     {
         $this->authorize('view', $worldwideDistribution->worldwideQuote->worldwideQuote);
@@ -384,8 +395,8 @@ class WorldwideDistributionController extends Controller
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function showPriceSummaryAfterMarginTax(ShowPriceDataAfterMarginTax $request,
-                                                   WorldwideDistribution $worldwideDistribution,
+    public function showPriceSummaryAfterMarginTax(ShowPriceDataAfterMarginTax   $request,
+                                                   WorldwideDistribution         $worldwideDistribution,
                                                    WorldwideDistributorQuoteCalc $calcService): JsonResponse
     {
         $this->authorize('view', $worldwideDistribution->worldwideQuote->worldwideQuote);
@@ -407,8 +418,8 @@ class WorldwideDistributionController extends Controller
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Throwable
      */
-    public function applyDiscounts(ApplyDiscounts $request,
-                                   WorldwideQuoteVersionGuard $versionGuard,
+    public function applyDiscounts(ApplyDiscounts               $request,
+                                   WorldwideQuoteVersionGuard   $versionGuard,
                                    ProcessesWorldwideQuoteState $quoteProcessor): Response
     {
         $this->authorize('update', $request->getQuote());
@@ -433,8 +444,8 @@ class WorldwideDistributionController extends Controller
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Throwable
      */
-    public function updateDetails(UpdateDetails $request,
-                                  WorldwideQuoteVersionGuard $versionGuard,
+    public function updateDetails(UpdateDetails                $request,
+                                  WorldwideQuoteVersionGuard   $versionGuard,
                                   ProcessesWorldwideQuoteState $quoteProcessor): Response
     {
         $this->authorize('update', $request->getQuote());
@@ -459,9 +470,9 @@ class WorldwideDistributionController extends Controller
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Throwable
      */
-    public function storeDistributorFile(StoreDistributorFile $request,
+    public function storeDistributorFile(StoreDistributorFile       $request,
                                          WorldwideQuoteVersionGuard $versionGuard,
-                                         WorldwideDistribution $worldwideDistribution): JsonResponse
+                                         WorldwideDistribution      $worldwideDistribution): JsonResponse
     {
         $this->authorize('update', $worldwideDistribution->worldwideQuote->worldwideQuote);
 
@@ -489,9 +500,9 @@ class WorldwideDistributionController extends Controller
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Throwable
      */
-    public function storeScheduleFile(StoreScheduleFile $request,
+    public function storeScheduleFile(StoreScheduleFile          $request,
                                       WorldwideQuoteVersionGuard $versionGuard,
-                                      WorldwideDistribution $worldwideDistribution): JsonResponse
+                                      WorldwideDistribution      $worldwideDistribution): JsonResponse
     {
         $this->authorize('update', $worldwideDistribution->worldwideQuote->worldwideQuote);
 
@@ -521,9 +532,9 @@ class WorldwideDistributionController extends Controller
      * @throws \Throwable
      */
     public function updateMappedRow(UpdateDistributionMappedRow $request,
-                                    WorldwideQuoteVersionGuard $versionGuard,
-                                    WorldwideDistribution $worldwideDistribution,
-                                    MappedRow $mappedRow): JsonResponse
+                                    WorldwideQuoteVersionGuard  $versionGuard,
+                                    WorldwideDistribution       $worldwideDistribution,
+                                    MappedRow                   $mappedRow): JsonResponse
     {
         $this->authorize('update', $worldwideDistribution->worldwideQuote->worldwideQuote);
 
@@ -553,9 +564,9 @@ class WorldwideDistributionController extends Controller
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Throwable
      */
-    public function destroy(Request $request,
+    public function destroy(Request                    $request,
                             WorldwideQuoteVersionGuard $versionGuard,
-                            WorldwideDistribution $worldwideDistribution): Response
+                            WorldwideDistribution      $worldwideDistribution): Response
     {
         $this->authorize('update', $worldwideDistribution->worldwideQuote->worldwideQuote);
 

@@ -2,9 +2,13 @@
 
 namespace App\Models\QuoteFile;
 
+use App\Models\WorldwideQuoteAsset;
 use App\Traits\Uuid;
+use Awobaz\Compoships\Compoships;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property string|null $quote_file_id
@@ -23,10 +27,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $searchable
  * @property string|null $service_level_description
  * @property bool|null $is_selected
+ *
+ * @property-read bool|null $is_customer_exclusive_asset
+ * @property-read bool|null $same_worldwide_quote_assets_exists
+ * @property-read bool|null $same_mapped_rows_exists
  */
 class MappedRow extends Model
 {
-    use Uuid;
+    use Uuid, Compoships;
 
     protected $guarded = [];
 
@@ -36,11 +44,31 @@ class MappedRow extends Model
     ];
 
     protected $hidden = [
-        'laravel_through_key', 'pivot'
+        'laravel_through_key', 'pivot',
     ];
 
     public function quoteFile(): BelongsTo
     {
         return $this->belongsTo(QuoteFile::class);
+    }
+
+    public function sameMappedRows(): HasMany
+    {
+        return $this->hasMany(related: MappedRow::class, foreignKey: ['serial_no', 'product_no'], localKey: ['serial_no', 'product_no']);
+    }
+
+    public function sameWorldwideQuoteAssets(): HasMany
+    {
+        return $this->hasMany(related: WorldwideQuoteAsset::class, foreignKey: ['serial_no', 'sku'], localKey: ['serial_no', 'product_no']);
+    }
+
+    public function distributionRowsGroups(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            related: DistributionRowsGroup::class,
+            table: 'distribution_rows_group_mapped_row',
+            foreignPivotKey: 'mapped_row_id',
+            relatedPivotKey: 'rows_group_id'
+        );
     }
 }

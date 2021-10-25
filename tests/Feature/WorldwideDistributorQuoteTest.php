@@ -751,7 +751,9 @@ class WorldwideDistributorQuoteTest extends TestCase
                 'worldwide_distribution_id',
                 'rows_sum',
                 'rows_count',
-                'rows',
+                'rows' => [
+                    '*' => ['id', 'is_customer_exclusive_asset']
+                ],
                 'group_name',
                 'search_text',
                 'is_selected',
@@ -816,8 +818,9 @@ class WorldwideDistributorQuoteTest extends TestCase
                     'system_handle',
                     'searchable',
                     'service_level_description',
-                    'is_selected'
-                ]
+                    'is_selected',
+                    'is_customer_exclusive_asset'
+                ],
             ]);
     }
 
@@ -863,7 +866,9 @@ class WorldwideDistributorQuoteTest extends TestCase
             ->assertJsonStructure([
                 'id',
                 'worldwide_distribution_id',
-                'rows',
+                'rows' => [
+                    '*' => ['id', 'is_customer_exclusive_asset']
+                ],
                 'rows_sum',
                 'rows_count',
                 'group_name',
@@ -957,7 +962,9 @@ class WorldwideDistributorQuoteTest extends TestCase
                 'output_rows_group' => [
                     'id',
                     'worldwide_distribution_id',
-                    'rows',
+                    'rows' => [
+                        '*' => ['id', 'is_customer_exclusive_asset']
+                    ],
                     'rows_sum',
                     'rows_count',
                     'group_name',
@@ -969,7 +976,9 @@ class WorldwideDistributorQuoteTest extends TestCase
                 'input_rows_group' => [
                     'id',
                     'worldwide_distribution_id',
-                    'rows',
+                    'rows' => [
+                        '*' => ['id', 'is_customer_exclusive_asset']
+                    ],
                     'rows_sum',
                     'rows_count',
                     'group_name',

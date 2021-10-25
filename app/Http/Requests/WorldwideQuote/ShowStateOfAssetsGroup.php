@@ -33,6 +33,11 @@ class ShowStateOfAssetsGroup extends FormRequest
                 $asset->setAttribute('buy_currency_code', $asset->buyCurrency?->code);
                 $asset->setAttribute('machine_address_string', WorldwideQuoteDataMapper::formatMachineAddressToString($asset->machineAddress));
             }
+
+            /** @var WorldwideQuoteDataMapper $dataMapper */
+            $dataMapper = $this->container[WorldwideQuoteDataMapper::class];
+
+            $dataMapper->markExclusivityOfWorldwidePackQuoteAssetsForCustomer(quote: $group->worldwideQuoteVersion->worldwideQuote, assets: $group->assets);
         });
     }
 }

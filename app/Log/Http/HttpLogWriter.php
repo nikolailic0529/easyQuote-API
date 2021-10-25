@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Log;
+namespace App\Log\Http;
 
+use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Psr\Log\LoggerInterface;
@@ -10,11 +11,9 @@ use Symfony\Component\HttpFoundation\File\UploadedFile;
 
 final class HttpLogWriter implements LogWriter
 {
-    protected LoggerInterface $logger;
-
-    public function __construct(LoggerInterface $logger)
+    public function __construct(protected LoggerInterface $logger,
+                                protected Config          $config)
     {
-        $this->logger = $logger;
     }
 
     public function logRequest(Request $request)
@@ -30,7 +29,7 @@ final class HttpLogWriter implements LogWriter
         $headersAsJson = json_encode($message['headers']);
         $files = $message['files']->implode(',');
 
-        return "{$message['method']} {$message['uri']} - Body: {$bodyAsJson} - Headers: {$headersAsJson} - Files: ".$files;
+        return "REQUEST: {$message['method']} {$message['uri']} - Body: {$bodyAsJson} - Headers: {$headersAsJson} - Files: ".$files;
     }
 
     public function getMessage(Request $request): array
@@ -42,7 +41,7 @@ final class HttpLogWriter implements LogWriter
         return [
             'method' => strtoupper($request->getMethod()),
             'uri' => $request->getPathInfo(),
-            'body' => $request->except(config('http-logger.except')),
+            'body' => $request->except($this->config->get('http-logger.except')),
             'headers' => $request->headers->all(),
             'files' => $files,
         ];

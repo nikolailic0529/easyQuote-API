@@ -84,7 +84,7 @@ class Asset extends Model implements SearchableEntity
 
     public function quote(): MorphTo
     {
-        return $this->morphTo('quote');
+        return $this->morphTo('quote')->withTrashed();
     }
 
     public function vendor(): BelongsTo
@@ -149,9 +149,22 @@ class Asset extends Model implements SearchableEntity
                 }
 
                 return match ($this->quote::class) {
-                  Quote::class => $this->quote->customer->rfq,
-                  WorldwideQuote::class => $this->quote->quote_number,
+                    Quote::class => $this->quote->customer->rfq,
+                    WorldwideQuote::class => $this->quote->quote_number,
                 };
+            }),
+
+            'customer_name' => value(function () {
+
+                if (is_null($this->quote)) {
+                    return null;
+                }
+
+                return match ($this->quote::class) {
+                    Quote::class => $this->quote->customer->name,
+                    WorldwideQuote::class => $this->quote->opportunity?->primaryAccount?->name,
+                };
+
             }),
         ];
     }

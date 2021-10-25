@@ -5,6 +5,8 @@ namespace App\Queries;
 use App\Models\Asset;
 use App\Models\AssetCategory;
 use App\Models\Company;
+use App\Models\Customer\Customer;
+use App\Models\Opportunity;
 use App\Models\Quote\Quote;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\User;
@@ -23,12 +25,12 @@ class AssetQueries
 {
 
     public function __construct(protected Elasticsearch $elasticsearch,
-                                protected Gate $gate)
+                                protected Gate          $gate)
     {
 
     }
 
-    public function assetUniquenessQuery(string $serialNumber,
+    public function assetUniquenessQuery(string  $serialNumber,
                                          ?string $productNumber = null,
                                          ?string $ignoreModelKey = null,
                                          ?string $ownerKey = null,
@@ -78,38 +80,54 @@ class AssetQueries
     public function paginateAssetsQuery(Request $request = null): Builder
     {
         $request ??= new Request();
-        $model = new Asset();
+        $assetModel = new Asset();
 
         /** @var User|null $user */
         $user = $request->user();
 
-        $query = $model->newQuery()
-            ->select([
-                $model->qualifyColumn('id'),
-                $model->qualifyColumn('asset_category_id'),
-                'asset_categories.name as asset_category_name',
-                $model->qualifyColumn('user_id'),
-                $model->qualifyColumn('address_id'),
-                $model->qualifyColumn('vendor_id'),
-                $model->qualifyColumn('quote_id'),
-                new Expression('coalesce(customers.rfq, worldwide_quotes.quote_number) as customer_rfq_number'),
-                $model->qualifyColumn('vendor_short_code'),
+        $assetCategoryModel = new AssetCategory();
+        $rescueQuoteModel = new Quote();
+        $rescueCustomerModel = new Customer();
+        $worldwideQuoteModel = new WorldwideQuote();
+        $opportunityModel = new Opportunity();
+        $companyModel = new Company();
 
-                $model->qualifyColumn('unit_price'),
-                $model->qualifyColumn('base_warranty_start_date'),
-                $model->qualifyColumn('base_warranty_end_date'),
-                $model->qualifyColumn('active_warranty_start_date'),
-                $model->qualifyColumn('active_warranty_end_date'),
-                $model->qualifyColumn('product_number'),
-                $model->qualifyColumn('serial_number'),
-                $model->qualifyColumn('product_description'),
-                $model->qualifyColumn('product_image'),
-                $model->qualifyColumn('created_at'),
+        $query = $assetModel->newQuery()
+            ->select([
+                $assetModel->qualifyColumn('id'),
+                $assetModel->qualifyColumn('asset_category_id'),
+                "{$assetCategoryModel->qualifyColumn('name')} as asset_category_name",
+                $assetModel->qualifyColumn('user_id'),
+                $assetModel->qualifyColumn('address_id'),
+                $assetModel->qualifyColumn('vendor_id'),
+                $assetModel->qualifyColumn('quote_id'),
+                new Expression("coalesce(primary_account.name, {$rescueCustomerModel->qualifyColumn('name')}) as customer_name"),
+                new Expression("coalesce({$rescueCustomerModel->qualifyColumn('rfq')}, {$worldwideQuoteModel->qualifyColumn('quote_number')}) as customer_rfq_number"),
+                $assetModel->qualifyColumn('vendor_short_code'),
+
+                $assetModel->qualifyColumn('unit_price'),
+                $assetModel->qualifyColumn('base_warranty_start_date'),
+                $assetModel->qualifyColumn('base_warranty_end_date'),
+                $assetModel->qualifyColumn('active_warranty_start_date'),
+                $assetModel->qualifyColumn('active_warranty_end_date'),
+                $assetModel->qualifyColumn('product_number'),
+                $assetModel->qualifyColumn('serial_number'),
+                $assetModel->qualifyColumn('product_description'),
+                $assetModel->qualifyColumn('product_image'),
+                $assetModel->qualifyColumn('created_at'),
             ])
-            ->join('asset_categories', 'asset_categories.id', $model->qualifyColumn('asset_category_id'))
-            ->leftJoin('quotes', 'quotes.id', $model->qualifyColumn('quote_id'))
-            ->leftJoin('customers', 'customers.id', 'quotes.customer_id')
-            ->leftJoin('worldwide_quotes', 'worldwide_quotes.id', $model->qualifyColumn('quote_id'));
+            ->join($assetCategoryModel->getTable(), $assetCategoryModel->getQualifiedKeyName(), $assetModel->assetCategory()->getQualifiedForeignKeyName())
+            ->leftJoin($rescueQuoteModel->getTable(), function (JoinClause $join) use ($rescueQuoteModel, $assetModel) {
+                $join->on($rescueQuoteModel->getQualifiedKeyName(), $assetModel->quote()->getQualifiedForeignKeyName());
+//                    ->whereNull($rescueQuoteModel->getQualifiedDeletedAtColumn());
+            })
+            ->leftJoin($rescueCustomerModel->getTable(), $rescueCustomerModel->getQualifiedKeyName(), $rescueQuoteModel->customer()->getQualifiedForeignKeyName())
+            ->leftJoin($worldwideQuoteModel->getTable(), function (JoinClause $join) use ($worldwideQuoteModel, $assetModel) {
+                $join->on($worldwideQuoteModel->getQualifiedKeyName(), $assetModel->quote()->getQualifiedForeignKeyName());
+//                    ->whereNull($worldwideQuoteModel->getQualifiedDeletedAtColumn());
+            })
+            ->leftJoin($opportunityModel->getTable(), $opportunityModel->getQualifiedKeyName(), $worldwideQuoteModel->opportunity()->getQualifiedForeignKeyName())
+            ->leftJoin("{$companyModel->getTable()} as primary_account", "primary_account.{$companyModel->getKeyName()}", $opportunityModel->primaryAccount()->getQualifiedForeignKeyName());
 
         if (false === is_null($user) && $this->gate->denies('viewAnyOwnerEntities', Asset::class)) {
 
@@ -157,21 +175,22 @@ class AssetQueries
                 'vendor_short_code',
                 'asset_category',
                 'quote_id',
+                'customer_name',
             ])
             ->qualifyOrderFields(
-                created_at: $model->getQualifiedCreatedAtColumn(),
-                product_number: $model->qualifyColumn('product_number'),
-                serial_number: $model->qualifyColumn('serial_number'),
-                sku: $model->qualifyColumn('sku'),
-                base_warranty_start_date: $model->qualifyColumn('base_warranty_start_date'),
-                base_warranty_end_date: $model->qualifyColumn('base_warranty_end_date'),
-                active_warranty_start_date: $model->qualifyColumn('active_warranty_start_date'),
-                active_warranty_end_date: $model->qualifyColumn('active_warranty_end_date'),
-                vendor_short_code: $model->qualifyColumn('vendor_short_code'),
+                created_at: $assetModel->getQualifiedCreatedAtColumn(),
+                product_number: $assetModel->qualifyColumn('product_number'),
+                serial_number: $assetModel->qualifyColumn('serial_number'),
+                sku: $assetModel->qualifyColumn('sku'),
+                base_warranty_start_date: $assetModel->qualifyColumn('base_warranty_start_date'),
+                base_warranty_end_date: $assetModel->qualifyColumn('base_warranty_end_date'),
+                active_warranty_start_date: $assetModel->qualifyColumn('active_warranty_start_date'),
+                active_warranty_end_date: $assetModel->qualifyColumn('active_warranty_end_date'),
+                vendor_short_code: $assetModel->qualifyColumn('vendor_short_code'),
                 asset_category: 'asset_category_name',
                 quote_id: 'customer_rfq_number',
             )
-            ->enforceOrderBy($model->getQualifiedCreatedAtColumn(), 'desc')
+            ->enforceOrderBy($assetModel->getQualifiedCreatedAtColumn(), 'desc')
             ->process();
     }
 

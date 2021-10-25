@@ -17,7 +17,9 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
  * @property mixed $worldwide_distribution_id
  * @property Collection<MappedRow>|MappedRow[] $rows
  * @property mixed $is_selected
+ *
  * @property string|null $rows_sum
+ * @property-read WorldwideDistribution|null $worldwideDistribution
  */
 class DistributionRowsGroup extends Model
 {

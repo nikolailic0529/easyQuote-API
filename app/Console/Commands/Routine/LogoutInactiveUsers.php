@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands\Routine;
 
-use App\Services\UserActivityService;
+use App\Services\User\InactiveUserService;
 use Illuminate\Console\Command;
 
 class LogoutInactiveUsers extends Command
@@ -34,16 +34,17 @@ class LogoutInactiveUsers extends Command
     /**
      * Execute the console command.
      *
-     * @return mixed
+     * @param InactiveUserService $service
+     * @return int
      */
-    public function handle(UserActivityService $service)
+    public function handle(InactiveUserService $service): int
     {
-        $count = $service->logoutInactive();
+        $count = $service->logoutInactiveUsers();
 
         if ($count > 0) {
             customlog(['message' => sprintf('Logged out %s inactive users.', $count)]);
         }
 
-        return 0;
+        return self::SUCCESS;
     }
 }

@@ -56,6 +56,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string|null $timezone_id
  * @property string|null $password
  * @property string|null $phone
+ * @property int|null $failed_attempts
  *
  * @property-read string|null $user_fullname
  * @property-read Team|null $team

@@ -45,7 +45,8 @@ class UpdateSalesOrder extends FormRequest
             'sales_order_template_id' => $this->input('sales_order_template_id'),
             'vat_number' => $this->input('vat_number'),
             'vat_type' => $this->input('vat_type'),
-            'customer_po' => $this->input('customer_po')
+            'customer_po' => $this->input('customer_po'),
+            'contract_number' => $this->input('contract_number')
         ]);
     }
 }

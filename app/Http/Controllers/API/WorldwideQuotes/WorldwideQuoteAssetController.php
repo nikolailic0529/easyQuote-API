@@ -24,6 +24,7 @@ use App\Models\WorldwideQuoteAssetsGroup;
 use App\Queries\WorldwideQuoteQueries;
 use App\Services\Exceptions\ValidationException;
 use App\Services\WorldwideQuote\AssetServiceLookupService;
+use App\Services\WorldwideQuote\WorldwideQuoteDataMapper;
 use App\Services\WorldwideQuote\WorldwideQuoteVersionGuard;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
@@ -49,9 +50,9 @@ class WorldwideQuoteAssetController extends Controller
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Throwable
      */
-    public function initializeQuoteAsset(InitializeQuoteAsset $request,
+    public function initializeQuoteAsset(InitializeQuoteAsset       $request,
                                          WorldwideQuoteVersionGuard $versionGuard,
-                                         WorldwideQuote $worldwideQuote): JsonResponse
+                                         WorldwideQuote             $worldwideQuote): JsonResponse
     {
         $this->authorize('update', $worldwideQuote);
 
@@ -79,9 +80,9 @@ class WorldwideQuoteAssetController extends Controller
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Throwable
      */
-    public function batchUpdateQuoteAssets(UpdateQuoteAssets $request,
-                                           WorldwideQuoteVersionGuard $versionGuard,
-                                           WorldwideQuote $worldwideQuote,
+    public function batchUpdateQuoteAssets(UpdateQuoteAssets            $request,
+                                           WorldwideQuoteVersionGuard   $versionGuard,
+                                           WorldwideQuote               $worldwideQuote,
                                            ProcessesWorldwideQuoteState $quoteProcessor): Response
     {
         $this->authorize('update', $worldwideQuote);
@@ -135,9 +136,9 @@ class WorldwideQuoteAssetController extends Controller
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Throwable
      */
-    public function importBatchQuoteAssetsFile(ImportBatchAssetFile $request,
+    public function importBatchQuoteAssetsFile(ImportBatchAssetFile       $request,
                                                WorldwideQuoteVersionGuard $versionGuard,
-                                               WorldwideQuote $worldwideQuote): Response
+                                               WorldwideQuote             $worldwideQuote): Response
     {
         $this->authorize('update', $worldwideQuote);
 
@@ -187,10 +188,10 @@ class WorldwideQuoteAssetController extends Controller
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Throwable
      */
-    public function destroyQuoteAsset(Request $request,
+    public function destroyQuoteAsset(Request                    $request,
                                       WorldwideQuoteVersionGuard $versionGuard,
-                                      WorldwideQuote $worldwideQuote,
-                                      WorldwideQuoteAsset $asset): Response
+                                      WorldwideQuote             $worldwideQuote,
+                                      WorldwideQuoteAsset        $asset): Response
     {
         $this->authorize('update', $worldwideQuote);
 
@@ -215,10 +216,10 @@ class WorldwideQuoteAssetController extends Controller
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Throwable
      */
-    public function storeGroupOfAssets(StoreGroupOfAssets $request,
-                                       WorldwideQuoteVersionGuard $versionGuard,
+    public function storeGroupOfAssets(StoreGroupOfAssets           $request,
+                                       WorldwideQuoteVersionGuard   $versionGuard,
                                        ProcessesWorldwideQuoteState $quoteProcessor,
-                                       WorldwideQuote $worldwideQuote): JsonResponse
+                                       WorldwideQuote               $worldwideQuote): JsonResponse
     {
         $this->authorize('update', $worldwideQuote);
 
@@ -243,8 +244,8 @@ class WorldwideQuoteAssetController extends Controller
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function showGroupOfAssets(ShowStateOfAssetsGroup $request,
-                                      WorldwideQuote $worldwideQuote,
+    public function showGroupOfAssets(ShowStateOfAssetsGroup    $request,
+                                      WorldwideQuote            $worldwideQuote,
                                       WorldwideQuoteAssetsGroup $assetsGroup): JsonResponse
     {
         $this->authorize('view', $worldwideQuote);
@@ -266,11 +267,11 @@ class WorldwideQuoteAssetController extends Controller
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Throwable
      */
-    public function updateGroupOfAssets(UpdateGroupOfAssets $request,
-                                        WorldwideQuoteVersionGuard $versionGuard,
+    public function updateGroupOfAssets(UpdateGroupOfAssets          $request,
+                                        WorldwideQuoteVersionGuard   $versionGuard,
                                         ProcessesWorldwideQuoteState $quoteProcessor,
-                                        WorldwideQuote $worldwideQuote,
-                                        WorldwideQuoteAssetsGroup $assetsGroup): JsonResponse
+                                        WorldwideQuote               $worldwideQuote,
+                                        WorldwideQuoteAssetsGroup    $assetsGroup): JsonResponse
     {
         $this->authorize('update', $worldwideQuote);
 
@@ -298,11 +299,11 @@ class WorldwideQuoteAssetController extends Controller
      * @throws \Illuminate\Auth\Access\AuthorizationException
      * @throws \Throwable
      */
-    public function deleteGroupOfAssets(Request $request,
-                                        WorldwideQuoteVersionGuard $versionGuard,
+    public function deleteGroupOfAssets(Request                      $request,
+                                        WorldwideQuoteVersionGuard   $versionGuard,
                                         ProcessesWorldwideQuoteState $quoteProcessor,
-                                        WorldwideQuote $worldwideQuote,
-                                        WorldwideQuoteAssetsGroup $assetsGroup): Response
+                                        WorldwideQuote               $worldwideQuote,
+                                        WorldwideQuoteAssetsGroup    $assetsGroup): Response
     {
         $this->authorize('update', $worldwideQuote);
 
@@ -327,9 +328,9 @@ class WorldwideQuoteAssetController extends Controller
      * @throws \Throwable
      */
     public function moveAssetsBetweenGroupsOfAssets(MoveAssetsBetweenGroupsOfAssets $request,
-                                                    WorldwideQuoteVersionGuard $versionGuard,
-                                                    ProcessesWorldwideQuoteState $quoteProcessor,
-                                                    WorldwideQuote $worldwideQuote): JsonResponse
+                                                    WorldwideQuoteVersionGuard      $versionGuard,
+                                                    ProcessesWorldwideQuoteState    $quoteProcessor,
+                                                    WorldwideQuote                  $worldwideQuote): JsonResponse
     {
         $this->authorize('update', $worldwideQuote);
 
@@ -356,19 +357,23 @@ class WorldwideQuoteAssetController extends Controller
      * @param \App\Http\Requests\WorldwideQuote\AssetsLookup $request
      * @param \App\Models\Quote\WorldwideQuote $worldwideQuote
      * @param \App\Queries\WorldwideQuoteQueries $queries
+     * @param WorldwideQuoteDataMapper $dataMapper
      * @return \Illuminate\Http\JsonResponse
-     * @throws \Illuminate\Auth\Access\AuthorizationException
+     * @throws AuthorizationException
      */
-    public function performAssetsLookup(AssetsLookup $request,
-                                        WorldwideQuote $worldwideQuote,
-                                        WorldwideQuoteQueries $queries): JsonResponse
+    public function performAssetsLookup(AssetsLookup             $request,
+                                        WorldwideQuote           $worldwideQuote,
+                                        WorldwideQuoteQueries    $queries,
+                                        WorldwideQuoteDataMapper $dataMapper): JsonResponse
     {
         $this->authorize('view', $worldwideQuote);
 
         $resource = $queries->assetsLookupQuery(
-            $worldwideQuote->activeVersion,
-            $request->getAssetsLookupData()
+            quoteVersion: $worldwideQuote->activeVersion,
+            data: $request->getAssetsLookupData()
         )->get();
+
+        $dataMapper->markExclusivityOfWorldwidePackQuoteAssetsForCustomer(quote: $worldwideQuote, assets: $resource);
 
         return response()->json(
             AssetLookupResult::collection($resource)

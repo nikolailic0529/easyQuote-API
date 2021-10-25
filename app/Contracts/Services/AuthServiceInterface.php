@@ -17,13 +17,6 @@ interface AuthServiceInterface
     public function checkCredentials(array $credentials);
 
     /**
-     * Disable ip checking.
-     *
-     * @return AuthServiceInterface
-     */
-    public function disableCheckIp(): AuthServiceInterface;
-
-    /**
      * Generate and return token for authenticated user
      *
      * @param array $attributes

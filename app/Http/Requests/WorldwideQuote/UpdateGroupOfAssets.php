@@ -6,6 +6,7 @@ use App\DTO\AssetsGroupData;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\WorldwideQuoteAsset;
 use App\Models\WorldwideQuoteAssetsGroup;
+use App\Services\WorldwideQuote\WorldwideQuoteDataMapper;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -69,6 +70,11 @@ class UpdateGroupOfAssets extends FormRequest
                 ->loadMissing('assets')
                 ->loadCount('assets')
                 ->loadSum('assets', 'price');
+
+            /** @var WorldwideQuoteDataMapper $dataMapper */
+            $dataMapper = $this->container[WorldwideQuoteDataMapper::class];
+
+            $dataMapper->markExclusivityOfWorldwidePackQuoteAssetsForCustomer(quote: $group->worldwideQuoteVersion->worldwideQuote, assets: $group->assets);
         });
     }
 }

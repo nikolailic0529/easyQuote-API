@@ -3,6 +3,7 @@
 namespace Tests\Unit\User;
 
 use App\Models\User;
+use App\Services\User\UserActivityService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\{Arr, Str};
 use Tests\TestCase;
@@ -110,7 +111,10 @@ class AuthTest extends TestCase
      */
     public function testLogoutDueInactivity()
     {
-        $this->user->freshActivity(now()->subHour());
+        /** @var \App\Services\User\UserActivityService $activityService */
+        $activityService = $this->app[UserActivityService::class];
+
+        $activityService->updateActivityTimeOfUser($this->user, now()->subHour());
 
         $this->authenticate()->getJson(url('api/auth/user'))
             ->assertUnauthorized()

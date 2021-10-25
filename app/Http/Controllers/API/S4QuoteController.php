@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Http\Middleware\HttpResponseLogger;
 use App\Contracts\Repositories\{Quote\QuoteSubmittedRepositoryInterface as QuoteSubmittedRepository,};
 use App\Contracts\Services\CustomerState;
 use App\Contracts\Services\QuoteView;
@@ -25,7 +26,7 @@ class S4QuoteController extends Controller
     {
         $this->quote = $quote;
 
-        $this->middleware('client');
+        $this->middleware(['client', HttpResponseLogger::class]);
     }
 
     /**

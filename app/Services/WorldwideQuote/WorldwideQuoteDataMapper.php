@@ -28,6 +28,7 @@ use App\Models\Contact;
 use App\Models\Data\Country;
 use App\Models\Data\Currency;
 use App\Models\Image;
+use App\Models\Opportunity;
 use App\Models\Quote\DistributionFieldColumn;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
@@ -45,6 +46,7 @@ use App\Services\WorldwideQuote\Calculation\WorldwideDistributorQuoteCalc;
 use App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc;
 use App\Support\PriceParser;
 use Illuminate\Contracts\Config\Repository as Config;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -74,10 +76,10 @@ class WorldwideQuoteDataMapper
     /** @var bool[]|null */
     protected ?array $requiredFieldsDictionary = null;
 
-    public function __construct(WorldwideQuoteCalc $worldwideQuoteCalc,
+    public function __construct(WorldwideQuoteCalc            $worldwideQuoteCalc,
                                 WorldwideDistributorQuoteCalc $worldwideDistributionCalc,
-                                ManagesExchangeRates $exchangeRateService,
-                                Config $config)
+                                ManagesExchangeRates          $exchangeRateService,
+                                Config                        $config)
     {
         $this->worldwideQuoteCalc = $worldwideQuoteCalc;
         $this->worldwideDistributionCalc = $worldwideDistributionCalc;
@@ -130,7 +132,7 @@ class WorldwideQuoteDataMapper
             'name' => $activeVersion->company->name,
             'logo_url' => transform($activeVersion->company->logo, function (array $logo) {
                 return $logo['x3'] ?? '';
-            })
+            }),
         ]);
 
         $distributions = $activeVersion->worldwideDistributions()->with('country:id,name,iso_3166_2,flag', 'vendors:id,name,short_code', 'vendors.image')->get(['id', 'country_id']);
@@ -142,7 +144,7 @@ class WorldwideQuoteDataMapper
             'name' => $vendor->name,
             'logo_url' => transform($vendor->logo, function (array $logo) {
                 return $logo['x3'] ?? '';
-            })
+            }),
         ])->all();
 
         $countries = $distributions->pluck('country')->unique('id')->values();
@@ -150,7 +152,7 @@ class WorldwideQuoteDataMapper
         $countriesData = $countries->map(fn(Country $country) => [
             'id' => $country->getKey(),
             'name' => $country->name,
-            'flag_url' => $country->flag
+            'flag_url' => $country->flag,
         ])->all();
 
         $templates = SalesOrderTemplate::query()
@@ -177,7 +179,8 @@ class WorldwideQuoteDataMapper
             'company' => $companyData,
             'vendors' => $vendorsData,
             'countries' => $countriesData,
-            'sales_order_templates' => $templatesData
+            'sales_order_templates' => $templatesData,
+            'contract_type' => $worldwideQuote->contractType->type_short_name,
         ]);
     }
 
@@ -190,7 +193,7 @@ class WorldwideQuoteDataMapper
             'name' => $activeVersion->company->name,
             'logo_url' => transform($activeVersion->company->logo, function (array $logo) {
                 return $logo['x3'] ?? '';
-            })
+            }),
         ]);
 
         $vendorModelKeys = $activeVersion->assets()->distinct('vendor_id')->pluck('vendor_id')->all();
@@ -202,7 +205,7 @@ class WorldwideQuoteDataMapper
             'name' => $vendor->name,
             'logo_url' => transform($vendor->logo, function (array $logo) {
                 return $logo['x3'] ?? '';
-            })
+            }),
         ])->all();
 
         $addressModelKeys = $activeVersion->assets()->distinct('machine_address_id')->pluck('machine_address_id')->all();
@@ -219,7 +222,7 @@ class WorldwideQuoteDataMapper
         $countriesData = $countries->map(fn(Country $country) => [
             'id' => $country->getKey(),
             'name' => $country->name,
-            'flag_url' => $country->flag
+            'flag_url' => $country->flag,
         ])->all();
 
         $templates = SalesOrderTemplate::query()
@@ -246,7 +249,8 @@ class WorldwideQuoteDataMapper
             'company' => $companyData,
             'vendors' => $vendorsData,
             'countries' => $countriesData,
-            'sales_order_templates' => $templatesData
+            'sales_order_templates' => $templatesData,
+            'contract_type' => $worldwideQuote->contractType->type_short_name,
         ]);
     }
 
@@ -265,7 +269,7 @@ class WorldwideQuoteDataMapper
             'pack_asset_fields' => $this->getPackAssetFields($worldwideQuote, $worldwideQuote->activeVersion->quoteTemplate),
             'pack_assets_are_grouped' => (bool)$worldwideQuote->activeVersion->use_groups,
             'quote_summary' => $this->getQuoteSummary($worldwideQuote, $outputCurrency),
-            'contract_type_name' => $worldwideQuote->contractType->type_short_name
+            'contract_type_name' => $worldwideQuote->contractType->type_short_name,
         ]);
     }
 
@@ -461,7 +465,7 @@ class WorldwideQuoteDataMapper
         foreach ([
                      'logo_set_x1' => $logoSetX1,
                      'logo_set_x2' => $logoSetX2,
-                     'logo_set_x3' => $logoSetX3
+                     'logo_set_x3' => $logoSetX3,
                  ] as $key => $logoSet) {
 
             $templateAssets[$key] = $composeLogoSet($logoSet);
@@ -577,7 +581,7 @@ class WorldwideQuoteDataMapper
                     'supplier_name' => (string)$distribution->opportunitySupplier->supplier_name,
                     'contact_name' => (string)$distribution->opportunitySupplier->contact_name,
                     'contact_email' => (string)$distribution->opportunitySupplier->contact_email,
-                    'country_name' => (string)$distribution->opportunitySupplier->country_name
+                    'country_name' => (string)$distribution->opportunitySupplier->country_name,
                 ],
 
                 'vendors' => $distribution->vendors->pluck('name')->join(', '),
@@ -925,7 +929,7 @@ class WorldwideQuoteDataMapper
 
             foreach ($assetsGroup->assets as $asset) {
 
-                $asset->setAttribute('vendor_short_code', transform($asset->vendor, fn (Vendor $vendor) => $vendor->short_code));
+                $asset->setAttribute('vendor_short_code', transform($asset->vendor, fn(Vendor $vendor) => $vendor->short_code));
                 $asset->setAttribute('date_to', $quote->opportunity->opportunity_end_date);
 
             }
@@ -986,12 +990,139 @@ class WorldwideQuoteDataMapper
         $quote->setRelation('assets', $results);
     }
 
+    public function markExclusivityOfWorldwidePackQuoteAssetsForCustomer(WorldwideQuote $quote, Collection $assets): void
+    {
+        $primaryAccount = $quote->opportunity->primaryAccount;
+
+        if (is_null($primaryAccount)) {
+            return;
+        }
+
+        $assets->loadExists([
+            'sameWorldwideQuoteAssets' => function (Builder $constraints) use ($primaryAccount) {
+
+                $opportunityModel = new Opportunity();
+                $quoteModel = new WorldwideQuote();
+                $quoteVersionModel = new WorldwideQuoteVersion();
+                $assetModel = new WorldwideQuoteAsset();
+
+                $constraints
+                    ->join($quoteVersionModel->getTable(), $quoteVersionModel->getQualifiedKeyName(), $constraints->qualifyColumn($assetModel->worldwideQuote()->getForeignKeyName()))
+                    ->join($quoteModel->getTable(), $quoteModel->getQualifiedKeyName(), $quoteVersionModel->worldwideQuote()->getQualifiedForeignKeyName())
+                    ->join($opportunityModel->getTable(), $opportunityModel->getQualifiedKeyName(), $quoteModel->opportunity()->getQualifiedForeignKeyName())
+                    ->join($primaryAccount->getTable(), $primaryAccount->getQualifiedKeyName(), $opportunityModel->primaryAccount()->getQualifiedForeignKeyName())
+                    ->where($primaryAccount->getQualifiedKeyName(), '<>', $primaryAccount->getKey())
+                    ->where(function (Builder $constraints) {
+                        $constraints->where($constraints->qualifyColumn('is_selected'), true)
+                            ->orWhereHas('groups', function (Builder $relation) {
+                                $relation->where($relation->qualifyColumn('is_selected'), true);
+                            });
+                    });
+
+            },
+            'sameMappedRows' => function (Builder $constraints) use ($primaryAccount) {
+
+                $opportunityModel = new Opportunity();
+                $quoteModel = new WorldwideQuote();
+                $quoteVersionModel = new WorldwideQuoteVersion();
+                $distributorQuoteModel = new WorldwideDistribution();
+                $mappedRowModel = new MappedRow();
+                $quoteFileModel = new QuoteFile();
+
+                $constraints
+                    ->join($quoteFileModel->getTable(), $quoteFileModel->getQualifiedKeyName(), $constraints->qualifyColumn($mappedRowModel->quoteFile()->getForeignKeyName()))
+                    ->join($distributorQuoteModel->getTable(), $distributorQuoteModel->distributorFile()->getQualifiedForeignKeyName(), $quoteFileModel->getQualifiedKeyName())
+                    ->join($quoteVersionModel->getTable(), $quoteVersionModel->getQualifiedKeyName(), $distributorQuoteModel->worldwideQuote()->getQualifiedForeignKeyName())
+                    ->join($quoteModel->getTable(), $quoteModel->getQualifiedKeyName(), $quoteVersionModel->worldwideQuote()->getQualifiedForeignKeyName())
+                    ->join($opportunityModel->getTable(), $opportunityModel->getQualifiedKeyName(), $quoteModel->opportunity()->getQualifiedForeignKeyName())
+                    ->join($primaryAccount->getTable(), $primaryAccount->getQualifiedKeyName(), $opportunityModel->primaryAccount()->getQualifiedForeignKeyName())
+                    ->where($primaryAccount->getQualifiedKeyName(), '<>', $primaryAccount->getKey())
+                    ->where(function (Builder $constraints) {
+                        $constraints->where($constraints->qualifyColumn('is_selected'), true)
+                            ->orWhereHas('distributionRowsGroups', function (Builder $relation) {
+                                $relation->where($relation->qualifyColumn('is_selected'), true);
+                            });
+                    });
+
+            },
+        ]);
+
+        foreach ($assets as $asset) {
+
+            $asset->setAttribute('is_customer_exclusive_asset', !($asset->same_mapped_rows_exists || $asset->same_worldwide_quote_assets_exists));
+
+        }
+    }
+
+    public function markExclusivityOfWorldwideDistributionRowsForCustomer(WorldwideDistribution $distributorQuote, Collection $rows): void
+    {
+        $primaryAccount = $distributorQuote->worldwideQuote->worldwideQuote->opportunity->primaryAccount;
+
+        if (is_null($primaryAccount)) {
+            return;
+        }
+
+        $rows->loadExists([
+            'sameWorldwideQuoteAssets' => function (Builder $constraints) use ($primaryAccount) {
+
+                $opportunityModel = new Opportunity();
+                $quoteModel = new WorldwideQuote();
+                $quoteVersionModel = new WorldwideQuoteVersion();
+                $assetModel = new WorldwideQuoteAsset();
+
+                $constraints
+                    ->join($quoteVersionModel->getTable(), $quoteVersionModel->getQualifiedKeyName(), $constraints->qualifyColumn($assetModel->worldwideQuote()->getForeignKeyName()))
+                    ->join($quoteModel->getTable(), $quoteModel->getQualifiedKeyName(), $quoteVersionModel->worldwideQuote()->getQualifiedForeignKeyName())
+                    ->join($opportunityModel->getTable(), $opportunityModel->getQualifiedKeyName(), $quoteModel->opportunity()->getQualifiedForeignKeyName())
+                    ->join($primaryAccount->getTable(), $primaryAccount->getQualifiedKeyName(), $opportunityModel->primaryAccount()->getQualifiedForeignKeyName())
+                    ->where($primaryAccount->getQualifiedKeyName(), '<>', $primaryAccount->getKey())
+                    ->where(function (Builder $constraints) {
+                        $constraints->where($constraints->qualifyColumn('is_selected'), true)
+                            ->orWhereHas('groups', function (Builder $relation) {
+                                $relation->where($relation->qualifyColumn('is_selected'), true);
+                            });
+                    });
+
+            },
+            'sameMappedRows' => function (Builder $constraints) use ($primaryAccount) {
+
+                $opportunityModel = new Opportunity();
+                $quoteModel = new WorldwideQuote();
+                $quoteVersionModel = new WorldwideQuoteVersion();
+                $distributorQuoteModel = new WorldwideDistribution();
+                $mappedRowModel = new MappedRow();
+                $quoteFileModel = new QuoteFile();
+
+                $constraints
+                    ->join($quoteFileModel->getTable(), $quoteFileModel->getQualifiedKeyName(), $constraints->qualifyColumn($mappedRowModel->quoteFile()->getForeignKeyName()))
+                    ->join($distributorQuoteModel->getTable(), $distributorQuoteModel->distributorFile()->getQualifiedForeignKeyName(), $quoteFileModel->getQualifiedKeyName())
+                    ->join($quoteVersionModel->getTable(), $quoteVersionModel->getQualifiedKeyName(), $distributorQuoteModel->worldwideQuote()->getQualifiedForeignKeyName())
+                    ->join($quoteModel->getTable(), $quoteModel->getQualifiedKeyName(), $quoteVersionModel->worldwideQuote()->getQualifiedForeignKeyName())
+                    ->join($opportunityModel->getTable(), $opportunityModel->getQualifiedKeyName(), $quoteModel->opportunity()->getQualifiedForeignKeyName())
+                    ->join($primaryAccount->getTable(), $primaryAccount->getQualifiedKeyName(), $opportunityModel->primaryAccount()->getQualifiedForeignKeyName())
+                    ->where($primaryAccount->getQualifiedKeyName(), '<>', $primaryAccount->getKey())
+                    ->where(function (Builder $constraints) {
+                        $constraints->where($constraints->qualifyColumn('is_selected'), true)
+                            ->orWhereHas('distributionRowsGroups', function (Builder $relation) {
+                                $relation->where($relation->qualifyColumn('is_selected'), true);
+                            });
+                    });
+            },
+        ]);
+
+        foreach ($rows as $row) {
+
+            $row->setAttribute('is_customer_exclusive_asset', !($row->same_mapped_rows_exists || $row->same_worldwide_quote_assets_exists));
+
+        }
+    }
+
     private function worldwideQuoteAssetsToArrayOfAssetData(Collection $assets, float $priceValueCoeff, Currency $outputCurrency): array
     {
         return $assets
             ->load('machineAddress.country')
             ->map(function (WorldwideQuoteAsset $asset) use ($outputCurrency, $priceValueCoeff) {
-                $assetFloatPrice = (float)$asset->price * $priceValueCoeff  * (float)$outputCurrency->exchange_rate_value;
+                $assetFloatPrice = (float)$asset->price * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value;
 
                 return new AssetData([
                     'buy_currency_code' => transform($asset->buyCurrency, fn(Currency $currency) => $currency->code, ''),
@@ -1039,7 +1170,7 @@ class WorldwideQuoteDataMapper
             'date_from',
             'date_to',
             'price',
-            'machine_address_string'
+            'machine_address_string',
         ];
 
         foreach ($assetFieldNames as $fieldName) {
@@ -1191,7 +1322,7 @@ class WorldwideQuoteDataMapper
             'service_agreement_id' => $activeVersion->service_agreement_id ?? '',
             'system_handle' => $activeVersion->system_handle ?? '',
 
-            'footer_notes' => implode("\n", $footerNotes)
+            'footer_notes' => implode("\n", $footerNotes),
         ]);
     }
 
@@ -1238,7 +1369,7 @@ class WorldwideQuoteDataMapper
         $fields = static::getClassPublicProperties(DistributionSummary::class);
 
         $fields = array_values(
-            array_filter($fields, fn (string $fieldName) => !in_array($fieldName, ['duration'], true))
+            array_filter($fields, fn(string $fieldName) => !in_array($fieldName, ['duration'], true))
         );
 
         return array_map(function (string $fieldName) use ($quoteTemplate) {
@@ -1283,7 +1414,7 @@ class WorldwideQuoteDataMapper
             'pack_asset_fields' => $this->getPackAssetFields($worldwideQuote, $worldwideQuote->activeVersion->quoteTemplate),
             'pack_assets_are_grouped' => (bool)$worldwideQuote->activeVersion->use_groups,
             'quote_summary' => $this->getQuoteSummary($worldwideQuote, $outputCurrency),
-            'contract_type_name' => $worldwideQuote->contractType->type_short_name
+            'contract_type_name' => $worldwideQuote->contractType->type_short_name,
         ]);
     }
 

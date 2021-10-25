@@ -77,6 +77,7 @@ class SalesOrderStateProcessor implements ProcessesSalesOrderState
 
             $salesOrder->vat_type = $data->vat_type;
             $salesOrder->customer_po = $data->customer_po;
+            $salesOrder->contract_number = $data->contract_number;
             $salesOrder->activated_at = $salesOrder->freshTimestampString();
 
             $this->assignNewSalesOrderNumber($salesOrder);
@@ -132,6 +133,7 @@ class SalesOrderStateProcessor implements ProcessesSalesOrderState
 
             $salesOrder->vat_type = $data->vat_type;
             $salesOrder->customer_po = $data->customer_po;
+            $salesOrder->contract_number = $data->contract_number;
 
             $lock = $this->lockProvider->lock(Lock::UPDATE_SORDER($salesOrder->getKey()), 10);
 

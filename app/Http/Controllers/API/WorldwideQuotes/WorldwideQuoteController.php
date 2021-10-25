@@ -512,7 +512,7 @@ class WorldwideQuoteController extends Controller
         $this->authorize('view', $worldwideQuote);
 
         return response()->json(
-            ApplicableDiscountCollection::make($request->getApplicableDiscounts()),
+            ApplicableDiscountCollection::make($request->getApplicableDiscounts($worldwideQuote)),
             Response::HTTP_OK
         );
     }

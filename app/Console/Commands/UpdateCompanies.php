@@ -66,7 +66,7 @@ class UpdateCompanies extends Command
 
             $company->save();
 
-            $vendors = Vendor::query()->where('short_code', $data['vendors'])->pluck((new Vendor())->getQualifiedKeyName())->all();
+            $vendors = Vendor::query()->whereIn('short_code', $data['vendors'])->pluck((new Vendor())->getQualifiedKeyName())->all();
 
             $company->vendors()->sync($vendors);
 

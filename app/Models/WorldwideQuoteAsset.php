@@ -4,9 +4,13 @@ namespace App\Models;
 
 use App\Models\Data\Currency;
 use App\Models\Quote\BaseWorldwideQuote;
+use App\Models\QuoteFile\MappedRow;
 use App\Traits\Uuid;
+use Awobaz\Compoships\Compoships;
+use Awobaz\Compoships\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
@@ -41,19 +45,22 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property Currency|null $buyCurrency
  * @property-read string|null $date_to
  * @property-read string|null $machine_address_string
+ * @property-read bool|null $is_customer_exclusive_asset
+ * @property-read bool|null $same_worldwide_quote_assets_exists
+ * @property-read bool|null $same_mapped_rows_exists
  */
 class WorldwideQuoteAsset extends Model
 {
-    use Uuid;
+    use Uuid, Compoships;
 
     protected $guarded = [];
 
     protected $hidden = [
-        'worldwide_quote_id', 'worldwide_quote_type', 'pivot'
+        'worldwide_quote_id', 'worldwide_quote_type', 'pivot',
     ];
 
     protected $casts = [
-        'service_level_data' => 'array'
+        'service_level_data' => 'array',
     ];
 
     public function worldwideQuote(): MorphTo
@@ -79,5 +86,20 @@ class WorldwideQuoteAsset extends Model
     public function buyCurrency(): BelongsTo
     {
         return $this->belongsTo(Currency::class);
+    }
+
+    public function sameWorldwideQuoteAssets(): HasMany
+    {
+        return $this->hasMany(WorldwideQuoteAsset::class, ['serial_no', 'sku'], ['serial_no', 'sku']);
+    }
+
+    public function sameMappedRows(): HasMany
+    {
+        return $this->hasMany(MappedRow::class, ['serial_no', 'product_no'], ['serial_no', 'sku']);
+    }
+
+    public function groups(): BelongsToMany
+    {
+        return $this->belongsToMany(related: WorldwideQuoteAssetsGroup::class, table: 'worldwide_quote_assets_group_asset', foreignPivotKey: 'asset_id', relatedPivotKey: 'group_id');
     }
 }
