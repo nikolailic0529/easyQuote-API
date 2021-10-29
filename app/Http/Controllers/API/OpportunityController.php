@@ -128,7 +128,9 @@ class OpportunityController extends Controller
     {
         $this->authorize('create', Opportunity::class);
 
-        $result = $service->batchImportOpportunities(
+        $result = $service
+            ->setCauser($request->user())
+            ->batchImportOpportunities(
             $request->getImportOpportunityData(),
             $request->user()
         );
@@ -149,7 +151,9 @@ class OpportunityController extends Controller
     {
         $this->authorize('create', Opportunity::class);
 
-        $service->batchSaveOpportunities($request->getBatchSaveData());
+        $service
+            ->setCauser($request->user())
+            ->batchSaveOpportunities($request->getBatchSaveData());
 
         return response()->noContent();
     }

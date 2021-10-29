@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Contact;
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
@@ -56,6 +58,68 @@ class ContactTest extends TestCase
             $this->getJson('api/contacts?order_by_'.$field.'=desc')->assertOk();
             $this->getJson('api/contacts?order_by_'.$field.'=asc')->assertOk();
         }
+    }
+
+    /**
+     * Test an ability to view only owned contacts
+     * when user doesn't have super permissions.
+     *
+     * @return void
+     */
+    public function testCanViewOnlyOwnedContactsWithoutSuperPermissions()
+    {
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions([
+            'view_contacts',
+            'update_contacts',
+            'delete_contacts',
+        ]);
+
+        /** @var User $user */
+        $user = factory(User::class)->create();
+
+        $user->syncRoles($role);
+
+        $this->authenticateApi($user);
+
+        $response = $this->getJson('api/contacts')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id', 'contact_type', 'phone', 'first_name', 'last_name', 'mobile', 'job_title', 'image_id', 'is_verified', 'email', 'created_at', 'activated_at',
+                    ],
+                ],
+                'current_page',
+                'first_page_url',
+                'from',
+                'last_page',
+                'last_page_url',
+                'links' => [
+                    '*' => [
+                        'url', 'label', 'active',
+                    ],
+                ],
+                'next_page_url',
+                'path',
+                'per_page',
+                'prev_page_url',
+                'to',
+                'total',
+            ]);
+
+        $this->assertEmpty($response->json('data'));
+
+        factory(Contact::class)->create(['user_id' => $user->getKey()]);
+
+        $response = $this->getJson('api/contacts')
+            ->assertOk();
+
+        $this->assertSame($user->getKey(), $response->json('data.0.user_id'));
+        $this->assertCount(1, $response->json('data'));
     }
 
     /**

@@ -40,4 +40,20 @@ interface PermissionBroker
      * @return array
      */
     public function providedLevels(): array;
+
+    /**
+     * Get default guard name.
+     *
+     * @return string
+     */
+    public function getDefaultGuard(): string;
+
+    /**
+     * Give permission to user.
+     *
+     * @param User $user
+     * @param string $name
+     * @param string|null $guard
+     */
+    public function givePermissionToUser(User $user, string $name, ?string $guard = null): void;
 }

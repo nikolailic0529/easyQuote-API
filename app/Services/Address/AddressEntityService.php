@@ -27,6 +27,7 @@ class AddressEntityService implements CauserAware
     {
         return tap(new Address(), function (Address $address) use ($data) {
             $address->{$address->getKeyName()} = (string)Uuid::generate(4);
+            $address->user()->associate($this->causer);
             $address->address_type = $data->address_type;
             $address->address_1 = $data->address_1;
             $address->address_2 = $data->address_2;

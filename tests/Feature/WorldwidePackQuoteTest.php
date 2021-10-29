@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enum\PackQuoteStage;
 use App\Models\Address;
+use App\Models\Asset;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Data\Country;
@@ -1009,28 +1010,28 @@ class WorldwidePackQuoteTest extends TestCase
         $groupOfAssets->assets()->sync($lenAssets->merge($hpeAssets));
 
         factory(MultiYearDiscount::class)->create([
-            'vendor_id' => $lenVendor->getKey()
+            'vendor_id' => $lenVendor->getKey(),
         ]);
         factory(MultiYearDiscount::class)->create([
-            'vendor_id' => $hpeVendor->getKey()
+            'vendor_id' => $hpeVendor->getKey(),
         ]);
         factory(PrePayDiscount::class)->create([
-            'vendor_id' => $lenVendor->getKey()
+            'vendor_id' => $lenVendor->getKey(),
         ]);
         factory(PrePayDiscount::class)->create([
-            'vendor_id' => $hpeVendor->getKey()
+            'vendor_id' => $hpeVendor->getKey(),
         ]);
         factory(PromotionalDiscount::class)->create([
-            'vendor_id' => $lenVendor->getKey()
+            'vendor_id' => $lenVendor->getKey(),
         ]);
         factory(PromotionalDiscount::class)->create([
-            'vendor_id' => $hpeVendor->getKey()
+            'vendor_id' => $hpeVendor->getKey(),
         ]);
         factory(SND::class)->create([
-            'vendor_id' => $lenVendor->getKey()
+            'vendor_id' => $lenVendor->getKey(),
         ]);
         factory(SND::class)->create([
-            'vendor_id' => $hpeVendor->getKey()
+            'vendor_id' => $hpeVendor->getKey(),
         ]);
 
         $this->authenticateApi();
@@ -1121,13 +1122,10 @@ class WorldwidePackQuoteTest extends TestCase
             'buy_price' => 100,
         ]);
 
-        $anotherQuote = factory(WorldwideQuote::class)->create();
-
-        $assetOfAnotherQuote = factory(WorldwideQuoteAsset::class)->create([
-            'worldwide_quote_id' => $anotherQuote->activeVersion->getKey(),
-            'worldwide_quote_type' => $anotherQuote->activeVersion->getMorphClass(),
-            'serial_no' => $assets[0]->serial_no,
-            'sku' => $assets[0]->sku,
+        /** @var Asset $sameAsset */
+        $sameAsset = factory(Asset::class)->create([
+            'serial_number' => $assets[0]->serial_no,
+            'product_number' => $assets[0]->sku,
         ]);
 
         $assetsGroup = factory(WorldwideQuoteAssetsGroup::class)->create([
@@ -1138,7 +1136,7 @@ class WorldwidePackQuoteTest extends TestCase
 
         $this->authenticateApi();
 
-        $this->getJson('api/ww-quotes/'.$quote->getKey().'?'.Arr::query([
+        $response = $this->getJson('api/ww-quotes/'.$quote->getKey().'?'.Arr::query([
                 'include' => [
                     'summary', 'assets.machine_address', 'assets_groups.assets.machine_address',
                 ],
@@ -1188,6 +1186,19 @@ class WorldwidePackQuoteTest extends TestCase
                     'final_margin' => '36.33',
                 ],
             ]);
+
+        $duplicatedAssetCount = 0;
+
+        foreach ($response->json('assets') as $asset) {
+            if ($asset['serial_no'] === $sameAsset->serial_number && $asset['sku'] === $sameAsset->product_number) {
+                $this->assertFalse($asset['is_customer_exclusive_asset']);
+                $duplicatedAssetCount++;
+            } else {
+                $this->assertTrue($asset['is_customer_exclusive_asset']);
+            }
+        }
+
+        $this->assertSame(1, $duplicatedAssetCount);
     }
 
     /**
@@ -2463,7 +2474,7 @@ class WorldwidePackQuoteTest extends TestCase
                 'assets' => [
                     '*' => [
                         'id', 'is_customer_exclusive_asset',
-                    ]
+                    ],
                 ],
                 'group_name',
                 'search_text',
@@ -2529,7 +2540,7 @@ class WorldwidePackQuoteTest extends TestCase
                     'vendor_short_code',
                     'machine_address_string',
                     'buy_currency_code',
-                    'is_customer_exclusive_asset'
+                    'is_customer_exclusive_asset',
                 ],
             ]);
     }
@@ -2640,8 +2651,8 @@ class WorldwidePackQuoteTest extends TestCase
                 'worldwide_quote_version_id',
                 'assets' => [
                     '*' => [
-                        'id', 'is_customer_exclusive_asset'
-                    ]
+                        'id', 'is_customer_exclusive_asset',
+                    ],
                 ],
                 'assets_sum',
                 'assets_count',

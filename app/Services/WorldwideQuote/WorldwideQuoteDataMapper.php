@@ -23,12 +23,12 @@ use App\DTO\WorldwideQuote\WorldwideQuoteToSalesOrderData;
 use App\Enum\AddressType;
 use App\Enum\VAT;
 use App\Models\Address;
+use App\Models\Asset;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Data\Country;
 use App\Models\Data\Currency;
 use App\Models\Image;
-use App\Models\Opportunity;
 use App\Models\Quote\DistributionFieldColumn;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
@@ -41,6 +41,8 @@ use App\Models\Template\SalesOrderTemplate;
 use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
 use App\Models\WorldwideQuoteAssetsGroup;
+use App\Queries\MappedRowQueries;
+use App\Queries\WorldwideQuoteAssetQueries;
 use App\Services\ThumbHelper;
 use App\Services\WorldwideQuote\Calculation\WorldwideDistributorQuoteCalc;
 use App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc;
@@ -65,26 +67,17 @@ use const CT_PACK;
 
 class WorldwideQuoteDataMapper
 {
-    protected WorldwideQuoteCalc $worldwideQuoteCalc;
-
-    protected WorldwideDistributorQuoteCalc $worldwideDistributionCalc;
-
-    protected ManagesExchangeRates $exchangeRateService;
-
-    protected Config $config;
 
     /** @var bool[]|null */
     protected ?array $requiredFieldsDictionary = null;
 
-    public function __construct(WorldwideQuoteCalc            $worldwideQuoteCalc,
-                                WorldwideDistributorQuoteCalc $worldwideDistributionCalc,
-                                ManagesExchangeRates          $exchangeRateService,
-                                Config                        $config)
+    public function __construct(protected Config                        $config,
+                                protected WorldwideQuoteCalc            $worldwideQuoteCalc,
+                                protected WorldwideDistributorQuoteCalc $worldwideDistributionCalc,
+                                protected ManagesExchangeRates          $exchangeRateService,
+                                protected WorldwideQuoteAssetQueries    $assetQueries,
+                                protected MappedRowQueries              $mappedRowQueries)
     {
-        $this->worldwideQuoteCalc = $worldwideQuoteCalc;
-        $this->worldwideDistributionCalc = $worldwideDistributionCalc;
-        $this->exchangeRateService = $exchangeRateService;
-        $this->config = $config;
     }
 
     public function isMappingFieldRequired(string $fieldName): bool
@@ -998,60 +991,37 @@ class WorldwideQuoteDataMapper
             return;
         }
 
-        $assets->loadExists([
-            'sameWorldwideQuoteAssets' => function (Builder $constraints) use ($primaryAccount) {
+        $hashGenericAssetKey = function (Asset $asset) {
+            return sprintf("%s.%s", $asset->serial_number, $asset->product_number);
+        };
 
-                $opportunityModel = new Opportunity();
-                $quoteModel = new WorldwideQuote();
-                $quoteVersionModel = new WorldwideQuoteVersion();
-                $assetModel = new WorldwideQuoteAsset();
+        $hashAssetKey = function (WorldwideQuoteAsset $asset) {
+            return sprintf("%s.%s", $asset->serial_no, $asset->sku);
+        };
 
-                $constraints
-                    ->join($quoteVersionModel->getTable(), $quoteVersionModel->getQualifiedKeyName(), $constraints->qualifyColumn($assetModel->worldwideQuote()->getForeignKeyName()))
-                    ->join($quoteModel->getTable(), $quoteModel->getQualifiedKeyName(), $quoteVersionModel->worldwideQuote()->getQualifiedForeignKeyName())
-                    ->join($opportunityModel->getTable(), $opportunityModel->getQualifiedKeyName(), $quoteModel->opportunity()->getQualifiedForeignKeyName())
-                    ->join($primaryAccount->getTable(), $primaryAccount->getQualifiedKeyName(), $opportunityModel->primaryAccount()->getQualifiedForeignKeyName())
-                    ->where($primaryAccount->getQualifiedKeyName(), '<>', $primaryAccount->getKey())
-                    ->where(function (Builder $constraints) {
-                        $constraints->where($constraints->qualifyColumn('is_selected'), true)
-                            ->orWhereHas('groups', function (Builder $relation) {
-                                $relation->where($relation->qualifyColumn('is_selected'), true);
-                            });
-                    });
-
-            },
-            'sameMappedRows' => function (Builder $constraints) use ($primaryAccount) {
-
-                $opportunityModel = new Opportunity();
-                $quoteModel = new WorldwideQuote();
-                $quoteVersionModel = new WorldwideQuoteVersion();
-                $distributorQuoteModel = new WorldwideDistribution();
-                $mappedRowModel = new MappedRow();
-                $quoteFileModel = new QuoteFile();
-
-                $constraints
-                    ->join($quoteFileModel->getTable(), $quoteFileModel->getQualifiedKeyName(), $constraints->qualifyColumn($mappedRowModel->quoteFile()->getForeignKeyName()))
-                    ->join($distributorQuoteModel->getTable(), $distributorQuoteModel->distributorFile()->getQualifiedForeignKeyName(), $quoteFileModel->getQualifiedKeyName())
-                    ->join($quoteVersionModel->getTable(), $quoteVersionModel->getQualifiedKeyName(), $distributorQuoteModel->worldwideQuote()->getQualifiedForeignKeyName())
-                    ->join($quoteModel->getTable(), $quoteModel->getQualifiedKeyName(), $quoteVersionModel->worldwideQuote()->getQualifiedForeignKeyName())
-                    ->join($opportunityModel->getTable(), $opportunityModel->getQualifiedKeyName(), $quoteModel->opportunity()->getQualifiedForeignKeyName())
-                    ->join($primaryAccount->getTable(), $primaryAccount->getQualifiedKeyName(), $opportunityModel->primaryAccount()->getQualifiedForeignKeyName())
-                    ->where($primaryAccount->getQualifiedKeyName(), '<>', $primaryAccount->getKey())
-                    ->where(function (Builder $constraints) {
-                        $constraints->where($constraints->qualifyColumn('is_selected'), true)
-                            ->orWhereHas('distributionRowsGroups', function (Builder $relation) {
-                                $relation->where($relation->qualifyColumn('is_selected'), true);
-                            });
-                    });
-
-            },
-        ]);
+        $sameGenericAssetDict = $this->assetQueries->sameGenericAssetsQuery($assets)
+            ->whereDoesntHave('companies', function (Builder $builder) use ($primaryAccount) {
+                $builder->whereKey($primaryAccount);
+            })
+            ->with('companies:companies.id,companies.name')
+            ->get()
+            ->keyBy($hashGenericAssetKey);
 
         foreach ($assets as $asset) {
+            /** @var WorldwideQuoteAsset $asset */
 
-            $asset->setAttribute('is_customer_exclusive_asset', !($asset->same_mapped_rows_exists || $asset->same_worldwide_quote_assets_exists));
+            $assetKeyHash = $hashAssetKey($asset);
 
+            /** @var Asset|null $sameGenericAsset */
+            $sameGenericAsset = $sameGenericAssetDict->get($assetKeyHash);
+
+            $asset->setAttribute('is_customer_exclusive_asset', is_null($sameGenericAsset));
+
+            if (!is_null($sameGenericAsset)) {
+                $asset->setAttribute('owned_by_customer', $sameGenericAsset->companies->first());
+            }
         }
+
     }
 
     public function markExclusivityOfWorldwideDistributionRowsForCustomer(WorldwideDistribution $distributorQuote, Collection $rows): void
@@ -1062,59 +1032,38 @@ class WorldwideQuoteDataMapper
             return;
         }
 
-        $rows->loadExists([
-            'sameWorldwideQuoteAssets' => function (Builder $constraints) use ($primaryAccount) {
+        $hashMappedRowKey = function (MappedRow $mappedRow) {
+            return sprintf("%s.%s", $mappedRow->serial_no, $mappedRow->product_no);
+        };
 
-                $opportunityModel = new Opportunity();
-                $quoteModel = new WorldwideQuote();
-                $quoteVersionModel = new WorldwideQuoteVersion();
-                $assetModel = new WorldwideQuoteAsset();
+        $hashGenericAssetKey = function (Asset $asset) {
+            return sprintf("%s.%s", $asset->serial_number, $asset->product_number);
+        };
 
-                $constraints
-                    ->join($quoteVersionModel->getTable(), $quoteVersionModel->getQualifiedKeyName(), $constraints->qualifyColumn($assetModel->worldwideQuote()->getForeignKeyName()))
-                    ->join($quoteModel->getTable(), $quoteModel->getQualifiedKeyName(), $quoteVersionModel->worldwideQuote()->getQualifiedForeignKeyName())
-                    ->join($opportunityModel->getTable(), $opportunityModel->getQualifiedKeyName(), $quoteModel->opportunity()->getQualifiedForeignKeyName())
-                    ->join($primaryAccount->getTable(), $primaryAccount->getQualifiedKeyName(), $opportunityModel->primaryAccount()->getQualifiedForeignKeyName())
-                    ->where($primaryAccount->getQualifiedKeyName(), '<>', $primaryAccount->getKey())
-                    ->where(function (Builder $constraints) {
-                        $constraints->where($constraints->qualifyColumn('is_selected'), true)
-                            ->orWhereHas('groups', function (Builder $relation) {
-                                $relation->where($relation->qualifyColumn('is_selected'), true);
-                            });
-                    });
-
-            },
-            'sameMappedRows' => function (Builder $constraints) use ($primaryAccount) {
-
-                $opportunityModel = new Opportunity();
-                $quoteModel = new WorldwideQuote();
-                $quoteVersionModel = new WorldwideQuoteVersion();
-                $distributorQuoteModel = new WorldwideDistribution();
-                $mappedRowModel = new MappedRow();
-                $quoteFileModel = new QuoteFile();
-
-                $constraints
-                    ->join($quoteFileModel->getTable(), $quoteFileModel->getQualifiedKeyName(), $constraints->qualifyColumn($mappedRowModel->quoteFile()->getForeignKeyName()))
-                    ->join($distributorQuoteModel->getTable(), $distributorQuoteModel->distributorFile()->getQualifiedForeignKeyName(), $quoteFileModel->getQualifiedKeyName())
-                    ->join($quoteVersionModel->getTable(), $quoteVersionModel->getQualifiedKeyName(), $distributorQuoteModel->worldwideQuote()->getQualifiedForeignKeyName())
-                    ->join($quoteModel->getTable(), $quoteModel->getQualifiedKeyName(), $quoteVersionModel->worldwideQuote()->getQualifiedForeignKeyName())
-                    ->join($opportunityModel->getTable(), $opportunityModel->getQualifiedKeyName(), $quoteModel->opportunity()->getQualifiedForeignKeyName())
-                    ->join($primaryAccount->getTable(), $primaryAccount->getQualifiedKeyName(), $opportunityModel->primaryAccount()->getQualifiedForeignKeyName())
-                    ->where($primaryAccount->getQualifiedKeyName(), '<>', $primaryAccount->getKey())
-                    ->where(function (Builder $constraints) {
-                        $constraints->where($constraints->qualifyColumn('is_selected'), true)
-                            ->orWhereHas('distributionRowsGroups', function (Builder $relation) {
-                                $relation->where($relation->qualifyColumn('is_selected'), true);
-                            });
-                    });
-            },
-        ]);
+        $sameGenericAssetDict = $this->mappedRowQueries->sameGenericAssetsQuery($rows)
+            ->whereDoesntHave('companies', function (Builder $builder) use ($primaryAccount) {
+                $builder->whereKey($primaryAccount);
+            })
+            ->with('companies:companies.id,companies.name')
+            ->get()
+            ->keyBy($hashGenericAssetKey);
 
         foreach ($rows as $row) {
 
-            $row->setAttribute('is_customer_exclusive_asset', !($row->same_mapped_rows_exists || $row->same_worldwide_quote_assets_exists));
+            /** @var MappedRow $row */
 
+            $rowKeyHash = $hashMappedRowKey($row);
+
+            /** @var Asset|null $sameGenericAsset */
+            $sameGenericAsset = $sameGenericAssetDict->get($rowKeyHash);
+
+            $row->setAttribute('is_customer_exclusive_asset', is_null($sameGenericAsset));
+
+            if (!is_null($sameGenericAsset)) {
+                $row->setAttribute('owned_by_customer', $sameGenericAsset->companies->first());
+            }
         }
+
     }
 
     private function worldwideQuoteAssetsToArrayOfAssetData(Collection $assets, float $priceValueCoeff, Currency $outputCurrency): array

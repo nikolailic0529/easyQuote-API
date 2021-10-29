@@ -2,16 +2,20 @@
 
 namespace App\Queries;
 
+use App\Models\Address;
 use App\Models\Contact;
+use App\Models\User;
 use App\Queries\Pipeline\PerformElasticsearchSearch;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
+use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
 class ContactQueries
 {
-    public function __construct(protected Elasticsearch $elasticsearch)
+    public function __construct(protected Elasticsearch $elasticsearch,
+                                protected Gate          $gate)
     {
     }
 
@@ -19,9 +23,16 @@ class ContactQueries
     {
         $request ??= new Request();
 
+        /** @var User $user */
+        $user = $request->user() ?? new User();
+
         $contactModel = new Contact();
 
-        $query = $contactModel->newQuery();
+        $query = $contactModel
+            ->newQuery()
+            ->when($this->gate->denies('viewAnyOwnerEntities', Address::class), function (Builder $builder) use ($user) {
+                $builder->whereBelongsTo($user);
+            });
 
         return RequestQueryBuilder::for(
             builder: $query,

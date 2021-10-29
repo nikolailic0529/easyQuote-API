@@ -27,6 +27,11 @@ use Spatie\Permission\{Contracts\Role as RoleContract,
     Traits\RefreshesPermissionCache
 };
 
+/**
+ * @property string|null $name
+ * @property string|null $guard_name
+ * @property bool|null $is_system
+ */
 class Role extends Model implements RoleContract, ActivatableInterface, SearchableEntity
 {
     use Uuid,

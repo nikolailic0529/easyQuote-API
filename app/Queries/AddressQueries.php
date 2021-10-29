@@ -4,15 +4,18 @@ namespace App\Queries;
 
 use App\Models\Address;
 use App\Models\Data\Country;
+use App\Models\User;
 use App\Queries\Pipeline\PerformElasticsearchSearch;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
+use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
 class AddressQueries
 {
-    public function __construct(protected Elasticsearch $elasticsearch)
+    public function __construct(protected Elasticsearch $elasticsearch,
+                                protected Gate          $gate)
     {
     }
 
@@ -20,12 +23,18 @@ class AddressQueries
     {
         $request ??= new Request();
 
+        /** @var User $user */
+        $user = $request->user() ?? new User();
+
         $addressModel = new Address();
         $countryModel = new Country();
 
         $query = $addressModel->newQuery()
             ->with('country')
             ->leftJoin($countryModel->getTable(), $countryModel->getQualifiedKeyName(), $addressModel->country()->getQualifiedForeignKeyName())
+            ->when($this->gate->denies('viewAnyOwnerEntities', Address::class), function (Builder $builder) use ($user) {
+                $builder->whereBelongsTo($user);
+            })
             ->select($addressModel->qualifyColumn('*'));
 
         return RequestQueryBuilder::for(

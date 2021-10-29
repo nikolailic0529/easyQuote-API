@@ -4,14 +4,21 @@ namespace App\Models;
 
 use App\Models\Data\Currency;
 use App\Models\Quote\BaseWorldwideQuote;
+use App\Models\Quote\WorldwideDistribution;
+use App\Models\Quote\WorldwideQuote;
+use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\QuoteFile\MappedRow;
 use App\Traits\Uuid;
 use Awobaz\Compoships\Compoships;
 use Awobaz\Compoships\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
+use Staudenmeir\EloquentHasManyDeep\HasOneDeep;
+use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 /**
  * Class WorldwideQuoteAsset
@@ -48,10 +55,13 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read bool|null $is_customer_exclusive_asset
  * @property-read bool|null $same_worldwide_quote_assets_exists
  * @property-read bool|null $same_mapped_rows_exists
+ * @property-read Company|null $company
+ * @property-read WorldwideQuoteVersion|null $worldwideQuoteVersion
+ * @property-read bool|null $exists_in_selected_groups
  */
 class WorldwideQuoteAsset extends Model
 {
-    use Uuid, Compoships;
+    use Uuid, Compoships, HasRelationships;
 
     protected $guarded = [];
 
@@ -66,6 +76,11 @@ class WorldwideQuoteAsset extends Model
     public function worldwideQuote(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function worldwideQuoteVersion(): BelongsTo
+    {
+        return $this->belongsTo(WorldwideQuoteVersion::class, 'worldwide_quote_id');
     }
 
     public function replicatedAsset(): BelongsTo
@@ -101,5 +116,28 @@ class WorldwideQuoteAsset extends Model
     public function groups(): BelongsToMany
     {
         return $this->belongsToMany(related: WorldwideQuoteAssetsGroup::class, table: 'worldwide_quote_assets_group_asset', foreignPivotKey: 'asset_id', relatedPivotKey: 'group_id');
+    }
+
+    public function company(): HasOneDeep
+    {
+        return $this->hasOneDeep(
+            related: Company::class,
+            through: [
+                WorldwideQuoteVersion::class,
+                WorldwideQuote::class,
+                Opportunity::class,
+            ],
+            foreignKeys: [
+                'id',
+                'id',
+                'id',
+                'id',
+            ],
+            localKeys: [
+                'worldwide_quote_id',
+                'worldwide_quote_id',
+                'opportunity_id',
+                'primary_account_id',
+            ]);
     }
 }

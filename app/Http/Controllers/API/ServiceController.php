@@ -2,40 +2,48 @@
 
 namespace App\Http\Controllers\API;
 
-use App\DTO\ServiceData;
+use App\DTO\VendorServices\WarrantyLookupResult;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Lookup\Service;
+use App\Http\Requests\Lookup\PerformWarrantyLookup;
 use App\Http\Resources\Lookup\Service as ServiceResource;
-use App\Services\ServiceLookup;
-use Illuminate\Http\Response;
+use App\Services\Exceptions\ServiceLookupRouteException;
+use App\Services\VendorServices\WarrantyLookupService;
+use Illuminate\Http\JsonResponse;
+use Psr\SimpleCache\InvalidArgumentException;
+use Symfony\Component\HttpFoundation\Response;
 
 class ServiceController extends Controller
 {
     /**
-     * Handle the incoming request.
+     * Perform warranty lookup request.
      *
-     * @param  \Service  $request
-     * @return \Illuminate\Http\Response
+     * @param PerformWarrantyLookup $request
+     * @param WarrantyLookupService $service
+     * @return JsonResponse
+     * @throws ServiceLookupRouteException
+     * @throws InvalidArgumentException
      */
-    public function __invoke(Service $request, ServiceLookup $service)
+    public function __invoke(PerformWarrantyLookup $request,
+                             WarrantyLookupService $service): JsonResponse
     {
-        $result = $service->getService(
-            $request->vendor(),
-            $request->serial_number,
-            $request->product_number
+        $result = $service->getWarranty(
+            vendorCode: $request->getVendorCode(),
+            serial: $request->getSerialNumber(),
+            sku: $request->getProductNumber(),
+            countryCode: $request->getCountryCode(),
         );
 
-        return static::buildResponse($result);
+        return static::buildResponseFromResult($result);
     }
 
-    protected static function buildResponse($result)
+    protected static function buildResponseFromResult(?WarrantyLookupResult $result): JsonResponse
     {
-        if ($result instanceof ServiceData) {
-            return response()->json(
-              ServiceResource::make($result)
-            );
+        if (is_null($result)) {
+            return response()->json(['message' => SUN_01], Response::HTTP_NOT_FOUND);
         }
 
-        return response()->json(['message' => SUN_01], Response::HTTP_NOT_FOUND);
+        return response()->json(
+            ServiceResource::make($result)
+        );
     }
 }

@@ -2,7 +2,7 @@
 
 namespace App\Http\Resources\User;
 
-use App\Services\PermissionBroker;
+use App\Services\DefaultPermissionBroker;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Facades\Permission;
 use App\Models\Role;

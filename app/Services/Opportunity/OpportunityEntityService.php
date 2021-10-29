@@ -3,6 +3,7 @@
 namespace App\Services\Opportunity;
 
 use App\Contracts\CauserAware;
+use App\Contracts\Services\PermissionBroker;
 use App\DTO\{Opportunity\BatchOpportunityUploadResult,
     Opportunity\BatchSaveOpportunitiesData,
     Opportunity\CreateOpportunityData,
@@ -32,6 +33,7 @@ use App\Models\Data\Country;
 use App\Models\Data\Timezone;
 use App\Models\Opportunity;
 use App\Models\OpportunitySupplier;
+use App\Models\Permission;
 use App\Models\User;
 use App\Queries\PipelineQueries;
 use App\Services\Exceptions\ValidationException;
@@ -69,7 +71,8 @@ class OpportunityEntityService implements CauserAware
                                 protected EventDispatcher     $eventDispatcher,
                                 protected ValidatorFactory    $validatorFactory,
                                 protected CurrencyConverter   $currencyConverter,
-                                protected PipelineQueries     $pipelineQueries)
+                                protected PipelineQueries     $pipelineQueries,
+                                protected PermissionBroker    $permissionBroker)
     {
     }
 
@@ -246,6 +249,7 @@ class OpportunityEntityService implements CauserAware
         };
 
         if (is_null($company)) {
+            /** @var Company $company */
             $company = tap(new Company(), function (Company $company) use ($accountData, $categoryOfCompanyResolver, $accountName) {
                 $company->{$company->getKeyName()} = (string)Uuid::generate(4);
                 $company->name = $accountName;
@@ -254,6 +258,22 @@ class OpportunityEntityService implements CauserAware
                 $company->vat_type = VAT::NO_VAT;
                 $company->category = $categoryOfCompanyResolver($accountData);
             });
+
+
+            // once the company has been created by the current authenticated user,
+            // we grant super permissions to him on the newly created company
+
+            if ($this->causer instanceof User) {
+
+                $company->user()->associate($this->causer);
+
+                $this->permissionBroker->givePermissionToUser(
+                    user: $this->causer,
+                    name: "companies.*.{$company->getKey()}"
+                );
+
+            }
+
         }
 
         /** @var Company $company */

@@ -15,7 +15,7 @@ class PermissionSeeder extends Seeder
      */
     public function run()
     {
-        $seeds = json_decode(file_get_contents(database_path('seeders/models/permissions.json')), true);
+        $seeds = yaml_parse_file(database_path('seeders/models/permissions.yaml'));
 
         DB::transaction(function () use ($seeds) {
 

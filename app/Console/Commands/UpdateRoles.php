@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\{Company, Role};
-use Illuminate\Support\Facades\DB;
+use Illuminate\Console\Command;
+use Illuminate\Database\ConnectionInterface;
 
 class UpdateRoles extends Command
 {
@@ -47,36 +47,48 @@ class UpdateRoles extends Command
         $this->call('db:seed', [
             '--class' => 'PermissionSeeder',
             '--force' => true,
+            '--quiet' => true,
         ]);
 
-        DB::transaction(fn () => $this->updateSystemRoles());
+        $this->performUpdateOfSystemRoles();
 
         activity()->enableLogging();
 
+        $this->output->newLine(2);
         $this->output->success("System Defined Roles were updated!");
 
-        return Command::SUCCESS;
+        return self::SUCCESS;
     }
 
-    protected function updateSystemRoles()
+    protected function performUpdateOfSystemRoles(): void
     {
-        $roles = json_decode(file_get_contents(database_path('seeders/models/roles.json')), true);
+        /** @var array $roles */
+        $roles = require database_path('seeders/models/roles.php');
 
-        $this->output->progressStart(count($roles));
+        /** @var ConnectionInterface $connection */
+        $connection = $this->laravel[ConnectionInterface::class];
 
-        collect($roles)->each(function ($attributes) {
+        $this->withProgressBar($roles, function (array $attributes) use ($connection) {
+
+            $role = Role::query()
+                ->where('name', $attributes['name'])
+                ->where('is_system', true)
+                ->first();
+
             /** @var Role $role */
-            $role = Role::query()->firstOrCreate(['name' => $attributes['name'], 'is_system' => true]);
+            $role ??= tap(new Role(), function (Role $role) use ($connection, $attributes) {
+                $role->name = $attributes['name'];
+                $role->is_system = true;
 
-            $role->syncPermissions($attributes['permissions']);
+                $connection->transaction(fn() => $role->save());
+            });
 
-            $companies = Company::query()->whereIn('short_code', $attributes['companies'])->pluck('id');
+            $connection->transaction(fn() => $role->syncPermissions($attributes['permissions']));
 
-            $role->companies()->sync($companies);
+            $companyIDs = Company::query()->whereIn('short_code', $attributes['companies'])->get()->modelKeys();
 
-            $this->output->progressAdvance();
+            $connection->transaction(fn() => $role->companies()->sync($companyIDs));
+
         });
-
-        $this->output->progressFinish();
     }
 }

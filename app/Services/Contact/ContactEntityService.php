@@ -32,6 +32,7 @@ class ContactEntityService implements CauserAware
     {
         return tap(new Contact(), function (Contact $contact) use ($data) {
             $contact->{$contact->getKeyName()} = (string)Uuid::generate(4);
+            $contact->user()->associate($this->causer);
             $contact->contact_type = $data->contact_type;
             $contact->email = $data->email;
             $contact->first_name = $data->first_name;

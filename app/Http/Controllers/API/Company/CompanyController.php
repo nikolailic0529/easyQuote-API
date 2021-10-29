@@ -18,7 +18,7 @@ use App\Http\Resources\{Asset\AssetOfCompany,
     Attachment\UnifiedAttachment,
     Company\CompanyCollection,
     Company\ExternalCompanyList,
-    Company\UpdatedCompany,
+    Company\CompanyWithIncludes,
     Note\UnifiedNoteOfCompany,
     Opportunity\OpportunityList,
     SalesOrder\SalesOrderOfCompany,
@@ -152,7 +152,7 @@ class CompanyController extends Controller
             ->createCompany($request->getCreateCompanyData());
 
         return response()->json(
-            data: UpdatedCompany::make($resource),
+            data: CompanyWithIncludes::make($resource),
             status: Response::HTTP_CREATED
         );
     }
@@ -169,7 +169,7 @@ class CompanyController extends Controller
         $this->authorize('view', $company);
 
         return response()->json(
-            data: UpdatedCompany::make($company)
+            data: CompanyWithIncludes::make($company)
         );
     }
 
@@ -304,7 +304,7 @@ class CompanyController extends Controller
             ->updateCompany($company, $request->getUpdateCompanyData());
 
         return response()->json(
-            UpdatedCompany::make($resource),
+            CompanyWithIncludes::make($resource),
             Response::HTTP_OK
         );
     }

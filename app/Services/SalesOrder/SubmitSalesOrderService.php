@@ -7,13 +7,14 @@ use App\DTO\SalesOrder\Submit\SubmitOrderLineData;
 use App\DTO\SalesOrder\Submit\SubmitSalesOrderData;
 use App\DTO\SalesOrder\Submit\SubmitSalesOrderResult;
 use App\Enum\SalesOrderStatus;
-use Carbon\Carbon;
+use App\Services\VendorServices\CachingOauthClient;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\RequestOptions;
 use Illuminate\Config\Repository as Config;
+use Illuminate\Http\Client\Factory as HttpFactory;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Arr;
-use Psr\Http\Message\ResponseInterface;
 use Symfony\Component\Validator\ConstraintViolationInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -23,21 +24,11 @@ class SubmitSalesOrderService
 
     const BUSINESS_DIVISION = 'Worldwide';
 
-    protected Config $config;
-
-    protected ValidatorInterface $validator;
-
-    protected Client $client;
-
-    public function __construct(Config $config, ValidatorInterface $validator, ClientInterface $client = null)
+    public function __construct(protected Config             $config,
+                                protected ValidatorInterface $validator,
+                                protected CachingOauthClient $oauthClient,
+                                protected HttpFactory        $http)
     {
-        $this->config = $config;
-
-        $this->validator = $validator;
-
-        $this->client = $client ?? new Client([
-                RequestOptions::HTTP_ERRORS => false
-            ]);
     }
 
     public function processSalesOrderDataSubmission(SubmitSalesOrderData $data): SubmitSalesOrderResult
@@ -64,29 +55,26 @@ class SubmitSalesOrderService
 
             return new SubmitSalesOrderResult([
                 'status' => SalesOrderStatus::FAILURE,
-                'status_reason' => 'Sales Order Data failed the internal validation, the errors are: '.implode(' ', array_keys($violationMessages))
+                'status_reason' => 'Sales Order Data failed the internal validation, the errors are: '.implode(' ', array_keys($violationMessages)),
             ]);
         }
 
         $url = rtrim($this->getBaseUrl(), '/').'/'.ltrim($this->config->get('services.vs.submit_sales_order_route'), '/');
 
-        $token = $this->issueBearerToken();
+        $token = $this->oauthClient->getAccessToken();
 
         $postData = $this->mapSubmitSalesOrderDataToPostData($data);
 
-        $response = $this->client->post($url, [
-            RequestOptions::JSON => $postData,
-            RequestOptions::HEADERS => [
-                'Authorization' => "Bearer $token",
-                'Accept' => 'application/json',
-            ]
-        ]);
+        $response = $this->http
+            ->acceptJson()
+            ->withToken($token)
+            ->post(url: $url, data: $postData);
 
-        if ($response->getStatusCode() >= 400) {
+        if ($response->status() >= 400) {
 
             return new SubmitSalesOrderResult([
                 'status' => SalesOrderStatus::FAILURE,
-                'status_reason' => $this->getResponseStatusReason($response)
+                'status_reason' => $this->getResponseStatusReason($response),
             ]);
 
         }
@@ -96,9 +84,9 @@ class SubmitSalesOrderService
         ]);
     }
 
-    private function getResponseStatusReason(ResponseInterface $response): string
+    private function getResponseStatusReason(Response $response): string
     {
-        $json = json_decode((string)$response->getBody(), true);
+        $json = $response->json();
 
         $errorDetails = Arr::wrap(Arr::get($json, 'ErrorDetails'));
         $validationErrors = Arr::wrap(Arr::get($json, 'Error.original'));
@@ -168,30 +156,9 @@ class SubmitSalesOrderService
                     'machine_country_code' => $lineData->machine_country_code,
                     'sales_group' => sprintf('%s %s', self::BUSINESS_DIVISION, $salesOrderData->contract_type),
                     'short_name' => $lineData->vendor_short_code,
-                ], $salesOrderData->order_lines_data)
-            ]
+                ], $salesOrderData->order_lines_data),
+            ],
         ];
-    }
-
-    protected function issueBearerToken(): string
-    {
-        $url = rtrim($this->getBaseUrl(), '/').'/'.ltrim($this->config->get('services.vs.token_route'), '/');
-
-        $response = $this->client->post(
-            $url,
-            [
-                'form_params' => [
-                    'client_id' => $this->config->get('services.vs.client_id'),
-                    'client_secret' => $this->config->get('services.vs.client_secret'),
-                    'grant_type' => 'client_credentials',
-                    'scope' => '*'
-                ]
-            ]
-        );
-
-        $json = json_decode((string)$response->getBody(), true);
-
-        return $json['access_token'] ?? '';
     }
 
     protected function getBaseUrl(): string

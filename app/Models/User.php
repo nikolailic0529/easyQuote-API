@@ -36,7 +36,7 @@ use Illuminate\Contracts\Auth\{Access\Authorizable as AuthorizableContract,
     Authenticatable as AuthenticatableContract,
     CanResetPassword as CanResetPasswordContract
 };
-use Illuminate\Database\Eloquent\{Builder, Model, Relations\BelongsToMany, SoftDeletes};
+use Illuminate\Database\Eloquent\{Builder, Collection, Model, Relations\BelongsToMany, SoftDeletes};
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\Access\Authorizable;
 use Illuminate\Http\UploadedFile;
@@ -60,6 +60,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  *
  * @property-read string|null $user_fullname
  * @property-read Team|null $team
+ * @property-read Collection<int, Permission>|Permission[] $permissions
  */
 class User extends Model implements
     ActivatableInterface,

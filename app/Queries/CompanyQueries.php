@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Queries\Pipeline\PerformElasticsearchSearch;
 use Devengine\RequestQueryBuilder\RequestQueryBuilder;
 use Elasticsearch\Client as Elasticsearch;
+use Illuminate\Contracts\Auth\Access\Gate;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Query\Builder as BaseBuilder;
@@ -17,7 +18,8 @@ use Illuminate\Http\Request;
 class CompanyQueries
 {
 
-    public function __construct(protected Elasticsearch $elasticsearch)
+    public function __construct(protected Elasticsearch $elasticsearch,
+                                protected Gate          $gate)
     {
     }
 
@@ -46,6 +48,9 @@ class CompanyQueries
     {
         $request ??= new Request();
 
+        /** @var User|null $user */
+        $user = $request->user() ?? new User();
+
         $model = new Company();
 
         $query = $model->newQuery()
@@ -70,6 +75,9 @@ class CompanyQueries
             ->withCasts([
                 'total_quoted_value' => 'decimal:2',
             ])
+            ->when($this->gate->denies('viewAnyOwnerEntities', Company::class), function (Builder $builder) use ($user) {
+                $builder->whereBelongsTo($user);
+            })
             ->orderByDesc($model->qualifyColumn('is_active'));
 
         return RequestQueryBuilder::for(
@@ -96,10 +104,16 @@ class CompanyQueries
     {
         $request ??= new Request;
 
+        /** @var User|null $user */
+        $user = $request->user() ?? new User();
+
         $model = new Company();
 
-        $query = Company::query()
-            ->where('type', 'External')
+        $query = $model->newQuery()
+            ->where($model->qualifyColumn('type'), CompanyType::EXTERNAL)
+            ->when($this->gate->denies('viewAnyOwnerEntities', Company::class), function (Builder $builder) use ($user) {
+                $builder->whereBelongsTo($user);
+            })
             ->orderByDesc($model->qualifyColumn('is_active'));
 
         return RequestQueryBuilder::for(

@@ -2,21 +2,14 @@
 
 namespace Tests;
 
+use App\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
-use Tests\Unit\Traits\{
-    AssertsModelAttributes,
-    WithClientCredentials,
-    WithFakeQuote,
-    WithFakeQuoteFile,
-    WithFakeUser
-};
-use App\Models\User;
 use Laravel\Passport\Client;
 use Laravel\Passport\ClientRepository;
 use Laravel\Passport\Passport;
+use Tests\Unit\Traits\{AssertsModelAttributes, WithClientCredentials, WithFakeQuote, WithFakeQuoteFile, WithFakeUser};
 
 abstract class TestCase extends BaseTestCase
 {

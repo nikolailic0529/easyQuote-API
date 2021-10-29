@@ -9,6 +9,7 @@ use App\Traits\{BelongsToUser, Uuid,};
 use App\Traits\{Auth\Multitenantable, Search\Searchable,};
 use DateTimeInterface;
 use Fico7489\Laravel\EloquentJoin\Traits\EloquentJoin;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -39,6 +40,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property AssetCategory $assetCategory
  * @property Location $location
  * @property Quote|WorldwideQuote|null $quote
+ * @property-read Collection<int, Company>|Company[] $companies
  */
 class Asset extends Model implements SearchableEntity
 {

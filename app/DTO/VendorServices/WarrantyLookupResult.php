@@ -1,12 +1,13 @@
 <?php
 
-namespace App\DTO;
+namespace App\DTO\VendorServices;
 
-use Spatie\DataTransferObject\FlexibleDataTransferObject;
-use Illuminate\Support\Arr;
+use App\DTO\WarrantyCollection;
 use Carbon\Carbon;
+use Illuminate\Support\Arr;
+use Spatie\DataTransferObject\FlexibleDataTransferObject;
 
-class ServiceData extends FlexibleDataTransferObject
+class WarrantyLookupResult extends FlexibleDataTransferObject
 {
     public string $serial, $model, $type, $sku;
     
@@ -20,7 +21,7 @@ class ServiceData extends FlexibleDataTransferObject
 
     public WarrantyCollection $warranties;
 
-    public static function create(array $data): ServiceData
+    public static function fromArray(array $data): WarrantyLookupResult
     {
         $serial = Arr::get($data, 'serial');
         $model = Arr::get($data, 'model');

@@ -744,6 +744,7 @@ class OpportunityTest extends TestCase
     public function testCanBatchSaveOpportunities()
     {
         $this->app['db.connection']->table('opportunities')->update(['deleted_at' => now()]);
+        $this->app['db.connection']->table('companies')->where('is_system', false)->update(['deleted_at' => now()]);
 
         $opportunitiesFile = UploadedFile::fake()->createWithContent('ops-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/export-23032021.xlsx')));
 
@@ -751,7 +752,21 @@ class OpportunityTest extends TestCase
 
         $accountContactsFile = UploadedFile::fake()->createWithContent('primary-account-contacts-pipeliner-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/primary-account-contacts-pipeliner-export.xlsx')));
 
-        $this->authenticateApi();
+
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions([
+            'view_opportunities',
+            'create_opportunities',
+            'update_own_opportunities',
+            'delete_own_opportunities',
+        ]);
+
+        /** @var User $user */
+        $user = factory(User::class)->create();
+
+        $this->authenticateApi($user);
 
         $response = $this->postJson('api/opportunities/upload', [
             'opportunities_file' => $opportunitiesFile,
@@ -770,6 +785,27 @@ class OpportunityTest extends TestCase
             ]);
 
         $keys = $response->json('opportunities.*.id');
+
+        $opportunityWithCompany = collect($response->json('opportunities'))->whereNotNull('company_id')->first();
+
+        $this->assertNotNull($opportunityWithCompany);
+
+        $companyResponse = $this->getJson('api/companies/'.$opportunityWithCompany['company_id'])
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'permissions' => [
+                    'view',
+                    'update',
+                    'delete'
+                ]
+            ]);
+
+        $this->assertTrue($companyResponse->json('permissions.view'));
+        $this->assertTrue($companyResponse->json('permissions.update'));
+        $this->assertTrue($companyResponse->json('permissions.delete'));
+
 
         // Ensure that uploaded opportunities don't exist on the main listing.
         $response = $this->getJson('api/opportunities')

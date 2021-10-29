@@ -2,13 +2,24 @@
 
 namespace App\Models\QuoteFile;
 
+use App\Models\Asset;
+use App\Models\Company;
+use App\Models\Opportunity;
+use App\Models\Quote\WorldwideDistribution;
+use App\Models\Quote\WorldwideQuote;
+use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\WorldwideQuoteAsset;
 use App\Traits\Uuid;
 use Awobaz\Compoships\Compoships;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
+use Staudenmeir\EloquentHasManyDeep\HasOneDeep;
+use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 
 /**
  * @property string|null $quote_file_id
@@ -31,10 +42,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read bool|null $is_customer_exclusive_asset
  * @property-read bool|null $same_worldwide_quote_assets_exists
  * @property-read bool|null $same_mapped_rows_exists
+ * @property-read Company|null $company
+ * @property-read WorldwideQuoteVersion|null $worldwideQuoteVersion
+ * @property-read WorldwideDistribution|null $worldwideDistributorQuote
+ * @property-read bool|null $exists_in_selected_groups
  */
 class MappedRow extends Model
 {
-    use Uuid, Compoships;
+    use Uuid, Compoships, HasRelationships;
 
     protected $guarded = [];
 
@@ -60,6 +75,65 @@ class MappedRow extends Model
     public function sameWorldwideQuoteAssets(): HasMany
     {
         return $this->hasMany(related: WorldwideQuoteAsset::class, foreignKey: ['serial_no', 'sku'], localKey: ['serial_no', 'product_no']);
+    }
+
+    public function worldwideDistributorQuoteRowsGroups(): BelongsToMany
+    {
+        return $this->belongsToMany(related: DistributionRowsGroup::class, relatedPivotKey: 'rows_group_id');
+    }
+
+    public function worldwideDistributorQuote(): HasOneThrough
+    {
+        return $this->hasOneThrough(
+            related: WorldwideDistribution::class,
+            through: QuoteFile::class,
+            firstKey: 'id',
+            secondKey: 'distributor_file_id',
+            localKey: 'quote_file_id'
+        );
+    }
+
+    public function worldwideQuoteVersion(): HasOneDeep
+    {
+        return $this->hasOneDeep(
+            related: WorldwideQuoteVersion::class,
+            through: [
+                WorldwideDistribution::class,
+            ],
+            foreignKeys: [
+                'distributor_file_id',
+                'id',
+            ],
+            localKeys: [
+                'quote_file_id',
+                'worldwide_quote_id',
+            ]);
+    }
+
+    public function company(): HasOneDeep
+    {
+        return $this->hasOneDeep(
+            related: Company::class,
+            through: [
+                WorldwideDistribution::class,
+                WorldwideQuoteVersion::class,
+                WorldwideQuote::class,
+                Opportunity::class,
+            ],
+            foreignKeys: [
+                'distributor_file_id',
+                'id',
+                'id',
+                'id',
+                'id',
+            ],
+            localKeys: [
+                'quote_file_id',
+                'worldwide_quote_id',
+                'worldwide_quote_id',
+                'opportunity_id',
+                'primary_account_id',
+            ]);
     }
 
     public function distributionRowsGroups(): BelongsToMany

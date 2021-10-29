@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Address;
 use App\Models\Data\Country;
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -25,7 +28,7 @@ class AddressTest extends TestCase
                     '*' => [
                         'id', 'location_id', 'address_type', 'address_1', 'city', 'state', 'state_code', 'post_code', 'address_2', 'country_id', 'contact_name', 'contact_number', 'contact_email', 'created_at', 'updated_at', 'activated_at',
                         'country' => [
-                            'id', 'iso_3166_2', 'name', 'default_currency_id', 'user_id', 'is_system', 'currency_code', 'currency_symbol', 'currency_code', 'flag', 'created_at', 'updated_at', 'deleted_at', 'activated_at',
+//                            'id', 'iso_3166_2', 'name', 'default_currency_id', 'user_id', 'is_system', 'currency_code', 'currency_symbol', 'currency_code', 'flag', 'created_at', 'updated_at', 'deleted_at', 'activated_at',
                         ],
                     ],
                 ],
@@ -61,6 +64,72 @@ class AddressTest extends TestCase
             $this->getJson('api/addresses?order_by_'.$field.'=desc')->assertOk();
             $this->getJson('api/addresses?order_by_'.$field.'=asc')->assertOk();
         }
+    }
+
+    /**
+     * Test an ability to view only owned addresses
+     * when user doesn't have super permissions.
+     *
+     * @return void
+     */
+    public function testCanViewOnlyOwnedAddressesWithoutSuperPermissions()
+    {
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions([
+            'view_addresses',
+            'update_addresses',
+            'delete_addresses',
+        ]);
+
+        /** @var User $user */
+        $user = factory(User::class)->create();
+
+        $user->syncRoles($role);
+
+        $this->authenticateApi($user);
+
+        $response = $this->getJson('api/addresses')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id', 'location_id', 'address_type', 'address_1', 'city', 'state', 'state_code', 'post_code', 'address_2', 'country_id', 'contact_name', 'contact_number', 'contact_email', 'created_at', 'updated_at', 'activated_at',
+                        'country' => [
+//                            'id', 'iso_3166_2', 'name', 'default_currency_id', 'user_id', 'is_system', 'currency_code', 'currency_symbol', 'currency_code', 'flag', 'created_at', 'updated_at', 'deleted_at', 'activated_at',
+                        ],
+                    ],
+                ],
+                'current_page',
+                'first_page_url',
+                'from',
+                'last_page',
+                'last_page_url',
+                'links' => [
+                    '*' => [
+                        'url', 'label', 'active',
+                    ],
+                ],
+                'next_page_url',
+                'path',
+                'per_page',
+                'prev_page_url',
+                'to',
+                'total',
+            ]);
+
+        $this->assertEmpty($response->json('data'));
+
+        factory(Address::class)->create(['user_id' => $user->getKey()]);
+
+        $response = $this->getJson('api/addresses')
+//            ->dump()
+            ->assertOk();
+
+        $this->assertSame($user->getKey(), $response->json('data.0.user_id'));
+        $this->assertCount(1, $response->json('data'));
     }
 
     /**

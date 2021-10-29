@@ -6,7 +6,7 @@ use App\Contracts\HasImagesDirectory;
 use App\Traits\{Activatable, Search\Searchable, Uuid};
 use App\Contracts\SearchableEntity;
 use Illuminate\Support\Arr;
-use Illuminate\Database\Eloquent\{Builder, Model, SoftDeletes};
+use Illuminate\Database\Eloquent\{Builder, Model, Relations\BelongsTo, SoftDeletes};
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -82,6 +82,11 @@ class Contact extends Model implements HasImagesDirectory, SearchableEntity
     public function image()
     {
         return $this->morphOne(Image::class, 'imageable')->cacheForever();
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function createImage($file, array $properties = [])

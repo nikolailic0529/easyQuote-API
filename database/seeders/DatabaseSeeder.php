@@ -37,15 +37,6 @@ class DatabaseSeeder extends Seeder
         $this->call(TimezoneSeeder::class);
         $this->command->info('Seeded the timezones!');
 
-        $this->call(PermissionSeeder::class);
-        $this->command->info('Seeded the permissions!');
-
-        $this->call(RolesSeeder::class);
-        $this->command->info('Seeded the roles!');
-
-        $this->call(UsersSeeder::class);
-        $this->command->info('Seeded the users!');
-
         $this->call(LanguagesSeeder::class);
         $this->command->info('Seeded the languages!');
 
@@ -66,6 +57,15 @@ class DatabaseSeeder extends Seeder
 
         $this->call(CompanySeeder::class);
         $this->command->info('Seeded the companies!');
+
+        $this->call(PermissionSeeder::class);
+        $this->command->info('Seeded the permissions!');
+
+        $this->call(RoleSeeder::class);
+        $this->command->info('Seeded the roles!');
+
+        $this->call(UsersSeeder::class);
+        $this->command->info('Seeded the users!');
 
         $this->call(DataSelectSeparatorsSeeder::class);
         $this->command->info('Seeded the data select separators for csv files!');

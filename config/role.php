@@ -7,18 +7,26 @@ return [
         $CRUD = 'Read, Write and Delete',
     ],
     'properties' => [
+        // Rescue quote
         'download_quote_pdf',
         'download_quote_price',
         'download_quote_schedule',
+
+        // Contract
         'download_contract_pdf',
         'download_hpe_contract_pdf',
 
+        // Worldwide quote
         'download_ww_quote_pdf',
         'download_ww_quote_distributor_file',
         'download_ww_quote_payment_schedule',
-        'download_sales_order_pdf',
 
+        // Sales order
+        'download_sales_order_pdf',
         'cancel_sales_orders',
+        'resubmit_sales_orders',
+        'unravel_sales_orders',
+        'alter_active_status_of_sales_orders',
     ],
     'submodules' => [
         'Quotes' => [

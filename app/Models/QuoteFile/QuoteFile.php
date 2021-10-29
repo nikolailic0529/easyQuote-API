@@ -2,6 +2,7 @@
 
 namespace App\Models\QuoteFile;
 
+use App\Models\Quote\WorldwideDistribution;
 use App\Traits\{Auth\Multitenantable,
     BelongsToUser,
     Handleable,
@@ -155,5 +156,10 @@ class QuoteFile extends Model
     public function mappingWasGuessed(): bool
     {
         return !is_null($this->automapped_at);
+    }
+
+    public function worldwideDistributorQuotesWhereQuoteFileAsPriceList(): HasMany
+    {
+        return $this->hasMany(related: WorldwideDistribution::class, foreignKey: 'distributor_file_id');
     }
 }

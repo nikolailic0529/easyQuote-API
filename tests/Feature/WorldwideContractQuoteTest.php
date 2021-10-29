@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Address;
+use App\Models\Asset;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Data\Country;
@@ -714,35 +715,12 @@ class WorldwideContractQuoteTest extends TestCase
             $distributorQuote->snDiscount()->associate($snDiscount)->save();
         });
 
-        /** @var WorldwideQuote $anotherQuote */
-        $anotherQuote = factory(WorldwideQuote::class)->create(['contract_type_id' => CT_CONTRACT]);
-        $supplierOfAnotherQuote = factory(OpportunitySupplier::class)->create(['opportunity_id' => $anotherQuote->opportunity->getKey()]);
 
-        /** @var WorldwideDistribution $distributorQuoteOfAnotherQuote */
-        $distributorQuoteOfAnotherQuote = factory(WorldwideDistribution::class)->create([
-            'opportunity_supplier_id' => $supplierOfAnotherQuote->getKey(),
-            'worldwide_quote_id' => $anotherQuote->activeVersion->getKey(),
-            'worldwide_quote_type' => $anotherQuote->activeVersion->getMorphClass(),
+        /** @var Asset $sameAsset */
+        $sameAsset = factory(Asset::class)->create([
+            'serial_number' => $distributorQuotes[0]->mappedRows[0]->serial_no,
+            'product_number' => $distributorQuotes[0]->mappedRows[0]->product_no,
         ]);
-
-        /** @var MappedRow $duplicatedRow */
-        $duplicatedRow = with($distributorQuoteOfAnotherQuote, function (WorldwideDistribution $distributorQuote) use ($distributorQuotes) {
-            $distributorFile = factory(QuoteFile::class)->create([
-                'file_type' => QFT_WWPL,
-            ]);
-
-            $distributorQuote->update(['distributor_file_id' => $distributorFile->getKey()]);
-
-            factory(MappedRow::class, 2)->create(['quote_file_id' => $distributorFile->getKey(), 'is_selected' => true]);
-
-            /** Duplicated asset */
-            return factory(MappedRow::class)->create([
-                'quote_file_id' => $distributorFile->getKey(),
-                'serial_no' => $distributorQuotes[0]->mappedRows[0]->serial_no,
-                'product_no' => $distributorQuotes[0]->mappedRows[0]->product_no,
-                'is_selected' => true,
-            ]);
-        });
 
         $query = Arr::query(['include' => [
             'worldwide_customer',
@@ -924,16 +902,18 @@ class WorldwideContractQuoteTest extends TestCase
                 ],
             ]);
 
-        $foundDuplicatedRow = false;
+        $duplicatedAssetCount = 0;
 
         foreach (Arr::collapse($response->json('worldwide_distributions.*.mapped_rows')) as $row) {
-            if ($row['serial_no'] === $duplicatedRow->serial_no && $row['product_no'] === $duplicatedRow->product_no) {
+            if ($row['serial_no'] === $sameAsset->serial_number && $row['product_no'] === $sameAsset->product_number) {
                 $this->assertFalse($row['is_customer_exclusive_asset']);
-                $foundDuplicatedRow = true;
+                $duplicatedAssetCount++;
+            } else {
+                $this->assertTrue($row['is_customer_exclusive_asset']);
             }
         }
 
-        $this->assertTrue($foundDuplicatedRow);
+        $this->assertSame(1, $duplicatedAssetCount);
 
         $mapping = Arr::pluck($response->json('worldwide_distributions.0.mapping'), 'is_required', 'template_field_name');
 

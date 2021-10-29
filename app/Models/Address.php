@@ -31,7 +31,7 @@ use Illuminate\Database\Eloquent\{Builder, Model, Relations\BelongsTo, SoftDelet
  */
 class Address extends Model implements SearchableEntity
 {
-    use Uuid, SoftDeletes, Activatable, BelongsToCountry, Searchable, EloquentJoin;
+    use Uuid, SoftDeletes, Activatable, Searchable, EloquentJoin;
 
     public const TYPES = ['Invoice', 'Client', 'Machine', 'Equipment', 'Hardware', 'Software'];
 
@@ -53,6 +53,16 @@ class Address extends Model implements SearchableEntity
         'addressable_id', 'addressable_type', 'deleted_at', 'pivot',
     ];
 
+    public function country(): BelongsTo
+    {
+        return $this->belongsTo(Country::class);
+    }
+
+    public function getCountryCodeAttribute()
+    {
+        return $this->country->code;
+    }
+
     public function scopeType(Builder $query, string $type): Builder
     {
         return $query->where('address_type', $type);
@@ -66,6 +76,11 @@ class Address extends Model implements SearchableEntity
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class)->withDefault();
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function toSearchArray(): array

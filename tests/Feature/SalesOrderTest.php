@@ -27,14 +27,17 @@ use App\Models\Template\TemplateField;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
+use App\Services\DocumentEngine\OauthClient;
 use App\Services\SalesOrder\CancelSalesOrderService;
 use App\Services\SalesOrder\SubmitSalesOrderService;
+use App\Services\VendorServices\OauthClient as VSOauthClient;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -556,17 +559,24 @@ class SalesOrderTest extends TestCase
 
         $salesOrder = factory(SalesOrder::class)->create(['worldwide_quote_id' => $quote->getKey(), 'submitted_at' => null, 'vat_number' => '1234']);
 
-        $this->app->when(SubmitSalesOrderService::class)->needs(ClientInterface::class)
-            ->give(function () {
-               $mock = new MockHandler([
-                   new \GuzzleHttp\Psr7\Response(200, [], json_encode(['token_type' => 'Bearer', 'expires_in' => 31536000, 'access_token' => '1234'])),
-                   new \GuzzleHttp\Psr7\Response(200, [], json_encode(['id' => 'b7a34431-75c1-4b8d-af9d-4db0ca499109'])),
-               ]);
+        /** @var HttpFactory $oauthFactory */
+        $oauthFactory = $this->app[HttpFactory::class];
 
-               $handlerStack = HandlerStack::create($mock);
+        $oauthFactory->fake([
+            '*' => HttpFactory::response(['token_type' => 'Bearer', 'expires_in' => 31536000, 'access_token' => '1234']),
+        ]);
 
-               return new Client(['handler' => $handlerStack]);
-            });
+        $this->app->when(VSOauthClient::class)->needs(HttpFactory::class)->give(fn() => $oauthFactory);
+
+        /** @var HttpFactory $oauthFactory */
+        $httpFactory = $this->app[HttpFactory::class];
+
+        $httpFactory->fake([
+            '*' => HttpFactory::response(['id' => 'b7a34431-75c1-4b8d-af9d-4db0ca499109']),
+        ]);
+
+        $this->app->when(SubmitSalesOrderService::class)->needs(HttpFactory::class)
+            ->give(fn () => $httpFactory);
 
 
         $response = $this->postJson('api/sales-orders/'.$salesOrder->getKey().'/submit')

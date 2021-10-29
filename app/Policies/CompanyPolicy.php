@@ -47,7 +47,7 @@ class CompanyPolicy
      */
     public function view(User $user, Company $company)
     {
-        if ($user->canAny(['view_companies', 'view_opportunities'])) {
+        if ($user->canAny(['view_companies', 'view_opportunities', "companies.*.{$company->getKey()}"])) {
             return true;
         }
     }
@@ -78,7 +78,7 @@ class CompanyPolicy
             return true;
         }
 
-        if ($user->canAny(['update_companies', 'update_own_opportunities'])) {
+        if ($user->canAny(['update_companies', "companies.*.{$company->getKey()}", 'update_own_opportunities'])) {
             return true;
         }
     }
@@ -104,6 +104,10 @@ class CompanyPolicy
             $user->can('delete_companies') &&
             $user->getKey() === $company->{$company->user()->getForeignKeyName()}
         ) {
+            return true;
+        }
+
+        if ($user->can("companies.*.{$company->getKey()}")) {
             return true;
         }
     }
