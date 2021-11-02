@@ -65,7 +65,9 @@ class UpdateVendors extends Command
 
             $vendor->countries()->sync($countryModelKeys);
 
-            $vendor->createLogo($data['logo'], true);
+            if (isset($data['logo'])) {
+                $vendor->createLogo($data['logo'], true);
+            }
 
             if (isset($data['svg_logo'])) {
                 ThumbHelper::updateModelSvgThumbnails($vendor, base_path($data['svg_logo']));
