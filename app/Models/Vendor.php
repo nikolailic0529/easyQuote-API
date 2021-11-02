@@ -161,4 +161,15 @@ class Vendor extends Model implements HasImagesDirectory, WithLogo, ActivatableI
           $relation->orderBy('name');
         });
     }
+
+    public function toArray(): array
+    {
+        $array = parent::toArray();
+
+        if (isset($array['logo']) && $array['logo'] === []) {
+            $array['logo'] = null;
+        }
+
+        return $array;
+    }
 }

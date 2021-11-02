@@ -53,7 +53,7 @@ class UpdateQuoteAssets extends FormRequest
                 'bail', 'nullable', 'string', 'size:2'
             ],
             'assets.*.serial_no' => [
-                'bail', 'nullable', 'string', 'max:191'
+                'bail', 'nullable', 'string', 'max:191', 'distinct:ignore_case',
             ],
             'assets.*.sku' => [
                 'bail', 'nullable', 'string', 'max:191'
@@ -102,11 +102,35 @@ class UpdateQuoteAssets extends FormRequest
         return $model;
     }
 
-    public function messages()
+    public function messages(): array
     {
         return [
             'assets.required' => "No assets provided.",
             'assets.*.buy_currency_id.required' => "One or more assets don't have a buy currency.",
+            'assets.*.serial_no.distinct' => "The :attribute field has a duplicate value: ':input'."
+        ];
+    }
+
+    public function attributes(): array
+    {
+        return [
+            'assets.*.id' => 'Asset ID',
+            'assets.*.buy_currency_id' => 'Buy Currency',
+            'assets.*.vendor_id' => 'Vendor',
+            'assets.*.machine_address_id' => 'Machine Address',
+            'assets.*.country' => 'Country',
+            'assets.*.serial_no' => 'Serial No',
+            'assets.*.sku' => 'Sku',
+            'assets.*.service_sku' => 'Service Sku',
+            'assets.*.product_name' => 'Product Name',
+            'assets.*.expiry_date' => 'Expiry Date',
+            'assets.*.service_level_description' => 'Service Level',
+            'assets.*.buy_price' => 'Buy Price',
+            'assets.*.buy_price_margin' => 'Buy Price Margin',
+            'assets.*.price' => 'Selling Price',
+            'assets.*.original_price' => 'List Price',
+            'assets.*.exchange_rate_margin' => 'Exchange Rate Margin',
+            'assets.*.exchange_rate_value' => 'Exchange Rate Value',
         ];
     }
 

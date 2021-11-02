@@ -22,9 +22,29 @@ class VendorTest extends TestCase
      */
     public function testCanViewPaginatedVendors()
     {
-        $response = $this->getJson(url('api/vendors'));
-
-        $this->assertListing($response);
+        $this->getJson('api/vendors')
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id', 'name', 'short_code', 'is_system', 'user_id', 'created_at', 'updated_at', 'deleted_at', 'activated_at', 'drafted_at', 'logo', 'image',
+                    ],
+                ],
+                'current_page',
+                'first_page_url',
+                'from',
+                'last_page',
+                'last_page_url',
+                'links' => [
+                    '*' => ['url', 'label', 'active'],
+                ],
+                'next_page_url',
+                'path',
+                'per_page',
+                'prev_page_url',
+                'to',
+                'total',
+            ]);
 
         $query = http_build_query([
             'search' => Str::random(10),
@@ -33,7 +53,7 @@ class VendorTest extends TestCase
             'order_by_short_code' => 'asc',
         ]);
 
-        $this->getJson(url('api/vendors?'.$query))->assertOk();
+        $this->getJson('api/vendors?'.$query)->assertOk();
     }
 
     /**
@@ -49,8 +69,8 @@ class VendorTest extends TestCase
                 '*' => [
                     'id',
                     'name',
-                    'short_code'
-                ]
+                    'short_code',
+                ],
             ]);
     }
 

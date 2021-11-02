@@ -33,11 +33,9 @@ use Illuminate\Http\Response;
 
 class WorldwideQuoteAssetController extends Controller
 {
-    protected ProcessesWorldwideQuoteAssetState $processor;
 
-    public function __construct(ProcessesWorldwideQuoteAssetState $processor)
+    public function __construct(protected ProcessesWorldwideQuoteAssetState $processor)
     {
-        $this->processor = $processor;
     }
 
     /**
@@ -112,7 +110,8 @@ class WorldwideQuoteAssetController extends Controller
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function uploadBatchQuoteAssetsFile(UploadBatchAssetsFile $request, WorldwideQuote $worldwideQuote): JsonResponse
+    public function uploadBatchQuoteAssetsFile(UploadBatchAssetsFile $request,
+                                               WorldwideQuote        $worldwideQuote): JsonResponse
     {
         $this->authorize('update', $worldwideQuote);
 

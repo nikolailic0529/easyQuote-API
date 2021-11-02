@@ -87,7 +87,7 @@ class Address extends Model implements SearchableEntity
     {
         return [
             'city' => $this->city,
-            'country_name' => $this->country->name,
+            'country_name' => $this->country?->name,
             'state' => $this->state,
             'address_type' => $this->address_type,
             'address_1' => $this->address_1,

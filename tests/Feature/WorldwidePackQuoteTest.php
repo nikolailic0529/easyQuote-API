@@ -549,6 +549,47 @@ class WorldwidePackQuoteTest extends TestCase
     }
 
     /**
+     * Test an ability to save pack assets with duplicate serial number.
+     *
+     * @return void
+     */
+    public function testCanNotBatchSaveWorldwideQuoteAssetsWithDuplicateSerialNumber()
+    {
+        $this->authenticateApi();
+
+        $quote = factory(WorldwideQuote::class)->create(['contract_type_id' => CT_PACK]);
+
+        $assetKeys = [];
+
+        foreach (range(1, 10) as $i) {
+            $response = $this->postJson('api/ww-quotes/'.$quote->getKey().'/assets')
+//            ->dump()
+                ->assertCreated()
+                ->assertJsonStructure([
+                    'id',
+                ]);
+
+            $assetKeys[] = $response->json('id');
+        }
+
+        $assetsData = array_map(function (string $assetKey) {
+
+            return factory(WorldwideQuoteAsset::class)->raw([
+                'id' => $assetKey,
+            ]);
+
+        }, $assetKeys);
+
+        $assetsData[1]['serial_no'] = $assetsData[0]['serial_no'];
+
+        $this->patchJson('api/ww-quotes/'.$quote->getKey().'/assets',
+            ['assets' => $assetsData, 'stage' => 'Assets Creation'])
+//            ->dump()
+            ->assertUnprocessable()
+            ->assertInvalid(['assets.0.serial_no', 'assets.1.serial_no'], responseKey: 'Error.original');
+    }
+
+    /**
      * Test an ability to perform batch warranty lookup on existing quote assets.
      *
      * @return void

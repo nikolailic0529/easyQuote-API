@@ -45,5 +45,15 @@
         ],
         "logo": "database/seeders/models/images/aruba-trimmed.png",
         "svg_logo": "database/seeders/models/images/aruba.svg"
+    },
+    {
+        "id": "45d3c1c5-d10d-4a77-b97a-3cb79ab863e3",
+        "name": "Dell",
+        "short_code": "DEL",
+        "countries": [
+            "GB", "US", "BE", "CA", "DK", "FR", "NL", "SE", "DE", "AT", "IE", "NO", "ZA", "CH", "AE"
+        ],
+        "logo": null,
+        "svg_logo": null
     }
 ]
