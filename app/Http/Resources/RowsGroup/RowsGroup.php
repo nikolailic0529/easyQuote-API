@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\RowsGroup;
 
+use App\Http\Resources\WorldwideQuote\ContractAsset;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -22,7 +23,7 @@ class RowsGroup extends JsonResource
             'group_name' => $this->group_name,
             'search_text' => $this->search_text,
 
-            'rows' => $this->whenLoaded('rows', function () {
+            'rows' => ContractAsset::collection($this->whenLoaded('rows', function () {
 
                 /** @var \App\Models\QuoteFile\DistributionRowsGroup $this */
 
@@ -38,7 +39,7 @@ class RowsGroup extends JsonResource
 
                 });
 
-            }),
+            })),
 
 //            'rows_sum' => number_format((float) $this->rows_sum, 2, '.', ''),
             'rows_sum' => (float)$this->rows_sum,

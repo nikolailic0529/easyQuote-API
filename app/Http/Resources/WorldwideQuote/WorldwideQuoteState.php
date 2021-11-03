@@ -209,7 +209,7 @@ class WorldwideQuoteState extends JsonResource
                     return new MissingValue();
                 }
 
-                return $this->activeVersion->assets;
+                return PackAsset::collection($this->activeVersion->assets);
             }),
 
             'assets_groups' => value(function () {

@@ -58,6 +58,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read Company|null $company
  * @property-read WorldwideQuoteVersion|null $worldwideQuoteVersion
  * @property-read bool|null $exists_in_selected_groups
+ * @property-read Company|null $owned_by_customer
  */
 class WorldwideQuoteAsset extends Model
 {

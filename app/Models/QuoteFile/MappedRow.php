@@ -46,6 +46,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read WorldwideQuoteVersion|null $worldwideQuoteVersion
  * @property-read WorldwideDistribution|null $worldwideDistributorQuote
  * @property-read bool|null $exists_in_selected_groups
+ * @property-read Company|null $owned_by_customer
  */
 class MappedRow extends Model
 {

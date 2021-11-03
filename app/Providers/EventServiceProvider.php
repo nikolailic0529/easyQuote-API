@@ -7,7 +7,8 @@ use App\Events\{Company\CompanyUpdated,
     Opportunity\OpportunityUpdated,
     Permission\GrantedModulePermission,
     RfqReceived,
-    WorldwideQuote\WorldwideQuoteNoteCreated};
+    WorldwideQuote\WorldwideQuoteNoteCreated,
+    WorldwideQuote\WorldwideQuoteSubmitted};
 use App\Listeners\{AddressEventAuditor,
     AttachmentEventAuditor,
     CompanyEventAuditor,
@@ -17,6 +18,7 @@ use App\Listeners\{AddressEventAuditor,
     ExchangeRatesListener,
     ImportableColumnEventAuditor,
     LogSentMessage,
+    MigrateWorldwideQuoteAssets,
     ModulePermissionListener,
     NotifyNoteCreatedOnWorldwideQuote,
     OpportunityEventAuditor,
@@ -76,6 +78,10 @@ class EventServiceProvider extends ServiceProvider
         CompanyUpdated::class => [
             SyncOpportunityPrimaryAccountContacts::class,
         ],
+
+        WorldwideQuoteSubmitted::class => [
+            MigrateWorldwideQuoteAssets::class,
+        ]
     ];
 
     /**

@@ -24,7 +24,7 @@ class AssetsGroup extends JsonResource
             'group_name' => $this->group_name,
             'search_text' => $this->search_text,
 
-            'assets' => $this->whenLoaded('assets', function () {
+            'assets' => PackAsset::collection($this->whenLoaded('assets', function () {
 
                 /** @var \App\Models\WorldwideQuoteAssetsGroup|\App\Http\Resources\WorldwideQuote\AssetsGroup $this */
 
@@ -40,7 +40,7 @@ class AssetsGroup extends JsonResource
 
                 });
 
-            }),
+            })),
 
             'assets_sum' => (float)$this->assets_sum_price,
             'assets_count' => $this->assets_count,

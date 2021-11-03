@@ -1003,7 +1003,7 @@ class WorldwideQuoteDataMapper
             ->whereDoesntHave('companies', function (Builder $builder) use ($primaryAccount) {
                 $builder->whereKey($primaryAccount);
             })
-            ->with('companies:companies.id,companies.name')
+            ->with('companies:companies.id,companies.user_id,companies.name')
             ->get()
             ->keyBy($hashGenericAssetKey);
 
@@ -1044,7 +1044,7 @@ class WorldwideQuoteDataMapper
             ->whereDoesntHave('companies', function (Builder $builder) use ($primaryAccount) {
                 $builder->whereKey($primaryAccount);
             })
-            ->with('companies:companies.id,companies.name')
+            ->with('companies:companies.id,companies.user_id,companies.name')
             ->get()
             ->keyBy($hashGenericAssetKey);
 

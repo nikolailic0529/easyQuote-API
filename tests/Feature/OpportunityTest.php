@@ -707,6 +707,40 @@ class OpportunityTest extends TestCase
     }
 
     /**
+     * Test an ability to batch upload the opportunities from a file.
+     *
+     * @return void
+     */
+    public function testCanBatchUploadOpportunitiesBy20211102()
+    {
+        $accountsDataFile = UploadedFile::fake()->createWithContent('accounts-0211.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/Accounts-04042021.xlsx')));
+
+        $accountContactsFile = UploadedFile::fake()->createWithContent('contacts-0211.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/Contacts-04042021.xlsx')));
+
+        $opportunitiesFile = UploadedFile::fake()->createWithContent('opps-0211.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/Opportunities-04042021.xlsx')));
+
+        $this->authenticateApi();
+
+        $response = $this->postJson('api/opportunities/upload', [
+            'opportunities_file' => $opportunitiesFile,
+            'accounts_data_file' => $accountsDataFile,
+            'account_contacts_file' => $accountContactsFile,
+        ])
+//            ->dump()
+            ->assertCreated()
+            ->assertJsonStructure([
+                'opportunities' => [
+                    '*' => [
+                        'id', 'opportunity_type', 'account_name', 'account_manager_name', 'opportunity_amount', 'opportunity_start_date', 'opportunity_end_date', 'opportunity_closing_date', 'sale_action_name', 'campaign_name',
+                    ],
+                ],
+                'errors',
+            ]);
+
+        $this->assertEmpty($response->json('errors'));
+    }
+
+    /**
      * Test an ability to batch upload the opportunities from a file without accounts data file.
      *
      * @return void

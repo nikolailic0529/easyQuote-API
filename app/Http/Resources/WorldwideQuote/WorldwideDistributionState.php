@@ -53,7 +53,7 @@ class WorldwideDistributionState extends JsonResource
             'mapping_row' => MappingRow::make($this->whenLoaded('mappingRow')),
             'mapping' => $this->whenLoaded('mapping'),
 
-            'mapped_rows' => $this->whenLoaded('mappedRows'),
+            'mapped_rows' => ContractAsset::collection($this->whenLoaded('mappedRows')),
 
             'rows_groups' => RowsGroup::collection($this->whenLoaded('rowsGroups')),
 

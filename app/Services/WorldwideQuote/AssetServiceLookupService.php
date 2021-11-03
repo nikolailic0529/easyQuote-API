@@ -6,6 +6,8 @@ use App\DTO\WorldwideQuote\AssetServiceLookupDataCollection;
 use App\DTO\WorldwideQuote\AssetServiceLookupResult;
 use App\Models\Data\Currency;
 use App\Services\Exceptions\ValidationException;
+use App\Services\VendorServices\CachingOauthClient;
+use App\Services\VendorServices\OauthClient;
 use GuzzleHttp\Client;
 use GuzzleHttp\Pool;
 use GuzzleHttp\Psr7\Request;
@@ -24,18 +26,14 @@ class AssetServiceLookupService
 
     const SUPPORTED_VENDORS = ['HPE', 'LEN'];
 
-    protected ValidatorInterface $validator;
-
-    protected Config $config;
-
     protected Client $client;
 
     private array $currenciesBuffer = [];
 
-    public function __construct(ValidatorInterface $validator, Config $config)
+    public function __construct(protected ValidatorInterface $validator,
+                                protected Config             $config,
+                                protected CachingOauthClient $oauthClient)
     {
-        $this->validator = $validator;
-        $this->config = $config;
         $this->client = new Client([
             'http_errors' => false
         ]);
@@ -61,7 +59,7 @@ class AssetServiceLookupService
         $warrantyRequests = [];
         $supportRequests = [];
 
-        $token = $this->issueBearerToken();
+        $token = $this->oauthClient->getAccessToken();
 
         foreach ($batchLookupData as $assetLookupData) {
             $warrantyLookupUrl = $this->buildVendorWarrantyLookupUrl(
@@ -221,27 +219,6 @@ class AssetServiceLookupService
         if (count($violations)) {
             throw new ValidationFailedException($payload, $violations);
         }
-    }
-
-    protected function issueBearerToken(): string
-    {
-        $url = rtrim($this->getBaseUrl(), '/').'/'.$this->config->get('services.vs.token_route');
-
-        $response = $this->client->post(
-            $url,
-            [
-                'form_params' => [
-                    'client_id' => $this->config->get('services.vs.client_id'),
-                    'client_secret' => $this->config->get('services.vs.client_secret'),
-                    'grant_type' => 'client_credentials',
-                    'scope' => '*'
-                ]
-            ]
-        );
-
-        $json = json_decode((string)$response->getBody(), true);
-
-        return $json['access_token'] ?? '';
     }
 
     protected function buildVendorSupportLookupUrl(string $vendorShortCode, string $sku, string $countryCode, ?string $currencyCode = null): string

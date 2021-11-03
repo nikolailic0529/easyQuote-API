@@ -722,6 +722,8 @@ class WorldwideContractQuoteTest extends TestCase
             'product_number' => $distributorQuotes[0]->mappedRows[0]->product_no,
         ]);
 
+        $sameAsset->companies()->sync(factory(Company::class)->create());
+
         $query = Arr::query(['include' => [
             'worldwide_customer',
             'opportunity',
@@ -907,6 +909,11 @@ class WorldwideContractQuoteTest extends TestCase
         foreach (Arr::collapse($response->json('worldwide_distributions.*.mapped_rows')) as $row) {
             if ($row['serial_no'] === $sameAsset->serial_number && $row['product_no'] === $sameAsset->product_number) {
                 $this->assertFalse($row['is_customer_exclusive_asset']);
+                $this->assertArrayHasKey('owned_by_customer', $row);
+                $this->assertArrayHasKey('permissions', $row['owned_by_customer']);
+                $this->assertArrayHasKey('view', $row['owned_by_customer']['permissions']);
+                $this->assertArrayHasKey('update', $row['owned_by_customer']['permissions']);
+                $this->assertArrayHasKey('delete', $row['owned_by_customer']['permissions']);
                 $duplicatedAssetCount++;
             } else {
                 $this->assertTrue($row['is_customer_exclusive_asset']);
@@ -1452,7 +1459,33 @@ class WorldwideContractQuoteTest extends TestCase
     {
         $this->authenticateApi();
 
-        $wwQuote = factory(WorldwideQuote::class)->create();
+        $this->app['db.connection']->table('assets')->delete();
+
+        /** @var WorldwideQuote $wwQuote */
+        $wwQuote = factory(WorldwideQuote::class)->create([
+            'contract_type_id' => CT_CONTRACT,
+        ]);
+
+        $supplier = factory(OpportunitySupplier::class)->create([
+            'opportunity_id' => $wwQuote->opportunity->getKey(),
+        ]);
+
+        $distributorFile = factory(QuoteFile::class)->create();
+
+        /** @var WorldwideDistribution $distributorQuote */
+        $distributorQuote = factory(WorldwideDistribution::class)->create([
+            'worldwide_quote_id' => $wwQuote->activeVersion->getKey(),
+            'worldwide_quote_type' => $wwQuote->activeVersion->getMorphClass(),
+            'distributor_file_id' => $distributorFile->getKey(),
+            'opportunity_supplier_id' => $supplier->getKey(),
+        ]);
+
+        $distributorQuote->vendors()->sync(Vendor::query()->where('short_code', 'HPE')->sole());
+
+        /** @var MappedRow $mappedRow */
+        $mappedRow = factory(MappedRow::class)->create([
+            'quote_file_id' => $distributorFile->getKey(),
+        ]);
 
         $this->postJson('api/ww-quotes/'.$wwQuote->getKey().'/submit', [
             'quote_closing_date' => $this->faker->date,
@@ -1469,6 +1502,26 @@ class WorldwideContractQuoteTest extends TestCase
             ]);
 
         $this->assertNotEmpty($response->json('submitted_at'));
+
+        $response = $this->get('api/assets')
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => ['id', 'rfq_number', 'customer_name', 'vendor_short_code', 'product_number', 'serial_number', 'product_description']
+                ]
+            ]);
+
+        $this->assertNotEmpty($response->json('data'));
+        $this->assertCount(1, $response->json('data'));
+
+
+        $this->assertSame('HPE', $response->json('data.0.vendor_short_code'));
+        $this->assertSame($wwQuote->quote_number, $response->json('data.0.rfq_number'));
+        $this->assertSame($wwQuote->opportunity->primaryAccount->name, $response->json('data.0.customer_name'));
+
+        $this->assertSame($mappedRow->product_no, $response->json('data.0.product_number'));
+        $this->assertSame($mappedRow->serial_no, $response->json('data.0.serial_number'));
+        $this->assertSame($mappedRow->description, $response->json('data.0.product_description'));
     }
 
     /**

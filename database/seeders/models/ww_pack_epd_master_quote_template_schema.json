@@ -51,7 +51,7 @@
               "type": "richtext",
               "class": null,
               "label": "Rich Text",
-              "value": null,
+              "value": "<p><strong>Account Management</strong> – Your account manager will help you to manage your services contract, and will arrange quarterly support reviews for you to ensure that the service levels within the services contract remain appropriate for the applications running on the hardware. If your IT environment changes, with the addition or decommissioning of hardware, we can update your services contract at any time.</p><p><strong>Renewal Service</strong> – Your account manager will remind you when your services contract is due to expire, normally 45 to 90 days in advance. This gives us enough time to review your current IT support, take into account any changes that have taken place in your IT environment, and create an up-to-date tailored quotation.</p><p><strong>Assistance with Vendor tools</strong> – We are experienced in using the proprietary tools and resources available to make managing your IT support easier. We can help you to link your support with the Support Centre portal and introduce you to contacts that can assist with installing IRS.</p><p><strong>Support for the whole lifecycle</strong> – Europlus Direct can provide support for your IT environment from initial product purchase through to decommissioning and technology refresh.</p><p>Consolidate your IT Support – Your account manager will help you to consolidate your various IT support agreements and certificates under one Vendor services contract. This can include Vendor hardware and some multi-vendor hardware.</p><p><strong>Flexibility</strong> – Once a services contract is in place with Vendor, it is possible for you to add new hardware to the contract (with 30 days’ notice) or remove hardware from the contract (with 90 days’ notice). Any difference in cost will be invoiced or credited accordingly. Services Contracts can also be cancelled entirely, subject to minimum periods of cover and notice periods.</p>",
               "is_field": true,
               "is_image": false,
               "droppable": false,
@@ -59,80 +59,6 @@
               "is_required": false,
               "attached_child_id": "20b8033e-434b-47ac-96c0-dfb361dcc6d3",
               "attached_element_id": "7487ada6-1182-4737-9a62-34c893e7fbd1"
-            }
-          ],
-          "position": 1
-        }
-      ],
-      "class": "single-column field-dragger",
-      "order": 1,
-      "controls": [],
-      "is_field": false,
-      "droppable": false,
-      "decoration": "1"
-    },
-    {
-      "id": "fb35cfb7-fdde-4022-91d0-3524b3df4f32",
-      "name": "Single Column",
-      "child": [
-        {
-          "id": "543128e3-6fd9-468d-a5bc-8fff75a32898",
-          "class": "col-lg-12 border-right",
-          "controls": [
-            {
-              "id": "328a2ad6-9090-478e-b719-b23489239dd1",
-              "css": null,
-              "src": null,
-              "name": "h-1",
-              "show": false,
-              "type": "hr",
-              "class": null,
-              "label": "Line",
-              "value": null,
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "attached_child_id": "543128e3-6fd9-468d-a5bc-8fff75a32898",
-              "attached_element_id": "fb35cfb7-fdde-4022-91d0-3524b3df4f32"
-            }
-          ],
-          "position": 1
-        }
-      ],
-      "class": "single-column field-dragger",
-      "order": 1,
-      "controls": [],
-      "is_field": false,
-      "droppable": false,
-      "decoration": "1"
-    },
-    {
-      "id": "9d794895-65cf-4656-be58-1d9a2715bb04",
-      "name": "Single Column",
-      "child": [
-        {
-          "id": "543128e3-6fd9-468d-a5bc-8fff75a32898",
-          "class": "col-lg-12 border-right",
-          "controls": [
-            {
-              "id": "cbb82c75-c7a1-4cf9-be44-a1d60c696665",
-              "css": null,
-              "src": null,
-              "name": "richtext-1",
-              "show": false,
-              "type": "richtext",
-              "class": null,
-              "label": "Rich Text",
-              "value": null,
-              "is_field": true,
-              "is_image": false,
-              "droppable": false,
-              "is_system": false,
-              "is_required": false,
-              "attached_child_id": "543128e3-6fd9-468d-a5bc-8fff75a32898",
-              "attached_element_id": "9d794895-65cf-4656-be58-1d9a2715bb04"
             }
           ],
           "position": 1
@@ -1576,7 +1502,7 @@
               "type": "label",
               "class": null,
               "label": "Label",
-              "value": "www.supportwarehouse.com",
+              "value": "www.europlusdirect.com",
               "is_field": true,
               "is_image": false,
               "droppable": false,

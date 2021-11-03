@@ -1169,6 +1169,8 @@ class WorldwidePackQuoteTest extends TestCase
             'product_number' => $assets[0]->sku,
         ]);
 
+        $sameAsset->companies()->sync(factory(Company::class)->create());
+
         $assetsGroup = factory(WorldwideQuoteAssetsGroup::class)->create([
             'worldwide_quote_version_id' => $quote->activeVersion->getKey(),
         ]);
@@ -1233,6 +1235,11 @@ class WorldwidePackQuoteTest extends TestCase
         foreach ($response->json('assets') as $asset) {
             if ($asset['serial_no'] === $sameAsset->serial_number && $asset['sku'] === $sameAsset->product_number) {
                 $this->assertFalse($asset['is_customer_exclusive_asset']);
+                $this->assertArrayHasKey('owned_by_customer', $asset);
+                $this->assertArrayHasKey('permissions', $asset['owned_by_customer']);
+                $this->assertArrayHasKey('view', $asset['owned_by_customer']['permissions']);
+                $this->assertArrayHasKey('update', $asset['owned_by_customer']['permissions']);
+                $this->assertArrayHasKey('delete', $asset['owned_by_customer']['permissions']);
                 $duplicatedAssetCount++;
             } else {
                 $this->assertTrue($asset['is_customer_exclusive_asset']);

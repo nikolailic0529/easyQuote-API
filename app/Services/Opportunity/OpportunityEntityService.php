@@ -320,6 +320,8 @@ class OpportunityEntityService implements CauserAware
                     $address->country()->associate(
                         Country::query()->where('name', $contactData['country'])->first()
                     );
+                } else {
+                    $address->country()->disassociate();
                 }
 
                 $address->{$address->getCreatedAtColumn()} = $address->freshTimestampString();
