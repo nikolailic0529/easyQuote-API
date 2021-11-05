@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\VendorRepositoryInterface as VendorRepository;
+use App\Http\Resources\Vendor\VendorCollection;
 use App\Queries\VendorQueries;
 use Illuminate\Http\JsonResponse;
 use App\Http\Requests\Vendor\{
@@ -48,7 +49,7 @@ class VendorController extends Controller
         $this->authorize('viewList', Vendor::class);
 
         return response()->json(
-            $queries->listingQuery()->get()
+            VendorCollection::make($queries->listingQuery()->get())
         );
     }
 

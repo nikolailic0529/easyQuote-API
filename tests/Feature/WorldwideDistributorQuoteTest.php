@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Contracts\Repositories\SettingRepository;
 use App\Events\DistributionProcessed;
 use App\Models\Address;
+use App\Models\Asset;
+use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Data\Country;
 use App\Models\Data\Currency;
@@ -1622,6 +1624,7 @@ class WorldwideDistributorQuoteTest extends TestCase
             'file_type' => QFT_WWPL
         ]);
 
+        /** @var MappedRow $row */
         $row = factory(MappedRow::class)->create(['quote_file_id' => $distributorFile->getKey(), 'price' => 10_000, 'is_selected' => true]);
 
         /** @var WorldwideDistribution $distributorQuote */
@@ -1643,10 +1646,22 @@ class WorldwideDistributorQuoteTest extends TestCase
             'original_price' => 120000.10 * .9
         ];
 
+        /** @var Asset $sameAsset */
+        $sameAsset = factory(Asset::class)->create([
+            'product_number' => $rowFieldsData['product_no'],
+            'serial_number' => $row->serial_no,
+        ]);
+
+        $sameAsset->companies()->sync(factory(Company::class)->create());
+
         $this->patchJson('api/ww-distributions/'.$distributorQuote->getKey().'/mapped-rows/'.$row->getKey(), $rowFieldsData)
 //            ->dump()
             ->assertOk()
-            ->assertJson($rowFieldsData);
+            ->assertJson($rowFieldsData)
+            ->assertJsonStructure([
+                'is_customer_exclusive_asset',
+                'owned_by_customer'
+            ]);
     }
 
     /**

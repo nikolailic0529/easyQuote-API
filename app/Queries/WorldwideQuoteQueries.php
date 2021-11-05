@@ -206,6 +206,7 @@ class WorldwideQuoteQueries
             $assetModel->qualifyColumn('exchange_rate_value'),
             $assetModel->qualifyColumn('exchange_rate_margin'),
             "{$vendorRelationship->qualifyColumn('short_code')} as vendor_short_code",
+            $assetModel->qualifyColumn('is_warranty_checked'),
         ];
 
         return $quoteVersion->assets()->getQuery()

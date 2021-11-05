@@ -59,4 +59,6 @@ final class InitializeWorldwideQuoteAssetData extends DataTransferObject
     public ?float $exchange_rate_margin;
 
     public ?float $exchange_rate_value;
+
+    public bool $is_warranty_checked = false;
 }

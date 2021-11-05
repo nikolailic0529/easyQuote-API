@@ -4,7 +4,9 @@
 namespace Tests\Feature;
 
 
+use App\Models\Quote\Discount\MultiYearDiscount;
 use App\Models\Quote\Discount\PrePayDiscount;
+use App\Models\Quote\WorldwideQuote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 use Tests\Unit\Traits\WithFakeUser;
@@ -133,6 +135,34 @@ class PrePayDiscountTest extends TestCase
 
         $this->getJson('api/discounts/pre_pay/'.$discount->getKey())
             ->assertNotFound();
+    }
+
+    /**
+     * Test an ability to delete an existing pre-pay discount attached to worldwide pack quote.
+     *
+     * @return void
+     */
+    public function testCanNotDeletePrePayDiscountAttachedToWorldwidePackQuote()
+    {
+        $discount = factory(PrePayDiscount::class)->create();
+
+        /** @var WorldwideQuote $quote */
+        $quote = factory(WorldwideQuote::class)->create([
+            'submitted_at' => now()
+        ]);
+
+        $quote->activeVersion->prePayDiscount()->associate($discount)->save();
+
+        $this->authenticateApi();
+
+        $response = $this->deleteJson("api/discounts/pre_pay/".$discount->getKey())
+//            ->dump()
+            ->assertForbidden()
+            ->assertJsonStructure([
+                'message'
+            ]);
+
+        $this->assertStringStartsWith('You can not delete the pre-pay discount', $response->json('message'));
     }
 
     /**

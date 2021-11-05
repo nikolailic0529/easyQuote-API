@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\WorldwideQuotes;
 use App\Contracts\Services\ProcessesWorldwideDistributionState;
 use App\Contracts\Services\ProcessesWorldwideQuoteState;
 use App\Http\Controllers\Controller;
+use Illuminate\Database\Eloquent\Collection;
 use App\Http\Requests\{MappedRow\UpdateDistributionMappedRow,
     WorldwideQuote\ApplyDiscounts,
     WorldwideQuote\CreateRowsGroup,
@@ -28,6 +29,7 @@ use App\Http\Resources\Discount\ApplicableDiscountCollection;
 use App\Http\Resources\PriceSummary;
 use App\Http\Resources\QuoteFile\StoredQuoteFile;
 use App\Http\Resources\RowsGroup\RowsGroup;
+use App\Http\Resources\WorldwideQuote\ContractAsset;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Models\QuoteFile\MappedRow;
@@ -533,6 +535,7 @@ class WorldwideDistributionController extends Controller
      */
     public function updateMappedRow(UpdateDistributionMappedRow $request,
                                     WorldwideQuoteVersionGuard  $versionGuard,
+                                    WorldwideQuoteDataMapper    $dataMapper,
                                     WorldwideDistribution       $worldwideDistribution,
                                     MappedRow                   $mappedRow): JsonResponse
     {
@@ -542,15 +545,17 @@ class WorldwideDistributionController extends Controller
 
         // TODO: process inside WorldwideQuoteStateProcessor.
         $resource = $this->processor->updateMappedRowOfDistribution(
-            $version,
-            $worldwideDistribution,
-            $mappedRow,
-            $request->getUpdateMappedRowFieldCollection(),
+            quote: $version,
+            worldwideDistribution: $worldwideDistribution,
+            mappedRow: $mappedRow,
+            rowData: $request->getUpdateMappedRowFieldCollection(),
         );
 
+        $dataMapper->markExclusivityOfWorldwideDistributionRowsForCustomer($worldwideDistribution, $resource);
+
         return response()->json(
-            $resource,
-            Response::HTTP_OK
+            data: ContractAsset::make($resource),
+            status: Response::HTTP_OK
         );
     }
 

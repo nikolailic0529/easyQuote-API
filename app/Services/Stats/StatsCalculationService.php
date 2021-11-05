@@ -2,7 +2,6 @@
 
 namespace App\Services\Stats;
 
-use App\Services\RescueQuote\RescueQuoteCalc;
 use App\Contracts\{Services\ManagesExchangeRates, Services\Stats};
 use App\DTO\AssetAggregate;
 use App\Enum\QuoteStatus;
@@ -17,6 +16,7 @@ use App\Models\{Address,
     Quote\WorldwideQuote};
 use App\Models\Quote\QuoteLocationTotal;
 use App\Queries\AssetQueries;
+use App\Services\RescueQuote\RescueQuoteCalc;
 use App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc;
 use Illuminate\Database\{ConnectionInterface, Eloquent\Collection, Query\JoinClause};
 use Illuminate\Support\{Collection as BaseCollection,};
@@ -30,13 +30,13 @@ class StatsCalculationService implements Stats
 {
     protected OutputInterface $output;
 
-    public function __construct(protected ConnectionInterface $connection,
-                                protected LoggerInterface $logger,
-                                protected AssetQueries $assetQueries,
-                                protected RescueQuoteCalc $rescueQuoteCalc,
-                                protected WorldwideQuoteCalc $worldwideQuoteCalc,
+    public function __construct(protected ConnectionInterface  $connection,
+                                protected LoggerInterface      $logger,
+                                protected AssetQueries         $assetQueries,
+                                protected RescueQuoteCalc      $rescueQuoteCalc,
+                                protected WorldwideQuoteCalc   $worldwideQuoteCalc,
                                 protected ManagesExchangeRates $exchangeRateService,
-                                OutputInterface $output = null)
+                                OutputInterface                $output = null)
     {
         $this->output = $output ?? new NullOutput();
     }
@@ -52,40 +52,41 @@ class StatsCalculationService implements Stats
     {
         $this->progressStart(Quote::query()->count() + WorldwideQuote::query()->count());
 
-        $this->connection->transaction(function () {
-            /**
-             * Truncate quote totals.
-             */
-            QuoteTotal::query()
-                ->leftJoin('quotes', function (JoinClause $join) {
-                    $join->on('quotes.id', 'quote_totals.quote_id')
-                        ->whereNull('quotes.deleted_at');
-                })
-                ->leftJoin('worldwide_quotes', function (JoinClause $join) {
-                    $join->on('worldwide_quotes.id', 'quote_totals.quote_id')
-                        ->whereNull('worldwide_quotes.deleted_at');
-                })
-                ->whereNull(['quotes.id', 'worldwide_quotes.id'])
-                ->delete();
+        /**
+         * Truncate quote totals with deleted quote parents.
+         */
+        QuoteTotal::query()
+            ->leftJoin('quotes', function (JoinClause $join) {
+                $join->on('quotes.id', 'quote_totals.quote_id')
+                    ->whereNull('quotes.deleted_at');
+            })
+            ->leftJoin('worldwide_quotes', function (JoinClause $join) {
+                $join->on('worldwide_quotes.id', 'quote_totals.quote_id')
+                    ->whereNull('worldwide_quotes.deleted_at');
+            })
+            ->whereNull(['quotes.id', 'worldwide_quotes.id'])
+            ->get()
+            ->each(function (QuoteTotal $quoteTotal) {
+                $quoteTotal->delete();
+            });
 
-            Quote::query()
-                ->with('customer.equipmentLocation')
-                ->chunkById(500, function (Collection $chunk) {
-                    foreach ($chunk as $quote) {
-                        $this->denormalizeSummaryOfRescueQuote($quote);
-                        $this->progressAdvance();
-                    }
-                });
+        Quote::query()
+            ->with('customer.equipmentLocation')
+            ->chunkById(500, function (Collection $chunk) {
+                foreach ($chunk as $quote) {
+                    $this->denormalizeSummaryOfRescueQuote($quote);
+                    $this->progressAdvance();
+                }
+            });
 
-            WorldwideQuote::query()
-                ->with('opportunity.primaryAccount')
-                ->chunkById(500, function (Collection $chunk) {
-                    foreach ($chunk as $quote) {
-                        $this->denormalizeSummaryOfWorldwideQuote($quote);
-                        $this->progressAdvance();
-                    }
-                });
-        });
+        WorldwideQuote::query()
+            ->with('opportunity.primaryAccount')
+            ->chunkById(500, function (Collection $chunk) {
+                foreach ($chunk as $quote) {
+                    $this->denormalizeSummaryOfWorldwideQuote($quote);
+                    $this->progressAdvance();
+                }
+            });
 
         $this->logger->info('Summary by Rescue & Worldwide Quotes has been calculated.');
 
@@ -204,23 +205,19 @@ class StatsCalculationService implements Stats
     {
         $this->progressStart();
 
-        $this->connection->transaction(function () {
-
-            QuoteTotal::query()
-                ->toBase()
-                ->selectRaw('SUM(`total_price`) as `total_value`')
-                ->selectRaw('COUNT(*) AS `total_count`')
-                ->addSelect('company_id', 'user_id')
-                ->groupBy('company_id', 'user_id')
-                ->orderBy('company_id')
-                ->chunk(100, function (BaseCollection $chunk) {
-                    foreach ($chunk as $total) {
-                        $this->denormalizeSummaryOfCustomer($total);
-                        $this->progressAdvance();
-                    }
-                });
-
-        });
+        QuoteTotal::query()
+            ->toBase()
+            ->selectRaw('SUM(`total_price`) as `total_value`')
+            ->selectRaw('COUNT(*) AS `total_count`')
+            ->addSelect('company_id', 'user_id')
+            ->groupBy('company_id', 'user_id')
+            ->orderBy('company_id')
+            ->chunk(100, function (BaseCollection $chunk) {
+                foreach ($chunk as $total) {
+                    $this->denormalizeSummaryOfCustomer($total);
+                    $this->progressAdvance();
+                }
+            });
 
         $this->logger->info('Summary by Customers has been calculated.');
 
@@ -231,19 +228,16 @@ class StatsCalculationService implements Stats
     {
         $this->progressStart(QuoteTotal::query()->distinct('location_id')->count());
 
-        $this->connection->transaction(function () {
-            QuoteTotal::query()
-                ->with('location')
-                ->has('location')
-                ->groupByRaw('location_id')
-                ->chunk(500, function (Collection $chunk) {
-                    foreach ($chunk as $quoteTotal) {
-                        $this->denormalizeSummaryOfLocation($quoteTotal->location);
-                        $this->progressAdvance();
-                    }
-
-                });
-        });
+        QuoteTotal::query()
+            ->with('location')
+            ->has('location')
+            ->groupByRaw('location_id')
+            ->chunk(500, function (Collection $chunk) {
+                foreach ($chunk as $quoteTotal) {
+                    $this->denormalizeSummaryOfLocation($quoteTotal->location);
+                    $this->progressAdvance();
+                }
+            });
 
         $this->logger->info('Summary by Locations of Quote entity has been calculated.');
 
@@ -254,23 +248,21 @@ class StatsCalculationService implements Stats
     {
         $this->progressStart(Asset::query()->count());
 
-        $this->connection->transaction(function () {
-            /**
-             * Truncate asset totals.
-             */
-            AssetTotal::query()->delete();
+        /**
+         * Truncate asset totals.
+         */
+        AssetTotal::query()->delete();
 
-            $this->assetQueries
-                ->locationsQuery()
-                ->orderBy('locations.id')
-                ->chunk(500, function (Collection $chunk) {
-                    foreach ($chunk as $asset) {
-                        /** @var Asset $asset */
-                        $this->denormalizeSummaryOfAsset($asset->location);
-                        $this->progressAdvance();
-                    }
-                });
-        });
+        $this->assetQueries
+            ->locationsQuery()
+            ->orderBy('locations.id')
+            ->chunk(500, function (Collection $chunk) {
+                foreach ($chunk as $asset) {
+                    /** @var Asset $asset */
+                    $this->denormalizeSummaryOfAsset($asset->location);
+                    $this->progressAdvance();
+                }
+            });
 
         $this->logger->info('Summary by Assets has been calculated.');
 
@@ -292,31 +284,29 @@ class StatsCalculationService implements Stats
         /**
          * We are creating aggregates for each quote user.
          */
-        $this->connection->transaction(function () use ($quoteTotals, $location) {
-            $quoteTotals->each(function (QuoteTotal $quoteTotal) use ($location) {
+        $quoteTotals->each(function (QuoteTotal $quoteTotal) use ($location) {
 
-                $quoteLocationTotal = QuoteLocationTotal::query()
-                    ->where('quote_total_id', $quoteTotal->getKey())
-                    ->where('location_id', $location->getKey())
-                    ->where('user_id', $quoteTotal->user_id)
-                    ->firstOrNew();
+            $quoteLocationTotal = QuoteLocationTotal::query()
+                ->where('quote_total_id', $quoteTotal->getKey())
+                ->where('location_id', $location->getKey())
+                ->where('user_id', $quoteTotal->user_id)
+                ->firstOrNew();
 
-                tap($quoteLocationTotal, function (QuoteLocationTotal $quoteLocationTotal) use ($location, $quoteTotal) {
-                    $quoteLocationTotal->quote_total_id = $quoteTotal->getKey();
-                    $quoteLocationTotal->user_id = $quoteTotal->user_id;
-                    $quoteLocationTotal->location_id = $location->getKey();
-                    $quoteLocationTotal->country_id = $location->country->getKey();
-                    $quoteLocationTotal->location_coordinates = $location->coordinates;
-                    $quoteLocationTotal->location_address = $location->formatted_address;
-                    $quoteLocationTotal->total_drafted_value = $quoteTotal->total_drafted_value;
-                    $quoteLocationTotal->total_drafted_count = $quoteTotal->total_drafted_count;
-                    $quoteLocationTotal->total_submitted_value = $quoteTotal->total_submitted_value;
-                    $quoteLocationTotal->total_submitted_count = $quoteTotal->total_submitted_count;
+            tap($quoteLocationTotal, function (QuoteLocationTotal $quoteLocationTotal) use ($location, $quoteTotal) {
+                $quoteLocationTotal->quote_total_id = $quoteTotal->getKey();
+                $quoteLocationTotal->user_id = $quoteTotal->user_id;
+                $quoteLocationTotal->location_id = $location->getKey();
+                $quoteLocationTotal->country_id = $location->country->getKey();
+                $quoteLocationTotal->location_coordinates = $location->coordinates;
+                $quoteLocationTotal->location_address = $location->formatted_address;
+                $quoteLocationTotal->total_drafted_value = $quoteTotal->total_drafted_value;
+                $quoteLocationTotal->total_drafted_count = $quoteTotal->total_drafted_count;
+                $quoteLocationTotal->total_submitted_value = $quoteTotal->total_submitted_value;
+                $quoteLocationTotal->total_submitted_count = $quoteTotal->total_submitted_count;
 
-                    $quoteTotal->save();
-                });
-
+                $quoteTotal->save();
             });
+
         });
     }
 
@@ -330,23 +320,19 @@ class StatsCalculationService implements Stats
         /**
          * We are creating aggregates for each asset user.
          */
-        $this->connection->transaction(function () use ($aggregatedAssetData, $location) {
+        $aggregatedAssetData->each(function (AssetAggregate $aggregate) use ($location) {
 
-            $aggregatedAssetData->each(function (AssetAggregate $aggregate) use ($location) {
+            tap(new AssetTotal(), function (AssetTotal $assetTotal) use ($location, $aggregate) {
+                $assetTotal->location_id = $location->getKey();
+                $assetTotal->country_id = $location->country->getKey();
+                $assetTotal->user_id = $aggregate->user_id;
+                $assetTotal->location_coordinates = $location->coordinates;
+                $assetTotal->location_address = $location->formatted_address;
+                $assetTotal->total_count = $aggregate->total_count;
+                $assetTotal->total_value = $aggregate->total_value;
 
-                tap(new AssetTotal(), function (AssetTotal $assetTotal) use ($location, $aggregate) {
-                    $assetTotal->location_id = $location->getKey();
-                    $assetTotal->country_id = $location->country->getKey();
-                    $assetTotal->user_id = $aggregate->user_id;
-                    $assetTotal->location_coordinates = $location->coordinates;
-                    $assetTotal->location_address = $location->formatted_address;
-                    $assetTotal->total_count = $aggregate->total_count;
-                    $assetTotal->total_value = $aggregate->total_value;
-
-                    $assetTotal->save();
-                });
+                $assetTotal->save();
             });
-
         });
     }
 
@@ -382,33 +368,30 @@ class StatsCalculationService implements Stats
             return;
         }
 
-        $this->connection->transaction(function () use ($company, $total) {
+        $company->addresses->each(function (Address $address) use ($company, $total) {
 
-            $company->addresses->each(function (Address $address) use ($company, $total) {
+            $customerTotal = CustomerTotal::query()
+                ->where('company_id', $company->getKey())
+                ->where('user_id', $total->user_id)
+                ->where('location_id', $address->location_id)
+                ->firstOrNew();
 
-                $customerTotal = CustomerTotal::query()
-                    ->where('company_id', $company->getKey())
-                    ->where('user_id', $total->user_id)
-                    ->where('location_id', $address->location_id)
-                    ->firstOrNew();
+            tap($customerTotal, function (CustomerTotal $customerTotal) use ($total, $address, $company) {
+                $customerTotal->customer_name = $company->name;
+                $customerTotal->location_id = $address->location_id;
+                $customerTotal->country_id = $address->location->country->getKey();
+                $customerTotal->address_id = $address->getKey();
+                $customerTotal->company_id = $company->getKey();
+                $customerTotal->user_id = $total->user_id;
+                $customerTotal->total_count = $total->total_count;
+                $customerTotal->total_value = $total->total_value;
+                $customerTotal->location_address = $address->location->formatted_address;
+                $customerTotal->location_coordinates = $address->location->coordinates;
 
-                tap($customerTotal, function (CustomerTotal $customerTotal) use ($total, $address, $company) {
-                    $customerTotal->customer_name = $company->name;
-                    $customerTotal->location_id = $address->location_id;
-                    $customerTotal->country_id = $address->location->country->getKey();
-                    $customerTotal->address_id = $address->getKey();
-                    $customerTotal->company_id = $company->getKey();
-                    $customerTotal->user_id = $total->user_id;
-                    $customerTotal->total_count = $total->total_count;
-                    $customerTotal->total_value = $total->total_value;
-                    $customerTotal->location_address = $address->location->formatted_address;
-                    $customerTotal->location_coordinates = $address->location->coordinates;
-
-                    $customerTotal->save();
-                });
-
-                $this->logger->info('A new customer total created with new location', $customerTotal->toArray());
+                $customerTotal->save();
             });
+
+            $this->logger->info('A new customer total created with new location', $customerTotal->toArray());
         });
     }
 

@@ -63,7 +63,8 @@ class VendorTest extends TestCase
      */
     public function testCanViewVendorsList()
     {
-        $this->getJson('api/vendors/list')
+        $response = $this->getJson('api/vendors/list')
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 '*' => [
@@ -72,6 +73,9 @@ class VendorTest extends TestCase
                     'short_code',
                 ],
             ]);
+
+        $this->assertNotEmpty($response->json());
+        $this->assertSame('LEN', $response->json('0.short_code'));
     }
 
     /**

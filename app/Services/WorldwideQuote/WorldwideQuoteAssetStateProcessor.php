@@ -90,6 +90,7 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
             $asset->original_price = $data->original_price;
             $asset->exchange_rate_value = $data->exchange_rate_value;
             $asset->exchange_rate_margin = $data->exchange_rate_margin;
+            $asset->is_warranty_checked = $data->is_warranty_checked;
 
             $asset->makeHidden('worldwideQuote');
 
@@ -149,6 +150,7 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
                 $asset->original_price = $assetData->original_price;
                 $asset->exchange_rate_margin = $assetData->exchange_rate_margin;
                 $asset->exchange_rate_value = $assetData->exchange_rate_value;
+                $asset->is_warranty_checked = $assetData->is_warranty_checked;
 
                 $lock = $this->lockProvider->lock(Lock::UPDATE_WWASSET($asset->getKey()), 10);
 

@@ -1026,12 +1026,10 @@ class QuoteStateProcessor implements QuoteState
 
         $oldRowsIds = $quote->rowsData()->selected()->pluck('imported_rows.id');
 
-        $this->connection->transaction(function () use ($quote, $updatableScope, $selectedRowsIds) {
-            $quote->rowsData()->update(['is_selected' => false]);
+        $quote->rowsData()->update(['is_selected' => false]);
 
-            $quote->rowsData()->{$updatableScope}('imported_rows.id', $selectedRowsIds)
-                ->update(['is_selected' => true]);
-        }, 3);
+        $quote->rowsData()->{$updatableScope}('imported_rows.id', $selectedRowsIds)
+            ->update(['is_selected' => true]);
 
         $newRowsIds = $quote->rowsData()->selected()->pluck('imported_rows.id');
 

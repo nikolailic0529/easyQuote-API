@@ -48,9 +48,14 @@ class LocationService implements Contract
         /**
          * Begin cursor query for addresses where location_id is null
          */
-        $this->address->on(MYSQL_UNBUFFERED)
+
+        $cursor = Address::query()
             ->whereNull('location_id')
-            ->cursor()->each(fn (Address $address) => $this->handleAddressLocation($address));
+            ->lazyById();
+
+        foreach ($cursor as $address) {
+            $this->handleAddressLocation($address);
+        }
 
         $this->onUpdateAddressLocationsCompleted();
     }

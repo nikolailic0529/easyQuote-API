@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Quote\Discount\PrePayDiscount;
 use App\Models\Quote\Discount\PromotionalDiscount;
+use App\Models\Quote\WorldwideQuote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 use Tests\Unit\Traits\WithFakeUser;
@@ -122,6 +124,34 @@ class PromotionalDiscountTest extends TestCase
 
         $this->getJson('api/discounts/promotions/'.$discount->getKey())
             ->assertNotFound();
+    }
+
+    /**
+     * Test an ability to delete an existing promotional discount attached to worldwide pack quote.
+     *
+     * @return void
+     */
+    public function testCanNotDeletePromotionalDiscountAttachedToWorldwidePackQuote()
+    {
+        $discount = factory(PromotionalDiscount::class)->create();
+
+        /** @var WorldwideQuote $quote */
+        $quote = factory(WorldwideQuote::class)->create([
+            'submitted_at' => now()
+        ]);
+
+        $quote->activeVersion->promotionalDiscount()->associate($discount)->save();
+
+        $this->authenticateApi();
+
+        $response = $this->deleteJson("api/discounts/promotions/".$discount->getKey())
+//            ->dump()
+            ->assertForbidden()
+            ->assertJsonStructure([
+                'message'
+            ]);
+
+        $this->assertStringStartsWith('You can not delete the promotional discount', $response->json('message'));
     }
 
     /**

@@ -45,13 +45,17 @@ class QuotesExpiration extends Command
     /**
      * Execute the job.
      *
-     * @return void
+     * @return int
      */
-    public function handle(Users $users)
+    public function handle(): int
     {
-        DB::transaction(
-            fn () => $users->cursor()->each(fn (User $user) => $this->serveUser($user))
-        );
+        $cursor = User::query()->lazyById();
+
+        foreach ($cursor as $user) {
+            $this->serveUser($user);
+        }
+
+        return self::SUCCESS;
     }
 
     protected function serveUser(User $user): void

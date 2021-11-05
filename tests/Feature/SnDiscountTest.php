@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Quote\Discount\PromotionalDiscount;
 use App\Models\Quote\Discount\SND;
+use App\Models\Quote\WorldwideQuote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 use Tests\Unit\Traits\WithFakeUser;
@@ -119,6 +121,34 @@ class SnDiscountTest extends TestCase
 
         $this->getJson('api/discounts/snd/'.$discount->getKey())
             ->assertNotFound();
+    }
+
+    /**
+     * Test an ability to delete an existing special negotiation discount attached to worldwide pack quote.
+     *
+     * @return void
+     */
+    public function testCanNotDeleteSpecialNegotiationDiscountAttachedToWorldwidePackQuote()
+    {
+        $discount = factory(SND::class)->create();
+
+        /** @var WorldwideQuote $quote */
+        $quote = factory(WorldwideQuote::class)->create([
+            'submitted_at' => now()
+        ]);
+
+        $quote->activeVersion->snDiscount()->associate($discount)->save();
+
+        $this->authenticateApi();
+
+        $response = $this->deleteJson("api/discounts/snd/".$discount->getKey())
+//            ->dump()
+            ->assertForbidden()
+            ->assertJsonStructure([
+                'message'
+            ]);
+
+        $this->assertStringStartsWith('You can not delete the special negotiation discount', $response->json('message'));
     }
 
     /**

@@ -2,18 +2,12 @@
 
 namespace App\Http\Controllers\API\Discounts;
 
-use App\Http\Controllers\Controller;
 use App\Contracts\Repositories\Quote\Discount\PrePayDiscountRepositoryInterface as PrePayDiscountRepository;
-use App\Http\Requests\Discount\{
-    StorePrePayDiscountRequest,
-    UpdatePrePayDiscountRequest
-};
-use App\Http\Resources\Discount\DiscountList;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Discount\{DeletePrePayDiscount, StorePrePayDiscountRequest, UpdatePrePayDiscountRequest};
 use App\Http\Resources\Discount\DiscountListCollection;
-use App\Models\Quote\Discount\{
-    Discount,
-    PrePayDiscount
-};
+use App\Models\Quote\Discount\{PrePayDiscount};
+use Illuminate\Http\JsonResponse;
 
 class PrePayDiscountController extends Controller
 {
@@ -42,7 +36,7 @@ class PrePayDiscountController extends Controller
     /**
      * Store a newly created PrePay Discount in storage.
      *
-     * @param  StorePrePayDiscountRequest  $request
+     * @param StorePrePayDiscountRequest $request
      * @return \Illuminate\Http\Response
      */
     public function store(StorePrePayDiscountRequest $request)
@@ -55,7 +49,7 @@ class PrePayDiscountController extends Controller
     /**
      * Display the specified PrePay Discount.
      *
-     * @param  \App\Models\Quote\Discount\PrePayDiscount $pre_pay
+     * @param \App\Models\Quote\Discount\PrePayDiscount $pre_pay
      * @return \Illuminate\Http\Response
      */
     public function show(PrePayDiscount $pre_pay)
@@ -68,8 +62,8 @@ class PrePayDiscountController extends Controller
     /**
      * Update the specified PrePay Discount in storage.
      *
-     * @param  UpdatePrePayDiscountRequest  $request
-     * @param  \App\Models\Quote\Discount\PrePayDiscount $pre_pay
+     * @param UpdatePrePayDiscountRequest $request
+     * @param \App\Models\Quote\Discount\PrePayDiscount $pre_pay
      * @return \Illuminate\Http\Response
      */
     public function update(UpdatePrePayDiscountRequest $request, PrePayDiscount $pre_pay)
@@ -82,10 +76,12 @@ class PrePayDiscountController extends Controller
     /**
      * Remove the specified PrePay Discount from storage.
      *
-     * @param  \App\Models\Quote\Discount\PrePayDiscount $pre_pay
-     * @return \Illuminate\Http\Response
+     * @param DeletePrePayDiscount $request
+     * @param \App\Models\Quote\Discount\PrePayDiscount $pre_pay
+     * @return JsonResponse
      */
-    public function destroy(PrePayDiscount $pre_pay)
+    public function destroy(DeletePrePayDiscount $request,
+                            PrePayDiscount       $pre_pay): JsonResponse
     {
         return response()->json(
             $this->prePayDiscount->delete($pre_pay->id)
@@ -95,7 +91,7 @@ class PrePayDiscountController extends Controller
     /**
      * Activate the specified PrePay Discount from storage.
      *
-     * @param  \App\Models\Quote\Discount\PrePayDiscount $pre_pay
+     * @param \App\Models\Quote\Discount\PrePayDiscount $pre_pay
      * @return \Illuminate\Http\Response
      */
     public function activate(PrePayDiscount $pre_pay)
@@ -110,7 +106,7 @@ class PrePayDiscountController extends Controller
     /**
      * Deactivate the specified PrePay Discount from storage.
      *
-     * @param  \App\Models\Quote\Discount\PrePayDiscount $pre_pay
+     * @param \App\Models\Quote\Discount\PrePayDiscount $pre_pay
      * @return \Illuminate\Http\Response
      */
     public function deactivate(PrePayDiscount $pre_pay)

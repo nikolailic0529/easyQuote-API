@@ -45,6 +45,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string|null $vendor_short_code
  * @property array|null $service_level_data
  * @property bool|null $is_selected
+ * @property bool|null $is_warranty_checked
  *
  * @property BaseWorldwideQuote|null $worldwideQuote
  * @property Vendor|null $vendor

@@ -39,6 +39,7 @@ return [
             'date_from',
             'date_to',
             'price',
+            'service_level_description',
         ]
 
     ],

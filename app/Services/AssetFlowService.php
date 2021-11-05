@@ -2,10 +2,11 @@
 
 namespace App\Services;
 
-use App\Contracts\{Services\ManagesExchangeRates,
+use App\Enum\Lock;
+use App\Contracts\{LoggerAware,
+    Services\ManagesExchangeRates,
     Services\MigratesAssetEntity,
-    Services\MigratesCustomerEntity,
-    LoggerAware};
+    Services\MigratesCustomerEntity};
 use App\DTO\QuoteAsset;
 use App\Enum\AddressType;
 use App\Models\{Address,
@@ -19,6 +20,7 @@ use App\Models\{Address,
 use App\Models\Quote\BaseQuote;
 use App\Queries\QuoteQueries;
 use App\Services\Concerns\WithProgress;
+use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Carbon;
 use JetBrains\PhpStorm\Pure;
@@ -34,13 +36,14 @@ class AssetFlowService implements MigratesAssetEntity, LoggerAware
     protected array $assetCategoryCache = [];
 
     #[Pure]
-    public function __construct(protected ConnectionInterface $connection,
-                                protected LoggerInterface $logger,
-                                protected ValidatorInterface $validator,
-                                protected QuoteQueries $quoteQueries,
-                                protected ManagesExchangeRates $exchangeRateService,
+    public function __construct(protected ConnectionInterface    $connection,
+                                protected LoggerInterface        $logger,
+                                protected ValidatorInterface     $validator,
+                                protected QuoteQueries           $quoteQueries,
+                                protected ManagesExchangeRates   $exchangeRateService,
                                 protected MigratesCustomerEntity $customerFlowService,
-                                protected ActivityLogStatus $activityLogStatus)
+                                protected ActivityLogStatus      $activityLogStatus,
+                                protected LockProvider           $lockProvider)
     {
     }
 
@@ -113,11 +116,15 @@ class AssetFlowService implements MigratesAssetEntity, LoggerAware
             CT_PACK => $this->migrateAssetsFromWorldwidePackQuote($quote),
         };
 
-        with($quote, function (WorldwideQuoteVersion $version) {
+        with($quote, function (WorldwideQuoteVersion $version) use ($quote) {
 
             $version->assets_migrated_at = now();
 
-            $this->connection->transaction(fn() => $version->save());
+            $this->lockProvider->lock(Lock::UPDATE_WWQUOTE($quote->getKey()), 10)
+                ->block(30, function () use ($version) {
+                    $this->connection->transaction(fn() => $version->save());
+                });
+
 
         });
 
@@ -292,10 +299,13 @@ class AssetFlowService implements MigratesAssetEntity, LoggerAware
         }
 
         with($quote, function (Quote $quote) {
-
             $quote->assets_migrated_at = now();
 
-            $quote->save();
+
+            $this->lockProvider->lock(Lock::UPDATE_QUOTE($quote->getKey()), 10)
+                ->block(30, function () use ($quote) {
+                    $this->connection->transaction(fn () => $quote->save());
+                });
 
         });
 

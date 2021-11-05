@@ -5,9 +5,8 @@ namespace App\Http\Controllers\API\Company;
 use App\Enum\CompanySource;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Attachment\CreateAttachment;
-use App\Queries\AttachmentQueries;
-use App\Services\UnifiedAttachment\UnifiedAttachmentDataMapper;
-use App\Http\Requests\Company\{PaginateCompanies,
+use App\Http\Requests\Company\{DeleteCompany,
+    PaginateCompanies,
     ShowCompanyFormData,
     StoreCompanyRequest,
     UpdateCompanyContact,
@@ -17,8 +16,8 @@ use App\Http\Resources\{Asset\AssetOfCompany,
     Attachment\AttachmentOfCompany,
     Attachment\UnifiedAttachment,
     Company\CompanyCollection,
-    Company\ExternalCompanyList,
     Company\CompanyWithIncludes,
+    Company\ExternalCompanyList,
     Note\UnifiedNoteOfCompany,
     Opportunity\OpportunityList,
     SalesOrder\SalesOrderOfCompany,
@@ -27,6 +26,7 @@ use App\Models\Attachment;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Queries\AssetQueries;
+use App\Queries\AttachmentQueries;
 use App\Queries\CompanyQueries;
 use App\Queries\OpportunityQueries;
 use App\Queries\SalesOrderQueries;
@@ -34,6 +34,7 @@ use App\Queries\UnifiedNoteQueries;
 use App\Queries\UnifiedQuoteQueries;
 use App\Services\Attachment\AttachmentEntityService;
 use App\Services\CompanyEntityService;
+use App\Services\UnifiedAttachment\UnifiedAttachmentDataMapper;
 use App\Services\UnifiedNote\UnifiedNoteDataMapper;
 use App\Services\UnifiedQuote\UnifiedQuoteDataMapper;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -345,9 +346,9 @@ class CompanyController extends Controller
      * @return AnonymousResourceCollection
      * @throws AuthorizationException
      */
-    public function showAttachmentsOfCompany(AttachmentQueries $attachmentQueries,
+    public function showAttachmentsOfCompany(AttachmentQueries           $attachmentQueries,
                                              UnifiedAttachmentDataMapper $dataMapper,
-                                             Company           $company): AnonymousResourceCollection
+                                             Company                     $company): AnonymousResourceCollection
     {
         $this->authorize('view', $company);
 
@@ -408,13 +409,13 @@ class CompanyController extends Controller
     /**
      * Remove the specified Company from storage.
      *
-     * @param Request $request
+     * @param DeleteCompany $request
      * @param CompanyEntityService $service
      * @param Company $company
      * @return JsonResponse
      * @throws AuthorizationException
      */
-    public function destroyCompany(Request              $request,
+    public function destroyCompany(DeleteCompany        $request,
                                    CompanyEntityService $service,
                                    Company              $company): JsonResponse
     {

@@ -36,7 +36,12 @@ class Discount extends Model
 
     public function quotes(): BelongsToMany
     {
-        return $this->belongsToMany(Quote::class);
+        return $this->belongsToMany(Quote::class, 'quote_discount');
+    }
+
+    public function quoteVersions(): BelongsToMany
+    {
+        return $this->belongsToMany(QuoteVersion::class, 'quote_version_discount', relatedPivotKey: 'quote_version_id');
     }
 
     public function getDiscountTypeAttribute()

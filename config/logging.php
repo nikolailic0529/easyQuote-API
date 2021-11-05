@@ -43,14 +43,14 @@ return [
 
         'single' => [
             'driver' => 'single',
-            'path' => env('STORAGE_PATH', storage_path()) . '/logs/laravel.log',
+            'path' => storage_path('/logs/laravel.log'),
             'level' => 'debug',
             'permission' => 0777
         ],
 
         'daily' => [
             'driver' => 'daily',
-            'path' => env('STORAGE_PATH', storage_path()) . '/logs/laravel.log',
+            'path' => storage_path('/logs/laravel.log'),
             'level' => 'debug',
             'days' => 365,
             'permission' => 0777
@@ -58,7 +58,7 @@ return [
 
         'http-requests' => [
             'driver' => 'daily',
-            'path' => env('STORAGE_PATH', storage_path()) . '/logs/http.log',
+            'path' => storage_path('/logs/http.log'),
             'level' => 'debug',
             'days' => 365,
             'permission' => 0777
@@ -66,7 +66,7 @@ return [
 
         'document-processor' => [
             'driver' => 'daily',
-            'path' => env('STORAGE_PATH', storage_path()) . '/logs/document-processor.log',
+            'path' => storage_path('/logs/document-processor.log'),
             'level' => 'debug',
             'days' => 365,
             'permission' => 0777
@@ -82,7 +82,15 @@ return [
 
         'stats-calculation' => [
             'driver' => 'daily',
-            'path' => env('STORAGE_PATH', storage_path()) . '/logs/stats-calculation.log',
+            'path' => storage_path('/logs/stats-calculation.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777
+        ],
+
+        'vendor-services' => [
+          'driver' => 'daily',
+            'path' => storage_path('/logs/vendor-services.log'),
             'level' => 'debug',
             'days' => 365,
             'permission' => 0777

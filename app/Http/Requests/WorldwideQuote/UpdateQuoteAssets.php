@@ -30,57 +30,57 @@ class UpdateQuoteAssets extends FormRequest
     {
         return [
             'assets' => [
-                'bail', 'required', 'array'
+                'bail', 'required', 'array',
             ],
             'assets.*.id' => [
                 'bail', 'uuid',
                 Rule::exists(WorldwideQuoteAsset::class, 'id')
-                    ->where('worldwide_quote_id', $this->getQuote()->active_version_id)
+                    ->where('worldwide_quote_id', $this->getQuote()->active_version_id),
             ],
             'assets.*.buy_currency_id' => [
                 'bail', 'required', 'uuid',
-                Rule::exists(Currency::class, 'id')
+                Rule::exists(Currency::class, 'id'),
             ],
             'assets.*.vendor_id' => [
                 'bail', 'required', 'uuid',
-                Rule::exists(Vendor::class, 'id')->whereNull('deleted_at')
+                Rule::exists(Vendor::class, 'id')->whereNull('deleted_at'),
             ],
             'assets.*.machine_address_id' => [
                 'bail', 'nullable', 'uuid',
-                Rule::exists(Address::class, 'id')->whereNull('deleted_at')
+                Rule::exists(Address::class, 'id')->whereNull('deleted_at'),
             ],
             'assets.*.country' => [
-                'bail', 'nullable', 'string', 'size:2'
+                'bail', 'nullable', 'string', 'size:2',
             ],
             'assets.*.serial_no' => [
                 'bail', 'nullable', 'string', 'max:191', 'distinct:ignore_case',
             ],
             'assets.*.sku' => [
-                'bail', 'nullable', 'string', 'max:191'
+                'bail', 'nullable', 'string', 'max:191',
             ],
             'assets.*.service_sku' => [
-                'bail', 'nullable', 'string', 'max:191'
+                'bail', 'nullable', 'string', 'max:191',
             ],
             'assets.*.product_name' => [
-                'bail', 'nullable', 'string', 'max:191'
+                'bail', 'nullable', 'string', 'max:191',
             ],
             'assets.*.expiry_date' => [
                 'bail', 'nullable', 'date_format:Y-m-d',
             ],
             'assets.*.service_level_description' => [
-                'bail', 'nullable', 'string', 'max:500'
+                'bail', 'nullable', 'string', 'max:500',
             ],
             'assets.*.buy_price' => [
-                'bail', 'nullable', 'numeric', 'min:-999999', 'max:999999'
+                'bail', 'nullable', 'numeric', 'min:-999999', 'max:999999',
             ],
             'assets.*.buy_price_margin' => [
-                'bail', 'nullable', 'numeric', 'min:0', 'max:100'
+                'bail', 'nullable', 'numeric', 'min:0', 'max:100',
             ],
             'assets.*.price' => [
-                'bail', 'nullable', 'numeric', 'min:-999999', 'max:999999'
+                'bail', 'nullable', 'numeric', 'min:-999999', 'max:999999',
             ],
             'assets.*.original_price' => [
-                'bail', 'nullable', 'numeric', 'min:-999999', 'max:999999'
+                'bail', 'nullable', 'numeric', 'min:-999999', 'max:999999',
             ],
             'assets.*.exchange_rate_margin' => [
                 'bail', 'nullable', 'numeric', 'min:0', 'max:999999',
@@ -88,8 +88,11 @@ class UpdateQuoteAssets extends FormRequest
             'assets.*.exchange_rate_value' => [
                 'bail', 'nullable', 'numeric', 'min:0', 'max:999999',
             ],
+            'assets.*.is_warranty_checked' => [
+                'bail', 'nullable', 'boolean',
+            ],
             'stage' => [
-                'bail', 'required', Rule::in(PackQuoteStage::getLabels())
+                'bail', 'required', Rule::in(PackQuoteStage::getLabels()),
             ],
         ];
     }
@@ -107,7 +110,7 @@ class UpdateQuoteAssets extends FormRequest
         return [
             'assets.required' => "No assets provided.",
             'assets.*.buy_currency_id.required' => "One or more assets don't have a buy currency.",
-            'assets.*.serial_no.distinct' => "The :attribute field has a duplicate value: ':input'."
+            'assets.*.serial_no.distinct' => "The :attribute field has a duplicate value: ':input'.",
         ];
     }
 
@@ -131,6 +134,7 @@ class UpdateQuoteAssets extends FormRequest
             'assets.*.original_price' => 'List Price',
             'assets.*.exchange_rate_margin' => 'Exchange Rate Margin',
             'assets.*.exchange_rate_value' => 'Exchange Rate Value',
+            'assets.*.is_warranty_checked' => 'Warranty Checked Flag',
         ];
     }
 
@@ -151,12 +155,13 @@ class UpdateQuoteAssets extends FormRequest
                     'product_name' => $asset['product_name'] ?? null,
                     'expiry_date' => transform($asset['expiry_date'] ?? null, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
                     'service_level_description' => $asset['service_level_description'] ?? null,
-                    'buy_price' => transform($asset['buy_price'] ?? null, fn (string $price) => (float)$price),
-                    'buy_price_margin' => transform($asset['buy_price_margin'] ?? null, fn (string $price) => (float)$price),
+                    'buy_price' => transform($asset['buy_price'] ?? null, fn(string $price) => (float)$price),
+                    'buy_price_margin' => transform($asset['buy_price_margin'] ?? null, fn(string $price) => (float)$price),
                     'price' => transform($asset['price'] ?? null, fn(string $price) => (float)$price),
                     'original_price' => transform($asset['original_price'] ?? null, fn(string $price) => (float)$price),
                     'exchange_rate_value' => transform($asset['exchange_rate_value'] ?? null, fn(string $value) => (float)$value),
                     'exchange_rate_margin' => transform($asset['exchange_rate_margin'] ?? null, fn(string $value) => (float)$value),
+                    'is_warranty_checked' => filter_var($asset['is_warranty_checked'] ?? false, FILTER_VALIDATE_BOOL),
                 ]);
             }, $assets);
 
@@ -168,7 +173,7 @@ class UpdateQuoteAssets extends FormRequest
     public function getStage(): PackAssetsCreationStage
     {
         return $this->quoteStage ??= new PackAssetsCreationStage([
-            'stage' => PackQuoteStage::getValueOfLabel($this->input('stage'))
+            'stage' => PackQuoteStage::getValueOfLabel($this->input('stage')),
         ]);
     }
 }

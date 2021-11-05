@@ -443,6 +443,29 @@ class CompanyTest extends TestCase
     }
 
     /**
+     * Test an ability to delete an existing company attached to an opportunity as primary account.
+     *
+     * @return void
+     */
+    public function testCanNotDeleteCompanyAttachedToOpportunityAsPrimaryAccount()
+    {
+        $company = factory(Company::class)->create();
+
+        $opportunity = factory(Opportunity::class)->create([
+            'primary_account_id' => $company->getKey(),
+        ]);
+
+        $response = $this->deleteJson("api/companies/".$company->getKey(), [])
+//            ->dump()
+            ->assertForbidden()
+            ->assertJsonStructure([
+                'message'
+            ]);
+
+        $this->assertStringStartsWith('You can not delete the company', $response->json('message'));
+    }
+
+    /**
      * Test an ability tot delete system defined company.
      *
      * @return void

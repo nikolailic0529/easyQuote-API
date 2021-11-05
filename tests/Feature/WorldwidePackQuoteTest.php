@@ -27,9 +27,11 @@ use App\Models\User;
 use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
 use App\Models\WorldwideQuoteAssetsGroup;
+use App\Services\VendorServices\OauthClient as VSOauthClient;
 use Faker\Generator;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
@@ -470,6 +472,7 @@ class WorldwidePackQuoteTest extends TestCase
                 'price',
                 'buy_price',
                 'buy_price_margin',
+                'is_warranty_checked',
             ]);
     }
 
@@ -820,6 +823,15 @@ class WorldwidePackQuoteTest extends TestCase
 
         $this->authenticateApi();
 
+        /** @var HttpFactory $oauthFactory */
+        $oauthFactory = $this->app[HttpFactory::class];
+
+        $oauthFactory->fake([
+            '*' => HttpFactory::response(['token_type' => 'Bearer', 'expires_in' => 31536000, 'access_token' => '1234']),
+        ]);
+
+        $this->app->when(VSOauthClient::class)->needs(HttpFactory::class)->give(fn() => $oauthFactory);
+
         $response = $this->postJson('api/ww-quotes/'.$quote->getKey().'/assets/upload', [
             'file' => $file,
         ])
@@ -850,7 +862,7 @@ class WorldwidePackQuoteTest extends TestCase
             ],
             'file_contains_headers' => true,
         ])
-//            ->dump()
+            ->dump()
             ->assertNoContent();
 
         $response = $this->getJson('api/ww-quotes/'.$quote->getKey().'?include[]=opportunity.addresses&include[]=assets.machine_address.country')
@@ -870,6 +882,7 @@ class WorldwidePackQuoteTest extends TestCase
                         'product_name',
                         'expiry_date',
                         'price',
+                        'is_warranty_checked',
                     ],
                 ],
             ]);
@@ -1196,7 +1209,7 @@ class WorldwidePackQuoteTest extends TestCase
                     'margin_percentage',
                 ],
                 'assets' => [
-                    '*' => ['id', 'is_customer_exclusive_asset'],
+                    '*' => ['id', 'is_customer_exclusive_asset', 'is_warranty_checked',],
                 ],
                 'assets_groups' => [
                     '*' => [
@@ -1212,6 +1225,7 @@ class WorldwidePackQuoteTest extends TestCase
                                 'machine_address_string',
                                 'buy_currency_code',
                                 'is_customer_exclusive_asset',
+                                'is_warranty_checked',
                             ],
                         ],
                     ],
@@ -2589,6 +2603,7 @@ class WorldwidePackQuoteTest extends TestCase
                     'machine_address_string',
                     'buy_currency_code',
                     'is_customer_exclusive_asset',
+                    'is_warranty_checked',
                 ],
             ]);
     }
@@ -2646,6 +2661,7 @@ class WorldwidePackQuoteTest extends TestCase
                         'vendor_short_code',
                         'buy_currency_code',
                         'machine_address_string',
+                        'is_warranty_checked',
                     ],
                 ],
                 'assets_sum',
@@ -2699,7 +2715,7 @@ class WorldwidePackQuoteTest extends TestCase
                 'worldwide_quote_version_id',
                 'assets' => [
                     '*' => [
-                        'id', 'is_customer_exclusive_asset',
+                        'id', 'is_customer_exclusive_asset', 'is_warranty_checked',
                     ],
                 ],
                 'assets_sum',

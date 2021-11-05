@@ -5,6 +5,7 @@ namespace Tests\Feature;
 
 
 use App\Models\Quote\Discount\MultiYearDiscount;
+use App\Models\Quote\WorldwideQuote;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
@@ -140,6 +141,34 @@ class MultiYearDiscountTest extends TestCase
 
         $this->getJson('api/discounts/multi_year/'.$discount->getKey())
             ->assertNotFound();
+    }
+
+    /**
+     * Test an ability to delete an existing multi-year discount attached to worldwide pack quote.
+     *
+     * @return void
+     */
+    public function testCanNotDeleteMultiYearDiscountAttachedToWorldwidePackQuote()
+    {
+        $discount = factory(MultiYearDiscount::class)->create();
+
+        /** @var WorldwideQuote $quote */
+        $quote = factory(WorldwideQuote::class)->create([
+            'submitted_at' => now()
+        ]);
+
+        $quote->activeVersion->multiYearDiscount()->associate($discount)->save();
+
+        $this->authenticateApi();
+
+        $response = $this->deleteJson("api/discounts/multi_year/".$discount->getKey())
+//            ->dump()
+            ->assertForbidden()
+            ->assertJsonStructure([
+                'message'
+            ]);
+
+        $this->assertStringStartsWith('You can not delete the multi-year discount', $response->json('message'));
     }
 
     /**

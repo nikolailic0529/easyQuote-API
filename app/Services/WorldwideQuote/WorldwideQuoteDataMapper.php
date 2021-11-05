@@ -983,8 +983,12 @@ class WorldwideQuoteDataMapper
         $quote->setRelation('assets', $results);
     }
 
-    public function markExclusivityOfWorldwidePackQuoteAssetsForCustomer(WorldwideQuote $quote, Collection $assets): void
+    public function markExclusivityOfWorldwidePackQuoteAssetsForCustomer(WorldwideQuote $quote, Collection|WorldwideQuoteAsset $assets): void
     {
+        if ($assets instanceof WorldwideQuoteAsset) {
+            $assets = new Collection([$assets]);
+        }
+
         $primaryAccount = $quote->opportunity->primaryAccount;
 
         if (is_null($primaryAccount)) {
@@ -1024,8 +1028,12 @@ class WorldwideQuoteDataMapper
 
     }
 
-    public function markExclusivityOfWorldwideDistributionRowsForCustomer(WorldwideDistribution $distributorQuote, Collection $rows): void
+    public function markExclusivityOfWorldwideDistributionRowsForCustomer(WorldwideDistribution $distributorQuote, Collection|MappedRow $rows): void
     {
+        if ($rows instanceof MappedRow) {
+            $rows = new Collection([$rows]);
+        }
+
         $primaryAccount = $distributorQuote->worldwideQuote->worldwideQuote->opportunity->primaryAccount;
 
         if (is_null($primaryAccount)) {

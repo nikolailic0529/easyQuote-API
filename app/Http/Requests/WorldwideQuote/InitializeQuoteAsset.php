@@ -73,6 +73,9 @@ class InitializeQuoteAsset extends FormRequest
             'exchange_rate_value' => [
                 'bail', 'nullable', 'numeric', 'min:0', 'max:999999',
             ],
+            'is_warranty_checked' => [
+                'bail', 'nullable', 'boolean',
+            ],
         ];
     }
 
@@ -95,6 +98,7 @@ class InitializeQuoteAsset extends FormRequest
             'original_price' => transform($this->input('original_price'), fn($value) => (float)$value),
             'exchange_rate_margin' => transform($this->input('exchange_rate_margin'), fn($value) => (float)$value),
             'exchange_rate_value' => transform($this->input('exchange_rate_value'), fn($value) => (float)$value),
+            'is_warranty_checked' => $this->boolean('is_warranty_checked'),
         ]);
     }
 }
