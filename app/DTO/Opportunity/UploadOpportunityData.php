@@ -5,7 +5,7 @@ namespace App\DTO\Opportunity;
 use Spatie\DataTransferObject\DataTransferObject;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 
-final class ImportOpportunityData extends DataTransferObject
+final class UploadOpportunityData extends DataTransferObject
 {
     public UploadedFile $opportunities_file;
 

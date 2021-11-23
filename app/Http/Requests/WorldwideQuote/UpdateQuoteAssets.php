@@ -91,6 +91,9 @@ class UpdateQuoteAssets extends FormRequest
             'assets.*.is_warranty_checked' => [
                 'bail', 'nullable', 'boolean',
             ],
+            'assets.*.is_serial_number_generated' => [
+              'bail', 'nullable', 'boolean'
+            ],
             'stage' => [
                 'bail', 'required', Rule::in(PackQuoteStage::getLabels()),
             ],
@@ -135,6 +138,7 @@ class UpdateQuoteAssets extends FormRequest
             'assets.*.exchange_rate_margin' => 'Exchange Rate Margin',
             'assets.*.exchange_rate_value' => 'Exchange Rate Value',
             'assets.*.is_warranty_checked' => 'Warranty Checked Flag',
+            'assets.*.is_serial_number_generated' => 'Serial Number Generated Flag',
         ];
     }
 
@@ -162,6 +166,7 @@ class UpdateQuoteAssets extends FormRequest
                     'exchange_rate_value' => transform($asset['exchange_rate_value'] ?? null, fn(string $value) => (float)$value),
                     'exchange_rate_margin' => transform($asset['exchange_rate_margin'] ?? null, fn(string $value) => (float)$value),
                     'is_warranty_checked' => filter_var($asset['is_warranty_checked'] ?? false, FILTER_VALIDATE_BOOL),
+                    'is_serial_number_generated' => filter_var($asset['is_serial_number_generated'] ?? false, FILTER_VALIDATE_BOOL),
                 ]);
             }, $assets);
 

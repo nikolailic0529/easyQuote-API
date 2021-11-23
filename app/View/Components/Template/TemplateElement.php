@@ -7,16 +7,14 @@ use Illuminate\View\Component;
 
 class TemplateElement extends Component
 {
-    public array $children;
-
     /**
      * Create a new component instance.
      *
      * @param \App\DTO\Template\TemplateElementChild[] $children
      */
-    public function __construct(array $children)
+    public function __construct(public array $children,
+                                public bool  $hide)
     {
-        $this->children = $children;
     }
 
     /**
@@ -26,6 +24,10 @@ class TemplateElement extends Component
      */
     public function render()
     {
+        if ($this->hide) {
+            return '';
+        }
+
         return <<<'blade'
 <div {{ $attributes->merge(["class" => "row form-group"]) }}>
     @foreach ($children as $child)

@@ -13,11 +13,39 @@ class QuoteAsset extends DataTransferObject
 
     public ?string $company_reference_id;
 
-    public string $vendor_id, $user_id, $vendor_short_code, $asset_category_id;
+    public string $vendor_id;
 
-    public ?string $product_number, $serial_number, $address_id, $service_description, $product_description, $pricing_document, $system_handle, $service_agreement_id;
+    public string $user_id;
 
-    public ?Carbon $base_warranty_start_date, $base_warranty_end_date, $active_warranty_start_date, $active_warranty_end_date;
+    public string $asset_category_id;
+
+    public string $vendor_short_code;
+
+    public ?string $product_number;
+
+    public ?string $serial_number;
+
+    public ?string $address_id;
+
+    public ?string $service_description;
+
+    public ?string $product_description;
+
+    public ?string $pricing_document;
+
+    public ?string $system_handle;
+
+    public ?string $service_agreement_id;
+
+    public ?string $product_image;
+
+    public ?Carbon $base_warranty_start_date;
+
+    public ?Carbon $base_warranty_end_date;
+
+    public ?Carbon $active_warranty_start_date;
+
+    public ?Carbon $active_warranty_end_date;
 
     public int $quantity = 1;
 

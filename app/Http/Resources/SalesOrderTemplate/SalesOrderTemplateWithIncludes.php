@@ -22,7 +22,7 @@ class SalesOrderTemplateWithIncludes extends JsonResource
 
             $headers = [];
 
-            foreach (__('template.contract_data_headers') as $key => $header) {
+            foreach (__('template.sales_order_data_headers') as $key => $header) {
                 $headers[$key] = [
                     'key' => $key,
                     'label' => $header['label'],

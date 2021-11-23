@@ -105,20 +105,15 @@ final class QuoteSummary extends DataTransferObject
 
     public string $software_phone;
 
-    /**
-     * @Constraints\NotBlank
-     */
     public string $coverage_period;
 
-    /**
-     * @Constraints\NotBlank
-     */
     public string $coverage_period_from;
 
-    /**
-     * @Constraints\NotBlank
-     */
     public string $coverage_period_to;
+
+    public string $contract_duration;
+
+    public bool $is_contract_duration_checked;
 
     public string $additional_details;
 

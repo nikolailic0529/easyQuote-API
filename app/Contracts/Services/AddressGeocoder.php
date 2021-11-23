@@ -7,14 +7,14 @@ use App\Models\Location;
 use Grimzy\LaravelMysqlSpatial\Types\Point;
 use Grimzy\LaravelMysqlSpatial\Types\Polygon;
 
-interface LocationService
+interface AddressGeocoder
 {
     /**
      * Process locations for addresses without location relation.
      *
      * @return void
      */
-    public function updateAddressLocations(): void;
+    public function geocodeAddressLocations(): void;
 
     /**
      * Perform update location relationship for provided address instance.
@@ -23,7 +23,7 @@ interface LocationService
      * @param Address $address
      * @return void
      */
-    public function handleAddressLocation(Address $address): void;
+    public function performAddressGeocoding(Address $address): void;
 
     /**
      * Find location attributes in Google Geocoder API by address string.
@@ -44,13 +44,4 @@ interface LocationService
      * @return Polygon
      */
     public function renderPolygon(float $neLat, float $neLng, float $swLat, float $swLng): Polygon;
-
-    /**
-     * Render point by provided latitude & longitude.
-     *
-     * @param float $lat
-     * @param float $lng
-     * @return Point
-     */
-    public function renderPoint(float $lat, float $lng): Point;
 }

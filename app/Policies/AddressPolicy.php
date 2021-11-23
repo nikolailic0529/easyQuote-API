@@ -21,7 +21,7 @@ class AddressPolicy
             return true;
         }
 
-        if ($user->canAny(['view_addresses', 'view_opportunities'])) {
+        if ($user->canAny(['view_addresses', 'view_companies', 'view_opportunities'])) {
             return true;
         }
     }
@@ -52,7 +52,7 @@ class AddressPolicy
             return true;
         }
 
-        if ($user->canAny(['view_addresses', 'view_companies', 'view_opportunities']) && $user->getKey() === $address->{$address->user()->getForeignKeyName()}) {
+        if ($user->canAny(['view_addresses', 'view_companies', 'view_opportunities'])) {
             return true;
         }
     }
@@ -87,9 +87,15 @@ class AddressPolicy
             return true;
         }
 
-        if ($user->canAny(['update_addresses', 'update_companies', 'update_opportunities']) && $user->getKey() === $address->{$address->user()->getForeignKeyName()}) {
-            return true;
+        if (!$user->canAny(['update_addresses', 'update_companies', 'update_opportunities'])) {
+            return false;
         }
+
+        if ($user->getKey() !== $address->{$address->user()->getForeignKeyName()}) {
+            return $this->deny("You can't update the address owned by another user.");
+        }
+
+        return true;
     }
 
     /**
@@ -105,8 +111,14 @@ class AddressPolicy
             return true;
         }
 
-        if ($user->canAny(['delete_addresses', 'update_companies', 'update_opportunities']) && $user->getKey() === $address->{$address->user()->getForeignKeyName()}) {
-            return true;
+        if (!$user->canAny(['delete_addresses', 'update_companies', 'update_opportunities'])) {
+            return false;
         }
+
+        if ($user->getKey() !== $address->{$address->user()->getForeignKeyName()}) {
+            return $this->deny("You can't delete the address owned by another user.");
+        }
+
+        return true;
     }
 }

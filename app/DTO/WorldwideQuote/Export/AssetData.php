@@ -19,9 +19,13 @@ final class AssetData extends DataTransferObject
 
     public string $serial_no;
 
+    public bool $is_serial_number_generated;
+
     public string $date_from;
 
     public string $date_to;
+
+    public string $contract_duration = '';
 
     public int $qty;
 

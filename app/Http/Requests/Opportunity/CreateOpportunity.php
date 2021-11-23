@@ -70,19 +70,25 @@ class CreateOpportunity extends FormRequest
                 'bail', 'string', 'max:191',
             ],
             'opportunity_start_date' => [
-                'bail', 'required', 'date_format:Y-m-d',
+                'bail', Rule::requiredIf(fn () => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
             ],
             'is_opportunity_start_date_assumed' => [
-                'bail', 'boolean'
+                'bail', 'boolean',
             ],
             'opportunity_end_date' => [
-                'bail', 'required', 'date_format:Y-m-d',
+                'bail', Rule::requiredIf(fn () => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
             ],
             'is_opportunity_end_end_assumed' => [
-                'bail', 'boolean'
+                'bail', 'boolean',
             ],
             'opportunity_closing_date' => [
-                'bail', 'required', 'date_format:Y-m-d',
+                'bail', Rule::requiredIf(fn () => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
+            ],
+            'contract_duration_months' => [
+                'bail', Rule::requiredIf(fn () => $this->boolean('is_contract_duration_checked')), 'integer', 'min:1', 'max:60',
+            ],
+            'is_contract_duration_checked' => [
+                'bail', 'boolean',
             ],
             'expected_order_date' => [
                 'bail', 'date_format:Y-m-d',
@@ -219,6 +225,10 @@ class CreateOpportunity extends FormRequest
             'opportunity_end_date' => transform($this->input('opportunity_end_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
             'is_opportunity_end_date_assumed' => $this->boolean('is_opportunity_end_date_assumed'),
             'opportunity_closing_date' => transform($this->input('opportunity_closing_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
+
+            'is_contract_duration_checked' => $this->boolean('is_contract_duration_checked'),
+            'contract_duration_months' => transform($this->input('contract_duration_months'), fn (mixed $months) => (int)$months),
+
             'expected_order_date' => transform($this->input('expected_order_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
             'customer_order_date' => transform($this->input('customer_order_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
             'purchase_order_date' => transform($this->input('purchase_order_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),

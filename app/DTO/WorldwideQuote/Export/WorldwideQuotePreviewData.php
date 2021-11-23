@@ -27,6 +27,8 @@ final class WorldwideQuotePreviewData extends DataTransferObject
      */
     public array $pack_asset_fields = [];
 
+    public string $asset_notes;
+
     public bool $pack_assets_are_grouped;
 
     /**

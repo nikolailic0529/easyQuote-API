@@ -35,6 +35,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 use Webpatser\Uuid\Uuid;
 
@@ -452,6 +453,7 @@ class WorldwideContractQuoteTest extends TestCase
             'opportunity_end_date' => $this->faker->date(),
             'opportunity_closing_date' => $this->faker->date(),
             'suppliers_grid' => null,
+            'is_contract_duration_checked' => false,
         ])
 //            ->dump()
             ->assertOk();
@@ -479,6 +481,7 @@ class WorldwideContractQuoteTest extends TestCase
             'suppliers_grid' => [
                 ['supplier_name' => $this->faker->firstName,],
             ],
+            'is_contract_duration_checked' => false,
         ])
 //            ->dump()
             ->assertOk();
@@ -832,7 +835,7 @@ class WorldwideContractQuoteTest extends TestCase
                         'mapping_row',
                         'mapped_rows' => [
                             '*' => [
-                                'id', 'is_customer_exclusive_asset',
+                                'id', 'is_customer_exclusive_asset', 'contract_duration', 'contract_duration_months',
                             ],
                         ],
 
@@ -944,7 +947,7 @@ class WorldwideContractQuoteTest extends TestCase
         $this->assertFalse($mapping['qty']);
         $this->assertTrue($mapping['price']);
         $this->assertFalse($mapping['searchable']);
-        $this->assertFalse($mapping['service_level_description']);
+        $this->assertTrue($mapping['service_level_description']);
     }
 
     /**
@@ -1419,6 +1422,8 @@ class WorldwideContractQuoteTest extends TestCase
                     'support_start',
                     'support_end',
                     'valid_until',
+                    'contract_duration',
+                    'is_contract_duration_checked',
                     'contact_name',
                     'contact_email',
                     'contact_phone',
@@ -1442,7 +1447,53 @@ class WorldwideContractQuoteTest extends TestCase
                     'service_agreement_id',
                     'system_handle',
                 ],
+
+                'distributions' => [
+                    '*' => [
+                        'vendors', 'country', 'supplier',
+//                        'assets_data' => [
+//                            '*' => [
+//                                'buy_currency_code'
+//                            ]
+//                        ],
+                    ],
+                ],
             ]);
+
+        $assetDataFields = [
+            "buy_currency_code",
+            "vendor_short_code",
+            "product_no",
+            "service_sku",
+            "description",
+            "serial_no",
+            "is_serial_number_generated",
+            "date_from",
+            "date_to",
+            "contract_duration",
+            "qty",
+            "price",
+            "price_float",
+            "pricing_document",
+            "system_handle",
+            "searchable",
+            "service_level_description",
+            "machine_address_string",
+        ];
+
+        foreach ($response->json('distributions') as $distributorQuote) {
+            $assets = collect($distributorQuote['assets_data']);
+
+            if ($distributorQuote['assets_are_grouped']) {
+                $assets = $assets->pluck('assets')->collapse()->all();
+            }
+
+            foreach ($assets as $asset) {
+                foreach ($assetDataFields as $field) {
+                    $this->assertArrayHasKey($field, $asset);
+                }
+            }
+        }
 
         $this->assertSame('$ 1,111.11', $response->json('quote_summary.list_price'));
         $this->assertSame('$ 1,086.96', $response->json('quote_summary.final_price'));
@@ -1464,6 +1515,15 @@ class WorldwideContractQuoteTest extends TestCase
         /** @var WorldwideQuote $wwQuote */
         $wwQuote = factory(WorldwideQuote::class)->create([
             'contract_type_id' => CT_CONTRACT,
+        ]);
+
+        $wwQuote->activeVersion->user()->associate($this->app['auth.driver']->user());
+        $wwQuote->activeVersion->save();
+
+        $noteForDraftedQuote = factory(WorldwideQuoteNote::class)->create([
+            'worldwide_quote_id' => $wwQuote->getKey(),
+            'worldwide_quote_version_id' => $wwQuote->activeVersion->getKey(),
+            'text' => 'Note for drafted quote',
         ]);
 
         $supplier = factory(OpportunitySupplier::class)->create([
@@ -1489,7 +1549,7 @@ class WorldwideContractQuoteTest extends TestCase
 
         $this->postJson('api/ww-quotes/'.$wwQuote->getKey().'/submit', [
             'quote_closing_date' => $this->faker->date,
-            'additional_notes' => $this->faker->text(10000),
+            'additional_notes' => 'Note for submitted quote',
         ])
 //            ->dump()
             ->assertNoContent();
@@ -1507,8 +1567,8 @@ class WorldwideContractQuoteTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'data' => [
-                    '*' => ['id', 'rfq_number', 'customer_name', 'vendor_short_code', 'product_number', 'serial_number', 'product_description']
-                ]
+                    '*' => ['id', 'rfq_number', 'customer_name', 'vendor_short_code', 'product_number', 'serial_number', 'product_description'],
+                ],
             ]);
 
         $this->assertNotEmpty($response->json('data'));
@@ -1522,6 +1582,38 @@ class WorldwideContractQuoteTest extends TestCase
         $this->assertSame($mappedRow->product_no, $response->json('data.0.product_number'));
         $this->assertSame($mappedRow->serial_no, $response->json('data.0.serial_number'));
         $this->assertSame($mappedRow->description, $response->json('data.0.product_description'));
+
+
+        // Assert a separated note created on quote submission.
+
+        $notesResponse = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'/notes')
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'worldwide_quote_id',
+                        'user_id',
+                        'created_at',
+                        'updated_at',
+                        'user',
+                    ],
+                ],
+                'current_page',
+                'from',
+                'last_page',
+                'path',
+                'per_page',
+                'to',
+                'total',
+            ]);
+
+        $this->assertSame(2, $notesResponse->json('total'));
+
+        $notesText = $notesResponse->json('data.*.text');
+
+        $this->assertContainsEquals("Note for drafted quote", $notesText);
+        $this->assertContainsEquals("Note for submitted quote", $notesText);
     }
 
     /**
@@ -1715,6 +1807,122 @@ TEMPLATE;
 //        $fakeStorage = Storage::persistentFake();
 //
 //        $fakeStorage->put($expectedFileName, $response->getContent());
+    }
+
+    /**
+     * Test an ability to export a submitted worldwide quote,
+     * when contract duration is checked in opportunity.
+     *
+     * @return void
+     */
+    public function testCanExportContractWorldwideQuoteWhenContractDurationIsChecked()
+    {
+        $this->authenticateApi();
+
+        $template = factory(QuoteTemplate::class)->create();
+
+        $templateSchema = <<<TEMPLATE
+{"last_page": [{"id": "ae296560-047e-4cd1-8a30-d4481159eb80", "name": "Single Column", "child": [{"id": "7e7313c6-26a7-4c66-a63a-42a44297c67f", "class": "col-lg-12", "controls": [{"id": "04bb6182-2768-486b-9961-1b5bdebaefbf", "src": null, "name": "h-1", "show": true, "type": "h", "class": null, "label": "Heading", "value": "Why choose Europlus Direct to deliver your Vendor Support Services?", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "7e7313c6-26a7-4c66-a63a-42a44297c67f", "attached_element_id": "ae296560-047e-4cd1-8a30-d4481159eb80"}], "position": 1}], "class": "single-column field-dragger", "order": 1, "controls": [], "is_field": false, "droppable": false, "decoration": "1"}, {"id": "7487ada6-1182-4737-9a62-34c893e7fbd1", "name": "Single Column", "child": [{"id": "20b8033e-434b-47ac-96c0-dfb361dcc6d3", "class": "col-lg-12", "controls": [{"id": "cd2c69d9-4956-494a-9a82-a20d4a7e3ed2", "src": null, "name": "richtext-1", "type": "richtext", "class": null, "label": "Rich Text", "value": "<p><strong>Account Management</strong> – Your account manager will help you to manage your services contract, and will arrange quarterly support reviews for you to ensure that the service levels within the services contract remain appropriate for the applications running on the hardware. If your IT environment changes, with the addition or decommissioning of hardware, we can update your services contract at any time.</p><p><strong>Renewal Service</strong> – Your account manager will remind you when your services contract is due to expire, normally 45 to 90 days in advance. This gives us enough time to review your current IT support, take into account any changes that have taken place in your IT environment, and create an up-to-date tailored quotation.</p><p><strong>Assistance with Vendor tools</strong> – We are experienced in using the proprietary tools and resources available to make managing your IT support easier. We can help you to link your support with the Support Centre portal and introduce you to contacts that can assist with installing IRS.</p><p><strong>Support for the whole lifecycle</strong> – Europlus Direct can provide support for your IT environment from initial product purchase through to decommissioning and technology refresh.</p><p>Consolidate your IT Support – Your account manager will help you to consolidate your various IT support agreements and certificates under one Vendor services contract. This can include Vendor hardware and some multi-vendor hardware.</p><p><strong>Flexibility</strong> – Once a services contract is in place with Vendor, it is possible for you to add new hardware to the contract (with 30 days’ notice) or remove hardware from the contract (with 90 days’ notice). Any difference in cost will be invoiced or credited accordingly. Services Contracts can also be cancelled entirely, subject to minimum periods of cover and notice periods.</p>", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "20b8033e-434b-47ac-96c0-dfb361dcc6d3", "attached_element_id": "7487ada6-1182-4737-9a62-34c893e7fbd1"}], "position": 1}], "class": "single-column field-dragger", "order": 1, "controls": [], "is_field": false, "droppable": false, "decoration": "1"}], "data_pages": [{"id": "a73915b6-29f2-4688-ae3d-ee8ef9054f47", "name": "Single Column", "child": [{"id": "f7f3b4e6-6a00-4748-9cfa-66c479b7e3b7", "class": "col-lg-12", "controls": [{"id": "820d7aea-804a-423b-8d63-3696f70ba365", "src": null, "name": "h-1", "show": true, "type": "h", "class": null, "label": "Heading", "value": "Quotation Detail", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "f7f3b4e6-6a00-4748-9cfa-66c479b7e3b7", "attached_element_id": "a73915b6-29f2-4688-ae3d-ee8ef9054f47"}], "position": 1}], "class": "single-column field-dragger", "order": 1, "controls": [], "is_field": false, "droppable": false, "decoration": "1"}, {"id": "5a412e13-6f7d-4716-8cbb-20aec130e2f9", "name": "Four Column", "child": [{"id": "67b16d52-482b-4c90-8f68-3bfb7dace282", "class": "col-lg-3", "controls": [{"id": "6b797fa6-c859-4ff1-9efc-8b74bf575930", "src": null, "name": "l-1", "show": true, "type": "label", "class": "bold text-nowrap", "label": "Label", "value": "Equipment Address", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "67b16d52-482b-4c90-8f68-3bfb7dace282", "attached_element_id": "5a412e13-6f7d-4716-8cbb-20aec130e2f9"}], "position": 1}, {"id": "0d86193d-1afb-4874-b3a6-03477e38c6ce", "class": "col-lg-3", "controls": [{"id": "equipment_address", "name": "equipment_address", "type": "tag", "class": "s4-form-control text-size-17", "label": "Equipment Address", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "0d86193d-1afb-4874-b3a6-03477e38c6ce", "attached_element_id": "5a412e13-6f7d-4716-8cbb-20aec130e2f9"}], "position": 2}, {"id": "9daf1130-ab47-4b35-b256-af25e5bd8d11", "class": "col-lg-3", "controls": [{"id": "6b797fa6-c859-4ff1-9efc-8b74bf575930", "src": null, "name": "l-1", "show": true, "type": "label", "class": "bold text-nowrap", "label": "Label", "value": "Software Update Address", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "9daf1130-ab47-4b35-b256-af25e5bd8d11", "attached_element_id": "5a412e13-6f7d-4716-8cbb-20aec130e2f9"}], "position": 3}, {"id": "9e8a0b77-2bc4-4fde-9f18-5250907a425d", "class": "col-lg-3", "controls": [{"id": "software_address", "name": "software_address", "type": "tag", "class": "s4-form-control text-size-17", "label": "Software Address", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "9e8a0b77-2bc4-4fde-9f18-5250907a425d", "attached_element_id": "5a412e13-6f7d-4716-8cbb-20aec130e2f9"}], "position": 4}], "class": "four-column field-dragger", "order": 5, "controls": [], "is_field": false, "droppable": false, "decoration": "4"}, {"id": "aea202ab-8bc6-4663-9c08-a73ae6ce91d1", "name": "Four Column", "child": [{"id": "67b16d52-482b-4c90-8f68-3bfb7dace282", "class": "col-lg-3", "controls": [{"id": "6b797fa6-c859-4ff1-9efc-8b74bf575930", "src": null, "name": "l-1", "show": true, "type": "label", "class": "bold text-nowrap", "label": "Label", "value": "Hardware Contact", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "67b16d52-482b-4c90-8f68-3bfb7dace282", "attached_element_id": "aea202ab-8bc6-4663-9c08-a73ae6ce91d1"}], "position": 1}, {"id": "0d86193d-1afb-4874-b3a6-03477e38c6ce", "class": "col-lg-3", "controls": [{"id": "hardware_contact", "name": "hardware_contact", "type": "tag", "class": "s4-form-control text-size-17", "label": "Hardware Contact", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "0d86193d-1afb-4874-b3a6-03477e38c6ce", "attached_element_id": "aea202ab-8bc6-4663-9c08-a73ae6ce91d1"}], "position": 2}, {"id": "9daf1130-ab47-4b35-b256-af25e5bd8d11", "class": "col-lg-3", "controls": [{"id": "6b797fa6-c859-4ff1-9efc-8b74bf575930", "src": null, "name": "l-1", "show": true, "type": "label", "class": "bold text-nowrap", "label": "Label", "value": "Software Contact", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "9daf1130-ab47-4b35-b256-af25e5bd8d11", "attached_element_id": "aea202ab-8bc6-4663-9c08-a73ae6ce91d1"}], "position": 3}, {"id": "9e8a0b77-2bc4-4fde-9f18-5250907a425d", "class": "col-lg-3", "controls": [{"id": "software_contact", "name": "software_contact", "show": true, "type": "tag", "class": "s4-form-control text-size-17", "label": "Software Contact", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "9e8a0b77-2bc4-4fde-9f18-5250907a425d", "attached_element_id": "aea202ab-8bc6-4663-9c08-a73ae6ce91d1"}], "position": 4}], "class": "four-column field-dragger", "order": 5, "controls": [], "is_field": false, "droppable": false, "decoration": "4"}, {"id": "af9545d4-2f67-496c-99bc-35c08ff9c5c9", "name": "Four Column", "child": [{"id": "67b16d52-482b-4c90-8f68-3bfb7dace282", "class": "col-lg-3", "controls": [{"id": "6b797fa6-c859-4ff1-9efc-8b74bf575930", "src": null, "name": "l-1", "show": true, "type": "label", "class": "bold text-nowrap", "label": "Label", "value": "Telephone", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "67b16d52-482b-4c90-8f68-3bfb7dace282", "attached_element_id": "af9545d4-2f67-496c-99bc-35c08ff9c5c9"}], "position": 1}, {"id": "0d86193d-1afb-4874-b3a6-03477e38c6ce", "class": "col-lg-3", "controls": [{"id": "hardware_phone", "name": "hardware_phone", "type": "tag", "class": "s4-form-control text-size-17", "label": "Hardware Phone", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "0d86193d-1afb-4874-b3a6-03477e38c6ce", "attached_element_id": "af9545d4-2f67-496c-99bc-35c08ff9c5c9"}], "position": 2}, {"id": "9daf1130-ab47-4b35-b256-af25e5bd8d11", "class": "col-lg-3", "controls": [{"id": "6b797fa6-c859-4ff1-9efc-8b74bf575930", "src": null, "name": "l-1", "show": true, "type": "label", "class": "bold text-nowrap", "label": "Label", "value": "Telephone", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "9daf1130-ab47-4b35-b256-af25e5bd8d11", "attached_element_id": "af9545d4-2f67-496c-99bc-35c08ff9c5c9"}], "position": 3}, {"id": "9e8a0b77-2bc4-4fde-9f18-5250907a425d", "class": "col-lg-3", "controls": [{"id": "software_phone", "name": "software_phone", "type": "tag", "class": "s4-form-control text-size-17", "label": "Software Phone", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "9e8a0b77-2bc4-4fde-9f18-5250907a425d", "attached_element_id": "af9545d4-2f67-496c-99bc-35c08ff9c5c9"}], "position": 4}], "class": "four-column field-dragger", "order": 5, "controls": [], "is_field": false, "droppable": false, "decoration": "4"}, {"id": "736ac1e0-52c8-4f80-bc81-7bae72e10102", "name": "Four Column", "child": [{"id": "67b16d52-482b-4c90-8f68-3bfb7dace282", "class": "col-lg-3", "controls": [{"id": "6b797fa6-c859-4ff1-9efc-8b74bf575930", "src": null, "name": "l-1", "show": true, "type": "label", "class": "bold text-nowrap", "label": "Label", "value": "Coverage Period", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "67b16d52-482b-4c90-8f68-3bfb7dace282", "attached_element_id": "736ac1e0-52c8-4f80-bc81-7bae72e10102"}], "position": 1}, {"id": "0d86193d-1afb-4874-b3a6-03477e38c6ce", "class": "col-lg-3", "controls": [{"id": "coverage_period", "css": null, "name": "coverage_period", "show": false, "type": "tag", "class": "s4-form-control", "label": "Coverage Period", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "0d86193d-1afb-4874-b3a6-03477e38c6ce", "attached_element_id": "736ac1e0-52c8-4f80-bc81-7bae72e10102"}], "position": 2}, {"id": "9daf1130-ab47-4b35-b256-af25e5bd8d11", "class": "col-lg-3", "controls": [], "position": 3}, {"id": "9e8a0b77-2bc4-4fde-9f18-5250907a425d", "class": "col-lg-3", "controls": [], "position": 4}], "class": "four-column field-dragger", "order": 5, "toggle": true, "controls": [], "is_field": false, "droppable": false, "decoration": "4", "visibility": true}], "first_page": [{"id": "6cceda6e-2654-42c0-8943-ac8ac9d5b489", "hide": false, "name": "Two Column", "show": false, "child": [{"id": "2a1b5356-1f81-4746-9b06-b91d2149fa87", "class": "col-lg-3", "controls": [{"id": "company_logo_x3", "css": null, "src": "http://68.183.35.153/easyQuote-API/public/storage/images/companies/b86170d9-ceca-4f58-8a04-99ed2b0acb87@x3.png", "name": "company_logo_x3", "show": false, "type": "img", "class": "s4-form-control", "label": "Logo 240X120", "value": null, "is_field": true, "is_image": true, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "2a1b5356-1f81-4746-9b06-b91d2149fa87", "attached_element_id": "6cceda6e-2654-42c0-8943-ac8ac9d5b489"}], "position": 1}, {"id": "ae4c8fb5-0e5a-4fbb-bbb3-e9f61f874628", "class": "col-lg-9 border-right", "controls": [{"id": "logo_set_x3", "css": null, "name": "logo_set_x3", "show": false, "type": "tag", "class": "text-right", "label": "Logo Set X3", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "ae4c8fb5-0e5a-4fbb-bbb3-e9f61f874628", "attached_element_id": "6cceda6e-2654-42c0-8943-ac8ac9d5b489"}], "position": 2}], "class": "two-column field-dragger", "order": 1, "toggle": false, "controls": [], "is_field": false, "settings": true, "droppable": false, "decoration": "1+3", "visibility": false}, {"id": "49b9ad57-0d51-4d1a-a091-072cefcce506", "name": "Single Column", "child": [{"id": "3c3a94de-6f3a-4d98-af8c-c3becc3a2bf9", "class": "col-lg-12 border-right", "controls": [], "position": 1}], "class": "single-column field-dragger", "order": 1, "controls": [], "is_field": false, "settings": "show", "droppable": false, "decoration": "1", "visibility": false}, {"id": "205bb944-4333-4add-baa7-5ae17bf238a9", "name": "Two Column", "child": [{"id": "0ac510f6-44c7-45cb-8d38-44e022c57ec0", "class": "col-lg-3", "controls": [{"id": "2e77e288-76dc-4e71-9f7c-b4f75b0c4890", "src": null, "name": "l-1", "show": true, "type": "label", "class": "blue", "label": "Label", "value": "For", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "0ac510f6-44c7-45cb-8d38-44e022c57ec0", "attached_element_id": "205bb944-4333-4add-baa7-5ae17bf238a9"}], "position": 1}, {"id": "4ac79f88-cd5d-433b-a64c-a85c3b9ff52e", "class": "col-lg-9", "controls": [{"id": "customer_name", "name": "customer_name", "show": true, "type": "tag", "class": "s4-form-control blue", "label": "Customer Name", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "4ac79f88-cd5d-433b-a64c-a85c3b9ff52e", "attached_element_id": "205bb944-4333-4add-baa7-5ae17bf238a9"}], "position": 2}], "class": "two-column field-dragger", "order": 3, "controls": [], "is_field": false, "droppable": false, "decoration": "2", "visibility": false}, {"id": "44ee34b7-4ab7-44da-9134-9994259f85d0", "name": "Two Column", "child": [{"id": "0ac510f6-44c7-45cb-8d38-44e022c57ec0", "class": "col-lg-3", "controls": [{"id": "2e77e288-76dc-4e71-9f7c-b4f75b0c4890", "src": null, "name": "l-1", "show": true, "type": "label", "class": "blue", "label": "Label", "value": "From", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "0ac510f6-44c7-45cb-8d38-44e022c57ec0", "attached_element_id": "44ee34b7-4ab7-44da-9134-9994259f85d0"}], "position": 1}, {"id": "4ac79f88-cd5d-433b-a64c-a85c3b9ff52e", "class": "col-lg-9", "controls": [{"id": "company_name", "name": "company_name", "show": true, "type": "tag", "class": "s4-form-control blue", "label": "Internal Company Name", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "4ac79f88-cd5d-433b-a64c-a85c3b9ff52e", "attached_element_id": "44ee34b7-4ab7-44da-9134-9994259f85d0"}], "position": 2}], "class": "two-column field-dragger", "order": 3, "controls": [], "is_field": false, "droppable": false, "decoration": "2", "visibility": false}, {"id": "8c74b0d3-f439-4383-a442-e4386fb957d9", "name": "Single Column", "child": [{"id": "7142a607-6e91-4d36-8c73-6432feddd182", "class": "col-lg-12", "controls": [{"id": "ae1e9dc9-9458-4172-a2b7-6086a29ce1b0", "css": null, "src": null, "name": "h-1", "show": true, "type": "hr", "class": "blue", "label": "Line", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "7142a607-6e91-4d36-8c73-6432feddd182", "attached_element_id": "8c74b0d3-f439-4383-a442-e4386fb957d9"}], "position": 1}], "class": "single-column field-dragger", "order": 1, "controls": [], "is_field": false, "droppable": false, "decoration": "1", "visibility": false}, {"id": "a8661be5-1b81-43ad-a614-2fefc2db80eb", "name": "Single Column", "child": [{"id": "88647d86-d061-43d5-9078-1e232b5ea47e", "class": "col-lg-12", "controls": [{"id": "0b2402a3-38de-47f8-a0f6-83b7c3cc3764", "src": null, "name": "h-1", "show": true, "type": "h", "class": "blue", "label": "Heading", "value": "Quotation Summary", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "88647d86-d061-43d5-9078-1e232b5ea47e", "attached_element_id": "a8661be5-1b81-43ad-a614-2fefc2db80eb"}], "position": 1}], "class": "single-column field-dragger", "order": 1, "controls": [], "is_field": false, "droppable": false, "decoration": "1", "visibility": false}, {"id": "e1b21561-9910-4375-b324-bbee46c8bbf4", "name": "Two Column", "child": [{"id": "2521a5c6-6eda-4420-876d-b821841f892e", "class": "col-lg-4", "controls": [{"id": "c0093711-ea9d-478d-b288-8433ef02af26", "src": null, "name": "l-1", "show": true, "type": "label", "class": "bold", "label": "Label", "value": "Quotation Number:", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "2521a5c6-6eda-4420-876d-b821841f892e", "attached_element_id": "e1b21561-9910-4375-b324-bbee46c8bbf4"}], "position": 1}, {"id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "class": "col-lg-8", "controls": [{"id": "quotation_number", "name": "quotation_number", "show": true, "type": "tag", "class": "s4-form-control text-nowrap", "label": "RFQ Number", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "attached_element_id": "e1b21561-9910-4375-b324-bbee46c8bbf4"}], "position": 2}], "class": "two-column field-dragger", "order": 3, "controls": [], "is_field": false, "droppable": false, "decoration": "1+3", "visibility": false}, {"id": "344e5c52-2caf-4376-a4b3-915ca7a12965", "name": "Two Column", "child": [{"id": "2521a5c6-6eda-4420-876d-b821841f892e", "class": "col-lg-4", "controls": [{"id": "c0093711-ea9d-478d-b288-8433ef02af26", "css": null, "src": null, "name": "l-1", "show": true, "type": "label", "class": "bold", "label": "Label", "value": "Quotation Valid Until:", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "2521a5c6-6eda-4420-876d-b821841f892e", "attached_element_id": "344e5c52-2caf-4376-a4b3-915ca7a12965"}], "position": 1}, {"id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "class": "col-lg-8", "controls": [{"id": "valid_until", "name": "valid_until", "show": true, "type": "tag", "class": "s4-form-control text-nowrap", "label": "Quotation Closing Date", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "attached_element_id": "344e5c52-2caf-4376-a4b3-915ca7a12965"}], "position": 2}], "class": "two-column field-dragger", "order": 3, "controls": [], "is_field": false, "droppable": false, "decoration": "1+3", "visibility": false}, {"id": "a931eb6b-51e1-45d5-816e-dcdd64ec843b", "hide": true, "name": "Two Column", "child": [{"id": "2521a5c6-6eda-4420-876d-b821841f892e", "class": "col-lg-4", "controls": [{"id": "c0093711-ea9d-478d-b288-8433ef02af26", "src": null, "name": "l-1", "show": true, "type": "label", "class": "bold", "label": "Label", "value": "Support Start Date:", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "2521a5c6-6eda-4420-876d-b821841f892e", "attached_element_id": "a931eb6b-51e1-45d5-816e-dcdd64ec843b"}, {"id": "support_start_assumed_char", "css": null, "name": "support_start_assumed_char", "show": false, "type": "tag", "class": "s4-form-control", "label": "Support Start Assumed (*)", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "2521a5c6-6eda-4420-876d-b821841f892e", "attached_element_id": "a931eb6b-51e1-45d5-816e-dcdd64ec843b"}], "position": 1}, {"id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "class": "col-lg-8", "controls": [{"id": "support_start", "name": "support_start", "type": "tag", "class": "s4-form-control text-nowrap", "label": "Support Start Date", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "attached_element_id": "a931eb6b-51e1-45d5-816e-dcdd64ec843b"}], "position": 2}], "class": "two-column field-dragger", "order": 3, "toggle": true, "controls": [], "is_field": false, "droppable": false, "decoration": "1+3", "visibility": true}, {"id": "7a98ee0b-e097-4370-938a-dc7d3e1f4f73", "hide": true, "name": "Two Column", "child": [{"id": "2521a5c6-6eda-4420-876d-b821841f892e", "class": "col-lg-4", "controls": [{"id": "c0093711-ea9d-478d-b288-8433ef02af26", "src": null, "name": "l-1", "show": true, "type": "label", "class": "bold", "label": "Label", "value": "Support End Date:", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "2521a5c6-6eda-4420-876d-b821841f892e", "attached_element_id": "7a98ee0b-e097-4370-938a-dc7d3e1f4f73"}, {"id": "support_end_assumed_char", "css": null, "name": "support_end_assumed_char", "show": false, "type": "tag", "class": "s4-form-control", "label": "Support End Assumed (*)", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "2521a5c6-6eda-4420-876d-b821841f892e", "attached_element_id": "7a98ee0b-e097-4370-938a-dc7d3e1f4f73"}], "position": 1}, {"id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "class": "col-lg-8", "controls": [{"id": "support_end", "name": "support_end", "type": "tag", "class": "s4-form-control text-nowrap", "label": "Support End Date", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "attached_element_id": "7a98ee0b-e097-4370-938a-dc7d3e1f4f73"}], "position": 2}], "class": "two-column field-dragger", "order": 3, "toggle": true, "controls": [], "is_field": false, "droppable": false, "decoration": "1+3", "visibility": true}, {"id": "e8ea5a34-5838-461d-83f8-b2bab0a70a96", "name": "Two Column", "child": [{"id": "a2477129-bbd2-4187-81cd-6cf8ac5e8752", "class": "col-lg-4", "controls": [{"id": "e932d11b-f75c-44c2-b3a8-2c451a6ddc6f", "css": null, "src": null, "name": "l-1", "show": false, "type": "label", "class": "bold", "label": "Label", "value": "Support Duration:", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "a2477129-bbd2-4187-81cd-6cf8ac5e8752", "attached_element_id": "e8ea5a34-5838-461d-83f8-b2bab0a70a96"}], "position": 1}, {"id": "cff6ed9a-3add-4bb8-81d3-c04da079206b", "class": "col-lg-8 border-right", "controls": [{"id": "contract_duration", "css": null, "name": "contract_duration", "show": false, "type": "tag", "class": "s4-form-control", "label": "Contract Duration", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "cff6ed9a-3add-4bb8-81d3-c04da079206b", "attached_element_id": "e8ea5a34-5838-461d-83f8-b2bab0a70a96"}], "position": 2}], "class": "two-column field-dragger", "order": 1, "toggle": true, "controls": [], "is_field": false, "droppable": false, "decoration": "1+3", "visibility": false}, {"id": "bb9ea3cc-95eb-4be1-b78d-7565b68c78cf", "name": "Two Column", "child": [{"id": "2521a5c6-6eda-4420-876d-b821841f892e", "class": "col-lg-4", "controls": [{"id": "c0093711-ea9d-478d-b288-8433ef02af26", "src": null, "name": "l-1", "show": true, "type": "label", "class": "bold", "label": "Label", "value": "List Price:", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "2521a5c6-6eda-4420-876d-b821841f892e", "attached_element_id": "bb9ea3cc-95eb-4be1-b78d-7565b68c78cf"}], "position": 1}, {"id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "class": "col-lg-8", "controls": [{"id": "list_price", "name": "list_price", "type": "tag", "class": "s4-form-control text-nowrap", "label": "Total List Price", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "attached_element_id": "bb9ea3cc-95eb-4be1-b78d-7565b68c78cf"}], "position": 2}], "class": "two-column field-dragger", "order": 3, "controls": [], "is_field": false, "droppable": false, "decoration": "1+3", "visibility": false}, {"id": "a7623070-c87b-428f-a894-87ccfcb909c2", "name": "Two Column", "child": [{"id": "2521a5c6-6eda-4420-876d-b821841f892e", "class": "col-lg-4", "controls": [{"id": "c0093711-ea9d-478d-b288-8433ef02af26", "src": null, "name": "l-1", "show": true, "type": "label", "class": "bold", "label": "Label", "value": "Applicable Discounts:", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "2521a5c6-6eda-4420-876d-b821841f892e", "attached_element_id": "a7623070-c87b-428f-a894-87ccfcb909c2"}], "position": 1}, {"id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "class": "col-lg-8", "controls": [{"id": "applicable_discounts", "name": "applicable_discounts", "type": "tag", "class": "s4-form-control text-nowrap", "label": "Total Discounts", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "attached_element_id": "a7623070-c87b-428f-a894-87ccfcb909c2"}], "position": 2}], "class": "two-column field-dragger", "order": 3, "controls": [], "is_field": false, "droppable": false, "decoration": "1+3", "visibility": false}, {"id": "b6747784-7b91-4ca8-93fc-1ec0e7399f98", "name": "Two Column", "child": [{"id": "2521a5c6-6eda-4420-876d-b821841f892e", "class": "col-lg-4", "controls": [{"id": "c0093711-ea9d-478d-b288-8433ef02af26", "src": null, "name": "l-1", "show": true, "type": "label", "class": "bold", "label": "Label", "value": "Final Price:", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "2521a5c6-6eda-4420-876d-b821841f892e", "attached_element_id": "b6747784-7b91-4ca8-93fc-1ec0e7399f98"}], "position": 1}, {"id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "class": "col-lg-8", "controls": [{"id": "final_price", "name": "final_price", "type": "tag", "class": "s4-form-control text-nowrap", "label": "Final Price", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "attached_element_id": "b6747784-7b91-4ca8-93fc-1ec0e7399f98"}, {"id": "c0093711-ea9d-478d-b288-8433ef02af26", "src": null, "name": "l-1", "type": "label", "class": null, "label": "Label", "value": "(All prices are excluding applicable taxes)", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "attached_element_id": "b6747784-7b91-4ca8-93fc-1ec0e7399f98"}], "position": 2}], "class": "two-column field-dragger", "order": 3, "controls": [], "is_field": false, "droppable": false, "decoration": "1+3", "visibility": false}, {"id": "6d38b26d-e1f4-4db2-bc87-4d6f4350f4ce", "name": "Two Column", "child": [{"id": "2521a5c6-6eda-4420-876d-b821841f892e", "class": "col-lg-4", "controls": [{"id": "c0093711-ea9d-478d-b288-8433ef02af26", "src": null, "name": "l-1", "show": true, "type": "label", "class": "bold", "label": "Label", "value": "Payment Terms:", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "2521a5c6-6eda-4420-876d-b821841f892e", "attached_element_id": "6d38b26d-e1f4-4db2-bc87-4d6f4350f4ce"}], "position": 1}, {"id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "class": "col-lg-8", "controls": [{"id": "payment_terms", "css": null, "name": "payment_terms", "show": false, "type": "tag", "class": "s4-form-control", "label": "Payment Terms", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "attached_element_id": "6d38b26d-e1f4-4db2-bc87-4d6f4350f4ce"}], "position": 2}], "class": "two-column field-dragger", "order": 3, "controls": [], "is_field": false, "droppable": false, "decoration": "1+3", "visibility": false}, {"id": "9c378e04-49eb-472d-bead-5a02d628303b", "name": "Three Column", "child": [{"id": "2521a5c6-6eda-4420-876d-b821841f892e", "class": "col-lg-4", "controls": [{"id": "c0093711-ea9d-478d-b288-8433ef02af26", "src": null, "name": "h-1", "show": true, "type": "h", "class": "blue", "label": "Heading", "value": "Contact Us", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "2521a5c6-6eda-4420-876d-b821841f892e", "attached_element_id": "9c378e04-49eb-472d-bead-5a02d628303b"}], "position": 1}, {"id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "class": "col-lg-6", "controls": [], "position": 2}, {"id": "aefea0d8-c143-403f-ad55-207ae5432481", "class": "col-lg-2", "controls": [], "position": 3}], "class": "three-column field-dragger", "order": 3, "controls": [], "is_field": false, "droppable": false, "decoration": "2+1", "visibility": false}, {"id": "eb4410df-3cb1-4e68-866a-f294658768b7", "name": "Three Column", "child": [{"id": "2521a5c6-6eda-4420-876d-b821841f892e", "class": "col-lg-4", "controls": [{"id": "c0093711-ea9d-478d-b288-8433ef02af26", "src": null, "name": "l-1", "show": true, "type": "label", "class": "bold", "label": "Label", "value": "Tel:", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "2521a5c6-6eda-4420-876d-b821841f892e", "attached_element_id": "eb4410df-3cb1-4e68-866a-f294658768b7"}], "position": 1}, {"id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "class": "col-lg-6", "controls": [{"id": "c0093711-ea9d-478d-b288-8433ef02af26", "src": null, "name": "l-1", "type": "label", "class": null, "label": "Label", "value": "+44 (0)113 887 8650", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "attached_element_id": "eb4410df-3cb1-4e68-866a-f294658768b7"}], "position": 2}, {"id": "aefea0d8-c143-403f-ad55-207ae5432481", "class": "col-lg-2", "controls": [], "position": 3}], "class": "three-column field-dragger", "order": 3, "controls": [], "is_field": false, "droppable": false, "decoration": "2+1", "visibility": false}, {"id": "5591650b-9c22-4f55-a286-916b64aa5588", "name": "Three Column", "child": [{"id": "2521a5c6-6eda-4420-876d-b821841f892e", "class": "col-lg-4", "controls": [{"id": "c0093711-ea9d-478d-b288-8433ef02af26", "src": null, "name": "l-1", "show": true, "type": "label", "class": "bold", "label": "Label", "value": "Email:", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "2521a5c6-6eda-4420-876d-b821841f892e", "attached_element_id": "5591650b-9c22-4f55-a286-916b64aa5588"}], "position": 1}, {"id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "class": "col-lg-6", "controls": [{"id": "c0093711-ea9d-478d-b288-8433ef02af26", "src": null, "name": "l-1", "type": "label", "class": null, "label": "Label", "value": "sales@epd-worldwide.com", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "attached_element_id": "5591650b-9c22-4f55-a286-916b64aa5588"}], "position": 2}, {"id": "aefea0d8-c143-403f-ad55-207ae5432481", "class": "col-lg-2", "controls": [], "position": 3}], "class": "three-column field-dragger", "order": 3, "controls": [], "is_field": false, "droppable": false, "decoration": "2+1", "visibility": false}, {"id": "fef1dba7-386f-4959-bd7d-121de4a0cd54", "name": "Three Column", "child": [{"id": "2521a5c6-6eda-4420-876d-b821841f892e", "class": "col-lg-4", "controls": [{"id": "c0093711-ea9d-478d-b288-8433ef02af26", "src": null, "name": "l-1", "show": true, "type": "label", "class": "bold", "label": "Label", "value": "Visit:", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "2521a5c6-6eda-4420-876d-b821841f892e", "attached_element_id": "fef1dba7-386f-4959-bd7d-121de4a0cd54"}], "position": 1}, {"id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "class": "col-lg-6", "controls": [{"id": "c0093711-ea9d-478d-b288-8433ef02af26", "src": null, "name": "l-1", "type": "label", "class": null, "label": "Label", "value": "www.europlusdirect.com", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "49e0ebf9-8c4d-422b-8641-7d5622e6f087", "attached_element_id": "fef1dba7-386f-4959-bd7d-121de4a0cd54"}], "position": 2}, {"id": "aefea0d8-c143-403f-ad55-207ae5432481", "class": "col-lg-2", "controls": [], "position": 3}], "class": "three-column field-dragger", "order": 3, "controls": [], "is_field": false, "droppable": false, "decoration": "2+1", "visibility": false}, {"id": "91e18f80-92f5-4628-b6d3-b951da437f0f", "name": "Single Column", "child": [{"id": "75d642c7-049b-438d-9e3f-249ba51691fa", "class": "col-lg-12 border-right", "controls": [{"id": "footer_notes", "css": null, "name": "footer_notes", "show": false, "type": "tag", "class": "s4-form-control", "label": "Footer notes", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "75d642c7-049b-438d-9e3f-249ba51691fa", "attached_element_id": "91e18f80-92f5-4628-b6d3-b951da437f0f"}], "position": 1}], "class": "single-column field-dragger", "order": 1, "toggle": true, "controls": [], "is_field": false, "droppable": false, "decoration": "1", "visibility": true}], "payment_page": [{"id": "20d0dd48-f3fc-4663-9fda-3b76e9e9d1e0", "name": "Single Column", "child": [{"id": "9fa820ea-1bca-4136-ae6a-cbf6723a7073", "class": "col-lg-12 border-right", "controls": [{"id": "logo_set_x3", "css": null, "name": "logo_set_x3", "show": false, "type": "tag", "class": "s4-form-control", "label": "Logo Set X3", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "9fa820ea-1bca-4136-ae6a-cbf6723a7073", "attached_element_id": "20d0dd48-f3fc-4663-9fda-3b76e9e9d1e0"}], "position": 1}], "class": "single-column field-dragger", "order": 1, "controls": [], "is_field": false, "droppable": false, "decoration": "1"}, {"id": "4915df8d-0480-4a10-b881-bc3f0e2cd110", "name": "Two Column", "child": [{"id": "24222f6f-b4e6-44f2-bd81-d8465a1f8b47", "class": "col-lg-3", "controls": [{"id": "6be62079-0092-4fde-9d08-24bc1967e25f", "css": null, "src": null, "name": "l-1", "show": true, "type": "label", "class": "blue", "label": "Label", "value": "Quotation for", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "24222f6f-b4e6-44f2-bd81-d8465a1f8b47", "attached_element_id": "4915df8d-0480-4a10-b881-bc3f0e2cd110"}], "position": 1}, {"id": "24222f6f-b4e6-44f2-bd81-d8465a1f8b47", "class": "col-lg-9", "controls": [{"id": "vendor_name", "css": null, "name": "vendor_name", "show": true, "type": "tag", "class": "s4-form-control blue", "label": "Vendor Full Name", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "24222f6f-b4e6-44f2-bd81-d8465a1f8b47", "attached_element_id": "eb1e8eb2-2616-455c-aa10-52578736687e"}], "position": 2}], "class": "two-column field-dragger", "order": 1, "controls": [], "is_field": false, "droppable": false, "decoration": "2"}, {"id": "c83dff46-b6ef-4553-bc69-775d3694a487", "name": "Two Column", "child": [{"id": "176fea14-5e5a-41d2-aa98-bcc2e0f66b93", "class": "col-lg-3", "controls": [{"id": "f86c0d28-b074-4758-9295-43d8cbe1214b", "src": null, "name": "l-1", "show": true, "type": "label", "class": "blue", "label": "Label", "value": "For", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "176fea14-5e5a-41d2-aa98-bcc2e0f66b93", "attached_element_id": "c83dff46-b6ef-4553-bc69-775d3694a487"}], "position": 1}, {"id": "9ccab411-7583-4400-90bf-975e1601b9d4", "class": "col-lg-9", "controls": [{"id": "customer_name", "name": "customer_name", "show": true, "type": "tag", "class": "s4-form-control blue", "label": "Customer Name", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "9ccab411-7583-4400-90bf-975e1601b9d4", "attached_element_id": "c83dff46-b6ef-4553-bc69-775d3694a487"}], "position": 2}], "class": "two-column field-dragger", "order": 3, "controls": [], "is_field": false, "droppable": false, "decoration": "2"}, {"id": "54682e57-49d0-47c0-bb51-44233fa41438", "name": "Two Column", "child": [{"id": "176fea14-5e5a-41d2-aa98-bcc2e0f66b93", "class": "col-lg-3", "controls": [{"id": "f86c0d28-b074-4758-9295-43d8cbe1214b", "src": null, "name": "l-1", "show": true, "type": "label", "class": "blue", "label": "Label", "value": "From", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "176fea14-5e5a-41d2-aa98-bcc2e0f66b93", "attached_element_id": "54682e57-49d0-47c0-bb51-44233fa41438"}], "position": 1}, {"id": "9ccab411-7583-4400-90bf-975e1601b9d4", "class": "col-lg-9", "controls": [{"id": "company_name", "name": "company_name", "show": true, "type": "tag", "class": "s4-form-control blue", "label": "Internal Company Name", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "9ccab411-7583-4400-90bf-975e1601b9d4", "attached_element_id": "54682e57-49d0-47c0-bb51-44233fa41438"}], "position": 2}], "class": "two-column field-dragger", "order": 3, "controls": [], "is_field": false, "droppable": false, "decoration": "2"}, {"id": "13612e0d-7a90-420f-88cc-73ea17046865", "name": "Single Column", "child": [{"id": "04d9adf1-8257-4001-b6bf-6fbfc250532f", "class": "col-lg-12", "controls": [{"id": "087c4ed7-f16b-4250-b025-69ec72801d2f", "src": null, "name": "h-1", "type": "hr", "class": null, "label": "Line", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "04d9adf1-8257-4001-b6bf-6fbfc250532f", "attached_element_id": "13612e0d-7a90-420f-88cc-73ea17046865"}], "position": 1}], "class": "single-column field-dragger", "order": 1, "controls": [], "is_field": false, "droppable": false, "decoration": "1"}, {"id": "baadd19a-a0b7-491c-930b-e1325653c3ce", "name": "Single Column", "child": [{"id": "04d9adf1-8257-4001-b6bf-6fbfc250532f", "class": "col-lg-12", "controls": [{"id": "f86c0d28-b074-4758-9295-43d8cbe1214b", "src": null, "name": "l-1", "type": "label", "class": null, "label": "Label", "value": "Payment Schedule From", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "04d9adf1-8257-4001-b6bf-6fbfc250532f", "attached_element_id": "baadd19a-a0b7-491c-930b-e1325653c3ce"}, {"id": "support_start", "name": "support_start", "type": "tag", "class": "s4-form-control", "label": "Support Start Date", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "04d9adf1-8257-4001-b6bf-6fbfc250532f", "attached_element_id": "baadd19a-a0b7-491c-930b-e1325653c3ce"}, {"id": "f86c0d28-b074-4758-9295-43d8cbe1214b", "src": null, "name": "l-1", "type": "label", "class": null, "label": "Label", "value": "To", "is_field": true, "is_image": false, "droppable": false, "is_system": false, "is_required": false, "attached_child_id": "04d9adf1-8257-4001-b6bf-6fbfc250532f", "attached_element_id": "baadd19a-a0b7-491c-930b-e1325653c3ce"}, {"id": "support_end", "name": "support_end", "type": "tag", "class": "s4-form-control", "label": "Support End Date", "value": null, "is_field": true, "is_image": false, "droppable": false, "is_system": true, "is_required": false, "attached_child_id": "04d9adf1-8257-4001-b6bf-6fbfc250532f", "attached_element_id": "baadd19a-a0b7-491c-930b-e1325653c3ce"}], "position": 1}], "class": "single-column field-dragger", "order": 1, "controls": [], "is_field": false, "droppable": false, "decoration": "1"}]}
+TEMPLATE;
+
+        $template->form_data = json_decode($templateSchema);
+        $template->save();
+
+        /** @var WorldwideQuote $wwQuote */
+        $wwQuote = factory(WorldwideQuote::class)->create(['submitted_at' => now()]);
+
+        $wwQuote->activeVersion->update(['quote_template_id' => $template->getKey()]);
+
+        /** @var Opportunity $opportunity */
+        $opportunity = $wwQuote->opportunity;
+
+        $opportunity->update([
+            'is_contract_duration_checked' => true,
+            'contract_duration_months' => 53,
+        ]);
+
+        $opportunity->primaryAccount->addresses()->syncWithoutDetaching(
+            factory(\App\Models\Address::class)->create(['address_type' => 'Hardware'])
+        );
+        $opportunity->primaryAccount->addresses()->syncWithoutDetaching(
+            factory(\App\Models\Address::class)->create(['address_type' => 'Software'])
+        );
+
+        $country = Country::query()->first();
+        $vendor = Vendor::query()->first();
+
+        factory(SND::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
+        factory(PromotionalDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
+        factory(PrePayDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
+        factory(MultiYearDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey()]);
+
+        $wwDistributions = factory(WorldwideDistribution::class, 2)->create(
+            [
+                'worldwide_quote_id' => $wwQuote->activeVersion->getKey(),
+                'worldwide_quote_type' => $wwQuote->activeVersion->getMorphClass(),
+                'country_id' => $country->getKey(),
+                'sort_rows_column' => 'product_no',
+                'sort_rows_direction' => 'asc',
+                'sort_rows_groups_column' => 'group_name',
+                'sort_rows_groups_direction' => 'asc',
+                'margin_value' => 10,
+                'buy_price' => mt_rand(500, 2000),
+                'additional_details' => $this->faker->text(),
+            ]
+        );
+
+        $templateFields = TemplateField::query()->where('is_system', true)
+            ->whereNotIn('name', ['pricing_document', 'system_handle', 'searchable'])
+            ->pluck('id', 'name');
+        $importableColumns = ImportableColumn::query()->where('is_system', true)->pluck('id', 'name');
+
+        $mapping = $templateFields->mapWithKeys(function (string $id, string $name) use ($importableColumns) {
+            return [$id => ['importable_column_id' => $importableColumns->get($name)]];
+        });
+
+        $wwDistributions->each(function (WorldwideDistribution $distribution) use ($opportunity, $mapping, $vendor) {
+            $supplier = factory(OpportunitySupplier::class)->create(['opportunity_id' => $opportunity->getKey()]);
+
+            $distribution->opportunitySupplier()->associate($supplier)->save();
+
+            $distribution->vendors()->sync($vendor);
+
+            $distributorFile = factory(QuoteFile::class)->create([
+                'file_type' => QFT_WWPL,
+            ]);
+
+            $distribution->update(['distributor_file_id' => $distributorFile->getKey()]);
+
+            $mappedRows = factory(MappedRow::class, 2)->create(['quote_file_id' => $distributorFile->getKey(), 'is_selected' => true]);
+
+            $rowsGroup = factory(DistributionRowsGroup::class)->create(['worldwide_distribution_id' => $distribution->getKey()]);
+            $rowsGroup->rows()->sync($mappedRows->modelKeys());
+
+            $distribution->templateFields()->sync($mapping);
+
+            $paymentScheduleFile = factory(QuoteFile::class)->create([
+                'file_type' => 'Payment Schedule',
+            ]);
+
+            factory(ScheduleData::class)->create([
+                'quote_file_id' => $paymentScheduleFile->getKey(),
+            ]);
+
+            $distribution->schedule_file_id = $paymentScheduleFile->getKey();
+            $distribution->save();
+        });
+
+        $expectedFileName = $wwQuote->quote_number.'.pdf';
+
+        $response = $this->get('api/ww-quotes/'.$wwQuote->getKey().'/export')
+//            ->dump()
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf')
+            ->assertHeader('content-disposition', "attachment; filename=\"$expectedFileName\"");
+
+        @mkdir("storage/framework/testing/ww-quotes/", recursive: true);
+
+        file_put_contents("storage/framework/testing/ww-quotes/$expectedFileName", $response->content());
     }
 
     /**
@@ -2710,6 +2918,7 @@ TEMPLATE;
             'suppliers_grid' => [
                 ['id' => null, 'supplier_name' => $supplierName = $this->faker->company, 'contact_name' => $supplierContactName = $this->faker->name, 'country_name' => $supplierCountry = 'United Kingdom'],
             ],
+            'is_contract_duration_checked' => false,
         ])
             ->assertOk();
 
@@ -2788,6 +2997,7 @@ TEMPLATE;
             'opportunity_end_date' => $responseOfOpportunity->json('opportunity_end_date'),
             'opportunity_closing_date' => $responseOfOpportunity->json('opportunity_closing_date'),
             'suppliers_grid' => $responseOfOpportunity->json('suppliers_grid'),
+            'is_contract_duration_checked' => false,
         ])
 //            ->dump()
             ->assertOk();
@@ -2859,6 +3069,7 @@ TEMPLATE;
             'opportunity_end_date' => $responseOfOpportunity->json('opportunity_end_date'),
             'opportunity_closing_date' => $responseOfOpportunity->json('opportunity_closing_date'),
             'suppliers_grid' => $responseOfOpportunity->json('suppliers_grid'),
+            'is_contract_duration_checked' => false,
         ])
 //            ->dump()
             ->assertOk();

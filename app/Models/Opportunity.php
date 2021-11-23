@@ -24,6 +24,8 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string|null $contract_type_id
  * @property string|null $primary_account_id
  * @property string|null $primary_account_contact_id
+ * @property string|null $imported_primary_account_id
+ * @property string|null $imported_primary_account_contact_id
  * @property string|null $account_manager_id
  * @property string|null $project_name
  * @property string|null $nature_of_service
@@ -39,6 +41,8 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string|null $opportunity_end_date
  * @property bool|null $is_opportunity_end_date_assumed
  * @property string|null $opportunity_closing_date
+ * @property int|null $contract_duration_months
+ * @property bool|null $is_contract_duration_checked
  * @property string|null $customer_order_date
  * @property string|null $purchase_order_date
  * @property string|null $supplier_order_date
@@ -89,7 +93,9 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read \App\Models\Pipeline\Pipeline|null $pipeline
  * @property-read ContractType|null $contractType
  * @property-read Company|null $primaryAccount
+ * @property-read ImportedCompany|null $importedPrimaryAccount
  * @property-read Contact|null $primaryAccountContact
+ * @property-read ImportedContact|null $importedPrimaryAccountContact
  * @property-read User|null $accountManager
  * @property-read Collection<OpportunitySupplier>|OpportunitySupplier[] $opportunitySuppliers
  * @property-read Collection<WorldwideQuote>|WorldwideQuote[] $worldwideQuotes
@@ -121,9 +127,19 @@ class Opportunity extends Model implements SearchableEntity
         return $this->belongsTo(Company::class);
     }
 
+    public function importedPrimaryAccount(): BelongsTo
+    {
+        return $this->belongsTo(ImportedCompany::class);
+    }
+
     public function primaryAccountContact(): BelongsTo
     {
         return $this->belongsTo(Contact::class);
+    }
+
+    public function importedPrimaryAccountContact(): BelongsTo
+    {
+        return $this->belongsTo(ImportedContact::class);
     }
 
     public function accountManager(): BelongsTo

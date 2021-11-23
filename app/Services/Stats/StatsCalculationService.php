@@ -271,42 +271,30 @@ class StatsCalculationService implements Stats
 
     protected function denormalizeSummaryOfLocation(Location $location): void
     {
-        $quoteTotals = QuoteTotal::query()
+        $totals = QuoteTotal::query()
             ->selectRaw('SUM(CASE WHEN ISNULL(`quote_submitted_at`) THEN `total_price` ELSE 0 END) AS `total_drafted_value`')
             ->selectRaw('COUNT(ISNULL(`quote_submitted_at`) OR NULL) AS `total_drafted_count`')
             ->selectRaw('SUM(CASE WHEN `quote_submitted_at` IS NOT NULL THEN `total_price` ELSE 0 END) AS `total_submitted_value`')
             ->selectRaw('COUNT(`quote_submitted_at` IS NOT NULL OR NULL) AS `total_submitted_count`')
-            ->addSelect('user_id')
-            ->where('location_id', $location->getKey())
-            ->groupBy('user_id')
-            ->get();
+            ->whereBelongsTo($location)
+            ->toBase()
+            ->first();
 
-        /**
-         * We are creating aggregates for each quote user.
-         */
-        $quoteTotals->each(function (QuoteTotal $quoteTotal) use ($location) {
+        $quoteLocationTotal = QuoteLocationTotal::query()
+            ->whereBelongsTo($location)
+            ->firstOrNew();
 
-            $quoteLocationTotal = QuoteLocationTotal::query()
-                ->where('quote_total_id', $quoteTotal->getKey())
-                ->where('location_id', $location->getKey())
-                ->where('user_id', $quoteTotal->user_id)
-                ->firstOrNew();
+        tap($quoteLocationTotal ?? new QuoteLocationTotal(), function (QuoteLocationTotal $quoteLocationTotal) use ($location, $totals) {
+            $quoteLocationTotal->location()->associate($location);
+            $quoteLocationTotal->country()->associate($location->country);
+            $quoteLocationTotal->location_coordinates = $location->coordinates;
+            $quoteLocationTotal->location_address = $location->formatted_address;
+            $quoteLocationTotal->total_drafted_value = $totals->total_drafted_value;
+            $quoteLocationTotal->total_drafted_count = $totals->total_drafted_count;
+            $quoteLocationTotal->total_submitted_value = $totals->total_submitted_value;
+            $quoteLocationTotal->total_submitted_count = $totals->total_submitted_count;
 
-            tap($quoteLocationTotal, function (QuoteLocationTotal $quoteLocationTotal) use ($location, $quoteTotal) {
-                $quoteLocationTotal->quote_total_id = $quoteTotal->getKey();
-                $quoteLocationTotal->user_id = $quoteTotal->user_id;
-                $quoteLocationTotal->location_id = $location->getKey();
-                $quoteLocationTotal->country_id = $location->country->getKey();
-                $quoteLocationTotal->location_coordinates = $location->coordinates;
-                $quoteLocationTotal->location_address = $location->formatted_address;
-                $quoteLocationTotal->total_drafted_value = $quoteTotal->total_drafted_value;
-                $quoteLocationTotal->total_drafted_count = $quoteTotal->total_drafted_count;
-                $quoteLocationTotal->total_submitted_value = $quoteTotal->total_submitted_value;
-                $quoteLocationTotal->total_submitted_count = $quoteTotal->total_submitted_count;
-
-                $quoteTotal->save();
-            });
-
+            $quoteLocationTotal->save();
         });
     }
 

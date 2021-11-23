@@ -19,10 +19,10 @@ class GeocoderData extends DataTransferObject
 
     public ?string $place_id, $accuracy, $formatted_address, $country_code, $country_name, $postal_code, $postal_code_suffix, $postal_town, $administrative_area_level_1, $administrative_area_level_2, $route, $street_number, $locality;
 
-    public static function create(array $data): GeocoderData
+    public static function fromArray(array $data): GeocoderData
     {
-        $lat = Arr::get($data, 'lat');
-        $lng = Arr::get($data, 'lng');
+        $lat = (float)Arr::get($data, 'lat');
+        $lng = (float)Arr::get($data, 'lng');
         $coordinates = new Point($lat, $lng);
 
         $address_components = Collection::wrap(Arr::get($data, 'address_components'))->keyBy(fn ($component) => data_get($component, 'types.0'));

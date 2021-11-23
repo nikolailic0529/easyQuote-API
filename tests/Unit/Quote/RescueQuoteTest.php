@@ -3,8 +3,7 @@
 namespace Tests\Unit\Quote;
 
 use App\DTO\RowsGroup;
-use App\Models\{Attachment,
-    Company,
+use App\Models\{Company,
     Data\Currency,
     QuoteFile\ImportableColumn,
     QuoteFile\ImportedRow,
@@ -15,8 +14,8 @@ use App\Models\{Attachment,
 use App\Models\Quote\Quote;
 use Illuminate\Database\Eloquent\JsonEncodingException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\{Arr, Facades\File, Str};
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\{Arr, Str};
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -362,6 +361,146 @@ class RescueQuoteTest extends TestCase
     }
 
     /**
+     * Test an ability to view correct total list price of the rescue quote,
+     * when the rows are selected.
+     */
+    public function testCanViewCorrectTotalListPriceOfRescueQuoteWhenRowsAreSelected()
+    {
+        $templateFields = TemplateField::query()->where('is_system', true)->get()->mapWithKeys(fn (TemplateField $f) => [$f->name => $f->getKey()]);
+        $importableColumns = ImportableColumn::query()->where('is_system', true)->get()->mapWithKeys(fn (ImportableColumn $f) => [$f->name => $f->getKey()]);
+
+
+        /** @var Quote $quote */
+        $quote = factory(Quote::class)->create([
+            'calculate_list_price' => false,
+            'source_currency_id' => Currency::query()->where('code', 'GBP')->sole()->getKey(),
+            'target_currency_id' => Currency::query()->where('code', 'GBP')->sole()->getKey(),
+        ]);
+
+        $quote->templateFields()->sync([
+            $templateFields->get('product_no') => ['importable_column_id' => $importableColumns->get('product_no')],
+            $templateFields->get('serial_no') => ['importable_column_id' => $importableColumns->get('serial_no')],
+            $templateFields->get('description') => ['importable_column_id' => $importableColumns->get('description')],
+            $templateFields->get('date_from') => ['importable_column_id' => $importableColumns->get('date_from')],
+            $templateFields->get('date_to') => ['importable_column_id' => $importableColumns->get('date_to')],
+            $templateFields->get('qty') => ['importable_column_id' => $importableColumns->get('qty')],
+            $templateFields->get('price') => ['importable_column_id' => $importableColumns->get('price')],
+        ]);
+
+        $quoteFile = factory(QuoteFile::class)->create([
+            'file_type' => 'Distributor Price List',
+        ]);
+
+        $quote->priceList()->associate($quoteFile)->save();
+
+        /** @var ImportedRow $importedRow */
+        $importedRow = factory(ImportedRow::class)->create([
+            'quote_file_id' => $quoteFile->getKey(),
+            'columns_data' => [
+                $templateFields->get('product_no') => ['value' => $this->faker->regexify('/\d{6}-[A-Z]\d{2}/'), 'header' => 'Product Number', 'importable_column_id' => $importableColumns->get('product_no')],
+                $templateFields->get('serial_no') => ['value' => $this->faker->regexify('/[A-Z]{2}\d{4}[A-Z]{2}[A-Z]/'), 'header' => 'Serial Number', 'importable_column_id' => $importableColumns->get('serial_no')],
+                $templateFields->get('description') => ['value' => $this->faker->text, 'header' => 'Description', 'importable_column_id' => $importableColumns->get('description')],
+                $templateFields->get('date_from') => ['value' => now()->format('d/m/Y'), 'header' => 'Coverage from', 'importable_column_id' => $importableColumns->get('date_from')],
+                $templateFields->get('date_to') => ['value' => now()->addYears(2)->format('d/m/Y'), 'header' => 'Coverage to', 'importable_column_id' => $importableColumns->get('date_to')],
+                $templateFields->get('qty') => ['value' => 1, 'header' => 'Quantity', 'importable_column_id' => $importableColumns->get('qty')],
+                $templateFields->get('price') => ['value' => 1000, 'header' => 'Price', 'importable_column_id' => $importableColumns->get('price')],
+            ],
+            'is_selected' => true,
+        ]);
+
+        $this->putJson('api/quotes/get/'.$quote->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'list_price'
+            ])
+            ->assertJson([
+                'list_price' => '1,000.00'
+            ]);
+
+    }
+
+    /**
+     * Test an ability to view correct total list price of the rescue quote,
+     * when the grouped contain the same rows.
+     */
+    public function testCanViewCorrectTotalListPriceOfRescueQuoteWhenSameRowsAreGrouped()
+    {
+        $templateFields = TemplateField::query()->where('is_system', true)->get()->mapWithKeys(fn (TemplateField $f) => [$f->name => $f->getKey()]);
+        $importableColumns = ImportableColumn::query()->where('is_system', true)->get()->mapWithKeys(fn (ImportableColumn $f) => [$f->name => $f->getKey()]);
+
+
+        /** @var Quote $quote */
+        $quote = factory(Quote::class)->create([
+            'use_groups' => true,
+            'calculate_list_price' => false,
+            'source_currency_id' => Currency::query()->where('code', 'GBP')->sole()->getKey(),
+            'target_currency_id' => Currency::query()->where('code', 'GBP')->sole()->getKey(),
+        ]);
+
+        $quote->templateFields()->sync([
+            $templateFields->get('product_no') => ['importable_column_id' => $importableColumns->get('product_no')],
+            $templateFields->get('serial_no') => ['importable_column_id' => $importableColumns->get('serial_no')],
+            $templateFields->get('description') => ['importable_column_id' => $importableColumns->get('description')],
+            $templateFields->get('date_from') => ['importable_column_id' => $importableColumns->get('date_from')],
+            $templateFields->get('date_to') => ['importable_column_id' => $importableColumns->get('date_to')],
+            $templateFields->get('qty') => ['importable_column_id' => $importableColumns->get('qty')],
+            $templateFields->get('price') => ['importable_column_id' => $importableColumns->get('price')],
+        ]);
+
+        $quoteFile = factory(QuoteFile::class)->create([
+            'file_type' => 'Distributor Price List',
+        ]);
+
+        $quote->priceList()->associate($quoteFile)->save();
+
+        /** @var ImportedRow $importedRow */
+        $importedRow = factory(ImportedRow::class)->create([
+            'quote_file_id' => $quoteFile->getKey(),
+            'columns_data' => [
+                $templateFields->get('product_no') => ['value' => $this->faker->regexify('/\d{6}-[A-Z]\d{2}/'), 'header' => 'Product Number', 'importable_column_id' => $importableColumns->get('product_no')],
+                $templateFields->get('serial_no') => ['value' => $this->faker->regexify('/[A-Z]{2}\d{4}[A-Z]{2}[A-Z]/'), 'header' => 'Serial Number', 'importable_column_id' => $importableColumns->get('serial_no')],
+                $templateFields->get('description') => ['value' => $this->faker->text, 'header' => 'Description', 'importable_column_id' => $importableColumns->get('description')],
+                $templateFields->get('date_from') => ['value' => now()->format('d/m/Y'), 'header' => 'Coverage from', 'importable_column_id' => $importableColumns->get('date_from')],
+                $templateFields->get('date_to') => ['value' => now()->addYears(2)->format('d/m/Y'), 'header' => 'Coverage to', 'importable_column_id' => $importableColumns->get('date_to')],
+                $templateFields->get('qty') => ['value' => 1, 'header' => 'Quantity', 'importable_column_id' => $importableColumns->get('qty')],
+                $templateFields->get('price') => ['value' => 1000, 'header' => 'Price', 'importable_column_id' => $importableColumns->get('price')],
+            ]
+        ]);
+
+        $groups = collect([
+            RowsGroup::make([
+                'name' => Str::random(),
+                'search_text' => Str::random(),
+                'rows_ids' => [$importedRow->getKey()],
+                'is_selected' => true,
+            ]),
+            RowsGroup::make([
+                'name' => Str::random(),
+                'search_text' => Str::random(),
+                'rows_ids' => [$importedRow->getKey()],
+                'is_selected' => true,
+            ]),
+        ]);
+
+        $quote->group_description = $groups;
+
+        $quote->save();
+
+        $this->putJson('api/quotes/get/'.$quote->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'list_price'
+            ])
+            ->assertJson([
+                'list_price' => '2,000.00'
+            ]);
+
+    }
+
+    /**
      * Test Submitted Quote Export in PDF.
      *
      * @return void
@@ -554,14 +693,14 @@ class RescueQuoteTest extends TestCase
                 [
                     'from' => '01.01.2020',
                     'to' => '30.01.2020',
-                    'price' => '10.000,00'
+                    'price' => '10.000,00',
                 ],
                 [
                     'from' => '31.01.2020',
                     'to' => '30.01.2021',
-                    'price' => '12.000,00'
-                ]
-            ]
+                    'price' => '12.000,00',
+                ],
+            ],
         ]);
 
         /** @var Quote $quote */
@@ -572,7 +711,7 @@ class RescueQuoteTest extends TestCase
             'target_currency_id' => null,
             'calculate_list_price' => false,
             'custom_discount' => 2,
-            'buy_price' => 1_100.0
+            'buy_price' => 1_100.0,
         ]);
 
         $quote->templateFields()->sync([
@@ -707,8 +846,8 @@ class RescueQuoteTest extends TestCase
                 'created_at',
                 'updated_at',
                 'format' => [
-                    'id', 'name', 'extension'
-                ]
+                    'id', 'name', 'extension',
+                ],
             ])
             ->json('id');
 

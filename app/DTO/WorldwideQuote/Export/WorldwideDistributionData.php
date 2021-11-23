@@ -59,20 +59,15 @@ final class WorldwideDistributionData extends DataTransferObject
 
     public string $service_levels;
 
-    /**
-     * @Constraints\NotBlank
-     */
     public string $coverage_period;
 
-    /**
-     * @Constraints\NotBlank
-     */
     public string $coverage_period_from;
 
-    /**
-     * @Constraints\NotBlank
-     */
     public string $coverage_period_to;
+
+    public string $contract_duration;
+
+    public bool $is_contract_duration_checked;
 
     public string $additional_details;
 
@@ -85,4 +80,6 @@ final class WorldwideDistributionData extends DataTransferObject
     public string $purchase_order_number;
 
     public string $vat_number;
+
+    public string $asset_notes;
 }

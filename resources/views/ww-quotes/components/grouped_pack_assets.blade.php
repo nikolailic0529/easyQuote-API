@@ -22,7 +22,7 @@
                 @foreach ($asset_fields as $field)
 
                     <td
-                        @if ($field->field_name === 'price')style="white-space: nowrap"@endif
+                        @if (in_array($field->field_name, ['price', 'serial_no']))style="white-space: nowrap"@endif
                     >{{ $row->{$field->field_name} ?? "" }}</td>
 
                 @endforeach
@@ -31,3 +31,7 @@
     @endforeach
     </tbody>
 </table>
+
+@if (filled($asset_notes))
+    <p class="mt-1">{{ $asset_notes }}</p>
+@endif

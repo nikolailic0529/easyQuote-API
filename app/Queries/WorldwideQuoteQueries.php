@@ -107,6 +107,8 @@ class WorldwideQuoteQueries
                 'opportunities.opportunity_closing_date as valid_until_date',
                 'opportunities.opportunity_start_date as customer_support_start_date',
                 'opportunities.opportunity_end_date as customer_support_end_date',
+                'opportunities.is_contract_duration_checked',
+                'opportunities.contract_duration_months',
             ])
             ->orderByDesc($model->qualifyColumn('is_active'));
 
@@ -126,6 +128,7 @@ class WorldwideQuoteQueries
                 'valid_until_date',
                 'customer_support_start_date',
                 'customer_support_end_date',
+                'contract_duration',
                 'status',
                 'status_reason',
                 'created_at',
@@ -133,6 +136,7 @@ class WorldwideQuoteQueries
             ])
             ->qualifyOrderFields(
                 completeness: 'active_version.completeness',
+                contract_duration: 'opportunities.contract_duration_months',
             )
             ->enforceOrderBy($model->getQualifiedUpdatedAtColumn(), 'desc')
             ->process();

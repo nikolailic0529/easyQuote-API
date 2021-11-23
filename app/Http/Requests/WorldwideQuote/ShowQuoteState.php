@@ -10,37 +10,64 @@ use App\Models\Quote\Discount\SND;
 use App\Models\Quote\DistributionFieldColumn;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
+use App\Models\QuoteFile\DistributionRowsGroup;
+use App\Models\QuoteFile\MappedRow;
 use App\Models\Vendor;
+use App\Models\WorldwideQuoteAsset;
+use App\Models\WorldwideQuoteAssetsGroup;
 use App\Queries\DiscountQueries;
 use App\Services\WorldwideQuote\Calculation\WorldwideDistributorQuoteCalc;
+use App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc;
 use App\Services\WorldwideQuote\WorldwideQuoteDataMapper;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Arr;
 
 class ShowQuoteState extends FormRequest
 {
-    protected array $availableAttributeIncludes = [
-        'summary' => 'includeWorldwideQuoteSummaryAttribute',
-        'company.logo' => 'includeCompanyLogo',
-        'worldwide_distributions.vendors.logo' => 'includeVendorsLogo',
-        'worldwide_distributions.country.flag' => 'includeCountryFlag',
-        'predefined_discounts' => 'includeWorldwideQuotePredefinedDiscounts',
-        'applicable_discounts' => 'includeWorldwideQuoteApplicableDiscounts',
-        'worldwide_distributions.summary' => 'includeWorldwideDistributionsSummaryAttribute',
-        'worldwide_distributions.predefined_discounts' => 'includeWorldwideDistributionsPredefinedDiscounts',
-        'worldwide_distributions.applicable_discounts' => 'includeWorldwideDistributionsApplicableDiscounts',
-        'worldwide_distributions.mapping_row' => 'includeWorldwideDistributionsMappingRow',
-    ];
-
     /**
      * Get the validation rules that apply to the request.
      *
      * @return array
      */
-    public function rules()
+    public function rules(): array
     {
         return [
             //
+        ];
+    }
+
+    protected function getOnDemandAttributeLoaders(): array
+    {
+        return [
+            'summary' => [$this, 'includeSummaryAttributeOfQuote'],
+            'company.logo' => [$this, 'includeCompanyLogo'],
+            'worldwide_distributions.vendors.logo' => [$this, 'includeVendorsLogo'],
+            'worldwide_distributions.country.flag' => [$this, 'includeCountryFlag'],
+            'predefined_discounts' => [$this, 'includePredefinedDiscountsOfQuote'],
+            'applicable_discounts' => [$this, 'includeApplicableDiscountsOfQuote'],
+            'worldwide_distributions.summary' => [$this, 'includeSummaryAttributeOfDistributorQuotes'],
+            'worldwide_distributions.predefined_discounts' => [$this, 'includePredefinedDiscountsOfDistributorQuotes'],
+            'worldwide_distributions.applicable_discounts' => [$this, 'includeApplicableDiscountsOfDistributorQuotes'],
+        ];
+    }
+
+    protected function getDefaultAttributeLoaders(): array
+    {
+        return [
+            [$this, 'sortContractAssetsWhenLoaded'],
+            [$this, 'sortGroupsOfContractAssetsWhenLoaded'],
+            [$this, 'includeExclusivityOfContractAssetsWhenLoaded'],
+            [$this, 'sortPackAssetsWhenLoaded'],
+            [$this, 'sortGroupsOfPackAssetsWhenLoaded'],
+            [$this, 'includeExclusivityOfPackAssetsWhenLoaded'],
+            [$this, 'normalizePackAssetAttributesWhenLoaded'],
+            [$this, 'prepareMappingOfDistributorQuotesWhenLoaded'],
+            [$this, 'loadCountryOfAddressesWhenLoaded'],
+            [$this, 'loadReferencedAddressDataOfAddressesWhenLoaded'],
+            [$this, 'loadReferencedContactDataOfContactsWhenLoaded'],
+            [$this, 'populateContractDurationToPackAssetsWhenLoaded'],
+            [$this, 'populateContractDurationToContractAssetsWhenLoaded'],
         ];
     }
 
@@ -48,37 +75,78 @@ class ShowQuoteState extends FormRequest
     {
         return tap($worldwideQuote, function (WorldwideQuote $worldwideQuote) {
 
-            $includes = (array)($this->query('include') ?? []);
+            $includes = Arr::wrap($this->query('include'));
 
-            foreach ($includes as $include) {
-                if (!isset($this->availableAttributeIncludes[$include])) {
-                    continue;
-                }
-
-                $method = $this->availableAttributeIncludes[$include];
-
-                if (method_exists($this, $method)) {
-                    $this->container->call([$this, $method], ['model' => $worldwideQuote]);
-                }
-            }
+            $onDemandLoaders = $this->getOnDemandAttributeLoaders();
+            $defaultLoaders = $this->getDefaultAttributeLoaders();
 
             $parameters = ['model' => $worldwideQuote];
 
-            $this->container->call([$this, 'sortWorldwideDistributionRowsWhenLoaded'], $parameters);
-            $this->container->call([$this, 'sortWorldwideDistributionRowsGroupsWhenLoaded'], $parameters);
-            $this->container->call([$this, 'includeExclusivityOfWorldwideDistributionRowsForCustomerWhenLoaded'], $parameters);
-            $this->container->call([$this, 'sortWorldwideQuoteAssetsWhenLoaded'], $parameters);
-            $this->container->call([$this, 'sortWorldwideQuoteAssetsGroupsWhenLoaded'], $parameters);
-            $this->container->call([$this, 'includeExclusivityOfWorldwidePackQuoteAssetsForCustomerWhenLoaded'], $parameters);
-            $this->container->call([$this, 'normalizeWorldwideQuoteAssetAttributesWhenLoaded'], $parameters);
-            $this->container->call([$this, 'prepareWorldwideDistributionMappingWhenLoaded'], $parameters);
-            $this->container->call([$this, 'loadCountryOfAddressesWhenLoaded'], $parameters);
-            $this->container->call([$this, 'loadReferencedAddressDataOfAddressesWhenLoaded'], $parameters);
-            $this->container->call([$this, 'loadReferencedContactDataOfContactsWhenLoaded'], $parameters);
+            foreach ($includes as $include) {
+                if (array_key_exists($include, $onDemandLoaders)) {
+                    $loader = $onDemandLoaders[$include];
+                    $this->container->call($loader, $parameters);
+                }
+            }
+
+            foreach ($defaultLoaders as $loader) {
+                $this->container->call($loader, $parameters);
+            }
+
         });
     }
 
-    public function loadReferencedAddressDataOfAddressesWhenLoaded(WorldwideQuote $model)
+    public function populateContractDurationToPackAssetsWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper): void
+    {
+        $opportunityWasLoaded = $model->relationLoaded('opportunity');
+
+        if ($model->activeVersion->relationLoaded('assets')) {
+            $dataMapper->includeContractDurationToPackAssets($model, $model->activeVersion->assets);
+        }
+
+        if ($model->activeVersion->relationLoaded('assetsGroups')) {
+            $model->activeVersion->assetsGroups->each(function (WorldwideQuoteAssetsGroup $group) use ($dataMapper, $model) {
+                if (!$group->relationLoaded('assets')) {
+                    return;
+                }
+
+                $dataMapper->includeContractDurationToPackAssets($model, $group->assets);
+            });
+        }
+
+        if (!$opportunityWasLoaded) {
+            $model->unsetRelation('opportunity');
+        }
+    }
+
+    public function populateContractDurationToContractAssetsWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper): void
+    {
+        $opportunityWasLoaded = $model->relationLoaded('opportunity');
+
+        foreach ($model->activeVersion->worldwideDistributions as $distribution) {
+
+            if ($distribution->relationLoaded('mappedRows')) {
+                $dataMapper->includeContractDurationToContractAssets($distribution, $distribution->mappedRows);
+            }
+
+            if ($distribution->relationLoaded('rowsGroups')) {
+                $distribution->rowsGroups->each(static function (DistributionRowsGroup $group) use ($dataMapper, $distribution) {
+                    if (!$group->relationLoaded('rows')) {
+                        return;
+                    }
+
+                    $dataMapper->includeContractDurationToContractAssets($distribution, $group->rows);
+                });
+            }
+
+        }
+
+        if (!$opportunityWasLoaded) {
+            $model->unsetRelation('opportunity');
+        }
+    }
+
+    public function loadReferencedAddressDataOfAddressesWhenLoaded(WorldwideQuote $model): void
     {
         if ($model->activeVersion->relationLoaded('addresses')) {
 
@@ -108,7 +176,7 @@ class ShowQuoteState extends FormRequest
         }
     }
 
-    public function loadReferencedContactDataOfContactsWhenLoaded(WorldwideQuote $model)
+    public function loadReferencedContactDataOfContactsWhenLoaded(WorldwideQuote $model): void
     {
         if ($model->activeVersion->relationLoaded('contacts')) {
 
@@ -138,7 +206,7 @@ class ShowQuoteState extends FormRequest
         }
     }
 
-    public function loadCountryOfAddressesWhenLoaded(WorldwideQuote $model)
+    public function loadCountryOfAddressesWhenLoaded(WorldwideQuote $model): void
     {
         if ($model->activeVersion->relationLoaded('addresses')) {
             $model->activeVersion->addresses->load('country');
@@ -153,14 +221,14 @@ class ShowQuoteState extends FormRequest
         }
     }
 
-    public function includeCompanyLogo(WorldwideQuote $model)
+    public function includeCompanyLogo(WorldwideQuote $model): void
     {
         if (!is_null($model->activeVersion->company)) {
             $model->activeVersion->company->setAttribute('logo', $model->activeVersion->company->logo);
         }
     }
 
-    public function includeVendorsLogo(WorldwideQuote $model)
+    public function includeVendorsLogo(WorldwideQuote $model): void
     {
         $model->activeVersion->worldwideDistributions->each(function (WorldwideDistribution $distribution) {
             $distribution->vendors->each(function (Vendor $vendor) {
@@ -169,7 +237,7 @@ class ShowQuoteState extends FormRequest
         });
     }
 
-    public function includeCountryFlag(WorldwideQuote $model)
+    public function includeCountryFlag(WorldwideQuote $model): void
     {
         $model->activeVersion->worldwideDistributions->each(function (WorldwideDistribution $distribution) {
             if (!is_null($distribution->country)) {
@@ -178,9 +246,10 @@ class ShowQuoteState extends FormRequest
         });
     }
 
-    public function prepareWorldwideDistributionMappingWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper)
+    public function prepareMappingOfDistributorQuotesWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper): void
     {
         $templateLoaded = $model->activeVersion->relationLoaded('quoteTemplate');
+        $opportunityLoaded = $model->relationLoaded('opportunity');
 
         if (!$model->activeVersion->relationLoaded('worldwideDistributions') || is_null($model->activeVersion->quoteTemplate)) {
             return;
@@ -188,17 +257,9 @@ class ShowQuoteState extends FormRequest
 
         $quoteTemplate = $model->activeVersion->quoteTemplate;
 
-        $includesOriginalPrice = value(function (): bool {
-            foreach ($this->input('include') ?? [] as $include) {
-                if ($include === 'worldwide_distributions.mapping.original_price') {
-                    return true;
-                }
-            }
+        $includesOriginalPrice = $this->collect('include')->contains('worldwide_distributions.mapping.original_price');
 
-            return false;
-        });
-
-        $model->activeVersion->worldwideDistributions->each(function (WorldwideDistribution $distribution) use ($quoteTemplate, $dataMapper, $includesOriginalPrice) {
+        $model->activeVersion->worldwideDistributions->each(function (WorldwideDistribution $distribution) use ($model, $quoteTemplate, $dataMapper, $includesOriginalPrice) {
 
             if (!$distribution->relationLoaded('mapping')) {
                 return;
@@ -210,11 +271,16 @@ class ShowQuoteState extends FormRequest
             foreach ($distribution->mapping as $column) {
                 /** @var DistributionFieldColumn $column */
 
-                $column->setAttribute('is_required', $dataMapper->isMappingFieldRequired($column->template_field_name));
+                // Skip the date columns, when contract duration is checked
+                if ($model->opportunity->is_contract_duration_checked && in_array($column->template_field_name, ['date_from', 'date_to'])) {
+                    continue;
+                }
+
+                $column->setAttribute('is_required', $dataMapper->isMappingFieldRequired($model, $column->template_field_name));
 
                 $column->setAttribute('template_field_header', $dataMapper->mapTemplateFieldHeader($column->template_field_name, $quoteTemplate) ?? $column->template_field_header);
 
-                if ($includesOriginalPrice && $column->template_field_name === 'price') {
+                if ($includesOriginalPrice && 'price' === $column->template_field_name) {
                     $mapping[] = tap(new DistributionFieldColumn(), function (DistributionFieldColumn $distributionFieldColumn) use ($column, $distribution) {
                         $distributionFieldColumn->worldwide_distribution_id = $distribution->getKey();
                         $distributionFieldColumn->template_field_id = null;
@@ -240,9 +306,13 @@ class ShowQuoteState extends FormRequest
         if (!$templateLoaded) {
             $model->activeVersion->unsetRelation('quoteTemplate');
         }
+
+        if (!$opportunityLoaded) {
+            $model->unsetRelation('opportunity');
+        }
     }
 
-    public function normalizeWorldwideQuoteAssetAttributesWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper)
+    public function normalizePackAssetAttributesWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper): void
     {
         if ($model->activeVersion->relationLoaded('assets')) {
 
@@ -284,7 +354,7 @@ class ShowQuoteState extends FormRequest
         }
     }
 
-    public function sortWorldwideQuoteAssetsWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper)
+    public function sortPackAssetsWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper): void
     {
         if ($model->activeVersion->relationLoaded('assets')) {
 
@@ -293,7 +363,7 @@ class ShowQuoteState extends FormRequest
         }
     }
 
-    public function includeExclusivityOfWorldwidePackQuoteAssetsForCustomerWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper)
+    public function includeExclusivityOfPackAssetsWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper): void
     {
         if ($model->activeVersion->relationLoaded('assets')) {
             $dataMapper->markExclusivityOfWorldwidePackQuoteAssetsForCustomer($model, $model->activeVersion->assets);
@@ -306,7 +376,7 @@ class ShowQuoteState extends FormRequest
         }
     }
 
-    public function sortWorldwideDistributionRowsWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper)
+    public function sortContractAssetsWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper): void
     {
         foreach ($model->activeVersion->worldwideDistributions as $distribution) {
 
@@ -319,7 +389,7 @@ class ShowQuoteState extends FormRequest
         }
     }
 
-    public function includeExclusivityOfWorldwideDistributionRowsForCustomerWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper)
+    public function includeExclusivityOfContractAssetsWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper): void
     {
         foreach ($model->activeVersion->worldwideDistributions as $distribution) {
 
@@ -336,7 +406,7 @@ class ShowQuoteState extends FormRequest
         }
     }
 
-    public function sortWorldwideDistributionRowsGroupsWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper)
+    public function sortGroupsOfContractAssetsWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper): void
     {
         foreach ($model->activeVersion->worldwideDistributions as $distribution) {
 
@@ -349,7 +419,7 @@ class ShowQuoteState extends FormRequest
         }
     }
 
-    public function sortWorldwideQuoteAssetsGroupsWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper)
+    public function sortGroupsOfPackAssetsWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper): void
     {
         if ($model->activeVersion->relationLoaded('assetsGroups')) {
 
@@ -358,7 +428,7 @@ class ShowQuoteState extends FormRequest
         }
     }
 
-    public function includeWorldwideQuoteSummaryAttribute(WorldwideQuote $model, \App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc $service)
+    public function includeSummaryAttributeOfQuote(WorldwideQuote $model, WorldwideQuoteCalc $service): void
     {
         $priceSummary = $service->calculatePriceSummaryOfQuote($model);
 
@@ -382,7 +452,7 @@ class ShowQuoteState extends FormRequest
         ]);
     }
 
-    public function includeWorldwideDistributionsSummaryAttribute(WorldwideQuote $model, WorldwideDistributorQuoteCalc $service)
+    public function includeSummaryAttributeOfDistributorQuotes(WorldwideQuote $model, WorldwideDistributorQuoteCalc $service): void
     {
         $model->activeVersion->worldwideDistributions->load([
             'multiYearDiscount:id,name,durations',
@@ -415,7 +485,7 @@ class ShowQuoteState extends FormRequest
         });
     }
 
-    public function includeWorldwideDistributionsPredefinedDiscounts(WorldwideQuote $model, WorldwideDistributorQuoteCalc $service)
+    public function includePredefinedDiscountsOfDistributorQuotes(WorldwideQuote $model, WorldwideDistributorQuoteCalc $service): void
     {
         $model->activeVersion->worldwideDistributions->load([
             'multiYearDiscount:id,name,durations',
@@ -467,7 +537,7 @@ class ShowQuoteState extends FormRequest
             });
     }
 
-    public function includeWorldwideQuotePredefinedDiscounts(WorldwideQuote $model, \App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc $service)
+    public function includePredefinedDiscountsOfQuote(WorldwideQuote $model, WorldwideQuoteCalc $service): void
     {
         $model->activeVersion->load([
             'multiYearDiscount:id,name,durations',
@@ -486,7 +556,7 @@ class ShowQuoteState extends FormRequest
         ]);
     }
 
-    public function includeWorldwideQuoteApplicableDiscounts(WorldwideQuote $model, DiscountQueries $discountQueries)
+    public function includeApplicableDiscountsOfQuote(WorldwideQuote $model, DiscountQueries $discountQueries): void
     {
         $model->activeVersion->setAttribute('applicableMultiYearDiscounts',
             $discountQueries->activeMultiYearDiscountsQuery()->get()
@@ -512,7 +582,7 @@ class ShowQuoteState extends FormRequest
         ]);
     }
 
-    public function includeWorldwideDistributionsApplicableDiscounts(WorldwideQuote $model, DiscountQueries $discountQueries)
+    public function includeApplicableDiscountsOfDistributorQuotes(WorldwideQuote $model, DiscountQueries $discountQueries): void
     {
         $model->activeVersion->worldwideDistributions->each(function (WorldwideDistribution $distribution) use ($discountQueries) {
             $distribution->setAttribute('applicableMultiYearDiscounts',

@@ -66,7 +66,7 @@ class SalesOrderTemplateEntityService
             $templateSchema->data_headers = value(function (): array {
                 $headers = [];
 
-                foreach (__('template.contract_data_headers') as $key => $header) {
+                foreach (__('template.sales_order_data_headers') as $key => $header) {
                     $headers[$key] = $header['value'];
                 }
 

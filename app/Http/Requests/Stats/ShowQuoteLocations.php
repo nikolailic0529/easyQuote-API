@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Stats;
 
-use App\Contracts\Services\LocationService;
+use App\Contracts\Services\AddressGeocoder;
 use Grimzy\LaravelMysqlSpatial\{Types\Point, Types\Polygon,};
 
 class ShowQuoteLocations extends StatsAggregatorRequest
@@ -28,15 +28,15 @@ class ShowQuoteLocations extends StatsAggregatorRequest
 
     public function getPointOfCenter(): Point
     {
-        return $this->container[LocationService::class]->renderPoint(
-            $this->input('lat'),
-            $this->input('lng')
+        return new Point(
+            lat: $this->input('lat'),
+            lng: $this->input('lng')
         );
     }
 
     public function getPolygon(): Polygon
     {
-        return $this->container[LocationService::class]->renderPolygon(
+        return $this->container[AddressGeocoder::class]->renderPolygon(
             (float)$this->input('ne_lat'),
             (float)$this->input('ne_lng'),
             (float)$this->input('sw_lat'),

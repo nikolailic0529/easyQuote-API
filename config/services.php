@@ -65,8 +65,8 @@ return [
         'url' => env('VS_API_URL'),
 
         'token_route' => 'api/oauth/token',
-
         'submit_sales_order_route' => 'nav-data',
+        'check_sales_order_route' => 'bc-data/{id}',
         'cancel_sales_order_route' => 'bc-data/{id}/cancel',
 
         'service_routes' => [

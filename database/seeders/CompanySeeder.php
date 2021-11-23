@@ -14,7 +14,7 @@ class CompanySeeder extends Seeder
      */
     public function run()
     {
-        $companies = json_decode(file_get_contents(__DIR__.'/models/companies.json'), true);
+        $companies = yaml_parse_file(__DIR__.'/models/companies.yaml');
 
         $connection = $this->container['db.connection'];
 
@@ -33,7 +33,6 @@ class CompanySeeder extends Seeder
                 'default_vendor_id' => $defaultVendorKey
             ]);
         }, $companies);
-
 
         $connection->transaction(function () use ($connection, $companies) {
 

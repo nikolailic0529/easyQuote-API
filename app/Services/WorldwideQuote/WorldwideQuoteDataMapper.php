@@ -29,6 +29,7 @@ use App\Models\Contact;
 use App\Models\Data\Country;
 use App\Models\Data\Currency;
 use App\Models\Image;
+use App\Models\Opportunity;
 use App\Models\Quote\DistributionFieldColumn;
 use App\Models\Quote\WorldwideDistribution;
 use App\Models\Quote\WorldwideQuote;
@@ -43,10 +44,12 @@ use App\Models\WorldwideQuoteAsset;
 use App\Models\WorldwideQuoteAssetsGroup;
 use App\Queries\MappedRowQueries;
 use App\Queries\WorldwideQuoteAssetQueries;
+use App\Services\Formatter\FormatterDelegatorService;
 use App\Services\ThumbHelper;
 use App\Services\WorldwideQuote\Calculation\WorldwideDistributorQuoteCalc;
 use App\Services\WorldwideQuote\Calculation\WorldwideQuoteCalc;
 use App\Support\PriceParser;
+use Carbon\CarbonInterval;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -76,15 +79,23 @@ class WorldwideQuoteDataMapper
                                 protected WorldwideDistributorQuoteCalc $worldwideDistributionCalc,
                                 protected ManagesExchangeRates          $exchangeRateService,
                                 protected WorldwideQuoteAssetQueries    $assetQueries,
-                                protected MappedRowQueries              $mappedRowQueries)
+                                protected MappedRowQueries              $mappedRowQueries,
+                                protected FormatterDelegatorService     $formatter)
     {
     }
 
-    public function isMappingFieldRequired(string $fieldName): bool
+    public function isMappingFieldRequired(WorldwideQuote $quote, string $field): bool
     {
+        // When `contract duration` is checked,
+        // the date_from & date_to fields come as optional
+        // regardless on configuration
+        if (in_array($field, ['date_from', 'date_to']) && $quote->opportunity->is_contract_duration_checked) {
+            return false;
+        }
+
         $this->requiredFieldsDictionary ??= array_map(fn(string $name) => true, array_flip($this->config['quote-mapping.worldwide_quote.required_fields'] ?? []));
 
-        return $this->requiredFieldsDictionary[$fieldName] ?? false;
+        return $this->requiredFieldsDictionary[$field] ?? false;
     }
 
     public function mapTemplateFieldHeader(string $fieldName, QuoteTemplate $template): ?string
@@ -255,11 +266,22 @@ class WorldwideQuoteDataMapper
 
         $outputCurrency = $this->getQuoteOutputCurrency($worldwideQuote);
 
+        $packAssets = $this->getPackQuoteAssetsData($worldwideQuote, $outputCurrency);
+
+        $contractDuration = $this->formatOpportunityContractDuration($worldwideQuote->opportunity);
+
+        $this->applyToAssetCollection(static function (AssetData $assetData) use ($contractDuration) {
+            $assetData->contract_duration = $contractDuration;
+        }, ...$packAssets);
+
+        $packAssetNotes = implode("\n", $this->resolveNotesForAssets($packAssets, $worldwideQuote->activeVersion->quoteTemplate));
+
         return new WorldwideQuotePreviewData([
             'template_data' => $this->getTemplateData($worldwideQuote),
             'distributions' => $this->getContractQuoteDistributionsData($worldwideQuote, $outputCurrency),
-            'pack_assets' => $this->getPackQuoteAssetsData($worldwideQuote, $outputCurrency),
+            'pack_assets' => $packAssets,
             'pack_asset_fields' => $this->getPackAssetFields($worldwideQuote, $worldwideQuote->activeVersion->quoteTemplate),
+            'asset_notes' => $packAssetNotes,
             'pack_assets_are_grouped' => (bool)$worldwideQuote->activeVersion->use_groups,
             'quote_summary' => $this->getQuoteSummary($worldwideQuote, $outputCurrency),
             'contract_type_name' => $worldwideQuote->contractType->type_short_name,
@@ -335,6 +357,8 @@ class WorldwideQuoteDataMapper
                 'children' => $element['child'] ?? [],
                 'class' => $element['class'] ?? '',
                 'css' => $element['css'] ?? '',
+                'toggle' => filter_var($element['toggle'] ?? false, FILTER_VALIDATE_BOOL),
+                'visibility' => filter_var($element['visibility'] ?? false, FILTER_VALIDATE_BOOL),
             ]);
 
         }, $pageSchema);
@@ -540,9 +564,9 @@ class WorldwideQuoteDataMapper
             $coveragePeriod = value(function () use ($opportunityEndDate, $opportunityStartDate): string {
                 if (!is_null($opportunityStartDate) && !is_null($opportunityEndDate)) {
                     return implode('&nbsp;', [
-                        static::formatDate($opportunityStartDate),
+                        $this->formatter->format('date', $opportunityStartDate),
                         'to',
-                        static::formatDate($opportunityEndDate),
+                        $this->formatter->format('date', $opportunityEndDate),
                     ]);
                 }
 
@@ -569,6 +593,14 @@ class WorldwideQuoteDataMapper
                 ->sortByDesc('pivot.is_default')
                 ->first(fn(Contact $contact) => $contact->contact_type === 'Software');
 
+            $assetNotes = implode("\n", $this->resolveNotesForAssets($assetsData, $worldwideQuote->activeVersion->quoteTemplate));
+
+            $contractDuration = $this->formatOpportunityContractDuration($opportunity);
+
+            $this->applyToAssetCollection(static function (AssetData $assetData) use ($contractDuration) {
+                $assetData->contract_duration = $contractDuration;
+            }, ...$assetsData);
+
             return new WorldwideDistributionData([
                 'supplier' => [
                     'supplier_name' => (string)$distribution->opportunitySupplier->supplier_name,
@@ -583,6 +615,7 @@ class WorldwideQuoteDataMapper
                 'mapped_fields_count' => (int)$mappedFieldsCount,
                 'assets_are_grouped' => (bool)$distribution->use_groups,
                 'asset_fields' => $assetFields,
+                'asset_notes' => $assetNotes,
 
                 'payment_schedule_fields' => $paymentScheduleFields,
                 'payment_schedule_data' => $paymentScheduleData,
@@ -602,8 +635,10 @@ class WorldwideQuoteDataMapper
 
                 'service_levels' => $serviceLevels,
                 'coverage_period' => $coveragePeriod,
-                'coverage_period_from' => static::formatDate(transform($opportunity->opportunity_start_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date))),
-                'coverage_period_to' => static::formatDate(transform($opportunity->opportunity_end_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date))),
+                'coverage_period_from' => $this->formatter->format('date', $opportunity->opportunity_start_date),
+                'coverage_period_to' => $this->formatter->format('date', $opportunity->opportunity_end_date),
+                'contract_duration' => $contractDuration,
+                'is_contract_duration_checked' => (bool)$opportunity->is_contract_duration_checked,
 
                 'additional_details' => $distribution->additional_details ?? '',
                 'pricing_document' => $distribution->pricing_document ?? '',
@@ -613,6 +648,30 @@ class WorldwideQuoteDataMapper
                 'vat_number' => $distribution->vat_number ?? '',
             ]);
         })->all();
+    }
+
+    private function applyToAssetCollection(\Closure $closure, AssetData|AssetsGroupData ...$assetCollection): void
+    {
+        foreach ($assetCollection as $assetData) {
+            if ($assetData instanceof AssetsGroupData) {
+
+                foreach ($assetData->assets as $asset) {
+                    $closure($asset);
+                }
+
+            } else {
+                $closure($assetData);
+            }
+        }
+    }
+
+    public function formatOpportunityContractDuration(Opportunity $opportunity): string
+    {
+        if (is_null($opportunity->contract_duration_months)) {
+            return '';
+        }
+
+        return CarbonInterval::months($opportunity->contract_duration_months)->cascade()->forHumans();
     }
 
     /**
@@ -695,11 +754,13 @@ class WorldwideQuoteDataMapper
         return $distribution->rowsGroups->map(function (DistributionRowsGroup $rowsGroup) use ($priceValueCoeff, $outputCurrency, $distribution) {
             $assets = $this->mappedRowsToArrayOfAssetData($rowsGroup->rows, $priceValueCoeff * (float)$outputCurrency->exchange_rate_value, $outputCurrency);
 
+            $groupTotalPrice = (float)$rowsGroup->rows_sum * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value;
+
             return new AssetsGroupData([
                 'group_name' => $rowsGroup->group_name,
                 'assets' => $assets,
-                'group_total_price' => static::formatPriceValue((float)$rowsGroup->rows_sum * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value, $outputCurrency->symbol),
-                'group_total_price_float' => (float)$rowsGroup->rows_sum * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value,
+                'group_total_price' => $this->formatter->format('number', $groupTotalPrice, prepend: $outputCurrency->symbol),
+                'group_total_price_float' => $groupTotalPrice,
             ]);
 
         })->all();
@@ -734,23 +795,27 @@ class WorldwideQuoteDataMapper
     private function mappedRowsToArrayOfAssetData(Collection $rows, float $priceValueCoeff, Currency $outputCurrency): array
     {
         return $rows->map(function (MappedRow $row) use ($priceValueCoeff, $outputCurrency) {
+
+            $assetPrice = (float)$row->price * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value;
+
             return new AssetData([
                 'buy_currency_code' => '',
                 'vendor_short_code' => '',
                 'product_no' => $row->product_no ?? '',
                 'service_sku' => $row->service_sku ?? '',
                 'description' => $row->description ?? '',
-                'serial_no' => $row->serial_no ?? '',
-                'date_from' => transform($row->date_from, function (string $date) {
-                    /** @noinspection PhpParamsInspection */
-                    return static::formatDate(Carbon::createFromFormat('Y-m-d', $date));
-                }, ''),
-                'date_to' => transform($row->date_to, function (string $date) {
-                    /** @noinspection PhpParamsInspection */
-                    return static::formatDate(Carbon::createFromFormat('Y-m-d', $date));
-                }, ''),
+                'serial_no' => transform($row->serial_no ?? '', function (string $serial) use ($row) {
+                    if ($row->is_serial_number_generated) {
+                        return "$serial **";
+                    }
+
+                    return $serial;
+                }),
+                'is_serial_number_generated' => (bool)$row->is_serial_number_generated,
+                'date_from' => $this->formatter->format('date', $row->date_from),
+                'date_to' => $this->formatter->format('date', $row->date_to),
                 'qty' => $row->qty ?? 1,
-                'price' => static::formatPriceValue((float)$row->price * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value, $outputCurrency->symbol),
+                'price' => $this->formatter->format('number', $assetPrice, prepend: $outputCurrency->symbol),
                 'price_float' => (float)$row->price * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value,
                 'machine_address_string' => '',
                 'pricing_document' => $row->pricing_document ?? '',
@@ -759,26 +824,6 @@ class WorldwideQuoteDataMapper
                 'service_level_description' => $row->service_level_description ?? '',
             ]);
         })->all();
-    }
-
-    private static function formatDate(?Carbon $date): string
-    {
-        if (is_null($date)) {
-            return '';
-        }
-
-        return $date->format('d/m/Y');
-    }
-
-    private static function formatPriceValue(float $value, string $currencySymbol = ''): string
-    {
-        $priceValue = number_format($value, 2);
-
-        if ($currencySymbol !== '') {
-            $priceValue = $currencySymbol.' '.$priceValue;
-        }
-
-        return $priceValue;
     }
 
     /**
@@ -804,9 +849,19 @@ class WorldwideQuoteDataMapper
     {
         $assetFields = [];
 
-        $templateDataHeaders = $quoteTemplate->data_headers;
-        $templateHeadersDictionary = QuoteTemplate::dataHeadersDictionary();
-        $mapping = $distribution->mapping->keyBy('template_field_name');
+        $mapping = $distribution->mapping->keyBy('template_field_name')
+            ->put('contract_duration', tap(new DistributionFieldColumn, function (DistributionFieldColumn $column) {
+                $column->setAttribute('template_field_name', 'contract_duration');
+                $column->setAttribute('is_editable', true);
+            }));
+
+        $dateTemplateFieldNames = value(static function () use ($distribution): array {
+            if ($distribution->worldwideQuote->worldwideQuote->opportunity->is_contract_duration_checked) {
+                return ['contract_duration'];
+            }
+
+            return ['date_from', 'date_to'];
+        });
 
         $templateFieldNames = [
             'product_no',
@@ -814,8 +869,7 @@ class WorldwideQuoteDataMapper
             'serial_no',
             'service_level_description',
             'service_sku',
-            'date_from',
-            'date_to',
+            ...$dateTemplateFieldNames,
             'qty',
             'price',
         ];
@@ -834,23 +888,9 @@ class WorldwideQuoteDataMapper
                 continue;
             }
 
-            $fieldHeader = with($column->template_field_name, function (string $fieldName) use ($templateDataHeaders, $templateHeadersDictionary) {
-
-                if (isset($templateDataHeaders[$fieldName])) {
-                    return $templateDataHeaders[$fieldName]['value'];
-                }
-
-                if (isset($templateHeadersDictionary[$fieldName])) {
-                    return $templateHeadersDictionary[$fieldName]['value'];
-                }
-
-                return $fieldName;
-
-            });
-
             $assetFields[] = new AssetField([
                 'field_name' => $column->template_field_name,
-                'field_header' => $fieldHeader,
+                'field_header' => self::resolveTemplateDataHeader($column->template_field_name, $quoteTemplate) ?? $column->template_field_name,
             ]);
 
         }
@@ -868,10 +908,12 @@ class WorldwideQuoteDataMapper
     {
         return array_map(function (array $payment) use ($priceValueCoeff, $outputCurrency) {
 
+            $paymentValue = (float)PriceParser::parseAmount($payment['price'] ?? '') * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value;
+
             return new PaymentData([
                 'from' => $payment['from'],
                 'to' => $payment['to'],
-                'price' => static::formatPriceValue((float)PriceParser::parseAmount($payment['price'] ?? '') * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value, $outputCurrency->symbol),
+                'price' => $this->formatter->format('number', $paymentValue, prepend: $outputCurrency->symbol),
             ]);
 
         }, $value);
@@ -934,7 +976,7 @@ class WorldwideQuoteDataMapper
             return new AssetsGroupData([
                 'group_name' => $assetsGroup->group_name,
                 'assets' => $assets,
-                'group_total_price' => static::formatPriceValue($groupTotalPrice, $outputCurrency->symbol),
+                'group_total_price' => $this->formatter->format('number', $groupTotalPrice, prepend: $outputCurrency->symbol),
                 'group_total_price_float' => $groupTotalPrice,
             ]);
         })->all();
@@ -1074,6 +1116,46 @@ class WorldwideQuoteDataMapper
 
     }
 
+    public function includeContractDurationToPackAssets(WorldwideQuote $quote, Collection|WorldwideQuoteAsset $assets): void
+    {
+        if ($assets instanceof WorldwideQuoteAsset) {
+            $assets = new Collection([$assets]);
+        }
+
+        /** @var WorldwideQuoteAsset[] $assets */
+
+        $attributes = [
+            'contract_duration' => $this->formatOpportunityContractDuration($quote->opportunity),
+            'contract_duration_months' => $quote->opportunity->contract_duration_months,
+        ];
+
+        foreach ($assets as $asset) {
+            foreach ($attributes as $attribute => $value) {
+                $asset->setAttribute($attribute, $value);
+            }
+        }
+    }
+
+    public function includeContractDurationToContractAssets(WorldwideDistribution $distributorQuote, Collection|MappedRow $rows): void
+    {
+        if ($rows instanceof MappedRow) {
+            $rows = new Collection([$rows]);
+        }
+
+        /** @var MappedRow[] $rows */
+
+        $attributes = [
+            'contract_duration' => $this->formatOpportunityContractDuration($distributorQuote->worldwideQuote->worldwideQuote->opportunity),
+            'contract_duration_months' => $distributorQuote->worldwideQuote->worldwideQuote->opportunity->contract_duration_months,
+        ];
+
+        foreach ($rows as $row) {
+            foreach ($attributes as $attribute => $value) {
+                $row->setAttribute($attribute, $value);
+            }
+        }
+    }
+
     private function worldwideQuoteAssetsToArrayOfAssetData(Collection $assets, float $priceValueCoeff, Currency $outputCurrency): array
     {
         return $assets
@@ -1082,22 +1164,23 @@ class WorldwideQuoteDataMapper
                 $assetFloatPrice = (float)$asset->price * $priceValueCoeff * (float)$outputCurrency->exchange_rate_value;
 
                 return new AssetData([
-                    'buy_currency_code' => transform($asset->buyCurrency, fn(Currency $currency) => $currency->code, ''),
+                    'buy_currency_code' => $asset->buyCurrency?->code ?? '',
                     'vendor_short_code' => $asset->vendor_short_code ?? '',
                     'product_no' => $asset->sku ?? '',
                     'service_sku' => $asset->service_sku ?? '',
                     'description' => $asset->product_name ?? '',
-                    'serial_no' => $asset->serial_no ?? '',
-                    'date_from' => transform($asset->expiry_date, function (string $date) {
-                        /** @noinspection PhpParamsInspection */
-                        return static::formatDate(Carbon::createFromFormat('Y-m-d', $date)->addDay());
-                    }, ''),
-                    'date_to' => transform($asset->date_to, function (string $date) {
-                        /** @noinspection PhpParamsInspection */
-                        return static::formatDate(Carbon::createFromFormat('Y-m-d', $date));
-                    }, ''),
+                    'serial_no' => transform($asset->serial_no ?? '', function (string $serial) use ($asset) {
+                        if ($asset->is_serial_number_generated) {
+                            return "$serial **";
+                        }
+
+                        return $serial;
+                    }),
+                    'is_serial_number_generated' => (bool)$asset->is_serial_number_generated,
+                    'date_from' => $this->formatter->format('date', $asset->expiry_date),
+                    'date_to' => $this->formatter->format('date', $asset->date_to),
                     'qty' => 1,
-                    'price' => static::formatPriceValue($assetFloatPrice, $outputCurrency->symbol),
+                    'price' => $this->formatter->format('number', $assetFloatPrice, prepend: $outputCurrency->symbol),
                     'price_float' => $assetFloatPrice,
                     'machine_address_string' => transform($asset->machineAddress, function (Address $address): string {
                         return sprintf('%s %s', $address->address_1, optional($address->country)->iso_3166_2);
@@ -1114,8 +1197,13 @@ class WorldwideQuoteDataMapper
     {
         $assetFields = [];
 
-        $templateDataHeaders = $quoteTemplate->data_headers;
-        $templateHeadersDictionary = QuoteTemplate::dataHeadersDictionary();
+        $assetDateFields = value(static function () use ($quote): array {
+            if ($quote->opportunity->is_contract_duration_checked) {
+                return ['contract_duration'];
+            }
+
+            return ['date_from', 'date_to'];
+        });
 
         $assetFieldNames = [
             'vendor_short_code',
@@ -1124,32 +1212,60 @@ class WorldwideQuoteDataMapper
             'serial_no',
             'service_level_description',
             'service_sku',
-            'date_from',
-            'date_to',
+            ...$assetDateFields,
             'price',
             'machine_address_string',
         ];
 
         foreach ($assetFieldNames as $fieldName) {
-            $fieldHeader = with($fieldName, function (string $fieldName) use ($templateDataHeaders, $templateHeadersDictionary) {
-                if (isset($templateDataHeaders[$fieldName])) {
-                    return $templateDataHeaders[$fieldName]['value'];
-                }
-
-                if (isset($templateHeadersDictionary[$fieldName])) {
-                    return $templateHeadersDictionary[$fieldName]['value'];
-                }
-
-                return $fieldName;
-            });
-
             $assetFields[] = new AssetField([
                 'field_name' => $fieldName,
-                'field_header' => $fieldHeader,
+                'field_header' => self::resolveTemplateDataHeader($fieldName, $quoteTemplate) ?? $fieldName,
             ]);
         }
 
         return $assetFields;
+    }
+
+    private static function resolveTemplateDataHeader(string $fieldName, QuoteTemplate $quoteTemplate): ?string
+    {
+        $templateDataHeaders = $quoteTemplate->data_headers;
+        $defaultDataHeaders = QuoteTemplate::dataHeadersDictionary();
+
+        if (isset($templateDataHeaders[$fieldName])) {
+            return $templateDataHeaders[$fieldName]['value'];
+        }
+
+        if (isset($defaultDataHeaders[$fieldName])) {
+            return $defaultDataHeaders[$fieldName]['value'];
+        }
+
+        return null;
+    }
+
+    private function resolveNotesForAssets(array $assets, QuoteTemplate $quoteTemplate): array
+    {
+        $notes = [];
+
+        $containGeneratedSerialNumber = collect($assets)
+            ->contains(function (AssetData|AssetsGroupData $asset) {
+
+                if ($asset instanceof AssetData) {
+                    return $asset->is_serial_number_generated;
+                }
+
+                return collect($asset->assets)
+                    ->contains(fn(AssetData $assetData) => $assetData->is_serial_number_generated);
+
+            });
+
+        if ($containGeneratedSerialNumber) {
+            $autoGeneratedSerialNote = self::resolveTemplateDataHeader('auto_generated_serial_number_text', $quoteTemplate) ?? "Serial numbers are user's generated";
+
+            $notes[] = "** $autoGeneratedSerialNote";
+        }
+
+        return $notes;
     }
 
     public function getQuoteSummary(WorldwideQuote $worldwideQuote, Currency $outputCurrency): QuoteSummary
@@ -1215,9 +1331,9 @@ class WorldwideQuoteDataMapper
         $coveragePeriod = value(function () use ($opportunityEndDate, $opportunityStartDate): string {
             if (!is_null($opportunityStartDate) && !is_null($opportunityEndDate)) {
                 return implode('&nbsp;', [
-                    static::formatDate($opportunityStartDate),
+                    $this->formatter->format('date', $opportunityStartDate),
                     'to',
-                    static::formatDate($opportunityEndDate),
+                    $this->formatter->format('date', $opportunityEndDate),
                 ]);
             }
 
@@ -1240,40 +1356,41 @@ class WorldwideQuoteDataMapper
             'invoicing_terms' => '',
             'payment_terms' => $activeVersion->payment_terms ?? '',
 
-            'support_start' => static::formatDate($opportunityStartDate),
+            'support_start' => $this->formatter->format('date', $opportunityStartDate),
             'support_start_assumed_char' => $opportunity->is_opportunity_start_date_assumed ? '*' : '',
-            'support_end' => static::formatDate($opportunityEndDate),
+            'support_end' => $this->formatter->format('date', $opportunityEndDate),
             'support_end_assumed_char' => $opportunity->is_opportunity_end_date_assumed ? '*' : '',
-            'valid_until' => static::formatDate($quoteExpiryDate),
+            'valid_until' => $this->formatter->format('date', $quoteExpiryDate),
 
-            'list_price' => static::formatPriceValue($quotePriceData->total_price_value_after_margin, $outputCurrency->symbol),
-            'applicable_discounts' => static::formatPriceValue($quotePriceData->applicable_discounts_value, $outputCurrency->symbol),
-            'final_price' => static::formatPriceValue($quotePriceData->final_total_price_value_excluding_tax, $outputCurrency->symbol),
+            'contract_duration' => (string)transform($opportunity->contract_duration_months, fn (int $months) => CarbonInterval::months($months)->cascade()->forHumans()),
+            'is_contract_duration_checked' => (bool)$opportunity->is_contract_duration_checked,
+
+            'list_price' => $this->formatter->format('number', $quotePriceData->total_price_value_after_margin, prepend: $outputCurrency->symbol),
+            'applicable_discounts' => $this->formatter->format('number', $quotePriceData->applicable_discounts_value, prepend: $outputCurrency->symbol),
+            'final_price' => $this->formatter->format('number', $quotePriceData->final_total_price_value_excluding_tax, prepend: $outputCurrency->symbol),
 
             'quote_price_value_coefficient' => $quotePriceData->price_value_coefficient,
 
-            'contact_name' => transform($opportunity->primaryAccountContact, function (Contact $contact) {
-                    return implode(' ', [$contact->first_name, $contact->last_name]);
-                }) ?? '',
-            'contact_email' => optional($opportunity->primaryAccountContact)->email ?? '',
-            'contact_phone' => optional($opportunity->primaryAccountContact)->phone ?? '',
+            'contact_name' => $contactStringFormatter($opportunity->primaryAccountContact),
+            'contact_email' => $opportunity->primaryAccountContact?->email ?? '',
+            'contact_phone' => $opportunity->primaryAccountContact?->phone ?? '',
 
             'quote_data_aggregation_fields' => $this->getQuoteDataAggregationFields($activeVersion->quoteTemplate),
             'quote_data_aggregation' => $quoteDataAggregation,
 
-            'sub_total_value' => static::formatPriceValue($quotePriceData->final_total_price_value_excluding_tax, $outputCurrency->symbol),
-            'total_value_including_tax' => static::formatPriceValue($quotePriceData->final_total_price_value, $outputCurrency->symbol),
-            'grand_total_value' => static::formatPriceValue($quotePriceData->final_total_price_value, $outputCurrency->symbol),
+            'sub_total_value' => $this->formatter->format('number',$quotePriceData->final_total_price_value_excluding_tax, prepend: $outputCurrency->symbol),
+            'total_value_including_tax' => $this->formatter->format('number',$quotePriceData->final_total_price_value, prepend: $outputCurrency->symbol),
+            'grand_total_value' => $this->formatter->format('number',$quotePriceData->final_total_price_value, prepend: $outputCurrency->symbol),
 
             'equipment_address' => $addressStringFormatter($quoteHardwareAddress),
             'hardware_contact' => $contactStringFormatter($quoteHardwareContact),
-            'hardware_phone' => optional($quoteHardwareContact)->phone ?? '',
+            'hardware_phone' => $quoteHardwareContact?->phone ?? '',
             'software_address' => $addressStringFormatter($quoteSoftwareAddress),
             'software_contact' => $contactStringFormatter($quoteSoftwareContact),
-            'software_phone' => optional($quoteSoftwareContact)->phone ?? '',
+            'software_phone' => $quoteSoftwareContact?->phone ?? '',
             'coverage_period' => $coveragePeriod,
-            'coverage_period_from' => static::formatDate($opportunityStartDate),
-            'coverage_period_to' => static::formatDate($opportunityEndDate),
+            'coverage_period_from' => $this->formatter->format('date', $opportunityStartDate),
+            'coverage_period_to' => $this->formatter->format('date', $opportunityEndDate),
             'additional_details' => $activeVersion->additional_details ?? '',
             'pricing_document' => $activeVersion->pricing_document ?? '',
             'service_agreement_id' => $activeVersion->service_agreement_id ?? '',
@@ -1310,7 +1427,7 @@ class WorldwideQuoteDataMapper
                 'country_name' => $worldwideDistribution->country->name,
                 'duration' => $duration,
                 'qty' => 1,
-                'total_price' => static::formatPriceValue($priceSummaryOfDistributorQuote->final_total_price_excluding_tax, $outputCurrency->symbol),
+                'total_price' => $this->formatter->format('number', $priceSummaryOfDistributorQuote->final_total_price_excluding_tax, prepend: $outputCurrency->symbol),
             ]);
         }
 
@@ -1364,11 +1481,22 @@ class WorldwideQuoteDataMapper
 
         $outputCurrency = $this->getQuoteOutputCurrency($worldwideQuote);
 
+        $packAssets = $this->getPackQuoteAssetsData($worldwideQuote, $outputCurrency);
+
+        $contractDuration = $this->formatOpportunityContractDuration($worldwideQuote->opportunity);
+
+        $this->applyToAssetCollection(static function (AssetData $assetData) use ($contractDuration) {
+            $assetData->contract_duration = $contractDuration;
+        }, ...$packAssets);
+
+        $packAssetNotes = implode("\n", $this->resolveNotesForAssets($packAssets, $worldwideQuote->activeVersion->quoteTemplate));
+
         return new WorldwideQuotePreviewData([
             'template_data' => $this->getTemplateData($worldwideQuote, true),
             'distributions' => $this->getContractQuoteDistributionsData($worldwideQuote, $outputCurrency),
-            'pack_assets' => $this->getPackQuoteAssetsData($worldwideQuote, $outputCurrency),
+            'pack_assets' => $packAssets,
             'pack_asset_fields' => $this->getPackAssetFields($worldwideQuote, $worldwideQuote->activeVersion->quoteTemplate),
+            'asset_notes' => $packAssetNotes,
             'pack_assets_are_grouped' => (bool)$worldwideQuote->activeVersion->use_groups,
             'quote_summary' => $this->getQuoteSummary($worldwideQuote, $outputCurrency),
             'contract_type_name' => $worldwideQuote->contractType->type_short_name,

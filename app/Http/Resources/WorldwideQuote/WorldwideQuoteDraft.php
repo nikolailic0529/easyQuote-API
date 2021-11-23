@@ -7,6 +7,7 @@ use App\Enum\PackQuoteStage;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\User;
+use Carbon\CarbonInterval;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class WorldwideQuoteDraft extends JsonResource
@@ -39,6 +40,18 @@ class WorldwideQuoteDraft extends JsonResource
             'valid_until_date' => $this->valid_until_date,
             'customer_support_start_date' => $this->customer_support_start_date,
             'customer_support_end_date' => $this->customer_support_end_date,
+
+            'is_contract_duration_checked' => (bool)$this->is_contract_duration_checked,
+
+            'contract_duration' => value(function (): ?string {
+                /** @var WorldwideQuote $this */
+
+                if ($this->is_contract_duration_checked) {
+                    return CarbonInterval::months((int)$this->contract_duration_months)->cascade()->forHumans();
+                }
+
+                return null;
+            }),
 
             'completeness' => $this->completeness,
 

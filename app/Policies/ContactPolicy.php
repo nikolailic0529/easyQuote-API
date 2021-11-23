@@ -21,7 +21,7 @@ class ContactPolicy
             return true;
         }
 
-        if ($user->canAny(['view_contacts', 'view_opportunities'])) {
+        if ($user->canAny(['view_contacts', 'view_companies', 'view_opportunities'])) {
             return true;
         }
     }
@@ -52,7 +52,7 @@ class ContactPolicy
             return true;
         }
 
-        if ($user->canAny(['view_contacts', 'view_companies', 'view_opportunities']) && $user->getKey() === $contact->{$contact->user()->getForeignKeyName()}) {
+        if ($user->canAny(['view_contacts', 'view_companies', 'view_opportunities'])) {
             return true;
         }
     }
@@ -87,9 +87,15 @@ class ContactPolicy
             return true;
         }
 
-        if ($user->canAny(['update_contacts', 'update_companies', 'update_opportunities']) && $user->getKey() === $contact->{$contact->user()->getForeignKeyName()}) {
-            return true;
+        if (!$user->canAny(['update_contacts', 'update_companies', 'update_opportunities'])) {
+            return false;
         }
+
+        if ($user->getKey() !== $contact->{$contact->user()->getForeignKeyName()}) {
+            return $this->deny("You can't update the contact owned by another user.");
+        }
+
+        return true;
     }
 
     /**
@@ -105,8 +111,14 @@ class ContactPolicy
             return true;
         }
 
-        if ($user->canAny(['delete_contacts', 'update_companies', 'update_opportunities']) && $user->getKey() === $contact->{$contact->user()->getForeignKeyName()}) {
-            return true;
+        if (!$user->canAny(['delete_contacts', 'update_companies', 'update_opportunities'])) {
+            return false;
         }
+
+        if ($user->getKey() !== $contact->{$contact->user()->getForeignKeyName()}) {
+            return $this->deny("You can't delete the contact owned by another user.");
+        }
+
+        return true;
     }
 }

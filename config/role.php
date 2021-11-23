@@ -27,6 +27,7 @@ return [
         'resubmit_sales_orders',
         'unravel_sales_orders',
         'alter_active_status_of_sales_orders',
+        'refresh_status_of_sales_orders',
     ],
     'submodules' => [
         'Quotes' => [

@@ -2,6 +2,7 @@
 
 namespace App\Services\WorldwideQuote;
 
+use Carbon\CarbonInterval;
 use App\Contracts\Services\{ManagesDocumentProcessors, ManagesExchangeRates, ProcessesWorldwideDistributionState};
 use App\DTO\{Discounts\DistributionDiscountsCollection,
     DistributionDetailsCollection,
@@ -10,7 +11,7 @@ use App\DTO\{Discounts\DistributionDiscountsCollection,
     DistributionMappingCollection,
     DistributionMarginTaxCollection,
     MappedRow\UpdateMappedRowFieldCollection,
-    MappedRowSettings,
+    MappingConfig,
     ProcessableDistribution,
     ProcessableDistributionCollection,
     RowMapping,
@@ -794,7 +795,7 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
                         return;
                     }
 
-                    $mappedRowDefaults = $this->getMappedRowSettings($model);
+                    $mappedRowDefaults = $this->getMappingConfig($model);
 
                     $rowMapping = $this->transitDistributionMappingToRowMapping(new DistributionMappingCollection($distributionMapping->all()));
 
@@ -854,7 +855,7 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
         return $changes;
     }
 
-    protected function getMappedRowSettings(WorldwideDistribution $worldwideDistribution): MappedRowSettings
+    protected function getMappingConfig(WorldwideDistribution $worldwideDistribution): MappingConfig
     {
         $version = $worldwideDistribution->worldwideQuote;
 
@@ -863,9 +864,11 @@ class WorldwideDistributionStateProcessor implements ProcessesWorldwideDistribut
             $version->quoteCurrency
         );
 
-        return new MappedRowSettings([
+        return new MappingConfig([
             'default_date_from' => transform($version->worldwideQuote->opportunity->opportunity_start_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
             'default_date_to' => transform($version->worldwideQuote->opportunity->opportunity_end_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
+            'contract_duration' => transform($version->worldwideQuote->opportunity->contract_duration_months, fn (int $months) => CarbonInterval::months($months)),
+            'is_contract_duration_checked' => (bool)$version->worldwideQuote->opportunity->is_contract_duration_checked,
             'default_qty' => 1,
             'calculate_list_price' => (bool)$worldwideDistribution->calculate_list_price,
             'exchange_rate_value' => $exchangeRateValue,

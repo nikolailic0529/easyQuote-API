@@ -34,7 +34,7 @@ class WorldwideQuoteTemplateSeeder extends Seeder
 
         $vendors = $connection->table('vendors')
             ->whereNull('deleted_at')
-            ->whereIn('short_code', ['CIS', 'LEN', 'IBM', 'HPE'])
+            ->whereIn('short_code', ['CIS', 'LEN', 'IBM', 'HPE', 'VMW', 'FUJ'])
             ->pluck('id')
             ->all();
 

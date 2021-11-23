@@ -5,22 +5,44 @@ namespace App\Services\RescueQuote;
 use App\Contracts\Services\ManagesExchangeRates;
 use App\DTO\Discounts\ImmutablePriceSummaryData;
 use App\DTO\PriceSummaryData;
+use App\Models\Quote\BaseQuote;
 use App\Models\Quote\Quote;
 use App\Queries\QuoteQueries;
 
 class RescueQuoteCalc
 {
-    public function __construct(protected QuoteQueries $quoteQueries, protected ManagesExchangeRates $exchangeRateService)
+    public function __construct(protected QuoteQueries         $quoteQueries,
+                                protected ManagesExchangeRates $exchangeRateService)
     {
+    }
+
+    public function calculateListPriceOfRescueQuote(BaseQuote $version): float
+    {
+        if (!$version->use_groups) {
+            return (float)$this->quoteQueries
+                ->mappedSelectedRowsQuery($version)
+                ->sum('price');
+        }
+
+        $groupedRowKeys = $version->groupedRows();
+
+        $rowPriceMap = $this->quoteQueries
+            ->mappedOrderedRowsQuery($version)
+            ->whereIn('id', $groupedRowKeys)
+            ->get()
+            ->pluck('price', 'id');
+
+        return collect($version->groupedRows())
+            ->reduce(function (float $listPrice, string $id) use ($rowPriceMap) {
+                return $listPrice + (float)$rowPriceMap->get($id);
+            }, 0.0);
     }
 
     public function calculatePriceSummaryOfRescueQuote(Quote $quote): ImmutablePriceSummaryData
     {
         $activeVersion = $quote->activeVersionOrCurrent;
 
-        $totalPrice = (float)$this->quoteQueries
-            ->mappedSelectedRowsQuery($activeVersion)
-            ->sum('price');
+        $totalPrice = $this->calculateListPriceOfRescueQuote($activeVersion);
 
         $buyPrice = $activeVersion->buy_price;
 

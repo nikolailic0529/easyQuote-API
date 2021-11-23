@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $user_id
  * @property string|null $worldwide_quote_id
  * @property string|null $worldwide_quote_version_id
+ * @property bool|null $is_for_submitted_quote
  *
  * @property-read WorldwideQuote|null $worldwideQuote
  * @property-read \App\Models\Quote\WorldwideQuoteVersion|null $worldwideQuoteVersion

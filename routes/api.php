@@ -531,6 +531,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::patch('sales-orders/{sales_order}/activate', [SalesOrderController::class, 'activateSalesOrder']);
     Route::patch('sales-orders/{sales_order}/deactivate', [SalesOrderController::class, 'deactivateSalesOrder']);
     Route::patch('sales-orders/{sales_order}/cancel', [SalesOrderController::class, 'cancelSalesOrder']);
+    Route::patch('sales-orders/{sales_order}/refresh-status', [SalesOrderController::class, 'refreshSalesOrderStatus']);
 
     /**
      *  Worldwide Quotes.

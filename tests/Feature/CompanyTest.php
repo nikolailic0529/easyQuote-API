@@ -15,7 +15,9 @@ use App\Models\Quote\Quote;
 use App\Models\Quote\QuoteNote;
 use App\Models\Quote\WorldwideQuote;
 use App\Models\Quote\WorldwideQuoteNote;
+use App\Models\Role;
 use App\Models\SalesOrder;
+use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
@@ -689,6 +691,102 @@ class CompanyTest extends TestCase
         ]);
 
         $worldwideQuote = factory(WorldwideQuote::class)->create([
+            'opportunity_id' => $worldwideOpportunity->getKey(),
+        ]);
+
+        // Worldwide Quote entity of another Customer.
+        factory(WorldwideQuote::class)->create();
+
+        $response = $this->getJson('api/companies/'.$company->getKey().'/quotes')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'user_id',
+                        'business_division',
+                        'contract_type',
+                        'opportunity_id',
+                        'customer_id',
+                        'customer_name',
+                        'company_name',
+                        'rfq_number',
+                        'updated_at',
+                        'activated_at',
+                        'is_active',
+
+                        'active_version_id',
+
+                        'has_distributor_files',
+                        'has_schedule_files',
+
+                        'sales_order_id',
+                        'has_sales_order',
+                        'sales_order_submitted',
+                        'contract_id',
+                        'has_contract',
+                        'contract_submitted_at',
+
+                        'status_type',
+                        'submission_status',
+
+                        'permissions' => [
+                            'view',
+                            'update',
+                            'delete',
+                        ],
+                    ],
+                ],
+            ]);
+
+        $this->assertNotEmpty($response->json('data'));
+        $this->assertContains($rescueQuote->getKey(), $response->json('data.*.id'));
+        $this->assertContains($worldwideQuote->getKey(), $response->json('data.*.id'));
+    }
+
+    public function testCanViewListOfQuotesOfCompanyWithoutSuperPermissions()
+    {
+        /** @var Role $role */
+        $role = factory(Role::class)->create();
+
+        $role->syncPermissions(
+            'view_companies',
+            'view_quotes',
+            'view_own_ww_quotes'
+        );
+
+        /** @var User $user */
+        $user = factory(User::class)->create();
+
+        $user->syncRoles($role);
+
+        $this->actingAs($user, 'api');
+
+        /** @var Company $company */
+        $company = factory(Company::class)->create();
+
+        /** @var Customer $rescueCustomer */
+        $rescueCustomer = factory(Customer::class)->create([
+            'company_reference_id' => $company->getKey(),
+            'name' => $company->name,
+        ]);
+
+        $rescueQuote = factory(Quote::class)->create([
+            'user_id' => $user->getKey(),
+            'customer_id' => $rescueCustomer->getKey(),
+        ]);
+
+        // Rescue Quote entity of another Customer.
+        factory(Quote::class)->create();
+
+        $worldwideOpportunity = factory(Opportunity::class)->create([
+            'primary_account_id' => $company->getKey(),
+        ]);
+
+        /** @var WorldwideQuote $worldwideQuote */
+        $worldwideQuote = factory(WorldwideQuote::class)->create([
+            'user_id' => $user->getKey(),
             'opportunity_id' => $worldwideOpportunity->getKey(),
         ]);
 

@@ -6,6 +6,7 @@ use App\Models\Quote\Quote;
 use App\Models\Template\QuoteTemplate;
 use App\Models\Template\TemplateField;
 use App\Queries\QuoteQueries;
+use App\Services\RescueQuote\RescueQuoteCalc;
 use Illuminate\Contracts\Config\Repository as Config;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -32,7 +33,10 @@ class ShowQuoteState extends FormRequest
 
             $quoteQueries = $this->container[QuoteQueries::class];
 
-            $quote->activeVersionOrCurrent->totalPrice = (float)$quoteQueries->mappedSelectedRowsQuery($quote->activeVersionOrCurrent)->sum('price');
+            /** @var RescueQuoteCalc $quoteCalc */
+            $quoteCalc = $this->container[RescueQuoteCalc::class];
+
+            $quote->activeVersionOrCurrent->totalPrice = $quoteCalc->calculateListPriceOfRescueQuote($quote->activeVersionOrCurrent);
 
             $templateFields = TemplateField::with('templateFieldType')
                 ->whereIn('name', $config['quote-mapping.rescue_quote.fields'] ?? [])

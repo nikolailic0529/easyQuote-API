@@ -49,7 +49,7 @@ class UpdateVendors extends Command
 
         activity()->disableLogging();
 
-        $vendors = json_decode(file_get_contents(database_path('seeders/models/vendors.json')), true);
+        $vendors = yaml_parse_file(database_path('seeders/models/vendors.yaml'));
 
         DB::beginTransaction();
 

@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
-use App\Enum\Lock;
 use App\Contracts\{LoggerAware,
     Services\ManagesExchangeRates,
     Services\MigratesAssetEntity,
     Services\MigratesCustomerEntity};
 use App\DTO\QuoteAsset;
 use App\Enum\AddressType;
+use App\Enum\Lock;
 use App\Models\{Address,
     Asset,
     AssetCategory,
@@ -20,11 +20,13 @@ use App\Models\{Address,
 use App\Models\Quote\BaseQuote;
 use App\Queries\QuoteQueries;
 use App\Services\Concerns\WithProgress;
+use App\Services\VendorServices\WarrantyLookupService;
 use Illuminate\Contracts\Cache\LockProvider;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Support\Carbon;
 use JetBrains\PhpStorm\Pure;
 use Psr\Log\LoggerInterface;
+use Psr\SimpleCache\InvalidArgumentException;
 use Spatie\Activitylog\ActivityLogStatus;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -43,6 +45,7 @@ class AssetFlowService implements MigratesAssetEntity, LoggerAware
                                 protected ManagesExchangeRates   $exchangeRateService,
                                 protected MigratesCustomerEntity $customerFlowService,
                                 protected ActivityLogStatus      $activityLogStatus,
+                                protected WarrantyLookupService  $warrantyLookupService,
                                 protected LockProvider           $lockProvider)
     {
     }
@@ -110,7 +113,6 @@ class AssetFlowService implements MigratesAssetEntity, LoggerAware
 
     public function migrateAssetsFromWorldwideQuote(WorldwideQuoteVersion $quote): void
     {
-        /** @noinspection PhpVoidFunctionResultUsedInspection */
         match ($quote->worldwideQuote->contract_type_id) {
             CT_CONTRACT => $this->migrateAssetsFromWorldwideContractQuote($quote),
             CT_PACK => $this->migrateAssetsFromWorldwidePackQuote($quote),
@@ -247,6 +249,19 @@ class AssetFlowService implements MigratesAssetEntity, LoggerAware
         $dateFrom = transform($asset->expiry_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date));
         $dateTo = transform($quote->worldwideQuote?->opportunity?->opportunity_end_date, fn(string $date) => Carbon::createFromFormat('Y-m-d', $date));
 
+        $productImage = null;
+
+        if ($this->determineIfPossibleToGetImageOfAsset($asset->vendor?->short_code)) {
+            $warrantyLookupResult = $this->warrantyLookupService->getWarranty(
+                vendorCode: $asset->vendor->short_code,
+                serial: $asset->serial_no,
+                sku: $asset->sku,
+                countryCode: $asset->country
+            );
+
+            $productImage = $warrantyLookupResult?->product_image;
+        }
+
         return new QuoteAsset([
             'user_id' => $quote->user_id,
             'address_id' => $assetAddress?->getKey(),
@@ -268,7 +283,13 @@ class AssetFlowService implements MigratesAssetEntity, LoggerAware
             'active_warranty_start_date' => $dateFrom,
             'active_warranty_end_date' => $dateTo,
             'unit_price' => $baseRate * (float)$asset->original_price,
+            'product_image' => $productImage,
         ]);
+    }
+
+    private function determineIfPossibleToGetImageOfAsset(?string $vendorCode): bool
+    {
+        return in_array($vendorCode, ['LEN'], true);
     }
 
     public function migrateAssetsFromRescueQuote(Quote $quote): void
@@ -304,7 +325,7 @@ class AssetFlowService implements MigratesAssetEntity, LoggerAware
 
             $this->lockProvider->lock(Lock::UPDATE_QUOTE($quote->getKey()), 10)
                 ->block(30, function () use ($quote) {
-                    $this->connection->transaction(fn () => $quote->save());
+                    $this->connection->transaction(fn() => $quote->save());
                 });
 
         });
@@ -404,6 +425,7 @@ class AssetFlowService implements MigratesAssetEntity, LoggerAware
             $asset->base_warranty_end_date = $quoteAsset->base_warranty_end_date;
             $asset->active_warranty_start_date = $quoteAsset->active_warranty_start_date;
             $asset->active_warranty_end_date = $quoteAsset->active_warranty_end_date;
+            $asset->product_image = $quoteAsset->product_image;
 
             $asset->unit_price = $quoteAsset->unit_price;
             $asset->is_migrated = true;

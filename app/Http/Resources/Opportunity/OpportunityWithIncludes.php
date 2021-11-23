@@ -64,6 +64,8 @@ class OpportunityWithIncludes extends JsonResource
             'opportunity_end_date' => $this->opportunity_end_date,
             'is_opportunity_end_date_assumed' => (bool)$this->is_opportunity_end_date_assumed,
             'opportunity_closing_date' => $this->opportunity_closing_date,
+            'contract_duration_months' => $this->contract_duration_months,
+            'is_contract_duration_checked' => (bool)$this->is_contract_duration_checked,
             'expected_order_date' => $this->expected_order_date,
             'customer_order_date' => $this->customer_order_date,
             'purchase_order_date' => $this->purchase_order_date,

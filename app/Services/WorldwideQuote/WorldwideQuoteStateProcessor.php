@@ -1159,7 +1159,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $quote->additional_notes = $stage->additional_notes;
 
             /** @var WorldwideQuoteNote $quoteNote */
-            $quoteNote = tap($quote->note()->firstOrNew(), function (WorldwideQuoteNote $note) use ($quote, $stage) {
+            $quoteNote = tap($quote->submitNote()->firstOrNew(), function (WorldwideQuoteNote $note) use ($quote, $stage) {
                 if (false === $note->exists) {
                     $note->{$note->getKeyName()} = (string)Uuid::generate(4);
                 }
@@ -1167,6 +1167,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                 $note->user()->associate($quote->user_id);
                 $note->worldwideQuote()->associate($quote->worldwide_quote_id);
                 $note->worldwideQuoteVersion()->associate($quote);
+                $note->is_for_submitted_quote = true;
                 $note->text = $stage->additional_notes;
             });
 
@@ -1225,7 +1226,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
             $quote->additional_notes = $stage->additional_notes;
 
             /** @var WorldwideQuoteNote $quoteNote */
-            $quoteNote = tap($quote->note()->firstOrNew(), function (WorldwideQuoteNote $note) use ($quote, $stage) {
+            $quoteNote = tap($quote->draftNote()->firstOrNew(), function (WorldwideQuoteNote $note) use ($quote, $stage) {
                 if (false === $note->exists) {
                     $note->{$note->getKeyName()} = (string)Uuid::generate(4);
                 }

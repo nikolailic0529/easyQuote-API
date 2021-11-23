@@ -57,6 +57,9 @@ class UpdateDistributionMappedRow extends FormRequest
             'service_level_description' => [
                 'bail', 'nullable', 'string', 'max:250'
             ],
+            'is_serial_number_generated' => [
+                'bail', 'nullable', 'boolean'
+            ]
         ];
     }
 

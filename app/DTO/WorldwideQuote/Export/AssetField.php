@@ -8,7 +8,7 @@ use Symfony\Component\Validator\Constraints;
 final class AssetField extends DataTransferObject
 {
     /**
-     * @Constraints\Choice({"product_no", "description", "serial_no", "date_from", "qty", "price", "pricing_document", "system_handle", "searchable", "service_level_description"})
+     * @Constraints\Choice({"product_no", "description", "serial_no", "date_from", "contract_duration", "qty", "price", "pricing_document", "system_handle", "searchable", "service_level_description"})
      */
     public string $field_name;
 

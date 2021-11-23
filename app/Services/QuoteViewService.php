@@ -231,11 +231,9 @@ class QuoteViewService implements QuoteView
         $quote->computableRows = MappedRows::make($rows);
     }
 
-    public function prepareQuoteReview(BaseQuote $quote)
+    public function prepareQuoteReview(BaseQuote $quote): static
     {
-        $totalRowsPrice = (float)$this->quoteQueries
-            ->mappedSelectedRowsQuery($quote)
-            ->sum('price');
+        $totalRowsPrice = $this->rescueQuoteCalc->calculateListPriceOfRescueQuote($quote);
 
         $quote->totalPrice = $totalRowsPrice * (float)$quote->target_exchange_rate;
         $quote->buy_price = (float)$quote->buy_price * ($quote->target_exchange_rate);

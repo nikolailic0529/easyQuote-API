@@ -234,6 +234,8 @@ return [
         App\Providers\SnappyServiceProvider::class,
         Spatie\Geocoder\GeocoderServiceProvider::class,
         App\Providers\AttachmentServiceProvider::class,
+        App\Providers\FormatterServiceProvider::class,
+        App\Providers\SalesOrderServiceProvider::class,
 
         LynX39\LaraPdfMerger\PdfMergerServiceProvider::class,
     ],

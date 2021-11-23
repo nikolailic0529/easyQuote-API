@@ -298,17 +298,10 @@ class WorldwideQuoteState extends JsonResource
             'system_handle' => $this->activeVersion->system_handle,
             'additional_details' => $this->activeVersion->additional_details,
 
-            'additional_notes' => value(function () {
+            'additional_notes' => $this->activeVersion->note?->text,
 
-                /** @var WorldwideQuote|WorldwideQuoteState $this */
-
-                if (is_null($this->activeVersion->note)) {
-                    return null;
-                }
-
-                return $this->activeVersion->note->text;
-
-            }),
+            'draft_note' => $this->activeVersion->draftNote?->text,
+            'submit_note' => $this->activeVersion->submitNote?->text,
 
             'status' => $this->status,
             'status_reason' => $this->status_reason,

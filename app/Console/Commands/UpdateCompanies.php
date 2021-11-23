@@ -35,7 +35,7 @@ class UpdateCompanies extends Command
 
         activity()->disableLogging();
 
-        $companies = json_decode(file_get_contents(database_path('seeders/models/companies.json')), true);
+        $companies = yaml_parse_file(database_path('seeders/models/companies.yaml'));
 
         $this->withProgressBar($companies, function (array $data) {
             $this->performCompanyUpdate($data);

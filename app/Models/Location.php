@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property string|null $formatted_address
+ * @property string|null $searchable_address
  * @property mixed $coordinates
  * @property Country $country
  */

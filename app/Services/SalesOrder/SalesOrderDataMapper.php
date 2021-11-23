@@ -541,6 +541,8 @@ class SalesOrderDataMapper
                 'children' => $element['child'] ?? [],
                 'class' => $element['class'] ?? '',
                 'css' => $element['css'] ?? '',
+                'toggle' => filter_var($element['toggle'] ?? false, FILTER_VALIDATE_BOOL),
+                'visibility' => filter_var($element['visibility'] ?? false, FILTER_VALIDATE_BOOL),
             ]);
 
         }, $pageSchema);

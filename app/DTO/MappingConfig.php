@@ -2,14 +2,19 @@
 
 namespace App\DTO;
 
+use Carbon\CarbonInterval;
 use Illuminate\Support\Carbon;
 use Spatie\DataTransferObject\DataTransferObject;
 
-class MappedRowSettings extends DataTransferObject
+class MappingConfig extends DataTransferObject
 {
     public ?Carbon $default_date_from = null;
 
     public ?Carbon $default_date_to = null;
+
+    public ?CarbonInterval $contract_duration = null;
+
+    public bool $is_contract_duration_checked = false;
 
     public int $default_qty = 1;
 

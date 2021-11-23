@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Opportunities\BatchUpload;
+use App\Http\Resources\Opportunity\UploadedOpportunities;
 use App\Http\Requests\Opportunity\{BatchSave,
     CreateOpportunity,
     MarkOpportunityAsLost,
@@ -135,7 +136,7 @@ class OpportunityController extends Controller
             $request->user()
         );
 
-        return response()->json($result, Response::HTTP_CREATED);
+        return response()->json(UploadedOpportunities::make($result), Response::HTTP_CREATED);
     }
 
     /**

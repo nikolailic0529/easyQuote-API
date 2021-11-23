@@ -20,16 +20,15 @@ use App\Models\QuoteFile\QuoteFile;
 use App\Models\QuoteFile\ScheduleData;
 use App\Models\Role;
 use App\Models\SalesOrder;
-use App\Models\Template\ContractTemplate;
 use App\Models\Template\QuoteTemplate;
 use App\Models\Template\SalesOrderTemplate;
 use App\Models\Template\TemplateField;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Models\WorldwideQuoteAsset;
-use App\Services\DocumentEngine\OauthClient;
 use App\Services\SalesOrder\CancelSalesOrderService;
 use App\Services\SalesOrder\SubmitSalesOrderService;
+use App\Services\VendorServices\CheckSalesOrderService;
 use App\Services\VendorServices\OauthClient as VSOauthClient;
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
@@ -78,15 +77,15 @@ class SalesOrderTest extends TestCase
 //                        'sequence_number',
                         'order_type',
                         'created_at',
-                        'activated_at'
-                    ]
+                        'activated_at',
+                    ],
                 ],
                 'links' => [
-                    'first', 'last', 'prev', 'next'
+                    'first', 'last', 'prev', 'next',
                 ],
                 'meta' => [
-                    'current_page', 'from', 'last_page', 'path', 'per_page', 'to', 'total'
-                ]
+                    'current_page', 'from', 'last_page', 'path', 'per_page', 'to', 'total',
+                ],
             ]);
     }
 
@@ -111,7 +110,7 @@ class SalesOrderTest extends TestCase
         // Acting user own entity.
         $salesOrder = factory(SalesOrder::class)->create([
             'user_id' => $user->getKey(),
-            'submitted_at' => null
+            'submitted_at' => null,
         ]);
 
         // Entity own by different user.
@@ -128,9 +127,9 @@ class SalesOrderTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
-                        'user_id'
-                    ]
-                ]
+                        'user_id',
+                    ],
+                ],
             ]);
 
         $this->assertCount(1, $response->json('data'));
@@ -158,7 +157,7 @@ class SalesOrderTest extends TestCase
         // Acting user own entity.
         $salesOrder = factory(SalesOrder::class)->create([
             'user_id' => $user->getKey(),
-            'submitted_at' => now()
+            'submitted_at' => now(),
         ]);
 
         // Entity own by different user.
@@ -175,9 +174,9 @@ class SalesOrderTest extends TestCase
                 'data' => [
                     '*' => [
                         'id',
-                        'user_id'
-                    ]
-                ]
+                        'user_id',
+                    ],
+                ],
             ]);
 
         $this->assertCount(1, $response->json('data'));
@@ -213,15 +212,24 @@ class SalesOrderTest extends TestCase
 //                        'sequence_number',
                         'order_type',
                         'created_at',
-                        'activated_at'
-                    ]
+                        'activated_at',
+                        'permissions' => [
+                            'view',
+                            'update',
+                            'delete',
+                            'resubmit',
+                            'refresh_status',
+                            'cancel',
+                            'export',
+                        ],
+                    ],
                 ],
                 'links' => [
-                    'first', 'last', 'prev', 'next'
+                    'first', 'last', 'prev', 'next',
                 ],
                 'meta' => [
-                    'current_page', 'from', 'last_page', 'path', 'per_page', 'to', 'total'
-                ]
+                    'current_page', 'from', 'last_page', 'path', 'per_page', 'to', 'total',
+                ],
             ]);
     }
 
@@ -250,23 +258,23 @@ class SalesOrderTest extends TestCase
                 'worldwide_quote_id',
                 'worldwide_quote_number',
                 'company' => [
-                    'id', 'name', 'logo_url'
+                    'id', 'name', 'logo_url',
                 ],
                 'vendors' => [
                     '*' => [
-                        'id', 'name', 'logo_url'
-                    ]
+                        'id', 'name', 'logo_url',
+                    ],
                 ],
                 'countries' => [
                     '*' => [
-                        'id', 'name', 'flag_url'
-                    ]
+                        'id', 'name', 'flag_url',
+                    ],
                 ],
                 'sales_order_templates' => [
                     '*' => [
-                        'id', 'name'
-                    ]
-                ]
+                        'id', 'name',
+                    ],
+                ],
             ]);
 
         $this->assertNotEmpty($response->json('sales_order_templates'));
@@ -279,7 +287,7 @@ class SalesOrderTest extends TestCase
             'sales_order_template_id' => $contractTemplateKey,
             'vat_number' => $vatNumber = Str::random(191),
             'vat_type' => 'VAT Number',
-            'customer_po' => $customerPo = Str::random(191)
+            'customer_po' => $customerPo = Str::random(191),
         ])
 //            ->dump()
             ->assertCreated()
@@ -288,11 +296,11 @@ class SalesOrderTest extends TestCase
                 'worldwide_quote_id',
                 'sales_order_template_id',
                 'vat_number',
-                'customer_po'
+                'customer_po',
             ])
             ->assertJson([
                 'vat_number' => $vatNumber,
-                'customer_po' => $customerPo
+                'customer_po' => $customerPo,
             ]);
     }
 
@@ -322,7 +330,7 @@ class SalesOrderTest extends TestCase
                 'created_at',
                 'updated_at',
                 'submitted_at',
-                'activated_at'
+                'activated_at',
             ]);
     }
 
@@ -346,14 +354,14 @@ class SalesOrderTest extends TestCase
 
         /** @var WorldwideQuote $quote */
         $quote = factory(WorldwideQuote::class)->create([
-            'contract_type_id' => CT_PACK
+            'contract_type_id' => CT_PACK,
         ]);
 
         $quote->activeVersion->update([
             'quote_template_id' => $template->getKey(),
             'multi_year_discount_id' => $multiYearDiscount->getKey(),
             'sort_rows_column' => 'vendor_short_code',
-            'sort_rows_direction' => 'asc'
+            'sort_rows_direction' => 'asc',
         ]);
 
         $defaultSoftwareAddress = factory(Address::class)->create(['address_type' => 'Software', 'address_1' => '-1 Default Software Address']);
@@ -361,12 +369,12 @@ class SalesOrderTest extends TestCase
 
         $quote->activeVersion->addresses()->sync([
             $softwareAddress2->getKey(),
-            $defaultSoftwareAddress->getKey()
+            $defaultSoftwareAddress->getKey(),
         ]);
 
         factory(WorldwideQuoteAsset::class, 5)->create([
             'worldwide_quote_id' => $quote->getKey(),
-            'is_selected' => true
+            'is_selected' => true,
         ]);
 
         $salesOrder = factory(SalesOrder::class)->create(['worldwide_quote_id' => $quote->getKey()]);
@@ -380,7 +388,7 @@ class SalesOrderTest extends TestCase
                     'assets_page_schema',
                     'payment_schedule_page_schema',
                     'last_page_schema',
-                    'template_assets'
+                    'template_assets',
                 ],
 
                 'quote_summary' => [
@@ -430,16 +438,16 @@ class SalesOrderTest extends TestCase
                         'system_handle',
                         'searchable',
                         'service_level_description',
-                        'machine_address_string'
-                    ]
+                        'machine_address_string',
+                    ],
                 ],
 
                 'pack_asset_fields' => [
                     '*' => [
                         'field_name',
-                        'field_header'
-                    ]
-                ]
+                        'field_header',
+                    ],
+                ],
             ]);
 
         // TODO: asset the price field is missing.
@@ -465,7 +473,7 @@ class SalesOrderTest extends TestCase
             'sales_order_template_id' => $salesOrderTemplate->getKey(),
             'vat_number' => $vatNumber = Str::random(191),
             'vat_type' => 'VAT Number',
-            'customer_po' => $customerPo = Str::random(191)
+            'customer_po' => $customerPo = Str::random(191),
         ])
 //            ->dump()
             ->assertOk();
@@ -477,12 +485,12 @@ class SalesOrderTest extends TestCase
                 'id',
                 'sales_order_template_id',
                 'vat_number',
-                'customer_po'
+                'customer_po',
             ])
             ->assertJson([
                 'sales_order_template_id' => $salesOrderTemplate->getKey(),
                 'vat_number' => $vatNumber,
-                'customer_po' => $customerPo
+                'customer_po' => $customerPo,
             ]);
 
         $this->patchJson('api/sales-orders/'.$salesOrder->getKey(), [
@@ -490,7 +498,7 @@ class SalesOrderTest extends TestCase
             'sales_order_template_id' => $salesOrderTemplate->getKey(),
             'vat_number' => null,
             'vat_type' => 'NO VAT',
-            'customer_po' => $customerPo = Str::random(191)
+            'customer_po' => $customerPo = Str::random(191),
         ])
 //            ->dump()
             ->assertOk();
@@ -502,12 +510,12 @@ class SalesOrderTest extends TestCase
                 'id',
                 'sales_order_template_id',
                 'vat_number',
-                'customer_po'
+                'customer_po',
             ])
             ->assertJson([
                 'sales_order_template_id' => $salesOrderTemplate->getKey(),
                 'vat_number' => null,
-                'customer_po' => $customerPo
+                'customer_po' => $customerPo,
             ]);
     }
 
@@ -522,13 +530,13 @@ class SalesOrderTest extends TestCase
 
         /** @var Opportunity $opportunity */
         $opportunity = factory(Opportunity::class)->create([
-            'contract_type_id' => CT_PACK
+            'contract_type_id' => CT_PACK,
         ]);
 
         $invoiceAddress = factory(Address::class)->create(['address_type' => 'Invoice']);
         $machineAddress = factory(Address::class)->create([
             'address_type' => 'Machine',
-            'country_id' => Country::query()->where('iso_3166_2', 'GB')->value('id')
+            'country_id' => Country::query()->where('iso_3166_2', 'GB')->value('id'),
         ]);
 
         /** @var WorldwideQuote $quote */
@@ -538,7 +546,7 @@ class SalesOrderTest extends TestCase
         ]);
 
         $quote->activeVersion->addresses()->sync([
-            $invoiceAddress->getKey(), $machineAddress->getKey()
+            $invoiceAddress->getKey(), $machineAddress->getKey(),
         ]);
 
         $quote->activeVersion->update([
@@ -554,7 +562,7 @@ class SalesOrderTest extends TestCase
             'sku' => 'J9846A',
             'serial_no' => 'CN51G8M1X6',
             'service_level_description' => 'HPE 1Y PW FC CTR 560 Wrls AP SVC',
-            'machine_address_id' => $machineAddress->getKey()
+            'machine_address_id' => $machineAddress->getKey(),
         ]);
 
         $salesOrder = factory(SalesOrder::class)->create(['worldwide_quote_id' => $quote->getKey(), 'submitted_at' => null, 'vat_number' => '1234']);
@@ -576,11 +584,10 @@ class SalesOrderTest extends TestCase
         ]);
 
         $this->app->when(SubmitSalesOrderService::class)->needs(HttpFactory::class)
-            ->give(fn () => $httpFactory);
+            ->give(fn() => $httpFactory);
 
 
-        $response = $this->postJson('api/sales-orders/'.$salesOrder->getKey().'/submit')
-//            ->dump()
+        $response = $this->postJson('api/sales-orders/'.$salesOrder->getKey().'/submit')//            ->dump()
         ;
 
         $this->assertContainsEquals($response->status(), [Response::HTTP_UNPROCESSABLE_ENTITY, Response::HTTP_ACCEPTED]);
@@ -590,7 +597,7 @@ class SalesOrderTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'submitted_at'
+                'submitted_at',
             ]);
 
         $this->assertNotEmpty($response->json('submitted_at'));
@@ -607,13 +614,13 @@ class SalesOrderTest extends TestCase
 
         /** @var Opportunity $opportunity */
         $opportunity = factory(Opportunity::class)->create([
-            'contract_type_id' => CT_CONTRACT
+            'contract_type_id' => CT_CONTRACT,
         ]);
 
         $invoiceAddress = factory(Address::class)->create(['address_type' => 'Invoice']);
         $machineAddress = factory(Address::class)->create([
             'address_type' => 'Machine',
-            'country_id' => Country::query()->where('iso_3166_2', 'GB')->value('id')
+            'country_id' => Country::query()->where('iso_3166_2', 'GB')->value('id'),
         ]);
 
         /** @var WorldwideQuote $quote */
@@ -623,7 +630,7 @@ class SalesOrderTest extends TestCase
         ]);
 
         $quote->activeVersion->addresses()->sync([
-            $invoiceAddress->getKey(), $machineAddress->getKey()
+            $invoiceAddress->getKey(), $machineAddress->getKey(),
         ]);
 
         $quote->activeVersion->update([
@@ -633,7 +640,7 @@ class SalesOrderTest extends TestCase
         $distributorFile = factory(QuoteFile::class)->create();
 
         $supplier = factory(OpportunitySupplier::class)->create([
-            'opportunity_id' => $opportunity->getKey()
+            'opportunity_id' => $opportunity->getKey(),
         ]);
 
         /** @var WorldwideDistribution $distributorQuote */
@@ -643,24 +650,24 @@ class SalesOrderTest extends TestCase
             'distributor_file_id' => $distributorFile,
             'opportunity_supplier_id' => $supplier->getKey(),
             'country_id' => Country::query()->value('id'),
-            'use_groups' => true
+            'use_groups' => true,
         ]);
 
         $distributorQuote->addresses()->sync([
             $invoiceAddress->getKey(),
-            $machineAddress->getKey()
+            $machineAddress->getKey(),
         ]);
 
         $distributorQuote->vendors()->sync(Vendor::query()->where('short_code', 'HPE')->value('id'));
 
         $mappedRows = factory(MappedRow::class, 10)->create([
-            'quote_file_id' => $distributorFile->getKey()
+            'quote_file_id' => $distributorFile->getKey(),
         ]);
 
         /** @var DistributionRowsGroup $groupOfRows */
         $groupOfRows = factory(DistributionRowsGroup::class)->create([
             'worldwide_distribution_id' => $distributorQuote->getKey(),
-            'is_selected' => true
+            'is_selected' => true,
         ]);
 
         $groupOfRows->rows()->sync($mappedRows);
@@ -680,8 +687,7 @@ class SalesOrderTest extends TestCase
             });
 
 
-        $response = $this->postJson('api/sales-orders/'.$salesOrder->getKey().'/submit')
-//            ->dump()
+        $response = $this->postJson('api/sales-orders/'.$salesOrder->getKey().'/submit')//            ->dump()
         ;
 
         $this->assertContainsEquals($response->status(), [Response::HTTP_UNPROCESSABLE_ENTITY, Response::HTTP_ACCEPTED]);
@@ -691,7 +697,7 @@ class SalesOrderTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
-                'submitted_at'
+                'submitted_at',
             ]);
 
         $this->assertNotEmpty($response->json('submitted_at'));
@@ -723,11 +729,11 @@ class SalesOrderTest extends TestCase
             });
 
         $this->patchJson('api/sales-orders/'.$salesOrder->getKey().'/cancel', [
-            'status_reason' => 'Just cancelled'
+            'status_reason' => 'Just cancelled',
         ])
             ->assertStatus(Response::HTTP_ACCEPTED)
             ->assertJsonStructure([
-                'result'
+                'result',
             ]);
 
         $this->getJson('api/sales-orders/'.$salesOrder->getKey())
@@ -736,11 +742,11 @@ class SalesOrderTest extends TestCase
             ->assertJsonStructure([
                 'id',
                 'status',
-                'status_reason'
+                'status_reason',
             ])
             ->assertJson([
                 'status' => 3,
-                'status_reason' => 'Just cancelled'
+                'status_reason' => 'Just cancelled',
             ]);
     }
 
@@ -759,7 +765,7 @@ class SalesOrderTest extends TestCase
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
-                'id', 'activated_at'
+                'id', 'activated_at',
             ]);
 
         $this->assertEmpty($response->json('activated_at'));
@@ -771,7 +777,7 @@ class SalesOrderTest extends TestCase
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
-                'id', 'activated_at'
+                'id', 'activated_at',
             ]);
 
         $this->assertNotEmpty($response->json('activated_at'));
@@ -792,7 +798,7 @@ class SalesOrderTest extends TestCase
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
-                'id', 'activated_at'
+                'id', 'activated_at',
             ]);
 
 
@@ -805,7 +811,7 @@ class SalesOrderTest extends TestCase
 //            ->dump()
             ->assertOk()
             ->assertJsonStructure([
-                'id', 'activated_at'
+                'id', 'activated_at',
             ]);
 
         $this->assertEmpty($response->json('activated_at'));
@@ -838,23 +844,23 @@ class SalesOrderTest extends TestCase
                 'worldwide_quote_id',
                 'worldwide_quote_number',
                 'company' => [
-                    'id', 'name', 'logo_url'
+                    'id', 'name', 'logo_url',
                 ],
                 'vendors' => [
                     '*' => [
-                        'id', 'name', 'logo_url'
-                    ]
+                        'id', 'name', 'logo_url',
+                    ],
                 ],
                 'countries' => [
                     '*' => [
-                        'id', 'name', 'flag_url'
-                    ]
+                        'id', 'name', 'flag_url',
+                    ],
                 ],
                 'sales_order_templates' => [
                     '*' => [
-                        'id', 'name'
-                    ]
-                ]
+                        'id', 'name',
+                    ],
+                ],
             ]);
 
         $this->assertNotEmpty($response->json('sales_order_templates'));
@@ -867,7 +873,7 @@ class SalesOrderTest extends TestCase
             'sales_order_template_id' => $orderTemplateKey,
             'vat_number' => $vatNumber = Str::random(191),
             'vat_type' => 'VAT Number',
-            'customer_po' => $customerPo = Str::random(191)
+            'customer_po' => $customerPo = Str::random(191),
         ])
 //            ->dump()
             ->assertCreated()
@@ -876,11 +882,11 @@ class SalesOrderTest extends TestCase
                 'worldwide_quote_id',
                 'sales_order_template_id',
                 'vat_number',
-                'customer_po'
+                'customer_po',
             ])
             ->assertJson([
                 'vat_number' => $vatNumber,
-                'customer_po' => $customerPo
+                'customer_po' => $customerPo,
             ]);
 
         $salesOrderModelKey = $response->json('id');
@@ -907,11 +913,11 @@ class SalesOrderTest extends TestCase
         /** @var WorldwideQuote $wwQuote */
         $wwQuote = factory(WorldwideQuote::class)->create([
             'contract_type_id' => CT_CONTRACT,
-            'submitted_at' => now()
+            'submitted_at' => now(),
         ]);
 
         $wwQuote->activeVersion->update([
-            'quote_template_id' => $quoteTemplate->getKey()
+            'quote_template_id' => $quoteTemplate->getKey(),
         ]);
 
         /** @var Opportunity $opportunity */
@@ -963,7 +969,7 @@ class SalesOrderTest extends TestCase
             $distribution->vendors()->sync($vendor);
 
             $distributorFile = factory(QuoteFile::class)->create([
-                'file_type' => QFT_WWPL
+                'file_type' => QFT_WWPL,
             ]);
 
             $distribution->update(['distributor_file_id' => $distributorFile->getKey()]);
@@ -991,7 +997,7 @@ class SalesOrderTest extends TestCase
             'worldwide_quote_id' => $wwQuote->getKey(),
             'order_number' => sprintf("EPD-WW-DP-CSO%'.07d", $wwQuote->sequence_number),
             'sales_order_template_id' => $salesOrderTemplate->getKey(),
-            'submitted_at' => now()
+            'submitted_at' => now(),
         ]);
 
         $expectedFileName = sprintf("EPD-WW-DP-CSO%'.07d.pdf", $wwQuote->sequence_number);
@@ -1016,8 +1022,99 @@ class SalesOrderTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 '*' => [
-                    'id', 'description'
-                ]
+                    'id', 'description',
+                ],
             ]);
+    }
+
+    /**
+     * Test an ability to refresh status of an existing sales order.
+     *
+     * @return void
+     */
+    public function testCanRefreshStatusOfSalesOrder()
+    {
+        /** @var SalesOrder $salesOrder */
+        $salesOrder = factory(SalesOrder::class)->create([
+            'submitted_at' => now(),
+            'status' => 2,
+        ]);
+
+        /** @var HttpFactory $oauthFactory */
+        $oauthFactory = $this->app[HttpFactory::class];
+
+        $oauthFactory->fake([
+            '*' => HttpFactory::response(['token_type' => 'Bearer', 'expires_in' => 31536000, 'access_token' => '1234']),
+        ]);
+
+        $this->app->when(VSOauthClient::class)->needs(HttpFactory::class)->give(fn() => $oauthFactory);
+
+        /** @var HttpFactory $factory */
+        $factory = $this->app[HttpFactory::class];
+
+        $factory->fake([
+            '*' => $factory->response([
+                'id' => $vsCustomerID = $this->faker->uuid,
+                'bc_customer_id' => $this->faker->uuid,
+                'bc_company' => 'EPD',
+                'customer_number' => 'EPD-EQ-0000001',
+                'customer_name' => $salesOrder->worldwideQuote->opportunity->primaryAccount->name,
+                'status' => 1,
+                'is_supplier' => 0,
+                'created_at' => now()->toDateTimeString(),
+                'updated_at' => now()->toDateTimeString(),
+                'bc_orders' => [
+                    [
+                        'id' => $vsOrderID = $this->faker->uuid,
+                        'customer_id' => $vsCustomerID,
+                        'post_sales_id' => $salesOrder->getKey(),
+                        'order_no' => $salesOrder->order_number,
+                        'order_date' => now()->toDateString(),
+                        'created_at' => now()->toDateTimeString(),
+                        'updated_at' => now()->toDateTimeString(),
+                        'status' => 1,
+                        'bc_sales_line' => [
+                            [
+                                'id' => $this->faker->uuid,
+                                'bc_order_id' => $vsOrderID,
+                                'drop_shipment' => 0,
+                                'created_at' => now()->toDateTimeString(),
+                                'updated_at' => now()->toDateTimeString(),
+                            ],
+                        ],
+                        'bc_addresses' => [
+                            [
+                                'id' => $this->faker->uuid,
+                                'customer_id' => $vsCustomerID,
+                                'order_id' => $vsOrderID,
+                                'address_type' => 'Invoice',
+                                'is_default' => 1,
+                                'created_at' => now()->toDateTimeString(),
+                                'updated_at' => now()->toDateTimeString(),
+                            ],
+                        ],
+                    ],
+                ],
+            ]),
+        ]);
+
+        $this->app->when(CheckSalesOrderService::class)
+            ->needs(HttpFactory::class)
+            ->give(fn() => $factory);
+
+        $this->authenticateApi();
+
+        $this->patchJson('api/sales-orders/'.$salesOrder->getKey().'/refresh-status')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'status',
+                'failure_reason',
+            ])
+            ->assertJson([
+                'status' => 1,
+            ]);
+
     }
 }

@@ -94,7 +94,7 @@ class UnifiedQuoteQueries
                 $builder->where($builder->qualifyColumn('user_id'), $user?->getKey())
                     ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->join('team_team_leader', function (JoinClause $join) use ($user) {
                         $join->on('users.team_id', 'team_team_leader.team_id')
-                            ->where('team_team_leader.id', $user?->getKey());
+                            ->where('team_team_leader.team_leader_id', $user?->getKey());
                     }));
             });
 
@@ -174,7 +174,7 @@ class UnifiedQuoteQueries
                 $builder->where($builder->qualifyColumn('user_id'), $user?->getKey())
                     ->orWhereIn($builder->qualifyColumn('user_id'), User::query()->select('id')->join('team_team_leader', function (JoinClause $join) use ($user) {
                         $join->on('users.team_id', 'team_team_leader.team_id')
-                            ->where('team_team_leader.id', $user?->getKey());
+                            ->where('team_team_leader.team_leader_id', $user?->getKey());
                     }));
             });
 

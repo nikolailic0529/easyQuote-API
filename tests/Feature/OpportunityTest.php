@@ -385,6 +385,7 @@ class OpportunityTest extends TestCase
         $data = factory(Opportunity::class)->raw([
             'primary_account_id' => $primaryAccountID,
             'primary_account_contact_id' => $primaryAccountContactID,
+            'is_contract_duration_checked' => false,
         ]);
 
         $data['suppliers_grid'] = factory(OpportunitySupplier::class, 10)->raw();
@@ -430,6 +431,8 @@ class OpportunityTest extends TestCase
                 "opportunity_start_date",
                 "opportunity_end_date",
                 "opportunity_closing_date",
+                "is_contract_duration_checked",
+                "contract_duration_months",
                 "expected_order_date",
                 "customer_order_date",
                 "purchase_order_date",
@@ -476,6 +479,184 @@ class OpportunityTest extends TestCase
                         "id", "supplier_name", "country_name", "contact_name", "contact_email",
                     ],
                 ],
+            ]);
+    }
+
+    /**
+     * Test an ability to create a new opportunity with contract duration.
+     *
+     * @returtn void
+     */
+    public function testCanCreateOpportunityWithContractDuration()
+    {
+        $this->authenticateApi();
+
+        $account = tap(new Company(), function (Company $company) {
+            $company->name = $this->faker->company;
+            $company->vat = Str::random(40);
+            $company->type = 'External';
+            $company->email = $this->faker->companyEmail;
+            $company->phone = $this->faker->e164PhoneNumber;
+            $company->website = $this->faker->url;
+
+            $company->save();
+
+            $contact = factory(Contact::class)->create();
+
+            $company->contacts()->sync($contact);
+
+            $address = factory(Address::class)->create();
+
+            $company->addresses()->sync($address);
+        });
+
+        $response = $this->getJson('api/external-companies')
+//            ->dump()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'name',
+                        'vat',
+                        'email',
+                        'phone',
+                    ],
+                ],
+            ])
+            ->assertOk();
+
+        $primaryAccountID = $response->json('data.0.id');
+
+        $response = $this->getJson('api/companies/'.$primaryAccountID)
+//            ->dump()
+            ->assertJsonStructure([
+                'contacts' => [
+                    '*' => [
+                        'id',
+                        'email',
+                        'first_name',
+                        'last_name',
+                        'phone',
+                        'mobile',
+                        'job_title',
+                        'is_verified',
+                    ],
+                ],
+            ])
+            ->assertOk();
+
+        $primaryAccountContactID = $response->json('contacts.0.id');
+
+        $data = factory(Opportunity::class)->raw([
+            'primary_account_id' => $primaryAccountID,
+            'primary_account_contact_id' => $primaryAccountContactID,
+            'is_contract_duration_checked' => true,
+            'contract_duration_months' => 2,
+        ]);
+
+        $data['suppliers_grid'] = factory(OpportunitySupplier::class, 10)->raw();
+
+        $response = $this->postJson('api/opportunities', $data)
+//            ->dump()
+            ->assertCreated()
+            ->assertJsonStructure([
+                "id",
+                "user_id",
+                "pipeline_id",
+                "pipeline",
+                "contract_type_id",
+                "contract_type",
+                "primary_account_id",
+                "primary_account" => [
+                    "id",
+                    "addresses" => [
+                        "*" => [
+                            "id",
+                            "is_default",
+                        ],
+                    ],
+                    "contacts" => [
+                        "*" => [
+                            "id",
+                            "is_default",
+                        ],
+                    ],
+                ],
+                "primary_account_contact_id",
+                "primary_account_contact",
+                "account_manager_id",
+                "account_manager",
+                "project_name",
+                "nature_of_service",
+                "renewal_month",
+                "renewal_year",
+                "customer_status",
+                "end_user_name",
+                "hardware_status",
+                "region_name",
+                "opportunity_start_date",
+                "opportunity_end_date",
+                "opportunity_closing_date",
+                "is_contract_duration_checked",
+                "contract_duration_months",
+                "expected_order_date",
+                "customer_order_date",
+                "purchase_order_date",
+                "supplier_order_date",
+                "supplier_order_transaction_date",
+                "supplier_order_confirmation_date",
+                "opportunity_amount",
+                "opportunity_amount_currency_code",
+                "purchase_price",
+                "purchase_price_currency_code",
+                "list_price",
+                "list_price_currency_code",
+                "estimated_upsell_amount",
+                "estimated_upsell_amount_currency_code",
+                "margin_value",
+                "personal_rating",
+                "ranking",
+                "account_manager_name",
+                "service_level_agreement_id",
+                "sale_unit_name",
+                "drop_in",
+                "lead_source_name",
+                "has_higher_sla",
+                "is_multi_year",
+                "has_additional_hardware",
+                "has_service_credits",
+                "remarks",
+                "sale_action_name",
+                "updated_at",
+                "created_at",
+
+                "status",
+                "status_reason",
+
+                "base_list_price",
+                "base_purchase_price",
+                "base_opportunity_amount",
+
+                "is_opportunity_start_date_assumed",
+                "is_opportunity_end_date_assumed",
+
+                "suppliers_grid" => [
+                    "*" => [
+                        "id", "supplier_name", "country_name", "contact_name", "contact_email",
+                    ],
+                ],
+            ]);
+
+        $this->getJson('api/opportunities/'.$response->json('id'))
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'contract_duration_months',
+                'is_contract_duration_checked',
+            ])
+            ->assertJson([
+                'contract_duration_months' => 2,
+                'is_contract_duration_checked' => true,
             ]);
     }
 
@@ -549,6 +730,7 @@ class OpportunityTest extends TestCase
         $data = factory(Opportunity::class)->raw([
             'primary_account_id' => $primaryAccountID,
             'primary_account_contact_id' => $primaryAccountContactID,
+            'is_contract_duration_checked' => false,
         ]);
 
         $data['suppliers_grid'] = factory(OpportunitySupplier::class, 10)->raw();
@@ -580,6 +762,8 @@ class OpportunityTest extends TestCase
                 "opportunity_start_date",
                 "opportunity_end_date",
                 "opportunity_closing_date",
+                "is_contract_duration_checked",
+                "contract_duration_months",
                 "expected_order_date",
                 "customer_order_date",
                 "purchase_order_date",
@@ -649,6 +833,192 @@ class OpportunityTest extends TestCase
             ->assertOk();
 
         $this->assertEmpty($response->json('primary_account_contact_id'));
+    }
+
+    /**
+     * Test an ability to update an existing opportunity with contract duration.
+     *
+     * @return void
+     */
+    public function testCanUpdateOpportunityWithContractDuration()
+    {
+        $this->authenticateApi();
+
+        $opportunity = factory(Opportunity::class)->create([
+            'user_id' => $this->app['auth.driver']->id(),
+        ]);
+
+        $account = tap(new Company(), function (Company $company) {
+            $company->name = $this->faker->company;
+            $company->vat = Str::random(40);
+            $company->type = 'External';
+            $company->email = $this->faker->companyEmail;
+            $company->phone = $this->faker->e164PhoneNumber;
+            $company->website = $this->faker->url;
+
+            $company->save();
+
+            $contact = factory(Contact::class)->create();
+
+            $company->contacts()->sync($contact);
+
+            $address = factory(Address::class)->create();
+
+            $company->addresses()->sync($address);
+        });
+
+        $response = $this->getJson('api/external-companies')
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id',
+                        'name',
+                        'vat',
+                        'email',
+                        'phone',
+                    ],
+                ],
+            ])
+            ->assertOk();
+
+        $primaryAccountID = $response->json('data.0.id');
+
+        $response = $this->getJson('api/companies/'.$primaryAccountID)
+            ->assertJsonStructure([
+                'contacts' => [
+                    '*' => [
+                        'id',
+                        'email',
+                        'first_name',
+                        'last_name',
+                        'phone',
+                        'mobile',
+                        'job_title',
+                        'is_verified',
+                    ],
+                ],
+            ])
+            ->assertOk();
+
+        $primaryAccountContactID = $response->json('contacts.0.id');
+
+        $data = factory(Opportunity::class)->raw([
+            'primary_account_id' => $primaryAccountID,
+            'primary_account_contact_id' => $primaryAccountContactID,
+            'is_contract_duration_checked' => true,
+            'contract_duration_months' => 60,
+        ]);
+
+        $data['suppliers_grid'] = factory(OpportunitySupplier::class, 10)->raw();
+
+        $response = $this->patchJson('api/opportunities/'.$opportunity->getKey(), $data)
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                "id",
+                "user_id",
+                "pipeline_id",
+                "pipeline",
+                "contract_type_id",
+                "contract_type",
+                "primary_account_id",
+                "primary_account",
+                "primary_account_contact_id",
+                "primary_account_contact",
+                "account_manager_id",
+                "account_manager",
+                "project_name",
+                "nature_of_service",
+                "renewal_month",
+                "renewal_year",
+                "customer_status",
+                "end_user_name",
+                "hardware_status",
+                "region_name",
+                "opportunity_start_date",
+                "opportunity_end_date",
+                "opportunity_closing_date",
+                "is_contract_duration_checked",
+                "contract_duration_months",
+                "expected_order_date",
+                "customer_order_date",
+                "purchase_order_date",
+                "supplier_order_date",
+                "supplier_order_transaction_date",
+                "supplier_order_confirmation_date",
+                "opportunity_amount",
+                "opportunity_amount_currency_code",
+                "purchase_price",
+                "purchase_price_currency_code",
+                "list_price",
+                "list_price_currency_code",
+                "estimated_upsell_amount",
+                "estimated_upsell_amount_currency_code",
+                "margin_value",
+                "personal_rating",
+                "ranking",
+                "account_manager_name",
+                "service_level_agreement_id",
+                "sale_unit_name",
+                "drop_in",
+                "lead_source_name",
+                "has_higher_sla",
+                "is_multi_year",
+                "has_additional_hardware",
+                "has_service_credits",
+                "remarks",
+                "sale_action_name",
+                "updated_at",
+                "created_at",
+
+                "status",
+                "status_reason",
+
+                "base_list_price",
+                "base_purchase_price",
+                "base_opportunity_amount",
+
+                "is_opportunity_start_date_assumed",
+                "is_opportunity_end_date_assumed",
+
+                "suppliers_grid" => [
+                    "*" => [
+                        "id", "supplier_name", "country_name", "contact_name", "contact_email",
+                    ],
+                ],
+            ]);
+
+        $this->assertNotEmpty($response->json('primary_account_contact_id'));
+
+        // Test the primary account contact is detached from opportunity,
+        // once it's detached from the corresponding primary account.
+        $newContactOfPrimaryAccount = factory(Contact::class)->create();
+
+        $this->patchJson('api/companies/'.$primaryAccountID, [
+            'name' => $account->name,
+            'vat_type' => 'NO VAT',
+            'contacts' => [
+                ['id' => $newContactOfPrimaryAccount->getKey()],
+            ],
+        ])
+//            ->dump()
+            ->assertOk();
+
+        $response = $this->getJson('api/opportunities/'.$opportunity->getKey())
+//            ->dump()
+            ->assertOk();
+
+        $this->assertEmpty($response->json('primary_account_contact_id'));
+
+        $response = $this->getJson('api/opportunities/'.$opportunity->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id', 'contract_duration_months', 'is_contract_duration_checked',
+            ])
+            ->assertJson([
+                'contract_duration_months' => 60,
+                'is_contract_duration_checked' => true,
+            ]);
     }
 
     /**
@@ -786,7 +1156,6 @@ class OpportunityTest extends TestCase
 
         $accountContactsFile = UploadedFile::fake()->createWithContent('primary-account-contacts-pipeliner-export.xlsx', file_get_contents(base_path('tests/Feature/Data/opportunity/primary-account-contacts-pipeliner-export.xlsx')));
 
-
         /** @var Role $role */
         $role = factory(Role::class)->create();
 
@@ -820,29 +1189,9 @@ class OpportunityTest extends TestCase
 
         $keys = $response->json('opportunities.*.id');
 
-        $opportunityWithCompany = collect($response->json('opportunities'))->whereNotNull('company_id')->first();
-
-        $this->assertNotNull($opportunityWithCompany);
-
-        $companyResponse = $this->getJson('api/companies/'.$opportunityWithCompany['company_id'])
-//            ->dump()
-            ->assertOk()
-            ->assertJsonStructure([
-                'id',
-                'permissions' => [
-                    'view',
-                    'update',
-                    'delete'
-                ]
-            ]);
-
-        $this->assertTrue($companyResponse->json('permissions.view'));
-        $this->assertTrue($companyResponse->json('permissions.update'));
-        $this->assertTrue($companyResponse->json('permissions.delete'));
-
-
         // Ensure that uploaded opportunities don't exist on the main listing.
         $response = $this->getJson('api/opportunities')
+//            ->dump()
             ->assertOk()
             ->assertJsonStructure([
                 'data' => [
@@ -863,8 +1212,7 @@ class OpportunityTest extends TestCase
         $keysOnListing = [];
         $page = 1;
 
-        // Ensure that uploaded opportunities don't exist on the main listing.
-
+        // Assert that uploaded opportunities don't exist on the main listing.
         do {
             $response = $this->getJson('api/opportunities?page='.$page)
                 ->assertOk()
@@ -880,6 +1228,50 @@ class OpportunityTest extends TestCase
         } while (null !== $response->json('links.next'));
 
         $this->assertCount(count($keys), $keysOnListing);
+
+        $response = $this->getJson('api/opportunities')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => ['id'],
+                ],
+            ]);
+
+        // Assert that user has permissions for a newly created company.
+        $opportunityWithCompany = collect($response->json('data'))->whereNotNull('company_id')->first();
+
+        $this->assertNotNull($opportunityWithCompany);
+
+        $companyResponse = $this->getJson('api/companies/'.$opportunityWithCompany['company_id'])
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'addresses' => [
+                    '*' => ['id', 'user_id'],
+                ],
+                'contacts' => [
+                    '*' => ['id', 'user_id'],
+                ],
+                'permissions' => [
+                    'view',
+                    'update',
+                    'delete',
+                ],
+            ]);
+
+        $this->assertTrue($companyResponse->json('permissions.view'));
+        $this->assertTrue($companyResponse->json('permissions.update'));
+        $this->assertTrue($companyResponse->json('permissions.delete'));
+
+        foreach ($companyResponse->json('addresses.*.user_id') as $ownerID) {
+            $this->assertSame($user->getKey(), $ownerID);
+        }
+
+        foreach ($companyResponse->json('contacts.*.user_id') as $ownerID) {
+            $this->assertSame($user->getKey(), $ownerID);
+        }
     }
 
     /**

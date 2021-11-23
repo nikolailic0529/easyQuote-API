@@ -68,6 +68,7 @@ final class TemplateForm
                 ['id' => 'valid_until', 'label' => 'Quotation Closing Date'],
                 ['id' => 'support_start', 'label' => 'Support Start Date'],
                 ['id' => 'support_end', 'label' => 'Support End Date'],
+                ['id' => 'contract_duration', 'label' => 'Contract Duration'],
                 ['id' => 'list_price', 'label' => 'Total List Price'],
                 ['id' => 'applicable_discounts', 'label' => 'Total Discounts'],
                 ['id' => 'final_price', 'label' => 'Final Price'],

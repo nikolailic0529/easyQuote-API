@@ -70,17 +70,17 @@ class WorldwideQuoteExporter
             throw new ValidationException($violations);
         }
 
-        if ($previewData->contract_type_name === 'Pack') {
-            $this->mapPackTemplateDataControls($previewData);
-        } elseif ($previewData->contract_type_name === 'Contract') {
-            $this->mapContractTemplateDataControls($previewData);
-        }
-
+        match ($previewData->contract_type_name) {
+            'Pack' => $this->mapPackTemplateDataControls($previewData),
+            'Contract' => $this->mapContractTemplateDataControls($previewData),
+        };
     }
 
 
     private function mapContractTemplateDataControls(WorldwideQuotePreviewData $previewData): void
     {
+        $this->hideTemplateElements($previewData);
+
         $templateData = $previewData->template_data;
 
         $controlMapper = function (TemplateElementChildControl $control) use ($templateData, $previewData): void {
@@ -177,7 +177,7 @@ class WorldwideQuoteExporter
 
                 $assetsView = $this->viewFactory->make(
                     $assetsViewName,
-                    ['asset_fields' => $distribution->asset_fields, 'assets_data' => $distribution->assets_data]
+                    ['asset_fields' => $distribution->asset_fields, 'assets_data' => $distribution->assets_data, 'asset_notes' => $distribution->asset_notes]
                 );
 
                 $children = with([], function (array $children) use ($distribution, $assetsView) {
@@ -307,6 +307,8 @@ class WorldwideQuoteExporter
 
     private function mapPackTemplateDataControls(WorldwideQuotePreviewData $previewData): void
     {
+        $this->hideTemplateElements($previewData);
+
         $templateData = $previewData->template_data;
 
         $controlMapper = function (TemplateElementChildControl $control) use ($templateData, $previewData): void {
@@ -366,7 +368,7 @@ class WorldwideQuoteExporter
 
                 $assetsView = $this->viewFactory->make(
                     $assetsViewName,
-                    ['asset_fields' => $previewData->pack_asset_fields, 'assets_data' => $previewData->pack_assets]
+                    ['asset_fields' => $previewData->pack_asset_fields, 'assets_data' => $previewData->pack_assets, 'asset_notes' => $previewData->asset_notes]
                 );
 
                 $children = with([], function (array $children) use ($previewData, $assetsView) {
@@ -445,6 +447,28 @@ class WorldwideQuoteExporter
 
                 }
 
+            }
+
+        }
+    }
+
+    private function hideTemplateElements(WorldwideQuotePreviewData $data): void
+    {
+        foreach ([
+            $data->template_data->first_page_schema,
+            $data->template_data->assets_page_schema,
+            $data->template_data->payment_schedule_page_schema,
+            $data->template_data->last_page_schema,
+                 ] as $pageElements) {
+
+            foreach ($pageElements as $element) {
+                /** @var TemplateElement $element */
+
+                if (false === $element->toggle) {
+                    continue;
+                }
+
+                $element->_hidden = false === ($element->visibility xor $data->quote_summary->is_contract_duration_checked);
             }
 
         }

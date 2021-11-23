@@ -14,7 +14,7 @@ class VendorSeeder extends Seeder
      */
     public function run()
     {
-        $vendors = json_decode(file_get_contents(__DIR__.'/models/vendors.json'), true);
+        $vendors = yaml_parse_file(__DIR__.'/models/vendors.yaml');
 
         $connection = $this->container['db.connection'];
 

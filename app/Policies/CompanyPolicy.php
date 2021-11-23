@@ -78,7 +78,16 @@ class CompanyPolicy
             return true;
         }
 
-        if ($user->canAny(['update_companies', "companies.*.{$company->getKey()}", 'update_own_opportunities'])) {
+        if ($user->can("companies.*.{$company->getKey()}")) {
+            return true;
+        }
+
+        if ($user->canAny('update_companies')) {
+
+            if ($user->getKey() !== $company->{$company->user()->getForeignKeyName()}) {
+                return $this->deny("You can't update the company owned by another user.");
+            }
+
             return true;
         }
     }
@@ -100,14 +109,16 @@ class CompanyPolicy
             return true;
         }
 
-        if (
-            $user->can('delete_companies') &&
-            $user->getKey() === $company->{$company->user()->getForeignKeyName()}
-        ) {
+        if ($user->can("companies.*.{$company->getKey()}")) {
             return true;
         }
 
-        if ($user->can("companies.*.{$company->getKey()}")) {
+        if ($user->canAny('delete_companies')) {
+
+            if ($user->getKey() !== $company->{$company->user()->getForeignKeyName()}) {
+                return $this->deny("You can't delete the company owned by another user.");
+            }
+
             return true;
         }
     }

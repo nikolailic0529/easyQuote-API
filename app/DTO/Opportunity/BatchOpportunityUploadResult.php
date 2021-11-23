@@ -8,9 +8,7 @@ use Spatie\DataTransferObject\DataTransferObject;
 
 final class BatchOpportunityUploadResult extends DataTransferObject
 {
-    /**
-     * @var \App\DTO\Opportunity\ImportedOpportunityData[]
-     */
+    /** @var \App\Models\Opportunity[] */
     public array $opportunities;
 
     /**

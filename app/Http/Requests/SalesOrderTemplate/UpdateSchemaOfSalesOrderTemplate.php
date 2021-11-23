@@ -29,7 +29,7 @@ class UpdateSchemaOfSalesOrderTemplate extends FormRequest
             ],
             'data_headers.*.key' => [
                 'required', 'string',
-                Rule::in(array_keys(__('template.contract_data_headers'))),
+                Rule::in(array_keys(__('template.sales_order_data_headers'))),
             ],
             'data_headers.*.value' => [
                 'required', 'string', 'filled',

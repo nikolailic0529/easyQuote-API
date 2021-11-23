@@ -10,14 +10,12 @@ use App\Models\Quote\WorldwideQuote;
 use App\Models\Quote\WorldwideQuoteVersion;
 use App\Models\QuoteFile\ImportableColumn;
 use App\Models\Template\TemplateField;
+use App\Services\WorldwideQuote\WorldwideQuoteDataMapper;
 use Closure;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class UpdateDistributionsMapping extends FormRequest
@@ -39,7 +37,7 @@ class UpdateDistributionsMapping extends FormRequest
     {
         return [
             'worldwide_distributions.*' => [
-                'bail', 'required', 'array'
+                'bail', 'required', 'array',
             ],
             'worldwide_distributions.*.id' => [
                 'bail', 'required', 'uuid',
@@ -59,7 +57,7 @@ class UpdateDistributionsMapping extends FormRequest
 
                         $fail("The field '$field->header' must be present in mapping.");
                     }
-                }
+                },
             ],
             'worldwide_distributions.*.mapping.*.template_field_id' => [
                 'bail', 'required', 'uuid',
@@ -79,7 +77,7 @@ class UpdateDistributionsMapping extends FormRequest
                 'bail', 'nullable', 'boolean',
             ],
             'stage' => [
-                'bail', 'required', Rule::in(ContractQuoteStage::getLabels())
+                'bail', 'required', Rule::in(ContractQuoteStage::getLabels()),
             ],
         ];
     }
@@ -100,7 +98,7 @@ class UpdateDistributionsMapping extends FormRequest
     {
         return $this->mappingStage ??= new MappingStage([
             'stage' => ContractQuoteStage::getValueOfLabel($this->input('stage')),
-            'mapping' => $this->getMappingCollection()
+            'mapping' => $this->getMappingCollection(),
         ]);
     }
 
@@ -109,12 +107,20 @@ class UpdateDistributionsMapping extends FormRequest
         return $this->distributionMappingCollection ??= DistributionMappingCollection::fromArray($this->getArrayableMapping());
     }
 
-    /** @return Collection<TemplateField>|null */
+    /** @return Collection<int, TemplateField> */
     protected function getRequiredFields(): Collection
     {
-        return $this->requiredFields ??= TemplateField::where('is_system', true)
-            ->where('is_required', true)
-            ->get(['id', 'name', 'header']);
+        return $this->requiredFields ??= value(function () {
+            $templateFields = TemplateField::query()->where('is_system', true)->get(['id', 'name', 'header']);
+
+            /** @var WorldwideQuoteDataMapper $dataMapper */
+            $dataMapper = $this->container[WorldwideQuoteDataMapper::class];
+
+            return $templateFields->filter(function (TemplateField $templateField) use ($dataMapper) {
+                return $dataMapper->isMappingFieldRequired($this->getQuote(), $templateField->name);
+            })
+                ->values();
+        });
     }
 
     protected function getArrayableMapping(): array
@@ -128,7 +134,7 @@ class UpdateDistributionsMapping extends FormRequest
                         'importable_column_id' => $mapping['importable_column_id'],
                         'is_default_enabled' => (bool)($mapping['is_default_enabled'] ?? false),
                         'is_preview_visible' => (bool)($mapping['is_preview_visible'] ?? false),
-                        'is_editable' => (bool)($mapping['is_editable'] ?? false)
+                        'is_editable' => (bool)($mapping['is_editable'] ?? false),
                     ]);
                 }
 

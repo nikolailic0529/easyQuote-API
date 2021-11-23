@@ -68,4 +68,6 @@ final class WorldwideQuoteAssetData extends DataTransferObject
     public ?float $exchange_rate_value;
 
     public bool $is_warranty_checked = false;
+
+    public bool $is_serial_number_generated = false;
 }

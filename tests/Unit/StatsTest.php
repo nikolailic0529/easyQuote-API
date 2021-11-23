@@ -2,12 +2,13 @@
 
 namespace Tests\Unit;
 
-use App\Contracts\Services\LocationService;
+use App\Contracts\Services\AddressGeocoder;
 use App\DTO\Stats\SummaryRequestData;
 use App\DTO\Summary;
 use App\Models\{Data\Country, Quote\Quote, Quote\WorldwideQuote};
 use App\Services\Stats\StatsAggregationService;
 use Carbon\CarbonPeriod;
+use Grimzy\LaravelMysqlSpatial\Types\Point;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -57,14 +58,14 @@ class StatsTest extends TestCase
      */
     public function testQuotesOnMap()
     {
-        /** @var StatsAggregationService */
+        /** @var StatsAggregationService $aggregator */
         $aggregator = $this->app->make(StatsAggregationService::class);
 
-        /** @var LocationService */
-        $locationService = $this->app->make(LocationService::class);
+        /** @var AddressGeocoder $locationService */
+        $locationService = $this->app->make(AddressGeocoder::class);
 
         $quotes = $aggregator->getQuoteLocations(
-            $locationService->renderPoint(
+            new Point(
                 $this->faker->latitude,
                 $this->faker->longitude
             ),
@@ -86,14 +87,14 @@ class StatsTest extends TestCase
      */
     public function testAssetsOnMap()
     {
-        /** @var StatsAggregationService */
+        /** @var StatsAggregationService $aggregator */
         $aggregator = $this->app->make(StatsAggregationService::class);
 
-        /** @var LocationService */
-        $locationService = $this->app->make(LocationService::class);
+        /** @var AddressGeocoder $locationService */
+        $locationService = $this->app->make(AddressGeocoder::class);
 
         $assets = $aggregator->getAssetTotalLocations(
-            $locationService->renderPoint(
+            new Point(
                 $this->faker->latitude,
                 $this->faker->longitude
             ),
@@ -120,8 +121,8 @@ class StatsTest extends TestCase
         /** @var StatsAggregationService */
         $aggregator = $this->app->make(StatsAggregationService::class);
 
-        /** @var LocationService */
-        $locationService = $this->app->make(LocationService::class);
+        /** @var AddressGeocoder */
+        $locationService = $this->app->make(AddressGeocoder::class);
 
         $customers = $aggregator->getCustomerTotalLocations(
             $locationService->renderPolygon(

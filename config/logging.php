@@ -88,9 +88,25 @@ return [
             'permission' => 0777
         ],
 
+        'geocoding' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/geocoding.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777
+        ],
+
         'vendor-services' => [
           'driver' => 'daily',
             'path' => storage_path('/logs/vendor-services.log'),
+            'level' => 'debug',
+            'days' => 365,
+            'permission' => 0777
+        ],
+
+        'sales-orders' => [
+            'driver' => 'daily',
+            'path' => storage_path('/logs/sales-orders.log'),
             'level' => 'debug',
             'days' => 365,
             'permission' => 0777

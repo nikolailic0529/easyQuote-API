@@ -317,7 +317,7 @@ class WorldwideDistributionController extends Controller
         )->get();
 
         $dataMapper->markExclusivityOfWorldwideDistributionRowsForCustomer(distributorQuote: $worldwideDistribution, rows: $resource);
-
+        $dataMapper->includeContractDurationToContractAssets(distributorQuote: $worldwideDistribution, rows: $resource);
 
         return response()->json(
             data: $resource

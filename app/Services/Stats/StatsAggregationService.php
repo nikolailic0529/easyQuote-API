@@ -160,22 +160,12 @@ class StatsAggregationService
 
     public function getQuoteLocations(Point $center, Polygon $polygon, ?string $userId = null)
     {
-        $where = [];
-
-        if ($userId) {
-            array_push($where, ['user_id', '=', $userId]);
-        }
-
-        $bindings = ['polygon' => (string)$polygon, 'c_lat' => $center->getLat(), 'c_lng' => $center->getLng()];
-
         return QuoteLocationTotal::query()
             ->select('location_id', 'lat', 'lng', 'location_address', 'total_drafted_count', 'total_submitted_count')
             ->selectRaw('`total_drafted_value` * ? AS `total_drafted_value`', [$this->baseRate()])
             ->selectRaw('`total_submitted_value` * ? AS `total_submitted_value`', [$this->baseRate()])
             ->intersects('location_coordinates', $polygon)
             ->orderByDistance('location_coordinates', $center)
-            ->where($where)
-            ->groupBy('user_id')
             ->limit(static::MAP_BOUNDS_LIMIT)
             ->get()
             ->append(['total_value', 'total_count']);

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Contracts\Repositories\SettingRepository;
 use App\Events\DistributionProcessed;
 use App\Models\Address;
 use App\Models\Asset;
@@ -60,13 +59,13 @@ class WorldwideDistributorQuoteTest extends TestCase
         $supplier = factory(OpportunitySupplier::class)->create(['opportunity_id' => $opportunity->getKey()]);
 
         $wwDistribution = factory(WorldwideDistribution::class)->create([
-            'opportunity_supplier_id' => $supplier->getKey()
+            'opportunity_supplier_id' => $supplier->getKey(),
         ]);
 
         $file = UploadedFile::fake()->createWithContent('dist-1.pdf', file_get_contents(base_path('tests/Feature/Data/distributor-files/dist-1.pdf')));
 
         $this->postJson('api/ww-distributions/'.$wwDistribution->getKey().'/distributor-file', [
-            'file' => $file
+            'file' => $file,
         ])
 //            ->dump()
             ->assertCreated()
@@ -96,13 +95,13 @@ class WorldwideDistributorQuoteTest extends TestCase
         $supplier = factory(OpportunitySupplier::class)->create(['opportunity_id' => $opportunity->getKey()]);
 
         $wwDistribution = factory(WorldwideDistribution::class)->create([
-            'opportunity_supplier_id' => $supplier->getKey()
+            'opportunity_supplier_id' => $supplier->getKey(),
         ]);
 
         $file = UploadedFile::fake()->createWithContent('dist-1.pdf', file_get_contents(base_path('tests/Feature/Data/distributor-files/dist-1.pdf')));
 
         $this->postJson('api/ww-distributions/'.$wwDistribution->getKey().'/schedule-file', [
-            'file' => $file
+            'file' => $file,
         ])
             ->assertCreated()
             ->assertJsonStructure([
@@ -153,14 +152,14 @@ class WorldwideDistributorQuoteTest extends TestCase
             'file_type' => 'Worldwide Distributor Price List',
             'quote_file_format_id' => QuoteFileFormat::query()->where('extension', 'pdf')->value('id'),
             'original_file_name' => $fileName,
-            'imported_page' => 2
+            'imported_page' => 2,
         ]))->save();
 
         $wwDistribution = factory(WorldwideDistribution::class, 2)->create([
             'worldwide_quote_id' => $wwQuote->activeVersion->getKey(),
             'worldwide_quote_type' => $wwQuote->activeVersion->getMorphClass(),
             'opportunity_supplier_id' => $supplier->getKey(),
-            'distributor_file_id' => $distributorFile->getKey()
+            'distributor_file_id' => $distributorFile->getKey(),
         ]);
 
         $distributionExpiryDate = $quoteExpiryDate->copy();
@@ -211,9 +210,9 @@ class WorldwideDistributorQuoteTest extends TestCase
             ->assertJsonStructure([
                 'worldwide_distributions' => [
                     '*' => [
-                        'id', 'distribution_expiry_date'
-                    ]
-                ]
+                        'id', 'distribution_expiry_date',
+                    ],
+                ],
             ]);
 
 
@@ -258,7 +257,7 @@ class WorldwideDistributorQuoteTest extends TestCase
             'worldwide_quote_id' => $wwQuote->activeVersion->getKey(),
             'worldwide_quote_type' => $wwQuote->activeVersion->getMorphClass(),
             'distributor_file_id' => $distributorFile->getKey(),
-            'opportunity_supplier_id' => $supplier->getKey()
+            'opportunity_supplier_id' => $supplier->getKey(),
         ]);
 
         $data = $wwDistribution->map(function (WorldwideDistribution $distribution) use ($distributorFile) {
@@ -287,7 +286,7 @@ class WorldwideDistributorQuoteTest extends TestCase
 //            ->dump()
             ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
             ->assertJsonStructure([
-                'message'
+                'message',
             ]);
 
         Event::assertDispatched(DistributionProcessed::class, 2);
@@ -331,11 +330,11 @@ class WorldwideDistributorQuoteTest extends TestCase
 
         /** @var WorldwideQuote $wwQuote */
         $wwQuote = factory(WorldwideQuote::class)->create([
-            'opportunity_id' => $opportunity->getKey()
+            'opportunity_id' => $opportunity->getKey(),
         ]);
 
         $wwQuote->activeVersion->update([
-            'quote_currency_id' => $quoteCurrency->getKey()
+            'quote_currency_id' => $quoteCurrency->getKey(),
         ]);
 
         $fileName = Str::random(40).'.pdf';
@@ -347,7 +346,7 @@ class WorldwideDistributorQuoteTest extends TestCase
             'pages' => 7,
             'file_type' => 'Distributor Price List',
             'quote_file_format_id' => QuoteFileFormat::where('extension', 'pdf')->value('id'),
-            'imported_page' => 2
+            'imported_page' => 2,
         ]))->save();
 
         factory(ImportedRow::class, 10)->create(['quote_file_id' => $distributorFile->getKey(), 'page' => 2]);
@@ -357,7 +356,7 @@ class WorldwideDistributorQuoteTest extends TestCase
             'worldwide_quote_type' => $wwQuote->activeVersion->getMorphClass(),
             'distributor_file_id' => $distributorFile->getKey(),
             'distribution_currency_id' => $distributionCurrency->getKey(),
-            'opportunity_supplier_id' => $supplier->getKey()
+            'opportunity_supplier_id' => $supplier->getKey(),
         ]);
 
         $opportunity = factory(Opportunity::class)->create();
@@ -369,33 +368,32 @@ class WorldwideDistributorQuoteTest extends TestCase
         });
 
         $templateFields = TemplateField::where('is_system', true)->pluck('id', 'name');
+
         $importableColumns = ImportableColumn::where('is_system', true)->pluck('id', 'name');
 
-        $mapping = $wwDistributions->map(function (WorldwideDistribution $distribution) use ($templateFields, $importableColumns) {
-            $mapping = [];
-
-            foreach ($templateFields as $name => $key) {
-                $mapping[] = [
-                    'template_field_id' => $key,
-                    'importable_column_id' => $importableColumns->get($name),
-                ];
-            }
-
+        $fieldsMapping = $templateFields->map(function (string $id, string $name) use ($importableColumns) {
             return [
-                'id' => $distribution->getKey(),
-                'mapping' => $mapping,
+                'template_field_id' => $id,
+                'importable_column_id' => $importableColumns->get($name) ?? factory(ImportableColumn::class)->create()->getKey(),
             ];
-        })->all();
+        })
+            ->values()
+            ->all();
 
-        $this->postJson('api/ww-distributions/mapping', ['worldwide_distributions' => $mapping, 'stage' => 'Mapping'])
-//            ->dump()
+        $distributorQuotesMapping = $wwDistributions->map(fn(WorldwideDistribution $distribution) => [
+            'id' => $distribution->getKey(),
+            'mapping' => $fieldsMapping,
+        ])->all();
+
+        $this->postJson('api/ww-distributions/mapping', ['worldwide_distributions' => $distributorQuotesMapping, 'stage' => 'Mapping'])
+            ->dump()
             ->assertNoContent();
 
         $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'?'.Arr::query([
                 'include' => [
                     'worldwide_distributions.mapping',
-                    'worldwide_distributions.mapped_rows'
-                ]
+                    'worldwide_distributions.mapped_rows',
+                ],
             ]))
 //            ->dump()
             ->assertOk()
@@ -406,11 +404,11 @@ class WorldwideDistributorQuoteTest extends TestCase
                         'id',
                         'mapped_rows' => [
                             '*' => [
-                                'id'
-                            ]
-                        ]
-                    ]
-                ]
+                                'id',
+                            ],
+                        ],
+                    ],
+                ],
             ]);
 
         $firstMappedRowKey = $response->json('worldwide_distributions.0.mapped_rows.0.id');
@@ -419,7 +417,7 @@ class WorldwideDistributorQuoteTest extends TestCase
 
         $distributionsResponse = $response->json('worldwide_distributions');
 
-        $expectedMapping = collect($mapping)->keyBy('id');
+        $expectedMapping = collect($distributorQuotesMapping)->keyBy('id');
 
         foreach ($distributionsResponse as $distribution) {
             $this->assertArrayHasKey('id', $distribution);
@@ -443,7 +441,7 @@ class WorldwideDistributorQuoteTest extends TestCase
         // The rows should not be mapped again in this case.
         $newMapping = [];
 
-        foreach ($mapping as $distributorQuoteMapping) {
+        foreach ($distributorQuotesMapping as $distributorQuoteMapping) {
             $distributorQuoteMapping['mapping'][0]['is_editable'] = true;
 
             // Since a new version is created, we have to update entity keys accordingly.
@@ -459,8 +457,8 @@ class WorldwideDistributorQuoteTest extends TestCase
         $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'?'.Arr::query([
                 'include' => [
                     'worldwide_distributions.mapping',
-                    'worldwide_distributions.mapped_rows'
-                ]
+                    'worldwide_distributions.mapped_rows',
+                ],
             ]))
 //            ->dump()
             ->assertOk()
@@ -471,11 +469,11 @@ class WorldwideDistributorQuoteTest extends TestCase
                         'id',
                         'mapped_rows' => [
                             '*' => [
-                                'id'
-                            ]
-                        ]
-                    ]
-                ]
+                                'id',
+                            ],
+                        ],
+                    ],
+                ],
             ]);
 
         $this->assertSame($firstMappedRowKey, $response->json('worldwide_distributions.0.mapped_rows.0.id'));
@@ -513,16 +511,16 @@ class WorldwideDistributorQuoteTest extends TestCase
                     'margin_value' => 10.00,
                     'tax_value' => 5.00,
                     'margin_method' => 'No Margin',
-                    'quote_type' => 'New'
+                    'quote_type' => 'New',
                 ],
                 [
                     'id' => $wwDistributionWithoutMargin->getKey(),
                     'margin_value' => null,
                     'margin_method' => null,
                     'quote_type' => null,
-                ]
+                ],
             ],
-            'stage' => 'Margin'
+            'stage' => 'Margin',
         ];
 
         $this->postJson('api/ww-distributions/margin', $marginData)
@@ -584,7 +582,7 @@ class WorldwideDistributorQuoteTest extends TestCase
 
         $wwDistributions->each(function (WorldwideDistribution $distribution) {
             $distributorFile = factory(QuoteFile::class)->create([
-                'file_type' => QFT_WWPL
+                'file_type' => QFT_WWPL,
             ]);
             $mappedRows = factory(MappedRow::class, 10)->create(['quote_file_id' => $distributorFile->getKey()]);
 
@@ -614,7 +612,7 @@ class WorldwideDistributorQuoteTest extends TestCase
                 'sort_rows_groups_direction' => 'desc',
                 'reject' => false,
                 'use_groups' => true,
-            ]
+            ],
         ]);
 
         $this->postJson('api/ww-distributions/mapping-review', ['worldwide_distributions' => $selection->all(), 'stage' => 'Review'])
@@ -630,11 +628,11 @@ class WorldwideDistributorQuoteTest extends TestCase
                         'id',
                         'mapped_rows' => [
                             '*' => [
-                                'id', 'is_selected'
-                            ]
-                        ]
-                    ]
-                ]
+                                'id', 'is_selected',
+                            ],
+                        ],
+                    ],
+                ],
             ]);
 
         $this->assertEquals('Review', $response->json('stage'));
@@ -684,7 +682,7 @@ class WorldwideDistributorQuoteTest extends TestCase
 
         $wwDistributions->each(function (WorldwideDistribution $distribution) {
             $distributorFile = factory(QuoteFile::class)->create([
-                'file_type' => QFT_WWPL
+                'file_type' => QFT_WWPL,
             ]);
             $mappedRows = factory(MappedRow::class, 10)->create(['quote_file_id' => $distributorFile->getKey()]);
 
@@ -708,7 +706,7 @@ class WorldwideDistributorQuoteTest extends TestCase
         $this->postJson('api/ww-distributions/mapping-review', ['worldwide_distributions' => $selection, 'stage' => 'Review'])
             ->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY)
             ->assertJsonValidationErrors([
-                'worldwide_distributions.0.use_groups' => 'must contain one group at least to use grouping'
+                'worldwide_distributions.0.use_groups' => 'must contain one group at least to use grouping',
             ], 'Error.original');
     }
 
@@ -730,11 +728,11 @@ class WorldwideDistributorQuoteTest extends TestCase
         $wwDistribution = factory(WorldwideDistribution::class)->create([
             'worldwide_quote_id' => $wwQuote->activeVersion->getKey(),
             'worldwide_quote_type' => $wwQuote->activeVersion->getMorphClass(),
-            'opportunity_supplier_id' => $supplier->getKey()
+            'opportunity_supplier_id' => $supplier->getKey(),
         ]);
 
         $distributorFile = factory(QuoteFile::class)->create([
-            'file_type' => QFT_WWPL
+            'file_type' => QFT_WWPL,
         ]);
         $mappedRows = factory(MappedRow::class, 10)->create(['quote_file_id' => $distributorFile->getKey()]);
 
@@ -743,7 +741,7 @@ class WorldwideDistributorQuoteTest extends TestCase
         $groupData = [
             'group_name' => Str::random(40),
             'search_text' => Str::random(40),
-            'rows' => $mappedRows->random(2)->modelKeys()
+            'rows' => $mappedRows->random(2)->modelKeys(),
         ];
 
         $response = $this->postJson('api/ww-distributions/'.$wwDistribution->getKey().'/rows-groups', $groupData)
@@ -754,7 +752,7 @@ class WorldwideDistributorQuoteTest extends TestCase
                 'rows_sum',
                 'rows_count',
                 'rows' => [
-                    '*' => ['id', 'is_customer_exclusive_asset']
+                    '*' => ['id', 'is_customer_exclusive_asset'],
                 ],
                 'group_name',
                 'search_text',
@@ -785,11 +783,11 @@ class WorldwideDistributorQuoteTest extends TestCase
         $wwDistribution = factory(WorldwideDistribution::class)->create([
             'worldwide_quote_id' => $wwQuote->activeVersion->getKey(),
             'worldwide_quote_type' => $wwQuote->activeVersion->getMorphClass(),
-            'opportunity_supplier_id' => $supplier->getKey()
+            'opportunity_supplier_id' => $supplier->getKey(),
         ]);
 
         $distributorFile = factory(QuoteFile::class)->create([
-            'file_type' => QFT_WWPL
+            'file_type' => QFT_WWPL,
         ]);
         $mappedRows = factory(MappedRow::class, 10)->create(['quote_file_id' => $distributorFile->getKey()]);
 
@@ -803,7 +801,7 @@ class WorldwideDistributorQuoteTest extends TestCase
 
         $this->postJson('api/ww-distributions/'.$wwDistribution->getKey().'/rows-lookup', [
             'input' => '818208-B21, CZJ8170VHN',
-            'rows_group_id' => $rowsGroup->getKey()
+            'rows_group_id' => $rowsGroup->getKey(),
         ])
             ->assertOk()
             ->assertJsonStructure([
@@ -821,7 +819,7 @@ class WorldwideDistributorQuoteTest extends TestCase
                     'searchable',
                     'service_level_description',
                     'is_selected',
-                    'is_customer_exclusive_asset'
+                    'is_customer_exclusive_asset',
                 ],
             ]);
     }
@@ -844,12 +842,12 @@ class WorldwideDistributorQuoteTest extends TestCase
         $wwDistribution = factory(WorldwideDistribution::class)->create([
             'worldwide_quote_id' => $wwQuote->activeVersion->getKey(),
             'worldwide_quote_type' => $wwQuote->activeVersion->getMorphClass(),
-            'opportunity_supplier_id' => $supplier->getKey()
+            'opportunity_supplier_id' => $supplier->getKey(),
         ]);
 
 
         $distributorFile = factory(QuoteFile::class)->create([
-            'file_type' => QFT_WWPL
+            'file_type' => QFT_WWPL,
         ]);
         $mappedRows = factory(MappedRow::class, 10)->create(['quote_file_id' => $distributorFile->getKey()]);
 
@@ -860,7 +858,7 @@ class WorldwideDistributorQuoteTest extends TestCase
         $groupData = [
             'group_name' => Str::random(40),
             'search_text' => Str::random(40),
-            'rows' => $mappedRows->random(2)->modelKeys()
+            'rows' => $mappedRows->random(2)->modelKeys(),
         ];
 
         $response = $this->patchJson('api/ww-distributions/'.$wwDistribution->getKey().'/rows-groups/'.$rowsGroup->getKey(), $groupData)
@@ -869,7 +867,7 @@ class WorldwideDistributorQuoteTest extends TestCase
                 'id',
                 'worldwide_distribution_id',
                 'rows' => [
-                    '*' => ['id', 'is_customer_exclusive_asset']
+                    '*' => ['id', 'is_customer_exclusive_asset'],
                 ],
                 'rows_sum',
                 'rows_count',
@@ -903,12 +901,12 @@ class WorldwideDistributorQuoteTest extends TestCase
         $wwDistribution = factory(WorldwideDistribution::class)->create([
             'worldwide_quote_id' => $wwQuote->activeVersion->getKey(),
             'worldwide_quote_type' => $wwQuote->activeVersion->getMorphClass(),
-            'opportunity_supplier_id' => $supplier->getKey()
+            'opportunity_supplier_id' => $supplier->getKey(),
         ]);
 
 
         $distributorFile = factory(QuoteFile::class)->create([
-            'file_type' => QFT_WWPL
+            'file_type' => QFT_WWPL,
         ]);
         $mappedRows = factory(MappedRow::class, 10)->create(['quote_file_id' => $distributorFile->getKey()]);
 
@@ -938,12 +936,12 @@ class WorldwideDistributorQuoteTest extends TestCase
         $wwDistribution = factory(WorldwideDistribution::class)->create([
             'worldwide_quote_id' => $wwQuote->activeVersion->getKey(),
             'worldwide_quote_type' => $wwQuote->activeVersion->getMorphClass(),
-            'opportunity_supplier_id' => $supplier->getKey()
+            'opportunity_supplier_id' => $supplier->getKey(),
         ]);
 
 
         $distributorFile = factory(QuoteFile::class)->create([
-            'file_type' => QFT_WWPL
+            'file_type' => QFT_WWPL,
         ]);
         $mappedRows = factory(MappedRow::class, 10)->create(['quote_file_id' => $distributorFile->getKey()]);
 
@@ -965,7 +963,7 @@ class WorldwideDistributorQuoteTest extends TestCase
                     'id',
                     'worldwide_distribution_id',
                     'rows' => [
-                        '*' => ['id', 'is_customer_exclusive_asset']
+                        '*' => ['id', 'is_customer_exclusive_asset'],
                     ],
                     'rows_sum',
                     'rows_count',
@@ -979,7 +977,7 @@ class WorldwideDistributorQuoteTest extends TestCase
                     'id',
                     'worldwide_distribution_id',
                     'rows' => [
-                        '*' => ['id', 'is_customer_exclusive_asset']
+                        '*' => ['id', 'is_customer_exclusive_asset'],
                     ],
                     'rows_sum',
                     'rows_count',
@@ -988,7 +986,7 @@ class WorldwideDistributorQuoteTest extends TestCase
                     'is_selected',
                     'created_at',
                     'updated_at',
-                ]
+                ],
             ]);
 
         // TODO: test that rows are moved to another group.
@@ -1015,24 +1013,24 @@ class WorldwideDistributorQuoteTest extends TestCase
             ->assertJsonStructure([
                 'pre_pay' => [
                     '*' => [
-                        'id', 'name', 'durations' => ['duration' => ['value', 'duration']]
-                    ]
+                        'id', 'name', 'durations' => ['duration' => ['value', 'duration']],
+                    ],
                 ],
                 'multi_year' => [
                     '*' => [
-                        'id', 'name', 'durations' => ['duration' => ['value', 'duration']]
-                    ]
+                        'id', 'name', 'durations' => ['duration' => ['value', 'duration']],
+                    ],
                 ],
                 'promotional' => [
                     '*' => [
-                        'id', 'name', 'value', 'minimum_limit'
-                    ]
+                        'id', 'name', 'value', 'minimum_limit',
+                    ],
                 ],
                 'snd' => [
                     '*' => [
-                        'id', 'name', 'value'
-                    ]
-                ]
+                        'id', 'name', 'value',
+                    ],
+                ],
             ]);
     }
 
@@ -1042,13 +1040,13 @@ class WorldwideDistributorQuoteTest extends TestCase
         $country = Country::query()->first();
 
         $distributorFile = factory(QuoteFile::class)->create([
-            'file_type' => QFT_WWPL
+            'file_type' => QFT_WWPL,
         ]);
         $distributorFile->mappedRows()->create(
             [
                 'quote_file_id' => $distributorFile->getKey(),
                 'is_selected' => true,
-                'price' => 3_000
+                'price' => 3_000,
             ]
         );
 
@@ -1067,20 +1065,20 @@ class WorldwideDistributorQuoteTest extends TestCase
         $promotionalDiscount = factory(PromotionalDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey(), 'value' => 12, 'minimum_limit' => 1000]);
         $prePayDiscount = factory(PrePayDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey(),
             'durations' => [
-                'duration' => ['value' => 3, 'duration' => 3]
-            ]
+                'duration' => ['value' => 3, 'duration' => 3],
+            ],
         ]);
         $multiYearDiscount = factory(MultiYearDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey(),
             'durations' => [
-                'duration' => ['value' => 2, 'duration' => 3]
-            ]
+                'duration' => ['value' => 2, 'duration' => 3],
+            ],
         ]);
 
         $response = $this->postJson('api/ww-distributions/'.$wwDistribution->getKey().'/discounts-margin', [
             'sn_discount' => $snDiscount->getKey(),
             'promotional_discount' => $promotionalDiscount->getKey(),
             'multi_year_discount' => $multiYearDiscount->getKey(),
-            'pre_pay_discount' => $prePayDiscount->getKey()
+            'pre_pay_discount' => $prePayDiscount->getKey(),
         ])
 //            ->dump()
             ->assertOk()
@@ -1092,7 +1090,7 @@ class WorldwideDistributorQuoteTest extends TestCase
                 'margin_after_pre_pay_discount',
                 'margin_after_sn_discount',
                 'margin_after_multi_year_discount',
-                'margin_after_promotional_discount'
+                'margin_after_promotional_discount',
             ]);
 
         $this->assertEquals('3000.00', $response->json('total_price'));
@@ -1116,14 +1114,14 @@ class WorldwideDistributorQuoteTest extends TestCase
         $country = Country::query()->first();
 
         $distributorFile = factory(QuoteFile::class)->create([
-            'file_type' => QFT_WWPL
+            'file_type' => QFT_WWPL,
         ]);
 
         $distributorFile->mappedRows()->create(
             [
                 'quote_file_id' => $distributorFile->getKey(),
                 'is_selected' => true,
-                'price' => 3_000
+                'price' => 3_000,
             ]
         );
 
@@ -1133,7 +1131,7 @@ class WorldwideDistributorQuoteTest extends TestCase
             'country_id' => $country->getKey(),
             'distributor_file_id' => $distributorFile->getKey(),
             'buy_price' => $buyPrice = 2_000,
-            'sn_discount_id' => $snDiscount->getKey()
+            'sn_discount_id' => $snDiscount->getKey(),
 
         ]);
 
@@ -1143,7 +1141,7 @@ class WorldwideDistributorQuoteTest extends TestCase
 
         $response = $this->postJson('api/ww-distributions/'.$distributorQuote->getKey().'/country-margin-tax-margin', [
             'margin_value' => 10,
-            'tax_value' => 10
+            'tax_value' => 10,
         ])
 //            ->dump()
             ->assertOk()
@@ -1156,7 +1154,7 @@ class WorldwideDistributorQuoteTest extends TestCase
                 'margin_after_sn_discount',
                 'margin_after_multi_year_discount',
                 'margin_after_promotional_discount',
-                'final_margin'
+                'final_margin',
             ]);
 
         $this->assertEquals('3000.00', $response->json('total_price'));
@@ -1177,13 +1175,13 @@ class WorldwideDistributorQuoteTest extends TestCase
         $country = Country::query()->first();
 
         $distributorFile = factory(QuoteFile::class)->create([
-            'file_type' => QFT_WWPL
+            'file_type' => QFT_WWPL,
         ]);
         $distributorFile->mappedRows()->create(
             [
                 'quote_file_id' => $distributorFile->getKey(),
                 'is_selected' => true,
-                'price' => 3_000
+                'price' => 3_000,
             ]
         );
 
@@ -1199,7 +1197,7 @@ class WorldwideDistributorQuoteTest extends TestCase
         $this->authenticateApi();
 
         $this->postJson('api/ww-distributions/'.$wwDistribution->getKey().'/custom-discount-margin', [
-            'custom_discount' => 10.00
+            'custom_discount' => 10.00,
         ])
 //            ->dump()
             ->assertOk()
@@ -1212,7 +1210,7 @@ class WorldwideDistributorQuoteTest extends TestCase
                 'margin_after_multi_year_discount',
                 'margin_after_pre_pay_discount',
                 'margin_after_promotional_discount',
-                'margin_after_sn_discount'
+                'margin_after_sn_discount',
             ])
             ->assertJson([
                 'total_price' => '3000.00',
@@ -1235,13 +1233,13 @@ class WorldwideDistributorQuoteTest extends TestCase
         $country = Country::query()->first();
 
         $distributorFile = factory(QuoteFile::class)->create([
-            'file_type' => QFT_WWPL
+            'file_type' => QFT_WWPL,
         ]);
         $distributorFile->mappedRows()->create(
             [
                 'quote_file_id' => $distributorFile->getKey(),
                 'is_selected' => true,
-                'price' => 3_000
+                'price' => 3_000,
             ]
         );
 
@@ -1257,7 +1255,7 @@ class WorldwideDistributorQuoteTest extends TestCase
             'opportunity_supplier_id' => $supplier->getKey(),
             'country_id' => $country->getKey(),
             'distributor_file_id' => $distributorFile->getKey(),
-            'buy_price' => $buyPrice = 2_000
+            'buy_price' => $buyPrice = 2_000,
         ]);
 
         $wwDistributions->each(function (WorldwideDistribution $worldwideDistribution) use ($vendor, $opportunity) {
@@ -1273,13 +1271,13 @@ class WorldwideDistributorQuoteTest extends TestCase
         $promotionalDiscount = factory(PromotionalDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey(), 'value' => 12, 'minimum_limit' => 1000]);
         $prePayDiscount = factory(PrePayDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey(),
             'durations' => [
-                'duration' => ['value' => 3, 'duration' => 3]
-            ]
+                'duration' => ['value' => 3, 'duration' => 3],
+            ],
         ]);
         $multiYearDiscount = factory(MultiYearDiscount::class)->create(['vendor_id' => $vendor->getKey(), 'country_id' => $country->getKey(),
             'durations' => [
-                'duration' => ['value' => 2, 'duration' => 3]
-            ]
+                'duration' => ['value' => 2, 'duration' => 3],
+            ],
         ]);
 
         $discountsData = $wwDistributions->map(function (WorldwideDistribution $worldwideDistribution) use ($prePayDiscount, $multiYearDiscount, $promotionalDiscount, $snDiscount) {
@@ -1289,8 +1287,8 @@ class WorldwideDistributorQuoteTest extends TestCase
                     'sn_discount' => $snDiscount->getKey(),
                     'promotional_discount' => $promotionalDiscount->getKey(),
                     'multi_year_discount' => $multiYearDiscount->getKey(),
-                    'pre_pay_discount' => $prePayDiscount->getKey()
-                ]
+                    'pre_pay_discount' => $prePayDiscount->getKey(),
+                ],
             ];
         });
 
@@ -1308,9 +1306,9 @@ class WorldwideDistributorQuoteTest extends TestCase
                             'pre_pay_discount' => ['id', 'name', 'durations' => ['duration' => ['value', 'duration']]],
                             'promotional_discount' => ['id', 'name', 'minimum_limit', 'value'],
                             'sn_discount' => ['id', 'name', 'value'],
-                        ]
-                    ]
-                ]
+                        ],
+                    ],
+                ],
             ]);
 
         $this->assertEquals('Discount', $response->json('stage'));
@@ -1327,13 +1325,13 @@ class WorldwideDistributorQuoteTest extends TestCase
         $country = Country::query()->first();
 
         $distributorFile = factory(QuoteFile::class)->create([
-            'file_type' => QFT_WWPL
+            'file_type' => QFT_WWPL,
         ]);
         $distributorFile->mappedRows()->create(
             [
                 'quote_file_id' => $distributorFile->getKey(),
                 'is_selected' => true,
-                'price' => 3_000
+                'price' => 3_000,
             ]
         );
 
@@ -1349,7 +1347,7 @@ class WorldwideDistributorQuoteTest extends TestCase
             'opportunity_supplier_id' => $supplier->getKey(),
             'country_id' => $country->getKey(),
             'distributor_file_id' => $distributorFile->getKey(),
-            'buy_price' => $buyPrice = 2_000
+            'buy_price' => $buyPrice = 2_000,
         ]);
 
         $wwDistributions->each(function (WorldwideDistribution $worldwideDistribution) use ($vendor, $opportunity) {
@@ -1365,7 +1363,7 @@ class WorldwideDistributorQuoteTest extends TestCase
         $discountsData = $wwDistributions->map(function (WorldwideDistribution $worldwideDistribution) {
             return [
                 'id' => $worldwideDistribution->getKey(),
-                'custom_discount' => mt_rand(0, 50)
+                'custom_discount' => mt_rand(0, 50),
             ];
         });
 
@@ -1376,9 +1374,9 @@ class WorldwideDistributorQuoteTest extends TestCase
                 'stage',
                 'worldwide_distributions' => [
                     '*' => [
-                        'id', 'custom_discount'
-                    ]
-                ]
+                        'id', 'custom_discount',
+                    ],
+                ],
             ]);
 
         $this->assertEquals('Discount', $response->json('stage'));
@@ -1424,7 +1422,7 @@ class WorldwideDistributorQuoteTest extends TestCase
                 'system_handle' => $this->faker->text(),
                 'purchase_order_number' => $this->faker->text(),
                 'vat_number' => $this->faker->text(),
-                'additional_details' => $this->faker->text()
+                'additional_details' => $this->faker->text(),
             ];
         });
 
@@ -1444,9 +1442,9 @@ class WorldwideDistributorQuoteTest extends TestCase
                         'system_handle',
                         'purchase_order_number',
                         'vat_number',
-                        'additional_details'
-                    ]
-                ]
+                        'additional_details',
+                    ],
+                ],
             ]);
 
         $this->assertEquals('Additional Detail', $response->json('stage'));
@@ -1502,7 +1500,7 @@ class WorldwideDistributorQuoteTest extends TestCase
         $supplier = factory(OpportunitySupplier::class)->create(['opportunity_id' => $opportunity->getKey()]);
 
         $distributorFile = factory(QuoteFile::class)->create([
-            'file_type' => QFT_WWPL
+            'file_type' => QFT_WWPL,
         ]);
 
         $rows = factory(MappedRow::class)->create(['quote_file_id' => $distributorFile->getKey(), 'price' => 10_000, 'is_selected' => true]);
@@ -1513,7 +1511,7 @@ class WorldwideDistributorQuoteTest extends TestCase
             'worldwide_quote_type' => $wwQuote->activeVersion->getMorphClass(),
             'buy_price' => 10_000,
             'distributor_file_id' => $distributorFile->getKey(),
-            'opportunity_supplier_id' => $supplier->getKey()
+            'opportunity_supplier_id' => $supplier->getKey(),
         ]);
 
         $response = $this->getJson('api/ww-quotes/'.$wwQuote->getKey().'?include[]=worldwide_distributions.summary')->assertOk()
@@ -1523,9 +1521,9 @@ class WorldwideDistributorQuoteTest extends TestCase
                     '*' => [
                         'id',
                         'margin_percentage_after_custom_discount',
-                        'summary' => ['final_total_price', 'total_price', 'buy_price', 'margin_percentage']
-                    ]
-                ]
+                        'summary' => ['final_total_price', 'total_price', 'buy_price', 'margin_percentage'],
+                    ],
+                ],
             ]);
 
         $this->assertEquals(10_000, $response->json('worldwide_distributions.0.summary.total_price'));
@@ -1543,9 +1541,9 @@ class WorldwideDistributorQuoteTest extends TestCase
                     '*' => [
                         'id',
                         'margin_percentage_after_custom_discount',
-                        'summary' => ['final_total_price', 'total_price', 'buy_price', 'margin_percentage']
-                    ]
-                ]
+                        'summary' => ['final_total_price', 'total_price', 'buy_price', 'margin_percentage'],
+                    ],
+                ],
             ]);
 
         $this->assertEquals(10_000, $response->json('worldwide_distributions.0.summary.total_price'));
@@ -1562,9 +1560,9 @@ class WorldwideDistributorQuoteTest extends TestCase
                     '*' => [
                         'id',
                         'margin_percentage_after_custom_discount',
-                        'summary' => ['final_total_price', 'total_price', 'buy_price', 'margin_percentage']
-                    ]
-                ]
+                        'summary' => ['final_total_price', 'total_price', 'buy_price', 'margin_percentage'],
+                    ],
+                ],
             ]);
 
         $this->assertEquals(10_000, $response->json('worldwide_distributions.0.summary.total_price'));
@@ -1589,10 +1587,10 @@ class WorldwideDistributorQuoteTest extends TestCase
                         'margin_percentage_after_custom_discount',
                         'summary' => ['final_total_price', 'total_price', 'buy_price', 'margin_percentage'],
                         'predefined_discounts' => [
-                            'multi_year_discount' => ['id', 'name', 'durations' => ['duration' => ['value', 'duration']]]
-                        ]
-                    ]
-                ]
+                            'multi_year_discount' => ['id', 'name', 'durations' => ['duration' => ['value', 'duration']]],
+                        ],
+                    ],
+                ],
             ]);
 
         $this->assertEquals(0, $response->json('worldwide_distributions.0.predefined_discounts.margin_percentage'));
@@ -1621,7 +1619,7 @@ class WorldwideDistributorQuoteTest extends TestCase
         $supplier = factory(OpportunitySupplier::class)->create(['opportunity_id' => $opportunity->getKey()]);
 
         $distributorFile = factory(QuoteFile::class)->create([
-            'file_type' => QFT_WWPL
+            'file_type' => QFT_WWPL,
         ]);
 
         /** @var MappedRow $row */
@@ -1634,7 +1632,7 @@ class WorldwideDistributorQuoteTest extends TestCase
             'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
             'buy_price' => 10_000,
             'distributor_file_id' => $distributorFile->getKey(),
-            'opportunity_supplier_id' => $supplier->getKey()
+            'opportunity_supplier_id' => $supplier->getKey(),
         ]);
 
         $rowFieldsData = [
@@ -1643,7 +1641,7 @@ class WorldwideDistributorQuoteTest extends TestCase
             'date_from' => '2021-01-22',
             'date_to' => '2022-01-24',
             'price' => '120000.10',
-            'original_price' => 120000.10 * .9
+            'original_price' => 120000.10 * .9,
         ];
 
         /** @var Asset $sameAsset */
@@ -1660,7 +1658,7 @@ class WorldwideDistributorQuoteTest extends TestCase
             ->assertJson($rowFieldsData)
             ->assertJsonStructure([
                 'is_customer_exclusive_asset',
-                'owned_by_customer'
+                'owned_by_customer',
             ]);
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\SalesOrders;
 use App\Contracts\Services\ProcessesSalesOrderState;
 use App\DTO\SalesOrder\Submit\SubmitSalesOrderResult;
 use App\Http\Controllers\Controller;
+use App\Services\SalesOrder\RefreshSalesOrderStatusService;
 use App\Http\Requests\{SalesOrder\CancelSalesOrder, SalesOrder\DraftSalesOrder, SalesOrder\UpdateSalesOrder};
 use App\Http\Resources\SalesOrder\SalesOrderState;
 use App\Models\SalesOrder;
@@ -192,6 +193,25 @@ class SalesOrderController extends Controller
         $this->authorize('cancel', $salesOrder);
 
         return $this->orderProcessor->cancelSalesOrder($request->getCancelSalesOrderData(), $salesOrder);
+    }
+
+    /**
+     * Refresh status of the existing Sales Order from the API.
+     *
+     * @param RefreshSalesOrderStatusService $service
+     * @param SalesOrder $salesOrder
+     * @return JsonResponse
+     * @throws AuthorizationException
+     */
+    public function refreshSalesOrderStatus(RefreshSalesOrderStatusService $service, SalesOrder $salesOrder): JsonResponse
+    {
+        $this->authorize('view', $salesOrder);
+
+        $service->refreshStatusOf($salesOrder);
+
+        return response()->json(
+            SalesOrderState::make($salesOrder)
+        );
     }
 
     /**

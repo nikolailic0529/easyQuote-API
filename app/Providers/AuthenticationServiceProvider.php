@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Contracts\Services\AuthServiceInterface;
+use App\Services\Auth\AuthenticatedCase;
 use App\Services\Auth\AuthService;
 use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\ServiceProvider;
@@ -22,6 +23,8 @@ class AuthenticationServiceProvider extends ServiceProvider implements Deferrabl
         $this->app->alias(AuthServiceInterface::class, 'auth.service');
 
         $this->app->alias(ClientRepository::class, 'passport.client.repository');
+
+        $this->app->alias(AuthenticatedCase::class, 'auth.case');
     }
 
     public function provides(): array
@@ -29,6 +32,7 @@ class AuthenticationServiceProvider extends ServiceProvider implements Deferrabl
         return [
             AuthServiceInterface::class,
             'auth.service',
+            'auth.case',
             'passport.client.repository',
         ];
     }

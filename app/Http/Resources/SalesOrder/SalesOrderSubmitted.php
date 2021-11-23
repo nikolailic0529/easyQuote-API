@@ -32,6 +32,15 @@ class SalesOrderSubmitted extends JsonResource
             'company_name' => $this->company_name,
             'rfq_number' => $this->rfq_number,
             'order_type' => $this->order_type,
+            'permissions' => [
+                'view' => $request->user()->can('view', $this->resource),
+                'update' => $request->user()->can('update', $this->resource),
+                'delete' => $request->user()->can('delete', $this->resource),
+                'resubmit' => $request->user()->can('resubmit', $this->resource),
+                'refresh_status' => $request->user()->can('refreshStatus', $this->resource),
+                'cancel' => $request->user()->can('cancel', $this->resource),
+                'export' => $request->user()->can('export', $this->resource),
+            ],
             'created_at' => $this->created_at,
             'activated_at' => $this->activated_at
         ];

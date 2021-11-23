@@ -373,6 +373,7 @@ class WorldwideQuoteAssetController extends Controller
         )->get();
 
         $dataMapper->markExclusivityOfWorldwidePackQuoteAssetsForCustomer(quote: $worldwideQuote, assets: $resource);
+        $dataMapper->includeContractDurationToPackAssets(quote: $worldwideQuote, assets: $resource);
 
         return response()->json(
             AssetLookupResult::collection($resource)

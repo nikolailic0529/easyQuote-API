@@ -180,6 +180,7 @@ class WorldwideQuoteCalc
     {
         return (float)$quote->activeVersion
             ->assets()
+            ->where('is_selected', true)
             ->get()
             ->sum(function (WorldwideQuoteAsset $asset) use ($quote): float {
 

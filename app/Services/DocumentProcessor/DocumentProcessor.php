@@ -6,7 +6,7 @@ use App\Contracts\Repositories\SettingRepository;
 use App\Contracts\Services\ManagesDocumentProcessors;
 use App\Contracts\Services\ProcessesQuoteFile;
 use App\DTO\MappedRowData;
-use App\DTO\MappedRowSettings;
+use App\DTO\MappingConfig;
 use App\DTO\RowMapping;
 use App\Enum\Lock;
 use App\Models\{DocumentProcessLog, QuoteFile\QuoteFile};
@@ -142,18 +142,18 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
         }
     }
 
-    public function transitImportedRowsToMappedRows(QuoteFile $quoteFile, RowMapping $rowMapping, ?MappedRowSettings $rowSettings = null)
+    public function transitImportedRowsToMappedRows(QuoteFile $quoteFile, RowMapping $rowMapping, ?MappingConfig $mappingConfig = null)
     {
-        $rowSettings ??= new MappedRowSettings;
+        $mappingConfig ??= new MappingConfig;
 
         /** @var MappedRow[] */
         $mappedRows = [];
 
         $quoteFile->rowsData()
             ->where('page', '>=', $quoteFile->imported_page)
-            ->chunk(100, function (Collection $rows) use (&$mappedRows, $rowMapping, $rowSettings) {
+            ->chunk(100, function (Collection $rows) use (&$mappedRows, $rowMapping, $mappingConfig) {
                 foreach ($rows as $row) {
-                    $mappedRow = $this->collateImportedRow($row, $rowMapping, $rowSettings);
+                    $mappedRow = $this->collateImportedRow($row, $rowMapping, $mappingConfig);
 
                     if (false === $this->ensureAnyRequiredFieldPresentOnMappedRow($mappedRow)) {
                         continue;
@@ -190,7 +190,7 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
         });
     }
 
-    protected function collateImportedRow(ImportedRow $row, RowMapping $mapping, MappedRowSettings $rowSettings): MappedRowData
+    protected function collateImportedRow(ImportedRow $row, RowMapping $mapping, MappingConfig $mappingConfig): MappedRowData
     {
         /** @var array $mappedRowData */
         $mappedRowData = [
@@ -229,28 +229,32 @@ class DocumentProcessor extends Manager implements ManagesDocumentProcessors
             return (new DateParser($date))->parseSilent();
         };
 
-        $dateFrom = $mappedRowData['date_from'] = $parseDate($mappedRowData['date_from']) ?? $rowSettings->default_date_from;
-        $dateTo = $mappedRowData['date_to'] = $parseDate($mappedRowData['date_to']) ?? $rowSettings->default_date_to;
+        $dateFrom = $mappedRowData['date_from'] = $parseDate($mappedRowData['date_from']) ?? $mappingConfig->default_date_from;
+        $dateTo = $mappedRowData['date_to'] = $parseDate($mappedRowData['date_to']) ?? $mappingConfig->default_date_to;
 
-        $mappedRowData['qty'] = with($mappedRowData['qty'], function ($quantity) use ($rowSettings) {
+        $mappedRowData['qty'] = with($mappedRowData['qty'], function ($quantity) use ($mappingConfig) {
             if (blank($quantity)) {
-                return $rowSettings->default_qty;
+                return $mappingConfig->default_qty;
             }
 
             return (int)$quantity;
         });
 
-        $mappedRowData['original_price'] = (float)transform($mappedRowData['price'], function ($price) use ($dateFrom, $dateTo, $row, $rowSettings) {
+        $mappedRowData['original_price'] = (float)transform($mappedRowData['price'], function ($price) use ($dateFrom, $dateTo, $row, $mappingConfig) {
             $value = PriceParser::parseAmount($price);
 
-            if ($row->is_one_pay || false === $rowSettings->calculate_list_price) {
+            if ($row->is_one_pay || false === $mappingConfig->calculate_list_price) {
                 return $value;
+            }
+
+            if ($mappingConfig->is_contract_duration_checked) {
+                return $mappingConfig->contract_duration?->months * $value;
             }
 
             return $dateFrom->diffInMonths($dateTo) * $value;
         });
 
-        $mappedRowData['price'] = $mappedRowData['original_price'] * $rowSettings->exchange_rate_value;
+        $mappedRowData['price'] = $mappedRowData['original_price'] * $mappingConfig->exchange_rate_value;
 
         return new MappedRowData($mappedRowData);
     }

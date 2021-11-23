@@ -28,11 +28,11 @@ class UpdateOpportunity extends FormRequest
         return [
             'pipeline_id' => [
                 'bail', 'uuid',
-                Rule::exists(Pipeline::class, 'id')->whereNull('deleted_at')
+                Rule::exists(Pipeline::class, 'id')->whereNull('deleted_at'),
             ],
             'contract_type_id' => [
                 'bail', 'required', 'uuid',
-                Rule::exists(ContractType::class, 'id')
+                Rule::exists(ContractType::class, 'id'),
             ],
             'primary_account_id' => [
                 'bail', 'uuid',
@@ -53,7 +53,7 @@ class UpdateOpportunity extends FormRequest
                 'bail', 'string', 'max:191',
             ],
             'renewal_month' => [
-                'bail', 'string', 'max:191'
+                'bail', 'string', 'max:191',
             ],
             'renewal_year' => [
                 'bail', 'integer', 'max:9999',
@@ -71,19 +71,25 @@ class UpdateOpportunity extends FormRequest
                 'bail', 'string', 'max:191',
             ],
             'opportunity_start_date' => [
-                'bail', 'required', 'date_format:Y-m-d',
+                'bail', Rule::requiredIf(fn () => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
             ],
             'is_opportunity_start_date_assumed' => [
-                'bail', 'boolean'
+                'bail', 'boolean',
             ],
             'opportunity_end_date' => [
-                'bail', 'required', 'date_format:Y-m-d',
+                'bail', Rule::requiredIf(fn () => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
             ],
             'is_opportunity_end_end_assumed' => [
-                'bail', 'boolean'
+                'bail', 'boolean',
             ],
             'opportunity_closing_date' => [
-                'bail', 'required', 'date_format:Y-m-d',
+                'bail', Rule::requiredIf(fn () => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
+            ],
+            'contract_duration_months' => [
+                'bail', Rule::requiredIf(fn () => $this->boolean('is_contract_duration_checked')), 'integer', 'min:1', 'max:60',
+            ],
+            'is_contract_duration_checked' => [
+                'bail', 'boolean',
             ],
             'expected_order_date' => [
                 'bail', 'date_format:Y-m-d',
@@ -167,17 +173,17 @@ class UpdateOpportunity extends FormRequest
                 'bail', 'string',
             ],
             'ranking' => [
-                'bail', 'nullable', 'numeric', 'min:0', 'max:1'
+                'bail', 'nullable', 'numeric', 'min:0', 'max:1',
             ],
             'campaign_name' => [
-              'bail', 'nullable', 'string', 'max:191'
+                'bail', 'nullable', 'string', 'max:191',
             ],
             'suppliers_grid' => [
                 'bail', 'nullable', 'array',
             ],
             'suppliers_grid.*.id' => [
                 'bail', 'nullable', 'uuid',
-                Rule::exists(OpportunitySupplier::class, 'id')->where('opportunity_id', $this->route('opportunity')->getKey())
+                Rule::exists(OpportunitySupplier::class, 'id')->where('opportunity_id', $this->route('opportunity')->getKey()),
             ],
             'suppliers_grid.*.supplier_name' => [
                 'bail', 'nullable', 'string', 'max:191',
@@ -207,14 +213,14 @@ class UpdateOpportunity extends FormRequest
                         'supplier_name' => $supplierData['supplier_name'] ?? null,
                         'country_name' => $supplierData['country_name'] ?? null,
                         'contact_name' => $supplierData['contact_name'] ?? null,
-                        'contact_email' => $supplierData['contact_email'] ?? null
+                        'contact_email' => $supplierData['contact_email'] ?? null,
                     ];
                 } else {
                     $createSuppliers[] = [
                         'supplier_name' => $supplierData['supplier_name'] ?? null,
                         'country_name' => $supplierData['country_name'] ?? null,
                         'contact_name' => $supplierData['contact_name'] ?? null,
-                        'contact_email' => $supplierData['contact_email'] ?? null
+                        'contact_email' => $supplierData['contact_email'] ?? null,
                     ];
                 }
             }
@@ -243,6 +249,10 @@ class UpdateOpportunity extends FormRequest
                 'opportunity_end_date' => transform($this->input('opportunity_end_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
                 'is_opportunity_end_date_assumed' => $this->boolean('is_opportunity_end_date_assumed'),
                 'opportunity_closing_date' => transform($this->input('opportunity_closing_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
+
+                'is_contract_duration_checked' => $this->boolean('is_contract_duration_checked'),
+                'contract_duration_months' => transform($this->input('contract_duration_months'), fn (mixed $months) => (int)$months),
+
                 'expected_order_date' => transform($this->input('expected_order_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
                 'customer_order_date' => transform($this->input('customer_order_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
                 'purchase_order_date' => transform($this->input('purchase_order_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
@@ -274,7 +284,7 @@ class UpdateOpportunity extends FormRequest
                 'campaign_name' => $this->input('campaign_name'),
                 'sale_action_name' => $this->input('sale_action_name'),
                 'create_suppliers' => $createSuppliers,
-                'update_suppliers' => $updateSuppliers
+                'update_suppliers' => $updateSuppliers,
             ]);
 
         });

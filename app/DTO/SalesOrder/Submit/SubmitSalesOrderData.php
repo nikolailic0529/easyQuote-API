@@ -26,8 +26,6 @@ final class SubmitSalesOrderData extends DataTransferObject
     public array $order_lines_data;
 
     /**
-     * @Constraints\Choice({"HPE", "LEN", "IBM"}, message="An invalid vendor {{ value }} provided, vendor must be one the following: {{ choices }}.")
-     *
      * @var string
      */
     public string $vendor_short_code;

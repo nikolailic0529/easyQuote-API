@@ -50,8 +50,8 @@ return [
             'label' => 'Product No',
         ],
         'service_sku' => [
-          'value' => 'Service SKU',
-          'label' => 'Service SKU',
+            'value' => 'Service SKU',
+            'label' => 'Service SKU',
         ],
         'description' => [
             'value' => 'Description',
@@ -95,7 +95,7 @@ return [
         ],
         'total_price' => [
             'value' => 'Total',
-            'label' => 'Total Price'
+            'label' => 'Total Price',
         ],
         'sub_total' => [
             'value' => 'Sub Total',
@@ -107,24 +107,32 @@ return [
         ],
         'grand_total' => [
             'value' => 'Grand Total',
-            'label' => 'Grand Total'
+            'label' => 'Grand Total',
         ],
         'vendor_short_code' => [
             'value' => 'Vendor',
-            'label' => 'Vendor Name'
+            'label' => 'Vendor Name',
         ],
         'machine_address_string' => [
             'value' => 'Machine Address',
-            'label' => 'Machine Address'
+            'label' => 'Machine Address',
         ],
         'service_level' => [
             'value' => 'SLA',
-            'label' => 'Service Level'
+            'label' => 'Service Level',
         ],
         'service_level_description' => [
             'value' => 'Service Level',
-            'label' => 'Service Level'
-        ]
+            'label' => 'Service Level',
+        ],
+        'auto_generated_serial_number_text' => [
+            'value' => "Serial numbers are user's generated",
+            'label' => 'Auto-generated Serial Number Text',
+        ],
+        'contract_duration' => [
+            'value' => 'Support Duration',
+            'label' => 'Support Duration',
+        ],
     ],
     'contract_data_headers' => [
         'product_no' => [
@@ -150,6 +158,40 @@ return [
         'qty' => [
             'value' => 'Quantity',
             'label' => 'Quantity',
+        ],
+    ],
+    'sales_order_data_headers' => [
+        'product_no' => [
+            'value' => 'Product No',
+            'label' => 'Product No',
+        ],
+        'description' => [
+            'value' => 'Description',
+            'label' => 'Description',
+        ],
+        'serial_no' => [
+            'value' => 'Serial Number',
+            'label' => 'Serial Number',
+        ],
+        'date_from' => [
+            'value' => 'From Date',
+            'label' => 'From Date',
+        ],
+        'date_to' => [
+            'value' => 'To Date',
+            'label' => 'To Date',
+        ],
+        'qty' => [
+            'value' => 'Quantity',
+            'label' => 'Quantity',
+        ],
+        'auto_generated_serial_number_text' => [
+            'value' => "Serial numbers are user's generated",
+            'label' => 'Auto-generated Serial Number Text',
+        ],
+        'contract_duration' => [
+            'value' => 'Support Duration',
+            'label' => 'Support Duration',
         ],
     ],
     'hpe_contract_data_headers' => [

@@ -38,6 +38,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string|null $searchable
  * @property string|null $service_level_description
  * @property bool|null $is_selected
+ * @property bool|null $is_serial_number_generated
  *
  * @property-read bool|null $is_customer_exclusive_asset
  * @property-read bool|null $same_worldwide_quote_assets_exists

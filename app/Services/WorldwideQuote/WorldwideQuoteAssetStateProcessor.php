@@ -151,6 +151,7 @@ class WorldwideQuoteAssetStateProcessor implements ProcessesWorldwideQuoteAssetS
                 $asset->exchange_rate_margin = $assetData->exchange_rate_margin;
                 $asset->exchange_rate_value = $assetData->exchange_rate_value;
                 $asset->is_warranty_checked = $assetData->is_warranty_checked;
+                $asset->is_serial_number_generated = $assetData->is_serial_number_generated;
 
                 $lock = $this->lockProvider->lock(Lock::UPDATE_WWASSET($asset->getKey()), 10);
 

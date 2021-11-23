@@ -26,7 +26,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasOneOrMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Query\JoinClause;
 use Staudenmeir\EloquentHasManyDeep\HasManyDeep;
@@ -98,6 +100,8 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read Collection<Address>|Address[] $addresses
  * @property-read Collection<Contact>|Contact[] $contacts
  * @property-read WorldwideQuoteNote|null $note
+ * @property-read WorldwideQuoteNote|null $draftNote
+ * @property-read WorldwideQuoteNote|null $submitNote
  * @property-read Collection<WorldwideQuoteAssetsGroup>|WorldwideQuoteAssetsGroup[] $assetsGroups
  */
 class WorldwideQuoteVersion extends Model
@@ -203,6 +207,21 @@ class WorldwideQuoteVersion extends Model
 
     public function note(): HasOne
     {
-        return $this->hasOne(WorldwideQuoteNote::class);
+        return $this->hasOne(WorldwideQuoteNote::class)
+            ->latest();
+    }
+
+    public function draftNote(): HasOne
+    {
+        return $this->hasOne(WorldwideQuoteNote::class)
+            ->where('is_for_submitted_quote', false)
+            ->latest();
+    }
+
+    public function submitNote(): HasOne
+    {
+        return $this->hasOne(WorldwideQuoteNote::class)
+            ->where('is_for_submitted_quote', true)
+            ->latest();
     }
 }

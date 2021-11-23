@@ -99,7 +99,11 @@ final class UpdateOpportunityData extends DataTransferObject
 
     public bool $is_opportunity_end_date_assumed = false;
 
-    public Carbon $opportunity_closing_date;
+    public ?Carbon $opportunity_closing_date;
+
+    public ?int $contract_duration_months;
+
+    public bool $is_contract_duration_checked = false;
 
     public ?Carbon $expected_order_date;
 
