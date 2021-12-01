@@ -34,6 +34,7 @@ class OpportunityFormTest extends TestCase
                         'pipeline_name',
                         'created_at',
                         'updated_at',
+                        'is_system',
                         'permissions' => [
                             'view',
                             'update',

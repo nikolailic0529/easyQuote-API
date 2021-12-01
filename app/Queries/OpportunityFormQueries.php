@@ -31,6 +31,7 @@ class OpportunityFormQueries
                 $opportunityFormModel->getQualifiedKeyName(),
                 "{$spaceModel->qualifyColumn('space_name')} as space_name",
                 "{$pipelineModel->qualifyColumn('pipeline_name')} as pipeline_name",
+                $opportunityFormModel->qualifyColumn('is_system'),
                 $opportunityFormModel->getQualifiedCreatedAtColumn(),
                 $opportunityFormModel->getQualifiedUpdatedAtColumn(),
             ])

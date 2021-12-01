@@ -23,6 +23,7 @@ class PaginatedOpportunityForm extends JsonResource
             'id' => $this->getKey(),
             'space_name' => $this->space_name,
             'pipeline_name' => $this->pipeline_name,
+            'is_system' => (bool)$this->is_system,
             'permissions' => [
                 'view' => $user->can('view', $this->resource),
                 'update' => $user->can('update', $this->resource),

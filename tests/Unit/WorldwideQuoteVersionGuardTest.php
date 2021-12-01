@@ -50,6 +50,12 @@ class WorldwideQuoteVersionGuardTest extends TestCase
             'opportunity_id' => $opportunity->getKey(),
         ]);
 
+        $version = $quote->activeVersion;
+
+        $version->update([
+            'payment_terms' => Str::random(40)
+        ]);
+
         $packAssets = factory(WorldwideQuoteAsset::class, 5)->create([
             'worldwide_quote_id' => $quote->active_version_id,
             'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
@@ -145,6 +151,8 @@ class WorldwideQuoteVersionGuardTest extends TestCase
         $this->assertNotEquals($distributorFile->getKey(), $newDistributorQuote->{$newDistributorQuote->distributorFile()->getForeignKeyName()});
 
         $this->assertNotEquals($scheduleFile->getKey(), $newDistributorQuote->{$newDistributorQuote->scheduleFile()->getForeignKeyName()});
+
+        $this->assertSame($version->payment_terms, $newVersion->payment_terms);
 
         $this->assertCount($mappedRows->count(), $newDistributorQuote->mappedRows);
 

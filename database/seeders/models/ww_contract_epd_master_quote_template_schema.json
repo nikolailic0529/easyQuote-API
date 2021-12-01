@@ -489,10 +489,12 @@
       ],
       "class": "four-column field-dragger",
       "order": 5,
+      "toggle": true,
       "controls": [],
       "is_field": false,
       "droppable": false,
-      "decoration": "4"
+      "decoration": "4",
+      "visibility": true
     }
   ],
   "first_page": [
@@ -1140,10 +1142,12 @@
       ],
       "class": "two-column field-dragger",
       "order": 3,
+      "toggle": true,
       "controls": [],
       "is_field": false,
       "droppable": false,
-      "decoration": "1+3"
+      "decoration": "1+3",
+      "visibility": true
     },
     {
       "id": "7a98ee0b-e097-4370-938a-dc7d3e1f4f73",
@@ -1215,10 +1219,75 @@
       ],
       "class": "two-column field-dragger",
       "order": 3,
+      "toggle": true,
       "controls": [],
       "is_field": false,
       "droppable": false,
-      "decoration": "1+3"
+      "decoration": "1+3",
+      "visibility": true
+    },
+    {
+      "id": "4834a006-caf8-4de7-865a-6c91ff93f370",
+      "name": "Two Column",
+      "child": [
+        {
+          "id": "34fad4f1-0b44-4a9b-adce-16d572ef007c",
+          "class": "col-lg-4",
+          "controls": [
+            {
+              "id": "249e6df1-45f0-4cc7-b269-ee5bec33b059",
+              "css": null,
+              "src": null,
+              "name": "l-1",
+              "show": false,
+              "type": "label",
+              "class": "bold",
+              "label": "Label",
+              "value": "Support Duration:",
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "34fad4f1-0b44-4a9b-adce-16d572ef007c",
+              "attached_element_id": "4834a006-caf8-4de7-865a-6c91ff93f370"
+            }
+          ],
+          "position": 1
+        },
+        {
+          "id": "3f480e71-c087-44ea-9ea0-587d5402c7fb",
+          "class": "col-lg-8 border-right",
+          "controls": [
+            {
+              "id": "contract_duration",
+              "css": null,
+              "name": "contract_duration",
+              "show": false,
+              "type": "tag",
+              "class": "s4-form-control",
+              "label": "Contract Duration",
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": true,
+              "is_required": false,
+              "attached_child_id": "3f480e71-c087-44ea-9ea0-587d5402c7fb",
+              "attached_element_id": "4834a006-caf8-4de7-865a-6c91ff93f370"
+            }
+          ],
+          "position": 2
+        }
+      ],
+      "class": "two-column field-dragger",
+      "order": 1,
+      "toggle": false,
+      "controls": [],
+      "is_field": false,
+      "droppable": false,
+      "decoration": "1+3",
+      "visibility": false
     },
     {
       "id": "bb9ea3cc-95eb-4be1-b78d-7565b68c78cf",

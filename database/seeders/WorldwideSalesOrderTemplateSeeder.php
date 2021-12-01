@@ -22,6 +22,13 @@ class WorldwideSalesOrderTemplateSeeder extends Seeder
 
         $wwContractTemplates = collect($wwContractTemplates)
             ->map(function (array $template) use ($connection) {
+
+                $schemaPath = database_path('seeders/models/template_schemas/'.$template['template_schema']);
+
+                $template['template_schema'] = json_decode(file_get_contents($schemaPath), true);
+                $template['template_schema']['form_data'] = json_encode($template['template_schema']['form_data']);
+                $template['template_schema']['data_headers'] = json_encode($template['template_schema']['data_headers']);
+
                 $templateSchemaID = $template['template_schema']['id'];
 
                 $exists = $connection->table('template_schemas')
@@ -72,7 +79,7 @@ class WorldwideSalesOrderTemplateSeeder extends Seeder
                         'is_system' => true,
                     ]);
 
-                foreach ($template['country_model_keys'] as $countryKey) {
+                foreach ($template['countries'] as $countryKey) {
 
                     $connection->table('country_sales_order_template')
                         ->insertOrIgnore([

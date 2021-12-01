@@ -116,6 +116,7 @@ class WorldwideQuoteReplicator
             $version->sort_rows_column = $activeVersion->sort_rows_column;
             $version->sort_rows_direction = $activeVersion->sort_rows_direction;
             $version->use_groups = $activeVersion->use_groups;
+            $version->payment_terms = $activeVersion->payment_terms;
         });
     }
 

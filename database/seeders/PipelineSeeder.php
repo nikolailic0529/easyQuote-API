@@ -18,14 +18,28 @@ class PipelineSeeder extends Seeder
         /** @var \Illuminate\Database\ConnectionInterface $connection */
         $connection = $this->container['db.connection'];
 
+        $seeds = collect($seeds)
+            ->map(function (array $seed) {
 
-        $defaultPipelineId = value(function () use ($seeds): string {
+                $form = $seed['opportunity_form'];
+
+                $schemaPath = database_path('seeders/models/opportunity_form_schemas/'.$form['form_schema']);
+
+                $seed['opportunity_form']['form_schema'] = json_decode(file_get_contents($schemaPath), true);
+
+                return $seed;
+            })
+            ->all();
+
+        $defaultPipelineId = value(function () use ($seeds): ?string {
 
             foreach ($seeds as $pipelineSeed) {
                 if ($pipelineSeed['is_default']) {
                     return $pipelineSeed['id'];
                 }
             }
+
+            return null;
 
         });
 
@@ -41,7 +55,7 @@ class PipelineSeeder extends Seeder
                         'is_system' => true,
                         'is_default' => $pipelineSeed['is_default'],
                         'created_at' => now(),
-                        'updated_at' => now()
+                        'updated_at' => now(),
                     ]);
 
                 foreach ($pipelineSeed['pipeline_stages'] as $stageSeed) {
@@ -53,7 +67,7 @@ class PipelineSeeder extends Seeder
                             'stage_name' => $stageSeed['stage_name'],
                             'stage_order' => $stageSeed['stage_order'],
                             'created_at' => now(),
-                            'updated_at' => now()
+                            'updated_at' => now(),
                         ]);
 
                 }
@@ -63,20 +77,22 @@ class PipelineSeeder extends Seeder
                         'id' => $pipelineSeed['opportunity_form']['form_schema']['id'],
                         'form_data' => json_encode($pipelineSeed['opportunity_form']['form_schema']['form_data']),
                         'created_at' => now(),
-                        'updated_at' => now()
+                        'updated_at' => now(),
                     ], null, [
                         'form_data' => json_encode($pipelineSeed['opportunity_form']['form_schema']['form_data']),
                     ]);
 
                 $connection->table('opportunity_forms')
-                    ->insertOrIgnore([
+                    ->upsert([
                         'id' => $pipelineSeed['opportunity_form']['id'],
                         'pipeline_id' => $pipelineSeed['id'],
                         'form_schema_id' => $pipelineSeed['opportunity_form']['form_schema']['id'],
+                        'is_system' => true,
                         'created_at' => now(),
-                        'updated_at' => now()
+                        'updated_at' => now(),
+                    ], null, [
+                        'is_system' => true,
                     ]);
-
             }
 
         });

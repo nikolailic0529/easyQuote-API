@@ -955,10 +955,12 @@
       ],
       "class": "two-column field-dragger",
       "order": 3,
+      "toggle": true,
       "controls": [],
       "is_field": false,
       "droppable": false,
-      "decoration": "1+3"
+      "decoration": "1+3",
+      "visibility": true
     },
     {
       "id": "7a98ee0b-e097-4370-938a-dc7d3e1f4f73",
@@ -1030,10 +1032,75 @@
       ],
       "class": "two-column field-dragger",
       "order": 3,
+      "toggle": true,
       "controls": [],
       "is_field": false,
       "droppable": false,
-      "decoration": "1+3"
+      "decoration": "1+3",
+      "visibility": true
+    },
+    {
+      "id": "0dcc22e8-4e96-41eb-ad5e-fa60370f0567",
+      "name": "Two Column",
+      "child": [
+        {
+          "id": "1ecfea44-b66a-4826-8b02-9e889057f7c5",
+          "class": "col-lg-4",
+          "controls": [
+            {
+              "id": "93bac8c9-053b-481f-bf50-d2ae58b72224",
+              "css": null,
+              "src": null,
+              "name": "l-1",
+              "show": false,
+              "type": "label",
+              "class": "bold",
+              "label": "Label",
+              "value": "Support Duration:",
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "1ecfea44-b66a-4826-8b02-9e889057f7c5",
+              "attached_element_id": "0dcc22e8-4e96-41eb-ad5e-fa60370f0567"
+            }
+          ],
+          "position": 1
+        },
+        {
+          "id": "9cdb62aa-199e-46cb-8856-c7e5ccb196d2",
+          "class": "col-lg-8 border-right",
+          "controls": [
+            {
+              "id": "contract_duration",
+              "css": null,
+              "name": "contract_duration",
+              "show": false,
+              "type": "tag",
+              "class": "s4-form-control",
+              "label": "Contract Duration",
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": true,
+              "is_required": false,
+              "attached_child_id": "9cdb62aa-199e-46cb-8856-c7e5ccb196d2",
+              "attached_element_id": "0dcc22e8-4e96-41eb-ad5e-fa60370f0567"
+            }
+          ],
+          "position": 2
+        }
+      ],
+      "class": "two-column field-dragger",
+      "order": 1,
+      "toggle": true,
+      "controls": [],
+      "is_field": false,
+      "droppable": false,
+      "decoration": "1+3",
+      "visibility": false
     },
     {
       "id": "bb9ea3cc-95eb-4be1-b78d-7565b68c78cf",

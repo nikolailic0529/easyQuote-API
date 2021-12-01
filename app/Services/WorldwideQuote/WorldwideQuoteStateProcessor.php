@@ -1645,6 +1645,10 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
                 });
 
             });
+
+            $this->busDispatcher->dispatch(
+                new IndexSearchableEntity($replicatedQuote)
+            );
         });
     }
 
