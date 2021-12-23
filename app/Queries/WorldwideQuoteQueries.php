@@ -96,6 +96,9 @@ class WorldwideQuoteQueries
             ->join('companies', function (JoinClause $join) {
                 $join->on('companies.id', 'opportunities.primary_account_id');
             })
+            ->leftJoin('companies as end_user', function (JoinClause $join) {
+                $join->on('end_user.id', 'opportunities.end_user_id');
+            })
             ->leftJoin('sales_orders', function (JoinClause $join) {
                 $join->on('sales_orders.worldwide_quote_id', 'worldwide_quotes.id')
                     ->whereNull('sales_orders.deleted_at');
@@ -104,6 +107,7 @@ class WorldwideQuoteQueries
                 'user_fullname' => User::query()->select('user_fullname')->whereColumn('users.id', 'worldwide_quotes.user_id')->limit(1),
                 'company_name' => Company::query()->select('name')->whereColumn('companies.id', 'active_version.company_id')->limit(1),
                 'companies.name as customer_name',
+                'end_user.name as end_user_name',
                 'opportunities.opportunity_closing_date as valid_until_date',
                 'opportunities.opportunity_start_date as customer_support_start_date',
                 'opportunities.opportunity_end_date as customer_support_end_date',
@@ -122,6 +126,7 @@ class WorldwideQuoteQueries
             ->allowOrderFields(...[
                 'type_name',
                 'customer_name',
+                'end_user_name',
                 'completeness',
                 'user_fullname',
                 'rfq_number',

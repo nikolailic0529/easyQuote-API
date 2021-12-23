@@ -5,7 +5,7 @@ namespace App\Contracts\Services;
 use App\DTO\AssetsGroupData;
 use App\DTO\DistributionDetailsCollection;
 use App\DTO\ProcessableDistributionCollection;
-use App\DTO\QuoteStages\AddressesContactsStage;
+use App\DTO\QuoteStages\QuoteSetupStage;
 use App\DTO\QuoteStages\PackAssetsCreationStage;
 use App\DTO\QuoteStages\ContractDetailsStage;
 use App\DTO\QuoteStages\ContractDiscountStage;
@@ -100,10 +100,10 @@ interface ProcessesWorldwideQuoteState
      * Process Quote addresses & contacts step.
      *
      * @param WorldwideQuoteVersion $quote
-     * @param AddressesContactsStage $stage
+     * @param QuoteSetupStage $stage
      * @return WorldwideQuoteVersion
      */
-    public function processQuoteAddressesContactsStep(WorldwideQuoteVersion $quote, AddressesContactsStage $stage): WorldwideQuoteVersion;
+    public function processQuoteSetupStep(WorldwideQuoteVersion $quote, QuoteSetupStage $stage): WorldwideQuoteVersion;
 
     /**
      * Process Pack Quote details step.

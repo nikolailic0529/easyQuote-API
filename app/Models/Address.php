@@ -113,5 +113,4 @@ class Address extends Model implements SearchableEntity
             $this->contact_email ?? '',
         );
     }
-
 }

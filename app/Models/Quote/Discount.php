@@ -15,8 +15,11 @@ use Illuminate\Database\Eloquent\{
     Relations\MorphTo,
 };
 use Illuminate\Support\Collection;
-use Str;
+use Illuminate\Support\Str;
 
+/**
+ * @property-read Model $discountable
+ */
 class Discount extends Model
 {
     use Uuid;

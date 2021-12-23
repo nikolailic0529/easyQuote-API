@@ -28,7 +28,7 @@ class UpdateOpportunity extends FormRequest
         return [
             'pipeline_id' => [
                 'bail', 'uuid',
-                Rule::exists(Pipeline::class, 'id')->whereNull('deleted_at'),
+                Rule::exists(Pipeline::class, 'id')->withoutTrashed(),
             ],
             'contract_type_id' => [
                 'bail', 'required', 'uuid',
@@ -36,15 +36,25 @@ class UpdateOpportunity extends FormRequest
             ],
             'primary_account_id' => [
                 'bail', 'uuid',
-                Rule::exists(Company::class, 'id')->whereNull('deleted_at')->whereNotNull('activated_at'),
+                Rule::exists(Company::class, 'id')->withoutTrashed()->whereNotNull('activated_at'),
+            ],
+            'end_user_id' => [
+                'bail', 'uuid',
+                Rule::exists(Company::class, 'id')->withoutTrashed()->whereNotNull('activated_at'),
+            ],
+            'are_end_user_addresses_available' => [
+                'bail', 'boolean',
+            ],
+            'are_end_user_contacts_available' => [
+                'bail', 'boolean',
             ],
             'primary_account_contact_id' => [
                 'bail', 'uuid',
-                Rule::exists(Contact::class, 'id')->whereNull('deleted_at'),
+                Rule::exists(Contact::class, 'id')->withoutTrashed(),
             ],
             'account_manager_id' => [
                 'bail', 'uuid',
-                Rule::exists(User::class, 'id')->whereNull('deleted_at'),
+                Rule::exists(User::class, 'id')->withoutTrashed(),
             ],
             'project_name' => [
                 'bail', 'string', 'max:191',
@@ -235,6 +245,9 @@ class UpdateOpportunity extends FormRequest
                 'contract_type_id' => $this->input('contract_type_id'),
                 'account_manager_id' => $this->input('account_manager_id'),
                 'primary_account_id' => $this->input('primary_account_id'),
+                'end_user_id' => $this->input('end_user_id'),
+                'are_end_user_addresses_available' => $this->boolean('are_end_user_addresses_available'),
+                'are_end_user_contacts_available' => $this->boolean('are_end_user_contacts_available'),
                 'primary_account_contact_id' => $this->input('primary_account_contact_id'),
                 'project_name' => $this->input('project_name'),
                 'nature_of_service' => $this->input('nature_of_service'),

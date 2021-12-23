@@ -41,6 +41,7 @@ class SubmittedWorldwideQuote extends JsonResource
             'user_fullname' => $this->user_fullname,
             'company_name' => $this->company_name,
             'customer_name' => $this->customer_name,
+            'end_user_name' => $this->end_user_name,
             'rfq_number' => $this->rfq_number,
             'valid_until_date' => $this->valid_until_date,
             'customer_support_start_date' => $this->customer_support_start_date,

@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\WorldwideQuote;
 
-use App\DTO\QuoteStages\AddressesContactsStage;
+use App\DTO\QuoteStages\QuoteSetupStage;
 use App\DTO\WorldwideQuote\OpportunityAddressData;
 use App\DTO\WorldwideQuote\OpportunityAddressDataCollection;
 use App\DTO\WorldwideQuote\OpportunityContactData;
@@ -20,7 +20,7 @@ use Illuminate\Validation\Rule;
 
 class ProcessQuoteAddressesContacts extends FormRequest
 {
-    protected ?AddressesContactsStage $stage = null;
+    protected ?QuoteSetupStage $stage = null;
 
     /**
      * Get the validation rules that apply to the request.
@@ -49,24 +49,16 @@ class ProcessQuoteAddressesContacts extends FormRequest
                 'bail', 'required', 'numeric', 'min:0', 'max:999999999',
             ],
 
-            'addresses' => [
-                'bail', 'required', 'array'
-            ],
-            'addresses.*' => [
-                'bail', 'uuid',
-                Rule::exists(Address::class, 'id')->whereNull('deleted_at')
-            ],
-
-            'contacts' => [
-                'bail', 'required', 'array'
-            ],
-            'contacts.*' => [
-                'bail', 'uuid',
-                Rule::exists(Contact::class, 'id')->whereNull('deleted_at')
-            ],
-
             'payment_terms' => [
                 'bail', 'required', 'string', 'max:500'
+            ],
+
+            'are_end_user_addresses_available' => [
+                'bail', 'boolean',
+            ],
+
+            'are_end_user_contacts_available' => [
+                'bail', 'boolean',
             ],
 
             'stage' => [
@@ -76,18 +68,18 @@ class ProcessQuoteAddressesContacts extends FormRequest
         ];
     }
 
-    public function getStage(): AddressesContactsStage
+    public function getStage(): QuoteSetupStage
     {
         return $this->stage ??= with(true, function () {
-            return new AddressesContactsStage([
+            return new QuoteSetupStage([
                 'company_id' => $this->input('company_id'),
                 'quote_currency_id' => $this->input('quote_currency_id'),
                 'quote_template_id' => $this->input('quote_template_id'),
                 'quote_expiry_date' => Carbon::createFromFormat('Y-m-d', $this->input('quote_expiry_date')),
                 'buy_price' => (float)$this->input('buy_price'),
-                'address_ids' => $this->input('addresses'),
-                'contact_ids' => $this->input('contacts'),
                 'payment_terms' => $this->input('payment_terms'),
+                'are_end_user_addresses_available' => $this->boolean('are_end_user_addresses_available'),
+                'are_end_user_contacts_available' => $this->boolean('are_end_user_contacts_available'),
                 'stage' => PackQuoteStage::getValueOfLabel($this->input('stage')),
             ]);
 

@@ -246,10 +246,14 @@ class OpportunityTest extends TestCase
                 "contract_type_id",
                 "contract_type",
                 "primary_account_id",
+                "end_user_id",
                 "primary_account",
                 "primary_account" => [
                     "vendor_ids",
                 ],
+                "end_user",
+                "are_end_user_addresses_available",
+                "are_end_user_contacts_available",
                 "primary_account_contact_id",
                 "primary_account_contact",
                 "account_manager_id",
@@ -345,6 +349,8 @@ class OpportunityTest extends TestCase
             $company->addresses()->sync($address);
         });
 
+        $endUser = factory(Company::class)->create();
+
         $response = $this->getJson('api/external-companies')
 //            ->dump()
             ->assertJsonStructure([
@@ -385,12 +391,15 @@ class OpportunityTest extends TestCase
         $data = factory(Opportunity::class)->raw([
             'primary_account_id' => $primaryAccountID,
             'primary_account_contact_id' => $primaryAccountContactID,
+            'end_user_id' => $endUser->getKey(),
             'is_contract_duration_checked' => false,
+            'are_end_user_addresses_available' => true,
+            'are_end_user_contacts_available' => true,
         ]);
 
         $data['suppliers_grid'] = factory(OpportunitySupplier::class, 10)->raw();
 
-        $this->postJson('api/opportunities', $data)
+        $response = $this->postJson('api/opportunities', $data)
 //            ->dump()
             ->assertCreated()
             ->assertJsonStructure([
@@ -401,6 +410,24 @@ class OpportunityTest extends TestCase
                 "contract_type_id",
                 "contract_type",
                 "primary_account_id",
+                "end_user_id",
+                "end_user" => [
+                    "id",
+                    "addresses" => [
+                        "*" => [
+                            "id",
+                            "is_default",
+                        ],
+                    ],
+                    "contacts" => [
+                        "*" => [
+                            "id",
+                            "is_default",
+                        ],
+                    ],
+                ],
+                "are_end_user_addresses_available",
+                "are_end_user_contacts_available",
                 "primary_account" => [
                     "id",
                     "addresses" => [
@@ -479,6 +506,20 @@ class OpportunityTest extends TestCase
                         "id", "supplier_name", "country_name", "contact_name", "contact_email",
                     ],
                 ],
+            ]);
+
+        $this->getJson('api/opportunities/'.$response->json('id'))
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'primary_account_id',
+                'end_user_id'
+            ])
+            ->assertJson([
+                'primary_account_id' => $primaryAccountID,
+                'end_user_id' => $endUser->getKey(),
+                'are_end_user_addresses_available' => true,
+                'are_end_user_contacts_available' => true,
             ]);
     }
 
@@ -692,6 +733,8 @@ class OpportunityTest extends TestCase
             $company->addresses()->sync($address);
         });
 
+        $endUser = factory(Company::class)->create();
+
         $response = $this->getJson('api/external-companies')
             ->assertJsonStructure([
                 'data' => [
@@ -730,7 +773,10 @@ class OpportunityTest extends TestCase
         $data = factory(Opportunity::class)->raw([
             'primary_account_id' => $primaryAccountID,
             'primary_account_contact_id' => $primaryAccountContactID,
+            'end_user_id' => $endUser->getKey(),
             'is_contract_duration_checked' => false,
+            'are_end_user_addresses_available' => true,
+            'are_end_user_contacts_available' => true,
         ]);
 
         $data['suppliers_grid'] = factory(OpportunitySupplier::class, 10)->raw();
@@ -747,6 +793,10 @@ class OpportunityTest extends TestCase
                 "contract_type",
                 "primary_account_id",
                 "primary_account",
+                "end_user_id",
+                "end_user",
+                "are_end_user_addresses_available",
+                "are_end_user_contacts_available",
                 "primary_account_contact_id",
                 "primary_account_contact",
                 "account_manager_id",
@@ -830,7 +880,20 @@ class OpportunityTest extends TestCase
 
         $response = $this->getJson('api/opportunities/'.$opportunity->getKey())
 //            ->dump()
-            ->assertOk();
+            ->assertJsonStructure([
+                'id',
+                'primary_account_id',
+                'end_user_id',
+                'primary_account_contact_id',
+            ])
+            ->assertOk()
+            ->assertJson([
+                'primary_account_id' => $primaryAccountID,
+                'end_user_id' => $endUser->getKey(),
+                'are_end_user_addresses_available' => true,
+                'are_end_user_contacts_available' => true,
+
+            ]);
 
         $this->assertEmpty($response->json('primary_account_contact_id'));
     }

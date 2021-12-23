@@ -2,6 +2,7 @@
 
 namespace App\Models\QuoteFile;
 
+use App\Models\Address;
 use App\Models\Asset;
 use App\Models\Company;
 use App\Models\Opportunity;
@@ -24,6 +25,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
 /**
  * @property string|null $quote_file_id
  * @property string|null $replicated_mapped_row_id
+ * @property string|null $machine_address_id
  * @property string|null $product_no
  * @property string|null $service_sku
  * @property string|null $description
@@ -48,6 +50,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read WorldwideDistribution|null $worldwideDistributorQuote
  * @property-read bool|null $exists_in_selected_groups
  * @property-read Company|null $owned_by_customer
+ * @property-read Address|null $machineAddress
  */
 class MappedRow extends Model
 {
@@ -146,5 +149,10 @@ class MappedRow extends Model
             foreignPivotKey: 'mapped_row_id',
             relatedPivotKey: 'rows_group_id'
         );
+    }
+
+    public function machineAddress(): BelongsTo
+    {
+        return $this->belongsTo(Address::class);
     }
 }

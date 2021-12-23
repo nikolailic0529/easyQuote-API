@@ -17,7 +17,9 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property string|null $template_field_name
  * @property string|null $template_field_header
  * @property bool|null $is_editable
- * @property bool|null is_required
+ * @property bool|null $is_required
+ * @property bool|null $is_mapping_visible
+ * @property bool|null $is_preview_visible
  *
  * @property-read ImportableColumn|null $importableColumn
  */

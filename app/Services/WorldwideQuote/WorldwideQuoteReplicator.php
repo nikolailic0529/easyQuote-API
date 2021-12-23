@@ -117,6 +117,8 @@ class WorldwideQuoteReplicator
             $version->sort_rows_direction = $activeVersion->sort_rows_direction;
             $version->use_groups = $activeVersion->use_groups;
             $version->payment_terms = $activeVersion->payment_terms;
+            $version->are_end_user_addresses_available = $activeVersion->are_end_user_addresses_available;
+            $version->are_end_user_contacts_available = $activeVersion->are_end_user_contacts_available;
         });
     }
 

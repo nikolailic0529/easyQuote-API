@@ -70,6 +70,8 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string|null $sort_assets_groups_column
  * @property string|null $sort_assets_groups_direction
  * @property bool|null $use_groups
+ * @property bool|null $are_end_user_addresses_available
+ * @property bool|null $are_end_user_contacts_available
  *
  * @property float|null $total_price
  * @property float|null $margin_percentage

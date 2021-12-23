@@ -13,7 +13,6 @@ use App\Models\Quote\WorldwideQuote;
 use App\Models\QuoteFile\DistributionRowsGroup;
 use App\Models\QuoteFile\MappedRow;
 use App\Models\Vendor;
-use App\Models\WorldwideQuoteAsset;
 use App\Models\WorldwideQuoteAssetsGroup;
 use App\Queries\DiscountQueries;
 use App\Services\WorldwideQuote\Calculation\WorldwideDistributorQuoteCalc;
@@ -40,34 +39,35 @@ class ShowQuoteState extends FormRequest
     protected function getOnDemandAttributeLoaders(): array
     {
         return [
-            'summary' => [$this, 'includeSummaryAttributeOfQuote'],
-            'company.logo' => [$this, 'includeCompanyLogo'],
-            'worldwide_distributions.vendors.logo' => [$this, 'includeVendorsLogo'],
-            'worldwide_distributions.country.flag' => [$this, 'includeCountryFlag'],
-            'predefined_discounts' => [$this, 'includePredefinedDiscountsOfQuote'],
-            'applicable_discounts' => [$this, 'includeApplicableDiscountsOfQuote'],
-            'worldwide_distributions.summary' => [$this, 'includeSummaryAttributeOfDistributorQuotes'],
-            'worldwide_distributions.predefined_discounts' => [$this, 'includePredefinedDiscountsOfDistributorQuotes'],
-            'worldwide_distributions.applicable_discounts' => [$this, 'includeApplicableDiscountsOfDistributorQuotes'],
+            'summary' => $this->includeSummaryAttributeOfQuote(...),
+            'company.logo' => $this->includeCompanyLogo(...),
+            'worldwide_distributions.vendors.logo' => $this->includeVendorsLogo(...),
+            'worldwide_distributions.country.flag' => $this->includeCountryFlag(...),
+            'predefined_discounts' => $this->includePredefinedDiscountsOfQuote(...),
+            'applicable_discounts' => $this->includeApplicableDiscountsOfQuote(...),
+            'worldwide_distributions.summary' => $this->includeSummaryAttributeOfDistributorQuotes(...),
+            'worldwide_distributions.predefined_discounts' => $this->includePredefinedDiscountsOfDistributorQuotes(...),
+            'worldwide_distributions.applicable_discounts' => $this->includeApplicableDiscountsOfDistributorQuotes(...),
         ];
     }
 
     protected function getDefaultAttributeLoaders(): array
     {
         return [
-            [$this, 'sortContractAssetsWhenLoaded'],
-            [$this, 'sortGroupsOfContractAssetsWhenLoaded'],
-            [$this, 'includeExclusivityOfContractAssetsWhenLoaded'],
-            [$this, 'sortPackAssetsWhenLoaded'],
-            [$this, 'sortGroupsOfPackAssetsWhenLoaded'],
-            [$this, 'includeExclusivityOfPackAssetsWhenLoaded'],
-            [$this, 'normalizePackAssetAttributesWhenLoaded'],
-            [$this, 'prepareMappingOfDistributorQuotesWhenLoaded'],
-            [$this, 'loadCountryOfAddressesWhenLoaded'],
-            [$this, 'loadReferencedAddressDataOfAddressesWhenLoaded'],
-            [$this, 'loadReferencedContactDataOfContactsWhenLoaded'],
-            [$this, 'populateContractDurationToPackAssetsWhenLoaded'],
-            [$this, 'populateContractDurationToContractAssetsWhenLoaded'],
+            $this->sortContractAssetsWhenLoaded(...),
+            $this->sortGroupsOfContractAssetsWhenLoaded(...),
+            $this->includeExclusivityOfContractAssetsWhenLoaded(...),
+            $this->sortPackAssetsWhenLoaded(...),
+            $this->sortGroupsOfPackAssetsWhenLoaded(...),
+            $this->includeExclusivityOfPackAssetsWhenLoaded(...),
+            $this->normalizeContractAssetAttributesWhenLoaded(...),
+            $this->normalizePackAssetAttributesWhenLoaded(...),
+            $this->prepareMappingOfDistributorQuotesWhenLoaded(...),
+            $this->loadCountryOfAddressesWhenLoaded(...),
+            $this->loadReferencedAddressDataOfAddressesWhenLoaded(...),
+            $this->loadReferencedContactDataOfContactsWhenLoaded(...),
+            $this->populateContractDurationToPackAssetsWhenLoaded(...),
+            $this->populateContractDurationToContractAssetsWhenLoaded(...),
         ];
     }
 
@@ -267,6 +267,22 @@ class ShowQuoteState extends FormRequest
 
             $mapping = [];
 
+            // Prepend hidden machine address column.
+            $mapping[] = tap(new DistributionFieldColumn(), function (DistributionFieldColumn $distributionFieldColumn) use ($distribution) {
+                $distributionFieldColumn->worldwide_distribution_id = $distribution->getKey();
+                $distributionFieldColumn->template_field_id = null;
+                $distributionFieldColumn->importable_column_id = null;
+                $distributionFieldColumn->is_default_enabled = false;
+                $distributionFieldColumn->is_editable = true;
+                $distributionFieldColumn->is_required = false;
+                $distributionFieldColumn->is_mapping_visible = false;
+                $distributionFieldColumn->is_preview_visible = true;
+                $distributionFieldColumn->sort = null;
+
+                $distributionFieldColumn->template_field_name = 'machine_address';
+                $distributionFieldColumn->template_field_header = 'Machine Address';
+            });
+
 
             foreach ($distribution->mapping as $column) {
                 /** @var DistributionFieldColumn $column */
@@ -276,6 +292,7 @@ class ShowQuoteState extends FormRequest
                     continue;
                 }
 
+                $column->setAttribute('is_mapping_visible', true);
                 $column->setAttribute('is_required', $dataMapper->isMappingFieldRequired($model, $column->template_field_name));
 
                 $column->setAttribute('template_field_header', $dataMapper->mapTemplateFieldHeader($column->template_field_name, $quoteTemplate) ?? $column->template_field_header);
@@ -288,6 +305,7 @@ class ShowQuoteState extends FormRequest
                         $distributionFieldColumn->is_default_enabled = $column->is_default_enabled;
                         $distributionFieldColumn->is_editable = $column->is_editable;
                         $distributionFieldColumn->is_required = $column->is_required;
+                        $distributionFieldColumn->is_mapping_visible = $column->is_mapping_visible;
                         $distributionFieldColumn->sort = null;
                         $distributionFieldColumn->template_field_name = 'original_price';
                         $distributionFieldColumn->template_field_header = 'Original Price';
@@ -349,6 +367,34 @@ class ShowQuoteState extends FormRequest
 
                 }
 
+            }
+
+        }
+    }
+
+    public function normalizeContractAssetAttributesWhenLoaded(WorldwideQuote $model, WorldwideQuoteDataMapper $dataMapper): void
+    {
+
+        $includeMachineAddressString = static function (Collection $rows): void {
+            $rows->each(function (MappedRow $row) {
+
+                if ($row->relationLoaded('machineAddress')) {
+                    $row->setAttribute('machine_address_string', WorldwideQuoteDataMapper::formatMachineAddressToString($row->machineAddress));
+                }
+
+            });
+        };
+
+        foreach ($model->activeVersion->worldwideDistributions as $distribution) {
+
+            if ($distribution->relationLoaded('mappedRows')) {
+                $includeMachineAddressString($distribution->mappedRows);
+            }
+
+            if ($distribution->relationLoaded('rowsGroups')) {
+                $distribution->rowsGroups->each(function (DistributionRowsGroup $group) use ($includeMachineAddressString) {
+                    $includeMachineAddressString($group->rows);
+                });
             }
 
         }

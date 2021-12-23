@@ -98,7 +98,7 @@ class WorldwideQuoteExporter
 
                     $value = $previewData->quote_summary->{$control->id} ?? '';
 
-                    if (Str::startsWith($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
+                    if (str_starts_with($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
                         $control->value = $this->viewFactory->make('ww-quotes.components.images_row', [
                             'class' => $control->class,
                             'images' => $templateData->template_assets->{$control->id},
@@ -134,7 +134,7 @@ class WorldwideQuoteExporter
 
                     $value = $distributorQuoteData->{$control->id} ?? $previewData->quote_summary->{$control->id} ?? '';
 
-                    if (Str::startsWith($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
+                    if (str_starts_with($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
                         $control->value = $this->viewFactory->make('ww-quotes.components.images_row', [
                             'class' => $control->class,
                             'images' => $templateData->template_assets->{$control->id},
@@ -326,7 +326,7 @@ class WorldwideQuoteExporter
 
                     $value = $previewData->quote_summary->{$control->id} ?? '';
 
-                    if (Str::startsWith($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
+                    if (str_starts_with($control->id, 'logo_set_x') && isset($templateData->template_assets->{$control->id})) {
                         $control->value = $this->viewFactory->make('ww-quotes.components.images_row', [
                             'class' => $control->class,
                             'images' => $templateData->template_assets->{$control->id},

@@ -57,13 +57,25 @@ final class QuoteSummary extends DataTransferObject
 
     public string $contact_phone;
 
+    public string $contact_country;
+
+    public string $end_user_name;
+
+    public string $end_user_contact_country;
+
+    public string $end_user_contact_name;
+
+    public string $end_user_contact_email;
+
+    public string $account_manager_name;
+
     /**
      * @var \App\DTO\WorldwideQuote\Export\AggregationField[]
      */
     public array $quote_data_aggregation_fields;
 
     /**
-     * @var \App\DTO\WorldwideQuote\Export\DistributionSummary[]
+     * @var \App\DTO\WorldwideQuote\Export\QuoteAggregation[]
      */
     public array $quote_data_aggregation;
 

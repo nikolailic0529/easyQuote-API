@@ -5,7 +5,6 @@ namespace App\Http\Controllers\API\WorldwideQuotes;
 use App\Contracts\Services\ProcessesWorldwideDistributionState;
 use App\Contracts\Services\ProcessesWorldwideQuoteState;
 use App\Http\Controllers\Controller;
-use Illuminate\Database\Eloquent\Collection;
 use App\Http\Requests\{MappedRow\UpdateDistributionMappedRow,
     WorldwideQuote\ApplyDiscounts,
     WorldwideQuote\CreateRowsGroup,
@@ -519,6 +518,22 @@ class WorldwideDistributionController extends Controller
         return response()->json(
             StoredQuoteFile::make($resource),
             Response::HTTP_CREATED
+        );
+    }
+
+    /**
+     * Show the specified mapped row entity.
+     *
+     * @param WorldwideDistribution $worldwideDistribution
+     * @param MappedRow $mappedRow
+     * @return JsonResponse
+     */
+    public function showMappedRow(WorldwideDistribution $worldwideDistribution,
+                                  MappedRow             $mappedRow): JsonResponse
+    {
+        return response()->json(
+            data: ContractAsset::make($mappedRow),
+            status: Response::HTTP_OK
         );
     }
 

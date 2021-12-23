@@ -9,7 +9,7 @@ use Carbon\Carbon;
 use Spatie\DataTransferObject\DataTransferObject;
 use Symfony\Component\Validator\Constraints;
 
-final class AddressesContactsStage extends DataTransferObject
+final class QuoteSetupStage extends DataTransferObject
 {
     /**
      * @Constraints\Uuid
@@ -36,26 +36,16 @@ final class AddressesContactsStage extends DataTransferObject
 
     public string $payment_terms;
 
+    public bool $are_end_user_addresses_available;
+
+    public bool $are_end_user_contacts_available;
+
     /**
      * @Constraints\PositiveOrZero
      *
      * @var float
      */
     public float $buy_price;
-
-    /**
-     * @Constraints\All(@Constraints\Uuid)
-     *
-     * @var array
-     */
-    public array $address_ids;
-
-    /**
-     * @Constraints\All(@Constraints\Uuid)
-     *
-     * @var array
-     */
-    public array $contact_ids;
 
     public int $stage = PackQuoteStage::CONTACTS;
 }

@@ -3,6 +3,7 @@
 namespace App\Queries;
 
 use App\Enum\CompanyType;
+use App\Http\Query\Company\FilterCompanyCategory;
 use App\Models\Asset;
 use App\Models\Company;
 use App\Models\User;
@@ -121,7 +122,8 @@ class CompanyQueries
             request: $request,
         )
             ->addCustomBuildQueryPipe(
-                new PerformElasticsearchSearch($this->elasticsearch)
+                new PerformElasticsearchSearch($this->elasticsearch),
+                new FilterCompanyCategory(),
             )
             ->allowOrderFields(...[
                 'created_at',

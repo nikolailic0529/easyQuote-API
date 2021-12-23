@@ -4,7 +4,9 @@ namespace App\Http\Requests\MappedRow;
 
 use App\DTO\MappedRow\MappedRowFieldData;
 use App\DTO\MappedRow\UpdateMappedRowFieldCollection;
+use App\Models\Address;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateDistributionMappedRow extends FormRequest
 {
@@ -59,6 +61,9 @@ class UpdateDistributionMappedRow extends FormRequest
             ],
             'is_serial_number_generated' => [
                 'bail', 'nullable', 'boolean'
+            ],
+            'machine_address_id' => [
+                'bail', 'nullable', 'uuid', Rule::exists(Address::class, 'id')->withoutTrashed(),
             ]
         ];
     }

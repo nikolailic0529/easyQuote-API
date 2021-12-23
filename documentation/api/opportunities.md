@@ -18,56 +18,54 @@
 
 *Available Controls*
 
-    primary_account                       : {dynamic}
-    primary_account_contact               : {dynamic}
-    suppliers_grid                        : {dynamic}
-    account_manager                       : {dynamic}
-    
-    project_name                          : textbox/string
-    nature_of_service                     : dropdown/string
-    sale_action_name                      : dropdown/string
-    customer_status                       : dropdown/string
-    end_user_name                         : textbox/string
-    hardware_status                       : dropdown/string
-    region_name                           : textbox/string
-    account_manager_name                  : textbox/string
-    campaign_name                         : textbox/string
-    service_level_agreement_id            : textbox/string
-    sale_unit_name                        : textbox/string
-    competition_name                      : textbox/string
-    drop_in                               : dropdown/string
-    lead_source_name                      : dropdown/string
-
-    opportunity_amount                    : textbox/numeric
-    opportunity_amount_currency_code      : dropdown/numeric
-    purchase_price                        : textbox/numeric
-    purchase_price_currency_code          : dropdown/numeric
-    list_price                            : textbox/numeric
-    list_price_currency_code              : dropdown/numeric
-    estimated_upsell_amount               : textbox/numeric
-    estimated_upsell_amount_currency_code : dropdown/numeric
-    margin_value                          : textbox/numeric
-
-    renewal_month                         : dropdown/integer (1-12)
-    renewal_year                          : dropdown/integer (positive)
-    opportunity_start_date                : datepicker/string (y-m-d)
-    opportunity_end_date                  : datepicker/string (y-m-d)
-    opportunity_closing_date              : datepicker/string (y-m-d)
-    expected_order_date                   : datepicker/string (y-m-d)
-    customer_order_date                   : datepicker/string (y-m-d)
-    purchase_order_date                   : datepicker/string (y-m-d)
-    supplier_order_date                   : datepicker/string (y-m-d)
-    supplier_order_transaction_date       : datepicker/string (y-m-d)
-    supplier_order_confirmation_date      : datepicker/string (y-m-d)
-
-    has_higher_sla                        : checkbox/boolean
-    is_multi_year                         : checkbox/boolean
-    has_additional_hardware               : checkbox/boolean
-    has_service_credits                   : checkbox/boolean
-
-    personal_rating                       : dropdown/string
-    ranking                               : dropdown/float(0.0-1.0)
-    remarks                               : textbox/string
+| Control                               | Type                        |
+|---------------------------------------|-----------------------------|
+| primary_account                       | dynamic                     |
+| primary_account_contact               | dynamic                     |
+| end_user                              | dynamic                     |
+| suppliers_grid                        | dynamic                     |
+| account_manager                       | dynamic                     |
+| project_name                          | textbox/string              |
+| nature_of_service                     | dropdown/string             |
+| sale_action_name                      | dropdown/string             |
+| customer_status                       | dropdown/string             |
+| end_user_name                         | textbox/string              |
+| hardware_status                       | dropdown/string             |
+| region_name                           | textbox/string              |
+| account_manager_name                  | textbox/string              |
+| campaign_name                         | textbox/string              |
+| service_level_agreement_id            | textbox/string              |
+| sale_unit_name                        | textbox/string              |
+| competition_name                      | textbox/string              |
+| drop_in                               | dropdown/string             |
+| lead_source_name                      | dropdown/string             |
+| opportunity_amount                    | textbox/numeric             |
+| opportunity_amount_currency_code      | dropdown/numeric            |
+| purchase_price                        | textbox/numeric             |
+| purchase_price_currency_code          | dropdown/numeric            |
+| list_price                            | textbox/numeric             |
+| list_price_currency_code              | dropdown/numeric            |
+| estimated_upsell_amount               | textbox/numeric             |
+| estimated_upsell_amount_currency_code | dropdown/numeric            |
+| margin_value                          | textbox/numeric             |
+| renewal_month                         | dropdown/integer (1-12)     |
+| renewal_year                          | dropdown/integer (positive) |
+| opportunity_start_date                | datepicker/string (y-m-d)   |
+| opportunity_end_date                  | datepicker/string (y-m-d)   |
+| opportunity_closing_date              | datepicker/string (y-m-d)   |
+| expected_order_date                   | datepicker/string (y-m-d)   |
+| customer_order_date                   | datepicker/string (y-m-d)   |
+| purchase_order_date                   | datepicker/string (y-m-d)   |
+| supplier_order_date                   | datepicker/string (y-m-d)   |
+| supplier_order_transaction_date       | datepicker/string (y-m-d)   |
+| supplier_order_confirmation_date      | datepicker/string (y-m-d)   |
+| has_higher_sla                        | checkbox/boolean            |
+| is_multi_year                         | checkbox/boolean            |
+| has_additional_hardware               | checkbox/boolean            |
+| has_service_credits                   | checkbox/boolean            |
+| personal_rating                       | dropdown/string             |
+| ranking                               | dropdown/float(0.0-1.0)     |
+| remarks                               | textbox/string              |
 
 ## Show Opportunity Form Template
 
@@ -199,6 +197,8 @@
     {
         "primary_account_id"                    : {company_uuid}
         "primary_account_contact_id"            : {contact_uuid}
+        "end_user_id"                           : {company_uuid}
+        "is_end_user_contact_data_missing"      : {boolean}
         "account_manager_id"                    : {user_uuid}
         "nature_of_service"                     : {string_max_191_chars}
         "sale_action_name"                      : {string_max_191_chars}
@@ -355,6 +355,8 @@
     {
         "primary_account_id"                    : {company_uuid}
         "primary_account_contact_id"            : {contact_uuid}
+        "end_user_id"                           : {company_uuid}
+        "is_end_user_contact_data_missing"      : {boolean}
         "account_manager_id"                    : {user_uuid}
         "nature_of_service"                     : {string_max_191_chars}
         "sale_action_name"                      : {string_max_191_chars}

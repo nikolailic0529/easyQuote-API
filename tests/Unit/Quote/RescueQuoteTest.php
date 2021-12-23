@@ -5,6 +5,7 @@ namespace Tests\Unit\Quote;
 use App\DTO\RowsGroup;
 use App\Models\{Company,
     Data\Currency,
+    Quote\Discount\SND,
     QuoteFile\ImportableColumn,
     QuoteFile\ImportedRow,
     QuoteFile\QuoteFile,
@@ -859,6 +860,30 @@ class RescueQuoteTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'status',
+            ]);
+    }
+
+    public function testCanCalculateDiscountsForRescueQuote()
+    {
+        $quote = factory(Quote::class)->create();
+        $snd = factory(SND::class)->create();
+
+        $this->postJson('api/quotes/try-discounts/'.$quote->getKey(), [
+            [
+                'id' => $snd->getKey(),
+            ],
+        ])
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                '*' => [
+                    '*' => [
+                        'id',
+                        'duration',
+                        'margin_percentage',
+                        'discountable'
+                    ]
+                ]
             ]);
     }
 

@@ -190,7 +190,7 @@ class WorldwideQuoteController extends Controller
 
         $resource = $this->processor
             ->setActingUser($request->user())
-            ->processQuoteAddressesContactsStep(
+            ->processQuoteSetupStep(
             $version,
             $request->getStage()
         );

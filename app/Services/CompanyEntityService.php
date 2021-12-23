@@ -3,12 +3,16 @@
 namespace App\Services;
 
 use App\Contracts\CauserAware;
+use App\DTO\Company\AttachCompanyAddressData;
+use App\DTO\Company\AttachCompanyContactData;
 use App\DTO\Company\CreateCompanyData;
+use App\DTO\Company\PartialUpdateCompanyData;
 use App\DTO\Company\UpdateCompanyContactData;
 use App\DTO\Company\UpdateCompanyData;
 use App\Events\Company\CompanyCreated;
 use App\Events\Company\CompanyDeleted;
 use App\Events\Company\CompanyUpdated;
+use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
 use Illuminate\Contracts\Cache\LockProvider;
@@ -162,6 +166,44 @@ class CompanyEntityService implements CauserAware
                 new CompanyUpdated(company: $company, oldCompany: $oldCompany, causer: $this->causer)
             );
         });
+    }
+
+    public function partiallyUpdateCompany(Company $company, PartialUpdateCompanyData $companyData): Company
+    {
+        return $this->updateCompany($company, new UpdateCompanyData([
+            'name' => $companyData->name,
+            'vat' => $companyData->vat,
+            'vat_type' => $companyData->vat_type,
+            'logo' => $companyData->logo,
+            'delete_logo' => $companyData->delete_logo,
+            'email' => $companyData->email,
+            'phone' => $companyData->phone,
+            'website' => $companyData->website,
+            'addresses' => $companyData->addresses ?? $company->addresses->map(function (Address $address) {
+                    return new AttachCompanyAddressData([
+                        'id' => $address->getKey(),
+                        'is_default' => (bool)$address->pivot?->is_default,
+                    ]);
+                })
+                    ->all(),
+            'contacts' => $companyData->contacts ?? $company->contacts->map(function (Contact $contact) {
+                    return new AttachCompanyContactData([
+                        'id' => $contact->getKey(),
+                        'is_default' => (bool)$contact->pivot?->is_default,
+                    ]);
+                })
+                    ->all(),
+
+            // Persisting of the existing attributes
+            'type' => $company->type,
+            'source' => $company->source,
+            'short_code' => $company->short_code,
+            'category' => $company->category,
+            'vendors' => $company->vendors()->get()->modelKeys(),
+            'default_vendor_id' => $company->default_vendor_id,
+            'default_template_id' => $company->default_template_id,
+            'default_country_id' => $company->default_country_id,
+        ]));
     }
 
     public function markCompanyAsActive(Company $company): void

@@ -141,6 +141,88 @@
       "decoration": "2"
     },
     {
+      "id": "d3dafc57-7c26-465e-bb40-831ce0b89bb2",
+      "name": "Single Column",
+      "child": [
+        {
+          "id": "a3b2a322-04b1-4a80-bb0b-626c265986e0",
+          "class": "col-lg-12 border-right",
+          "controls": [],
+          "position": 1
+        }
+      ],
+      "class": "single-column field-dragger",
+      "order": 1,
+      "controls": [],
+      "is_field": false,
+      "droppable": false,
+      "decoration": "1"
+    },
+    {
+      "id": "e9e57717-0a58-4b25-ad05-3d7231c50e8a",
+      "name": "Two Column",
+      "child": [
+        {
+          "id": "2645d8df-334c-4d24-a6be-d680e37ebf91",
+          "class": "col-lg-6",
+          "controls": [
+            {
+              "id": "13e48218-f2cd-4ff8-a6fe-590adedd40b1",
+              "css": null,
+              "src": null,
+              "name": "l-1",
+              "show": false,
+              "type": "label",
+              "class": null,
+              "label": "Label",
+              "value": "End Customer",
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "attached_child_id": "2645d8df-334c-4d24-a6be-d680e37ebf91",
+              "attached_element_id": "e9e57717-0a58-4b25-ad05-3d7231c50e8a"
+            },
+            {
+              "id": "ac3242f6-f641-46d1-834d-1ef4b28a2b61",
+              "css": null,
+              "src": null,
+              "name": "end_user_id",
+              "show": false,
+              "type": "dropdown",
+              "class": "form-control",
+              "label": "End User",
+              "value": null,
+              "is_field": true,
+              "is_image": false,
+              "droppable": false,
+              "is_system": false,
+              "is_required": false,
+              "placeholder": null,
+              "field_required": false,
+              "possibel_values": null,
+              "attached_child_id": "2645d8df-334c-4d24-a6be-d680e37ebf91",
+              "attached_element_id": "e9e57717-0a58-4b25-ad05-3d7231c50e8a"
+            }
+          ],
+          "position": 1
+        },
+        {
+          "id": "03d96922-a72f-4b39-8684-01ef386bb181",
+          "class": "col-lg-6 border-right",
+          "controls": [],
+          "position": 2
+        }
+      ],
+      "class": "two-column field-dragger",
+      "order": 2,
+      "controls": [],
+      "is_field": false,
+      "droppable": false,
+      "decoration": "2"
+    },
+    {
       "id": "18f89b63-9353-47fe-9cc3-808bab2d69c2",
       "name": "Single Column",
       "child": [

@@ -48,298 +48,6 @@ class WorldwideContractQuoteTest extends TestCase
     use WithFaker, DatabaseTransactions;
 
     /**
-     * Test an ability to view paginated worldwide contract quotes.
-     *
-     * @return void
-     */
-    public function testCanViewPaginatedWorldwideContractQuotes()
-    {
-        $this->authenticateApi();
-
-        foreach (range(1, 10) as $time) {
-            factory(WorldwideQuote::class)->create();
-
-            $opportunity = factory(Opportunity::class)->create();
-            $opportunitySupplier = factory(OpportunitySupplier::class)->create(['opportunity_id' => $opportunity->getKey()]);
-            $submittedQuote = factory(WorldwideQuote::class)->create(['submitted_at' => now(), 'opportunity_id' => $opportunity->getKey()]);
-
-            $quoteFile = factory(QuoteFile::class)->create();
-
-            factory(WorldwideDistribution::class)->create([
-                'worldwide_quote_id' => $submittedQuote->getKey(),
-                'worldwide_quote_type' => WorldwideQuote::class,
-                'opportunity_supplier_id' => $opportunitySupplier->getKey(),
-                'distributor_file_id' => $quoteFile->getKey(),
-                'schedule_file_id' => $quoteFile->getKey(),
-            ]);
-
-            factory(SalesOrder::class)->create();
-            factory(SalesOrder::class)->create(['submitted_at' => now()]);
-        }
-
-        $this->getJson('api/ww-quotes/drafted')
-//            ->dump()
-            ->assertOk()
-            ->assertJsonStructure([
-                'current_page',
-                'data' => [
-                    '*' => [
-                        'id',
-                        'user_id',
-                        'opportunity_id',
-                        'company_id',
-                        'type_name',
-                        'completeness',
-                        'stage',
-                        'created_at',
-                        'updated_at',
-                        'activated_at',
-                        'user_fullname',
-                        'company_name',
-                        'customer_name',
-                        'rfq_number',
-                        'valid_until_date',
-                        'customer_support_start_date',
-                        'customer_support_end_date',
-
-                        'active_version_id',
-
-                        'versions' => [
-                            '*' => [
-                                'id',
-                                'worldwide_quote_id',
-                                'user_id',
-                                'user_fullname',
-                                'user_version_sequence_number',
-                                'updated_at',
-                                'version_name',
-                                'is_active_version',
-                            ],
-                        ],
-
-                        'status',
-                        'status_reason',
-
-                        'permissions' => [
-                            'view', 'update', 'delete', 'change_status',
-                        ],
-
-                        'created_at',
-                        'updated_at',
-                        'activated_at',
-                    ],
-                ],
-                'links' => [
-                    'first',
-                    'last',
-                    'next',
-                    'prev',
-                ],
-
-                // TODO: remove
-                'from',
-                'path',
-                'per_page',
-                'last_page',
-                'to',
-                'total',
-                //
-
-                'meta' => [
-                    'last_page',
-                    'from',
-                    'path',
-                    'per_page',
-                    'to',
-                    'total',
-                ],
-            ]);
-
-        $this->getJson('api/ww-quotes/drafted?search=1234')->assertOk();
-        $this->getJson('api/ww-quotes/drafted?order_by_customer_name=asc')->assertOk();
-        $this->getJson('api/ww-quotes/drafted?order_by_completeness=asc')->assertOk();
-        $this->getJson('api/ww-quotes/drafted?order_by_user_fullname=asc')->assertOk();
-        $this->getJson('api/ww-quotes/drafted?order_by_rfq_number=asc')->assertOk();
-        $this->getJson('api/ww-quotes/drafted?order_by_valid_until_date=asc')->assertOk();
-        $this->getJson('api/ww-quotes/drafted?order_by_support_start_date=asc')->assertOk();
-        $this->getJson('api/ww-quotes/drafted?order_by_support_end_date=asc')->assertOk();
-        $this->getJson('api/ww-quotes/drafted?order_by_created_at=asc')->assertOk();
-
-        $this->getJson('api/ww-quotes/submitted')
-//            ->dump()
-            ->assertOk()
-            ->assertJsonStructure([
-                'current_page',
-                'data' => [
-                    '*' => [
-                        'id',
-                        'user_id',
-                        'sales_order_id',
-                        'has_sales_order',
-                        'sales_order_submitted',
-                        'has_distributor_files',
-                        'has_schedule_files',
-                        'opportunity_id',
-                        'type_name',
-                        'company_id',
-                        'completeness',
-                        'created_at',
-                        'updated_at',
-                        'activated_at',
-                        'user_fullname',
-                        'company_name',
-                        'customer_name',
-                        'rfq_number',
-                        'valid_until_date',
-                        'customer_support_start_date',
-                        'customer_support_end_date',
-
-                        'status',
-                        'status_reason',
-
-                        'permissions' => [
-                            'view', 'update', 'delete', 'change_status',
-                        ],
-                    ],
-                ],
-                'links' => [
-                    'first',
-                    'last',
-                    'next',
-                    'prev',
-                ],
-
-                // TODO: remove
-                'from',
-                'path',
-                'per_page',
-                'last_page',
-                'to',
-                'total',
-                //
-
-                'meta' => [
-                    'last_page',
-                    'from',
-                    'path',
-                    'per_page',
-                    'to',
-                    'total',
-                ],
-            ]);
-
-        $this->getJson('api/ww-quotes/submitted?search=1234')->assertOk();
-        $this->getJson('api/ww-quotes/submitted?order_by_customer_name=asc')->assertOk();
-        $this->getJson('api/ww-quotes/submitted?order_by_rfq_number=asc')->assertOk();
-        $this->getJson('api/ww-quotes/submitted?order_by_valid_until_date=asc')->assertOk();
-        $this->getJson('api/ww-quotes/submitted?order_by_support_start_date=asc')->assertOk();
-        $this->getJson('api/ww-quotes/submitted?order_by_support_end_date=asc')->assertOk();
-        $this->getJson('api/ww-quotes/submitted?order_by_created_at=asc')->assertOk();
-    }
-
-    /**
-     * Test an ability to view own paginated drafted worldwide contract quotes.
-     *
-     * @return void
-     */
-    public function testCanViewOwnPaginatedDraftedWorldwideContractQuotes()
-    {
-        /** @var Role $role */
-        $role = factory(Role::class)->create();
-
-        $role->syncPermissions('view_own_ww_quotes');
-
-        /** @var User $user */
-        $user = factory(User::class)->create();
-
-        $user->syncRoles($role);
-
-        // Own WorldwideQuote entity.
-        $quote = factory(WorldwideQuote::class)->create([
-            'user_id' => $user->getKey(),
-            'contract_type_id' => CT_CONTRACT,
-            'submitted_at' => null,
-        ]);
-
-        // WorldwideQuote entity own by another user.
-        factory(WorldwideQuote::class)->create([
-            'contract_type_id' => CT_CONTRACT,
-            'submitted_at' => null,
-        ]);
-
-        $this->actingAs($user, 'api');
-
-        $response = $this->getJson('api/ww-quotes/drafted')
-//            ->dump()
-            ->assertOk()
-            ->assertJsonStructure([
-                'data' => [
-                    '*' => [
-                        'id',
-                        'user_id',
-                    ],
-                ],
-            ]);
-
-        $this->assertNotEmpty($response->json('data'));
-
-        foreach ($response->json('data.*.user_id') as $ownerUserKey) {
-            $this->assertSame($user->getKey(), $ownerUserKey);
-        }
-    }
-
-    /**
-     * Test an ability to view own paginated submitted worldwide contract quotes.
-     *
-     * @return void
-     */
-    public function testCanViewOwnPaginatedSubmittedWorldwideContractQuotes()
-    {
-        /** @var Role $role */
-        $role = factory(Role::class)->create();
-
-        $role->syncPermissions('view_own_ww_quotes');
-
-        /** @var User $user */
-        $user = factory(User::class)->create();
-
-        $user->syncRoles($role);
-
-        // Own WorldwideQuote entity.
-        $quote = factory(WorldwideQuote::class)->create([
-            'user_id' => $user->getKey(),
-            'contract_type_id' => CT_CONTRACT,
-            'submitted_at' => now(),
-        ]);
-
-        // WorldwideQuote entity own by another user.
-        factory(WorldwideQuote::class)->create([
-            'contract_type_id' => CT_CONTRACT,
-            'submitted_at' => now(),
-        ]);
-
-        $this->actingAs($user, 'api');
-
-        $response = $this->getJson('api/ww-quotes/submitted')
-//            ->dump()
-            ->assertOk()
-            ->assertJsonStructure([
-                'data' => [
-                    '*' => [
-                        'id',
-                        'user_id',
-                    ],
-                ],
-            ]);
-
-        $this->assertNotEmpty($response->json('data'));
-
-        foreach ($response->json('data.*.user_id') as $ownerUserKey) {
-            $this->assertSame($user->getKey(), $ownerUserKey);
-        }
-    }
-
-    /**
      * Test an ability to initialize a new Contract Worldwide Quote.
      *
      * @return void
@@ -557,6 +265,8 @@ class WorldwideContractQuoteTest extends TestCase
             'exchange_rate_margin' => 7,
             'worldwide_distributions' => $distributionsData,
             'payment_terms' => '30 Days',
+            'are_end_user_addresses_available' => false,
+            'are_end_user_contacts_available' => false,
             'stage' => 'Import',
         ])
 //            ->dump()
@@ -594,6 +304,10 @@ class WorldwideContractQuoteTest extends TestCase
 //        $this->assertEquals(1, $response->json('worldwide_distributions.0.contacts.0.is_default'));
         $this->assertCount(1, $response->json('worldwide_distributions.1.contacts'));
 //        $this->assertEquals(1, $response->json('worldwide_distributions.0.contacts.0.is_default'));
+
+
+        $this->assertSame($importStageData['are_end_user_addresses_available'], $response->json('are_end_user_addresses_available'));
+        $this->assertSame($importStageData['are_end_user_contacts_available'], $response->json('are_end_user_contacts_available'));
 
         $this->assertSame($distributionsData[0]['distribution_currency_quote_currency_exchange_rate_value'], $response->json('worldwide_distributions.0.distribution_currency_quote_currency_exchange_rate_value'));
         $this->assertSame($distributionsData[1]['distribution_currency_quote_currency_exchange_rate_value'], $response->json('worldwide_distributions.1.distribution_currency_quote_currency_exchange_rate_value'));
@@ -732,6 +446,7 @@ class WorldwideContractQuoteTest extends TestCase
             'opportunity',
             'opportunity.primary_account',
             'opportunity.primary_account_contact',
+            'opportunity.end_user',
             'opportunity.account_manager',
             'summary',
             'quote_template',
@@ -747,9 +462,10 @@ class WorldwideContractQuoteTest extends TestCase
             'worldwide_distributions.distribution_currency',
             'worldwide_distributions.mapping',
             'worldwide_distributions.mapping_row',
-            'worldwide_distributions.mapped_rows',
+            'worldwide_distributions.mapped_rows.machine_address.country',
             'worldwide_distributions.rows_groups',
             'worldwide_distributions.rows_groups.rows',
+            'worldwide_distributions.rows_groups.rows.machine_address.country',
             'worldwide_distributions.summary',
             'worldwide_distributions.applicable_discounts',
             'worldwide_distributions.predefined_discounts',
@@ -802,6 +518,10 @@ class WorldwideContractQuoteTest extends TestCase
                     'primary_account_contact' => [
                         'id',
                     ],
+
+                    'end_user' => [
+                        'id', 'name', 'short_code', 'name',
+                    ],
 //                    'account_manager_id',
                     'account_manager' => [
                         'id',
@@ -831,11 +551,29 @@ class WorldwideContractQuoteTest extends TestCase
                             'id', 'iso_3166_2', 'name', 'flag',
                         ],
 
-                        'mapping',
+                        'mapping' => [
+                            '*' => [
+                                'importable_column_id',
+                                'template_field_id',
+                                'sort',
+                                'template_field_name',
+                                'template_field_header',
+                                'is_editable',
+                                'is_default_enabled',
+                                'is_preview_visible',
+                                'is_mapping_visible',
+                                'is_required',
+                            ]
+                        ],
                         'mapping_row',
                         'mapped_rows' => [
                             '*' => [
-                                'id', 'is_customer_exclusive_asset', 'contract_duration', 'contract_duration_months',
+                                'id',
+                                'is_customer_exclusive_asset',
+                                'contract_duration',
+                                'contract_duration_months',
+                                'machine_address_id',
+                                'machine_address_string',
                             ],
                         ],
 
@@ -864,6 +602,8 @@ class WorldwideContractQuoteTest extends TestCase
                                 'rows' => [
                                     '*' => [
                                         'id',
+                                        'machine_address_id',
+                                        'machine_address_string',
                                         'product_no',
                                         'description',
                                         'serial_no',
@@ -927,6 +667,9 @@ class WorldwideContractQuoteTest extends TestCase
 
         $mapping = Arr::pluck($response->json('worldwide_distributions.0.mapping'), 'is_required', 'template_field_name');
 
+        $this->assertSame('machine_address', $response->json('worldwide_distributions.0.mapping.0.template_field_name'));
+
+        $this->assertArrayHasKey('machine_address', $mapping);
         $this->assertArrayHasKey('product_no', $mapping);
         $this->assertArrayHasKey('service_sku', $mapping);
         $this->assertArrayHasKey('description', $mapping);
@@ -938,6 +681,7 @@ class WorldwideContractQuoteTest extends TestCase
         $this->assertArrayHasKey('searchable', $mapping);
         $this->assertArrayHasKey('service_level_description', $mapping);
 
+        $this->assertFalse($mapping['machine_address']);
         $this->assertTrue($mapping['product_no']);
         $this->assertTrue($mapping['service_sku']);
         $this->assertFalse($mapping['description']);
@@ -1425,8 +1169,13 @@ class WorldwideContractQuoteTest extends TestCase
                     'contract_duration',
                     'is_contract_duration_checked',
                     'contact_name',
+                    'contact_country',
                     'contact_email',
                     'contact_phone',
+                    'end_user_name',
+                    'end_user_contact_country',
+                    'end_user_contact_name',
+                    'end_user_contact_email',
                     'list_price',
                     'final_price',
                     'applicable_discounts',
@@ -1446,11 +1195,15 @@ class WorldwideContractQuoteTest extends TestCase
                     'pricing_document',
                     'service_agreement_id',
                     'system_handle',
+                    'account_manager_name',
                 ],
 
                 'distributions' => [
                     '*' => [
                         'vendors', 'country', 'supplier',
+                        'asset_fields' => [
+                            '*' => ['field_name', 'field_header']
+                        ]
 //                        'assets_data' => [
 //                            '*' => [
 //                                'buy_currency_code'
@@ -1481,11 +1234,27 @@ class WorldwideContractQuoteTest extends TestCase
             "machine_address_string",
         ];
 
+        $assetFields = [
+            'product_no',
+            'description',
+            'serial_no',
+            'date_from',
+            'date_to',
+            'qty',
+            'price',
+            'service_level_description',
+            'machine_address_string'
+        ];
+
         foreach ($response->json('distributions') as $distributorQuote) {
             $assets = collect($distributorQuote['assets_data']);
 
             if ($distributorQuote['assets_are_grouped']) {
                 $assets = $assets->pluck('assets')->collapse()->all();
+            }
+
+            foreach ($assetFields as $field) {
+                $this->assertContainsEquals($field, Arr::pluck($distributorQuote['asset_fields'], 'field_name'));
             }
 
             foreach ($assets as $asset) {
@@ -1548,7 +1317,7 @@ class WorldwideContractQuoteTest extends TestCase
         ]);
 
         $this->postJson('api/ww-quotes/'.$wwQuote->getKey().'/submit', [
-            'quote_closing_date' => $this->faker->date,
+            'quote_closing_date' => $this->faker->date(),
             'additional_notes' => 'Note for submitted quote',
         ])
 //            ->dump()

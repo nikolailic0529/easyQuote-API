@@ -23,6 +23,9 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property string|null $pipeline_id
  * @property string|null $contract_type_id
  * @property string|null $primary_account_id
+ * @property string|null $end_user_id
+ * @property bool|null $are_end_user_addresses_available
+ * @property bool|null $are_end_user_contacts_available
  * @property string|null $primary_account_contact_id
  * @property string|null $imported_primary_account_id
  * @property string|null $imported_primary_account_contact_id
@@ -93,6 +96,7 @@ use Staudenmeir\EloquentHasManyDeep\HasRelationships;
  * @property-read \App\Models\Pipeline\Pipeline|null $pipeline
  * @property-read ContractType|null $contractType
  * @property-read Company|null $primaryAccount
+ * @property-read Company|null $endUser
  * @property-read ImportedCompany|null $importedPrimaryAccount
  * @property-read Contact|null $primaryAccountContact
  * @property-read ImportedContact|null $importedPrimaryAccountContact
@@ -123,6 +127,11 @@ class Opportunity extends Model implements SearchableEntity
     }
 
     public function primaryAccount(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function endUser(): BelongsTo
     {
         return $this->belongsTo(Company::class);
     }
@@ -170,7 +179,8 @@ class Opportunity extends Model implements SearchableEntity
     public function toSearchArray(): array
     {
         return [
-            'primary_account_name' => transform($this->primaryAccount, fn(Company $account) => $account->name),
+            'primary_account_name' => $this->primaryAccount?->name,
+            'end_user_name' => $this->endUser?->name,
             'project_name' => $this->project_name,
             'contract_type' => $this->contractType->type_short_name,
             'opportunity_start_date' => $this->opportunity_start_date,

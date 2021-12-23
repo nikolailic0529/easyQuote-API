@@ -35,6 +35,10 @@ class WorldwideQuoteState extends JsonResource
         'opportunity.primaryAccount.addresses.country',
         'opportunity.primaryAccount.contacts',
         'opportunity.primaryAccountContact',
+        'opportunity.endUser',
+        'opportunity.endUser.addresses',
+        'opportunity.endUser.addresses.country',
+        'opportunity.endUser.contacts',
 
         'worldwideDistributions',
         'quoteCurrency',
@@ -51,10 +55,15 @@ class WorldwideQuoteState extends JsonResource
         'worldwideDistributions.country',
         'worldwideDistributions.distributionCurrency',
         'worldwideDistributions.mappedRows',
+        'worldwideDistributions.mappedRows.machineAddress',
+        'worldwideDistributions.mappedRows.machineAddress.country',
         'worldwideDistributions.rowsGroups',
         'worldwideDistributions.rowsGroups.rows',
         'worldwideDistributions.addresses',
         'worldwideDistributions.contacts',
+        'worldwideDistributions.rowsGroups',
+        'worldwideDistributions.rowsGroups.rows.machineAddress',
+        'worldwideDistributions.rowsGroups.rows.machineAddress.country',
     ];
 
     public array $translatedIncludes = [
@@ -87,7 +96,11 @@ class WorldwideQuoteState extends JsonResource
         'worldwideDistributions.country' => 'activeVersion.worldwideDistributions.country',
         'worldwideDistributions.distributionCurrency' => 'activeVersion.worldwideDistributions.distributionCurrency',
         'worldwideDistributions.mappedRows' => 'activeVersion.worldwideDistributions.mappedRows',
+        'worldwideDistributions.mappedRows.machineAddress' => 'activeVersion.worldwideDistributions.mappedRows.machineAddress',
+        'worldwideDistributions.mappedRows.machineAddress.country' => 'activeVersion.worldwideDistributions.mappedRows.machineAddress.country',
         'worldwideDistributions.rowsGroups' => 'activeVersion.worldwideDistributions.rowsGroups',
+        'worldwideDistributions.rowsGroups.rows.machineAddress' => 'activeVersion.worldwideDistributions.rowsGroups.rows.machineAddress',
+        'worldwideDistributions.rowsGroups.rows.machineAddress.country' => 'activeVersion.worldwideDistributions.rowsGroups.rows.machineAddress.country',
         'worldwideDistributions.rowsGroups.rows' => 'activeVersion.worldwideDistributions.rowsGroups.rows',
         'worldwideDistributions.addresses' => 'activeVersion.worldwideDistributions.addresses',
         'worldwideDistributions.contacts' => 'activeVersion.worldwideDistributions.contacts',
@@ -297,6 +310,9 @@ class WorldwideQuoteState extends JsonResource
             'service_agreement_id' => $this->activeVersion->service_agreement_id,
             'system_handle' => $this->activeVersion->system_handle,
             'additional_details' => $this->activeVersion->additional_details,
+
+            'are_end_user_addresses_available' => (bool)$this->activeVersion->are_end_user_addresses_available,
+            'are_end_user_contacts_available' => (bool)$this->activeVersion->are_end_user_contacts_available,
 
             'additional_notes' => $this->activeVersion->note?->text,
 

@@ -309,6 +309,7 @@ Route::group(['middleware' => 'auth:api'], function () {
 
         Route::post('companies', [CompanyController::class, 'storeCompany']);
         Route::patch('companies/{company}', [CompanyController::class, 'updateCompany']);
+        Route::patch('companies/partial/{company}', [CompanyController::class, 'partiallyUpdateCompany']);
         Route::delete('companies/{company}', [CompanyController::class, 'destroyCompany']);
 
         Route::put('companies/activate/{company}', [CompanyController::class, 'markAsActiveCompany']);
@@ -643,6 +644,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::post('ww-distributions/{worldwide_distribution}/custom-discount-margin', [WorldwideDistributionController::class, 'showMarginAfterCustomDiscount']);
     Route::post('ww-distributions/{worldwide_distribution}/country-margin-tax-margin', [WorldwideDistributionController::class, 'showPriceSummaryAfterMarginTax']);
 
+    Route::get('ww-distributions/{worldwide_distribution}/mapped-rows/{mapped_row:id}', [WorldwideDistributionController::class, 'showMappedRow']);
     Route::patch('ww-distributions/{worldwide_distribution}/mapped-rows/{mapped_row:id}', [WorldwideDistributionController::class, 'updateMappedRow']);
 
 

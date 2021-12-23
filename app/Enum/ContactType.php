@@ -4,5 +4,7 @@ namespace App\Enum;
 
 final class ContactType extends Enum
 {
-    const HARDWARE = 'Hardware';
+    const
+        HARDWARE = 'Hardware',
+        SOFTWARE = 'Software';
 }

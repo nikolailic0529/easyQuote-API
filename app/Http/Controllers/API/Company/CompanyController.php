@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Attachment\CreateAttachment;
 use App\Http\Requests\Company\{DeleteCompany,
     PaginateCompanies,
+    PartialUpdateCompany,
     ShowCompanyFormData,
     StoreCompanyRequest,
     UpdateCompanyContact,
@@ -302,7 +303,32 @@ class CompanyController extends Controller
 
         $resource = $service
             ->setCauser($request->user())
-            ->updateCompany($company, $request->getUpdateCompanyData());
+            ->updateCompany(company: $company, companyData: $request->getUpdateCompanyData());
+
+        return response()->json(
+            CompanyWithIncludes::make($resource),
+            Response::HTTP_OK
+        );
+    }
+
+    /**
+     * Partially update the specified Company entity.
+     *
+     * @param PartialUpdateCompany $request
+     * @param CompanyEntityService $service
+     * @param Company $company
+     * @return JsonResponse
+     * @throws AuthorizationException
+     */
+    public function partiallyUpdateCompany(PartialUpdateCompany $request,
+                                           CompanyEntityService $service,
+                                           Company $company): JsonResponse
+    {
+        $this->authorize('update', $company);
+
+        $resource = $service
+            ->setCauser($request->user())
+            ->partiallyUpdateCompany(company: $company, companyData: $request->getUpdateCompanyData());
 
         return response()->json(
             CompanyWithIncludes::make($resource),

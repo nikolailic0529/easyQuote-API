@@ -24,5 +24,5 @@
 </table>
 
 @if (filled($asset_notes))
-    <p class="mt-1">{{ $asset_notes }}</p>
+    <p class="mt-1" style="white-space: pre-line">{{ $asset_notes }}</p>
 @endif

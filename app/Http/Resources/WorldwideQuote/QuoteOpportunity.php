@@ -5,6 +5,8 @@ namespace App\Http\Resources\WorldwideQuote;
 use App\Models\Address;
 use App\Models\Contact;
 use App\Models\Opportunity;
+use App\Services\WorldwideQuote\WorldwideQuoteDataMapper;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class QuoteOpportunity extends JsonResource
@@ -12,7 +14,7 @@ class QuoteOpportunity extends JsonResource
     /**
      * Transform the resource into an array.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param \Illuminate\Http\Request $request
      * @return array
      */
     public function toArray($request)
@@ -45,6 +47,66 @@ class QuoteOpportunity extends JsonResource
 
             }),
             'primary_account_contact' => $this->whenLoaded('primaryAccountContact'),
+            'end_user' => $this->whenLoaded('endUser', function () {
+
+                /** @var Opportunity|QuoteOpportunity $this */
+
+                if ($this->endUser->relationLoaded('addresses')) {
+                    $this->endUser->addresses->each(function (Address $address) {
+                        $address->setAttribute('is_default', $address->pivot->is_default);
+                    });
+                }
+
+                if ($this->endUser->relationLoaded('contacts')) {
+                    $this->endUser->contacts->each(function (Contact $contact) {
+                        $contact->setAttribute('is_default', $contact->pivot->is_default);
+                    });
+                }
+
+                return $this->endUser;
+
+            }),
+
+            'merged_addresses' => value(function (): Collection {
+
+                /** @var Opportunity|QuoteOpportunity $this */
+
+                $addresses = new Collection();
+
+                if ($this->relationLoaded('primaryAccount') && $this->primaryAccount?->relationLoaded('addresses')) {
+                    $addresses = $addresses->merge($this->primaryAccount->addresses);
+                }
+
+                if ($this->relationLoaded('endUser') && $this->endUser?->relationLoaded('addresses')) {
+                    $addresses = $addresses->merge($this->endUser->addresses);
+                }
+
+                $addresses->each(function (Address $address) {
+                    $address->setAttribute('address_string', WorldwideQuoteDataMapper::formatMachineAddressToString($address));
+                });
+
+                return $addresses;
+
+            }),
+
+            'merged_contacts' => value(function (): Collection {
+
+                /** @var Opportunity|QuoteOpportunity $this */
+
+                $contacts = new Collection();
+
+                if ($this->relationLoaded('primaryAccount') && $this->primaryAccount?->relationLoaded('contacts')) {
+                    $contacts = $contacts->merge($this->primaryAccount->contacts);
+                }
+
+                if ($this->relationLoaded('endUser') && $this->endUser?->relationLoaded('contacts')) {
+                    $contacts = $contacts->merge($this->endUser->contacts);
+                }
+
+                return $contacts;
+
+            }),
+
             'addresses' => $this->when(isset($this->additional['addresses']), function () {
                 return $this->additional['addresses'];
             }),

@@ -35,6 +35,15 @@ final class UpdateOpportunityData extends DataTransferObject
     /**
      * @Constraints\Uuid
      */
+    public ?string $end_user_id;
+
+    public bool $are_end_user_addresses_available;
+
+    public bool $are_end_user_contacts_available;
+
+    /**
+     * @Constraints\Uuid
+     */
     public ?string $primary_account_contact_id;
 
     /**

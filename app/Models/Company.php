@@ -34,6 +34,7 @@ use Staudenmeir\EloquentHasManyDeep\{HasManyDeep, HasRelationships,};
  * @property string|null $user_id
  * @property string|null $default_country_id
  * @property string|null $default_vendor_id
+ * @property string|null $default_template_id
  * @property string|null $name
  * @property string|null $short_code
  * @property string|null $vs_company_code

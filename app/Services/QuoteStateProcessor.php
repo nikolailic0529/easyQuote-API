@@ -403,7 +403,7 @@ class QuoteStateProcessor implements QuoteState
 
         $providedDiscounts = MorphDiscount::query()->with('discountable')->whereIn('discountable_id', Arr::pluck($attributes, 'id'))
             ->select(['*', DB::raw("({$durationsSelect}) as `duration`")])
-            ->orderByRaw("field(`discounts`.`discountable_type`, {$quote->discountsOrderToString()})", 'desc')
+            ->orderByRaw("field(`discounts`.`discountable_type`, {$quote->discountsOrderToString()}) desc")
             ->get();
 
         /**
@@ -430,9 +430,13 @@ class QuoteStateProcessor implements QuoteState
             return $interactedDiscounts;
         }
 
-        return $interactedDiscounts->groupBy(function ($discount) {
-            $type = $discount->discount_type === 'PromotionalDiscount' ? 'PromotionsDiscount' : $discount->discount_type;
-            return Str::snake(Str::before($type, 'Discount'));
+        return $interactedDiscounts->groupBy(function (MorphDiscount $discount) {
+            return match ($discount->discountable::class) {
+                MorphDiscount\SND::class => 's_n_d',
+                MorphDiscount\PromotionalDiscount::class => 'promotions',
+                MorphDiscount\PrePayDiscount::class => 'pre_pay',
+                MorphDiscount\MultiYearDiscount::class => 'multi_year',
+            };
         });
     }
 

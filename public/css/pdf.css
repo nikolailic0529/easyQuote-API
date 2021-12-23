@@ -123,6 +123,11 @@ hr.blue {
     margin-left: 1.5em
 }
 
+.group-logo {
+    padding: 5px 20px;
+    min-height: 40px;
+}
+
 .mt-1 {
     margin-top: 1rem
 }

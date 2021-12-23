@@ -48,6 +48,24 @@ class OpportunityWithIncludes extends JsonResource
             'primary_account_contact_id' => $this->primary_account_contact_id,
             'primary_account_contact' => $this->primaryAccountContact,
 
+            'end_user_id' => $this->end_user_id,
+            'end_user' => transform($this->endUser, function (Company $endUser): Company {
+                $endUser->loadMissing(['addresses.country', 'contacts']);
+
+                $endUser->addresses->each(function (Address $address) {
+                    $address->setAttribute('is_default', (bool)$address->pivot->is_default);
+                });
+
+                $endUser->contacts->each(function (Contact $contact) {
+                    $contact->setAttribute('is_default', (bool)$contact->pivot->is_default);
+                });
+
+                return $endUser->setAttribute('vendor_ids', $endUser->vendors->modelKeys());
+            }),
+
+            'are_end_user_addresses_available' => (bool)$this->are_end_user_addresses_available,
+            'are_end_user_contacts_available' => (bool)$this->are_end_user_contacts_available,
+
             'account_manager_id' => $this->account_manager_id,
             'account_manager' => $this->accountManager,
 

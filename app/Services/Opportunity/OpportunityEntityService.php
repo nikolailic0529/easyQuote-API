@@ -809,12 +809,15 @@ class OpportunityEntityService implements CauserAware
 
         return tap(new Opportunity(), function (Opportunity $opportunity) use ($data) {
             $opportunity->pipeline()->associate($data->pipeline_id);
-            $opportunity->user_id = $data->user_id;
-            $opportunity->contract_type_id = $data->contract_type_id;
+            $opportunity->user()->associate($data->user_id);
+            $opportunity->contractType()->associate($data->contract_type_id);
             $opportunity->project_name = $data->project_name;
-            $opportunity->primary_account_id = $data->primary_account_id;
-            $opportunity->primary_account_contact_id = $data->primary_account_contact_id;
-            $opportunity->account_manager_id = $data->account_manager_id;
+            $opportunity->primaryAccount()->associate($data->primary_account_id);
+            $opportunity->endUser()->associate($data->end_user_id);
+            $opportunity->primaryAccountContact()->associate($data->primary_account_contact_id);
+            $opportunity->accountManager()->associate($data->account_manager_id);
+            $opportunity->are_end_user_addresses_available = $data->are_end_user_addresses_available;
+            $opportunity->are_end_user_contacts_available = $data->are_end_user_contacts_available;
             $opportunity->nature_of_service = $data->nature_of_service;
             $opportunity->renewal_month = $data->renewal_month;
             $opportunity->renewal_year = $data->renewal_year;
@@ -957,11 +960,14 @@ class OpportunityEntityService implements CauserAware
 
             $lock->block(30, function () use ($opportunity, $data) {
                 $opportunity->pipeline()->associate($data->pipeline_id);
-                $opportunity->contract_type_id = $data->contract_type_id;
+                $opportunity->contractType()->associate($data->contract_type_id);
                 $opportunity->project_name = $data->project_name;
-                $opportunity->primary_account_id = $data->primary_account_id;
-                $opportunity->primary_account_contact_id = $data->primary_account_contact_id;
-                $opportunity->account_manager_id = $data->account_manager_id;
+                $opportunity->primaryAccount()->associate($data->primary_account_id);
+                $opportunity->endUser()->associate($data->end_user_id);
+                $opportunity->primaryAccountContact()->associate($data->primary_account_contact_id);
+                $opportunity->accountManager()->associate($data->account_manager_id);
+                $opportunity->are_end_user_addresses_available = $data->are_end_user_addresses_available;
+                $opportunity->are_end_user_contacts_available = $data->are_end_user_contacts_available;
                 $opportunity->nature_of_service = $data->nature_of_service;
                 $opportunity->renewal_month = $data->renewal_month;
                 $opportunity->renewal_year = $data->renewal_year;

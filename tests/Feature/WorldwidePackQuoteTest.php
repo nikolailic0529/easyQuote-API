@@ -47,266 +47,6 @@ class WorldwidePackQuoteTest extends TestCase
     use WithFaker, DatabaseTransactions;
 
     /**
-     * Test an ability to view paginate Pack Worldwide Quotes.
-     *
-     * @return void
-     */
-    public function testCanViewPaginatedPackWorldwideQuotes()
-    {
-        $this->authenticateApi();
-
-        foreach (range(1, 30) as $time) {
-
-            /** @var WorldwideQuote $quote */
-            $quote = factory(WorldwideQuote::class)->create(['contract_type_id' => CT_PACK]);
-
-            factory(WorldwideQuoteVersion::class)->create(['worldwide_quote_id' => $quote->getKey()]);
-
-            factory(WorldwideQuote::class)->create(['contract_type_id' => CT_PACK, 'submitted_at' => now()]);
-        }
-
-        $this->getJson('api/ww-quotes/drafted')
-//            ->dump()
-            ->assertOk()
-            ->assertJsonStructure([
-                'current_page',
-                'data' => [
-                    '*' => [
-                        'id',
-                        'user_id',
-
-                        'opportunity_id',
-                        'company_id',
-                        'completeness',
-                        'stage',
-                        'created_at',
-                        'updated_at',
-                        'activated_at',
-                        'user_fullname',
-                        'company_name',
-                        'customer_name',
-                        'rfq_number',
-                        'valid_until_date',
-                        'customer_support_start_date',
-                        'customer_support_end_date',
-                        'is_contract_duration_checked',
-                        'contract_duration',
-                        'created_at',
-                        'updated_at',
-                        'activated_at',
-
-                        'active_version_id',
-
-                        'versions' => [
-                            '*' => [
-                                'id',
-                                'worldwide_quote_id',
-                                'user_id',
-                                'user_fullname',
-                                'user_version_sequence_number',
-                                'updated_at',
-                                'version_name',
-                                'is_active_version',
-                            ],
-                        ],
-
-                        'status',
-                        'status_reason',
-
-                        'permissions' => [
-                            'view', 'update', 'delete', 'change_status',
-                        ],
-                    ],
-                ],
-                'links' => [
-                    'first',
-                    'last',
-                    'next',
-                    'prev',
-                ],
-
-                'meta' => [
-                    'last_page',
-                    'from',
-                    'path',
-                    'per_page',
-                    'to',
-                    'total',
-                ],
-            ]);
-
-//        $this->getJson('api/ww-quotes/drafted?search=1234')->assertOk();
-        $this->getJson('api/ww-quotes/drafted?order_by_customer_name=asc')->assertOk();
-        $this->getJson('api/ww-quotes/drafted?order_by_user_fullname=asc')->assertOk();
-        $this->getJson('api/ww-quotes/drafted?order_by_rfq_number=asc')->assertOk();
-        $this->getJson('api/ww-quotes/drafted?order_by_valid_until_date=asc')->assertOk();
-        $this->getJson('api/ww-quotes/drafted?order_by_support_start_date=asc')->assertOk();
-        $this->getJson('api/ww-quotes/drafted?order_by_support_end_date=asc')->assertOk();
-        $this->getJson('api/ww-quotes/drafted?order_by_contract_duration=asc')->assertOk();
-        $this->getJson('api/ww-quotes/drafted?order_by_created_at=asc')->assertOk();
-//
-        $this->getJson('api/ww-quotes/submitted')->assertOk()
-//            ->dump()
-            ->assertJsonStructure([
-                'current_page',
-                'data' => [
-                    '*' => [
-                        'id',
-                        'user_id',
-                        'opportunity_id',
-                        'company_id',
-                        'completeness',
-                        'created_at',
-                        'updated_at',
-                        'activated_at',
-                        'user_fullname',
-                        'company_name',
-                        'customer_name',
-                        'rfq_number',
-                        'valid_until_date',
-                        'customer_support_start_date',
-                        'customer_support_end_date',
-                        'is_contract_duration_checked',
-                        'contract_duration',
-
-                        'status',
-                        'status_reason',
-
-                        'permissions' => [
-                            'view', 'update', 'delete', 'change_status'
-                        ],
-                    ],
-                ],
-                'links' => [
-                    'first',
-                    'last',
-                    'next',
-                    'prev',
-                ],
-
-                'meta' => [
-                    'last_page',
-                    'from',
-                    'path',
-                    'per_page',
-                    'to',
-                    'total',
-                ],
-            ]);
-//
-        $this->getJson('api/ww-quotes/submitted?search=1234')->assertOk();
-        $this->getJson('api/ww-quotes/submitted?order_by_customer_name=asc')->assertOk();
-        $this->getJson('api/ww-quotes/submitted?order_by_rfq_number=asc')->assertOk();
-        $this->getJson('api/ww-quotes/submitted?order_by_valid_until_date=asc')->assertOk();
-        $this->getJson('api/ww-quotes/submitted?order_by_support_start_date=asc')->assertOk();
-        $this->getJson('api/ww-quotes/submitted?order_by_support_end_date=asc')->assertOk();
-        $this->getJson('api/ww-quotes/submitted?order_by_contract_duration=asc')->assertOk();
-        $this->getJson('api/ww-quotes/submitted?order_by_created_at=asc')->assertOk();
-    }
-
-    /**
-     * Test an ability to view own paginated drafted worldwide pack quotes.
-     *
-     * @return void
-     */
-    public function testCanViewOwnPaginatedDraftedWorldwidePackQuotes()
-    {
-        /** @var Role $role */
-        $role = factory(Role::class)->create();
-
-        $role->syncPermissions('view_own_ww_quotes');
-
-        /** @var User $user */
-        $user = factory(User::class)->create();
-
-        $user->syncRoles($role);
-
-        // Own WorldwideQuote entity.
-        $quote = factory(WorldwideQuote::class)->create([
-            'user_id' => $user->getKey(),
-            'contract_type_id' => CT_PACK,
-            'submitted_at' => null,
-        ]);
-
-        // WorldwideQuote entity own by another user.
-        factory(WorldwideQuote::class)->create([
-            'contract_type_id' => CT_PACK,
-            'submitted_at' => null,
-        ]);
-
-        $this->actingAs($user, 'api');
-
-        $response = $this->getJson('api/ww-quotes/drafted')
-//            ->dump()
-            ->assertOk()
-            ->assertJsonStructure([
-                'data' => [
-                    '*' => [
-                        'id',
-                        'user_id',
-                    ],
-                ],
-            ]);
-
-        $this->assertNotEmpty($response->json('data'));
-
-        foreach ($response->json('data.*.user_id') as $ownerUserKey) {
-            $this->assertSame($user->getKey(), $ownerUserKey);
-        }
-    }
-
-    /**
-     * Test an ability to view own paginated submitted worldwide pack quotes.
-     *
-     * @return void
-     */
-    public function testCanViewOwnPaginatedSubmittedWorldwidePackQuotes()
-    {
-        /** @var Role $role */
-        $role = factory(Role::class)->create();
-
-        $role->syncPermissions('view_own_ww_quotes');
-
-        /** @var User $user */
-        $user = factory(User::class)->create();
-
-        $user->syncRoles($role);
-
-        // Own WorldwideQuote entity.
-        $quote = factory(WorldwideQuote::class)->create([
-            'user_id' => $user->getKey(),
-            'contract_type_id' => CT_PACK,
-            'submitted_at' => now(),
-        ]);
-
-        // WorldwideQuote entity own by another user.
-        factory(WorldwideQuote::class)->create([
-            'contract_type_id' => CT_PACK,
-            'submitted_at' => now(),
-        ]);
-
-        $this->actingAs($user, 'api');
-
-        $response = $this->getJson('api/ww-quotes/submitted')
-//            ->dump()
-            ->assertOk()
-            ->assertJsonStructure([
-                'data' => [
-                    '*' => [
-                        'id',
-                        'user_id',
-                    ],
-                ],
-            ]);
-
-        $this->assertNotEmpty($response->json('data'));
-
-        foreach ($response->json('data.*.user_id') as $ownerUserKey) {
-            $this->assertSame($user->getKey(), $ownerUserKey);
-        }
-    }
-
-    /**
      * Test an ability to initialize a new Pack Worldwide Quote.
      *
      * @return void
@@ -661,11 +401,11 @@ class WorldwidePackQuoteTest extends TestCase
     }
 
     /**
-     * Test an ability to manage addresses & contacts of worldwide quote.
+     * Test an ability to process the quote setup step of worldwide quote.
      *
      * @return void
      */
-    public function testCanProcessWorldwideQuoteContactsStep()
+    public function testCanProcessWorldwideQuoteSetupStep()
     {
         $this->authenticateApi();
 
@@ -673,33 +413,21 @@ class WorldwidePackQuoteTest extends TestCase
             'contract_type_id' => CT_PACK,
         ]);
 
-        $existingAddress = factory(Address::class)->create();
-        $existingContact = factory(Contact::class)->create();
-
-        $addressesData = [
-            $existingAddress->getKey(),
-        ];
-
-        $contactsData = [
-            $existingContact->getKey(),
-        ];
-
         $template = factory(QuoteTemplate::class)->create();
 
         $quoteExpiryDate = now()->addMonth();
 
         $stageData = [
             'company_id' => $companyKey = Company::query()->where('type', 'Internal')->value('id'),
-            'quote_currency_id' => $quoteCurrencyKey = Currency::query()->where('code', 'GBP')->value('id'),
-            'buy_currency_id' => $quoteCurrencyKey = Currency::query()->where('code', 'GBP')->value('id'),
+            'quote_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
+            'buy_currency_id' => Currency::query()->where('code', 'GBP')->value('id'),
             'quote_template_id' => $templateKey = $template->getKey(),
             'quote_expiry_date' => $quoteExpiryDateString = $quoteExpiryDate->toDateString(),
-            'addresses' => $addressesData,
-            'contacts' => $contactsData,
             'buy_price' => $buyPrice = $this->faker->randomFloat(2, 1_000, 100_000),
+            'are_end_user_addresses_available' => false,
+            'are_end_user_contacts_available' => false,
             'payment_terms' => '30 Days',
             'stage' => 'Contacts',
-
         ];
 
         $this->postJson('api/ww-quotes/'.$quote->getKey().'/contacts', $stageData)
@@ -711,6 +439,8 @@ class WorldwidePackQuoteTest extends TestCase
             ->assertOk()
             ->assertJsonStructure([
                 'id',
+                'are_end_user_addresses_available',
+                'are_end_user_contacts_available',
                 'opportunity' => [
                     'id',
                     'addresses' => [
@@ -743,19 +473,14 @@ class WorldwidePackQuoteTest extends TestCase
                 ],
             ]);
 
-        $this->assertCount(count($addressesData), $response->json('opportunity.addresses'));
-        $this->assertCount(count($contactsData), $response->json('opportunity.contacts'));
-
-//        $this->assertCount(1, array_filter($response->json('opportunity.addresses'), fn(array $address) => $address['is_default']));
-//        $this->assertCount(1, array_filter($response->json('opportunity.contacts'), fn(array $contact) => $contact['is_default']));
-
-        $this->assertContains($existingAddress->getKey(), $response->json('opportunity.addresses.*.id'));
-        $this->assertContains($existingContact->getKey(), $response->json('opportunity.contacts.*.id'));
 
         $this->assertEquals($companyKey, $response->json('company_id'));
         $this->assertEquals($templateKey, $response->json('quote_template_id'));
         $this->assertEquals($quoteExpiryDateString, $response->json('quote_expiry_date'));
         $this->assertEquals($buyPrice, $response->json('buy_price'));
+        $this->assertSame($stageData['payment_terms'], $response->json('payment_terms'));
+        $this->assertSame($stageData['are_end_user_addresses_available'], $response->json('are_end_user_addresses_available'));
+        $this->assertSame($stageData['are_end_user_contacts_available'], $response->json('are_end_user_contacts_available'));
     }
 
     public function testCanUploadSampleNoVendorXlsxAsBatchAssetFile()
@@ -1543,8 +1268,13 @@ class WorldwidePackQuoteTest extends TestCase
                     'contract_duration',
                     'is_contract_duration_checked',
                     'contact_name',
+                    'contact_country',
                     'contact_email',
                     'contact_phone',
+                    'end_user_name',
+                    'end_user_contact_country',
+                    'end_user_contact_name',
+                    'end_user_contact_email',
                     'list_price',
                     'final_price',
                     'applicable_discounts',
@@ -1564,6 +1294,22 @@ class WorldwidePackQuoteTest extends TestCase
                     'pricing_document',
                     'service_agreement_id',
                     'system_handle',
+
+                    'account_manager_name',
+
+                    'quote_data_aggregation_fields' => [
+                        '*' => ['field_name', 'field_header']
+                    ],
+
+                    'quote_data_aggregation' => [
+                        '*' => [
+                            'vendor_name',
+                            'country_name',
+                            'duration',
+                            'qty',
+                            'total_price',
+                        ]
+                    ]
                 ],
 
 
@@ -1602,6 +1348,9 @@ class WorldwidePackQuoteTest extends TestCase
 
                 'asset_notes',
             ]);
+
+        $this->assertNotEmpty($response->json('quote_summary.quote_data_aggregation'));
+        $this->assertNotEmpty($response->json('quote_summary.quote_data_aggregation_fields'));
 
         $this->assertSame('£ 5,555.56', $response->json('quote_summary.list_price'));
         $this->assertSame('£ 5,263.16', $response->json('quote_summary.final_price'));

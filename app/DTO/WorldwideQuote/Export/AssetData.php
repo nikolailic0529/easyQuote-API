@@ -41,5 +41,13 @@ final class AssetData extends DataTransferObject
 
     public string $service_level_description;
 
+    public string $country_code;
+
     public string $machine_address_string;
+
+    public string $state;
+
+    public string $end_user_invoice_country_code = '';
+
+    public string $end_user_invoice_state = '';
 }

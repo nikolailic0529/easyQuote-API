@@ -49,13 +49,21 @@ class UpdateQuoteImport extends FormRequest
             ],
             'quote_template_id' => [
                 'bail', 'required', 'uuid',
-                Rule::exists(QuoteTemplate::class, 'id')->whereNull('deleted_at')->whereNotNull('activated_at')
+                Rule::exists(QuoteTemplate::class, 'id')->whereNull('deleted_at')->whereNotNull('activated_at'),
             ],
             'exchange_rate_margin' => [
-                'bail', 'nullable', 'numeric', 'max:999'
+                'bail', 'nullable', 'numeric', 'max:999',
             ],
             'quote_expiry_date' => [
-                'bail', 'required', 'date_format:Y-m-d'
+                'bail', 'required', 'date_format:Y-m-d',
+            ],
+
+            'are_end_user_addresses_available' => [
+                'bail', 'boolean',
+            ],
+
+            'are_end_user_contacts_available' => [
+                'bail', 'boolean',
             ],
 
             'worldwide_distributions' => [
@@ -92,7 +100,7 @@ class UpdateQuoteImport extends FormRequest
                 'bail', 'nullable', 'numeric', 'min:0', 'max:999999',
             ],
             'worldwide_distributions.*.distribution_currency_quote_currency_exchange_rate_value' => [
-                'bail', 'nullable', 'numeric', 'min:0', 'max:999999'
+                'bail', 'nullable', 'numeric', 'min:0', 'max:999999',
             ],
             'worldwide_distributions.*.buy_currency_id' => [
                 'bail', 'required', 'uuid',
@@ -100,19 +108,19 @@ class UpdateQuoteImport extends FormRequest
             ],
 
             'worldwide_distributions.*.addresses' => [
-                'bail', 'present', 'array'
+                'bail', 'present', 'array',
             ],
             'worldwide_distributions.*.addresses.*' => [
                 'bail', 'uuid',
-                Rule::exists(Address::class, 'id')->whereNull('deleted_at')
+                Rule::exists(Address::class, 'id')->whereNull('deleted_at'),
             ],
 
             'worldwide_distributions.*.contacts' => [
-                'bail', 'present', 'array'
+                'bail', 'present', 'array',
             ],
             'worldwide_distributions.*.contacts.*' => [
                 'bail', 'uuid',
-                Rule::exists(Contact::class, 'id')->whereNull('deleted_at')
+                Rule::exists(Contact::class, 'id')->whereNull('deleted_at'),
             ],
 
             'worldwide_distributions.*.buy_price' => [
@@ -126,11 +134,11 @@ class UpdateQuoteImport extends FormRequest
             ],
 
             'payment_terms' => [
-                'bail', 'required', 'string', 'max:500'
+                'bail', 'required', 'string', 'max:500',
             ],
 
             'stage' => [
-                'bail', 'required', Rule::in(ContractQuoteStage::getLabels())
+                'bail', 'required', Rule::in(ContractQuoteStage::getLabels()),
             ],
         ];
     }
@@ -165,6 +173,8 @@ class UpdateQuoteImport extends FormRequest
                 'contact_ids' => $distributionData['contacts'],
             ], $this->input('worldwide_distributions')),
             'payment_terms' => $this->input('payment_terms'),
+            'are_end_user_addresses_available' => $this->boolean('are_end_user_addresses_available'),
+            'are_end_user_contacts_available' => $this->boolean('are_end_user_contacts_available'),
             'stage' => ContractQuoteStage::getValueOfLabel($this->input('stage')),
         ]);
     }

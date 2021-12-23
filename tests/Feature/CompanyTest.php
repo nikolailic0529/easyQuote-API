@@ -9,7 +9,6 @@ use App\Models\Company;
 use App\Models\CompanyNote;
 use App\Models\Contact;
 use App\Models\Customer\Customer;
-use App\Models\Data\Country;
 use App\Models\Opportunity;
 use App\Models\Quote\Quote;
 use App\Models\Quote\QuoteNote;
@@ -19,6 +18,7 @@ use App\Models\Role;
 use App\Models\SalesOrder;
 use App\Models\User;
 use App\Models\Vendor;
+use App\Models\WorldwideQuoteAsset;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\{Arr, Str};
@@ -113,6 +113,46 @@ class CompanyTest extends TestCase
     }
 
     /**
+     * Test an ability to view paginated companies filtered by category.
+     *
+     * @return void
+     */
+    public function testCanViewExternalCompaniesFilteredByCategory()
+    {
+        $categories = [
+            'End User',
+            'Reseller',
+            'Business Partner',
+        ];
+
+        foreach ($categories as $category) {
+            factory(Company::class)->create([
+                'type' => 'External',
+                'category' => $category,
+            ]);
+        }
+
+        foreach ($categories as $category) {
+
+            $response = $this->getJson('api/external-companies/?filter[category][]='.$category)
+//                ->dump()
+                ->assertOk()
+                ->assertJsonStructure([
+                    'data' => [
+                        '*' => [
+                            'type',
+                            'category',
+                        ],
+                    ],
+                ]);
+
+            foreach ($response->json('data.*.category') as $value) {
+                $this->assertSame($category, $value);
+            }
+        }
+    }
+
+    /**
      * Test an ability to view company form data.
      *
      * @return void
@@ -129,31 +169,71 @@ class CompanyTest extends TestCase
                 'vendors' => [
                     '*' => [
                         'id', 'name', 'logo',
-                    ]
-                ]
+                    ],
+                ],
             ]);
 
         foreach ([
-            'Internal', 'External'
+                     'Internal', 'External',
                  ] as $type) {
             $this->assertContains($type, $response->json('types'));
         }
 
         foreach ([
-            'End User',
-            'Reseller',
-            'Business Partner'
+                     'End User',
+                     'Reseller',
+                     'Business Partner',
                  ] as $category) {
             $this->assertContains($category, $response->json('categories'));
         }
 
         foreach ([
-            'S4',
-            'EQ',
-            'Pipeliner'
+                     'S4',
+                     'EQ',
+                     'Pipeliner',
                  ] as $source) {
             $this->assertContains($source, $response->json('sources'));
         }
+    }
+
+    /**
+     * Test an ability to view company form data from opportunity screen.
+     *
+     * @return void
+     */
+    public function testCanViewCompanyFormDataFromOpportunityScreen()
+    {
+        $response = $this->getJson('api/companies/create')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'types',
+                'categories',
+                'sources',
+                'vendors' => [
+                    '*' => [
+                        'id', 'name', 'logo',
+                    ],
+                ],
+            ]);
+
+        $this->assertContains('End User', $response->json('categories'));
+
+        $response = $this->getJson('api/companies/create?correlation_id=3f40afc9-20ca-4374-b882-0716970b8f4c')
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'types',
+                'categories',
+                'sources',
+                'vendors' => [
+                    '*' => [
+                        'id', 'name', 'logo',
+                    ],
+                ],
+            ]);
+
+        $this->assertNotContains('End User', $response->json('categories'));
     }
 
     /**
@@ -166,8 +246,8 @@ class CompanyTest extends TestCase
         $attributes = factory(Company::class)->raw();
 
         $attributes['vendors'] = factory(Vendor::class, 2)->create()->modelKeys();
-        $attributes['addresses'] = array_map(fn (string $id) => ['id' => $id], factory(Address::class, 2)->create()->modelKeys());
-        $attributes['contacts'] = array_map(fn (string $id) => ['id' => $id], factory(Contact::class, 2)->create()->modelKeys());
+        $attributes['addresses'] = array_map(fn(string $id) => ['id' => $id], factory(Address::class, 2)->create()->modelKeys());
+        $attributes['contacts'] = array_map(fn(string $id) => ['id' => $id], factory(Contact::class, 2)->create()->modelKeys());
 
         $this->postJson('api/companies', $attributes)
 //            ->dump()
@@ -275,6 +355,157 @@ class CompanyTest extends TestCase
 
         $this->assertTrue($machineAddressFromResponse['is_default']);
         $this->assertTrue($contact1FromResponse['is_default']);
+    }
+
+    /**
+     * Test an ability to detach used in quotes addresses from an existing company.
+     *
+     * @return void
+     */
+    public function testCanDetachUsedAddressesFromCompany()
+    {
+        /** @var Company $company */
+        $company = factory(Company::class)->create();
+
+        $newAttributes = factory(Company::class)->raw(['_method' => 'PATCH']);
+
+        $usedMachineAddress = factory(Address::class)->create(['address_type' => 'Machine']);
+        $machineAddress = factory(Address::class)->create(['address_type' => 'Machine']);
+        $invoiceAddress = factory(Address::class)->create(['address_type' => 'Invoice']);
+
+        /** @var WorldwideQuote $quote */
+        $quote = factory(WorldwideQuote::class)->create();
+
+        $packAsset = factory(WorldwideQuoteAsset::class)->create([
+            'worldwide_quote_id' => $quote->activeVersion->getKey(),
+            'worldwide_quote_type' => $quote->activeVersion->getMorphClass(),
+            'machine_address_id' => $usedMachineAddress->getKey(),
+        ]);
+
+        $company->addresses()->syncWithoutDetaching($usedMachineAddress->getKey());
+
+        $contact1 = factory(Contact::class)->create();
+        $contact2 = factory(Contact::class)->create();
+
+        $newAttributes['vendors'] = factory(Vendor::class, 2)->create()->modelKeys();
+
+        $newAttributes['addresses'] = [
+            ['id' => $machineAddress->getKey(), 'is_default' => "1"],
+            ['id' => $invoiceAddress->getKey(), 'is_default' => "0"],
+        ];
+
+        $newAttributes['contacts'] = [
+            ['id' => $contact1->getKey(), 'is_default' => "1"],
+            ['id' => $contact2->getKey(), 'is_default' => "0"],
+        ];
+
+        $newAttributes['logo'] = UploadedFile::fake()->createWithContent('company-logo.jpg', file_get_contents(base_path('tests/Feature/Data/images/epd.png')));
+
+        $response = $this->postJson("api/companies/".$company->getKey(), $newAttributes)
+//            ->dump()
+            ->assertForbidden()
+            ->assertJsonStructure([
+                'message'
+            ]);
+
+        $this->assertStringContainsString('You cannot detach some of the addresses, used in the quotes', $response->json('message'));
+    }
+
+    /**
+     * Test an ability to update an existing company.
+     *
+     * @return void
+     */
+    public function testCanPartiallyUpdateCompany()
+    {
+        /** @var Company $company */
+        $company = factory(Company::class)->create();
+
+        $company->addresses()->attach(factory(Address::class)->create());
+
+        $newAttributes = [
+            'name' => $company->name,
+            'vat' => Str::random(40),
+            'vat_type' => 'VAT Number',
+            'email' => $this->faker->safeEmail(),
+            'phone' => $this->faker->e164PhoneNumber(),
+            'website' => Str::random(40),
+            '_method' => 'PATCH',
+        ];
+
+        $machineAddress = factory(Address::class)->create(['address_type' => 'Machine']);
+        $invoiceAddress = factory(Address::class)->create(['address_type' => 'Invoice']);
+
+        $contact1 = factory(Contact::class)->create();
+        $contact2 = factory(Contact::class)->create();
+
+        $newAttributes['addresses'] = [
+            ['id' => $machineAddress->getKey(), 'is_default' => "1"],
+            ['id' => $invoiceAddress->getKey(), 'is_default' => "0"],
+        ];
+
+        $newAttributes['contacts'] = [
+            ['id' => $contact1->getKey(), 'is_default' => "1"],
+            ['id' => $contact2->getKey(), 'is_default' => "0"],
+        ];
+
+        $newAttributes['logo'] = UploadedFile::fake()->createWithContent('company-logo.jpg', file_get_contents(base_path('tests/Feature/Data/images/epd.png')));
+
+        $this->postJson("api/companies/partial/".$company->getKey(), $newAttributes)
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'user_id',
+                'name',
+                'short_code',
+                'vat',
+                'type',
+                'email',
+                'phone',
+                'website',
+                'addresses' => [
+                    '*' => [
+                        'id',
+                        'is_default',
+                    ],
+                ],
+                'contacts' => [
+                    '*' => [
+                        'id',
+                        'is_default',
+                    ],
+                ],
+            ]);
+
+        $response = $this->getJson('api/companies/'.$company->getKey())
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'addresses' => [
+                    '*' => [
+                        'id',
+                        'is_default',
+                    ],
+                ],
+                'contacts' => [
+                    '*' => [
+                        'id',
+                        'is_default',
+                    ],
+                ],
+            ]);
+
+        $machineAddressFromResponse = Arr::first($response->json('addresses'), fn(array $address) => $address['id'] === $machineAddress->getKey());
+        $contact1FromResponse = Arr::first($response->json('contacts'), fn(array $contact) => $contact['id'] === $contact1->getKey());
+
+
+        $this->assertTrue($machineAddressFromResponse['is_default']);
+        $this->assertTrue($contact1FromResponse['is_default']);
+
+        foreach (Arr::except($newAttributes, ['logo', '_method', 'addresses', 'contacts']) as $key => $value) {
+            $this->assertSame($value, $response->json($key));
+        }
     }
 
     /**
@@ -461,7 +692,7 @@ class CompanyTest extends TestCase
 //            ->dump()
             ->assertForbidden()
             ->assertJsonStructure([
-                'message'
+                'message',
             ]);
 
         $this->assertStringStartsWith('You can not delete the company', $response->json('message'));
@@ -1090,8 +1321,8 @@ class CompanyTest extends TestCase
             ]);
 
         $response->assertJsonCount(6, 'data');
-        $this->assertCount(2, array_filter($response->json('data'), fn (array $attachment) => $attachment['parent_entity_type'] === 'Company'));
-        $this->assertCount(4, array_filter($response->json('data'), fn (array $attachment) => $attachment['parent_entity_type'] === 'Quote'));
+        $this->assertCount(2, array_filter($response->json('data'), fn(array $attachment) => $attachment['parent_entity_type'] === 'Company'));
+        $this->assertCount(4, array_filter($response->json('data'), fn(array $attachment) => $attachment['parent_entity_type'] === 'Quote'));
 
         foreach ($companyAttachments as $attachment) {
 

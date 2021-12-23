@@ -133,6 +133,14 @@ return [
             'value' => 'Support Duration',
             'label' => 'Support Duration',
         ],
+        'canada_tax_text' => [
+            'value' => 'Please note that tax will apply in Canada depending on the state. Therefore it is really important that the information stated above is reflecting the actual installation details since tax may vary on location.',
+            'label' => 'Canada Tax Information',
+        ],
+        'ca_ct_hi_md_ma_nv_pr_ri_tn_states_tax_text' => [
+            'value' => 'Please note that tax will apply if any of the machines above are located in California, Connecticut, Hawaii, Maryland, Massachusetts, Nevada, Puerto Rico, Rhode Island or Tennessee',
+            'label' => 'Specific States (CA, CT, HI, MD, MA, NV, PR, RI, TN) Tax Information',
+        ],
     ],
     'contract_data_headers' => [
         'product_no' => [
@@ -192,6 +200,14 @@ return [
         'contract_duration' => [
             'value' => 'Support Duration',
             'label' => 'Support Duration',
+        ],
+        'canada_tax_text' => [
+            'value' => 'Please note that tax will apply in Canada depending on the state. Therefore it is really important that the information stated above is reflecting the actual installation details since tax may vary on location.',
+            'label' => 'Canada Tax Information',
+        ],
+        'ca_ct_hi_md_ma_nv_pr_ri_tn_states_tax_text' => [
+            'value' => 'Please note that tax will apply if any of the machines above are located in California, Connecticut, Hawaii, Maryland, Massachusetts, Nevada, Puerto Rico, Rhode Island or Tennessee',
+            'label' => 'Specific States (CA, CT, HI, MD, MA, NV, PR, RI, TN) Tax Information',
         ],
     ],
     'hpe_contract_data_headers' => [

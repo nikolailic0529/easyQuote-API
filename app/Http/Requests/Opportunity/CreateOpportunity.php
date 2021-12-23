@@ -26,24 +26,34 @@ class CreateOpportunity extends FormRequest
     {
         return [
             'pipeline_id' => [
-              'bail', 'uuid',
-              Rule::exists(Pipeline::class, 'id')->whereNull('deleted_at')
+                'bail', 'uuid',
+                Rule::exists(Pipeline::class, 'id')->withoutTrashed(),
             ],
             'contract_type_id' => [
                 'bail', 'required', 'uuid',
-                Rule::exists(ContractType::class, 'id')
+                Rule::exists(ContractType::class, 'id'),
             ],
             'primary_account_id' => [
                 'bail', 'uuid',
-                Rule::exists(Company::class, 'id')->whereNull('deleted_at')->whereNotNull('activated_at'),
+                Rule::exists(Company::class, 'id')->withoutTrashed()->whereNotNull('activated_at'),
+            ],
+            'end_user_id' => [
+                'bail', 'uuid',
+                Rule::exists(Company::class, 'id')->withoutTrashed()->whereNotNull('activated_at'),
+            ],
+            'are_end_user_addresses_available' => [
+                'bail', 'boolean',
+            ],
+            'are_end_user_contacts_available' => [
+                'bail', 'boolean',
             ],
             'primary_account_contact_id' => [
                 'bail', 'uuid',
-                Rule::exists(Contact::class, 'id')->whereNull('deleted_at'),
+                Rule::exists(Contact::class, 'id')->withoutTrashed(),
             ],
             'account_manager_id' => [
                 'bail', 'uuid',
-                Rule::exists(User::class, 'id')->whereNull('deleted_at'),
+                Rule::exists(User::class, 'id')->withoutTrashed(),
             ],
             'project_name' => [
                 'bail', 'string', 'max:191',
@@ -52,7 +62,7 @@ class CreateOpportunity extends FormRequest
                 'bail', 'string', 'max:191',
             ],
             'renewal_month' => [
-                'bail', 'string', 'max:191'
+                'bail', 'string', 'max:191',
             ],
             'renewal_year' => [
                 'bail', 'integer', 'max:9999',
@@ -70,22 +80,22 @@ class CreateOpportunity extends FormRequest
                 'bail', 'string', 'max:191',
             ],
             'opportunity_start_date' => [
-                'bail', Rule::requiredIf(fn () => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
+                'bail', Rule::requiredIf(fn() => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
             ],
             'is_opportunity_start_date_assumed' => [
                 'bail', 'boolean',
             ],
             'opportunity_end_date' => [
-                'bail', Rule::requiredIf(fn () => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
+                'bail', Rule::requiredIf(fn() => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
             ],
             'is_opportunity_end_end_assumed' => [
                 'bail', 'boolean',
             ],
             'opportunity_closing_date' => [
-                'bail', Rule::requiredIf(fn () => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
+                'bail', Rule::requiredIf(fn() => false === $this->boolean('is_contract_duration_checked')), 'date_format:Y-m-d',
             ],
             'contract_duration_months' => [
-                'bail', Rule::requiredIf(fn () => $this->boolean('is_contract_duration_checked')), 'integer', 'min:1', 'max:60',
+                'bail', Rule::requiredIf(fn() => $this->boolean('is_contract_duration_checked')), 'integer', 'min:1', 'max:60',
             ],
             'is_contract_duration_checked' => [
                 'bail', 'boolean',
@@ -175,10 +185,10 @@ class CreateOpportunity extends FormRequest
                 'bail', 'string',
             ],
             'ranking' => [
-                'bail', 'nullable', 'numeric', 'min:0', 'max:1'
+                'bail', 'nullable', 'numeric', 'min:0', 'max:1',
             ],
             'campaign_name' => [
-                'bail', 'nullable', 'string', 'max:191'
+                'bail', 'nullable', 'string', 'max:191',
             ],
             'suppliers_grid' => [
                 'bail', 'nullable', 'array',
@@ -211,6 +221,9 @@ class CreateOpportunity extends FormRequest
             'contract_type_id' => $this->input('contract_type_id'),
             'account_manager_id' => $this->input('account_manager_id'),
             'primary_account_id' => $this->input('primary_account_id'),
+            'end_user_id' => $this->input('end_user_id'),
+            'are_end_user_addresses_available' => $this->boolean('are_end_user_addresses_available'),
+            'are_end_user_contacts_available' => $this->boolean('are_end_user_contacts_available'),
             'primary_account_contact_id' => $this->input('primary_account_contact_id'),
             'project_name' => $this->input('project_name'),
             'nature_of_service' => $this->input('nature_of_service'),
@@ -227,7 +240,7 @@ class CreateOpportunity extends FormRequest
             'opportunity_closing_date' => transform($this->input('opportunity_closing_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
 
             'is_contract_duration_checked' => $this->boolean('is_contract_duration_checked'),
-            'contract_duration_months' => transform($this->input('contract_duration_months'), fn (mixed $months) => (int)$months),
+            'contract_duration_months' => transform($this->input('contract_duration_months'), fn(mixed $months) => (int)$months),
 
             'expected_order_date' => transform($this->input('expected_order_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
             'customer_order_date' => transform($this->input('customer_order_date'), fn(string $date) => Carbon::createFromFormat('Y-m-d', $date)),
@@ -264,7 +277,7 @@ class CreateOpportunity extends FormRequest
                     'supplier_name' => $supplier['supplier_name'] ?? null,
                     'country_name' => $supplier['country_name'] ?? null,
                     'contact_name' => $supplier['contact_name'] ?? null,
-                    'contact_email' => $supplier['contact_email'] ?? null
+                    'contact_email' => $supplier['contact_email'] ?? null,
                 ], $suppliers);
             }),
         ]);

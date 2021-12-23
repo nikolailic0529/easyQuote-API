@@ -284,6 +284,7 @@ define('MLFQ_01', 'Malformed request.');
 define('FFTC_01', 'Failed when flushing Eloquent tagged cache.');
 define('TABLE_COUNT_POSTFIX', '_count');
 define('ND_01', 'N/A');
+define('ND_02', 'n/a');
 define('SUN_01', 'Unable to fetch data from external service');
 // MySQL unbuffered connection used for cursors.
 define('MYSQL_UNBUFFERED', 'mysql_unbuffered');

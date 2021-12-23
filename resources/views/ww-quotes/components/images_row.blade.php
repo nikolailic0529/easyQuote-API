@@ -1,5 +1,3 @@
-<div class="{{ $class ?? '' }}">
-    @foreach ($images as $image)
-        <img src="{{ $image }}"  alt=""/>
-    @endforeach
-</div>
+@foreach ($images as $image)
+  <img class="{{ $class ?? '' }}" src="{{ $image }}"  alt=""/>
+@endforeach

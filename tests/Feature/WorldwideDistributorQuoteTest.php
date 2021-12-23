@@ -1613,7 +1613,11 @@ class WorldwideDistributorQuoteTest extends TestCase
     {
         $this->authenticateApi();
 
-        $quote = factory(WorldwideQuote::class)->create();
+        $quote = factory(WorldwideQuote::class)->create([
+            'user_id' => $this->app['auth']->id(),
+        ]);
+
+        $quote->activeVersion->update(['user_id' => $this->app['auth']->id()]);
 
         $opportunity = factory(Opportunity::class)->create();
         $supplier = factory(OpportunitySupplier::class)->create(['opportunity_id' => $opportunity->getKey()]);
@@ -1624,6 +1628,8 @@ class WorldwideDistributorQuoteTest extends TestCase
 
         /** @var MappedRow $row */
         $row = factory(MappedRow::class)->create(['quote_file_id' => $distributorFile->getKey(), 'price' => 10_000, 'is_selected' => true]);
+
+        $machineAddress = factory(Address::class)->create();
 
         /** @var WorldwideDistribution $distributorQuote */
         $distributorQuote = factory(WorldwideDistribution::class)->create([
@@ -1642,6 +1648,7 @@ class WorldwideDistributorQuoteTest extends TestCase
             'date_to' => '2022-01-24',
             'price' => '120000.10',
             'original_price' => 120000.10 * .9,
+            'machine_address_id' => $machineAddress->getKey(),
         ];
 
         /** @var Asset $sameAsset */
@@ -1660,6 +1667,26 @@ class WorldwideDistributorQuoteTest extends TestCase
                 'is_customer_exclusive_asset',
                 'owned_by_customer',
             ]);
+
+        $response = $this->getJson('api/ww-distributions/'.$distributorQuote->getKey().'/mapped-rows/'.$row->getKey())
+//            ->dump()
+            ->assertOk()
+            ->assertJsonStructure([
+                'id',
+                'machine_address_id',
+                'product_no',
+                'description',
+                'date_from',
+                'date_to',
+                'price',
+                'original_price',
+                'machine_address_id',
+            ]);
+
+
+        foreach ($rowFieldsData as $field => $value) {
+            $this->assertEquals($value, $response->json($field));
+        }
     }
 
     /**

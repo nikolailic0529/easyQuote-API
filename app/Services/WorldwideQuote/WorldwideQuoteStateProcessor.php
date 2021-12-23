@@ -4,13 +4,11 @@ namespace App\Services\WorldwideQuote;
 
 use App\Contracts\{Services\ManagesExchangeRates,
     Services\ProcessesWorldwideDistributionState,
-    Services\ProcessesWorldwideQuoteState
-};
+    Services\ProcessesWorldwideQuoteState};
 use App\DTO\Asset\GenericAssetData;
 use App\DTO\AssetsGroupData;
 use App\DTO\ProcessableDistributionCollection;
-use App\DTO\QuoteStages\{AddressesContactsStage,
-    ContractDetailsStage,
+use App\DTO\QuoteStages\{ContractDetailsStage,
     ContractDiscountStage,
     ContractMarginTaxStage,
     DraftStage,
@@ -22,9 +20,9 @@ use App\DTO\QuoteStages\{AddressesContactsStage,
     PackDetailsStage,
     PackDiscountStage,
     PackMarginTaxStage,
+    QuoteSetupStage,
     ReviewStage,
-    SubmitStage
-};
+    SubmitStage};
 use App\DTO\WorldwideQuote\DistributionImportData;
 use App\DTO\WorldwideQuote\MarkWorldwideQuoteAsDeadData;
 use App\Enum\{ContractQuoteStage, Lock, QuoteStatus};
@@ -50,8 +48,7 @@ use App\Events\{WorldwideQuote\ProcessedImportOfDistributorQuotes,
     WorldwideQuote\WorldwideQuoteMarkedAsDead,
     WorldwideQuote\WorldwideQuoteSubmitted,
     WorldwideQuote\WorldwideQuoteUnraveled,
-    WorldwideQuote\WorldwideQuoteVersionDeleted
-};
+    WorldwideQuote\WorldwideQuoteVersionDeleted};
 use App\Helpers\PipelineShortCodeResolver;
 use App\Helpers\SpaceShortCodeResolver;
 use App\Jobs\IndexSearchableEntity;
@@ -68,8 +65,7 @@ use App\Models\{Address,
     User,
     Vendor,
     WorldwideQuoteAsset,
-    WorldwideQuoteAssetsGroup
-};
+    WorldwideQuoteAssetsGroup};
 use App\Services\Exceptions\ValidationException;
 use Illuminate\Contracts\{Bus\Dispatcher as BusDispatcher, Cache\LockProvider, Events\Dispatcher as EventDispatcher};
 use Illuminate\Database\{ConnectionInterface, Eloquent\Builder, Eloquent\Collection, Query\JoinClause};
@@ -117,14 +113,14 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
      * @param ProcessesWorldwideDistributionState $distributionProcessor
      * @param \App\Services\WorldwideQuote\WorldwideQuoteVersionGuard $versionGuard
      */
-    public function __construct(ConnectionInterface $connection,
-                                LockProvider $lockProvider,
-                                ValidatorInterface $validator,
-                                ManagesExchangeRates $exchangeRateService,
-                                BusDispatcher $busDispatcher,
-                                EventDispatcher $eventDispatcher,
+    public function __construct(ConnectionInterface                 $connection,
+                                LockProvider                        $lockProvider,
+                                ValidatorInterface                  $validator,
+                                ManagesExchangeRates                $exchangeRateService,
+                                BusDispatcher                       $busDispatcher,
+                                EventDispatcher                     $eventDispatcher,
                                 ProcessesWorldwideDistributionState $distributionProcessor,
-                                WorldwideQuoteVersionGuard $versionGuard)
+                                WorldwideQuoteVersionGuard          $versionGuard)
     {
         $this->connection = $connection;
         $this->lockProvider = $lockProvider;
@@ -501,7 +497,7 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         );
     }
 
-    public function processQuoteAddressesContactsStep(WorldwideQuoteVersion $quote, AddressesContactsStage $stage): WorldwideQuoteVersion
+    public function processQuoteSetupStep(WorldwideQuoteVersion $quote, QuoteSetupStage $stage): WorldwideQuoteVersion
     {
         if ($quote->worldwideQuote->contract_type_id !== CT_PACK) {
             throw new ValidationException('A processing of this stage is intended for Pack Quotes only.');
@@ -516,34 +512,20 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         return tap($quote, function (WorldwideQuoteVersion $quote) use ($stage) {
             $oldQuote = $this->cloneBaseQuoteEntityFromVersion($quote);
 
-            $opportunity = $quote->worldwideQuote->opportunity;
-
-            $quoteLock = $this->lockProvider->lock(
-                Lock::UPDATE_WWQUOTE($quote->getKey()),
-                10
-            );
-
             $quote->company()->associate($stage->company_id);
             $quote->quoteCurrency()->associate($stage->quote_currency_id);
             $quote->quoteTemplate()->associate($stage->quote_template_id);
             $quote->buy_price = $stage->buy_price;
             $quote->quote_expiry_date = $stage->quote_expiry_date->toDateString();
             $quote->payment_terms = $stage->payment_terms;
+            $quote->are_end_user_addresses_available = $stage->are_end_user_addresses_available;
+            $quote->are_end_user_contacts_available = $stage->are_end_user_contacts_available;
             $quote->completeness = $stage->stage;
 
-            $quoteLock->block(30, function () use ($quote) {
-                $this->connection->transaction(fn() => $quote->save());
-            });
-
-            $opportunityLock = $this->lockProvider->lock(
-                Lock::UPDATE_OPPORTUNITY($quote->worldwideQuote->opportunity_id),
-                10
-            );
-
-            $opportunityLock->block(30, fn() => $this->connection->transaction(function () use ($quote, $stage) {
-                $quote->addresses()->sync($stage->address_ids);
-                $quote->contacts()->sync($stage->contact_ids);
-            }));
+            $this->lockProvider->lock(Lock::UPDATE_WWQUOTE($quote->getKey()), 10)
+                ->block(30, function () use ($quote) {
+                    $this->connection->transaction(fn() => $quote->save());
+                });
 
             $this->eventDispatcher->dispatch(
                 new WorldwidePackQuoteContactsStepProcessed(
@@ -889,6 +871,8 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         $quoteVersion->exchange_rate_margin = $stage->exchange_rate_margin;
         $quoteVersion->quote_expiry_date = $stage->quote_expiry_date->toDateString();
         $quoteVersion->payment_terms = $stage->payment_terms;
+        $quoteVersion->are_end_user_addresses_available = $stage->are_end_user_addresses_available;
+        $quoteVersion->are_end_user_contacts_available = $stage->are_end_user_contacts_available;
 
         $lock->block(30, fn() => $quoteVersion->saveOrFail());
 
@@ -1351,7 +1335,10 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
         // Populate attributes from opportunity to each version of the quote entity.
         foreach ($quote->versions as $version) {
 
-            $version->payment_terms = $opportunity->customer_status;
+            if (!is_null($opportunity->customer_status)) {
+                $version->payment_terms = $opportunity->customer_status;
+            }
+
             $version->buy_price = $opportunity->purchase_price;
 
             $version->quoteCurrency()->associate(
@@ -1728,9 +1715,9 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
     /**
      * @inheritDoc
      */
-    public function updateGroupOfAssets(WorldwideQuoteVersion $quote,
+    public function updateGroupOfAssets(WorldwideQuoteVersion     $quote,
                                         WorldwideQuoteAssetsGroup $assetsGroup,
-                                        AssetsGroupData $data): WorldwideQuoteAssetsGroup
+                                        AssetsGroupData           $data): WorldwideQuoteAssetsGroup
     {
         $violations = $this->validator->validate($data);
 
@@ -1809,10 +1796,10 @@ class WorldwideQuoteStateProcessor implements ProcessesWorldwideQuoteState
     /**
      * @inheritDoc
      */
-    public function moveAssetsBetweenGroupsOfAssets(WorldwideQuoteVersion $quote,
+    public function moveAssetsBetweenGroupsOfAssets(WorldwideQuoteVersion     $quote,
                                                     WorldwideQuoteAssetsGroup $outputAssetsGroup,
                                                     WorldwideQuoteAssetsGroup $inputAssetsGroup,
-                                                    array $assets): void
+                                                    array                     $assets): void
     {
 
         /** @var WorldwideQuoteAssetsGroup $outputAssetsGroup */

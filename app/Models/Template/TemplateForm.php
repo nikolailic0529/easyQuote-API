@@ -57,13 +57,8 @@ final class TemplateForm
         'ww_quote' => [
             'first_page' => [
                 ['id' => 'quote_data_aggregation', 'label' => 'Quote Data Aggregation'],
-                // For
-                ['id' => 'customer_name', 'label' => 'Customer Name'],
-                // From
                 ['id' => 'company_name', 'label' => 'Internal Company Name'],
-                // Quotation Service Level
                 ['id' => 'service_levels', 'label' => 'Service Level (s)'],
-                // Quotation Summary
                 ['id' => 'quotation_number', 'label' => 'RFQ Number'],
                 ['id' => 'valid_until', 'label' => 'Quotation Closing Date'],
                 ['id' => 'support_start', 'label' => 'Support Start Date'],
@@ -73,12 +68,7 @@ final class TemplateForm
                 ['id' => 'applicable_discounts', 'label' => 'Total Discounts'],
                 ['id' => 'final_price', 'label' => 'Final Price'],
                 ['id' => 'invoicing_terms', 'label' => 'Invoicing Terms'],
-//                ['id' => 'service_agreement_id', 'label' => 'Service Agreement Id'],
                 ['id' => 'system_handle', 'label' => 'System Handle'],
-
-                ['id' => 'contact_name', 'label' => 'Contact Name'],
-                ['id' => 'contact_email', 'label' => 'Contact Email'],
-                ['id' => 'contact_phone', 'label' => 'Contact Phone'],
 
                 ['id' => 'logo_set_x1', 'label' => 'Logo Set X1'],
                 ['id' => 'logo_set_x2', 'label' => 'Logo Set X2'],
@@ -90,7 +80,25 @@ final class TemplateForm
                 ['id' => 'payment_terms', 'label' => 'Payment Terms'],
                 ['id' => 'support_start_assumed_char', 'label' => 'Support Start Assumed (*)'],
                 ['id' => 'support_end_assumed_char', 'label' => 'Support End Assumed (*)'],
-                ['id' => 'footer_notes', 'label' => 'Footer notes']
+                ['id' => 'footer_notes', 'label' => 'Footer notes'],
+
+                # Reseller
+                ['id' => 'customer_name', 'label' => 'Company/Reseller Name'],
+
+                ['id' => 'contact_country', 'label' => 'Company/Reseller Country'],
+                ['id' => 'contact_name', 'label' => 'Company/Reseller Contact Name'],
+                ['id' => 'contact_email', 'label' => 'Company/Reseller Contact Email'],
+                ['id' => 'contact_phone', 'label' => 'Company/Reseller Contact Phone'],
+
+                # End User
+                ['id' => 'end_user_name', 'label' => 'End Customer Name'],
+
+                ['id' => 'end_user_contact_country', 'label' => 'End Customer Contact Country'],
+                ['id' => 'end_user_contact_name', 'label' => 'End Customer Contact Name'],
+                ['id' => 'end_user_contact_email', 'label' => 'End Customer Contact Email'],
+
+                # Account Manager
+                ['id' => 'account_manager_name', 'label' => 'Account Manager Name'],
             ],
             'data_pages' => [
                 ['id' => 'pricing_document', 'label' => 'Pricing Document'],

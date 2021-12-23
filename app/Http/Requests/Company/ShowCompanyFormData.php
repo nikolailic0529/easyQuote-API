@@ -16,10 +16,9 @@ class ShowCompanyFormData extends FormRequest
      *
      * @return array
      */
-    public function rules()
+    public function rules(): array
     {
         return [
-            //
         ];
     }
 
@@ -31,9 +30,20 @@ class ShowCompanyFormData extends FormRequest
 
         return [
             'types' => CompanyType::getValues(),
-            'categories' => CompanyCategory::getValues(),
+            'categories' => $this->resolveCategories(),
             'sources' => CompanySource::getValues(),
             'vendors' => $vendorQueries->listOfActiveVendorsQuery()->get(),
         ];
+    }
+
+    private function resolveCategories(): array
+    {
+        $categories = collect(CompanyCategory::getValues());
+
+        if (config('request-correlation.update-customer-from-opportunity') === $this->input('correlation_id')) {
+            $categories = $categories->reject(CompanyCategory::END_USER);
+        }
+
+        return $categories->values()->all();
     }
 }

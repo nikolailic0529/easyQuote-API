@@ -36,6 +36,10 @@ final class ImportStage extends DataTransferObject
 
     public string $payment_terms;
 
+    public bool $are_end_user_addresses_available;
+
+    public bool $are_end_user_contacts_available;
+
     public int $stage = ContractQuoteStage::IMPORT;
 
     /**

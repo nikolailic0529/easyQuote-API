@@ -188,13 +188,14 @@ class WorldwideQuote extends Model implements SearchableEntity
     {
         return [
             'rfq_number' => $this->quote_number,
-            'customer_name' => optional($this->opportunity->primaryAccount)->name,
-            'company_name' => optional($this->activeVersion->company)->name,
+            'customer_name' => $this->opportunity->primaryAccount?->name,
+            'end_user_name' => $this->opportunity->endUser?->name,
+            'company_name' => $this->activeVersion->company?->name,
             'contract_type_name' => $this->contractType->type_short_name,
             'valid_until_date' => $this->opportunity->opportunity_closing_date,
             'support_start_date' => $this->opportunity->opportunity_start_date,
             'support_end_date' => $this->opportunity->opportunity_end_date,
-            'created_at' => optional($this->created_at)->toDateString(),
+            'created_at' => $this->created_at?->toDateString(),
         ];
     }
 }

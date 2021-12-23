@@ -10,12 +10,21 @@ use App\Enum\VAT;
 use App\Models\Address;
 use App\Models\Company;
 use App\Models\Contact;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+/**
+ * @property-read Company $company
+ */
 class UpdateCompanyRequest extends FormRequest
 {
     protected ?UpdateCompanyData $companyData = null;
+
+    public function authorize(): Response
+    {
+        return (new CompanyRequestAuthResolver())($this);
+    }
 
     /**
      * Get the validation rules that apply to the request.
@@ -33,7 +42,7 @@ class UpdateCompanyRequest extends FormRequest
                 Rule::unique(Company::class)
                     ->where('user_id', optional($this->company)->user_id)
                     ->whereNull('deleted_at')
-                    ->ignore($this->company)
+                    ->ignore($this->company),
             ],
             'vat' => [
                 'nullable',
@@ -43,43 +52,43 @@ class UpdateCompanyRequest extends FormRequest
                 Rule::unique(Company::class)
                     ->where('user_id', optional($this->company)->user_id)
                     ->whereNull('deleted_at')
-                    ->ignore($this->company)
+                    ->ignore($this->company),
             ],
             'vat_type' => [
                 'required',
                 'string',
-                Rule::in(VAT::getValues())
+                Rule::in(VAT::getValues()),
             ],
             'type' => [
                 'string',
-                Rule::in(CompanyType::getValues())
+                Rule::in(CompanyType::getValues()),
             ],
             'source' => [
                 'nullable',
-                Rule::requiredIf(fn() => $this->type === CompanyType::EXTERNAL),
+                Rule::requiredIf(fn() => $this->input('type') === CompanyType::EXTERNAL),
                 'string',
-                Rule::in(CompanySource::getValues())
+                Rule::in(CompanySource::getValues()),
             ],
             'short_code' => [
-                Rule::requiredIf(fn() => $this->type === CompanyType::INTERNAL),
+                Rule::requiredIf(fn() => $this->input('type') === CompanyType::INTERNAL),
                 'string',
                 'size:3',
                 Rule::unique(Company::class)
                     ->where('user_id', optional($this->company)->user_id)
                     ->whereNull('deleted_at')
-                    ->ignore($this->company)
+                    ->ignore($this->company),
             ],
             'logo' => [
                 'exclude_if:delete_logo,1',
                 'image',
-                'max:2048'
+                'max:2048',
             ],
             'delete_logo' => 'boolean',
             'category' => [
                 'nullable',
-                Rule::requiredIf(fn() => $this->type === CompanyType::EXTERNAL),
+                Rule::requiredIf(fn() => $this->input('type') === CompanyType::EXTERNAL),
                 'string',
-                Rule::in(CompanyCategory::getValues())
+                Rule::in(CompanyCategory::getValues()),
             ],
             'email' => 'email',
             'phone' => 'nullable|string|min:4|phone',
@@ -89,37 +98,37 @@ class UpdateCompanyRequest extends FormRequest
             'default_vendor_id' => [
                 'nullable',
                 'uuid',
-                Rule::in($this->vendors ?? $this->company->vendors->pluck('id')->toArray())
+                Rule::in($this->vendors ?? $this->company->vendors->pluck('id')->toArray()),
             ],
             'default_country_id' => [
                 'nullable',
                 'string',
                 'uuid',
-                Rule::exists('country_vendor', 'country_id')->where('vendor_id', $this->default_vendor_id ?? $this->company->default_vendor_id)
+                Rule::exists('country_vendor', 'country_id')->where('vendor_id', $this->default_vendor_id ?? $this->company->default_vendor_id),
             ],
             'default_template_id' => [
                 'nullable',
                 'string',
                 'uuid',
-                Rule::exists('country_quote_template', 'quote_template_id')->where('country_id', $this->default_country_id ?? $this->company->default_country_id)
+                Rule::exists('country_quote_template', 'quote_template_id')->where('country_id', $this->default_country_id ?? $this->company->default_country_id),
             ],
             'addresses' => ['nullable', 'array'],
             'addresses.*.id' => [
                 'bail', 'required', 'uuid',
-                Rule::exists(Address::class, 'id')->whereNull('deleted_at')
+                Rule::exists(Address::class, 'id')->whereNull('deleted_at'),
             ],
             'addresses.*.is_default' => [
-                'bail', 'required', 'boolean'
+                'bail', 'required', 'boolean',
             ],
 
             'contacts' => ['nullable', 'array'],
             'contacts.*.id' => [
                 'bail', 'required', 'uuid',
-                Rule::exists(Contact::class, 'id')->whereNull('deleted_at')
+                Rule::exists(Contact::class, 'id')->whereNull('deleted_at'),
             ],
             'contacts.*.is_default' => [
-                'bail', 'required', 'boolean'
-            ]
+                'bail', 'required', 'boolean',
+            ],
         ];
     }
 
@@ -127,7 +136,7 @@ class UpdateCompanyRequest extends FormRequest
     {
         return [
             'name.exists' => CPE_01,
-            'vat.exists' => CPE_01
+            'vat.exists' => CPE_01,
         ];
     }
 
@@ -152,7 +161,7 @@ class UpdateCompanyRequest extends FormRequest
                 'default_template_id' => $this->input('default_template_id'),
                 'default_country_id' => $this->input('default_country_id'),
                 'addresses' => $this->input('addresses') ?? [],
-                'contacts' => $this->input('contacts') ?? []
+                'contacts' => $this->input('contacts') ?? [],
             ]);
         });
     }
@@ -188,7 +197,7 @@ class UpdateCompanyRequest extends FormRequest
         $this->merge([
             'addresses' => $addresses,
             'contacts' => $contacts,
-            'delete_logo' => $this->boolean('delete_logo')
+            'delete_logo' => $this->boolean('delete_logo'),
         ]);
     }
 }

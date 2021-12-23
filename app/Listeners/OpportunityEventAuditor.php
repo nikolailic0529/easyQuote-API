@@ -18,6 +18,7 @@ class OpportunityEventAuditor
     protected static array $logModelAttributes = [
         'primaryAccount.name',
         'primaryAccountContact.contact_representation',
+        'endUser.name',
         'accountManager.fullname',
         'project_name',
         'nature_of_service',

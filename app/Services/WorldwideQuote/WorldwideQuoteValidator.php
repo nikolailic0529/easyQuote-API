@@ -27,14 +27,11 @@ class WorldwideQuoteValidator
 
     public function validateQuote(WorldwideQuote $worldwideQuote): WorldwideQuoteValidationResult
     {
-        $validator = [
-                CT_PACK => [$this, 'validatePackQuote'],
-                CT_CONTRACT => [$this, 'validateContractQuote']
-            ][$worldwideQuote->contract_type_id] ?? null;
-
-        if (is_null($validator)) {
-            throw new \RuntimeException('Unsupported Contract Type of Quote entity.');
-        }
+        $validator = match ($worldwideQuote->contract_type_id) {
+            CT_PACK => $this->validatePackQuote(...),
+            CT_CONTRACT => $this->validateContractQuote(...),
+            default => throw new \RuntimeException('Unsupported Contract Type of Quote entity.'),
+        };
 
         return $validator($worldwideQuote);
     }
@@ -79,13 +76,11 @@ class WorldwideQuoteValidator
                     [
                         $distributorQuote->getKey() => [
                             'addresses' => $this->mapAddressesOfDistributorQuote($distributorQuote),
-                            'assets' => $this->mapAssetsOfDistributorQuote($distributorQuote)
-                        ]
+                            'assets' => $this->mapAssetsOfDistributorQuote($distributorQuote),
+                        ],
                     ],
                     [
                         '*.addresses.invoice_address' => 'bail|required|array',
-                        '*.addresses.hardware_address' => 'bail|required_without:*.addresses.software_address|array',
-                        '*.addresses.software_address' => 'bail|required_without:*.addresses.hardware_address|array',
                         '*.addresses.*.country_code' => 'required|max:2',
 
                         '*.assets' => 'required|array',
@@ -104,8 +99,6 @@ class WorldwideQuoteValidator
                     ],
                     [
                         '*.addresses.invoice_address.required' => 'Invoice Address is missing.',
-                        '*.addresses.hardware_address.required_without' => 'Hardware address is required when Software address is not present.',
-                        '*.addresses.software_address.required_without' => 'Software address is required when Hardware address is not present.',
 
                         '*.addresses.invoice_address.address_1.required' => 'Invoice Address doesn\'t have a filled Address 1.',
                         '*.addresses.invoice_address.address_1.max' => 'Invoice Address has Address 1 greater than :max characters.',
@@ -154,7 +147,7 @@ class WorldwideQuoteValidator
                         '*.assets.*.machine_country_code.required' => 'One or more assets don\'t have machine country.',
                         '*.assets.*.vendor_name.required' => 'One or more assets don\'t have a vendor name.',
                         '*.assets.*.vendor_name.max' => 'One or more assets have an invalid vendor name.',
-                        '*.assets.*.distributor.max' => 'One or more suppliers have name greater than 20 characters.'
+                        '*.assets.*.distributor.max' => 'One or more suppliers have name greater than 20 characters.',
                     ]
                 );
 
@@ -189,8 +182,6 @@ class WorldwideQuoteValidator
 
             'addresses' => 'required|array',
             'addresses.invoice_address' => 'required|array',
-            'addresses.hardware_address' => 'required_without:addresses.software_address|array',
-            'addresses.software_address' => 'required_without:addresses.hardware_address|array',
             'addresses.*.country_code' => 'required|max:2',
 
             'assets' => 'required|array',
@@ -218,8 +209,6 @@ class WorldwideQuoteValidator
             'customer.currency_code.max' => 'Customer Currency Code is greater than :max characters.',
 
             'addresses.invoice_address.required' => 'Invoice Address is missing.',
-            'addresses.hardware_address.required_without' => 'Hardware address is required when Software address is not present.',
-            'addresses.software_address.required_without' => 'Software address is required when Hardware address is not present.',
 
             'addresses.invoice_address.address_1.required' => 'Invoice Address doesn\'t have a filled Address 1.',
             'addresses.invoice_address.address_1.max' => 'Invoice Address has Address 1 greater than :max characters.',
@@ -267,7 +256,7 @@ class WorldwideQuoteValidator
             'assets.*.machine_country_code.required' => 'One or more assets don\'t have machine country.',
             'assets.*.vendor_name.required' => 'One or more assets don\'t have a vendor name.',
             'assets.*.vendor_name.max' => 'One or more assets have an invalid vendor name.',
-            'assets.*.distributor.max' => 'One or more suppliers have name greater than 20 characters.'
+            'assets.*.distributor.max' => 'One or more suppliers have name greater than 20 characters.',
         ]);
 
         return new WorldwideQuoteValidationResult(
